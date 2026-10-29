@@ -1,0 +1,206 @@
+{
+  "scope": "Index of recorded outcomes, not a new test run or Sail result.",
+  "fixture_count": 10,
+  "case_count": 11,
+  "original_assertion_check_outcome": "passed",
+  "initial_default_TIME_attempt": {
+    "outcome": "failed",
+    "error": "[UNSUPPORTED_TIME_TYPE] The data type TIME is not supported. SQLSTATE: 0A000",
+    "log": "/tmp/sail-sdp-orc-bridge-reference/default-time-disabled.log"
+  },
+  "retained_exploratory_failures": [
+    {
+      "file": "default-time-disabled.log",
+      "outcome": "failed",
+      "reason": "TIME disabled under the default Spark configuration."
+    },
+    {
+      "file": "initial-run-with-sql-typo.log",
+      "outcome": "failed",
+      "reason": "Original exploratory SQL syntax error."
+    },
+    {
+      "file": "last-run.log",
+      "outcome": "failed",
+      "reason": "Python JSON serialization rejected time-valued map keys."
+    }
+  ],
+  "retained_interval_conversion_failure_files": [
+    "intervals-read_arrow-failure.txt",
+    "intervals-read_collect-failure.txt",
+    "intervals-source_arrow-failure.txt",
+    "intervals-source_collect-failure.txt",
+    "nested_time_intervals-read_arrow-failure.txt",
+    "nested_time_intervals-read_collect-failure.txt",
+    "nested_time_intervals-source_arrow-failure.txt",
+    "nested_time_intervals-source_collect-failure.txt"
+  ],
+  "cases": [
+    {
+      "name": "time_precisions",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "passed",
+        "source_strings": "passed",
+        "source_numeric": "passed",
+        "source_arrow": "passed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "passed",
+        "read_strings": "passed",
+        "read_numeric": "passed",
+        "read_arrow": "passed"
+      },
+      "fixture_directory": "data/time_precisions"
+    },
+    {
+      "name": "intervals",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "failed",
+        "source_strings": "passed",
+        "source_numeric": "passed",
+        "source_arrow": "failed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "failed",
+        "read_strings": "passed",
+        "read_numeric": "passed",
+        "read_arrow": "failed"
+      },
+      "fixture_directory": "data/intervals"
+    },
+    {
+      "name": "timestamps_utc",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "passed",
+        "source_strings": "passed",
+        "source_numeric": "passed",
+        "source_arrow": "passed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "passed",
+        "read_strings": "passed",
+        "read_numeric": "passed",
+        "read_arrow": "passed"
+      },
+      "fixture_directory": "data/timestamps_utc"
+    },
+    {
+      "name": "timestamps_los_angeles",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "passed",
+        "source_strings": "passed",
+        "source_numeric": "passed",
+        "source_arrow": "passed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "passed",
+        "read_strings": "passed",
+        "read_numeric": "passed",
+        "read_arrow": "passed"
+      },
+      "fixture_directory": "data/timestamps_los_angeles"
+    },
+    {
+      "name": "nested_timestamp_nulls",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "passed",
+        "source_strings": "passed",
+        "source_arrow": "passed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "passed",
+        "read_strings": "passed",
+        "read_arrow": "passed"
+      },
+      "fixture_directory": "data/nested_timestamp_nulls"
+    },
+    {
+      "name": "nested_time_intervals",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "failed",
+        "source_strings": "passed",
+        "source_arrow": "failed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "failed",
+        "read_strings": "passed",
+        "read_arrow": "failed"
+      },
+      "fixture_directory": "data/nested_time_intervals"
+    },
+    {
+      "name": "time_cast_precisions",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "passed",
+        "source_strings": "passed",
+        "source_arrow": "passed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "passed",
+        "read_strings": "passed",
+        "read_arrow": "passed"
+      },
+      "fixture_directory": "data/time_cast_precisions"
+    },
+    {
+      "name": "foreign_char_varchar_default_timestamp_ltz",
+      "writer": "Apache ORC Java from Spark jars; ForeignOrc.java",
+      "stage_outcomes": {
+        "read_collect": "passed",
+        "read_arrow": "passed",
+        "physical_arrow": "passed"
+      },
+      "fixture_directory": "data/foreign_char_varchar"
+    },
+    {
+      "name": "foreign_char_varchar_default_timestamp_ntz",
+      "writer": "Apache ORC Java from Spark jars; ForeignOrc.java",
+      "stage_outcomes": {
+        "read_collect": "passed",
+        "read_arrow": "passed",
+        "physical_arrow": "passed"
+      },
+      "fixture_directory": "data/foreign_char_varchar"
+    },
+    {
+      "name": "daytime_time_nested",
+      "writer": "Spark 4.2.1",
+      "stage_outcomes": {
+        "analysis": "passed",
+        "source_collect": "passed",
+        "source_strings": "passed",
+        "source_arrow": "passed",
+        "write": "passed",
+        "physical_arrow": "passed",
+        "read_collect": "passed",
+        "read_strings": "passed",
+        "read_arrow": "passed"
+      },
+      "fixture_directory": "data/daytime_time_nested"
+    },
+    {
+      "name": "foreign_submicro",
+      "writer": "Apache ORC Java; ForeignSubmicro.java",
+      "stage_outcomes": {
+        "native_microseconds_decode": "not executed"
+      },
+      "fixture_directory": "data/foreign_submicro",
+      "native_default_nanos_exitcode": 0,
+      "note": "Original report records additional schemas/values without per-stage outcome fields; none are newly classified as a runtime pass by this archive."
+    }
+  ]
+}

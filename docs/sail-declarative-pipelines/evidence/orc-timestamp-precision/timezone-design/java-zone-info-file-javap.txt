@@ -1,0 +1,2402 @@
+Compiled from "ZoneInfoFile.java"
+public final class sun.util.calendar.ZoneInfoFile {
+  private static java.lang.String versionId;
+
+  private static final java.util.Map<java.lang.String, sun.util.calendar.ZoneInfo> zones;
+
+  private static java.util.Map<java.lang.String, java.lang.String> aliases;
+
+  private static byte[][] ruleArray;
+
+  private static java.lang.String[] regions;
+
+  private static int[] indices;
+
+  private static final boolean USE_OLDMAPPING;
+
+  private static java.lang.String[][] oldMappings;
+
+  private static final long UTC1900;
+
+  private static final long UTC2037;
+
+  private static final long LDT2037;
+
+  private static final long CURRT;
+
+  static final int SECONDS_PER_DAY;
+
+  static final int DAYS_PER_CYCLE;
+
+  static final long DAYS_0000_TO_1970;
+
+  private static final int[] toCalendarDOW;
+
+  private static final int[] toSTZTime;
+
+  private static final long OFFSET_MASK;
+
+  private static final long DST_MASK;
+
+  private static final int DST_NSHIFT;
+
+  private static final int TRANSITION_NSHIFT;
+
+  private static final int LASTYEAR;
+
+  public static java.lang.String[] getZoneIds();
+    Code:
+       0: getstatic     #3                  // Field regions:[Ljava/lang/String;
+       3: arraylength
+       4: getstatic     #7                  // Field oldMappings:[[Ljava/lang/String;
+       7: arraylength
+       8: iadd
+       9: istore_0
+      10: getstatic     #11                 // Field USE_OLDMAPPING:Z
+      13: ifne          19
+      16: iinc          0, 3
+      19: getstatic     #3                  // Field regions:[Ljava/lang/String;
+      22: iload_0
+      23: invokestatic  #15                 // Method java/util/Arrays.copyOf:([Ljava/lang/Object;I)[Ljava/lang/Object;
+      26: checkcast     #21                 // class "[Ljava/lang/String;"
+      29: astore_1
+      30: getstatic     #3                  // Field regions:[Ljava/lang/String;
+      33: arraylength
+      34: istore_2
+      35: getstatic     #11                 // Field USE_OLDMAPPING:Z
+      38: ifne          65
+      41: aload_1
+      42: iload_2
+      43: iinc          2, 1
+      46: ldc           #22                 // String EST
+      48: aastore
+      49: aload_1
+      50: iload_2
+      51: iinc          2, 1
+      54: ldc           #24                 // String HST
+      56: aastore
+      57: aload_1
+      58: iload_2
+      59: iinc          2, 1
+      62: ldc           #26                 // String MST
+      64: aastore
+      65: iconst_0
+      66: istore_3
+      67: iload_3
+      68: getstatic     #7                  // Field oldMappings:[[Ljava/lang/String;
+      71: arraylength
+      72: if_icmpge     94
+      75: aload_1
+      76: iload_2
+      77: iinc          2, 1
+      80: getstatic     #7                  // Field oldMappings:[[Ljava/lang/String;
+      83: iload_3
+      84: aaload
+      85: iconst_0
+      86: aaload
+      87: aastore
+      88: iinc          3, 1
+      91: goto          67
+      94: aload_1
+      95: areturn
+
+  public static java.lang.String[] getZoneIds(int);
+    Code:
+       0: new           #28                 // class java/util/ArrayList
+       3: dup
+       4: invokespecial #30                 // Method java/util/ArrayList."<init>":()V
+       7: astore_1
+       8: invokestatic  #34                 // Method getZoneIds:()[Ljava/lang/String;
+      11: astore_2
+      12: aload_2
+      13: arraylength
+      14: istore_3
+      15: iconst_0
+      16: istore        4
+      18: iload         4
+      20: iload_3
+      21: if_icmpge     61
+      24: aload_2
+      25: iload         4
+      27: aaload
+      28: astore        5
+      30: aload         5
+      32: invokestatic  #38                 // Method getZoneInfo:(Ljava/lang/String;)Lsun/util/calendar/ZoneInfo;
+      35: astore        6
+      37: aload         6
+      39: invokevirtual #42                 // Method sun/util/calendar/ZoneInfo.getRawOffset:()I
+      42: iload_0
+      43: if_icmpne     55
+      46: aload_1
+      47: aload         5
+      49: invokeinterface #48,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      54: pop
+      55: iinc          4, 1
+      58: goto          18
+      61: aload_1
+      62: aload_1
+      63: invokeinterface #54,  1           // InterfaceMethod java/util/List.size:()I
+      68: anewarray     #57                 // class java/lang/String
+      71: invokeinterface #59,  2           // InterfaceMethod java/util/List.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;
+      76: checkcast     #21                 // class "[Ljava/lang/String;"
+      79: astore_2
+      80: aload_2
+      81: invokestatic  #63                 // Method java/util/Arrays.sort:([Ljava/lang/Object;)V
+      84: aload_2
+      85: areturn
+
+  public static sun.util.calendar.ZoneInfo getZoneInfo(java.lang.String);
+    Code:
+       0: aload_0
+       1: ifnonnull     6
+       4: aconst_null
+       5: areturn
+       6: aload_0
+       7: invokestatic  #67                 // Method getZoneInfo0:(Ljava/lang/String;)Lsun/util/calendar/ZoneInfo;
+      10: astore_1
+      11: aload_1
+      12: ifnull        28
+      15: aload_1
+      16: invokevirtual #70                 // Method sun/util/calendar/ZoneInfo.clone:()Ljava/lang/Object;
+      19: checkcast     #43                 // class sun/util/calendar/ZoneInfo
+      22: astore_1
+      23: aload_1
+      24: aload_0
+      25: invokevirtual #74                 // Method sun/util/calendar/ZoneInfo.setID:(Ljava/lang/String;)V
+      28: aload_1
+      29: areturn
+
+  private static sun.util.calendar.ZoneInfo getZoneInfo0(java.lang.String);
+    Code:
+       0: getstatic     #78                 // Field zones:Ljava/util/Map;
+       3: aload_0
+       4: invokeinterface #82,  2           // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+       9: checkcast     #43                 // class sun/util/calendar/ZoneInfo
+      12: astore_1
+      13: aload_1
+      14: ifnull        19
+      17: aload_1
+      18: areturn
+      19: getstatic     #88                 // Field aliases:Ljava/util/Map;
+      22: aload_0
+      23: aload_0
+      24: invokeinterface #91,  3           // InterfaceMethod java/util/Map.getOrDefault:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      29: checkcast     #57                 // class java/lang/String
+      32: astore_2
+      33: getstatic     #3                  // Field regions:[Ljava/lang/String;
+      36: aload_2
+      37: invokestatic  #95                 // Method java/util/Arrays.binarySearch:([Ljava/lang/Object;Ljava/lang/Object;)I
+      40: istore_3
+      41: iload_3
+      42: ifge          47
+      45: aconst_null
+      46: areturn
+      47: getstatic     #99                 // Field ruleArray:[[B
+      50: getstatic     #103                // Field indices:[I
+      53: iload_3
+      54: iaload
+      55: aaload
+      56: astore        4
+      58: new           #107                // class java/io/DataInputStream
+      61: dup
+      62: new           #109                // class java/io/ByteArrayInputStream
+      65: dup
+      66: aload         4
+      68: invokespecial #111                // Method java/io/ByteArrayInputStream."<init>":([B)V
+      71: invokespecial #114                // Method java/io/DataInputStream."<init>":(Ljava/io/InputStream;)V
+      74: astore        5
+      76: aload         5
+      78: aload_2
+      79: invokestatic  #117                // Method getZoneInfo:(Ljava/io/DataInput;Ljava/lang/String;)Lsun/util/calendar/ZoneInfo;
+      82: astore_1
+      83: getstatic     #78                 // Field zones:Ljava/util/Map;
+      86: aload_0
+      87: aload_1
+      88: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      93: pop
+      94: aload_1
+      95: areturn
+      96: astore_1
+      97: new           #125                // class java/lang/RuntimeException
+     100: dup
+     101: new           #127                // class java/lang/StringBuilder
+     104: dup
+     105: invokespecial #129                // Method java/lang/StringBuilder."<init>":()V
+     108: ldc           #130                // String Invalid binary time-zone data: TZDB:
+     110: invokevirtual #132                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     113: aload_0
+     114: invokevirtual #132                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     117: ldc           #136                // String , version:
+     119: invokevirtual #132                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     122: getstatic     #138                // Field versionId:Ljava/lang/String;
+     125: invokevirtual #132                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     128: invokevirtual #142                // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+     131: aload_1
+     132: invokespecial #146                // Method java/lang/RuntimeException."<init>":(Ljava/lang/String;Ljava/lang/Throwable;)V
+     135: athrow
+    Exception table:
+       from    to  target type
+           0    18    96   Class java/lang/Exception
+          19    46    96   Class java/lang/Exception
+          47    95    96   Class java/lang/Exception
+
+  public static java.util.Map<java.lang.String, java.lang.String> getAliasMap();
+    Code:
+       0: getstatic     #88                 // Field aliases:Ljava/util/Map;
+       3: invokestatic  #149                // Method java/util/Collections.unmodifiableMap:(Ljava/util/Map;)Ljava/util/Map;
+       6: areturn
+
+  public static java.lang.String getVersion();
+    Code:
+       0: getstatic     #138                // Field versionId:Ljava/lang/String;
+       3: areturn
+
+  public static sun.util.calendar.ZoneInfo getCustomTimeZone(java.lang.String, int);
+    Code:
+       0: iload_1
+       1: invokestatic  #155                // Method toCustomID:(I)Ljava/lang/String;
+       4: astore_2
+       5: new           #43                 // class sun/util/calendar/ZoneInfo
+       8: dup
+       9: aload_2
+      10: iload_1
+      11: invokespecial #159                // Method sun/util/calendar/ZoneInfo."<init>":(Ljava/lang/String;I)V
+      14: areturn
+
+  public static java.lang.String toCustomID(int);
+    Code:
+       0: iload_0
+       1: sipush        1000
+       4: idiv
+       5: istore_2
+       6: iload_2
+       7: iflt          16
+      10: bipush        43
+      12: istore_1
+      13: goto          22
+      16: bipush        45
+      18: istore_1
+      19: iload_2
+      20: ineg
+      21: istore_2
+      22: iload_2
+      23: sipush        3600
+      26: idiv
+      27: istore_3
+      28: iload_2
+      29: sipush        3600
+      32: irem
+      33: bipush        60
+      35: idiv
+      36: istore        4
+      38: iload_2
+      39: bipush        60
+      41: irem
+      42: istore        5
+      44: bipush        9
+      46: newarray       char
+      48: dup
+      49: iconst_0
+      50: bipush        71
+      52: castore
+      53: dup
+      54: iconst_1
+      55: bipush        77
+      57: castore
+      58: dup
+      59: iconst_2
+      60: bipush        84
+      62: castore
+      63: dup
+      64: iconst_3
+      65: iload_1
+      66: castore
+      67: dup
+      68: iconst_4
+      69: bipush        48
+      71: castore
+      72: dup
+      73: iconst_5
+      74: bipush        48
+      76: castore
+      77: dup
+      78: bipush        6
+      80: bipush        58
+      82: castore
+      83: dup
+      84: bipush        7
+      86: bipush        48
+      88: castore
+      89: dup
+      90: bipush        8
+      92: bipush        48
+      94: castore
+      95: astore        6
+      97: iload_3
+      98: bipush        10
+     100: if_icmplt     116
+     103: aload         6
+     105: iconst_4
+     106: dup2
+     107: caload
+     108: iload_3
+     109: bipush        10
+     111: idiv
+     112: i2c
+     113: iadd
+     114: i2c
+     115: castore
+     116: aload         6
+     118: iconst_5
+     119: dup2
+     120: caload
+     121: iload_3
+     122: bipush        10
+     124: irem
+     125: i2c
+     126: iadd
+     127: i2c
+     128: castore
+     129: iload         4
+     131: ifeq          164
+     134: aload         6
+     136: bipush        7
+     138: dup2
+     139: caload
+     140: iload         4
+     142: bipush        10
+     144: idiv
+     145: i2c
+     146: iadd
+     147: i2c
+     148: castore
+     149: aload         6
+     151: bipush        8
+     153: dup2
+     154: caload
+     155: iload         4
+     157: bipush        10
+     159: irem
+     160: i2c
+     161: iadd
+     162: i2c
+     163: castore
+     164: new           #57                 // class java/lang/String
+     167: dup
+     168: aload         6
+     170: invokespecial #162                // Method java/lang/String."<init>":([C)V
+     173: astore        7
+     175: iload         5
+     177: ifeq          240
+     180: aload         6
+     182: bipush        7
+     184: bipush        48
+     186: iload         5
+     188: bipush        10
+     190: idiv
+     191: iadd
+     192: i2c
+     193: castore
+     194: aload         6
+     196: bipush        8
+     198: bipush        48
+     200: iload         5
+     202: bipush        10
+     204: irem
+     205: iadd
+     206: i2c
+     207: castore
+     208: new           #127                // class java/lang/StringBuilder
+     211: dup
+     212: invokespecial #129                // Method java/lang/StringBuilder."<init>":()V
+     215: aload         7
+     217: invokevirtual #132                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     220: new           #57                 // class java/lang/String
+     223: dup
+     224: aload         6
+     226: bipush        6
+     228: iconst_3
+     229: invokespecial #165                // Method java/lang/String."<init>":([CII)V
+     232: invokevirtual #132                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     235: invokevirtual #142                // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+     238: astore        7
+     240: aload         7
+     242: areturn
+
+  private sun.util.calendar.ZoneInfoFile();
+    Code:
+       0: aload_0
+       1: invokespecial #168                // Method java/lang/Object."<init>":()V
+       4: return
+
+  private static void loadTZDB();
+    Code:
+       0: new           #171                // class sun/util/calendar/ZoneInfoFile$1
+       3: dup
+       4: invokespecial #173                // Method sun/util/calendar/ZoneInfoFile$1."<init>":()V
+       7: invokestatic  #174                // Method java/security/AccessController.doPrivileged:(Ljava/security/PrivilegedAction;)Ljava/lang/Object;
+      10: pop
+      11: return
+
+  private static void addOldMapping();
+    Code:
+       0: getstatic     #7                  // Field oldMappings:[[Ljava/lang/String;
+       3: astore_0
+       4: aload_0
+       5: arraylength
+       6: istore_1
+       7: iconst_0
+       8: istore_2
+       9: iload_2
+      10: iload_1
+      11: if_icmpge     39
+      14: aload_0
+      15: iload_2
+      16: aaload
+      17: astore_3
+      18: getstatic     #88                 // Field aliases:Ljava/util/Map;
+      21: aload_3
+      22: iconst_0
+      23: aaload
+      24: aload_3
+      25: iconst_1
+      26: aaload
+      27: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      32: pop
+      33: iinc          2, 1
+      36: goto          9
+      39: getstatic     #11                 // Field USE_OLDMAPPING:Z
+      42: ifeq          87
+      45: getstatic     #88                 // Field aliases:Ljava/util/Map;
+      48: ldc           #22                 // String EST
+      50: ldc           #180                // String America/New_York
+      52: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      57: pop
+      58: getstatic     #88                 // Field aliases:Ljava/util/Map;
+      61: ldc           #26                 // String MST
+      63: ldc           #182                // String America/Denver
+      65: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      70: pop
+      71: getstatic     #88                 // Field aliases:Ljava/util/Map;
+      74: ldc           #24                 // String HST
+      76: ldc           #184                // String Pacific/Honolulu
+      78: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      83: pop
+      84: goto          153
+      87: getstatic     #78                 // Field zones:Ljava/util/Map;
+      90: ldc           #22                 // String EST
+      92: new           #43                 // class sun/util/calendar/ZoneInfo
+      95: dup
+      96: ldc           #22                 // String EST
+      98: ldc           #186                // int -18000000
+     100: invokespecial #159                // Method sun/util/calendar/ZoneInfo."<init>":(Ljava/lang/String;I)V
+     103: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     108: pop
+     109: getstatic     #78                 // Field zones:Ljava/util/Map;
+     112: ldc           #26                 // String MST
+     114: new           #43                 // class sun/util/calendar/ZoneInfo
+     117: dup
+     118: ldc           #26                 // String MST
+     120: ldc           #187                // int -25200000
+     122: invokespecial #159                // Method sun/util/calendar/ZoneInfo."<init>":(Ljava/lang/String;I)V
+     125: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     130: pop
+     131: getstatic     #78                 // Field zones:Ljava/util/Map;
+     134: ldc           #24                 // String HST
+     136: new           #43                 // class sun/util/calendar/ZoneInfo
+     139: dup
+     140: ldc           #24                 // String HST
+     142: ldc           #188                // int -36000000
+     144: invokespecial #159                // Method sun/util/calendar/ZoneInfo."<init>":(Ljava/lang/String;I)V
+     147: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     152: pop
+     153: return
+
+  public static boolean useOldMapping();
+    Code:
+       0: getstatic     #11                 // Field USE_OLDMAPPING:Z
+       3: ireturn
+
+  private static void load(java.io.DataInputStream) throws java.lang.ClassNotFoundException, java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokevirtual #189                // Method java/io/DataInputStream.readByte:()B
+       4: iconst_1
+       5: if_icmpeq     18
+       8: new           #193                // class java/io/StreamCorruptedException
+      11: dup
+      12: ldc           #195                // String File format not recognised
+      14: invokespecial #197                // Method java/io/StreamCorruptedException."<init>":(Ljava/lang/String;)V
+      17: athrow
+      18: aload_0
+      19: invokevirtual #199                // Method java/io/DataInputStream.readUTF:()Ljava/lang/String;
+      22: astore_1
+      23: ldc           #202                // String TZDB
+      25: aload_1
+      26: invokevirtual #204                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+      29: ifne          42
+      32: new           #193                // class java/io/StreamCorruptedException
+      35: dup
+      36: ldc           #195                // String File format not recognised
+      38: invokespecial #197                // Method java/io/StreamCorruptedException."<init>":(Ljava/lang/String;)V
+      41: athrow
+      42: aload_0
+      43: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+      46: istore_2
+      47: iconst_0
+      48: istore_3
+      49: iload_3
+      50: iload_2
+      51: if_icmpge     67
+      54: aload_0
+      55: invokevirtual #199                // Method java/io/DataInputStream.readUTF:()Ljava/lang/String;
+      58: putstatic     #138                // Field versionId:Ljava/lang/String;
+      61: iinc          3, 1
+      64: goto          49
+      67: aload_0
+      68: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+      71: istore_3
+      72: iload_3
+      73: anewarray     #57                 // class java/lang/String
+      76: astore        4
+      78: iconst_0
+      79: istore        5
+      81: iload         5
+      83: iload_3
+      84: if_icmpge     102
+      87: aload         4
+      89: iload         5
+      91: aload_0
+      92: invokevirtual #199                // Method java/io/DataInputStream.readUTF:()Ljava/lang/String;
+      95: aastore
+      96: iinc          5, 1
+      99: goto          81
+     102: aload_0
+     103: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     106: istore        5
+     108: iload         5
+     110: anewarray     #211                // class "[B"
+     113: putstatic     #99                 // Field ruleArray:[[B
+     116: iconst_0
+     117: istore        6
+     119: iload         6
+     121: iload         5
+     123: if_icmpge     154
+     126: aload_0
+     127: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     130: newarray       byte
+     132: astore        7
+     134: aload_0
+     135: aload         7
+     137: invokevirtual #213                // Method java/io/DataInputStream.readFully:([B)V
+     140: getstatic     #99                 // Field ruleArray:[[B
+     143: iload         6
+     145: aload         7
+     147: aastore
+     148: iinc          6, 1
+     151: goto          119
+     154: iconst_0
+     155: istore        6
+     157: iload         6
+     159: iload_2
+     160: if_icmpge     225
+     163: aload_0
+     164: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     167: istore_3
+     168: iload_3
+     169: anewarray     #57                 // class java/lang/String
+     172: putstatic     #3                  // Field regions:[Ljava/lang/String;
+     175: iload_3
+     176: newarray       int
+     178: putstatic     #103                // Field indices:[I
+     181: iconst_0
+     182: istore        7
+     184: iload         7
+     186: iload_3
+     187: if_icmpge     219
+     190: getstatic     #3                  // Field regions:[Ljava/lang/String;
+     193: iload         7
+     195: aload         4
+     197: aload_0
+     198: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     201: aaload
+     202: aastore
+     203: getstatic     #103                // Field indices:[I
+     206: iload         7
+     208: aload_0
+     209: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     212: iastore
+     213: iinc          7, 1
+     216: goto          184
+     219: iinc          6, 1
+     222: goto          157
+     225: getstatic     #78                 // Field zones:Ljava/util/Map;
+     228: ldc           #216                // String ROC
+     230: invokeinterface #218,  2          // InterfaceMethod java/util/Map.remove:(Ljava/lang/Object;)Ljava/lang/Object;
+     235: pop
+     236: iconst_0
+     237: istore        6
+     239: iload         6
+     241: iload_2
+     242: if_icmpge     312
+     245: aload_0
+     246: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     249: istore        7
+     251: getstatic     #88                 // Field aliases:Ljava/util/Map;
+     254: invokeinterface #221,  1          // InterfaceMethod java/util/Map.clear:()V
+     259: iconst_0
+     260: istore        8
+     262: iload         8
+     264: iload         7
+     266: if_icmpge     306
+     269: aload         4
+     271: aload_0
+     272: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     275: aaload
+     276: astore        9
+     278: aload         4
+     280: aload_0
+     281: invokevirtual #207                // Method java/io/DataInputStream.readShort:()S
+     284: aaload
+     285: astore        10
+     287: getstatic     #88                 // Field aliases:Ljava/util/Map;
+     290: aload         9
+     292: aload         10
+     294: invokeinterface #120,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     299: pop
+     300: iinc          8, 1
+     303: goto          262
+     306: iinc          6, 1
+     309: goto          239
+     312: invokestatic  #224                // Method addOldMapping:()V
+     315: return
+
+  public static sun.util.calendar.ZoneInfo getZoneInfo(java.io.DataInput, java.lang.String) throws java.lang.Exception;
+    Code:
+       0: aload_0
+       1: invokeinterface #227,  1          // InterfaceMethod java/io/DataInput.readByte:()B
+       6: istore_2
+       7: aload_0
+       8: invokeinterface #230,  1          // InterfaceMethod java/io/DataInput.readInt:()I
+      13: istore_3
+      14: iload_3
+      15: newarray       long
+      17: astore        4
+      19: iconst_0
+      20: istore        5
+      22: iload         5
+      24: iload_3
+      25: if_icmpge     43
+      28: aload         4
+      30: iload         5
+      32: aload_0
+      33: invokestatic  #233                // Method readEpochSec:(Ljava/io/DataInput;)J
+      36: lastore
+      37: iinc          5, 1
+      40: goto          22
+      43: iload_3
+      44: iconst_1
+      45: iadd
+      46: newarray       int
+      48: astore        5
+      50: iconst_0
+      51: istore        6
+      53: iload         6
+      55: aload         5
+      57: arraylength
+      58: if_icmpge     76
+      61: aload         5
+      63: iload         6
+      65: aload_0
+      66: invokestatic  #237                // Method readOffset:(Ljava/io/DataInput;)I
+      69: iastore
+      70: iinc          6, 1
+      73: goto          53
+      76: aload_0
+      77: invokeinterface #230,  1          // InterfaceMethod java/io/DataInput.readInt:()I
+      82: istore        6
+      84: iload         6
+      86: newarray       long
+      88: astore        7
+      90: iconst_0
+      91: istore        8
+      93: iload         8
+      95: iload         6
+      97: if_icmpge     115
+     100: aload         7
+     102: iload         8
+     104: aload_0
+     105: invokestatic  #233                // Method readEpochSec:(Ljava/io/DataInput;)J
+     108: lastore
+     109: iinc          8, 1
+     112: goto          93
+     115: iload         6
+     117: iconst_1
+     118: iadd
+     119: newarray       int
+     121: astore        8
+     123: iconst_0
+     124: istore        9
+     126: iload         9
+     128: aload         8
+     130: arraylength
+     131: if_icmpge     149
+     134: aload         8
+     136: iload         9
+     138: aload_0
+     139: invokestatic  #237                // Method readOffset:(Ljava/io/DataInput;)I
+     142: iastore
+     143: iinc          9, 1
+     146: goto          126
+     149: aload_0
+     150: invokeinterface #227,  1          // InterfaceMethod java/io/DataInput.readByte:()B
+     155: istore        9
+     157: iload         9
+     159: anewarray     #241                // class sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule
+     162: astore        10
+     164: iconst_0
+     165: istore        11
+     167: iload         11
+     169: iload         9
+     171: if_icmpge     193
+     174: aload         10
+     176: iload         11
+     178: new           #241                // class sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule
+     181: dup
+     182: aload_0
+     183: invokespecial #243                // Method sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule."<init>":(Ljava/io/DataInput;)V
+     186: aastore
+     187: iinc          11, 1
+     190: goto          167
+     193: aload_1
+     194: aload         4
+     196: aload         5
+     198: aload         7
+     200: aload         8
+     202: aload         10
+     204: invokestatic  #246                // Method getZoneInfo:(Ljava/lang/String;[J[I[J[I[Lsun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule;)Lsun/util/calendar/ZoneInfo;
+     207: areturn
+
+  public static int readOffset(java.io.DataInput) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokeinterface #227,  1          // InterfaceMethod java/io/DataInput.readByte:()B
+       6: istore_1
+       7: iload_1
+       8: bipush        127
+      10: if_icmpne     22
+      13: aload_0
+      14: invokeinterface #230,  1          // InterfaceMethod java/io/DataInput.readInt:()I
+      19: goto          27
+      22: iload_1
+      23: sipush        900
+      26: imul
+      27: ireturn
+
+  static long readEpochSec(java.io.DataInput) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokeinterface #227,  1          // InterfaceMethod java/io/DataInput.readByte:()B
+       6: sipush        255
+       9: iand
+      10: istore_1
+      11: iload_1
+      12: sipush        255
+      15: if_icmpne     25
+      18: aload_0
+      19: invokeinterface #249,  1          // InterfaceMethod java/io/DataInput.readLong:()J
+      24: lreturn
+      25: aload_0
+      26: invokeinterface #227,  1          // InterfaceMethod java/io/DataInput.readByte:()B
+      31: sipush        255
+      34: iand
+      35: istore_2
+      36: aload_0
+      37: invokeinterface #227,  1          // InterfaceMethod java/io/DataInput.readByte:()B
+      42: sipush        255
+      45: iand
+      46: istore_3
+      47: iload_1
+      48: bipush        16
+      50: ishl
+      51: iload_2
+      52: bipush        8
+      54: ishl
+      55: iadd
+      56: iload_3
+      57: iadd
+      58: i2l
+      59: lstore        4
+      61: lload         4
+      63: ldc2_w        #253                // long 900l
+      66: lmul
+      67: ldc2_w        #255                // long 4575744000l
+      70: lsub
+      71: lreturn
+
+  private static sun.util.calendar.ZoneInfo getZoneInfo(java.lang.String, long[], int[], long[], int[], sun.util.calendar.ZoneInfoFile$ZoneOffsetTransitionRule[]);
+    Code:
+       0: iconst_0
+       1: istore        6
+       3: iconst_0
+       4: istore        7
+       6: iconst_0
+       7: istore        8
+       9: aconst_null
+      10: astore        9
+      12: iconst_0
+      13: istore        10
+      15: aload_1
+      16: arraylength
+      17: ifle          55
+      20: aload_2
+      21: aload_2
+      22: arraylength
+      23: iconst_1
+      24: isub
+      25: iaload
+      26: sipush        1000
+      29: imul
+      30: istore        6
+      32: aload_1
+      33: aload_1
+      34: arraylength
+      35: iconst_1
+      36: isub
+      37: laload
+      38: getstatic     #257                // Field CURRT:J
+      41: lcmp
+      42: ifle          49
+      45: iconst_1
+      46: goto          50
+      49: iconst_0
+      50: istore        10
+      52: goto          64
+      55: aload_2
+      56: iconst_0
+      57: iaload
+      58: sipush        1000
+      61: imul
+      62: istore        6
+      64: aconst_null
+      65: astore        11
+      67: aconst_null
+      68: astore        12
+      70: iconst_0
+      71: istore        13
+      73: iconst_0
+      74: istore        14
+      76: aload_3
+      77: arraylength
+      78: ifeq          1662
+      81: sipush        250
+      84: newarray       long
+      86: astore        11
+      88: bipush        100
+      90: newarray       int
+      92: astore        12
+      94: aload_3
+      95: aload_3
+      96: arraylength
+      97: iconst_1
+      98: isub
+      99: laload
+     100: aload         4
+     102: aload_3
+     103: arraylength
+     104: iconst_1
+     105: isub
+     106: iaload
+     107: invokestatic  #261                // Method getYear:(JI)I
+     110: istore        15
+     112: iconst_0
+     113: istore        16
+     115: iconst_1
+     116: istore        17
+     118: iload         16
+     120: aload_3
+     121: arraylength
+     122: if_icmpge     142
+     125: aload_3
+     126: iload         16
+     128: laload
+     129: ldc2_w        #265                // long -2208988800l
+     132: lcmp
+     133: ifge          142
+     136: iinc          16, 1
+     139: goto          118
+     142: iload         16
+     144: aload_3
+     145: arraylength
+     146: if_icmpge     205
+     149: iload         16
+     151: aload_3
+     152: arraylength
+     153: if_icmpge     173
+     156: aload         12
+     158: iconst_0
+     159: aload_2
+     160: aload_2
+     161: arraylength
+     162: iconst_1
+     163: isub
+     164: iaload
+     165: sipush        1000
+     168: imul
+     169: iastore
+     170: iconst_1
+     171: istore        13
+     173: aload         11
+     175: iload         14
+     177: iinc          14, 1
+     180: aload         12
+     182: iload         13
+     184: ldc2_w        #265                // long -2208988800l
+     187: aload         4
+     189: iload         16
+     191: iaload
+     192: aload_1
+     193: aload_2
+     194: ldc2_w        #265                // long -2208988800l
+     197: invokestatic  #267                // Method getStandardOffset:([J[IJ)I
+     200: invokestatic  #271                // Method addTrans:([JI[IIJII)I
+     203: istore        13
+     205: iload         16
+     207: aload_3
+     208: arraylength
+     209: if_icmpge     441
+     212: aload_3
+     213: iload         16
+     215: laload
+     216: lstore        18
+     218: lload         18
+     220: ldc2_w        #275                // long 2145916799l
+     223: lcmp
+     224: ifle          235
+     227: sipush        2037
+     230: istore        15
+     232: goto          441
+     235: iload         17
+     237: aload_1
+     238: arraylength
+     239: if_icmpge     357
+     242: aload_1
+     243: iload         17
+     245: laload
+     246: lstore        20
+     248: lload         20
+     250: ldc2_w        #265                // long -2208988800l
+     253: lcmp
+     254: iflt          351
+     257: lload         20
+     259: lload         18
+     261: lcmp
+     262: ifle          268
+     265: goto          357
+     268: lload         20
+     270: lload         18
+     272: lcmp
+     273: ifge          351
+     276: iload         13
+     278: iconst_2
+     279: iadd
+     280: aload         12
+     282: arraylength
+     283: if_icmplt     299
+     286: aload         12
+     288: aload         12
+     290: arraylength
+     291: bipush        100
+     293: iadd
+     294: invokestatic  #277                // Method java/util/Arrays.copyOf:([II)[I
+     297: astore        12
+     299: iload         14
+     301: iconst_1
+     302: iadd
+     303: aload         11
+     305: arraylength
+     306: if_icmplt     322
+     309: aload         11
+     311: aload         11
+     313: arraylength
+     314: bipush        100
+     316: iadd
+     317: invokestatic  #280                // Method java/util/Arrays.copyOf:([JI)[J
+     320: astore        11
+     322: aload         11
+     324: iload         14
+     326: iinc          14, 1
+     329: aload         12
+     331: iload         13
+     333: lload         20
+     335: aload         4
+     337: iload         16
+     339: iaload
+     340: aload_2
+     341: iload         17
+     343: iconst_1
+     344: iadd
+     345: iaload
+     346: invokestatic  #271                // Method addTrans:([JI[IIJII)I
+     349: istore        13
+     351: iinc          17, 1
+     354: goto          235
+     357: iload         13
+     359: iconst_2
+     360: iadd
+     361: aload         12
+     363: arraylength
+     364: if_icmplt     380
+     367: aload         12
+     369: aload         12
+     371: arraylength
+     372: bipush        100
+     374: iadd
+     375: invokestatic  #277                // Method java/util/Arrays.copyOf:([II)[I
+     378: astore        12
+     380: iload         14
+     382: iconst_1
+     383: iadd
+     384: aload         11
+     386: arraylength
+     387: if_icmplt     403
+     390: aload         11
+     392: aload         11
+     394: arraylength
+     395: bipush        100
+     397: iadd
+     398: invokestatic  #280                // Method java/util/Arrays.copyOf:([JI)[J
+     401: astore        11
+     403: aload         11
+     405: iload         14
+     407: iinc          14, 1
+     410: aload         12
+     412: iload         13
+     414: lload         18
+     416: aload         4
+     418: iload         16
+     420: iconst_1
+     421: iadd
+     422: iaload
+     423: aload_1
+     424: aload_2
+     425: lload         18
+     427: invokestatic  #267                // Method getStandardOffset:([J[IJ)I
+     430: invokestatic  #271                // Method addTrans:([JI[IIJII)I
+     433: istore        13
+     435: iinc          16, 1
+     438: goto          205
+     441: iload         17
+     443: aload_1
+     444: arraylength
+     445: if_icmpge     523
+     448: aload_1
+     449: iload         17
+     451: laload
+     452: lstore        18
+     454: lload         18
+     456: ldc2_w        #265                // long -2208988800l
+     459: lcmp
+     460: iflt          517
+     463: aload         4
+     465: iload         16
+     467: iaload
+     468: istore        20
+     470: aload         12
+     472: iconst_0
+     473: iload         13
+     475: iload         20
+     477: invokestatic  #283                // Method indexOf:([IIII)I
+     480: istore        21
+     482: iload         21
+     484: iload         13
+     486: if_icmpne     492
+     489: iinc          13, 1
+     492: aload         11
+     494: iload         14
+     496: iinc          14, 1
+     499: lload         18
+     501: ldc2_w        #287                // long 1000l
+     504: lmul
+     505: bipush        12
+     507: lshl
+     508: iload         21
+     510: i2l
+     511: ldc2_w        #289                // long 15l
+     514: land
+     515: lor
+     516: lastore
+     517: iinc          17, 1
+     520: goto          441
+     523: aload         5
+     525: arraylength
+     526: iconst_1
+     527: if_icmple     1031
+     530: iload         15
+     532: iinc          15, 1
+     535: sipush        2037
+     538: if_icmpge     659
+     541: aload         5
+     543: astore        18
+     545: aload         18
+     547: arraylength
+     548: istore        19
+     550: iconst_0
+     551: istore        20
+     553: iload         20
+     555: iload         19
+     557: if_icmpge     656
+     560: aload         18
+     562: iload         20
+     564: aaload
+     565: astore        21
+     567: aload         21
+     569: iload         15
+     571: invokevirtual #291                // Method sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.getTransitionEpochSecond:(I)J
+     574: lstore        22
+     576: iload         13
+     578: iconst_2
+     579: iadd
+     580: aload         12
+     582: arraylength
+     583: if_icmplt     599
+     586: aload         12
+     588: aload         12
+     590: arraylength
+     591: bipush        100
+     593: iadd
+     594: invokestatic  #277                // Method java/util/Arrays.copyOf:([II)[I
+     597: astore        12
+     599: iload         14
+     601: iconst_1
+     602: iadd
+     603: aload         11
+     605: arraylength
+     606: if_icmplt     622
+     609: aload         11
+     611: aload         11
+     613: arraylength
+     614: bipush        100
+     616: iadd
+     617: invokestatic  #280                // Method java/util/Arrays.copyOf:([JI)[J
+     620: astore        11
+     622: aload         11
+     624: iload         14
+     626: iinc          14, 1
+     629: aload         12
+     631: iload         13
+     633: lload         22
+     635: aload         21
+     637: getfield      #295                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.offsetAfter:I
+     640: aload         21
+     642: getfield      #299                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.standardOffset:I
+     645: invokestatic  #271                // Method addTrans:([JI[IIJII)I
+     648: istore        13
+     650: iinc          20, 1
+     653: goto          553
+     656: goto          530
+     659: aload         5
+     661: aload         5
+     663: arraylength
+     664: iconst_2
+     665: isub
+     666: aaload
+     667: astore        18
+     669: aload         5
+     671: aload         5
+     673: arraylength
+     674: iconst_1
+     675: isub
+     676: aaload
+     677: astore        19
+     679: bipush        10
+     681: newarray       int
+     683: astore        9
+     685: aload         18
+     687: getfield      #295                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.offsetAfter:I
+     690: aload         18
+     692: getfield      #302                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.offsetBefore:I
+     695: isub
+     696: ifge          725
+     699: aload         19
+     701: getfield      #295                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.offsetAfter:I
+     704: aload         19
+     706: getfield      #302                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.offsetBefore:I
+     709: isub
+     710: ifle          725
+     713: aload         18
+     715: astore        20
+     717: aload         19
+     719: astore        18
+     721: aload         20
+     723: astore        19
+     725: aload         9
+     727: iconst_0
+     728: aload         18
+     730: getfield      #305                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.month:I
+     733: iconst_1
+     734: isub
+     735: iastore
+     736: aload         18
+     738: getfield      #308                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.dom:B
+     741: istore        20
+     743: aload         18
+     745: getfield      #312                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.dow:I
+     748: istore        21
+     750: iload         21
+     752: iconst_m1
+     753: if_icmpne     770
+     756: aload         9
+     758: iconst_1
+     759: iload         20
+     761: iastore
+     762: aload         9
+     764: iconst_2
+     765: iconst_0
+     766: iastore
+     767: goto          817
+     770: iload         20
+     772: iflt          782
+     775: iload         20
+     777: bipush        24
+     779: if_icmplt     800
+     782: aload         9
+     784: iconst_1
+     785: iconst_m1
+     786: iastore
+     787: aload         9
+     789: iconst_2
+     790: getstatic     #315                // Field toCalendarDOW:[I
+     793: iload         21
+     795: iaload
+     796: iastore
+     797: goto          817
+     800: aload         9
+     802: iconst_1
+     803: iload         20
+     805: iastore
+     806: aload         9
+     808: iconst_2
+     809: getstatic     #315                // Field toCalendarDOW:[I
+     812: iload         21
+     814: iaload
+     815: ineg
+     816: iastore
+     817: aload         9
+     819: iconst_3
+     820: aload         18
+     822: getfield      #318                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.secondOfDay:I
+     825: sipush        1000
+     828: imul
+     829: iastore
+     830: aload         9
+     832: iconst_4
+     833: getstatic     #321                // Field toSTZTime:[I
+     836: aload         18
+     838: getfield      #324                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.timeDefinition:I
+     841: iaload
+     842: iastore
+     843: aload         9
+     845: iconst_5
+     846: aload         19
+     848: getfield      #305                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.month:I
+     851: iconst_1
+     852: isub
+     853: iastore
+     854: aload         19
+     856: getfield      #308                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.dom:B
+     859: istore        20
+     861: aload         19
+     863: getfield      #312                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.dow:I
+     866: istore        21
+     868: iload         21
+     870: iconst_m1
+     871: if_icmpne     890
+     874: aload         9
+     876: bipush        6
+     878: iload         20
+     880: iastore
+     881: aload         9
+     883: bipush        7
+     885: iconst_0
+     886: iastore
+     887: goto          941
+     890: iload         20
+     892: iflt          902
+     895: iload         20
+     897: bipush        24
+     899: if_icmplt     922
+     902: aload         9
+     904: bipush        6
+     906: iconst_m1
+     907: iastore
+     908: aload         9
+     910: bipush        7
+     912: getstatic     #315                // Field toCalendarDOW:[I
+     915: iload         21
+     917: iaload
+     918: iastore
+     919: goto          941
+     922: aload         9
+     924: bipush        6
+     926: iload         20
+     928: iastore
+     929: aload         9
+     931: bipush        7
+     933: getstatic     #315                // Field toCalendarDOW:[I
+     936: iload         21
+     938: iaload
+     939: ineg
+     940: iastore
+     941: aload         9
+     943: bipush        8
+     945: aload         19
+     947: getfield      #318                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.secondOfDay:I
+     950: sipush        1000
+     953: imul
+     954: iastore
+     955: aload         9
+     957: bipush        9
+     959: getstatic     #321                // Field toSTZTime:[I
+     962: aload         19
+     964: getfield      #324                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.timeDefinition:I
+     967: iaload
+     968: iastore
+     969: aload         18
+     971: getfield      #295                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.offsetAfter:I
+     974: aload         18
+     976: getfield      #302                // Field sun/util/calendar/ZoneInfoFile$ZoneOffsetTransitionRule.offsetBefore:I
+     979: isub
+     980: sipush        1000
+     983: imul
+     984: istore        7
+     986: aload_0
+     987: ldc_w         #327                // String Africa/Cairo
+     990: invokevirtual #204                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     993: ifeq          1028
+     996: aload         9
+     998: bipush        7
+    1000: iaload
+    1001: bipush        6
+    1003: if_icmpne     1028
+    1006: aload         9
+    1008: bipush        8
+    1010: iaload
+    1011: ifne          1028
+    1014: aload         9
+    1016: bipush        7
+    1018: iconst_5
+    1019: iastore
+    1020: aload         9
+    1022: bipush        8
+    1024: ldc_w         #331                // int 86400000
+    1027: iastore
+    1028: goto          1466
+    1031: iload         14
+    1033: ifle          1466
+    1036: iload         15
+    1038: sipush        2037
+    1041: if_icmpge     1111
+    1044: ldc2_w        #332                // long 2114380800l
+    1047: iload         6
+    1049: sipush        1000
+    1052: idiv
+    1053: i2l
+    1054: lsub
+    1055: lstore        18
+    1057: aload         12
+    1059: iconst_0
+    1060: iload         13
+    1062: iload         6
+    1064: sipush        1000
+    1067: idiv
+    1068: invokestatic  #283                // Method indexOf:([IIII)I
+    1071: istore        20
+    1073: iload         20
+    1075: iload         13
+    1077: if_icmpne     1083
+    1080: iinc          13, 1
+    1083: aload         11
+    1085: iload         14
+    1087: iinc          14, 1
+    1090: lload         18
+    1092: ldc2_w        #287                // long 1000l
+    1095: lmul
+    1096: bipush        12
+    1098: lshl
+    1099: iload         20
+    1101: i2l
+    1102: ldc2_w        #289                // long 15l
+    1105: land
+    1106: lor
+    1107: lastore
+    1108: goto          1466
+    1111: aload_3
+    1112: arraylength
+    1113: iconst_2
+    1114: if_icmple     1466
+    1117: aload_3
+    1118: arraylength
+    1119: istore        18
+    1121: aload_3
+    1122: iload         18
+    1124: iconst_2
+    1125: isub
+    1126: laload
+    1127: lstore        19
+    1129: aload         4
+    1131: iload         18
+    1133: iconst_2
+    1134: isub
+    1135: iconst_1
+    1136: iadd
+    1137: iaload
+    1138: istore        21
+    1140: aload_1
+    1141: aload_2
+    1142: lload         19
+    1144: invokestatic  #267                // Method getStandardOffset:([J[IJ)I
+    1147: istore        22
+    1149: aload_3
+    1150: iload         18
+    1152: iconst_1
+    1153: isub
+    1154: laload
+    1155: lstore        23
+    1157: aload         4
+    1159: iload         18
+    1161: iconst_1
+    1162: isub
+    1163: iconst_1
+    1164: iadd
+    1165: iaload
+    1166: istore        25
+    1168: aload_1
+    1169: aload_2
+    1170: lload         23
+    1172: invokestatic  #267                // Method getStandardOffset:([J[IJ)I
+    1175: istore        26
+    1177: iload         21
+    1179: iload         22
+    1181: if_icmple     1466
+    1184: iload         25
+    1186: iload         26
+    1188: if_icmpne     1466
+    1191: aload_3
+    1192: arraylength
+    1193: iconst_2
+    1194: isub
+    1195: istore        18
+    1197: aload         4
+    1199: iload         18
+    1201: iaload
+    1202: invokestatic  #334                // Method java/time/ZoneOffset.ofTotalSeconds:(I)Ljava/time/ZoneOffset;
+    1205: astore        27
+    1207: aload         4
+    1209: iload         18
+    1211: iconst_1
+    1212: iadd
+    1213: iaload
+    1214: invokestatic  #334                // Method java/time/ZoneOffset.ofTotalSeconds:(I)Ljava/time/ZoneOffset;
+    1217: astore        28
+    1219: aload_3
+    1220: iload         18
+    1222: laload
+    1223: iconst_0
+    1224: aload         27
+    1226: invokestatic  #340                // Method java/time/LocalDateTime.ofEpochSecond:(JILjava/time/ZoneOffset;)Ljava/time/LocalDateTime;
+    1229: astore        29
+    1231: aload         28
+    1233: invokevirtual #346                // Method java/time/ZoneOffset.getTotalSeconds:()I
+    1236: aload         27
+    1238: invokevirtual #346                // Method java/time/ZoneOffset.getTotalSeconds:()I
+    1241: if_icmple     1251
+    1244: aload         29
+    1246: astore        30
+    1248: goto          1272
+    1251: aload         29
+    1253: aload         4
+    1255: iload         18
+    1257: iconst_1
+    1258: iadd
+    1259: iaload
+    1260: aload         4
+    1262: iload         18
+    1264: iaload
+    1265: isub
+    1266: i2l
+    1267: invokevirtual #349                // Method java/time/LocalDateTime.plusSeconds:(J)Ljava/time/LocalDateTime;
+    1270: astore        30
+    1272: aload_3
+    1273: arraylength
+    1274: iconst_1
+    1275: isub
+    1276: istore        18
+    1278: aload         4
+    1280: iload         18
+    1282: iaload
+    1283: invokestatic  #334                // Method java/time/ZoneOffset.ofTotalSeconds:(I)Ljava/time/ZoneOffset;
+    1286: astore        27
+    1288: aload         4
+    1290: iload         18
+    1292: iconst_1
+    1293: iadd
+    1294: iaload
+    1295: invokestatic  #334                // Method java/time/ZoneOffset.ofTotalSeconds:(I)Ljava/time/ZoneOffset;
+    1298: astore        28
+    1300: aload_3
+    1301: iload         18
+    1303: laload
+    1304: iconst_0
+    1305: aload         27
+    1307: invokestatic  #340                // Method java/time/LocalDateTime.ofEpochSecond:(JILjava/time/ZoneOffset;)Ljava/time/LocalDateTime;
+    1310: astore        29
+    1312: aload         28
+    1314: invokevirtual #346                // Method java/time/ZoneOffset.getTotalSeconds:()I
+    1317: aload         27
+    1319: invokevirtual #346                // Method java/time/ZoneOffset.getTotalSeconds:()I
+    1322: if_icmple     1349
+    1325: aload         29
+    1327: aload         4
+    1329: iload         18
+    1331: iconst_1
+    1332: iadd
+    1333: iaload
+    1334: aload         4
+    1336: iload         18
+    1338: iaload
+    1339: isub
+    1340: i2l
+    1341: invokevirtual #349                // Method java/time/LocalDateTime.plusSeconds:(J)Ljava/time/LocalDateTime;
+    1344: astore        31
+    1346: goto          1353
+    1349: aload         29
+    1351: astore        31
+    1353: bipush        10
+    1355: newarray       int
+    1357: astore        9
+    1359: aload         9
+    1361: iconst_0
+    1362: aload         30
+    1364: invokevirtual #353                // Method java/time/LocalDateTime.getMonthValue:()I
+    1367: iconst_1
+    1368: isub
+    1369: iastore
+    1370: aload         9
+    1372: iconst_1
+    1373: aload         30
+    1375: invokevirtual #356                // Method java/time/LocalDateTime.getDayOfMonth:()I
+    1378: iastore
+    1379: aload         9
+    1381: iconst_2
+    1382: iconst_0
+    1383: iastore
+    1384: aload         9
+    1386: iconst_3
+    1387: aload         30
+    1389: invokevirtual #359                // Method java/time/LocalDateTime.toLocalTime:()Ljava/time/LocalTime;
+    1392: invokevirtual #363                // Method java/time/LocalTime.toSecondOfDay:()I
+    1395: sipush        1000
+    1398: imul
+    1399: iastore
+    1400: aload         9
+    1402: iconst_4
+    1403: iconst_0
+    1404: iastore
+    1405: aload         9
+    1407: iconst_5
+    1408: aload         31
+    1410: invokevirtual #353                // Method java/time/LocalDateTime.getMonthValue:()I
+    1413: iconst_1
+    1414: isub
+    1415: iastore
+    1416: aload         9
+    1418: bipush        6
+    1420: aload         31
+    1422: invokevirtual #356                // Method java/time/LocalDateTime.getDayOfMonth:()I
+    1425: iastore
+    1426: aload         9
+    1428: bipush        7
+    1430: iconst_0
+    1431: iastore
+    1432: aload         9
+    1434: bipush        8
+    1436: aload         31
+    1438: invokevirtual #359                // Method java/time/LocalDateTime.toLocalTime:()Ljava/time/LocalTime;
+    1441: invokevirtual #363                // Method java/time/LocalTime.toSecondOfDay:()I
+    1444: sipush        1000
+    1447: imul
+    1448: iastore
+    1449: aload         9
+    1451: bipush        9
+    1453: iconst_0
+    1454: iastore
+    1455: iload         21
+    1457: iload         22
+    1459: isub
+    1460: sipush        1000
+    1463: imul
+    1464: istore        7
+    1466: aload         11
+    1468: ifnull        1499
+    1471: aload         11
+    1473: arraylength
+    1474: iload         14
+    1476: if_icmpeq     1499
+    1479: iload         14
+    1481: ifne          1490
+    1484: aconst_null
+    1485: astore        11
+    1487: goto          1499
+    1490: aload         11
+    1492: iload         14
+    1494: invokestatic  #280                // Method java/util/Arrays.copyOf:([JI)[J
+    1497: astore        11
+    1499: aload         12
+    1501: ifnull        1532
+    1504: aload         12
+    1506: arraylength
+    1507: iload         13
+    1509: if_icmpeq     1532
+    1512: iload         13
+    1514: ifne          1523
+    1517: aconst_null
+    1518: astore        12
+    1520: goto          1532
+    1523: aload         12
+    1525: iload         13
+    1527: invokestatic  #277                // Method java/util/Arrays.copyOf:([II)[I
+    1530: astore        12
+    1532: aload         11
+    1534: ifnull        1662
+    1537: new           #370                // class sun/util/calendar/ZoneInfoFile$Checksum
+    1540: dup
+    1541: invokespecial #372                // Method sun/util/calendar/ZoneInfoFile$Checksum."<init>":()V
+    1544: astore        18
+    1546: iconst_0
+    1547: istore        16
+    1549: iload         16
+    1551: aload         11
+    1553: arraylength
+    1554: if_icmpge     1654
+    1557: aload         11
+    1559: iload         16
+    1561: laload
+    1562: lstore        19
+    1564: lload         19
+    1566: iconst_4
+    1567: lushr
+    1568: ldc2_w        #289                // long 15l
+    1571: land
+    1572: l2i
+    1573: istore        21
+    1575: iload         21
+    1577: ifne          1584
+    1580: iconst_0
+    1581: goto          1589
+    1584: aload         12
+    1586: iload         21
+    1588: iaload
+    1589: istore        22
+    1591: lload         19
+    1593: ldc2_w        #289                // long 15l
+    1596: land
+    1597: l2i
+    1598: istore        23
+    1600: aload         12
+    1602: iload         23
+    1604: iaload
+    1605: istore        24
+    1607: lload         19
+    1609: bipush        12
+    1611: lshr
+    1612: lstore        25
+    1614: aload         18
+    1616: lload         25
+    1618: iload         23
+    1620: i2l
+    1621: ladd
+    1622: invokevirtual #373                // Method sun/util/calendar/ZoneInfoFile$Checksum.update:(J)V
+    1625: aload         18
+    1627: iload         23
+    1629: invokevirtual #377                // Method sun/util/calendar/ZoneInfoFile$Checksum.update:(I)V
+    1632: aload         18
+    1634: iload         21
+    1636: ifne          1643
+    1639: iconst_m1
+    1640: goto          1645
+    1643: iload         21
+    1645: invokevirtual #377                // Method sun/util/calendar/ZoneInfoFile$Checksum.update:(I)V
+    1648: iinc          16, 1
+    1651: goto          1549
+    1654: aload         18
+    1656: invokevirtual #380                // Method sun/util/calendar/ZoneInfoFile$Checksum.getValue:()J
+    1659: l2i
+    1660: istore        8
+    1662: new           #43                 // class sun/util/calendar/ZoneInfo
+    1665: dup
+    1666: aload_0
+    1667: iload         6
+    1669: iload         7
+    1671: iload         8
+    1673: aload         11
+    1675: aload         12
+    1677: aload         9
+    1679: iload         10
+    1681: invokespecial #383                // Method sun/util/calendar/ZoneInfo."<init>":(Ljava/lang/String;III[J[I[IZ)V
+    1684: areturn
+
+  private static int getStandardOffset(long[], int[], long);
+    Code:
+       0: iconst_0
+       1: istore        4
+       3: iload         4
+       5: aload_0
+       6: arraylength
+       7: if_icmpge     28
+      10: lload_2
+      11: aload_0
+      12: iload         4
+      14: laload
+      15: lcmp
+      16: ifge          22
+      19: goto          28
+      22: iinc          4, 1
+      25: goto          3
+      28: aload_1
+      29: iload         4
+      31: iaload
+      32: ireturn
+
+  private static int getYear(long, int);
+    Code:
+       0: lload_0
+       1: iload_2
+       2: i2l
+       3: ladd
+       4: lstore_3
+       5: lload_3
+       6: ldc_w         #386                // int 86400
+       9: invokestatic  #387                // Method java/lang/Math.floorDiv:(JI)J
+      12: lstore        5
+      14: lload         5
+      16: ldc2_w        #393                // long 719528l
+      19: ladd
+      20: lstore        7
+      22: lload         7
+      24: ldc2_w        #395                // long 60l
+      27: lsub
+      28: lstore        7
+      30: lconst_0
+      31: lstore        9
+      33: lload         7
+      35: lconst_0
+      36: lcmp
+      37: ifge          72
+      40: lload         7
+      42: lconst_1
+      43: ladd
+      44: ldc2_w        #397                // long 146097l
+      47: ldiv
+      48: lconst_1
+      49: lsub
+      50: lstore        11
+      52: lload         11
+      54: ldc2_w        #399                // long 400l
+      57: lmul
+      58: lstore        9
+      60: lload         7
+      62: lload         11
+      64: lneg
+      65: ldc2_w        #397                // long 146097l
+      68: lmul
+      69: ladd
+      70: lstore        7
+      72: ldc2_w        #399                // long 400l
+      75: lload         7
+      77: lmul
+      78: ldc2_w        #401                // long 591l
+      81: ladd
+      82: ldc2_w        #397                // long 146097l
+      85: ldiv
+      86: lstore        11
+      88: lload         7
+      90: ldc2_w        #403                // long 365l
+      93: lload         11
+      95: lmul
+      96: lload         11
+      98: ldc2_w        #405                // long 4l
+     101: ldiv
+     102: ladd
+     103: lload         11
+     105: ldc2_w        #407                // long 100l
+     108: ldiv
+     109: lsub
+     110: lload         11
+     112: ldc2_w        #399                // long 400l
+     115: ldiv
+     116: ladd
+     117: lsub
+     118: lstore        13
+     120: lload         13
+     122: lconst_0
+     123: lcmp
+     124: ifge          165
+     127: lload         11
+     129: lconst_1
+     130: lsub
+     131: lstore        11
+     133: lload         7
+     135: ldc2_w        #403                // long 365l
+     138: lload         11
+     140: lmul
+     141: lload         11
+     143: ldc2_w        #405                // long 4l
+     146: ldiv
+     147: ladd
+     148: lload         11
+     150: ldc2_w        #407                // long 100l
+     153: ldiv
+     154: lsub
+     155: lload         11
+     157: ldc2_w        #399                // long 400l
+     160: ldiv
+     161: ladd
+     162: lsub
+     163: lstore        13
+     165: lload         11
+     167: lload         9
+     169: ladd
+     170: lstore        11
+     172: lload         13
+     174: l2i
+     175: istore        15
+     177: iload         15
+     179: iconst_5
+     180: imul
+     181: iconst_2
+     182: iadd
+     183: sipush        153
+     186: idiv
+     187: istore        16
+     189: iload         16
+     191: iconst_2
+     192: iadd
+     193: bipush        12
+     195: irem
+     196: iconst_1
+     197: iadd
+     198: istore        17
+     200: iload         15
+     202: iload         16
+     204: sipush        306
+     207: imul
+     208: iconst_5
+     209: iadd
+     210: bipush        10
+     212: idiv
+     213: isub
+     214: iconst_1
+     215: iadd
+     216: istore        18
+     218: lload         11
+     220: iload         16
+     222: bipush        10
+     224: idiv
+     225: i2l
+     226: ladd
+     227: lstore        11
+     229: lload         11
+     231: l2i
+     232: ireturn
+
+  private static int indexOf(int[], int, int, int);
+    Code:
+       0: iload_3
+       1: sipush        1000
+       4: imul
+       5: istore_3
+       6: iload_1
+       7: iload_2
+       8: if_icmpge     26
+      11: aload_0
+      12: iload_1
+      13: iaload
+      14: iload_3
+      15: if_icmpne     20
+      18: iload_1
+      19: ireturn
+      20: iinc          1, 1
+      23: goto          6
+      26: aload_0
+      27: iload_1
+      28: iload_3
+      29: iastore
+      30: iload_1
+      31: ireturn
+
+  private static int addTrans(long[], int, int[], int, long, int, int);
+    Code:
+       0: aload_2
+       1: iconst_0
+       2: iload_3
+       3: iload         6
+       5: invokestatic  #283                // Method indexOf:([IIII)I
+       8: istore        8
+      10: iload         8
+      12: iload_3
+      13: if_icmpne     19
+      16: iinc          3, 1
+      19: iconst_0
+      20: istore        9
+      22: iload         6
+      24: iload         7
+      26: if_icmpeq     51
+      29: aload_2
+      30: iconst_1
+      31: iload_3
+      32: iload         6
+      34: iload         7
+      36: isub
+      37: invokestatic  #283                // Method indexOf:([IIII)I
+      40: istore        9
+      42: iload         9
+      44: iload_3
+      45: if_icmpne     51
+      48: iinc          3, 1
+      51: aload_0
+      52: iload_1
+      53: lload         4
+      55: ldc2_w        #287                // long 1000l
+      58: lmul
+      59: bipush        12
+      61: lshl
+      62: iload         9
+      64: iconst_4
+      65: ishl
+      66: i2l
+      67: ldc2_w        #409                // long 240l
+      70: land
+      71: lor
+      72: iload         8
+      74: i2l
+      75: ldc2_w        #289                // long 15l
+      78: land
+      79: lor
+      80: lastore
+      81: iload_3
+      82: ireturn
+
+  static {};
+    Code:
+       0: new           #411                // class java/util/concurrent/ConcurrentHashMap
+       3: dup
+       4: invokespecial #413                // Method java/util/concurrent/ConcurrentHashMap."<init>":()V
+       7: putstatic     #78                 // Field zones:Ljava/util/Map;
+      10: new           #414                // class java/util/HashMap
+      13: dup
+      14: invokespecial #416                // Method java/util/HashMap."<init>":()V
+      17: putstatic     #88                 // Field aliases:Ljava/util/Map;
+      20: bipush        25
+      22: anewarray     #21                 // class "[Ljava/lang/String;"
+      25: dup
+      26: iconst_0
+      27: iconst_2
+      28: anewarray     #57                 // class java/lang/String
+      31: dup
+      32: iconst_0
+      33: ldc_w         #417                // String ACT
+      36: aastore
+      37: dup
+      38: iconst_1
+      39: ldc_w         #419                // String Australia/Darwin
+      42: aastore
+      43: aastore
+      44: dup
+      45: iconst_1
+      46: iconst_2
+      47: anewarray     #57                 // class java/lang/String
+      50: dup
+      51: iconst_0
+      52: ldc_w         #421                // String AET
+      55: aastore
+      56: dup
+      57: iconst_1
+      58: ldc_w         #423                // String Australia/Sydney
+      61: aastore
+      62: aastore
+      63: dup
+      64: iconst_2
+      65: iconst_2
+      66: anewarray     #57                 // class java/lang/String
+      69: dup
+      70: iconst_0
+      71: ldc_w         #425                // String AGT
+      74: aastore
+      75: dup
+      76: iconst_1
+      77: ldc_w         #427                // String America/Argentina/Buenos_Aires
+      80: aastore
+      81: aastore
+      82: dup
+      83: iconst_3
+      84: iconst_2
+      85: anewarray     #57                 // class java/lang/String
+      88: dup
+      89: iconst_0
+      90: ldc_w         #429                // String ART
+      93: aastore
+      94: dup
+      95: iconst_1
+      96: ldc_w         #327                // String Africa/Cairo
+      99: aastore
+     100: aastore
+     101: dup
+     102: iconst_4
+     103: iconst_2
+     104: anewarray     #57                 // class java/lang/String
+     107: dup
+     108: iconst_0
+     109: ldc_w         #431                // String AST
+     112: aastore
+     113: dup
+     114: iconst_1
+     115: ldc_w         #433                // String America/Anchorage
+     118: aastore
+     119: aastore
+     120: dup
+     121: iconst_5
+     122: iconst_2
+     123: anewarray     #57                 // class java/lang/String
+     126: dup
+     127: iconst_0
+     128: ldc_w         #435                // String BET
+     131: aastore
+     132: dup
+     133: iconst_1
+     134: ldc_w         #437                // String America/Sao_Paulo
+     137: aastore
+     138: aastore
+     139: dup
+     140: bipush        6
+     142: iconst_2
+     143: anewarray     #57                 // class java/lang/String
+     146: dup
+     147: iconst_0
+     148: ldc_w         #439                // String BST
+     151: aastore
+     152: dup
+     153: iconst_1
+     154: ldc_w         #441                // String Asia/Dhaka
+     157: aastore
+     158: aastore
+     159: dup
+     160: bipush        7
+     162: iconst_2
+     163: anewarray     #57                 // class java/lang/String
+     166: dup
+     167: iconst_0
+     168: ldc_w         #443                // String CAT
+     171: aastore
+     172: dup
+     173: iconst_1
+     174: ldc_w         #445                // String Africa/Harare
+     177: aastore
+     178: aastore
+     179: dup
+     180: bipush        8
+     182: iconst_2
+     183: anewarray     #57                 // class java/lang/String
+     186: dup
+     187: iconst_0
+     188: ldc_w         #447                // String CNT
+     191: aastore
+     192: dup
+     193: iconst_1
+     194: ldc_w         #449                // String America/St_Johns
+     197: aastore
+     198: aastore
+     199: dup
+     200: bipush        9
+     202: iconst_2
+     203: anewarray     #57                 // class java/lang/String
+     206: dup
+     207: iconst_0
+     208: ldc_w         #451                // String CST
+     211: aastore
+     212: dup
+     213: iconst_1
+     214: ldc_w         #453                // String America/Chicago
+     217: aastore
+     218: aastore
+     219: dup
+     220: bipush        10
+     222: iconst_2
+     223: anewarray     #57                 // class java/lang/String
+     226: dup
+     227: iconst_0
+     228: ldc_w         #455                // String CTT
+     231: aastore
+     232: dup
+     233: iconst_1
+     234: ldc_w         #457                // String Asia/Shanghai
+     237: aastore
+     238: aastore
+     239: dup
+     240: bipush        11
+     242: iconst_2
+     243: anewarray     #57                 // class java/lang/String
+     246: dup
+     247: iconst_0
+     248: ldc_w         #459                // String EAT
+     251: aastore
+     252: dup
+     253: iconst_1
+     254: ldc_w         #461                // String Africa/Addis_Ababa
+     257: aastore
+     258: aastore
+     259: dup
+     260: bipush        12
+     262: iconst_2
+     263: anewarray     #57                 // class java/lang/String
+     266: dup
+     267: iconst_0
+     268: ldc_w         #463                // String ECT
+     271: aastore
+     272: dup
+     273: iconst_1
+     274: ldc_w         #465                // String Europe/Paris
+     277: aastore
+     278: aastore
+     279: dup
+     280: bipush        13
+     282: iconst_2
+     283: anewarray     #57                 // class java/lang/String
+     286: dup
+     287: iconst_0
+     288: ldc_w         #467                // String IET
+     291: aastore
+     292: dup
+     293: iconst_1
+     294: ldc_w         #469                // String America/Indiana/Indianapolis
+     297: aastore
+     298: aastore
+     299: dup
+     300: bipush        14
+     302: iconst_2
+     303: anewarray     #57                 // class java/lang/String
+     306: dup
+     307: iconst_0
+     308: ldc_w         #471                // String IST
+     311: aastore
+     312: dup
+     313: iconst_1
+     314: ldc_w         #473                // String Asia/Kolkata
+     317: aastore
+     318: aastore
+     319: dup
+     320: bipush        15
+     322: iconst_2
+     323: anewarray     #57                 // class java/lang/String
+     326: dup
+     327: iconst_0
+     328: ldc_w         #475                // String JST
+     331: aastore
+     332: dup
+     333: iconst_1
+     334: ldc_w         #477                // String Asia/Tokyo
+     337: aastore
+     338: aastore
+     339: dup
+     340: bipush        16
+     342: iconst_2
+     343: anewarray     #57                 // class java/lang/String
+     346: dup
+     347: iconst_0
+     348: ldc_w         #479                // String MIT
+     351: aastore
+     352: dup
+     353: iconst_1
+     354: ldc_w         #481                // String Pacific/Apia
+     357: aastore
+     358: aastore
+     359: dup
+     360: bipush        17
+     362: iconst_2
+     363: anewarray     #57                 // class java/lang/String
+     366: dup
+     367: iconst_0
+     368: ldc_w         #483                // String NET
+     371: aastore
+     372: dup
+     373: iconst_1
+     374: ldc_w         #485                // String Asia/Yerevan
+     377: aastore
+     378: aastore
+     379: dup
+     380: bipush        18
+     382: iconst_2
+     383: anewarray     #57                 // class java/lang/String
+     386: dup
+     387: iconst_0
+     388: ldc_w         #487                // String NST
+     391: aastore
+     392: dup
+     393: iconst_1
+     394: ldc_w         #489                // String Pacific/Auckland
+     397: aastore
+     398: aastore
+     399: dup
+     400: bipush        19
+     402: iconst_2
+     403: anewarray     #57                 // class java/lang/String
+     406: dup
+     407: iconst_0
+     408: ldc_w         #491                // String PLT
+     411: aastore
+     412: dup
+     413: iconst_1
+     414: ldc_w         #493                // String Asia/Karachi
+     417: aastore
+     418: aastore
+     419: dup
+     420: bipush        20
+     422: iconst_2
+     423: anewarray     #57                 // class java/lang/String
+     426: dup
+     427: iconst_0
+     428: ldc_w         #495                // String PNT
+     431: aastore
+     432: dup
+     433: iconst_1
+     434: ldc_w         #497                // String America/Phoenix
+     437: aastore
+     438: aastore
+     439: dup
+     440: bipush        21
+     442: iconst_2
+     443: anewarray     #57                 // class java/lang/String
+     446: dup
+     447: iconst_0
+     448: ldc_w         #499                // String PRT
+     451: aastore
+     452: dup
+     453: iconst_1
+     454: ldc_w         #501                // String America/Puerto_Rico
+     457: aastore
+     458: aastore
+     459: dup
+     460: bipush        22
+     462: iconst_2
+     463: anewarray     #57                 // class java/lang/String
+     466: dup
+     467: iconst_0
+     468: ldc_w         #503                // String PST
+     471: aastore
+     472: dup
+     473: iconst_1
+     474: ldc_w         #505                // String America/Los_Angeles
+     477: aastore
+     478: aastore
+     479: dup
+     480: bipush        23
+     482: iconst_2
+     483: anewarray     #57                 // class java/lang/String
+     486: dup
+     487: iconst_0
+     488: ldc_w         #507                // String SST
+     491: aastore
+     492: dup
+     493: iconst_1
+     494: ldc_w         #509                // String Pacific/Guadalcanal
+     497: aastore
+     498: aastore
+     499: dup
+     500: bipush        24
+     502: iconst_2
+     503: anewarray     #57                 // class java/lang/String
+     506: dup
+     507: iconst_0
+     508: ldc_w         #511                // String VST
+     511: aastore
+     512: dup
+     513: iconst_1
+     514: ldc_w         #513                // String Asia/Ho_Chi_Minh
+     517: aastore
+     518: aastore
+     519: putstatic     #7                  // Field oldMappings:[[Ljava/lang/String;
+     522: ldc_w         #515                // String sun.timezone.ids.oldmapping
+     525: ldc_w         #517                // String false
+     528: invokestatic  #519                // Method sun/security/action/GetPropertyAction.privilegedGetProperty:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+     531: getstatic     #525                // Field java/util/Locale.ROOT:Ljava/util/Locale;
+     534: invokevirtual #531                // Method java/lang/String.toLowerCase:(Ljava/util/Locale;)Ljava/lang/String;
+     537: astore_0
+     538: aload_0
+     539: ldc_w         #535                // String yes
+     542: invokevirtual #204                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     545: ifne          558
+     548: aload_0
+     549: ldc_w         #537                // String true
+     552: invokevirtual #204                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     555: ifeq          562
+     558: iconst_1
+     559: goto          563
+     562: iconst_0
+     563: putstatic     #11                 // Field USE_OLDMAPPING:Z
+     566: invokestatic  #539                // Method loadTZDB:()V
+     569: invokestatic  #542                // Method java/lang/System.currentTimeMillis:()J
+     572: ldc2_w        #287                // long 1000l
+     575: ldiv
+     576: putstatic     #257                // Field CURRT:J
+     579: bipush        8
+     581: newarray       int
+     583: dup
+     584: iconst_0
+     585: iconst_m1
+     586: iastore
+     587: dup
+     588: iconst_1
+     589: iconst_2
+     590: iastore
+     591: dup
+     592: iconst_2
+     593: iconst_3
+     594: iastore
+     595: dup
+     596: iconst_3
+     597: iconst_4
+     598: iastore
+     599: dup
+     600: iconst_4
+     601: iconst_5
+     602: iastore
+     603: dup
+     604: iconst_5
+     605: bipush        6
+     607: iastore
+     608: dup
+     609: bipush        6
+     611: bipush        7
+     613: iastore
+     614: dup
+     615: bipush        7
+     617: iconst_1
+     618: iastore
+     619: putstatic     #315                // Field toCalendarDOW:[I
+     622: iconst_3
+     623: newarray       int
+     625: dup
+     626: iconst_0
+     627: iconst_2
+     628: iastore
+     629: dup
+     630: iconst_1
+     631: iconst_0
+     632: iastore
+     633: dup
+     634: iconst_2
+     635: iconst_1
+     636: iastore
+     637: putstatic     #321                // Field toSTZTime:[I
+     640: return
+}

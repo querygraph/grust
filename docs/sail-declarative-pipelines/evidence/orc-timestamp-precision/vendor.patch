@@ -1,0 +1,576 @@
+commit 4f7a642b710cd377babaae64f26107be805f2c05
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 13:29:03 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 13:29:03 2026 -0700
+
+    build: vendor qualified ORC timestamp precision options
+
+diff --git a/vendor/orc-rust/.cargo_vcs_info.json b/vendor/orc-rust/.cargo_vcs_info.json
+index c9648b60b..c33176457 100644
+--- a/vendor/orc-rust/.cargo_vcs_info.json
++++ b/vendor/orc-rust/.cargo_vcs_info.json
+@@ -1,6 +1,6 @@
+ {
+   "git": {
+-    "sha1": "91910faa90e70587655e40788495a8a936fdf8fe"
++    "sha1": "579c04b3aedefc007f09371894f01c90ef9e75c2"
+   },
+   "path_in_vcs": ""
+ }
+\ No newline at end of file
+diff --git a/vendor/orc-rust/SOURCE.json b/vendor/orc-rust/SOURCE.json
+index 493a3859e..241045f91 100644
+--- a/vendor/orc-rust/SOURCE.json
++++ b/vendor/orc-rust/SOURCE.json
+@@ -1,6 +1,6 @@
+ {
+   "repository": "https://github.com/datafusion-contrib/orc-rust",
+-  "commit": "91910faa90e70587655e40788495a8a936fdf8fe",
++  "commit": "579c04b3aedefc007f09371894f01c90ef9e75c2",
+   "source_kind": "Locally patched upstream package; patch revisions have not been published to the upstream repository.",
+   "upstream_tag": "v0.9.0",
+   "upstream_commit": "d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307",
+@@ -28,11 +28,15 @@
+     {
+       "commit": "91910faa90e70587655e40788495a8a936fdf8fe",
+       "subject": "feat: expose bounded ORC metadata and reusable validated types"
++    },
++    {
++      "commit": "579c04b3aedefc007f09371894f01c90ef9e75c2",
++      "subject": "feat: opt into checked timestamp precision truncation"
+     }
+   ],
+   "package": {
+-    "command": "cargo +1.98.1 package --locked --offline --no-verify",
+-    "sha256": "0075f821f2470f35b3ff04c738c36b1bbeac9ed6645b51e23868f310a5ac22ff",
++    "command": "cargo +1.98.1 package --locked --no-verify",
++    "sha256": "31eec632b1bc620a3da3dad31b94c1c46b3cb5666ba7b9233ebaa9e522d57a01",
+     "excluded_files": [
+       "Cargo.lock"
+     ],
+@@ -42,7 +46,7 @@
+     "note": "Cargo-normalized manifest; upstream package omits integration fixtures and benchmarks. Source tests were run in the full detached source checkout."
+   },
+   "files_sha256": {
+-    ".cargo_vcs_info.json": "0765fc9dedc9ced8a5360063e48acac7eb18469cf34ae4f477ca27869d5bafd6",
++    ".cargo_vcs_info.json": "13f295c623e827cdbd14d4f6c0443ceadd85ba959ba3339116087d45ceafc205",
+     "Cargo.toml": "0a69cbe6449e27e1be0f020c1f0e9393a135b99fa00a115e45a0e7e7b8726385",
+     "Cargo.toml.orig": "58ccc950aa988bb2c70c7850de74c1ac9ad182773452dc9a08a0b25cceeb7874",
+     "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+@@ -53,11 +57,11 @@
+     "src/array_decoder/mod.rs": "fbfd44cc35d0df82355f5d28a52d965394d6636d0c311b6c8a61a9f016d00e57",
+     "src/array_decoder/string.rs": "04b6244c315100525c9a7d37bc7e1537be699070522393772ddf2c203e49f2d3",
+     "src/array_decoder/struct_decoder.rs": "521c29e4ef19fa36a1c301a6214b69c851496f535b2f0666205e6731b49a97a2",
+-    "src/array_decoder/timestamp.rs": "64f8d35b93b1de8eba26f0641beab471eaa8387b9241e9d13ed7d3b856babfe7",
++    "src/array_decoder/timestamp.rs": "32d2ecaf13bb2282e2e5957aa1609822ea1aaca96c5f0b781b6c7a724336b369",
+     "src/array_decoder/union.rs": "461b9b9ab606f34b83e877fabe3eaae1c0ab9c1db15a4af8aa80b9724909f953",
+-    "src/arrow_reader.rs": "96fbbdb09cd2949d28b814765f39c7b5752a9e5c8d6dbdcadbf096a64a8f702f",
++    "src/arrow_reader.rs": "1dd3dd2ae1468dce214db6f8f8dfb0de4a79e287336acb908f03eec6047ea17e",
+     "src/arrow_writer.rs": "51cef8ce0fdf27d3b11eeb01d86d6a3f529fa8cee9387ac3b60a983c418d3711",
+-    "src/async_arrow_reader.rs": "cee00fb9ff14efdd93925404e72571e0232f19d3c783bfc77add64e64f3c7e5f",
++    "src/async_arrow_reader.rs": "d26b305858c9a155fe9adea44b5352e2bcb0b5acc8c09f3b1e6020aca29e69b7",
+     "src/bin/orc/bloom.rs": "74a3b31909802030a2c1a53a9fc081f39515701236e6222431a86761367529dd",
+     "src/bin/orc/common.rs": "02c348b38c209e5cd28916b41976ac19737cd310ca0acef78d5af79575458977",
+     "src/bin/orc/export.rs": "ead4b01058a54b7d884887ee4464f7672c28f9abf1a9f8b5553953accffd39a3",
+@@ -84,10 +88,10 @@
+     "src/encoding/integer/util.rs": "aaef853e1e62d45b69daf37c324631d30c308e34c277109cc1a188c1bf8674e0",
+     "src/encoding/mod.rs": "49e0af9060eedc9747d6d6c9c685b0a15d91373e5bceb1f66406ae002bd308ad",
+     "src/encoding/rle.rs": "aed6ecbf30d3f71c2d13c3757e6b16cde01e3207445e0f7652cae65009088f21",
+-    "src/encoding/timestamp.rs": "80658f528810ecbbaa7898c640ac5855f5791131709d724f730f7ec4f292e44c",
++    "src/encoding/timestamp.rs": "028a2b457d871215d42bdd51f0be4137a6e8346182cd9351ce9b02d42daa7bac",
+     "src/encoding/util.rs": "6c0b71288029a1ff7e6a08421a7ab182ad1f3c9bdd595af12d07809ef762aede",
+     "src/error.rs": "5f3b4b8535e0e3caac75070061527de767e7b54df531c7054b622b2ddb9a78a2",
+-    "src/lib.rs": "2d47ac4260f3ff0cd5d34fbd55db70d544768412055995c0f2a6f6ea6242e202",
++    "src/lib.rs": "5a7a695dd7135fbdd7c6dcea1e8f1017b45ccf082366d15066547481451a155a",
+     "src/memory.rs": "64a767aae7c852523cfa9f31db4e71f1d8558aeea83874d465bedd1b21f3febb",
+     "src/predicate.rs": "8701c1280b7bd56b77f5d02138c07de9c6b091180e2c02edb580fcd1dbd9efca",
+     "src/projection.rs": "9302c5cb0613dbb75eb11fc604b835f85484119b3e31fa0ad4dd0f2f13e71fd4",
+@@ -102,7 +106,9 @@
+     "src/schema/validation.rs": "aec9a39d24d077b87a9ba05c3b01c4302281de02efe47c1f38f3907d9f131d1b",
+     "src/schema.rs": "d7e873f9d2eceaccfbd7c2febd1d7b4380b6f9b3f25ea9704f3e6f20ec801300",
+     "src/statistics.rs": "0e937e6c5f97ca6cfd837107c13e38b1b96a063b3cb9b66f16ffd06eb21d0ae0",
+-    "src/stripe.rs": "9c9d85446ccc34dddf07beb3456d0b05ebe8b260f6123280d72d9181deb7a03f",
++    "src/stripe.rs": "16e4b5f3dee06e02729f3d27a095119c8ddae238ae51728d083c4d05c27e8559",
++    "src/timestamp.rs": "febabd1e581ee48d4b3664140bcd4e385213d1c96efd3f538716c4c6b5f77342",
++    "src/timestamp_tests.rs": "fd0208a7622926ba66207227fb90b5a7cacf15170d0290cdacfa7000ba8a37eb",
+     "src/writer/column.rs": "6fd1b0903ebff69f9d4debe1b6fb169e9b91050b14585137c1b8dab3a5ccad6e",
+     "src/writer/mod.rs": "58f92fcec92c29bd47a9660452542b7dacc2d4bd0eb8ae0246c1d4e1e3019af7",
+     "src/writer/stripe.rs": "6c76d30deb39f9242121aab8084ec7b0458d989a14de34081ca81544c07da924"
+diff --git a/vendor/orc-rust/src/array_decoder/timestamp.rs b/vendor/orc-rust/src/array_decoder/timestamp.rs
+index acea8857e..3a074ea36 100644
+--- a/vendor/orc-rust/src/array_decoder/timestamp.rs
++++ b/vendor/orc-rust/src/array_decoder/timestamp.rs
+@@ -42,6 +42,7 @@ use super::{
+     decimal::DecimalArrayDecoder, ArrayBatchDecoder, PresentDecoder, PrimitiveArrayDecoder,
+ };
+ use crate::error::UnsupportedTypeVariantSnafu;
++use crate::timestamp::TimestampReadOptions;
+ 
+ const NANOSECONDS_IN_SECOND: i128 = 1_000_000_000;
+ const NANOSECOND_DIGITS: i8 = 9;
+@@ -54,6 +55,7 @@ fn get_inner_timestamp_decoder<T: ArrowTimestampType + Send>(
+     column: &Column,
+     stripe: &Stripe,
+     seconds_since_unix_epoch: i64,
++    options: TimestampReadOptions,
+ ) -> PrimitiveArrayDecoder<T> {
+     let data = stripe.stream_map().get(column, Kind::Data);
+     let data = get_signed_int_decoder(data, column.rle_version());
+@@ -63,11 +65,9 @@ fn get_inner_timestamp_decoder<T: ArrowTimestampType + Send>(
+ 
+     let present = PresentDecoder::from_stripe(stripe, column);
+ 
+-    let iter = Box::new(TimestampDecoder::<T>::new(
+-        seconds_since_unix_epoch,
+-        data,
+-        secondary,
+-    ));
++    let iter = Box::new(
++        TimestampDecoder::<T>::new(seconds_since_unix_epoch, data, secondary).with_options(options),
++    );
+     PrimitiveArrayDecoder::<T>::new(iter, present)
+ }
+ 
+@@ -76,7 +76,12 @@ fn get_timestamp_decoder<T: ArrowTimestampType + Send>(
+     stripe: &Stripe,
+     seconds_since_unix_epoch: i64,
+ ) -> Box<dyn ArrayBatchDecoder> {
+-    let inner = get_inner_timestamp_decoder::<T>(column, stripe, seconds_since_unix_epoch);
++    let inner = get_inner_timestamp_decoder::<T>(
++        column,
++        stripe,
++        seconds_since_unix_epoch,
++        stripe.timestamp_read_options(),
++    );
+     match stripe.writer_tz() {
+         Some(writer_tz) => Box::new(TimestampOffsetArrayDecoder { inner, writer_tz }),
+         None => Box::new(inner),
+@@ -88,8 +93,12 @@ fn get_timestamp_instant_decoder<T: ArrowTimestampType + Send>(
+     stripe: &Stripe,
+ ) -> Box<dyn ArrayBatchDecoder> {
+     // TIMESTAMP_INSTANT is encoded as UTC so we don't check writer timezone in stripe
+-    let inner =
+-        get_inner_timestamp_decoder::<T>(column, stripe, ORC_EPOCH_UTC_SECONDS_SINCE_UNIX_EPOCH);
++    let inner = get_inner_timestamp_decoder::<T>(
++        column,
++        stripe,
++        ORC_EPOCH_UTC_SECONDS_SINCE_UNIX_EPOCH,
++        stripe.timestamp_read_options(),
++    );
+     Box::new(TimestampInstantArrayDecoder(inner))
+ }
+ 
+diff --git a/vendor/orc-rust/src/arrow_reader.rs b/vendor/orc-rust/src/arrow_reader.rs
+index bc6092acf..253c21778 100644
+--- a/vendor/orc-rust/src/arrow_reader.rs
++++ b/vendor/orc-rust/src/arrow_reader.rs
+@@ -35,6 +35,7 @@ use crate::row_group_filter::evaluate_predicate;
+ use crate::row_selection::RowSelection;
+ use crate::schema::{ArrowSchemaOptions, RootDataType, TimestampPrecision};
+ use crate::stripe::{Stripe, StripeMetadata};
++use crate::timestamp::TimestampReadOptions;
+ 
+ const DEFAULT_BATCH_SIZE: usize = 8192;
+ 
+@@ -47,6 +48,7 @@ pub struct ArrowReaderBuilder<R> {
+     pub(crate) file_byte_range: Option<Range<usize>>,
+     pub(crate) row_selection: Option<RowSelection>,
+     pub(crate) timestamp_precision: TimestampPrecision,
++    pub(crate) timestamp_read_options: TimestampReadOptions,
+     pub(crate) predicate: Option<Predicate>,
+ }
+ 
+@@ -65,6 +67,7 @@ impl<R> ArrowReaderBuilder<R> {
+             file_byte_range: None,
+             row_selection: None,
+             timestamp_precision: TimestampPrecision::default(),
++            timestamp_read_options: TimestampReadOptions::default(),
+             predicate: None,
+         }
+     }
+@@ -143,6 +146,12 @@ impl<R> ArrowReaderBuilder<R> {
+         self
+     }
+ 
++    /// Configure handling of fractional precision. The default rejects precision loss.
++    pub fn with_timestamp_read_options(mut self, options: TimestampReadOptions) -> Self {
++        self.timestamp_read_options = options;
++        self
++    }
++
+     /// Set a predicate for row group filtering
+     ///
+     /// The predicate will be evaluated against row group statistics to automatically
+@@ -228,6 +237,7 @@ impl<R: ChunkReader> ArrowReaderBuilder<R> {
+             file_metadata: self.file_metadata,
+             projected_data_type,
+             stripe_index: 0,
++            timestamp_read_options: self.timestamp_read_options,
+             file_byte_range: self.file_byte_range,
+         };
+         ArrowReader {
+@@ -363,6 +373,7 @@ pub(crate) struct Cursor<R> {
+     pub file_metadata: Arc<FileMetadata>,
+     pub projected_data_type: RootDataType,
+     pub stripe_index: usize,
++    pub timestamp_read_options: TimestampReadOptions,
+     pub file_byte_range: Option<Range<usize>>,
+ }
+ 
+@@ -398,7 +409,7 @@ impl<R: ChunkReader> Iterator for Cursor<R> {
+                     info,
+                 );
+                 self.stripe_index += 1;
+-                stripe
++                stripe.map(|stripe| stripe.with_timestamp_read_options(self.timestamp_read_options))
+             })
+     }
+ }
+diff --git a/vendor/orc-rust/src/async_arrow_reader.rs b/vendor/orc-rust/src/async_arrow_reader.rs
+index ff86719f6..9d5ac4f70 100644
+--- a/vendor/orc-rust/src/async_arrow_reader.rs
++++ b/vendor/orc-rust/src/async_arrow_reader.rs
+@@ -103,6 +103,7 @@ impl<R: AsyncChunkReader + 'static> StripeFactory<R> {
+             info,
+         )
+         .await
++        .map(|stripe| stripe.with_timestamp_read_options(inner.timestamp_read_options))
+     }
+ 
+     /// Read the next stripe from the file.
+@@ -318,6 +319,7 @@ impl<R: AsyncChunkReader + 'static> ArrowReaderBuilder<R> {
+             file_metadata: self.file_metadata.clone(),
+             projected_data_type,
+             stripe_index: 0,
++            timestamp_read_options: self.timestamp_read_options,
+             file_byte_range: self.file_byte_range,
+         };
+         ArrowStreamReader::new(
+diff --git a/vendor/orc-rust/src/encoding/timestamp.rs b/vendor/orc-rust/src/encoding/timestamp.rs
+index 3d59e3387..f6a07b67d 100644
+--- a/vendor/orc-rust/src/encoding/timestamp.rs
++++ b/vendor/orc-rust/src/encoding/timestamp.rs
+@@ -124,6 +124,7 @@ pub struct TimestampDecoder<T: ArrowTimestampType> {
+     base_from_epoch: i64,
+     data: Box<dyn PrimitiveValueDecoder<i64> + Send>,
+     secondary: Box<dyn PrimitiveValueDecoder<i64> + Send>,
++    options: crate::timestamp::TimestampReadOptions,
+     _marker: PhantomData<T>,
+ }
+ 
+@@ -137,9 +138,15 @@ impl<T: ArrowTimestampType> TimestampDecoder<T> {
+             base_from_epoch,
+             data,
+             secondary,
++            options: Default::default(),
+             _marker: PhantomData,
+         }
+     }
++
++    pub(crate) fn with_options(mut self, options: crate::timestamp::TimestampReadOptions) -> Self {
++        self.options = options;
++        self
++    }
+ }
+ 
+ impl<T: ArrowTimestampType> PrimitiveValueDecoder<T::Native> for TimestampDecoder<T> {
+@@ -158,8 +165,16 @@ impl<T: ArrowTimestampType> PrimitiveValueDecoder<T::Native> for TimestampDecode
+         for (index, (&seconds_since_orc_base, &nanoseconds)) in
+             data.iter().zip(secondary.iter()).enumerate()
+         {
+-            out[index] =
+-                decode_timestamp::<T>(self.base_from_epoch, seconds_since_orc_base, nanoseconds)?;
++            out[index] = if self.options == crate::timestamp::TimestampReadOptions::default() {
++                decode_timestamp::<T>(self.base_from_epoch, seconds_since_orc_base, nanoseconds)?
++            } else {
++                self.options.decode(
++                    self.base_from_epoch,
++                    seconds_since_orc_base,
++                    nanoseconds,
++                    T::UNIT,
++                )?
++            };
+         }
+         Ok(())
+     }
+diff --git a/vendor/orc-rust/src/lib.rs b/vendor/orc-rust/src/lib.rs
+index 36476c477..2708ea7a6 100644
+--- a/vendor/orc-rust/src/lib.rs
++++ b/vendor/orc-rust/src/lib.rs
+@@ -72,6 +72,7 @@ pub mod row_selection;
+ pub mod schema;
+ pub mod statistics;
+ pub mod stripe;
++pub mod timestamp;
+ mod writer;
+ 
+ pub use arrow_reader::{ArrowReader, ArrowReaderBuilder};
+@@ -81,3 +82,4 @@ pub use async_arrow_reader::ArrowStreamReader;
+ pub use predicate::{ComparisonOp, Predicate, PredicateValue};
+ pub use row_selection::{RowSelection, RowSelector};
+ pub use schema::{ArrowSchemaOptions, TimestampPrecision};
++pub use timestamp::{TimestampPrecisionLoss, TimestampReadOptions};
+diff --git a/vendor/orc-rust/src/stripe.rs b/vendor/orc-rust/src/stripe.rs
+index 57b2e9e05..8f27c34dc 100644
+--- a/vendor/orc-rust/src/stripe.rs
++++ b/vendor/orc-rust/src/stripe.rs
+@@ -122,6 +122,7 @@ pub struct Stripe {
+     stream_map: StreamMap,
+     number_of_rows: usize,
+     tz: Option<chrono_tz::Tz>,
++    timestamp_read_options: crate::timestamp::TimestampReadOptions,
+ }
+ 
+ impl Stripe {
+@@ -178,6 +179,7 @@ impl Stripe {
+             },
+             number_of_rows: info.number_of_rows() as usize,
+             tz,
++            timestamp_read_options: Default::default(),
+         })
+     }
+ 
+@@ -241,6 +243,7 @@ impl Stripe {
+             },
+             number_of_rows: info.number_of_rows() as usize,
+             tz,
++            timestamp_read_options: Default::default(),
+         })
+     }
+ 
+@@ -248,6 +251,18 @@ impl Stripe {
+         self.number_of_rows
+     }
+ 
++    pub(crate) fn with_timestamp_read_options(
++        mut self,
++        options: crate::timestamp::TimestampReadOptions,
++    ) -> Self {
++        self.timestamp_read_options = options;
++        self
++    }
++
++    pub(crate) fn timestamp_read_options(&self) -> crate::timestamp::TimestampReadOptions {
++        self.timestamp_read_options
++    }
++
+     pub fn stream_map(&self) -> &StreamMap {
+         &self.stream_map
+     }
+diff --git a/vendor/orc-rust/src/timestamp.rs b/vendor/orc-rust/src/timestamp.rs
+new file mode 100644
+index 000000000..1dbe2f677
+--- /dev/null
++++ b/vendor/orc-rust/src/timestamp.rs
+@@ -0,0 +1,120 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++//! Opt-in handling of timestamp precision loss.
++
++use arrow::datatypes::TimeUnit;
++use snafu::ensure;
++
++use crate::error::{OutOfSpecSnafu, Result};
++
++/// Handling of fractional digits that the requested Arrow unit cannot retain.
++#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
++pub enum TimestampPrecisionLoss {
++    /// Reject values that cannot be represented exactly (the existing default).
++    #[default]
++    Error,
++    /// Discard fractional digits, rounding negative instants toward negative infinity.
++    Truncate,
++}
++
++/// Optional precision handling for ORC timestamp readers.
++///
++/// The default rejects fractional digits that the requested Arrow unit cannot
++/// retain. Truncation uses checked wide arithmetic before narrowing the result;
++/// it does not impose the range of a nanosecond timestamp on microsecond reads.
++#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
++pub struct TimestampReadOptions {
++    precision_loss: TimestampPrecisionLoss,
++}
++
++impl TimestampReadOptions {
++    pub fn new() -> Self {
++        Self::default()
++    }
++
++    pub fn with_precision_loss(mut self, precision_loss: TimestampPrecisionLoss) -> Self {
++        self.precision_loss = precision_loss;
++        self
++    }
++
++    pub fn precision_loss(&self) -> TimestampPrecisionLoss {
++        self.precision_loss
++    }
++
++    pub(crate) fn decode(
++        self,
++        base: i64,
++        encoded_seconds: i64,
++        encoded_nanos: i64,
++        unit: TimeUnit,
++    ) -> Result<i64> {
++        let encoded_nanos = u64::try_from(encoded_nanos).map_err(|_| invalid("negative nanos"))?;
++        let zeros = encoded_nanos & 7;
++        let nanos = (encoded_nanos >> 3)
++            .checked_mul(if zeros == 0 {
++                1
++            } else {
++                10_u64.pow(zeros as u32 + 1)
++            })
++            .ok_or_else(|| invalid("nanosecond expansion overflow"))?;
++        ensure!(
++            nanos < 1_000_000_000,
++            OutOfSpecSnafu {
++                msg: "timestamp nanos exceed one second"
++            }
++        );
++        let mut seconds = i128::from(base) + i128::from(encoded_seconds);
++        // Preserve the Java ORC/ORC-763 decoding rule, including its epoch-edge behavior.
++        if seconds < 0 && nanos > 999_999 {
++            seconds -= 1;
++        }
++        let value = seconds
++            .checked_mul(1_000_000_000)
++            .and_then(|x| x.checked_add(i128::from(nanos)))
++            .ok_or_else(|| invalid("timestamp expansion overflow"))?;
++        self.convert(value, unit)
++    }
++
++    fn convert(self, nanos: i128, unit: TimeUnit) -> Result<i64> {
++        let divisor = match unit {
++            TimeUnit::Second => 1_000_000_000,
++            TimeUnit::Millisecond => 1_000_000,
++            TimeUnit::Microsecond => 1_000,
++            TimeUnit::Nanosecond => 1,
++        };
++        ensure!(
++            self.precision_loss == TimestampPrecisionLoss::Truncate || nanos % divisor == 0,
++            OutOfSpecSnafu {
++                msg: format!("timestamp loses precision at {unit:?}")
++            }
++        );
++        i64::try_from(nanos.div_euclid(divisor))
++            .map_err(|_| invalid("timestamp exceeds requested Arrow unit range"))
++    }
++}
++
++fn invalid(message: &str) -> crate::error::OrcError {
++    OutOfSpecSnafu {
++        msg: message.to_owned(),
++    }
++    .build()
++}
++
++#[cfg(test)]
++#[path = "timestamp_tests.rs"]
++mod tests;
+diff --git a/vendor/orc-rust/src/timestamp_tests.rs b/vendor/orc-rust/src/timestamp_tests.rs
+new file mode 100644
+index 000000000..67208a2c9
+--- /dev/null
++++ b/vendor/orc-rust/src/timestamp_tests.rs
+@@ -0,0 +1,84 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use super::*;
++
++fn options() -> TimestampReadOptions {
++    TimestampReadOptions::new().with_precision_loss(TimestampPrecisionLoss::Truncate)
++}
++
++#[test]
++fn default_options_keep_strict_precision() {
++    let options = TimestampReadOptions::default();
++    assert_eq!(options.precision_loss(), TimestampPrecisionLoss::Error);
++    for nanos in [1, -1, 1_876_543_211, -1_876_543_211] {
++        assert!(options.convert(nanos, TimeUnit::Microsecond).is_err());
++    }
++    assert_eq!(options.convert(-1_000, TimeUnit::Microsecond).unwrap(), -1);
++}
++
++#[test]
++fn fractional_truncation_floors_negative_instants() {
++    for (nanos, micros) in [
++        (1, 0),
++        (-1, -1),
++        (1_876_543_211, 1_876_543),
++        (-1_876_543_211, -1_876_544),
++    ] {
++        assert_eq!(
++            options().convert(nanos, TimeUnit::Microsecond).unwrap(),
++            micros
++        );
++    }
++}
++
++#[test]
++fn microsecond_range_is_not_limited_to_nanosecond_or_chrono_range() {
++    for micros in [
++        i64::MIN,
++        -62_135_596_800_000_000,
++        253_402_300_799_999_999,
++        i64::MAX,
++    ] {
++        assert_eq!(
++            options()
++                .convert(i128::from(micros) * 1_000, TimeUnit::Microsecond)
++                .unwrap(),
++            micros
++        );
++    }
++    assert!(options()
++        .convert((i128::from(i64::MAX) + 1) * 1_000, TimeUnit::Microsecond)
++        .is_err());
++}
++
++#[test]
++fn checked_decoder_retains_orc_epoch_edge_and_rejects_invalid_nanos() {
++    // ORC cannot distinguish this encoded positive value from the historical
++    // -1 microsecond writer case. Do not silently repair already-written files.
++    assert_eq!(
++        options()
++            .decode(0, 0, 999_999_000 << 3, TimeUnit::Microsecond)
++            .unwrap(),
++        999_999
++    );
++    for nanos in [-1, 1_000_000_000_i64 << 3, i64::MAX] {
++        assert!(options()
++            .decode(0, 0, nanos, TimeUnit::Microsecond)
++            .is_err());
++    }
++}

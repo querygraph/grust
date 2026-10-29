@@ -1,0 +1,93 @@
+{
+  "recorded_at": "2026-10-29T20:26:20.348575+00:00",
+  "repository": "/Users/alexy/src/sail-pipelines-proposal",
+  "sources": [
+    {
+      "path": "crates/sail-spark-connect/src/pipelines/schema.rs",
+      "commit": "69ff1a8e31091afe16b38ffcb5e504bcd912cdda",
+      "git_blob": "49a4dfa80ae1dec183ddb07be0d7c49049a37bff",
+      "sha256": "833ca58d1f0fa26ce1cf89f8bf4a4743445e8136edb72dbf96e65b3038c211f2",
+      "excerpts": [
+        {
+          "first_line": 84,
+          "last_line": 94,
+          "text": "fn spark_fields(schema: &Schema) -> SparkResult<spec::Fields> {\n    // Reuse Spark's schema conversion to normalize Arrow representations such\n    // as Utf8View and retain semantic types carried by extension metadata.\n    schema\n        .fields()\n        .iter()\n        .map(|field| spec::FieldRef::try_from(StructField::try_from(field.as_ref().clone())?))\n        .collect()\n}\n\npub(super) fn table_columns("
+        },
+        {
+          "first_line": 116,
+          "last_line": 124,
+          "text": "            Ok(spec::TableColumnDefinition {\n                name: field.name.clone(),\n                data_type: field.data_type.clone(),\n                nullable: field.nullable,\n                comment,\n                default: None,\n                generated_always_as: None,\n                identity: None,\n            })"
+        },
+        {
+          "first_line": 176,
+          "last_line": 183,
+          "text": "fn arrow_schema(resolver: &PlanResolver<'_>, fields: spec::Fields) -> SparkResult<Schema> {\n    let data_type = resolver.resolve_data_type_for_plan(&spec::DataType::Struct { fields })?;\n    let DataType::Struct(fields) = data_type else {\n        return Err(SparkError::internal(\n            \"resolved pipeline schema is not a struct\",\n        ));\n    };\n    Ok(Schema::new(fields))"
+        }
+      ]
+    },
+    {
+      "path": "crates/sail-spark-connect/src/proto/data_type.rs",
+      "commit": "69ff1a8e31091afe16b38ffcb5e504bcd912cdda",
+      "git_blob": "3e1c5c5b59c1c20772a1218e1d36439c10da8a1d",
+      "sha256": "a736a6b39db5c5144d26a7d31c78a6dd44500da4001a532181172aba2717d9d2",
+      "excerpts": [
+        {
+          "first_line": 271,
+          "last_line": 295,
+          "text": "            Kind::Time(sdt::Time {\n                precision,\n                type_variation_reference: _,\n            }) => {\n                let precision = precision.unwrap_or(6); // Default to microsecond if not specified\n                match precision {\n                    0 => Ok(spec::DataType::Time32 {\n                        time_unit: spec::TimeUnit::Second,\n                    }),\n                    3 => Ok(spec::DataType::Time32 {\n                        time_unit: spec::TimeUnit::Millisecond,\n                    }),\n                    6 => Ok(spec::DataType::Time64 {\n                        time_unit: spec::TimeUnit::Microsecond,\n                    }),\n                    9 => Ok(spec::DataType::Time64 {\n                        time_unit: spec::TimeUnit::Nanosecond,\n                    }),\n                    _ => Err(SparkError::invalid(format!(\n                        \"unsupported TIME precision: {}. Only 0, 3, 6, and 9 are supported\",\n                        precision\n                    ))),\n                }\n            }\n        }"
+        }
+      ]
+    },
+    {
+      "path": "crates/sail-common/src/spec/data_type.rs",
+      "commit": "69ff1a8e31091afe16b38ffcb5e504bcd912cdda",
+      "git_blob": "083e5e671f0ec8cb9838e175c85f1dabae88a432",
+      "sha256": "22216c27102ec53a345aba6ca543ba77e9671378e04fae8cf3e1db30bdf144d4",
+      "excerpts": [
+        {
+          "first_line": 157,
+          "last_line": 181,
+          "text": "    /// A signed 32-bit time representing the elapsed time since midnight in the unit of `TimeUnit`.\n    /// Must be either seconds or milliseconds.\n    /// Corresponds to [`arrow_schema::DataType::Time32`].\n    Time32 {\n        time_unit: TimeUnit,\n    },\n    /// A signed 64-bit time representing the elapsed time since midnight in the unit of `TimeUnit`.\n    /// Must be either microseconds or nanoseconds.\n    /// Corresponds to [`arrow_schema::DataType::Time64`].\n    Time64 {\n        time_unit: TimeUnit,\n    },\n    /// Measure of elapsed time in either seconds, milliseconds, microseconds or nanoseconds.\n    /// Corresponds to [`arrow_schema::DataType::Duration`].\n    Duration {\n        time_unit: TimeUnit,\n    },\n    /// Represents Spark's interval types.\n    /// `YearMonth` and `MonthDayNano` are resolved to [`arrow_schema::DataType::Interval`].\n    /// `DayTime` is resolved to [`arrow_schema::DataType::Duration`] with microsecond\n    /// precision to match Spark's `DayTimeIntervalType`.\n    Interval {\n        interval_unit: IntervalUnit,\n        start_field: Option<IntervalFieldType>,\n        end_field: Option<IntervalFieldType>,"
+        },
+        {
+          "first_line": 216,
+          "last_line": 232,
+          "text": "    List {\n        data_type: Box<DataType>,\n        nullable: bool,\n    },\n    /// A list of some logical data type with fixed length.\n    /// Corresponds to [`arrow_schema::DataType::FixedSizeList`].\n    FixedSizeList {\n        data_type: Box<DataType>,\n        nullable: bool,\n        length: i32,\n    },\n    /// A list of some logical data type with variable length and 64-bit offsets.\n    /// A single LargeList array can store up to [`i64::MAX`] elements in total.\n    /// Corresponds to [`arrow_schema::DataType::LargeList`].\n    LargeList {\n        data_type: Box<DataType>,\n        nullable: bool,"
+        },
+        {
+          "first_line": 267,
+          "last_line": 271,
+          "text": "    Map {\n        key_type: Box<DataType>,\n        value_type: Box<DataType>,\n        value_type_nullable: bool,\n        keys_sorted: bool,"
+        }
+      ]
+    },
+    {
+      "path": "crates/sail-common/src/utils/datetime.rs",
+      "commit": "69ff1a8e31091afe16b38ffcb5e504bcd912cdda",
+      "git_blob": "02c94710f4a4d38a91ba5dbf18cf83307a689042",
+      "sha256": "242c71843d0c317dc76b9e1f4c26d4265ef4e74784f062407568afb9b483dde3",
+      "excerpts": [
+        {
+          "first_line": 17,
+          "last_line": 20,
+          "text": "pub fn get_system_timezone() -> CommonResult<String> {\n    // TODO: This does not work in some Amazon Linux environments.\n    get_timezone().map_err(|e| CommonError::invalid(format!(\"failed to get system time zone: {e}\")))\n}"
+        }
+      ]
+    },
+    {
+      "path": "crates/sail-spark-connect/src/session.rs",
+      "commit": "69ff1a8e31091afe16b38ffcb5e504bcd912cdda",
+      "git_blob": "ba773d953c643e81139cb478e8c60ae26674ac88",
+      "sha256": "491a5c41f4300b2434dbd0627812a4a9a2ee86edc01930a2ad4d81d914fcef33",
+      "excerpts": [
+        {
+          "first_line": 63,
+          "last_line": 69,
+          "text": "            state: Mutex::new(SparkSessionState::try_new()?),\n        };\n        extension.set_config(vec![ConfigKeyValue {\n            key: SparkConfigKey::SPARK_SQL_SESSION_TIME_ZONE.to_string(),\n            value: Some(get_system_timezone()?),\n        }])?;\n        Ok(extension)"
+        }
+      ]
+    }
+  ],
+  "outcome": "source-review-only",
+  "finding": "SDP schema normalization still uses the old inbound Connect TIME-to-storage-unit mapping; outbound field metadata alone does not complete TIME round-trip parity."
+}

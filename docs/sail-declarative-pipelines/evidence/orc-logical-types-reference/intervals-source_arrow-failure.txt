@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 35, in stage
+    value = fn()
+            ^^^^
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 89, in <lambda>
+    stage(case, 'source_arrow', lambda: arrow_info(frame))
+                                        ^^^^^^^^^^^^^^^^^
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 49, in arrow_info
+    table = frame.toArrow()
+            ^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py", line 1981, in toArrow
+    schema = to_arrow_schema(
+             ^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/pandas/types.py", line 282, in to_arrow_schema
+    to_arrow_type(
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/pandas/types.py", line 246, in to_arrow_type
+    raise PySparkTypeError(
+pyspark.errors.exceptions.base.PySparkTypeError: [UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] YearMonthIntervalType(0, 1) is not supported in conversion to Arrow.

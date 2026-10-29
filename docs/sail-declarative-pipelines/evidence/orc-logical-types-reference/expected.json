@@ -1,0 +1,4169 @@
+{
+  "spark_version": "4.2.1",
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "orc_rust_source_pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+  "pyarrow_version": "26.0.0",
+  "spark_sql_timeType_enabled": true,
+  "initial_default_TIME_attempt": {
+    "outcome": "failed",
+    "error": "[UNSUPPORTED_TIME_TYPE] The data type TIME is not supported. SQLSTATE: 0A000",
+    "log": "/tmp/sail-sdp-orc-bridge-reference/default-time-disabled.log"
+  },
+  "recorded_at": "2026-10-29T19:45:04.497186+00:00",
+  "cases": [
+    {
+      "name": "time_precisions",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT id, CAST(t AS TIME(0)) AS t0, CAST(t AS TIME(3)) AS t3, CAST(t AS TIME(6)) AS t6\nFROM VALUES (0, '00:00:00'), (1, '12:34:56.123456'), (2, '23:59:59.999999'), (3, CAST(NULL AS STRING)) AS v(id,t)",
+      "session_timezone": "UTC",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "t0",
+              "type": "time(0)",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "t3",
+              "type": "time(3)",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "t6",
+              "type": "time(6)",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "t0",
+            "type": "time(0)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t3",
+            "type": "time(3)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t6",
+            "type": "time(6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": 1,
+            "t0": "12:34:56.123456",
+            "t3": "12:34:56.123456",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": 2,
+            "t0": "23:59:59.999999",
+            "t3": "23:59:59.999999",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": 3,
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": "1",
+            "t0": "12:34:56.123456",
+            "t3": "12:34:56.123456",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": "2",
+            "t0": "23:59:59.999999",
+            "t3": "23:59:59.999999",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": "3",
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "numeric_projection_sql": [
+        "id",
+        "CAST(t0 AS BIGINT) AS t0_seconds",
+        "CAST(t3 AS DECIMAL(20,6)) AS t3_seconds",
+        "CAST(t6 AS DECIMAL(20,6)) AS t6_seconds"
+      ],
+      "source_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "t0_seconds": 0,
+            "t3_seconds": "0.000000",
+            "t6_seconds": "0.000000"
+          },
+          {
+            "id": 1,
+            "t0_seconds": 45296,
+            "t3_seconds": "45296.123456",
+            "t6_seconds": "45296.123456"
+          },
+          {
+            "id": 2,
+            "t0_seconds": 86399,
+            "t3_seconds": "86399.999999",
+            "t6_seconds": "86399.999999"
+          },
+          {
+            "id": 3,
+            "t0_seconds": null,
+            "t3_seconds": null,
+            "t6_seconds": null
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32 not null\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "t0": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            },
+            "t3": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            },
+            "t6": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        }
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/time_precisions",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/time_precisions/part-00000-852757e5-9f88-4537-9709-a91a7cd8c833-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nt0: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'time(0)'\nt3: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'time(3)'\nt6: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'time(6)'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "t0": 0,
+                "t3": 0,
+                "t6": 0
+              },
+              {
+                "id": 1,
+                "t0": 45296123456000,
+                "t3": 45296123456000,
+                "t6": 45296123456000
+              },
+              {
+                "id": 2,
+                "t0": 86399999999000,
+                "t3": 86399999999000,
+                "t6": 86399999999000
+              },
+              {
+                "id": 3,
+                "t0": null,
+                "t3": null,
+                "t6": null
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "t0": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ],
+              "t3": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ],
+              "t6": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t0",
+            "type": "time(0)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t3",
+            "type": "time(3)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t6",
+            "type": "time(6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": 1,
+            "t0": "12:34:56.123456",
+            "t3": "12:34:56.123456",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": 2,
+            "t0": "23:59:59.999999",
+            "t3": "23:59:59.999999",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": 3,
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": "1",
+            "t0": "12:34:56.123456",
+            "t3": "12:34:56.123456",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": "2",
+            "t0": "23:59:59.999999",
+            "t3": "23:59:59.999999",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": "3",
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "read_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "t0_seconds": 0,
+            "t3_seconds": "0.000000",
+            "t6_seconds": "0.000000"
+          },
+          {
+            "id": 1,
+            "t0_seconds": 45296,
+            "t3_seconds": "45296.123456",
+            "t6_seconds": "45296.123456"
+          },
+          {
+            "id": 2,
+            "t0_seconds": 86399,
+            "t3_seconds": "86399.999999",
+            "t6_seconds": "86399.999999"
+          },
+          {
+            "id": 3,
+            "t0_seconds": null,
+            "t3_seconds": null,
+            "t6_seconds": null
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "t0": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            },
+            "t3": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            },
+            "t6": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "intervals",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT id, CAST(ym AS INTERVAL YEAR TO MONTH) AS ym, CAST(y AS INTERVAL YEAR) AS y, CAST(m AS INTERVAL MONTH) AS m,\nCAST(dt AS INTERVAL DAY TO SECOND) AS dt, CAST(d AS INTERVAL DAY) AS d, CAST(h AS INTERVAL HOUR) AS h, CAST(mi AS INTERVAL MINUTE) AS mi, CAST(sec AS INTERVAL SECOND) AS sec\nFROM VALUES\n(0, '1-2', '2', '14', '2 03:04:05.123456', '2', '27', '65', '1.000001'),\n(1, '-1-2', '-2', '-14', '-2 03:04:05.123456', '-2', '-27', '-65', '-1.000001'),\n(2, '0-0', '0', '0', '0 00:00:00.000000', '0', '0', '0', '0.000001'),\n(3, CAST(NULL AS STRING), NULL, NULL, NULL, NULL, NULL, NULL, NULL) AS v(id,ym,y,m,dt,d,h,mi,sec)",
+      "session_timezone": "UTC",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "ym",
+              "type": "interval year to month",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "y",
+              "type": "interval year",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "m",
+              "type": "interval month",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "dt",
+              "type": "interval day to second",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "d",
+              "type": "interval day",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "h",
+              "type": "interval hour",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "mi",
+              "type": "interval minute",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "sec",
+              "type": "interval second",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "ym",
+            "type": "interval year to month",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "y",
+            "type": "interval year",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "m",
+            "type": "interval month",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "dt",
+            "type": "interval day to second",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "d",
+            "type": "interval day",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "h",
+            "type": "interval hour",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mi",
+            "type": "interval minute",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sec",
+            "type": "interval second",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] month_interval is not supported in conversion to Arrow."
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "ym": "INTERVAL '1-2' YEAR TO MONTH",
+            "y": "INTERVAL '2' YEAR",
+            "m": "INTERVAL '14' MONTH",
+            "dt": "INTERVAL '2 03:04:05.123456' DAY TO SECOND",
+            "d": "INTERVAL '2' DAY",
+            "h": "INTERVAL '27' HOUR",
+            "mi": "INTERVAL '65' MINUTE",
+            "sec": "INTERVAL '01.000001' SECOND"
+          },
+          {
+            "id": "1",
+            "ym": "INTERVAL '-1-2' YEAR TO MONTH",
+            "y": "INTERVAL '-2' YEAR",
+            "m": "INTERVAL '-14' MONTH",
+            "dt": "INTERVAL '-2 03:04:05.123456' DAY TO SECOND",
+            "d": "INTERVAL '-2' DAY",
+            "h": "INTERVAL '-27' HOUR",
+            "mi": "INTERVAL '-65' MINUTE",
+            "sec": "INTERVAL '-01.000001' SECOND"
+          },
+          {
+            "id": "2",
+            "ym": "INTERVAL '0-0' YEAR TO MONTH",
+            "y": "INTERVAL '0' YEAR",
+            "m": "INTERVAL '0' MONTH",
+            "dt": "INTERVAL '0 00:00:00' DAY TO SECOND",
+            "d": "INTERVAL '0' DAY",
+            "h": "INTERVAL '00' HOUR",
+            "mi": "INTERVAL '00' MINUTE",
+            "sec": "INTERVAL '00.000001' SECOND"
+          },
+          {
+            "id": "3",
+            "ym": null,
+            "y": null,
+            "m": null,
+            "dt": null,
+            "d": null,
+            "h": null,
+            "mi": null,
+            "sec": null
+          }
+        ]
+      },
+      "numeric_projection_sql": [
+        "id",
+        "CAST(CAST(ym AS INTERVAL YEAR TO MONTH) AS INT) AS ym_months",
+        "CAST(CAST(y AS INTERVAL YEAR TO MONTH) AS INT) AS y_months",
+        "CAST(CAST(m AS INTERVAL YEAR TO MONTH) AS INT) AS m_months",
+        "CAST(CAST(CAST(dt AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS dt_micros",
+        "CAST(CAST(CAST(d AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS d_micros",
+        "CAST(CAST(CAST(h AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS h_micros",
+        "CAST(CAST(CAST(mi AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS mi_micros",
+        "CAST(CAST(CAST(sec AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS sec_micros"
+      ],
+      "source_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ym_months": 14,
+            "y_months": 24,
+            "m_months": 14,
+            "dt_micros": 183845123456,
+            "d_micros": 172800000000,
+            "h_micros": 97200000000,
+            "mi_micros": 3900000000,
+            "sec_micros": 1000001
+          },
+          {
+            "id": 1,
+            "ym_months": -14,
+            "y_months": -24,
+            "m_months": -14,
+            "dt_micros": -183845123456,
+            "d_micros": -172800000000,
+            "h_micros": -97200000000,
+            "mi_micros": -3900000000,
+            "sec_micros": -1000001
+          },
+          {
+            "id": 2,
+            "ym_months": 0,
+            "y_months": 0,
+            "m_months": 0,
+            "dt_micros": 0,
+            "d_micros": 0,
+            "h_micros": 0,
+            "mi_micros": 0,
+            "sec_micros": 1
+          },
+          {
+            "id": 3,
+            "ym_months": null,
+            "y_months": null,
+            "m_months": null,
+            "dt_micros": null,
+            "d_micros": null,
+            "h_micros": null,
+            "mi_micros": null,
+            "sec_micros": null
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] YearMonthIntervalType(0, 1) is not supported in conversion to Arrow."
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/intervals",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/intervals/part-00000-2d39aa27-07b5-4fc7-98f2-b46f50db13f5-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nym: int32\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval year to month'\ny: int32\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval year'\nm: int32\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval month'\ndt: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval day to second'\nd: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval day'\nh: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval hour'\nmi: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval minute'\nsec: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval second'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "ym": 14,
+                "y": 24,
+                "m": 14,
+                "dt": 183845123456,
+                "d": 172800000000,
+                "h": 97200000000,
+                "mi": 3900000000,
+                "sec": 1000001
+              },
+              {
+                "id": 1,
+                "ym": -14,
+                "y": -24,
+                "m": -14,
+                "dt": -183845123456,
+                "d": -172800000000,
+                "h": -97200000000,
+                "mi": -3900000000,
+                "sec": -1000001
+              },
+              {
+                "id": 2,
+                "ym": 0,
+                "y": 0,
+                "m": 0,
+                "dt": 0,
+                "d": 0,
+                "h": 0,
+                "mi": 0,
+                "sec": 1
+              },
+              {
+                "id": 3,
+                "ym": null,
+                "y": null,
+                "m": null,
+                "dt": null,
+                "d": null,
+                "h": null,
+                "mi": null,
+                "sec": null
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "ym": [
+                14,
+                -14,
+                0,
+                null
+              ],
+              "y": [
+                24,
+                -24,
+                0,
+                null
+              ],
+              "m": [
+                14,
+                -14,
+                0,
+                null
+              ],
+              "dt": [
+                183845123456,
+                -183845123456,
+                0,
+                null
+              ],
+              "d": [
+                172800000000,
+                -172800000000,
+                0,
+                null
+              ],
+              "h": [
+                97200000000,
+                -97200000000,
+                0,
+                null
+              ],
+              "mi": [
+                3900000000,
+                -3900000000,
+                0,
+                null
+              ],
+              "sec": [
+                1000001,
+                -1000001,
+                1,
+                null
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ym",
+            "type": "interval year to month",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "y",
+            "type": "interval year",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "m",
+            "type": "interval month",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "dt",
+            "type": "interval day to second",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "d",
+            "type": "interval day",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "h",
+            "type": "interval hour",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mi",
+            "type": "interval minute",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sec",
+            "type": "interval second",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] month_interval is not supported in conversion to Arrow."
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "ym": "INTERVAL '1-2' YEAR TO MONTH",
+            "y": "INTERVAL '2' YEAR",
+            "m": "INTERVAL '14' MONTH",
+            "dt": "INTERVAL '2 03:04:05.123456' DAY TO SECOND",
+            "d": "INTERVAL '2' DAY",
+            "h": "INTERVAL '27' HOUR",
+            "mi": "INTERVAL '65' MINUTE",
+            "sec": "INTERVAL '01.000001' SECOND"
+          },
+          {
+            "id": "1",
+            "ym": "INTERVAL '-1-2' YEAR TO MONTH",
+            "y": "INTERVAL '-2' YEAR",
+            "m": "INTERVAL '-14' MONTH",
+            "dt": "INTERVAL '-2 03:04:05.123456' DAY TO SECOND",
+            "d": "INTERVAL '-2' DAY",
+            "h": "INTERVAL '-27' HOUR",
+            "mi": "INTERVAL '-65' MINUTE",
+            "sec": "INTERVAL '-01.000001' SECOND"
+          },
+          {
+            "id": "2",
+            "ym": "INTERVAL '0-0' YEAR TO MONTH",
+            "y": "INTERVAL '0' YEAR",
+            "m": "INTERVAL '0' MONTH",
+            "dt": "INTERVAL '0 00:00:00' DAY TO SECOND",
+            "d": "INTERVAL '0' DAY",
+            "h": "INTERVAL '00' HOUR",
+            "mi": "INTERVAL '00' MINUTE",
+            "sec": "INTERVAL '00.000001' SECOND"
+          },
+          {
+            "id": "3",
+            "ym": null,
+            "y": null,
+            "m": null,
+            "dt": null,
+            "d": null,
+            "h": null,
+            "mi": null,
+            "sec": null
+          }
+        ]
+      },
+      "read_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ym_months": 14,
+            "y_months": 24,
+            "m_months": 14,
+            "dt_micros": 183845123456,
+            "d_micros": 172800000000,
+            "h_micros": 97200000000,
+            "mi_micros": 3900000000,
+            "sec_micros": 1000001
+          },
+          {
+            "id": 1,
+            "ym_months": -14,
+            "y_months": -24,
+            "m_months": -14,
+            "dt_micros": -183845123456,
+            "d_micros": -172800000000,
+            "h_micros": -97200000000,
+            "mi_micros": -3900000000,
+            "sec_micros": -1000001
+          },
+          {
+            "id": 2,
+            "ym_months": 0,
+            "y_months": 0,
+            "m_months": 0,
+            "dt_micros": 0,
+            "d_micros": 0,
+            "h_micros": 0,
+            "mi_micros": 0,
+            "sec_micros": 1
+          },
+          {
+            "id": 3,
+            "ym_months": null,
+            "y_months": null,
+            "m_months": null,
+            "dt_micros": null,
+            "d_micros": null,
+            "h_micros": null,
+            "mi_micros": null,
+            "sec_micros": null
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] YearMonthIntervalType(0, 1) is not supported in conversion to Arrow."
+      }
+    },
+    {
+      "name": "timestamps_utc",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT id, CAST(t AS TIMESTAMP_NTZ) AS ntz, CAST(t AS TIMESTAMP_LTZ) AS ltz FROM VALUES\n(0, '1969-12-31 23:59:58.123456'), (1, '1969-12-31 23:59:59.000001'), (2, '1969-12-31 23:59:59.999999'),\n(3, '1970-01-01 00:00:00'), (4, '2020-01-02 03:04:05.123456'), (5, CAST(NULL AS STRING)) AS v(id,t)",
+      "session_timezone": "UTC",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "ntz",
+              "type": "timestamp_ntz",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "ltz",
+              "type": "timestamp",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "ntz",
+            "type": "timestamp_ntz",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ltz",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 15:59:58.123456"
+          },
+          {
+            "id": 1,
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 15:59:59.000001"
+          },
+          {
+            "id": 2,
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1969-12-31 15:59:59.999999"
+          },
+          {
+            "id": 3,
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1969-12-31 16:00:00"
+          },
+          {
+            "id": 4,
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-01 19:04:05.123456"
+          },
+          {
+            "id": 5,
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 23:59:58.123456"
+          },
+          {
+            "id": "1",
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 23:59:59.000001"
+          },
+          {
+            "id": "2",
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1969-12-31 23:59:59.999999"
+          },
+          {
+            "id": "3",
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1970-01-01 00:00:00"
+          },
+          {
+            "id": "4",
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": "5",
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "numeric_projection_sql": [
+        "id",
+        "timestampdiff(MICROSECOND, TIMESTAMP_NTZ'1970-01-01 00:00:00', ntz) AS ntz_micros",
+        "unix_micros(ltz) AS ltz_micros"
+      ],
+      "source_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz_micros": -1876544,
+            "ltz_micros": -1876544
+          },
+          {
+            "id": 1,
+            "ntz_micros": -999999,
+            "ltz_micros": -999999
+          },
+          {
+            "id": 2,
+            "ntz_micros": -1,
+            "ltz_micros": -1
+          },
+          {
+            "id": 3,
+            "ntz_micros": 0,
+            "ltz_micros": 0
+          },
+          {
+            "id": 4,
+            "ntz_micros": 1577934245123456,
+            "ltz_micros": 1577934245123456
+          },
+          {
+            "id": 5,
+            "ntz_micros": null,
+            "ltz_micros": null
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32 not null\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
+            "ntz": {
+              "type": "timestamp[us]",
+              "storage_values": [
+                -1876544,
+                -999999,
+                -1,
+                0,
+                1577934245123456,
+                null
+              ]
+            },
+            "ltz": {
+              "type": "timestamp[us, tz=UTC]",
+              "storage_values": [
+                -1876544,
+                -999999,
+                -1,
+                0,
+                1577934245123456,
+                null
+              ]
+            }
+          }
+        }
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/timestamps_utc",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/timestamps_utc/part-00000-6f1a13b4-360a-434d-9c78-9b30c00540b6-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nntz: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'timestamp_ntz'\nltz: timestamp[ns]\n  -- field metadata --\n  spark.sql.catalyst.type: 'timestamp'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "ntz": -1876544,
+                "ltz": "1969-12-31 15:59:58.123456"
+              },
+              {
+                "id": 1,
+                "ntz": -999999,
+                "ltz": "1969-12-31 15:59:59.000001"
+              },
+              {
+                "id": 2,
+                "ntz": -1,
+                "ltz": "1969-12-31 15:59:59.999999"
+              },
+              {
+                "id": 3,
+                "ntz": 0,
+                "ltz": "1969-12-31 16:00:00"
+              },
+              {
+                "id": 4,
+                "ntz": 1577934245123456,
+                "ltz": "2020-01-01 19:04:05.123456"
+              },
+              {
+                "id": 5,
+                "ntz": null,
+                "ltz": null
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "ntz": [
+                -1876544,
+                -999999,
+                -1,
+                0,
+                1577934245123456,
+                null
+              ],
+              "ltz": [
+                -28801876544000,
+                -28800999999000,
+                -28800000001000,
+                -28800000000000,
+                1577905445123456000,
+                null
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ntz",
+            "type": "timestamp_ntz",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ltz",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 15:59:58.123456"
+          },
+          {
+            "id": 1,
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 15:59:59.000001"
+          },
+          {
+            "id": 2,
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1969-12-31 16:00:00.999999"
+          },
+          {
+            "id": 3,
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1969-12-31 16:00:00"
+          },
+          {
+            "id": 4,
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-01 19:04:05.123456"
+          },
+          {
+            "id": 5,
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 23:59:58.123456"
+          },
+          {
+            "id": "1",
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 23:59:59.000001"
+          },
+          {
+            "id": "2",
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1970-01-01 00:00:00.999999"
+          },
+          {
+            "id": "3",
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1970-01-01 00:00:00"
+          },
+          {
+            "id": "4",
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": "5",
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "read_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz_micros": -1876544,
+            "ltz_micros": -1876544
+          },
+          {
+            "id": 1,
+            "ntz_micros": -999999,
+            "ltz_micros": -999999
+          },
+          {
+            "id": 2,
+            "ntz_micros": -1,
+            "ltz_micros": 999999
+          },
+          {
+            "id": 3,
+            "ntz_micros": 0,
+            "ltz_micros": 0
+          },
+          {
+            "id": 4,
+            "ntz_micros": 1577934245123456,
+            "ltz_micros": 1577934245123456
+          },
+          {
+            "id": 5,
+            "ntz_micros": null,
+            "ltz_micros": null
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
+            "ntz": {
+              "type": "timestamp[us]",
+              "storage_values": [
+                -1876544,
+                -999999,
+                -1,
+                0,
+                1577934245123456,
+                null
+              ]
+            },
+            "ltz": {
+              "type": "timestamp[us, tz=UTC]",
+              "storage_values": [
+                -1876544,
+                -999999,
+                999999,
+                0,
+                1577934245123456,
+                null
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "timestamps_los_angeles",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT id, CAST(t AS TIMESTAMP_NTZ) AS ntz, CAST(t AS TIMESTAMP_LTZ) AS ltz FROM VALUES\n(0, '1969-12-31 23:59:58.123456'), (1, '1969-12-31 23:59:59.000001'), (2, '1969-12-31 23:59:59.999999'),\n(3, '1970-01-01 00:00:00'), (4, '2020-01-02 03:04:05.123456'), (5, CAST(NULL AS STRING)) AS v(id,t)",
+      "session_timezone": "America/Los_Angeles",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "ntz",
+              "type": "timestamp_ntz",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "ltz",
+              "type": "timestamp",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "ntz",
+            "type": "timestamp_ntz",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ltz",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 23:59:58.123456"
+          },
+          {
+            "id": 1,
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 23:59:59.000001"
+          },
+          {
+            "id": 2,
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1969-12-31 23:59:59.999999"
+          },
+          {
+            "id": 3,
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1970-01-01 00:00:00"
+          },
+          {
+            "id": 4,
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 5,
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 23:59:58.123456"
+          },
+          {
+            "id": "1",
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 23:59:59.000001"
+          },
+          {
+            "id": "2",
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1969-12-31 23:59:59.999999"
+          },
+          {
+            "id": "3",
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1970-01-01 00:00:00"
+          },
+          {
+            "id": "4",
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": "5",
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "numeric_projection_sql": [
+        "id",
+        "timestampdiff(MICROSECOND, TIMESTAMP_NTZ'1970-01-01 00:00:00', ntz) AS ntz_micros",
+        "unix_micros(ltz) AS ltz_micros"
+      ],
+      "source_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz_micros": -1876544,
+            "ltz_micros": 28798123456
+          },
+          {
+            "id": 1,
+            "ntz_micros": -999999,
+            "ltz_micros": 28799000001
+          },
+          {
+            "id": 2,
+            "ntz_micros": -1,
+            "ltz_micros": 28799999999
+          },
+          {
+            "id": 3,
+            "ntz_micros": 0,
+            "ltz_micros": 28800000000
+          },
+          {
+            "id": 4,
+            "ntz_micros": 1577934245123456,
+            "ltz_micros": 1577963045123456
+          },
+          {
+            "id": 5,
+            "ntz_micros": null,
+            "ltz_micros": null
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32 not null\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
+            "ntz": {
+              "type": "timestamp[us]",
+              "storage_values": [
+                -1876544,
+                -999999,
+                -1,
+                0,
+                1577934245123456,
+                null
+              ]
+            },
+            "ltz": {
+              "type": "timestamp[us, tz=UTC]",
+              "storage_values": [
+                28798123456,
+                28799000001,
+                28799999999,
+                28800000000,
+                1577963045123456,
+                null
+              ]
+            }
+          }
+        }
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/timestamps_los_angeles",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/timestamps_los_angeles/part-00000-b9cb4159-574e-4f96-b89c-f0e8951dabba-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nntz: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'timestamp_ntz'\nltz: timestamp[ns]\n  -- field metadata --\n  spark.sql.catalyst.type: 'timestamp'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "ntz": -1876544,
+                "ltz": "1969-12-31 23:59:57.123456"
+              },
+              {
+                "id": 1,
+                "ntz": -999999,
+                "ltz": "1969-12-31 23:59:59.000001"
+              },
+              {
+                "id": 2,
+                "ntz": -1,
+                "ltz": "1969-12-31 23:59:58.999999"
+              },
+              {
+                "id": 3,
+                "ntz": 0,
+                "ltz": "1970-01-01 00:00:00"
+              },
+              {
+                "id": 4,
+                "ntz": 1577934245123456,
+                "ltz": "2020-01-02 03:04:05.123456"
+              },
+              {
+                "id": 5,
+                "ntz": null,
+                "ltz": null
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "ntz": [
+                -1876544,
+                -999999,
+                -1,
+                0,
+                1577934245123456,
+                null
+              ],
+              "ltz": [
+                -2876544000,
+                -999999000,
+                -1000001000,
+                0,
+                1577934245123456000,
+                null
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ntz",
+            "type": "timestamp_ntz",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ltz",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 23:59:58.123456"
+          },
+          {
+            "id": 1,
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 23:59:59.000001"
+          },
+          {
+            "id": 2,
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1969-12-31 23:59:59.999999"
+          },
+          {
+            "id": 3,
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1970-01-01 00:00:00"
+          },
+          {
+            "id": 4,
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 5,
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "ntz": "1969-12-31 23:59:58.123456",
+            "ltz": "1969-12-31 23:59:58.123456"
+          },
+          {
+            "id": "1",
+            "ntz": "1969-12-31 23:59:59.000001",
+            "ltz": "1969-12-31 23:59:59.000001"
+          },
+          {
+            "id": "2",
+            "ntz": "1969-12-31 23:59:59.999999",
+            "ltz": "1969-12-31 23:59:59.999999"
+          },
+          {
+            "id": "3",
+            "ntz": "1970-01-01 00:00:00",
+            "ltz": "1970-01-01 00:00:00"
+          },
+          {
+            "id": "4",
+            "ntz": "2020-01-02 03:04:05.123456",
+            "ltz": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": "5",
+            "ntz": null,
+            "ltz": null
+          }
+        ]
+      },
+      "read_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ntz_micros": -1876544,
+            "ltz_micros": 28798123456
+          },
+          {
+            "id": 1,
+            "ntz_micros": -999999,
+            "ltz_micros": 28799000001
+          },
+          {
+            "id": 2,
+            "ntz_micros": -1,
+            "ltz_micros": 28799999999
+          },
+          {
+            "id": 3,
+            "ntz_micros": 0,
+            "ltz_micros": 28800000000
+          },
+          {
+            "id": 4,
+            "ntz_micros": 1577934245123456,
+            "ltz_micros": 1577963045123456
+          },
+          {
+            "id": 5,
+            "ntz_micros": null,
+            "ltz_micros": null
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
+            "ntz": {
+              "type": "timestamp[us]",
+              "storage_values": [
+                -1876544,
+                -999999,
+                -1,
+                0,
+                1577934245123456,
+                null
+              ]
+            },
+            "ltz": {
+              "type": "timestamp[us, tz=UTC]",
+              "storage_values": [
+                28798123456,
+                28799000001,
+                28799999999,
+                28800000000,
+                1577963045123456,
+                null
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "nested_timestamp_nulls",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT 0 AS id,\nnamed_struct('ntz', TIMESTAMP_NTZ'1969-12-31 23:59:58.123456', 'ltz', TIMESTAMP_LTZ'2020-01-02 03:04:05.123456') AS st,\narray(TIMESTAMP_NTZ'1969-12-31 23:59:58.123456', CAST(NULL AS TIMESTAMP_NTZ), TIMESTAMP_NTZ'2020-01-02 03:04:05.123456') AS nts,\narray(TIMESTAMP_LTZ'2020-01-02 03:04:05.123456', CAST(NULL AS TIMESTAMP_LTZ)) AS lts,\nmap('value', TIMESTAMP_NTZ'1969-12-31 23:59:58.123456', 'null', CAST(NULL AS TIMESTAMP_NTZ)) AS ntm,\narray(named_struct('ntz', TIMESTAMP_NTZ'2020-01-02 03:04:05.123456', 'ltz', CAST(NULL AS TIMESTAMP_LTZ)), CAST(NULL AS STRUCT<ntz:TIMESTAMP_NTZ,ltz:TIMESTAMP_LTZ>)) AS sts\nUNION ALL SELECT 1, CAST(NULL AS STRUCT<ntz:TIMESTAMP_NTZ,ltz:TIMESTAMP_LTZ>), CAST(NULL AS ARRAY<TIMESTAMP_NTZ>), CAST(NULL AS ARRAY<TIMESTAMP_LTZ>), CAST(NULL AS MAP<STRING,TIMESTAMP_NTZ>), CAST(NULL AS ARRAY<STRUCT<ntz:TIMESTAMP_NTZ,ltz:TIMESTAMP_LTZ>>)\nUNION ALL SELECT 2, named_struct('ntz', CAST(NULL AS TIMESTAMP_NTZ), 'ltz', CAST(NULL AS TIMESTAMP_LTZ)), array(), array(), map(), array()",
+      "session_timezone": "UTC",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "st",
+              "type": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "ntz",
+                    "type": "timestamp_ntz",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "ltz",
+                    "type": "timestamp",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "nts",
+              "type": {
+                "type": "array",
+                "elementType": "timestamp_ntz",
+                "containsNull": true
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "lts",
+              "type": {
+                "type": "array",
+                "elementType": "timestamp",
+                "containsNull": true
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "ntm",
+              "type": {
+                "type": "map",
+                "keyType": "string",
+                "valueType": "timestamp_ntz",
+                "valueContainsNull": true
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "sts",
+              "type": {
+                "type": "array",
+                "elementType": {
+                  "type": "struct",
+                  "fields": [
+                    {
+                      "name": "ntz",
+                      "type": "timestamp_ntz",
+                      "nullable": true,
+                      "metadata": {}
+                    },
+                    {
+                      "name": "ltz",
+                      "type": "timestamp",
+                      "nullable": true,
+                      "metadata": {}
+                    }
+                  ]
+                },
+                "containsNull": true
+              },
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "st",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "ntz",
+                  "type": "timestamp_ntz",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "ltz",
+                  "type": "timestamp",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "nts",
+            "type": {
+              "type": "array",
+              "elementType": "timestamp_ntz",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "lts",
+            "type": {
+              "type": "array",
+              "elementType": "timestamp",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ntm",
+            "type": {
+              "type": "map",
+              "keyType": "string",
+              "valueType": "timestamp_ntz",
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sts",
+            "type": {
+              "type": "array",
+              "elementType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "ntz",
+                    "type": "timestamp_ntz",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "ltz",
+                    "type": "timestamp",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "st": {
+              "ntz": "1969-12-31 23:59:58.123456",
+              "ltz": "2020-01-01 19:04:05.123456"
+            },
+            "nts": [
+              "1969-12-31 23:59:58.123456",
+              null,
+              "2020-01-02 03:04:05.123456"
+            ],
+            "lts": [
+              "2020-01-01 19:04:05.123456",
+              null
+            ],
+            "ntm": {
+              "value": "1969-12-31 23:59:58.123456",
+              "null": null
+            },
+            "sts": [
+              {
+                "ntz": "2020-01-02 03:04:05.123456",
+                "ltz": null
+              },
+              null
+            ]
+          },
+          {
+            "id": 1,
+            "st": null,
+            "nts": null,
+            "lts": null,
+            "ntm": null,
+            "sts": null
+          },
+          {
+            "id": 2,
+            "st": {
+              "ntz": null,
+              "ltz": null
+            },
+            "nts": [],
+            "lts": [],
+            "ntm": {},
+            "sts": []
+          }
+        ]
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "st": "{1969-12-31 23:59:58.123456, 2020-01-02 03:04:05.123456}",
+            "nts": "[1969-12-31 23:59:58.123456, null, 2020-01-02 03:04:05.123456]",
+            "lts": "[2020-01-02 03:04:05.123456, null]",
+            "ntm": "{value -> 1969-12-31 23:59:58.123456, null -> null}",
+            "sts": "[{2020-01-02 03:04:05.123456, null}, null]"
+          },
+          {
+            "id": "1",
+            "st": null,
+            "nts": null,
+            "lts": null,
+            "ntm": null,
+            "sts": null
+          },
+          {
+            "id": "2",
+            "st": "{null, null}",
+            "nts": "[]",
+            "lts": "[]",
+            "ntm": "{}",
+            "sts": "[]"
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32 not null\nst: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n  child 0, ntz: timestamp[us]\n  child 1, ltz: timestamp[us, tz=UTC]\nnts: list<element: timestamp[us]>\n  child 0, element: timestamp[us]\nlts: list<element: timestamp[us, tz=UTC]>\n  child 0, element: timestamp[us, tz=UTC]\nntm: map<string, timestamp[us]>\n  child 0, entries: struct<key: string not null, value: timestamp[us]> not null\n      child 0, key: string not null\n      child 1, value: timestamp[us]\nsts: list<element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>>\n  child 0, element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n      child 0, ntz: timestamp[us]\n      child 1, ltz: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2
+              ]
+            },
+            "st": {
+              "type": "struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>",
+              "values": [
+                {
+                  "ntz": "1969-12-31 23:59:58.123456",
+                  "ltz": "2020-01-02 03:04:05.123456+00:00"
+                },
+                null,
+                {
+                  "ntz": null,
+                  "ltz": null
+                }
+              ]
+            },
+            "nts": {
+              "type": "list<element: timestamp[us]>",
+              "values": [
+                [
+                  "1969-12-31 23:59:58.123456",
+                  null,
+                  "2020-01-02 03:04:05.123456"
+                ],
+                null,
+                []
+              ]
+            },
+            "lts": {
+              "type": "list<element: timestamp[us, tz=UTC]>",
+              "values": [
+                [
+                  "2020-01-02 03:04:05.123456+00:00",
+                  null
+                ],
+                null,
+                []
+              ]
+            },
+            "ntm": {
+              "type": "map<string, timestamp[us]>",
+              "values": [
+                [
+                  [
+                    "value",
+                    "1969-12-31 23:59:58.123456"
+                  ],
+                  [
+                    "null",
+                    null
+                  ]
+                ],
+                null,
+                []
+              ]
+            },
+            "sts": {
+              "type": "list<element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>>",
+              "values": [
+                [
+                  {
+                    "ntz": "2020-01-02 03:04:05.123456",
+                    "ltz": null
+                  },
+                  null
+                ],
+                null,
+                []
+              ]
+            }
+          }
+        }
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/nested_timestamp_nulls",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/nested_timestamp_nulls/part-00000-572b93a0-3616-4b77-b66c-1f2aa8cde785-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nst: struct<ntz: int64, ltz: timestamp[ns]>\n  child 0, ntz: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'timestamp_ntz'\n  child 1, ltz: timestamp[ns]\n    -- field metadata --\n    spark.sql.catalyst.type: 'timestamp'\nnts: list<item: int64>\n  child 0, item: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'timestamp_ntz'\nlts: list<item: timestamp[ns]>\n  child 0, item: timestamp[ns]\n    -- field metadata --\n    spark.sql.catalyst.type: 'timestamp'\nntm: map<string, int64>\n  child 0, entries: struct<key: string not null, value: int64> not null\n      child 0, key: string not null\n      -- field metadata --\n      spark.sql.catalyst.type: 'string'\n      child 1, value: int64\n      -- field metadata --\n      spark.sql.catalyst.type: 'timestamp_ntz'\nsts: list<item: struct<ntz: int64, ltz: timestamp[ns]>>\n  child 0, item: struct<ntz: int64, ltz: timestamp[ns]>\n      child 0, ntz: int64\n      -- field metadata --\n      spark.sql.catalyst.type: 'timestamp_ntz'\n      child 1, ltz: timestamp[ns]\n      -- field metadata --\n      spark.sql.catalyst.type: 'timestamp'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "st": {
+                  "ntz": -1876544,
+                  "ltz": "2020-01-01 19:04:05.123456"
+                },
+                "nts": [
+                  -1876544,
+                  null,
+                  1577934245123456
+                ],
+                "lts": [
+                  "2020-01-01 19:04:05.123456",
+                  null
+                ],
+                "ntm": [
+                  [
+                    "null",
+                    null
+                  ],
+                  [
+                    "value",
+                    -1876544
+                  ]
+                ],
+                "sts": [
+                  {
+                    "ntz": 1577934245123456,
+                    "ltz": null
+                  },
+                  null
+                ]
+              },
+              {
+                "id": 1,
+                "st": null,
+                "nts": null,
+                "lts": null,
+                "ntm": null,
+                "sts": null
+              },
+              {
+                "id": 2,
+                "st": {
+                  "ntz": null,
+                  "ltz": null
+                },
+                "nts": [],
+                "lts": [],
+                "ntm": [],
+                "sts": []
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "st",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "ntz",
+                  "type": "timestamp_ntz",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "ltz",
+                  "type": "timestamp",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "nts",
+            "type": {
+              "type": "array",
+              "elementType": "timestamp_ntz",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "lts",
+            "type": {
+              "type": "array",
+              "elementType": "timestamp",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ntm",
+            "type": {
+              "type": "map",
+              "keyType": "string",
+              "valueType": "timestamp_ntz",
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sts",
+            "type": {
+              "type": "array",
+              "elementType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "ntz",
+                    "type": "timestamp_ntz",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "ltz",
+                    "type": "timestamp",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "st": {
+              "ntz": "1969-12-31 23:59:58.123456",
+              "ltz": "2020-01-01 19:04:05.123456"
+            },
+            "nts": [
+              "1969-12-31 23:59:58.123456",
+              null,
+              "2020-01-02 03:04:05.123456"
+            ],
+            "lts": [
+              "2020-01-01 19:04:05.123456",
+              null
+            ],
+            "ntm": {
+              "null": null,
+              "value": "1969-12-31 23:59:58.123456"
+            },
+            "sts": [
+              {
+                "ntz": "2020-01-02 03:04:05.123456",
+                "ltz": null
+              },
+              null
+            ]
+          },
+          {
+            "id": 1,
+            "st": null,
+            "nts": null,
+            "lts": null,
+            "ntm": null,
+            "sts": null
+          },
+          {
+            "id": 2,
+            "st": {
+              "ntz": null,
+              "ltz": null
+            },
+            "nts": [],
+            "lts": [],
+            "ntm": {},
+            "sts": []
+          }
+        ]
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "st": "{1969-12-31 23:59:58.123456, 2020-01-02 03:04:05.123456}",
+            "nts": "[1969-12-31 23:59:58.123456, null, 2020-01-02 03:04:05.123456]",
+            "lts": "[2020-01-02 03:04:05.123456, null]",
+            "ntm": "{null -> null, value -> 1969-12-31 23:59:58.123456}",
+            "sts": "[{2020-01-02 03:04:05.123456, null}, null]"
+          },
+          {
+            "id": "1",
+            "st": null,
+            "nts": null,
+            "lts": null,
+            "ntm": null,
+            "sts": null
+          },
+          {
+            "id": "2",
+            "st": "{null, null}",
+            "nts": "[]",
+            "lts": "[]",
+            "ntm": "{}",
+            "sts": "[]"
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nst: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n  child 0, ntz: timestamp[us]\n  child 1, ltz: timestamp[us, tz=UTC]\nnts: list<element: timestamp[us]>\n  child 0, element: timestamp[us]\nlts: list<element: timestamp[us, tz=UTC]>\n  child 0, element: timestamp[us, tz=UTC]\nntm: map<string, timestamp[us]>\n  child 0, entries: struct<key: string not null, value: timestamp[us]> not null\n      child 0, key: string not null\n      child 1, value: timestamp[us]\nsts: list<element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>>\n  child 0, element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n      child 0, ntz: timestamp[us]\n      child 1, ltz: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2
+              ]
+            },
+            "st": {
+              "type": "struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>",
+              "values": [
+                {
+                  "ntz": "1969-12-31 23:59:58.123456",
+                  "ltz": "2020-01-02 03:04:05.123456+00:00"
+                },
+                null,
+                {
+                  "ntz": null,
+                  "ltz": null
+                }
+              ]
+            },
+            "nts": {
+              "type": "list<element: timestamp[us]>",
+              "values": [
+                [
+                  "1969-12-31 23:59:58.123456",
+                  null,
+                  "2020-01-02 03:04:05.123456"
+                ],
+                null,
+                []
+              ]
+            },
+            "lts": {
+              "type": "list<element: timestamp[us, tz=UTC]>",
+              "values": [
+                [
+                  "2020-01-02 03:04:05.123456+00:00",
+                  null
+                ],
+                null,
+                []
+              ]
+            },
+            "ntm": {
+              "type": "map<string, timestamp[us]>",
+              "values": [
+                [
+                  [
+                    "null",
+                    null
+                  ],
+                  [
+                    "value",
+                    "1969-12-31 23:59:58.123456"
+                  ]
+                ],
+                null,
+                []
+              ]
+            },
+            "sts": {
+              "type": "list<element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>>",
+              "values": [
+                [
+                  {
+                    "ntz": "2020-01-02 03:04:05.123456",
+                    "ltz": null
+                  },
+                  null
+                ],
+                null,
+                []
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "nested_time_intervals",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT 0 AS id, array(CAST('12:34:56.123456' AS TIME(6)), CAST(NULL AS TIME(6))) AS times,\nnamed_struct('ym', INTERVAL '-1-2' YEAR TO MONTH, 'dt', INTERVAL '-0 00:00:00.000001' DAY TO SECOND, 't', CAST('01:02:03.123' AS TIME(3))) AS st,\nmap(INTERVAL '1-2' YEAR TO MONTH, INTERVAL '-1.000001' SECOND) AS intervals\nUNION ALL SELECT 1, NULL, NULL, NULL\nUNION ALL SELECT 2, array(), named_struct('ym', CAST(NULL AS INTERVAL YEAR TO MONTH), 'dt', CAST(NULL AS INTERVAL DAY TO SECOND), 't', CAST(NULL AS TIME(3))), map()",
+      "session_timezone": "UTC",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "times",
+              "type": {
+                "type": "array",
+                "elementType": "time(6)",
+                "containsNull": true
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "st",
+              "type": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "ym",
+                    "type": "interval year to month",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "dt",
+                    "type": "interval day to second",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "t",
+                    "type": "time(3)",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "intervals",
+              "type": {
+                "type": "map",
+                "keyType": "interval year to month",
+                "valueType": "interval second",
+                "valueContainsNull": false
+              },
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "times",
+            "type": {
+              "type": "array",
+              "elementType": "time(6)",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "st",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "ym",
+                  "type": "interval year to month",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "dt",
+                  "type": "interval day to second",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "t",
+                  "type": "time(3)",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "intervals",
+            "type": {
+              "type": "map",
+              "keyType": "interval year to month",
+              "valueType": "interval second",
+              "valueContainsNull": false
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] month_interval is not supported in conversion to Arrow."
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "times": "[12:34:56.123456, null]",
+            "st": "{INTERVAL '-1-2' YEAR TO MONTH, INTERVAL '-0 00:00:00.000001' DAY TO SECOND, 01:02:03.123}",
+            "intervals": "{INTERVAL '1-2' YEAR TO MONTH -> INTERVAL '-01.000001' SECOND}"
+          },
+          {
+            "id": "1",
+            "times": null,
+            "st": null,
+            "intervals": null
+          },
+          {
+            "id": "2",
+            "times": "[]",
+            "st": "{null, null, null}",
+            "intervals": "{}"
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] YearMonthIntervalType(0, 1) is not supported in conversion to Arrow."
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/nested_time_intervals",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/nested_time_intervals/part-00000-81571664-2fc2-4561-aaae-353ed9708a56-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\ntimes: list<item: int64>\n  child 0, item: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'time(6)'\nst: struct<ym: int32, dt: int64, t: int64>\n  child 0, ym: int32\n    -- field metadata --\n    spark.sql.catalyst.type: 'interval year to month'\n  child 1, dt: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'interval day to second'\n  child 2, t: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'time(3)'\nintervals: map<int32, int64>\n  child 0, entries: struct<key: int32 not null, value: int64> not null\n      child 0, key: int32 not null\n      -- field metadata --\n      spark.sql.catalyst.type: 'interval year to month'\n      child 1, value: int64\n      -- field metadata --\n      spark.sql.catalyst.type: 'interval second'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "times": [
+                  45296123456000,
+                  null
+                ],
+                "st": {
+                  "ym": -14,
+                  "dt": -1,
+                  "t": 3723123000000
+                },
+                "intervals": [
+                  [
+                    14,
+                    -1000001
+                  ]
+                ]
+              },
+              {
+                "id": 1,
+                "times": null,
+                "st": null,
+                "intervals": null
+              },
+              {
+                "id": 2,
+                "times": [],
+                "st": {
+                  "ym": null,
+                  "dt": null,
+                  "t": null
+                },
+                "intervals": []
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "times",
+            "type": {
+              "type": "array",
+              "elementType": "time(6)",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "st",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "ym",
+                  "type": "interval year to month",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "dt",
+                  "type": "interval day to second",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "t",
+                  "type": "time(3)",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "intervals",
+            "type": {
+              "type": "map",
+              "keyType": "interval year to month",
+              "valueType": "interval second",
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] month_interval is not supported in conversion to Arrow."
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "times": "[12:34:56.123456, null]",
+            "st": "{INTERVAL '-1-2' YEAR TO MONTH, INTERVAL '-0 00:00:00.000001' DAY TO SECOND, 01:02:03.123}",
+            "intervals": "{INTERVAL '1-2' YEAR TO MONTH -> INTERVAL '-01.000001' SECOND}"
+          },
+          {
+            "id": "1",
+            "times": null,
+            "st": null,
+            "intervals": null
+          },
+          {
+            "id": "2",
+            "times": "[]",
+            "st": "{null, null, null}",
+            "intervals": "{}"
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "failed",
+        "type": "PySparkTypeError",
+        "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] YearMonthIntervalType(0, 1) is not supported in conversion to Arrow."
+      }
+    },
+    {
+      "name": "time_cast_precisions",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT id, CAST(CAST(t AS TIME(6)) AS TIME(0)) AS t0, CAST(CAST(t AS TIME(6)) AS TIME(3)) AS t3, CAST(t AS TIME(6)) AS t6\nFROM VALUES (0, '00:00:00'), (1, '12:34:56.123456'), (2, '23:59:59.999999'), (3, CAST(NULL AS STRING)) AS v(id,t)",
+      "session_timezone": "UTC",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "t0",
+              "type": "time(0)",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "t3",
+              "type": "time(3)",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "t6",
+              "type": "time(6)",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "t0",
+            "type": "time(0)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t3",
+            "type": "time(3)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t6",
+            "type": "time(6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": 1,
+            "t0": "12:34:56",
+            "t3": "12:34:56.123000",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": 2,
+            "t0": "23:59:59",
+            "t3": "23:59:59.999000",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": 3,
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": "1",
+            "t0": "12:34:56",
+            "t3": "12:34:56.123",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": "2",
+            "t0": "23:59:59",
+            "t3": "23:59:59.999",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": "3",
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32 not null\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "t0": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296000000000,
+                86399000000000,
+                null
+              ]
+            },
+            "t3": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123000000,
+                86399999000000,
+                null
+              ]
+            },
+            "t6": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        }
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/time_cast_precisions",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/time_cast_precisions/part-00000-75a71d4b-4bbc-4371-b39b-c50d241bdb22-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nt0: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'time(0)'\nt3: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'time(3)'\nt6: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'time(6)'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "t0": 0,
+                "t3": 0,
+                "t6": 0
+              },
+              {
+                "id": 1,
+                "t0": 45296000000000,
+                "t3": 45296123000000,
+                "t6": 45296123456000
+              },
+              {
+                "id": 2,
+                "t0": 86399000000000,
+                "t3": 86399999000000,
+                "t6": 86399999999000
+              },
+              {
+                "id": 3,
+                "t0": null,
+                "t3": null,
+                "t6": null
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "t0": [
+                0,
+                45296000000000,
+                86399000000000,
+                null
+              ],
+              "t3": [
+                0,
+                45296123000000,
+                86399999000000,
+                null
+              ],
+              "t6": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t0",
+            "type": "time(0)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t3",
+            "type": "time(3)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t6",
+            "type": "time(6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": 1,
+            "t0": "12:34:56",
+            "t3": "12:34:56.123000",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": 2,
+            "t0": "23:59:59",
+            "t3": "23:59:59.999000",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": 3,
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "t0": "00:00:00",
+            "t3": "00:00:00",
+            "t6": "00:00:00"
+          },
+          {
+            "id": "1",
+            "t0": "12:34:56",
+            "t3": "12:34:56.123",
+            "t6": "12:34:56.123456"
+          },
+          {
+            "id": "2",
+            "t0": "23:59:59",
+            "t3": "23:59:59.999",
+            "t6": "23:59:59.999999"
+          },
+          {
+            "id": "3",
+            "t0": null,
+            "t3": null,
+            "t6": null
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "t0": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296000000000,
+                86399000000000,
+                null
+              ]
+            },
+            "t3": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123000000,
+                86399999000000,
+                null
+              ]
+            },
+            "t6": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "foreign_char_varchar_default_timestamp_ltz",
+      "writer": "Apache ORC Java from Spark jars; ForeignOrc.java",
+      "timestamp_type_config": "TIMESTAMP_LTZ",
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_char_varchar",
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "c",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "__CHAR_VARCHAR_TYPE_STRING": "char(5)"
+            }
+          },
+          {
+            "name": "v",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "__CHAR_VARCHAR_TYPE_STRING": "varchar(5)"
+            }
+          },
+          {
+            "name": "ts",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "c": "a    ",
+            "v": "a",
+            "ts": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 1,
+            "c": "\u00e9\u732b   ",
+            "v": "\u00e9\u732b",
+            "ts": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 2,
+            "c": "abcde",
+            "v": "abcde",
+            "ts": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 3,
+            "c": null,
+            "v": null,
+            "ts": null
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nc: string\n  -- field metadata --\n  SPARK::metadata::json: '{\"__CHAR_VARCHAR_TYPE_STRING\": \"char(5)\"}'\nv: string\n  -- field metadata --\n  SPARK::metadata::json: '{\"__CHAR_VARCHAR_TYPE_STRING\": \"varchar(5)\"}'\nts: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "c": {
+              "type": "string",
+              "values": [
+                "a    ",
+                "\u00e9\u732b   ",
+                "abcde",
+                null
+              ]
+            },
+            "v": {
+              "type": "string",
+              "values": [
+                "a",
+                "\u00e9\u732b",
+                "abcde",
+                null
+              ]
+            },
+            "ts": {
+              "type": "timestamp[us, tz=UTC]",
+              "storage_values": [
+                1577963045123456,
+                1577963045123456,
+                1577963045123456,
+                null
+              ]
+            }
+          }
+        }
+      },
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_char_varchar/foreign.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nc: string\nv: string\nts: timestamp[ns]",
+            "rows": [
+              {
+                "id": 0,
+                "c": "a    ",
+                "v": "a",
+                "ts": "2020-01-02 03:04:05.123456"
+              },
+              {
+                "id": 1,
+                "c": "\u00e9\u732b   ",
+                "v": "\u00e9\u732b",
+                "ts": "2020-01-02 03:04:05.123456"
+              },
+              {
+                "id": 2,
+                "c": "abcde",
+                "v": "abcde",
+                "ts": "2020-01-02 03:04:05.123456"
+              },
+              {
+                "id": 3,
+                "c": null,
+                "v": null,
+                "ts": null
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "ts": [
+                1577934245123456000,
+                1577934245123456000,
+                1577934245123456000,
+                null
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "foreign_char_varchar_default_timestamp_ntz",
+      "writer": "Apache ORC Java from Spark jars; ForeignOrc.java",
+      "timestamp_type_config": "TIMESTAMP_NTZ",
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_char_varchar",
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "c",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "__CHAR_VARCHAR_TYPE_STRING": "char(5)"
+            }
+          },
+          {
+            "name": "v",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "__CHAR_VARCHAR_TYPE_STRING": "varchar(5)"
+            }
+          },
+          {
+            "name": "ts",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "c": "a    ",
+            "v": "a",
+            "ts": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 1,
+            "c": "\u00e9\u732b   ",
+            "v": "\u00e9\u732b",
+            "ts": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 2,
+            "c": "abcde",
+            "v": "abcde",
+            "ts": "2020-01-02 03:04:05.123456"
+          },
+          {
+            "id": 3,
+            "c": null,
+            "v": null,
+            "ts": null
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nc: string\n  -- field metadata --\n  SPARK::metadata::json: '{\"__CHAR_VARCHAR_TYPE_STRING\": \"char(5)\"}'\nv: string\n  -- field metadata --\n  SPARK::metadata::json: '{\"__CHAR_VARCHAR_TYPE_STRING\": \"varchar(5)\"}'\nts: timestamp[us, tz=UTC]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "c": {
+              "type": "string",
+              "values": [
+                "a    ",
+                "\u00e9\u732b   ",
+                "abcde",
+                null
+              ]
+            },
+            "v": {
+              "type": "string",
+              "values": [
+                "a",
+                "\u00e9\u732b",
+                "abcde",
+                null
+              ]
+            },
+            "ts": {
+              "type": "timestamp[us, tz=UTC]",
+              "storage_values": [
+                1577963045123456,
+                1577963045123456,
+                1577963045123456,
+                null
+              ]
+            }
+          }
+        }
+      },
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_char_varchar/foreign.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\nc: string\nv: string\nts: timestamp[ns]",
+            "rows": [
+              {
+                "id": 0,
+                "c": "a    ",
+                "v": "a",
+                "ts": "2020-01-02 03:04:05.123456"
+              },
+              {
+                "id": 1,
+                "c": "\u00e9\u732b   ",
+                "v": "\u00e9\u732b",
+                "ts": "2020-01-02 03:04:05.123456"
+              },
+              {
+                "id": 2,
+                "c": "abcde",
+                "v": "abcde",
+                "ts": "2020-01-02 03:04:05.123456"
+              },
+              {
+                "id": 3,
+                "c": null,
+                "v": null,
+                "ts": null
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "ts": [
+                1577934245123456000,
+                1577934245123456000,
+                1577934245123456000,
+                null
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "daytime_time_nested",
+      "writer": "Spark 4.2.1",
+      "sql": "SELECT 0 AS id, INTERVAL '-2 03:04:05.123456' DAY TO SECOND AS dt,\narray(INTERVAL '-1.000001' SECOND, CAST(NULL AS INTERVAL SECOND), INTERVAL '0.000001' SECOND) AS ds,\nmap(CAST('01:02:03.123' AS TIME(3)), INTERVAL '-1.000001' SECOND) AS tm,\nnamed_struct('t', CAST('12:34:56.123456' AS TIME(6)), 'd', INTERVAL '-0.000001' SECOND) AS st\nUNION ALL SELECT 1, NULL, NULL, NULL, NULL\nUNION ALL SELECT 2, INTERVAL '0' DAY, array(), map(), named_struct('t', CAST(NULL AS TIME(6)), 'd', CAST(NULL AS INTERVAL SECOND))",
+      "session_timezone": "UTC",
+      "analysis": {
+        "outcome": "passed",
+        "value": {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "integer",
+              "nullable": false,
+              "metadata": {}
+            },
+            {
+              "name": "dt",
+              "type": "interval day to second",
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "ds",
+              "type": {
+                "type": "array",
+                "elementType": "interval second",
+                "containsNull": true
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "tm",
+              "type": {
+                "type": "map",
+                "keyType": "time(3)",
+                "valueType": "interval second",
+                "valueContainsNull": false
+              },
+              "nullable": true,
+              "metadata": {}
+            },
+            {
+              "name": "st",
+              "type": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "t",
+                    "type": "time(6)",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "d",
+                    "type": "interval second",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      },
+      "source_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "dt",
+            "type": "interval day to second",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ds",
+            "type": {
+              "type": "array",
+              "elementType": "interval second",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "tm",
+            "type": {
+              "type": "map",
+              "keyType": "time(3)",
+              "valueType": "interval second",
+              "valueContainsNull": false
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "st",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "t",
+                  "type": "time(6)",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "d",
+                  "type": "interval second",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "source_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "dt": "-3 days, 20:55:54.876544",
+            "ds": [
+              "-1 day, 23:59:58.999999",
+              null,
+              "0:00:00.000001"
+            ],
+            "tm": {
+              "__map_entries__": [
+                {
+                  "key": "01:02:03.123000",
+                  "value": "-1 day, 23:59:58.999999"
+                }
+              ]
+            },
+            "st": {
+              "t": "12:34:56.123456",
+              "d": "-1 day, 23:59:59.999999"
+            }
+          },
+          {
+            "id": 1,
+            "dt": null,
+            "ds": null,
+            "tm": null,
+            "st": null
+          },
+          {
+            "id": 2,
+            "dt": "0:00:00",
+            "ds": [],
+            "tm": {},
+            "st": {
+              "t": null,
+              "d": null
+            }
+          }
+        ]
+      },
+      "source_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "dt": "INTERVAL '-2 03:04:05.123456' DAY TO SECOND",
+            "ds": "[INTERVAL '-01.000001' SECOND, null, INTERVAL '00.000001' SECOND]",
+            "tm": "{01:02:03.123 -> INTERVAL '-01.000001' SECOND}",
+            "st": "{12:34:56.123456, INTERVAL '-00.000001' SECOND}"
+          },
+          {
+            "id": "1",
+            "dt": null,
+            "ds": null,
+            "tm": null,
+            "st": null
+          },
+          {
+            "id": "2",
+            "dt": "INTERVAL '0 00:00:00' DAY TO SECOND",
+            "ds": "[]",
+            "tm": "{}",
+            "st": "{null, null}"
+          }
+        ]
+      },
+      "source_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32 not null\ndt: duration[us]\nds: list<element: duration[us]>\n  child 0, element: duration[us]\ntm: map<time64[ns], duration[us]>\n  child 0, entries: struct<key: time64[ns] not null, value: duration[us] not null> not null\n      child 0, key: time64[ns] not null\n      child 1, value: duration[us] not null\nst: struct<t: time64[ns], d: duration[us]>\n  child 0, t: time64[ns]\n  child 1, d: duration[us]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2
+              ]
+            },
+            "dt": {
+              "type": "duration[us]",
+              "storage_values": [
+                -183845123456,
+                null,
+                0
+              ]
+            },
+            "ds": {
+              "type": "list<element: duration[us]>",
+              "values": [
+                [
+                  "-1 day, 23:59:58.999999",
+                  null,
+                  "0:00:00.000001"
+                ],
+                null,
+                []
+              ]
+            },
+            "tm": {
+              "type": "map<time64[ns], duration[us]>",
+              "values": [
+                [
+                  [
+                    "01:02:03.123000",
+                    "-1 day, 23:59:58.999999"
+                  ]
+                ],
+                null,
+                []
+              ]
+            },
+            "st": {
+              "type": "struct<t: time64[ns], d: duration[us]>",
+              "values": [
+                {
+                  "t": "12:34:56.123456",
+                  "d": "-1 day, 23:59:59.999999"
+                },
+                null,
+                {
+                  "t": null,
+                  "d": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      "write": {
+        "outcome": "passed",
+        "value": null
+      },
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/daytime_time_nested",
+      "physical_arrow": {
+        "outcome": "passed",
+        "value": [
+          {
+            "path": "/tmp/sail-sdp-orc-bridge-reference/data/daytime_time_nested/part-00000-ac94957a-fa97-4e23-9e4a-838eb46fada9-c000.zstd.orc",
+            "compression": "ZSTD",
+            "schema": "id: int32\ndt: int64\n  -- field metadata --\n  spark.sql.catalyst.type: 'interval day to second'\nds: list<item: int64>\n  child 0, item: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'interval second'\ntm: map<int64, int64>\n  child 0, entries: struct<key: int64 not null, value: int64> not null\n      child 0, key: int64 not null\n      -- field metadata --\n      spark.sql.catalyst.type: 'time(3)'\n      child 1, value: int64\n      -- field metadata --\n      spark.sql.catalyst.type: 'interval second'\nst: struct<t: int64, d: int64>\n  child 0, t: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'time(6)'\n  child 1, d: int64\n    -- field metadata --\n    spark.sql.catalyst.type: 'interval second'\n-- schema metadata --\norg.apache.spark.version: '4.2.1'",
+            "rows": [
+              {
+                "id": 0,
+                "dt": -183845123456,
+                "ds": [
+                  -1000001,
+                  null,
+                  1
+                ],
+                "tm": [
+                  [
+                    3723123000000,
+                    -1000001
+                  ]
+                ],
+                "st": {
+                  "t": 45296123456000,
+                  "d": -1
+                }
+              },
+              {
+                "id": 1,
+                "dt": null,
+                "ds": null,
+                "tm": null,
+                "st": null
+              },
+              {
+                "id": 2,
+                "dt": 0,
+                "ds": [],
+                "tm": [],
+                "st": {
+                  "t": null,
+                  "d": null
+                }
+              }
+            ],
+            "integer_storage": {
+              "id": [
+                0,
+                1,
+                2
+              ],
+              "dt": [
+                -183845123456,
+                null,
+                0
+              ]
+            }
+          }
+        ]
+      },
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "dt",
+            "type": "interval day to second",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ds",
+            "type": {
+              "type": "array",
+              "elementType": "interval second",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "tm",
+            "type": {
+              "type": "map",
+              "keyType": "time(3)",
+              "valueType": "interval second",
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "st",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "t",
+                  "type": "time(6)",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "d",
+                  "type": "interval second",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_collect": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "dt": "-3 days, 20:55:54.876544",
+            "ds": [
+              "-1 day, 23:59:58.999999",
+              null,
+              "0:00:00.000001"
+            ],
+            "tm": {
+              "__map_entries__": [
+                {
+                  "key": "01:02:03.123000",
+                  "value": "-1 day, 23:59:58.999999"
+                }
+              ]
+            },
+            "st": {
+              "t": "12:34:56.123456",
+              "d": "-1 day, 23:59:59.999999"
+            }
+          },
+          {
+            "id": 1,
+            "dt": null,
+            "ds": null,
+            "tm": null,
+            "st": null
+          },
+          {
+            "id": 2,
+            "dt": "0:00:00",
+            "ds": [],
+            "tm": {},
+            "st": {
+              "t": null,
+              "d": null
+            }
+          }
+        ]
+      },
+      "read_strings": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": "0",
+            "dt": "INTERVAL '-2 03:04:05.123456' DAY TO SECOND",
+            "ds": "[INTERVAL '-01.000001' SECOND, null, INTERVAL '00.000001' SECOND]",
+            "tm": "{01:02:03.123 -> INTERVAL '-01.000001' SECOND}",
+            "st": "{12:34:56.123456, INTERVAL '-00.000001' SECOND}"
+          },
+          {
+            "id": "1",
+            "dt": null,
+            "ds": null,
+            "tm": null,
+            "st": null
+          },
+          {
+            "id": "2",
+            "dt": "INTERVAL '0 00:00:00' DAY TO SECOND",
+            "ds": "[]",
+            "tm": "{}",
+            "st": "{null, null}"
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\ndt: duration[us]\nds: list<element: duration[us]>\n  child 0, element: duration[us]\ntm: map<time64[ns], duration[us]>\n  child 0, entries: struct<key: time64[ns] not null, value: duration[us]> not null\n      child 0, key: time64[ns] not null\n      child 1, value: duration[us]\nst: struct<t: time64[ns], d: duration[us]>\n  child 0, t: time64[ns]\n  child 1, d: duration[us]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2
+              ]
+            },
+            "dt": {
+              "type": "duration[us]",
+              "storage_values": [
+                -183845123456,
+                null,
+                0
+              ]
+            },
+            "ds": {
+              "type": "list<element: duration[us]>",
+              "values": [
+                [
+                  "-1 day, 23:59:58.999999",
+                  null,
+                  "0:00:00.000001"
+                ],
+                null,
+                []
+              ]
+            },
+            "tm": {
+              "type": "map<time64[ns], duration[us]>",
+              "values": [
+                [
+                  [
+                    "01:02:03.123000",
+                    "-1 day, 23:59:58.999999"
+                  ]
+                ],
+                null,
+                []
+              ]
+            },
+            "st": {
+              "type": "struct<t: time64[ns], d: duration[us]>",
+              "values": [
+                {
+                  "t": "12:34:56.123456",
+                  "d": "-1 day, 23:59:59.999999"
+                },
+                null,
+                {
+                  "t": null,
+                  "d": null
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "foreign_submicro",
+      "writer": "Apache ORC Java; ForeignSubmicro.java",
+      "fixture_path": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_submicro/foreign.orc",
+      "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_submicro",
+      "session_timezone": "UTC",
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ts",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_strings": [
+        {
+          "id": 0,
+          "ts": "2020-01-02 11:04:05.123456"
+        },
+        {
+          "id": 1,
+          "ts": "1970-01-01 07:59:58.123456"
+        },
+        {
+          "id": 2,
+          "ts": "1970-01-01 08:00:00"
+        },
+        {
+          "id": 3,
+          "ts": null
+        }
+      ],
+      "read_numeric": [
+        {
+          "id": 0,
+          "ts_micros": 1577963045123456
+        },
+        {
+          "id": 1,
+          "ts_micros": 28798123456
+        },
+        {
+          "id": 2,
+          "ts_micros": 28800000000
+        },
+        {
+          "id": 3,
+          "ts_micros": null
+        }
+      ],
+      "spark_arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+      "physical_arrow_schema": "id: int32\nts: timestamp[ns]",
+      "physical_arrow_rows": [
+        {
+          "id": 0,
+          "ts": "2020-01-02 03:04:05.123456789"
+        },
+        {
+          "id": 1,
+          "ts": "1969-12-31 23:59:58.123456789"
+        },
+        {
+          "id": 2,
+          "ts": "1970-01-01 00:00:00.000000001"
+        },
+        {
+          "id": 3,
+          "ts": null
+        }
+      ],
+      "physical_arrow_ts_nanos": [
+        1577934245123456789,
+        -1876543211,
+        1,
+        null
+      ],
+      "native_default_nanos_exitcode": 0,
+      "native_microseconds_decode": {
+        "outcome": "not executed",
+        "source_expected": "DecodeTimestamp error for nonmultiples of 1000 nanoseconds",
+        "reason": "Existing bounded executable fixes default nanosecond decoder; no cargo or repo edits authorized."
+      }
+    }
+  ]
+}

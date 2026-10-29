@@ -1,0 +1,45 @@
+{
+  "spark_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "orc_rust_before": "91910faa90e70587655e40788495a8a936fdf8fe",
+  "java_orc_version": "2.3.0",
+  "spark_writer_jvm_timezone": "America/Los_Angeles",
+  "foreign_writer_jvm_timezone": "UTC",
+  "reader_jvm_timezone": "America/Los_Angeles",
+  "limitations": [
+    "Precision tests exercise native decoding; complete Spark historical calendar parity is not claimed."
+  ],
+  "fixtures": [
+    {
+      "file": "foreign_submicro.orc",
+      "sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
+      "writer": "Apache ORC Java; ForeignSubmicro.java",
+      "source_sql": null,
+      "sql_session_timezone": "UTC",
+      "source_numeric": null,
+      "expected_spark_read_numeric": [
+        {
+          "id": 0,
+          "ts_micros": 1577963045123456
+        },
+        {
+          "id": 1,
+          "ts_micros": 28798123456
+        },
+        {
+          "id": 2,
+          "ts_micros": 28800000000
+        },
+        {
+          "id": 3,
+          "ts_micros": null
+        }
+      ],
+      "physical_nanos": [
+        1577934245123456789,
+        -1876543211,
+        1,
+        null
+      ]
+    }
+  ]
+}

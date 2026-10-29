@@ -215,8 +215,10 @@ Each unit uses immutable detached source gates and its own applicable Rust,
 codec and Spark 4.2.1 checks. Do not rerun unrelated expensive suites to manufacture
 coverage, and do not count dependency experiments as SDP assertion ports. The
 canonical inventory remains 462 registrations, 97 audited and 59 partial ports.
-The next implementation step is the dependency-hardening part of unit 1; later streaming state/fencing and CDC
-coordination remain announced design checkpoints of their own.
+Dependency hardening and the isolated object-range reader are now implemented
+as recorded below. The schema/array bridge, source and worker codec, registration
+and writer remain outstanding; later streaming state/fencing and CDC coordination
+remain announced design checkpoints of their own.
 
 
 ## Dependency implementation update
@@ -273,10 +275,41 @@ The vendor gate compares source bytes and package contents, verifies manifests a
 preserves upstream README whitespace verbatim; its initial formatting failure is
 retained. This resolves portability without claiming published upstream patches.
 
-Next: consume that dependency in a separate metadata/schema bridge, then add the
-object-store reader, FileSource/worker codec/registration and writer units. The
-four current Sail ORC baseline failures and all SDP acceptance counts remain open.
-TIME precision needs special care: Spark4.2.1 accepts0–6 and stores microseconds;
-Sail's existing TIME parser accepts0/3/6/9. Preserve precision semantics through a
-shared type improvement rather than silently reporting unsupported precisions as6.
+The subsequent object-range reader consumes the dependency. The schema/array
+bridge, FileSource/worker codec/registration and writer remain separate units.
+The four current Sail ORC baseline failures and all SDP acceptance counts remain open.
+Correction to the preliminary type assumption: Spark 4.2.1 TIME accepts precision
+0–6 and stores **nanoseconds**, independently of declared precision. The
+[logical-type reference](evidence/orc-logical-types-reference/README.md) retains
+the physical values and distinguishes string casts from explicit TIME-to-TIME
+casts. Sail's existing TIME parser accepts 0/3/6/9. Preserve the declared precision
+through a shared type improvement; mapping it directly to an Arrow storage unit
+can discard values that Spark retains.
 General catalog semantics remain in Sail, with LakeCat provider coverage separate.
+
+## Sail field metadata and object-range reader
+
+Recorded: 2026-10-29T20:26:20.348575+00:00. The [Sail foundation receipt](evidence/orc-sail-foundation/provenance.json) records two independently gated commits:
+
+| Commit | Scope | Library tests |
+| --- | --- | --- |
+| `661232601e` | Shared declared TIME precision metadata and nested Connect field output; physical storage remains nanoseconds | common 16, Connect 49 |
+| `69ff1a8e31` | Pinned object version/ETag, checked byte ranges, response identity and exact payload bounds | data source 93 |
+
+Both pass formatting and strict all-target/all-feature Clippy. The lock audit retains every existing package version and dependency edge, apart from prost version disambiguation and the new ORC dependency. Eight required packages are added; all Arrow packages stay at 59.2.0. No ORC format is registered yet. The reader requires a usable version or ETag on every nonempty request; it rejects changed identity, invalid ranges, malformed responses and truncated/excess bodies. Its buffer still needs integration with Sail resource accounting.
+
+The [reference archive](evidence/orc-logical-types-reference/README.md) preserves 10 ORC fixtures, 11 cases and all preliminary failures, with 15 pinned source excerpts checked. TIME physical values are nanoseconds even under lower declared precision. Default Spark TIME is gated by `spark.sql.timeType.enabled`; retained year-month Python conversion failures are not passes. Native TIMESTAMP decoding currently yields writer wallclock values, whereas Spark Java ORC uses the reader JVM timezone independently of the SQL session timezone. Relabeling the native naive array as UTC is incorrect. An opt-in native reader-timezone policy must use the original instant and writer zone, preserving DST-fold distinctions; precision truncation is a separate reviewed unit.
+
+Capture the reader timezone once on the driver through Sail's existing `get_system_timezone`, and serialize it with the scan descriptor. Workers must not rediscover a potentially different local timezone. The session timezone remains the logical/display label. Reference timezone and historical-calendar cases must qualify the conversion before it is enabled in the Sail bridge.
+
+The TIME metadata commit is only the outbound field half. [Source inspection](evidence/orc-sail-foundation/remaining-type-boundaries.json) finds that SDP inference round-trips Arrow fields through Connect and back into `spec::Field`; the existing inbound converter rejects precisions 1/2/4/5 and maps 0/3/6 to coarser storage. A shared semantic TIME type, including nested type metadata, typed-null and cast-target handling, needs its own design/implementation unit. SQL/non-null literal parsing and formatting also require value-level qualification. Do not add a pipeline-only repair or claim complete TIME support from these field tests.
+
+Next: finish the timestamp policy and schema/array bridge, then the FileSource and worker codec, registry and stateful writer. Original ORC SQL/DataFrame/CTAS/pipeline failures remain open until those public paths are exercised. The 462-registration inventory and last 277 selected Sail/67 upstream Python runtime receipt are unchanged.
+
+## Checked timestamp precision and the next timezone design checkpoint
+
+Recorded: 2026-10-29T20:31:30.032608+00:00. Native `579c04b3ae` adds opt-in checked fractional truncation while keeping strict precision as the default. The [receipt](evidence/orc-timestamp-precision/provenance.json) records 293 default passes, eight pre-existing ignored cases, 186 no-default library passes, formatting and strict Clippy. New native file reads cover the retained foreign submicrosecond fixture in sync/async modes, negative truncation and microsecond values at years 1 and 9999. The original strict read still errors on precision loss. Sail `4f7a642b71` vendors that exact qualified package; hashes/provenance and 93 data-source library tests pass with unchanged lockfile.
+
+The timestamp timezone implementation remains pending. The [Java conversion probe and design handoff](evidence/orc-timestamp-precision/timezone-design/timestamp-timezone-design-handoff.txt) exposes two distinct compatibility gaps: Java `TimeZone` uses a raw standard offset before 1900 where chrono-tz uses historical local mean time; Java also extrapolates recurring daylight-saving rules after chrono-tz's finite Los Angeles transition table ends in 2099. The retained UTC-to-Los-Angeles examples differ by 7 minutes 2 seconds in years 1/1800, and require summer DST in years 2100/9999. Same-zone identity and a December-only case cannot qualify cross-zone behavior. These are Java utility/source observations, not new Spark file-read passes.
+
+This is the next announced Astra design checkpoint: choose a small portable offset/rule provider with explicit Java compatibility and ruleset provenance, reuse an existing dependency where suitable, and retain early/future/DST-fold/gap reference cases. A temporary date guard has been considered but is not adopted as the completion contract. Preserve full SDP scope; do not replace the missing semantics with a narrower acceptance denominator. The separate shared TIME schema round-trip also needs the semantic-type decision described above.

@@ -1,0 +1,879 @@
+commit 69ff1a8e31091afe16b38ffcb5e504bcd912cdda
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 13:17:45 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 13:17:45 2026 -0700
+
+    feat: read ORC object ranges against pinned object identity
+
+diff --git a/Cargo.lock b/Cargo.lock
+index df84efa08..83f3af703 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -402,7 +402,7 @@ dependencies = [
+  "bytes",
+  "futures",
+  "once_cell",
+- "prost",
++ "prost 0.14.4",
+  "prost-types",
+  "tonic",
+  "tonic-prost",
+@@ -2702,7 +2702,7 @@ dependencies = [
+  "datafusion-proto-common",
+  "datafusion-proto-models",
+  "object_store",
+- "prost",
++ "prost 0.14.4",
+ ]
+ 
+ [[package]]
+@@ -2713,7 +2713,7 @@ checksum = "a95763d5fa64a88b658ba4ec7314d9c538e2aea749dc88d5ce2afaafbb4c69b8"
+ dependencies = [
+  "arrow",
+  "datafusion-common",
+- "prost",
++ "prost 0.14.4",
+ ]
+ 
+ [[package]]
+@@ -2724,7 +2724,7 @@ checksum = "3c4982d05dee1e0b90b7f3b39845dca7eee5635c550db09158d385b8181bdc6a"
+ dependencies = [
+  "datafusion-common",
+  "datafusion-proto-common",
+- "prost",
++ "prost 0.14.4",
+ ]
+ 
+ [[package]]
+@@ -3143,6 +3143,12 @@ dependencies = [
+  "pin-project-lite",
+ ]
+ 
++[[package]]
++name = "fallible-streaming-iterator"
++version = "0.1.9"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
++
+ [[package]]
+ name = "fancy-regex"
+ version = "0.19.2"
+@@ -3684,7 +3690,7 @@ dependencies = [
+  "md-5 0.10.6",
+  "num-traits",
+  "once_cell",
+- "prost",
++ "prost 0.14.4",
+  "prost-types",
+  "rand 0.9.5",
+  "regex",
+@@ -5130,6 +5136,15 @@ dependencies = [
+  "xxhash-rust",
+ ]
+ 
++[[package]]
++name = "lz4_flex"
++version = "0.11.6"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "373f5eceeeab7925e0c1098212f2fbc4d416adec9d35051a6ab251e824c1854a"
++dependencies = [
++ "twox-hash",
++]
++
+ [[package]]
+ name = "lz4_flex"
+ version = "0.13.1"
+@@ -5148,6 +5163,15 @@ dependencies = [
+  "twox-hash",
+ ]
+ 
++[[package]]
++name = "lzokay"
++version = "2.0.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "953d350dc065718bb00b61ea2118274ffe2fdf6488f32f720422bcd1c9d6025f"
++dependencies = [
++ "zerocopy",
++]
++
+ [[package]]
+ name = "marrow"
+ version = "0.3.1"
+@@ -5561,7 +5585,7 @@ dependencies = [
+  "opentelemetry-http",
+  "opentelemetry-proto",
+  "opentelemetry_sdk",
+- "prost",
++ "prost 0.14.4",
+  "reqwest 0.13.4",
+  "serde_json",
+  "thiserror",
+@@ -5580,7 +5604,7 @@ dependencies = [
+  "const-hex",
+  "opentelemetry",
+  "opentelemetry_sdk",
+- "prost",
++ "prost 0.14.4",
+  "serde",
+  "tonic",
+  "tonic-prost",
+@@ -5609,6 +5633,31 @@ version = "0.2.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+ 
++[[package]]
++name = "orc-rust"
++version = "0.9.0"
++dependencies = [
++ "arrow",
++ "async-trait",
++ "bytemuck",
++ "bytes",
++ "chrono",
++ "chrono-tz",
++ "fallible-streaming-iterator",
++ "flate2",
++ "futures",
++ "futures-util",
++ "log",
++ "lz4_flex 0.11.6",
++ "lzokay",
++ "num",
++ "prost 0.13.5",
++ "snafu",
++ "snap",
++ "tokio",
++ "zstd 0.13.3",
++]
++
+ [[package]]
+ name = "ordered-float"
+ version = "2.10.1"
+@@ -5802,7 +5851,7 @@ checksum = "2ed4d5c6ae95e08ac768883c8401cf0e8deb4e6e1d6a4e1fd3d2ec4f0ec63200"
+ dependencies = [
+  "heck 0.5.0",
+  "itertools 0.14.0",
+- "prost",
++ "prost 0.14.4",
+  "prost-types",
+ ]
+ 
+@@ -5816,7 +5865,7 @@ dependencies = [
+  "chrono",
+  "pbjson",
+  "pbjson-build",
+- "prost",
++ "prost 0.14.4",
+  "prost-build",
+  "serde",
+ ]
+@@ -6181,6 +6230,16 @@ dependencies = [
+  "unarray",
+ ]
+ 
++[[package]]
++name = "prost"
++version = "0.13.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "2796faa41db3ec313a31f7624d9286acf277b52de526150b7e69f3debf891ee5"
++dependencies = [
++ "bytes",
++ "prost-derive 0.13.5",
++]
++
+ [[package]]
+ name = "prost"
+ version = "0.14.4"
+@@ -6188,7 +6247,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "528ac67416ff8646872a3c02cad9cc4ee5dc9f9540c9b10771855c95cb2e5ae1"
+ dependencies = [
+  "bytes",
+- "prost-derive",
++ "prost-derive 0.14.4",
+ ]
+ 
+ [[package]]
+@@ -6203,7 +6262,7 @@ dependencies = [
+  "multimap",
+  "petgraph",
+  "prettyplease 0.2.37",
+- "prost",
++ "prost 0.14.4",
+  "prost-types",
+  "pulldown-cmark",
+  "pulldown-cmark-to-cmark",
+@@ -6212,6 +6271,19 @@ dependencies = [
+  "tempfile",
+ ]
+ 
++[[package]]
++name = "prost-derive"
++version = "0.13.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
++dependencies = [
++ "anyhow",
++ "itertools 0.14.0",
++ "proc-macro2",
++ "quote",
++ "syn 2.0.119",
++]
++
+ [[package]]
+ name = "prost-derive"
+ version = "0.14.4"
+@@ -6231,7 +6303,7 @@ version = "0.14.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "f94967dc7688f3054c7fac87473ffae4cc4c3904800e2d9f5b857246d8963b0a"
+ dependencies = [
+- "prost",
++ "prost 0.14.4",
+ ]
+ 
+ [[package]]
+@@ -7159,7 +7231,7 @@ dependencies = [
+  "log",
+  "lz4_flex 0.14.0",
+  "num_enum",
+- "prost",
++ "prost 0.14.4",
+  "readonly",
+  "sail-common",
+  "thiserror",
+@@ -7243,7 +7315,7 @@ dependencies = [
+  "parquet-variant-compute",
+  "parquet-variant-json",
+  "pin-project-lite",
+- "prost",
++ "prost 0.14.4",
+  "sail-common",
+  "serde",
+  "serde_arrow",
+@@ -7293,6 +7365,7 @@ dependencies = [
+  "memchr",
+  "object_store",
+  "once_cell",
++ "orc-rust",
+  "percent-encoding",
+  "pyo3",
+  "regex",
+@@ -7376,7 +7449,7 @@ dependencies = [
+  "log",
+  "object_store",
+  "opentelemetry-proto",
+- "prost",
++ "prost 0.14.4",
+  "prost-build",
+  "rand 0.10.3",
+  "readonly",
+@@ -7420,7 +7493,7 @@ dependencies = [
+  "env_logger",
+  "futures",
+  "log",
+- "prost",
++ "prost 0.14.4",
+  "sail-catalog",
+  "sail-catalog-memory",
+  "sail-common",
+@@ -7828,7 +7901,7 @@ dependencies = [
+  "pbjson-types",
+  "phf 0.14.0",
+  "prettyplease 0.3.0",
+- "prost",
++ "prost 0.14.4",
+  "prost-build",
+  "prost-types",
+  "pyo3",
+@@ -7952,7 +8025,7 @@ dependencies = [
+  "pin-project-lite",
+  "prettyplease 0.3.0",
+  "proc-macro2",
+- "prost",
++ "prost 0.14.4",
+  "quote",
+  "regex",
+  "sail-common",
+@@ -8378,6 +8451,27 @@ dependencies = [
+  "serde",
+ ]
+ 
++[[package]]
++name = "snafu"
++version = "0.8.9"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "6e84b3f4eacbf3a1ce05eac6763b4d629d60cbc94d632e4092c54ade71f1e1a2"
++dependencies = [
++ "snafu-derive",
++]
++
++[[package]]
++name = "snafu-derive"
++version = "0.8.9"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "c1c97747dbf44bb1ca44a561ece23508e99cb592e862f22222dcf42f51d1e451"
++dependencies = [
++ "heck 0.5.0",
++ "proc-macro2",
++ "quote",
++ "syn 2.0.119",
++]
++
+ [[package]]
+ name = "snap"
+ version = "1.1.2"
+@@ -8953,7 +9047,7 @@ version = "0.14.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "fcfab99db777fba2802f0dfa861d1628d1ae916fb199d29819941f139ae85082"
+ dependencies = [
+- "prost",
++ "prost 0.14.4",
+  "tokio",
+  "tokio-stream",
+  "tonic",
+@@ -8967,7 +9061,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "50849f68853be452acf590cde0b146665b8d507b3b8af17261df47e02c209ea0"
+ dependencies = [
+  "bytes",
+- "prost",
++ "prost 0.14.4",
+  "tonic",
+ ]
+ 
+@@ -8993,7 +9087,7 @@ version = "0.14.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "acccd136a4bf19810a1fde9c74edc6129b42a66b44d0c1c8aaa67aeb49a146a7"
+ dependencies = [
+- "prost",
++ "prost 0.14.4",
+  "prost-types",
+  "tokio",
+  "tokio-stream",
+@@ -9007,7 +9101,7 @@ version = "0.14.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "73ab1b02061f83d519bba3caa167f88f261ef05720ab8ebc954ade70de3348e8"
+ dependencies = [
+- "prost",
++ "prost 0.14.4",
+  "prost-types",
+  "tonic",
+ ]
+diff --git a/crates/sail-data-source/Cargo.toml b/crates/sail-data-source/Cargo.toml
+index 52bd731e6..cab16630f 100644
+--- a/crates/sail-data-source/Cargo.toml
++++ b/crates/sail-data-source/Cargo.toml
+@@ -25,6 +25,7 @@ datafusion-datasource-json = { workspace = true }
+ datafusion-expr = { workspace = true }
+ datafusion-session = { workspace = true }
+ object_store = { workspace = true }
++orc-rust = { workspace = true }
+ chumsky = { workspace = true }
+ glob = { workspace = true }
+ url = { workspace = true }
+diff --git a/crates/sail-data-source/src/formats/mod.rs b/crates/sail-data-source/src/formats/mod.rs
+index dfbf8c3a7..60e9e5130 100644
+--- a/crates/sail-data-source/src/formats/mod.rs
++++ b/crates/sail-data-source/src/formats/mod.rs
+@@ -5,6 +5,7 @@ pub mod console;
+ pub mod csv;
+ pub mod json;
+ pub mod noop;
++pub mod orc;
+ pub mod parquet;
+ pub mod python;
+ pub mod rate;
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+new file mode 100644
+index 000000000..0afd6942d
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -0,0 +1,3 @@
++mod reader;
++
++pub use reader::OrcObjectReader;
+diff --git a/crates/sail-data-source/src/formats/orc/reader.rs b/crates/sail-data-source/src/formats/orc/reader.rs
+new file mode 100644
+index 000000000..3cfdf3dea
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/reader.rs
+@@ -0,0 +1,162 @@
++use std::io;
++use std::sync::Arc;
++
++use bytes::Bytes;
++use futures::future::BoxFuture;
++use futures::{FutureExt, TryStreamExt};
++use object_store::{GetOptions, GetRange, ObjectMeta, ObjectStore};
++use orc_rust::reader::AsyncChunkReader;
++
++/// Reads bounded ORC ranges against the object identity supplied by listing.
++///
++/// Every nonempty read requires an object version or a usable ETag. Both are
++/// sent when present; size and modification time alone are not an identity.
++/// Consistency relies on the store's version/conditional-read contract. In
++/// particular, a local filesystem's metadata-derived ETag cannot establish an
++/// immutable snapshot against out-of-band writes that preserve that metadata.
++#[derive(Debug)]
++pub struct OrcObjectReader {
++    store: Arc<dyn ObjectStore>,
++    meta: ObjectMeta,
++}
++
++impl OrcObjectReader {
++    pub fn new(store: Arc<dyn ObjectStore>, meta: ObjectMeta) -> Self {
++        Self { store, meta }
++    }
++
++    async fn read_range(&self, offset: u64, length: u64) -> io::Result<Bytes> {
++        let end = offset.checked_add(length).ok_or_else(|| {
++            io::Error::new(io::ErrorKind::InvalidInput, "ORC byte range overflows u64")
++        })?;
++        if end > self.meta.size {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                format!(
++                    "ORC byte range {offset}..{end} exceeds object size {}",
++                    self.meta.size
++                ),
++            ));
++        }
++        // Vec/Bytes allocations cannot exceed isize::MAX, even when usize is
++        // wide enough to represent the requested length.
++        let length = usize::try_from(length)
++            .ok()
++            .filter(|length| *length <= isize::MAX as usize)
++            .ok_or_else(|| {
++                io::Error::new(
++                    io::ErrorKind::InvalidInput,
++                    "ORC byte range length exceeds the addressable buffer size",
++                )
++            })?;
++        if length == 0 {
++            return Ok(Bytes::new());
++        }
++
++        let has_version = self
++            .meta
++            .version
++            .as_deref()
++            .is_some_and(|version| !version.is_empty());
++        let has_etag = self
++            .meta
++            .e_tag
++            .as_deref()
++            .is_some_and(|etag| !etag.is_empty() && etag != "*" && !etag.starts_with("W/"));
++        if !has_version && !has_etag {
++            return Err(io::Error::new(
++                io::ErrorKind::Unsupported,
++                format!(
++                    "ORC range reads require a version or usable ETag for object {}",
++                    self.meta.location
++                ),
++            ));
++        }
++
++        let range = offset..end;
++        let result = self
++            .store
++            .get_opts(
++                &self.meta.location,
++                GetOptions {
++                    range: Some(GetRange::Bounded(range.clone())),
++                    version: self.meta.version.clone(),
++                    if_match: self.meta.e_tag.clone(),
++                    ..Default::default()
++                },
++            )
++            .await
++            .map_err(io::Error::from)?;
++        if result.range != range {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidData,
++                format!(
++                    "ORC object store returned range {:?} for requested range {range:?}",
++                    result.range
++                ),
++            ));
++        }
++        if result.meta.location != self.meta.location
++            || result.meta.size != self.meta.size
++            || self
++                .meta
++                .version
++                .as_ref()
++                .is_some_and(|version| result.meta.version.as_ref() != Some(version))
++            || self
++                .meta
++                .e_tag
++                .as_ref()
++                .is_some_and(|etag| result.meta.e_tag.as_ref() != Some(etag))
++        {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidData,
++                format!(
++                    "ORC object store returned a different object identity for {}",
++                    self.meta.location
++                ),
++            ));
++        }
++
++        // Do not use GetResult::bytes(): a misbehaving stream could otherwise
++        // accumulate more than the requested range before its length is checked.
++        let mut stream = result.into_stream();
++        let mut buffer = Vec::new();
++        buffer
++            .try_reserve_exact(length)
++            .map_err(|error| io::Error::new(io::ErrorKind::OutOfMemory, error))?;
++        while let Some(chunk) = stream.try_next().await.map_err(io::Error::from)? {
++            if chunk.len() > length - buffer.len() {
++                return Err(io::Error::new(
++                    io::ErrorKind::InvalidData,
++                    "ORC object store returned more bytes than the requested range",
++                ));
++            }
++            buffer.extend_from_slice(&chunk);
++        }
++        if buffer.len() != length {
++            return Err(io::Error::new(
++                io::ErrorKind::UnexpectedEof,
++                format!(
++                    "ORC object store returned {} bytes for a {length}-byte range",
++                    buffer.len()
++                ),
++            ));
++        }
++        Ok(buffer.into())
++    }
++}
++
++impl AsyncChunkReader for OrcObjectReader {
++    fn len(&mut self) -> BoxFuture<'_, io::Result<u64>> {
++        async move { Ok(self.meta.size) }.boxed()
++    }
++
++    fn get_bytes(&mut self, offset: u64, length: u64) -> BoxFuture<'_, io::Result<Bytes>> {
++        self.read_range(offset, length).boxed()
++    }
++}
++
++#[cfg(test)]
++#[path = "reader_tests.rs"]
++mod tests;
+diff --git a/crates/sail-data-source/src/formats/orc/reader_tests.rs b/crates/sail-data-source/src/formats/orc/reader_tests.rs
+new file mode 100644
+index 000000000..3b394be43
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/reader_tests.rs
+@@ -0,0 +1,312 @@
++#![expect(clippy::unwrap_used)]
++
++use std::fmt;
++use std::io::ErrorKind;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::sync::{Arc, Mutex};
++
++use async_trait::async_trait;
++use bytes::Bytes;
++use futures::stream::{self, BoxStream};
++use futures::{StreamExt, TryStreamExt};
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use object_store::{
++    CopyOptions, GetOptions, GetRange, GetResult, GetResultPayload, ListResult, MultipartUpload,
++    ObjectMeta, ObjectStore, ObjectStoreExt, PutMultipartOptions, PutOptions, PutPayload,
++    PutResult, Result,
++};
++use orc_rust::reader::AsyncChunkReader;
++
++use super::OrcObjectReader;
++
++#[derive(Debug, Clone, Copy)]
++enum Response {
++    Normal,
++    Truncated,
++    TooLong,
++    WrongRange,
++    WrongSize,
++    WrongEtag,
++    WrongVersion,
++}
++
++#[derive(Debug)]
++struct RecordingStore {
++    inner: InMemory,
++    requests: Mutex<Vec<GetOptions>>,
++    response: Response,
++    version: Option<String>,
++    body_polls: Arc<AtomicUsize>,
++}
++
++impl fmt::Display for RecordingStore {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "RecordingStore")
++    }
++}
++
++#[async_trait]
++impl ObjectStore for RecordingStore {
++    async fn put_opts(
++        &self,
++        location: &Path,
++        payload: PutPayload,
++        opts: PutOptions,
++    ) -> Result<PutResult> {
++        self.inner.put_opts(location, payload, opts).await
++    }
++
++    async fn put_multipart_opts(
++        &self,
++        location: &Path,
++        opts: PutMultipartOptions,
++    ) -> Result<Box<dyn MultipartUpload>> {
++        self.inner.put_multipart_opts(location, opts).await
++    }
++
++    async fn get_opts(&self, location: &Path, options: GetOptions) -> Result<GetResult> {
++        self.requests.lock().unwrap().push(options.clone());
++        // InMemory has no historical versions. This wrapper checks forwarding
++        // of an explicit version; ETag preconditions are checked by InMemory.
++        if options.version != self.version {
++            return Err(object_store::Error::Precondition {
++                path: location.to_string(),
++                source: "unexpected object version".into(),
++            });
++        }
++        let mut result = self.inner.get_opts(location, options).await?;
++        result.meta.version = self.version.clone();
++        match self.response {
++            Response::Truncated => {
++                result.payload =
++                    GetResultPayload::Stream(stream::iter([Ok(Bytes::from_static(b"x"))]).boxed());
++            }
++            Response::TooLong => {
++                result.payload = GetResultPayload::Stream(
++                    stream::iter([
++                        Ok(Bytes::from_static(b"abc")),
++                        Ok(Bytes::from_static(b"extra")),
++                    ])
++                    .boxed(),
++                );
++            }
++            Response::WrongRange => result.range = 0..result.meta.size,
++            Response::WrongSize => result.meta.size += 1,
++            Response::WrongEtag => result.meta.e_tag = Some("different-etag".to_string()),
++            Response::WrongVersion => result.meta.version = Some("different-version".to_string()),
++            Response::Normal => {}
++        }
++        let GetResult {
++            payload,
++            meta,
++            range,
++            attributes,
++        } = result;
++        let polls = Arc::clone(&self.body_polls);
++        let result = GetResult {
++            payload,
++            meta: meta.clone(),
++            range: range.clone(),
++            attributes: attributes.clone(),
++        };
++        Ok(GetResult {
++            payload: GetResultPayload::Stream(
++                result
++                    .into_stream()
++                    .inspect_ok(move |_| {
++                        polls.fetch_add(1, Ordering::Relaxed);
++                    })
++                    .boxed(),
++            ),
++            meta,
++            range,
++            attributes,
++        })
++    }
++
++    fn delete_stream(
++        &self,
++        locations: BoxStream<'static, Result<Path>>,
++    ) -> BoxStream<'static, Result<Path>> {
++        self.inner.delete_stream(locations)
++    }
++
++    fn list(&self, prefix: Option<&Path>) -> BoxStream<'static, Result<ObjectMeta>> {
++        self.inner.list(prefix)
++    }
++
++    async fn list_with_delimiter(&self, prefix: Option<&Path>) -> Result<ListResult> {
++        self.inner.list_with_delimiter(prefix).await
++    }
++
++    async fn copy_opts(&self, from: &Path, to: &Path, options: CopyOptions) -> Result<()> {
++        self.inner.copy_opts(from, to, options).await
++    }
++}
++
++async fn fixture(response: Response, version: Option<&str>) -> (Arc<RecordingStore>, ObjectMeta) {
++    let store = Arc::new(RecordingStore {
++        inner: InMemory::new(),
++        requests: Mutex::new(Vec::new()),
++        response,
++        version: version.map(str::to_string),
++        body_polls: Arc::new(AtomicUsize::new(0)),
++    });
++    let location = Path::from("test.orc");
++    store
++        .inner
++        .put(&location, Bytes::from_static(b"0123456789").into())
++        .await
++        .unwrap();
++    let mut meta = store.inner.head(&location).await.unwrap();
++    meta.version = store.version.clone();
++    (store, meta)
++}
++
++#[tokio::test]
++async fn reads_exact_ranges_and_keeps_etag_on_every_request() {
++    let (store, meta) = fixture(Response::Normal, None).await;
++    let mut reader = OrcObjectReader::new(store.clone(), meta.clone());
++    assert_eq!(reader.len().await.unwrap(), 10);
++    assert_eq!(reader.get_bytes(0, 3).await.unwrap(), b"012"[..]);
++    assert_eq!(reader.get_bytes(7, 3).await.unwrap(), b"789"[..]);
++    let requests = store.requests.lock().unwrap();
++    assert_eq!(requests.len(), 2);
++    for (request, range) in requests.iter().zip([0..3, 7..10]) {
++        assert_eq!(request.range, Some(GetRange::Bounded(range)));
++        assert_eq!(request.if_match, meta.e_tag);
++        assert_eq!(request.version, None);
++        assert!(!request.head);
++    }
++}
++
++#[tokio::test]
++async fn empty_ranges_need_no_io_or_object_validator() {
++    let (store, mut meta) = fixture(Response::Normal, None).await;
++    meta.e_tag = None;
++    let mut reader = OrcObjectReader::new(store.clone(), meta.clone());
++    for offset in [0, 3, 10] {
++        assert!(reader.get_bytes(offset, 0).await.unwrap().is_empty());
++    }
++    meta.size = 0;
++    let mut empty_reader = OrcObjectReader::new(store.clone(), meta);
++    assert_eq!(empty_reader.len().await.unwrap(), 0);
++    assert!(empty_reader.get_bytes(0, 0).await.unwrap().is_empty());
++    assert!(store.requests.lock().unwrap().is_empty());
++}
++
++#[tokio::test]
++async fn invalid_ranges_are_rejected_before_io() {
++    let (store, mut meta) = fixture(Response::Normal, None).await;
++    let mut reader = OrcObjectReader::new(store.clone(), meta.clone());
++    for (offset, length) in [(10, 1), (11, 0), (0, 11), (u64::MAX, 1)] {
++        assert_eq!(
++            reader.get_bytes(offset, length).await.unwrap_err().kind(),
++            ErrorKind::InvalidInput
++        );
++    }
++    meta.size = u64::MAX;
++    let mut huge_reader = OrcObjectReader::new(store.clone(), meta);
++    assert_eq!(
++        huge_reader.get_bytes(0, u64::MAX).await.unwrap_err().kind(),
++        ErrorKind::InvalidInput
++    );
++    assert!(store.requests.lock().unwrap().is_empty());
++}
++
++#[tokio::test]
++async fn missing_or_unusable_validators_are_rejected_before_io() {
++    let (store, original) = fixture(Response::Normal, None).await;
++    for etag in [None, Some(""), Some("*"), Some("W/\"weak\"")] {
++        let mut meta = original.clone();
++        meta.e_tag = etag.map(str::to_string);
++        meta.version = Some(String::new());
++        let mut reader = OrcObjectReader::new(store.clone(), meta);
++        let error = reader.get_bytes(0, 3).await.unwrap_err();
++        assert_eq!(error.kind(), ErrorKind::Unsupported);
++        assert!(error.to_string().contains("version or usable ETag"));
++    }
++    assert!(store.requests.lock().unwrap().is_empty());
++}
++
++#[tokio::test]
++async fn changed_etag_preserves_precondition_failure_without_retry() {
++    let (store, meta) = fixture(Response::Normal, None).await;
++    let mut reader = OrcObjectReader::new(store.clone(), meta.clone());
++    reader.get_bytes(0, 3).await.unwrap();
++    store
++        .inner
++        .put(&meta.location, Bytes::from_static(b"abcdefghij").into())
++        .await
++        .unwrap();
++    let error = reader.get_bytes(7, 3).await.unwrap_err();
++    assert!(matches!(
++        error
++            .get_ref()
++            .and_then(|error| error.downcast_ref::<object_store::Error>()),
++        Some(object_store::Error::Precondition { .. })
++    ));
++    let requests = store.requests.lock().unwrap();
++    assert_eq!(requests.len(), 2);
++    assert!(
++        requests
++            .iter()
++            .all(|request| request.if_match == meta.e_tag)
++    );
++}
++
++#[tokio::test]
++async fn forwards_version_and_etag_on_every_range() {
++    let (store, meta) = fixture(Response::Normal, Some("version-1")).await;
++    let mut reader = OrcObjectReader::new(store.clone(), meta.clone());
++    reader.get_bytes(0, 3).await.unwrap();
++    reader.get_bytes(7, 3).await.unwrap();
++    let requests = store.requests.lock().unwrap();
++    assert_eq!(requests.len(), 2);
++    for request in requests.iter() {
++        assert_eq!(request.version, meta.version);
++        assert_eq!(request.if_match, meta.e_tag);
++    }
++}
++
++#[tokio::test]
++async fn explicit_version_does_not_require_an_etag() {
++    let (store, mut meta) = fixture(Response::Normal, Some("version-1")).await;
++    meta.e_tag = None;
++    let mut reader = OrcObjectReader::new(store.clone(), meta);
++    assert_eq!(reader.get_bytes(7, 3).await.unwrap(), b"789"[..]);
++    let requests = store.requests.lock().unwrap();
++    assert_eq!(requests[0].version.as_deref(), Some("version-1"));
++    assert_eq!(requests[0].if_match, None);
++}
++
++#[tokio::test]
++async fn rejects_truncated_or_excess_response_bytes() {
++    for (response, kind) in [
++        (Response::Truncated, ErrorKind::UnexpectedEof),
++        (Response::TooLong, ErrorKind::InvalidData),
++    ] {
++        let (store, meta) = fixture(response, None).await;
++        let mut reader = OrcObjectReader::new(store, meta);
++        assert_eq!(reader.get_bytes(2, 3).await.unwrap_err().kind(), kind);
++    }
++}
++
++#[tokio::test]
++async fn rejects_changed_response_identity_or_range_before_reading_body() {
++    for response in [
++        Response::WrongRange,
++        Response::WrongSize,
++        Response::WrongEtag,
++        Response::WrongVersion,
++    ] {
++        let (store, meta) = fixture(response, Some("version-1")).await;
++        let mut reader = OrcObjectReader::new(store.clone(), meta);
++        assert_eq!(
++            reader.get_bytes(2, 3).await.unwrap_err().kind(),
++            ErrorKind::InvalidData
++        );
++        assert_eq!(store.body_polls.load(Ordering::Relaxed), 0);
++    }
++}

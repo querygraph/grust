@@ -1254,3 +1254,13 @@ errors. The Sail commit changes no linked runtime or lockfile and registers no
 ORC format; its gate verifies exact package/source bytes and Cargo boundaries.
 The next Sail commit is the logical schema bridge, followed by the remote source
 and worker codec. No new SDP case is counted as passing from dependency tests.
+
+## Review Sail TIME metadata and ORC object reader
+
+The [foundation receipt](evidence/orc-sail-foundation/provenance.json) records Sail `661232601e` (declared TIME field metadata/Connect output) and `69ff1a8e31` (pinned ORC object ranges plus minimal dependency lock changes). Detached fmt/strict Clippy and complete affected library suites pass: 16 common, 49 Connect, then 93 data-source tests. Review the two code commits independently; neither registers a format or claims a new SDP runtime pass.
+
+The [Spark logical-type archive](evidence/orc-logical-types-reference/README.md) retains 10 fixtures/11 cases, including initial errors and Python interval conversion failures. It corrects the earlier TIME-microsecond assumption to nanoseconds. Remaining source-audited boundaries include inbound TIME schema normalization and ORC reader timezone/precision behavior. The native default wallclock array must not be relabeled as a UTC instant. Shared type and source behavior stays in Sail; no LakeCat-specific workaround is introduced.
+
+## Review opt-in ORC timestamp precision
+
+Native `579c04b3ae` adds checked truncation independently of timezone conversion; Sail `4f7a642b71` is its mechanical vendor update. [Evidence](evidence/orc-timestamp-precision/provenance.json): 293 native default passes/eight ignored, 186 no-default library passes, strict Clippy/formatting, exact package/source verification and 93 Sail data-source passes. The retained foreign submicrosecond input now has actual strict-error and opt-in-value checks. No production format registration or new SDP execution count. Java historical/future timezone differences are retained as the next design checkpoint, with no unqualified timezone prototype enabled.

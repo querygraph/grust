@@ -1,0 +1,91 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 12:45:01 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///tmp/sail-sdp-orc-bridge-reference/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+[Stage 0:===========================================================(1 + 0) / 1]                                                                                {"case": "time_precisions", "stages": {"analysis": "passed", "source_collect": "passed", "source_strings": "passed", "source_numeric": "passed", "source_arrow": "passed", "write": "passed", "physical_arrow": "passed", "read_collect": "passed", "read_strings": "passed", "read_numeric": "passed", "read_arrow": "passed"}}
+{"case": "intervals", "stages": {"analysis": "passed", "source_collect": "failed", "source_strings": "passed", "source_numeric": "passed", "source_arrow": "failed", "write": "passed", "physical_arrow": "passed", "read_collect": "failed", "read_strings": "passed", "read_numeric": "passed", "read_arrow": "failed"}}
+{"case": "timestamps_utc", "stages": {"analysis": "passed", "source_collect": "passed", "source_strings": "passed", "source_numeric": "passed", "source_arrow": "passed", "write": "passed", "physical_arrow": "passed", "read_collect": "passed", "read_strings": "passed", "read_numeric": "passed", "read_arrow": "passed"}}
+{"case": "timestamps_los_angeles", "stages": {"analysis": "passed", "source_collect": "passed", "source_strings": "passed", "source_numeric": "passed", "source_arrow": "passed", "write": "passed", "physical_arrow": "passed", "read_collect": "passed", "read_strings": "passed", "read_numeric": "passed", "read_arrow": "passed"}}
+Traceback (most recent call last):
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 122, in <module>
+    run('nested_timestamp_nulls', '''SELECT 0 AS id,
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 80, in run
+    frame = s.sql(query)
+            ^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py", line 836, in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1219, in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1754, in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1731, in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 2093, in _handle_error
+    self._handle_rpc_error(error)
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 2177, in _handle_rpc_error
+    raise convert_exception(
+pyspark.errors.exceptions.connect.ParseException: 
+[PARSE_SYNTAX_ERROR] Syntax error at or near '>': extra input '>'. SQLSTATE: 42601 (line 7, pos 255)
+
+
+JVM stacktrace:
+org.apache.spark.sql.catalyst.parser.ParseException
+	at org.apache.spark.sql.catalyst.parser.ParseErrorListener$.syntaxError(parsers.scala:161)
+	at org.antlr.v4.runtime.ProxyErrorListener.syntaxError(ProxyErrorListener.java:41)
+	at org.antlr.v4.runtime.Parser.notifyErrorListeners(Parser.java:544)
+	at org.apache.spark.sql.catalyst.parser.SparkParserErrorStrategy.reportUnwantedToken(SparkParserErrorStrategy.scala:99)
+	at org.antlr.v4.runtime.DefaultErrorStrategy.singleTokenDeletion(DefaultErrorStrategy.java:548)
+	at org.antlr.v4.runtime.DefaultErrorStrategy.recoverInline(DefaultErrorStrategy.java:467)
+	at org.antlr.v4.runtime.Parser.match(Parser.java:208)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.primaryExpression(SqlBaseParser.java:26942)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.valueExpression(SqlBaseParser.java:25579)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.booleanExpression(SqlBaseParser.java:24881)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.expression(SqlBaseParser.java:24513)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.namedExpression(SqlBaseParser.java:24005)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.namedExpressionSeq(SqlBaseParser.java:24103)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.selectClause(SqlBaseParser.java:16988)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.querySpecification(SqlBaseParser.java:16570)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.queryPrimary(SqlBaseParser.java:16002)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.queryTerm(SqlBaseParser.java:15717)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.queryTerm(SqlBaseParser.java:15821)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.query(SqlBaseParser.java:11859)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.statement(SqlBaseParser.java:5762)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.singleStatement(SqlBaseParser.java:2440)
+	at org.apache.spark.sql.catalyst.parser.SqlBaseParser.compoundOrSingleStatement(SqlBaseParser.java:636)
+	at org.apache.spark.sql.catalyst.parser.SubstituteParamsParser.$anonfun$substitute$1(SubstituteParamsParser.scala:80)
+	at org.apache.spark.sql.catalyst.parser.AbstractParser$.executeWithTwoStageStrategy(parsers.scala:520)
+	at org.apache.spark.sql.catalyst.parser.SubstituteParamsParser.substitute(SubstituteParamsParser.scala:80)
+	at org.apache.spark.sql.catalyst.parser.ParameterHandler$.performSubstitution(ParameterHandler.scala:75)
+	at org.apache.spark.sql.catalyst.parser.ParameterHandler$.substituteParameters(ParameterHandler.scala:163)
+	at org.apache.spark.sql.execution.SparkSqlParser.parseInternal(SparkSqlParser.scala:138)
+	at org.apache.spark.sql.execution.SparkSqlParser.parseWithParameters(SparkSqlParser.scala:74)
+	at org.apache.spark.sql.execution.SparkSqlParser.parsePlanWithParameters(SparkSqlParser.scala:88)
+	at org.apache.spark.sql.classic.SparkSession.$anonfun$sql$7(SparkSession.scala:601)
+	at org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)
+	at org.apache.spark.sql.classic.SparkSession.$anonfun$sql$5(SparkSession.scala:600)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+	at org.apache.spark.sql.classic.SparkSession.sql(SparkSession.scala:591)
+	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.executeSQL(SparkConnectPlanner.scala:3208)
+	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.handleSqlCommand(SparkConnectPlanner.scala:3056)
+	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2903)
+	at org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)
+	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)

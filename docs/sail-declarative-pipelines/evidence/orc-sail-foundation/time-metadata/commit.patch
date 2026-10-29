@@ -1,0 +1,390 @@
+commit 661232601eaee13171db5e53648b9724901b3570
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 13:10:55 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 13:10:55 2026 -0700
+
+    feat: preserve declared Spark TIME precision in Arrow field metadata
+
+diff --git a/crates/sail-common/src/spec/mod.rs b/crates/sail-common/src/spec/mod.rs
+index 3f3c87316..9c68c6c08 100644
+--- a/crates/sail-common/src/spec/mod.rs
++++ b/crates/sail-common/src/spec/mod.rs
+@@ -4,6 +4,7 @@ mod expression;
+ mod literal;
+ mod plan;
+ mod snapshot_reference;
++mod time;
+ 
+ pub use column_change::*;
+ pub use data_type::*;
+@@ -11,3 +12,4 @@ pub use expression::*;
+ pub use literal::*;
+ pub use plan::*;
+ pub use snapshot_reference::*;
++pub use time::*;
+diff --git a/crates/sail-common/src/spec/time.rs b/crates/sail-common/src/spec/time.rs
+new file mode 100644
+index 000000000..4f4cc8d63
+--- /dev/null
++++ b/crates/sail-common/src/spec/time.rs
+@@ -0,0 +1,87 @@
++use serde::{Deserialize, Serialize};
++
++use crate::error::{CommonError, CommonResult};
++
++pub const SAIL_SPARK_TIME_METADATA_KEY: &str = "SAIL::spark::time";
++
++/// Spark's declared TIME precision, independent of Arrow's storage resolution.
++///
++/// Fields carrying this metadata use Arrow Time64(Nanosecond). The precision
++/// describes the Spark type; it does not request rounding or truncation of data.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct SparkTimeMetadata {
++    precision: i32,
++}
++
++impl SparkTimeMetadata {
++    pub fn try_new(precision: i32) -> CommonResult<Self> {
++        if !(0..=6).contains(&precision) {
++            return Err(CommonError::invalid(format!(
++                "Spark TIME precision must be between 0 and 6: {precision}"
++            )));
++        }
++        Ok(Self { precision })
++    }
++
++    pub fn precision(self) -> i32 {
++        self.precision
++    }
++
++    pub fn from_json(value: &str) -> CommonResult<Self> {
++        let metadata = serde_json::from_str::<Self>(value)
++            .map_err(|error| CommonError::invalid(format!("Spark TIME metadata: {error}")))?;
++        Self::try_new(metadata.precision)
++    }
++
++    pub fn to_json(self) -> CommonResult<String> {
++        let metadata = Self::try_new(self.precision)?;
++        serde_json::to_string(&metadata)
++            .map_err(|error| CommonError::internal(format!("Spark TIME metadata: {error}")))
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn spark_time_metadata_preserves_every_supported_precision() -> CommonResult<()> {
++        for precision in 0..=6 {
++            let metadata = SparkTimeMetadata::try_new(precision)?;
++            assert_eq!(metadata.precision(), precision);
++            let json = metadata.to_json()?;
++            assert_eq!(json, format!(r#"{{"precision":{precision}}}"#));
++            assert_eq!(SparkTimeMetadata::from_json(&json)?, metadata);
++        }
++        Ok(())
++    }
++
++    #[test]
++    fn spark_time_metadata_rejects_invalid_precision() {
++        for precision in [i32::MIN, -1, 7, 9, i32::MAX] {
++            assert!(SparkTimeMetadata::try_new(precision).is_err());
++            assert!(
++                SparkTimeMetadata::from_json(&format!(r#"{{"precision":{precision}}}"#)).is_err()
++            );
++            assert!(SparkTimeMetadata { precision }.to_json().is_err());
++        }
++    }
++
++    #[test]
++    fn spark_time_metadata_rejects_malformed_json() {
++        for json in [
++            "invalid",
++            "{}",
++            "null",
++            "[]",
++            r#"{"precision":"3"}"#,
++            r#"{"precision":1.5}"#,
++            r#"{"precision":null}"#,
++            r#"{"precision":1,"precision":2}"#,
++            r#"{"precision":3,"unexpected":true}"#,
++        ] {
++            assert!(SparkTimeMetadata::from_json(json).is_err(), "{json}");
++        }
++    }
++}
+diff --git a/crates/sail-spark-connect/src/proto/data_type_arrow.rs b/crates/sail-spark-connect/src/proto/data_type_arrow.rs
+index 64759b2d5..4e4e8d8c7 100644
+--- a/crates/sail-spark-connect/src/proto/data_type_arrow.rs
++++ b/crates/sail-spark-connect/src/proto/data_type_arrow.rs
+@@ -76,7 +76,12 @@ impl TryFrom<adt::Field> for sdt::StructField {
+         let udt_metadata = field.metadata().get(spec::SAIL_SPARK_UDT_METADATA_KEY);
+         let extension_type_name = field.extension_type_name();
+ 
+-        let data_type = if let Some(udt_metadata) = udt_metadata {
++        let data_type = if let Some(metadata) =
++            field.metadata().get(spec::SAIL_SPARK_TIME_METADATA_KEY)
++        {
++            let metadata = spec::SparkTimeMetadata::from_json(metadata)?;
++            spark_time_data_type(field.data_type(), metadata)?
++        } else if let Some(udt_metadata) = udt_metadata {
+             let udt_metadata: spec::SparkUdtMetadata = serde_json::from_str(udt_metadata)?;
+             DataType {
+                 kind: Some(sdt::Kind::Udt(Box::new(sdt::Udt {
+@@ -136,6 +141,23 @@ impl TryFrom<adt::Field> for sdt::StructField {
+     }
+ }
+ 
++fn spark_time_data_type(
++    arrow_type: &adt::DataType,
++    metadata: spec::SparkTimeMetadata,
++) -> SparkResult<DataType> {
++    if arrow_type != &adt::DataType::Time64(adt::TimeUnit::Nanosecond) {
++        return Err(SparkError::invalid(format!(
++            "Spark TIME metadata requires Arrow Time64(Nanosecond), found {arrow_type}"
++        )));
++    }
++    Ok(DataType {
++        kind: Some(sdt::Kind::Time(sdt::Time {
++            precision: Some(metadata.precision()),
++            type_variation_reference: 0,
++        })),
++    })
++}
++
+ fn spark_interval_data_type(
+     arrow_type: &adt::DataType,
+     metadata: spec::SparkIntervalMetadata,
+@@ -310,6 +332,10 @@ impl TryFrom<adt::DataType> for DataType {
+     }
+ }
+ 
++#[cfg(test)]
++#[path = "data_type_arrow_time_tests.rs"]
++mod time_tests;
++
+ #[cfg(test)]
+ mod tests {
+     use std::collections::HashMap;
+@@ -555,7 +581,7 @@ mod tests {
+         let arrow_type = adt::DataType::Time64(adt::TimeUnit::Millisecond);
+         assert!(DataType::try_from(arrow_type).is_err());
+ 
+-        // Time64 Nanosecond - valid Arrow but rejected by Spark (only precision 0, 3, 6 supported)
++        // Unannotated Time64(Nanosecond) lacks a supported declared Spark precision.
+         let arrow_type = adt::DataType::Time64(adt::TimeUnit::Nanosecond);
+         assert!(DataType::try_from(arrow_type).is_err());
+     }
+diff --git a/crates/sail-spark-connect/src/proto/data_type_arrow_time_tests.rs b/crates/sail-spark-connect/src/proto/data_type_arrow_time_tests.rs
+new file mode 100644
+index 000000000..d0c8abe2d
+--- /dev/null
++++ b/crates/sail-spark-connect/src/proto/data_type_arrow_time_tests.rs
+@@ -0,0 +1,204 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use super::*;
++
++fn time_field(name: &str, precision: i32, nullable: bool) -> SparkResult<adt::Field> {
++    Ok(adt::Field::new(
++        name,
++        adt::DataType::Time64(adt::TimeUnit::Nanosecond),
++        nullable,
++    )
++    .with_metadata(HashMap::from([(
++        spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++        spec::SparkTimeMetadata::try_new(precision)?.to_json()?,
++    )])))
++}
++
++fn spark_time(precision: i32) -> DataType {
++    DataType {
++        kind: Some(sdt::Kind::Time(sdt::Time {
++            precision: Some(precision),
++            type_variation_reference: 0,
++        })),
++    }
++}
++
++#[test]
++fn spark_time_metadata_controls_declared_precision_without_leaking() -> SparkResult<()> {
++    for precision in 0..=6 {
++        let field = time_field("clock", precision, false)?;
++        let proto = sdt::StructField::try_from(field)?;
++        assert_eq!(
++            proto,
++            sdt::StructField {
++                name: "clock".to_string(),
++                data_type: Some(spark_time(precision)),
++                nullable: false,
++                metadata: None,
++            }
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn spark_time_metadata_preserves_user_metadata() -> SparkResult<()> {
++    let mut field = time_field("clock", 2, true)?;
++    let metadata = field.metadata_mut();
++    metadata.insert(
++        spec::SPARK_METADATA_JSON_KEY.to_string(),
++        r#"{"comment":"wall clock","custom":7}"#.to_string(),
++    );
++    let proto = sdt::StructField::try_from(field)?;
++    assert_eq!(proto.data_type, Some(spark_time(2)));
++    assert_eq!(
++        proto.metadata.as_deref(),
++        Some(r#"{"comment":"wall clock","custom":7}"#)
++    );
++    Ok(())
++}
++
++#[test]
++fn spark_time_metadata_rejects_incompatible_arrow_storage() -> SparkResult<()> {
++    for data_type in [
++        adt::DataType::Int64,
++        adt::DataType::Time32(adt::TimeUnit::Second),
++        adt::DataType::Time32(adt::TimeUnit::Millisecond),
++        adt::DataType::Time64(adt::TimeUnit::Microsecond),
++        adt::DataType::Timestamp(adt::TimeUnit::Nanosecond, None),
++    ] {
++        let field = time_field("clock", 3, true)?.with_data_type(data_type);
++        assert!(sdt::StructField::try_from(field).is_err());
++    }
++    Ok(())
++}
++
++#[test]
++fn spark_time_metadata_rejects_invalid_json_and_precision() {
++    for metadata in [
++        "invalid",
++        "{}",
++        r#"{"precision":-1}"#,
++        r#"{"precision":7}"#,
++        r#"{"precision":"3"}"#,
++    ] {
++        let field = adt::Field::new(
++            "clock",
++            adt::DataType::Time64(adt::TimeUnit::Nanosecond),
++            true,
++        )
++        .with_metadata(HashMap::from([(
++            spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++            metadata.to_string(),
++        )]));
++        assert!(sdt::StructField::try_from(field).is_err(), "{metadata}");
++    }
++}
++
++#[test]
++fn spark_time_metadata_survives_all_list_field_conversions() -> SparkResult<()> {
++    let element = Arc::new(time_field("item", 1, false)?);
++    for data_type in [
++        adt::DataType::List(Arc::clone(&element)),
++        adt::DataType::LargeList(Arc::clone(&element)),
++        adt::DataType::FixedSizeList(Arc::clone(&element), 2),
++        adt::DataType::ListView(Arc::clone(&element)),
++        adt::DataType::LargeListView(Arc::clone(&element)),
++    ] {
++        let proto = sdt::StructField::try_from(adt::Field::new("clocks", data_type, true))?;
++        assert_eq!(
++            proto.data_type,
++            Some(DataType {
++                kind: Some(sdt::Kind::Array(Box::new(sdt::Array {
++                    element_type: Some(Box::new(spark_time(1))),
++                    contains_null: false,
++                    type_variation_reference: 0,
++                }))),
++            })
++        );
++        assert_eq!(proto.metadata, None);
++    }
++    Ok(())
++}
++
++#[test]
++fn spark_time_metadata_survives_nested_map_and_struct_fields() -> SparkResult<()> {
++    let inner = time_field("clock", 4, true)?;
++    let value = adt::Field::new("value", adt::DataType::Struct(vec![inner].into()), true);
++    let entries = adt::Field::new(
++        "entries",
++        adt::DataType::Struct(vec![time_field("key", 2, false)?, value].into()),
++        false,
++    );
++    let mapping = adt::Field::new(
++        "mapping",
++        adt::DataType::Map(Arc::new(entries), false),
++        true,
++    );
++    let root = adt::Field::new("root", adt::DataType::Struct(vec![mapping].into()), true);
++    let proto = sdt::StructField::try_from(root)?;
++    assert_eq!(
++        proto.data_type,
++        Some(DataType {
++            kind: Some(sdt::Kind::Struct(sdt::Struct {
++                fields: vec![sdt::StructField {
++                    name: "mapping".to_string(),
++                    data_type: Some(DataType {
++                        kind: Some(sdt::Kind::Map(Box::new(sdt::Map {
++                            key_type: Some(Box::new(spark_time(2))),
++                            value_type: Some(Box::new(DataType {
++                                kind: Some(sdt::Kind::Struct(sdt::Struct {
++                                    fields: vec![sdt::StructField {
++                                        name: "clock".to_string(),
++                                        data_type: Some(spark_time(4)),
++                                        nullable: true,
++                                        metadata: None,
++                                    }],
++                                    type_variation_reference: 0,
++                                })),
++                            })),
++                            value_contains_null: true,
++                            type_variation_reference: 0,
++                        }))),
++                    }),
++                    nullable: true,
++                    metadata: None,
++                }],
++                type_variation_reference: 0,
++            })),
++        })
++    );
++    assert_eq!(proto.metadata, None);
++    Ok(())
++}
++
++#[test]
++fn spark_time_metadata_invalid_nested_storage_is_not_ignored() -> SparkResult<()> {
++    let inner = time_field("item", 5, true)?
++        .with_data_type(adt::DataType::Time64(adt::TimeUnit::Microsecond));
++    let field = adt::Field::new("clocks", adt::DataType::List(Arc::new(inner)), true);
++    assert!(sdt::StructField::try_from(field).is_err());
++    Ok(())
++}
++
++#[test]
++fn spark_time_unannotated_field_conversion_is_unchanged() -> SparkResult<()> {
++    for (data_type, precision) in [
++        (adt::DataType::Time32(adt::TimeUnit::Second), 0),
++        (adt::DataType::Time32(adt::TimeUnit::Millisecond), 3),
++        (adt::DataType::Time64(adt::TimeUnit::Microsecond), 6),
++    ] {
++        let proto = sdt::StructField::try_from(adt::Field::new("clock", data_type, true))?;
++        assert_eq!(proto.data_type, Some(spark_time(precision)));
++    }
++    assert!(
++        sdt::StructField::try_from(adt::Field::new(
++            "clock",
++            adt::DataType::Time64(adt::TimeUnit::Nanosecond),
++            true,
++        ))
++        .is_err()
++    );
++    Ok(())
++}

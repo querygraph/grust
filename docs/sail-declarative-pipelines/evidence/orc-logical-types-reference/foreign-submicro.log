@@ -1,0 +1,99 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 12:52:09 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///tmp/sail-sdp-orc-bridge-reference/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+{
+  "name": "foreign_submicro",
+  "writer": "Apache ORC Java; ForeignSubmicro.java",
+  "fixture_path": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_submicro/foreign.orc",
+  "fixture_directory": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_submicro",
+  "session_timezone": "UTC",
+  "read_schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "name": "id",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "ts",
+        "type": "timestamp",
+        "nullable": true,
+        "metadata": {}
+      }
+    ]
+  },
+  "read_strings": [
+    {
+      "id": 0,
+      "ts": "2020-01-02 11:04:05.123456"
+    },
+    {
+      "id": 1,
+      "ts": "1970-01-01 07:59:58.123456"
+    },
+    {
+      "id": 2,
+      "ts": "1970-01-01 08:00:00"
+    },
+    {
+      "id": 3,
+      "ts": null
+    }
+  ],
+  "read_numeric": [
+    {
+      "id": 0,
+      "ts_micros": 1577963045123456
+    },
+    {
+      "id": 1,
+      "ts_micros": 28798123456
+    },
+    {
+      "id": 2,
+      "ts_micros": 28800000000
+    },
+    {
+      "id": 3,
+      "ts_micros": null
+    }
+  ],
+  "spark_arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+  "physical_arrow_schema": "id: int32\nts: timestamp[ns]",
+  "physical_arrow_rows": [
+    {
+      "id": 0,
+      "ts": "2020-01-02 03:04:05.123456789"
+    },
+    {
+      "id": 1,
+      "ts": "1969-12-31 23:59:58.123456789"
+    },
+    {
+      "id": 2,
+      "ts": "1970-01-01 00:00:00.000000001"
+    },
+    {
+      "id": 3,
+      "ts": null
+    }
+  ],
+  "physical_arrow_ts_nanos": [
+    1577934245123456789,
+    -1876543211,
+    1,
+    null
+  ],
+  "native_default_nanos_exitcode": 0,
+  "native_microseconds_decode": {
+    "outcome": "not executed",
+    "source_expected": "DecodeTimestamp error for nonmultiples of 1000 nanoseconds",
+    "reason": "Existing bounded executable fixes default nanosecond decoder; no cargo or repo edits authorized."
+  }
+}

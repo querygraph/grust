@@ -1,0 +1,710 @@
+commit 579c04b3aedefc007f09371894f01c90ef9e75c2
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 13:24:36 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 13:24:36 2026 -0700
+
+    feat: opt into checked timestamp precision truncation
+
+diff --git a/src/array_decoder/timestamp.rs b/src/array_decoder/timestamp.rs
+index acea885..3a074ea 100644
+--- a/src/array_decoder/timestamp.rs
++++ b/src/array_decoder/timestamp.rs
+@@ -42,6 +42,7 @@ use super::{
+     decimal::DecimalArrayDecoder, ArrayBatchDecoder, PresentDecoder, PrimitiveArrayDecoder,
+ };
+ use crate::error::UnsupportedTypeVariantSnafu;
++use crate::timestamp::TimestampReadOptions;
+ 
+ const NANOSECONDS_IN_SECOND: i128 = 1_000_000_000;
+ const NANOSECOND_DIGITS: i8 = 9;
+@@ -54,6 +55,7 @@ fn get_inner_timestamp_decoder<T: ArrowTimestampType + Send>(
+     column: &Column,
+     stripe: &Stripe,
+     seconds_since_unix_epoch: i64,
++    options: TimestampReadOptions,
+ ) -> PrimitiveArrayDecoder<T> {
+     let data = stripe.stream_map().get(column, Kind::Data);
+     let data = get_signed_int_decoder(data, column.rle_version());
+@@ -63,11 +65,9 @@ fn get_inner_timestamp_decoder<T: ArrowTimestampType + Send>(
+ 
+     let present = PresentDecoder::from_stripe(stripe, column);
+ 
+-    let iter = Box::new(TimestampDecoder::<T>::new(
+-        seconds_since_unix_epoch,
+-        data,
+-        secondary,
+-    ));
++    let iter = Box::new(
++        TimestampDecoder::<T>::new(seconds_since_unix_epoch, data, secondary).with_options(options),
++    );
+     PrimitiveArrayDecoder::<T>::new(iter, present)
+ }
+ 
+@@ -76,7 +76,12 @@ fn get_timestamp_decoder<T: ArrowTimestampType + Send>(
+     stripe: &Stripe,
+     seconds_since_unix_epoch: i64,
+ ) -> Box<dyn ArrayBatchDecoder> {
+-    let inner = get_inner_timestamp_decoder::<T>(column, stripe, seconds_since_unix_epoch);
++    let inner = get_inner_timestamp_decoder::<T>(
++        column,
++        stripe,
++        seconds_since_unix_epoch,
++        stripe.timestamp_read_options(),
++    );
+     match stripe.writer_tz() {
+         Some(writer_tz) => Box::new(TimestampOffsetArrayDecoder { inner, writer_tz }),
+         None => Box::new(inner),
+@@ -88,8 +93,12 @@ fn get_timestamp_instant_decoder<T: ArrowTimestampType + Send>(
+     stripe: &Stripe,
+ ) -> Box<dyn ArrayBatchDecoder> {
+     // TIMESTAMP_INSTANT is encoded as UTC so we don't check writer timezone in stripe
+-    let inner =
+-        get_inner_timestamp_decoder::<T>(column, stripe, ORC_EPOCH_UTC_SECONDS_SINCE_UNIX_EPOCH);
++    let inner = get_inner_timestamp_decoder::<T>(
++        column,
++        stripe,
++        ORC_EPOCH_UTC_SECONDS_SINCE_UNIX_EPOCH,
++        stripe.timestamp_read_options(),
++    );
+     Box::new(TimestampInstantArrayDecoder(inner))
+ }
+ 
+diff --git a/src/arrow_reader.rs b/src/arrow_reader.rs
+index bc6092a..253c217 100644
+--- a/src/arrow_reader.rs
++++ b/src/arrow_reader.rs
+@@ -35,6 +35,7 @@ use crate::row_group_filter::evaluate_predicate;
+ use crate::row_selection::RowSelection;
+ use crate::schema::{ArrowSchemaOptions, RootDataType, TimestampPrecision};
+ use crate::stripe::{Stripe, StripeMetadata};
++use crate::timestamp::TimestampReadOptions;
+ 
+ const DEFAULT_BATCH_SIZE: usize = 8192;
+ 
+@@ -47,6 +48,7 @@ pub struct ArrowReaderBuilder<R> {
+     pub(crate) file_byte_range: Option<Range<usize>>,
+     pub(crate) row_selection: Option<RowSelection>,
+     pub(crate) timestamp_precision: TimestampPrecision,
++    pub(crate) timestamp_read_options: TimestampReadOptions,
+     pub(crate) predicate: Option<Predicate>,
+ }
+ 
+@@ -65,6 +67,7 @@ impl<R> ArrowReaderBuilder<R> {
+             file_byte_range: None,
+             row_selection: None,
+             timestamp_precision: TimestampPrecision::default(),
++            timestamp_read_options: TimestampReadOptions::default(),
+             predicate: None,
+         }
+     }
+@@ -143,6 +146,12 @@ impl<R> ArrowReaderBuilder<R> {
+         self
+     }
+ 
++    /// Configure handling of fractional precision. The default rejects precision loss.
++    pub fn with_timestamp_read_options(mut self, options: TimestampReadOptions) -> Self {
++        self.timestamp_read_options = options;
++        self
++    }
++
+     /// Set a predicate for row group filtering
+     ///
+     /// The predicate will be evaluated against row group statistics to automatically
+@@ -228,6 +237,7 @@ impl<R: ChunkReader> ArrowReaderBuilder<R> {
+             file_metadata: self.file_metadata,
+             projected_data_type,
+             stripe_index: 0,
++            timestamp_read_options: self.timestamp_read_options,
+             file_byte_range: self.file_byte_range,
+         };
+         ArrowReader {
+@@ -363,6 +373,7 @@ pub(crate) struct Cursor<R> {
+     pub file_metadata: Arc<FileMetadata>,
+     pub projected_data_type: RootDataType,
+     pub stripe_index: usize,
++    pub timestamp_read_options: TimestampReadOptions,
+     pub file_byte_range: Option<Range<usize>>,
+ }
+ 
+@@ -398,7 +409,7 @@ impl<R: ChunkReader> Iterator for Cursor<R> {
+                     info,
+                 );
+                 self.stripe_index += 1;
+-                stripe
++                stripe.map(|stripe| stripe.with_timestamp_read_options(self.timestamp_read_options))
+             })
+     }
+ }
+diff --git a/src/async_arrow_reader.rs b/src/async_arrow_reader.rs
+index ff86719..9d5ac4f 100644
+--- a/src/async_arrow_reader.rs
++++ b/src/async_arrow_reader.rs
+@@ -103,6 +103,7 @@ impl<R: AsyncChunkReader + 'static> StripeFactory<R> {
+             info,
+         )
+         .await
++        .map(|stripe| stripe.with_timestamp_read_options(inner.timestamp_read_options))
+     }
+ 
+     /// Read the next stripe from the file.
+@@ -318,6 +319,7 @@ impl<R: AsyncChunkReader + 'static> ArrowReaderBuilder<R> {
+             file_metadata: self.file_metadata.clone(),
+             projected_data_type,
+             stripe_index: 0,
++            timestamp_read_options: self.timestamp_read_options,
+             file_byte_range: self.file_byte_range,
+         };
+         ArrowStreamReader::new(
+diff --git a/src/encoding/timestamp.rs b/src/encoding/timestamp.rs
+index 3d59e33..f6a07b6 100644
+--- a/src/encoding/timestamp.rs
++++ b/src/encoding/timestamp.rs
+@@ -124,6 +124,7 @@ pub struct TimestampDecoder<T: ArrowTimestampType> {
+     base_from_epoch: i64,
+     data: Box<dyn PrimitiveValueDecoder<i64> + Send>,
+     secondary: Box<dyn PrimitiveValueDecoder<i64> + Send>,
++    options: crate::timestamp::TimestampReadOptions,
+     _marker: PhantomData<T>,
+ }
+ 
+@@ -137,9 +138,15 @@ impl<T: ArrowTimestampType> TimestampDecoder<T> {
+             base_from_epoch,
+             data,
+             secondary,
++            options: Default::default(),
+             _marker: PhantomData,
+         }
+     }
++
++    pub(crate) fn with_options(mut self, options: crate::timestamp::TimestampReadOptions) -> Self {
++        self.options = options;
++        self
++    }
+ }
+ 
+ impl<T: ArrowTimestampType> PrimitiveValueDecoder<T::Native> for TimestampDecoder<T> {
+@@ -158,8 +165,16 @@ impl<T: ArrowTimestampType> PrimitiveValueDecoder<T::Native> for TimestampDecode
+         for (index, (&seconds_since_orc_base, &nanoseconds)) in
+             data.iter().zip(secondary.iter()).enumerate()
+         {
+-            out[index] =
+-                decode_timestamp::<T>(self.base_from_epoch, seconds_since_orc_base, nanoseconds)?;
++            out[index] = if self.options == crate::timestamp::TimestampReadOptions::default() {
++                decode_timestamp::<T>(self.base_from_epoch, seconds_since_orc_base, nanoseconds)?
++            } else {
++                self.options.decode(
++                    self.base_from_epoch,
++                    seconds_since_orc_base,
++                    nanoseconds,
++                    T::UNIT,
++                )?
++            };
+         }
+         Ok(())
+     }
+diff --git a/src/lib.rs b/src/lib.rs
+index 36476c4..2708ea7 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -72,6 +72,7 @@ pub mod row_selection;
+ pub mod schema;
+ pub mod statistics;
+ pub mod stripe;
++pub mod timestamp;
+ mod writer;
+ 
+ pub use arrow_reader::{ArrowReader, ArrowReaderBuilder};
+@@ -81,3 +82,4 @@ pub use async_arrow_reader::ArrowStreamReader;
+ pub use predicate::{ComparisonOp, Predicate, PredicateValue};
+ pub use row_selection::{RowSelection, RowSelector};
+ pub use schema::{ArrowSchemaOptions, TimestampPrecision};
++pub use timestamp::{TimestampPrecisionLoss, TimestampReadOptions};
+diff --git a/src/stripe.rs b/src/stripe.rs
+index 57b2e9e..8f27c34 100644
+--- a/src/stripe.rs
++++ b/src/stripe.rs
+@@ -122,6 +122,7 @@ pub struct Stripe {
+     stream_map: StreamMap,
+     number_of_rows: usize,
+     tz: Option<chrono_tz::Tz>,
++    timestamp_read_options: crate::timestamp::TimestampReadOptions,
+ }
+ 
+ impl Stripe {
+@@ -178,6 +179,7 @@ impl Stripe {
+             },
+             number_of_rows: info.number_of_rows() as usize,
+             tz,
++            timestamp_read_options: Default::default(),
+         })
+     }
+ 
+@@ -241,6 +243,7 @@ impl Stripe {
+             },
+             number_of_rows: info.number_of_rows() as usize,
+             tz,
++            timestamp_read_options: Default::default(),
+         })
+     }
+ 
+@@ -248,6 +251,18 @@ impl Stripe {
+         self.number_of_rows
+     }
+ 
++    pub(crate) fn with_timestamp_read_options(
++        mut self,
++        options: crate::timestamp::TimestampReadOptions,
++    ) -> Self {
++        self.timestamp_read_options = options;
++        self
++    }
++
++    pub(crate) fn timestamp_read_options(&self) -> crate::timestamp::TimestampReadOptions {
++        self.timestamp_read_options
++    }
++
+     pub fn stream_map(&self) -> &StreamMap {
+         &self.stream_map
+     }
+diff --git a/src/timestamp.rs b/src/timestamp.rs
+new file mode 100644
+index 0000000..1dbe2f6
+--- /dev/null
++++ b/src/timestamp.rs
+@@ -0,0 +1,120 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++//! Opt-in handling of timestamp precision loss.
++
++use arrow::datatypes::TimeUnit;
++use snafu::ensure;
++
++use crate::error::{OutOfSpecSnafu, Result};
++
++/// Handling of fractional digits that the requested Arrow unit cannot retain.
++#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
++pub enum TimestampPrecisionLoss {
++    /// Reject values that cannot be represented exactly (the existing default).
++    #[default]
++    Error,
++    /// Discard fractional digits, rounding negative instants toward negative infinity.
++    Truncate,
++}
++
++/// Optional precision handling for ORC timestamp readers.
++///
++/// The default rejects fractional digits that the requested Arrow unit cannot
++/// retain. Truncation uses checked wide arithmetic before narrowing the result;
++/// it does not impose the range of a nanosecond timestamp on microsecond reads.
++#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
++pub struct TimestampReadOptions {
++    precision_loss: TimestampPrecisionLoss,
++}
++
++impl TimestampReadOptions {
++    pub fn new() -> Self {
++        Self::default()
++    }
++
++    pub fn with_precision_loss(mut self, precision_loss: TimestampPrecisionLoss) -> Self {
++        self.precision_loss = precision_loss;
++        self
++    }
++
++    pub fn precision_loss(&self) -> TimestampPrecisionLoss {
++        self.precision_loss
++    }
++
++    pub(crate) fn decode(
++        self,
++        base: i64,
++        encoded_seconds: i64,
++        encoded_nanos: i64,
++        unit: TimeUnit,
++    ) -> Result<i64> {
++        let encoded_nanos = u64::try_from(encoded_nanos).map_err(|_| invalid("negative nanos"))?;
++        let zeros = encoded_nanos & 7;
++        let nanos = (encoded_nanos >> 3)
++            .checked_mul(if zeros == 0 {
++                1
++            } else {
++                10_u64.pow(zeros as u32 + 1)
++            })
++            .ok_or_else(|| invalid("nanosecond expansion overflow"))?;
++        ensure!(
++            nanos < 1_000_000_000,
++            OutOfSpecSnafu {
++                msg: "timestamp nanos exceed one second"
++            }
++        );
++        let mut seconds = i128::from(base) + i128::from(encoded_seconds);
++        // Preserve the Java ORC/ORC-763 decoding rule, including its epoch-edge behavior.
++        if seconds < 0 && nanos > 999_999 {
++            seconds -= 1;
++        }
++        let value = seconds
++            .checked_mul(1_000_000_000)
++            .and_then(|x| x.checked_add(i128::from(nanos)))
++            .ok_or_else(|| invalid("timestamp expansion overflow"))?;
++        self.convert(value, unit)
++    }
++
++    fn convert(self, nanos: i128, unit: TimeUnit) -> Result<i64> {
++        let divisor = match unit {
++            TimeUnit::Second => 1_000_000_000,
++            TimeUnit::Millisecond => 1_000_000,
++            TimeUnit::Microsecond => 1_000,
++            TimeUnit::Nanosecond => 1,
++        };
++        ensure!(
++            self.precision_loss == TimestampPrecisionLoss::Truncate || nanos % divisor == 0,
++            OutOfSpecSnafu {
++                msg: format!("timestamp loses precision at {unit:?}")
++            }
++        );
++        i64::try_from(nanos.div_euclid(divisor))
++            .map_err(|_| invalid("timestamp exceeds requested Arrow unit range"))
++    }
++}
++
++fn invalid(message: &str) -> crate::error::OrcError {
++    OutOfSpecSnafu {
++        msg: message.to_owned(),
++    }
++    .build()
++}
++
++#[cfg(test)]
++#[path = "timestamp_tests.rs"]
++mod tests;
+diff --git a/src/timestamp_tests.rs b/src/timestamp_tests.rs
+new file mode 100644
+index 0000000..67208a2
+--- /dev/null
++++ b/src/timestamp_tests.rs
+@@ -0,0 +1,84 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use super::*;
++
++fn options() -> TimestampReadOptions {
++    TimestampReadOptions::new().with_precision_loss(TimestampPrecisionLoss::Truncate)
++}
++
++#[test]
++fn default_options_keep_strict_precision() {
++    let options = TimestampReadOptions::default();
++    assert_eq!(options.precision_loss(), TimestampPrecisionLoss::Error);
++    for nanos in [1, -1, 1_876_543_211, -1_876_543_211] {
++        assert!(options.convert(nanos, TimeUnit::Microsecond).is_err());
++    }
++    assert_eq!(options.convert(-1_000, TimeUnit::Microsecond).unwrap(), -1);
++}
++
++#[test]
++fn fractional_truncation_floors_negative_instants() {
++    for (nanos, micros) in [
++        (1, 0),
++        (-1, -1),
++        (1_876_543_211, 1_876_543),
++        (-1_876_543_211, -1_876_544),
++    ] {
++        assert_eq!(
++            options().convert(nanos, TimeUnit::Microsecond).unwrap(),
++            micros
++        );
++    }
++}
++
++#[test]
++fn microsecond_range_is_not_limited_to_nanosecond_or_chrono_range() {
++    for micros in [
++        i64::MIN,
++        -62_135_596_800_000_000,
++        253_402_300_799_999_999,
++        i64::MAX,
++    ] {
++        assert_eq!(
++            options()
++                .convert(i128::from(micros) * 1_000, TimeUnit::Microsecond)
++                .unwrap(),
++            micros
++        );
++    }
++    assert!(options()
++        .convert((i128::from(i64::MAX) + 1) * 1_000, TimeUnit::Microsecond)
++        .is_err());
++}
++
++#[test]
++fn checked_decoder_retains_orc_epoch_edge_and_rejects_invalid_nanos() {
++    // ORC cannot distinguish this encoded positive value from the historical
++    // -1 microsecond writer case. Do not silently repair already-written files.
++    assert_eq!(
++        options()
++            .decode(0, 0, 999_999_000 << 3, TimeUnit::Microsecond)
++            .unwrap(),
++        999_999
++    );
++    for nanos in [-1, 1_000_000_000_i64 << 3, i64::MAX] {
++        assert!(options()
++            .decode(0, 0, nanos, TimeUnit::Microsecond)
++            .is_err());
++    }
++}
+diff --git a/tests/integration/data/timestamp_options/ForeignSubmicro.java b/tests/integration/data/timestamp_options/ForeignSubmicro.java
+new file mode 100644
+index 0000000..a670690
+--- /dev/null
++++ b/tests/integration/data/timestamp_options/ForeignSubmicro.java
+@@ -0,0 +1,27 @@
++import java.sql.Timestamp;
++import org.apache.hadoop.conf.Configuration;
++import org.apache.hadoop.fs.Path;
++import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
++import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
++import org.apache.orc.OrcFile;
++import org.apache.orc.TypeDescription;
++
++public class ForeignSubmicro {
++  public static void main(String[] args) throws Exception {
++    java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"));
++    var schema = TypeDescription.fromString("struct<id:int,ts:timestamp>");
++    try (var writer = OrcFile.createWriter(new Path(args[0]), OrcFile.writerOptions(new Configuration()).setSchema(schema).overwrite(true))) {
++      var batch = schema.createRowBatch();
++      String[] values = {"2020-01-02 03:04:05.123456789", "1969-12-31 23:59:58.123456789", "1970-01-01 00:00:00.000000001"};
++      for (int i = 0; i < values.length; i++) {
++        ((LongColumnVector)batch.cols[0]).vector[i] = i;
++        ((TimestampColumnVector)batch.cols[1]).set(i, Timestamp.valueOf(values[i]));
++      }
++      ((LongColumnVector)batch.cols[0]).vector[3] = 3;
++      batch.cols[1].noNulls = false;
++      batch.cols[1].isNull[3] = true;
++      batch.size = 4;
++      writer.addRowBatch(batch);
++    }
++  }
++}
+diff --git a/tests/integration/data/timestamp_options/foreign_submicro.orc b/tests/integration/data/timestamp_options/foreign_submicro.orc
+new file mode 100644
+index 0000000000000000000000000000000000000000..162692e8a37e683e1bf3f0a7125e8b3a851004b1
+GIT binary patch
+literal 392
+zcmeYdau#G@;9?VE;a~}1&;~MvxtJLk7=(B@ScKR(7zEfPcmfy#f#PahTtIOs5R%|v
+z_7aj<DXY-7W!>R7(Hhr2NE-lg03#;@!vSUnCRPT9{|{st7|NK0F3$H_=_$jw(o_0B
+zSitID#tIMy8pSagWH$$!0D}ZKm}Zoa0Mkqo+CZ97fKh@SNHYj9Nw9+XOcH`Xnia?w
+z6k_6F0AeN(mSPSKan1yqWyA&c2Nxf*>m%5?q;NSmLj5|>8O#Ew8Kt;@l%Is2f{zA^
+z5+4VT5ECPl6jNr36jMpD5)%hA5OW%^Sb@#ALNnhAkNFN0{5%*U7?W6y^o;ckIPwHo
+ZB^nw8l$aQJG|UY+o4znJ`v*CT0{|pbMa}>K
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/integration/data/timestamp_options/provenance.json b/tests/integration/data/timestamp_options/provenance.json
+new file mode 100644
+index 0000000..10c0f44
+--- /dev/null
++++ b/tests/integration/data/timestamp_options/provenance.json
+@@ -0,0 +1,45 @@
++{
++  "spark_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
++  "orc_rust_before": "91910faa90e70587655e40788495a8a936fdf8fe",
++  "java_orc_version": "2.3.0",
++  "spark_writer_jvm_timezone": "America/Los_Angeles",
++  "foreign_writer_jvm_timezone": "UTC",
++  "reader_jvm_timezone": "America/Los_Angeles",
++  "limitations": [
++    "Precision tests exercise native decoding; complete Spark historical calendar parity is not claimed."
++  ],
++  "fixtures": [
++    {
++      "file": "foreign_submicro.orc",
++      "sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
++      "writer": "Apache ORC Java; ForeignSubmicro.java",
++      "source_sql": null,
++      "sql_session_timezone": "UTC",
++      "source_numeric": null,
++      "expected_spark_read_numeric": [
++        {
++          "id": 0,
++          "ts_micros": 1577963045123456
++        },
++        {
++          "id": 1,
++          "ts_micros": 28798123456
++        },
++        {
++          "id": 2,
++          "ts_micros": 28800000000
++        },
++        {
++          "id": 3,
++          "ts_micros": null
++        }
++      ],
++      "physical_nanos": [
++        1577934245123456789,
++        -1876543211,
++        1,
++        null
++      ]
++    }
++  ]
++}
+diff --git a/tests/timestamp_precision.rs b/tests/timestamp_precision.rs
+new file mode 100644
+index 0000000..622e6f1
+--- /dev/null
++++ b/tests/timestamp_precision.rs
+@@ -0,0 +1,120 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::sync::Arc;
++
++use arrow::{
++    array::{Array, RecordBatch, TimestampMicrosecondArray},
++    datatypes::{Field, Schema},
++};
++use bytes::Bytes;
++use orc_rust::{
++    ArrowReaderBuilder, ArrowWriterBuilder, TimestampPrecision, TimestampPrecisionLoss,
++    TimestampReadOptions,
++};
++
++const FOREIGN: &[u8] = include_bytes!("integration/data/timestamp_options/foreign_submicro.orc");
++
++fn options() -> TimestampReadOptions {
++    TimestampReadOptions::new().with_precision_loss(TimestampPrecisionLoss::Truncate)
++}
++
++fn values(batches: &[RecordBatch]) -> Vec<Option<i64>> {
++    batches
++        .iter()
++        .flat_map(|batch| {
++            batch
++                .column_by_name("ts")
++                .unwrap()
++                .as_any()
++                .downcast_ref::<TimestampMicrosecondArray>()
++                .unwrap()
++                .iter()
++                .collect::<Vec<_>>()
++        })
++        .collect()
++}
++
++#[test]
++fn foreign_submicroseconds_are_strict_by_default_and_can_be_truncated() {
++    let builder = || {
++        ArrowReaderBuilder::try_new(Bytes::from_static(FOREIGN))
++            .unwrap()
++            .with_timestamp_precision(TimestampPrecision::Microsecond)
++            .with_batch_size(2)
++    };
++    assert!(builder().build().collect::<Result<Vec<_>, _>>().is_err());
++    let batches = builder()
++        .with_timestamp_read_options(options())
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert_eq!(
++        values(&batches),
++        vec![Some(1_577_934_245_123_456), Some(-1_876_544), Some(0), None]
++    );
++}
++
++#[test]
++fn microsecond_instants_retain_year_one_and_year_9999() {
++    let expected = vec![
++        Some(-62_135_596_800_000_000),
++        Some(253_402_300_799_999_999),
++        None,
++    ];
++    let array = TimestampMicrosecondArray::from(expected.clone()).with_timezone("UTC");
++    let schema = Arc::new(Schema::new(vec![Field::new(
++        "ts",
++        array.data_type().clone(),
++        true,
++    )]));
++    let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(array)]).unwrap();
++    let mut encoded = Vec::new();
++    let mut writer = ArrowWriterBuilder::new(&mut encoded, schema)
++        .try_build()
++        .unwrap();
++    writer.write(&batch).unwrap();
++    writer.close().unwrap();
++    let batches = ArrowReaderBuilder::try_new(Bytes::from(encoded))
++        .unwrap()
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_timestamp_read_options(options())
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert_eq!(values(&batches), expected);
++}
++
++#[cfg(feature = "async")]
++#[tokio::test]
++async fn async_reader_propagates_precision_options() {
++    use futures::TryStreamExt;
++    let batches = ArrowReaderBuilder::try_new_async(std::io::Cursor::new(FOREIGN))
++        .await
++        .unwrap()
++        .with_batch_size(2)
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_timestamp_read_options(options())
++        .build_async()
++        .try_collect::<Vec<_>>()
++        .await
++        .unwrap();
++    assert_eq!(
++        values(&batches),
++        vec![Some(1_577_934_245_123_456), Some(-1_876_544), Some(0), None]
++    );
++}

@@ -1,0 +1,72 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 12:48:26 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///tmp/sail-sdp-orc-bridge-reference/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+Traceback (most recent call last):
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 144, in <module>
+    run('daytime_time_nested', '''SELECT 0 AS id, INTERVAL '-2 03:04:05.123456' DAY TO SECOND AS dt,
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 91, in run
+    stage(case, 'source_collect', lambda: rows(frame))
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 45, in stage
+    save()
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 33, in save
+    (ROOT / 'expected.json').write_text(json.dumps(report, indent=2, default=str) + '\n')
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 377, in _iterencode_dict
+    raise TypeError(f'keys must be str, int, float, bool or None, '
+TypeError: keys must be str, int, float, bool or None, not time
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 165, in <module>
+    save()
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 33, in save
+    (ROOT / 'expected.json').write_text(json.dumps(report, indent=2, default=str) + '\n')
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/json/encoder.py", line 377, in _iterencode_dict
+    raise TypeError(f'keys must be str, int, float, bool or None, '
+TypeError: keys must be str, int, float, bool or None, not time

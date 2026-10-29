@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 35, in stage
+    value = fn()
+            ^^^^
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 84, in <lambda>
+    stage(case, 'source_collect', lambda: rows(frame))
+                                          ^^^^^^^^^^^
+  File "/private/tmp/sail-sdp-orc-bridge-reference/generate.py", line 46, in rows
+    return [row.asDict(recursive=True) for row in frame.collect()]
+                                                  ^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py", line 1958, in collect
+    schema2 = from_arrow_schema(table.schema, prefer_timestamp_ntz=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/pandas/types.py", line 481, in from_arrow_schema
+    from_arrow_type(field.type, prefer_timestamp_ntz),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/pandas/types.py", line 465, in from_arrow_type
+    raise PySparkTypeError(
+pyspark.errors.exceptions.base.PySparkTypeError: [UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] month_interval is not supported in conversion to Arrow.

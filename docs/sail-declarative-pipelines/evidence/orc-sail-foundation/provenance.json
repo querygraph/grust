@@ -1,0 +1,105 @@
+{
+  "recorded_at": "2026-10-29T20:26:20.348575+00:00",
+  "units": [
+    {
+      "label": "time-metadata",
+      "commit": "661232601eaee13171db5e53648b9724901b3570",
+      "base": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+      "library_test_counts": [
+        16,
+        49
+      ],
+      "receipt": "time-metadata/gate.json"
+    },
+    {
+      "label": "orc-object-reader",
+      "commit": "69ff1a8e31091afe16b38ffcb5e504bcd912cdda",
+      "base": "661232601eaee13171db5e53648b9724901b3570",
+      "library_test_counts": [
+        93
+      ],
+      "receipt": "orc-object-reader/gate.json"
+    }
+  ],
+  "files": [
+    {
+      "path": "lock-audit.json",
+      "bytes": 4081,
+      "sha256": "ca7cb2c267948656074d8acc6dae192fc3d02760b1ce84f24a2d1b2546c34b5d"
+    },
+    {
+      "path": "orc-object-reader/candidate.json",
+      "bytes": 414,
+      "sha256": "96b9aba86fa8c219d083a67d6f62859cdfd0da78f5115a5aed12b02ef5429d34"
+    },
+    {
+      "path": "orc-object-reader/clippy.log",
+      "bytes": 6911,
+      "sha256": "cbb557c649c171d80549eb4a6368ab40edfd004d923ddf970ed0cd59d649e3a7"
+    },
+    {
+      "path": "orc-object-reader/commit.patch",
+      "bytes": 26579,
+      "sha256": "18ca478032dfd803d273f32e46744c1b9fa1fd3275c39343ba2ba6f88bd6c097"
+    },
+    {
+      "path": "orc-object-reader/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "orc-object-reader/gate.json",
+      "bytes": 1531,
+      "sha256": "df2901632e1384b364e7175bdb29c56a49d783978272ef1252bc72afcc64a77b"
+    },
+    {
+      "path": "orc-object-reader/rust.log",
+      "bytes": 14122,
+      "sha256": "f0069395cab7134042e70dd2c44e9d16cc0ce8d6d1d26e8a895452a108fb6e42"
+    },
+    {
+      "path": "remaining-type-boundaries.json",
+      "bytes": 7464,
+      "sha256": "5bb79c59fea595312f27d15cc3ede0fc25783b0d00017a135f23ad8836e8235e"
+    },
+    {
+      "path": "time-metadata/candidate.json",
+      "bytes": 350,
+      "sha256": "1676859ac299ab8d1996d66174ce1b020d667dec94836a97d18b44ff27f8e444"
+    },
+    {
+      "path": "time-metadata/clippy.log",
+      "bytes": 18610,
+      "sha256": "4cdc2267759e9d12d67779e9791bbce0dfd6943b888a065450c650c9d3059bf6"
+    },
+    {
+      "path": "time-metadata/commit.patch",
+      "bytes": 13982,
+      "sha256": "b632e885cfe17de042a2c5b73a5ba88ad878e3122f07b77b0486da07075158bc"
+    },
+    {
+      "path": "time-metadata/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "time-metadata/gate.json",
+      "bytes": 1657,
+      "sha256": "7e4325e52fff50a57d43facf320a06c63f77c09db2a0b6637cee0f088d0d8b9b"
+    },
+    {
+      "path": "time-metadata/rust.log",
+      "bytes": 19983,
+      "sha256": "20b2936cfad60ec8d7a32dae31b19069dd6741bce4dd303f05d1120a6a30e2aa"
+    }
+  ],
+  "spark_reference": "../orc-logical-types-reference/provenance.json",
+  "scope": "Isolated Sail field metadata and ORC object-range reader; no format registration or CLI/SDP runtime qualification.",
+  "limitations": [
+    "No new public Python, distributed source/codec or ORC writer tests.",
+    "TIME inbound/schema/literal/cast conversion remains incomplete.",
+    "Native TIMESTAMP reader-timezone and submicrosecond policies are in separate pending dependency work.",
+    "Range buffers do not yet participate in Sail memory-pool accounting.",
+    "Local ETag consistency relies on the object-store contract; no snapshot guarantee against out-of-band metadata-preserving rewrites."
+  ]
+}

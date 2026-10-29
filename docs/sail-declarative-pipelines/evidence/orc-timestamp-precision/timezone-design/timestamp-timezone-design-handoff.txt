@@ -1,0 +1,85 @@
+ORC timestamp reader timezone: pending design checkpoint
+
+Status
+The independent opt-in checked-precision unit is frozen in the native working
+tree while root gates candidate 579c04b. No reader-timezone behavior is enabled
+by that unit. The formatted, unbuilt timezone prototype and its additional
+fixtures are preserved under /tmp/sail-sdp-orc-timestamp-units/full. Do not apply
+that prototype as qualified Java timezone compatibility: its chrono-tz offset
+lookups have the historical and future differences documented below.
+
+Reproduction and provenance
+Spark source: 617618396087429b5627a86ce933bb0f5d6645cb.
+Native source before precision work: 91910faa90e70587655e40788495a8a936fdf8fe.
+Oracle: Java 20.0.2, java.util.TimeZone tzdb 2023c, Apache ORC 2.3.0 from the
+installed PySpark 4.2.1 distribution. HistoricalTimezone.java invokes the actual
+SerializationUtils.convertBetweenTimezones method. Results are in
+historical-timezone-java.json. The adjacent handoff JSON records SHA-256 hashes
+for source, results, javap evidence, the ORC jar and chrono-tz source excerpt.
+This is a Java conversion probe, not a new Spark ORC file-read acceptance run.
+
+Exact conversion contract
+For original decoded epoch milliseconds t:
+  w = writer.getOffset(t)
+  r = reader.getOffset(t)
+  candidate = t + w - r
+  adjustment = w - reader.getOffset(candidate)
+  output = t + adjustment
+Keep the submillisecond remainder through checked i128 arithmetic, then narrow
+with div_euclid for requested fractional truncation. Never reconstruct a naive
+local datetime: it loses the choice of instant at a DST fold. Same-zone input
+must preserve both 2020-11-01 08:30Z and 09:30Z for America/Los_Angeles.
+An absent writer timezone falls back to the explicit reader timezone in Java
+ORC; TIMESTAMP_INSTANT bypasses writer-to-reader conversion. Arrow display
+timezone and SQL session timezone do not select this reader timezone.
+
+Measured oracle cases
+UTC -> America/Los_Angeles, input 0001-01-01 00:00Z: output 0001-01-01 08:00Z.
+UTC -> America/Los_Angeles, input 1800-01-01 00:00Z: output 1800-01-01 08:00Z.
+America/Los_Angeles -> UTC subtracts eight hours for those two input instants.
+Java TimeZone returns -28800 seconds there; java.time ZoneRules reports -28378.
+chrono-tz 0.10.4 also stores Los Angeles's initial LMT offset as -28378 seconds.
+Thus a direct chrono lookup differs by seven minutes and two seconds.
+UTC -> America/Los_Angeles, input 2020-03-08 02:30Z: output 09:30Z (gap case).
+UTC -> America/Los_Angeles, input 2020-11-01 01:30Z: output 08:30Z (fold case).
+UTC -> America/Los_Angeles, input 2100-07-01 00:00Z: output 07:00Z.
+UTC -> America/Los_Angeles, input 9999-07-01 00:00Z: output 07:00Z.
+The December 9999 case uses an eight-hour adjustment; it cannot establish summer
+DST behavior. Same-zone conversions remain identity for all these dates.
+
+Why the databases differ
+java-zone-info-file-javap.txt: ZoneInfoFile.getZoneInfo selects the last standard
+offset as raw offset, drops transitions before UTC1900 (-2208988800 seconds),
+and builds later recurring rules. java-zone-info-javap.txt: ZoneInfo.getOffsets
+returns getLastRawOffset before its first transition and consults SimpleTimeZone
+last rules beyond the transition array. The raw offset is not historical LMT.
+chrono-tz 0.10.4's Los Angeles arm starts at timezones.rs line 16869; the archived
+excerpt supplies its complete span. It starts with LMT, lists finite transitions
+through timestamp 4097206800 (2099-11), then retains the last PST span. It does
+not provide Java's continuing summer DST from that finite table. Runtime tzdb
+versions also differ; a compatibility claim must identify both rulesets.
+
+Portable implementation options for the next design checkpoint
+1. A small native offset-provider boundary backed by a pinned Java-compatible
+   rule representation: standard offsets, transition bounds and recurring last
+   rules. Implement Java's early raw-offset fallback and future recurrence
+   explicitly, and retain oracle matrices for aliases, odd offsets and DST.
+2. Reuse a portable TZif/POSIX-rule engine with future recurrence, then add and
+   test the Java-specific compatibility behavior. Full IANA support alone does
+   not establish Java TimeZone behavior; database provenance and historical
+   fallback remain explicit. Evaluate footprint and existing Sail dependencies
+   before choosing or extracting an implementation.
+3. A temporary, fail-closed admission boundary for unqualified cross-zone dates
+   could preserve same-zone wide-range reads while rejecting affected inputs.
+   A 1900..2099 guard is only a tentative engineering boundary, not a proof of
+   parity for every zone or tzdb version. No guard has been implemented or
+   approved. It needs the announced design checkpoint and explicit limitations.
+
+Required acceptance before enabling the timezone mode
+Keep precision tests independent. Add actual Java/Spark oracle coverage for
+pre-1900 and post-2099 cross-zone dates, both DST-fold instants, spring gaps,
+absent writer timezone, TIMESTAMP_INSTANT invariance, nested nulls and sync/async
+reads. Preserve old native defaults. Capture the reader's IANA timezone once
+on the driver and serialize it to workers; presentation timezone remains
+independent. Historical Julian/Gregorian calendar rebasing is a separate parity
+obligation and is not solved by correcting timezone offsets.

@@ -11118,3 +11118,15 @@ User requested a fresh Fable review response appended as Astra Ultra. Read the c
 ## 2026-10-29T20:05:46.183747+00:00 — DONE Fable response and implementation readiness
 
 Appended 164 lines to SDP-FABLE-DESIGN-REVIEW.md, preserving all 121424 preceding bytes. Source audit captures 13 immutable Sail/Spark/Iggy source files and exact excerpts: first-ack Iggy retention and reservation gaps, actual Delta transaction expiry, Iceberg receipt propagation, key-only CDC drift and prepared-input recovery. The response separates adopted architectural amendments from open design choices and records concrete acceptance gates. Detached document/link/JSON/source-prefix checks must pass before the conditional branch advance. No runtime test or streaming/CDC implementation claim; existing Sail ORC drafts untouched.
+
+## 2026-10-29T20:13:46.691506+00:00 — ACK resume shared ORC integration
+
+Previous goal turn made progress: Fable response3e75abd9 committed after detached document/source gates. Resuming batch at Sail4c5d5861d with existing TIME metadata/schema/reader drafts. Isolating declared TIME metadata and immutable object-range reader into separate gated commits; native timestamp reader policy must match Java/Spark before the schema bridge is registered. Disk exhaustion resolved by removing only1604 old duplicate rlib/rmeta files from our Sail gate (5.95GB; manifest retained). Existing CLI services and unrelated checkouts preserved. No new streaming/CDC phase.
+
+## 2026-10-29T20:26:20.348575+00:00 — DONE Sail TIME metadata and object-range reader units
+
+Sail661232601e passed common16/Connect49 and 69ff1a8e31 passed data-source93; both immutable detached fmt/strict Clippy/library gates passed before conditional advance. Eight added dependency packages preserve all existing package versions/edges except required prost disambiguation. Archived10Spark ORC fixtures/11cases and15pinnedsourceexcerpts with all preliminary failures. Shared inbound TIME and native timestamp timezone/precision remain explicit next units. No ORC registration, CLI rebuild, new SDP count or streaming/CDC phase. Documentation integrity gate precedes branch advance.
+
+## 2026-10-29T20:31:30.032608+00:00 — DONE checked timestamp precision and vendor update
+
+Native579c04b3ae independently gated default293pass8ignored/no-default186pass/fmt/strictClippy; Sail4f7a642b71 vendors exact66hashedfiles, keeps lock unchanged and passes data-source93/fmt/strictClippy. Archived raw gates/patches/fixture and Java historical/future timezone oracle. The second timezone unit is held outside repositories for the next announced Astra design checkpoint; no range-guard compromise or implicitUTC-relabel adopted. The full goal remains active; native precision and object-reader success do not qualify Sail ORC runtime.

@@ -1,0 +1,4989 @@
+Compiled from "SerializationUtils.java"
+public final class org.apache.orc.impl.SerializationUtils {
+  private static final org.slf4j.Logger LOG;
+
+  private static final int BUFFER_SIZE;
+
+  private final byte[] readBuffer;
+
+  private final byte[] writeBuffer;
+
+  private final int[] histBuffer;
+
+  public org.apache.orc.impl.SerializationUtils();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: bipush        32
+       7: newarray       int
+       9: putfield      #7                  // Field histBuffer:[I
+      12: aload_0
+      13: bipush        64
+      15: newarray       byte
+      17: putfield      #13                 // Field readBuffer:[B
+      20: aload_0
+      21: bipush        64
+      23: newarray       byte
+      25: putfield      #17                 // Field writeBuffer:[B
+      28: return
+
+  public void writeVulong(java.io.OutputStream, long) throws java.io.IOException;
+    Code:
+       0: iconst_0
+       1: istore        4
+       3: lload_2
+       4: ldc2_w        #20                 // long -128l
+       7: land
+       8: lconst_0
+       9: lcmp
+      10: ifne          29
+      13: aload_0
+      14: getfield      #17                 // Field writeBuffer:[B
+      17: iload         4
+      19: iinc          4, 1
+      22: lload_2
+      23: l2i
+      24: i2b
+      25: bastore
+      26: goto          58
+      29: aload_0
+      30: getfield      #17                 // Field writeBuffer:[B
+      33: iload         4
+      35: iinc          4, 1
+      38: ldc2_w        #22                 // long 128l
+      41: lload_2
+      42: ldc2_w        #24                 // long 127l
+      45: land
+      46: lor
+      47: l2i
+      48: i2b
+      49: bastore
+      50: lload_2
+      51: bipush        7
+      53: lushr
+      54: lstore_2
+      55: goto          3
+      58: aload_1
+      59: aload_0
+      60: getfield      #17                 // Field writeBuffer:[B
+      63: iconst_0
+      64: iload         4
+      66: invokevirtual #26                 // Method java/io/OutputStream.write:([BII)V
+      69: return
+
+  public void writeVslong(java.io.OutputStream, long) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: lload_2
+       3: iconst_1
+       4: lshl
+       5: lload_2
+       6: bipush        63
+       8: lshr
+       9: lxor
+      10: invokevirtual #32                 // Method writeVulong:(Ljava/io/OutputStream;J)V
+      13: return
+
+  public static long readVulong(java.io.InputStream) throws java.io.IOException;
+    Code:
+       0: lconst_0
+       1: lstore_1
+       2: iconst_0
+       3: istore        5
+       5: aload_0
+       6: invokevirtual #36                 // Method java/io/InputStream.read:()I
+       9: i2l
+      10: lstore_3
+      11: lload_3
+      12: ldc2_w        #42                 // long -1l
+      15: lcmp
+      16: ifne          29
+      19: new           #44                 // class java/io/EOFException
+      22: dup
+      23: ldc           #46                 // String Reading Vulong past EOF
+      25: invokespecial #48                 // Method java/io/EOFException."<init>":(Ljava/lang/String;)V
+      28: athrow
+      29: lload_1
+      30: ldc2_w        #24                 // long 127l
+      33: lload_3
+      34: land
+      35: iload         5
+      37: lshl
+      38: lor
+      39: lstore_1
+      40: iinc          5, 7
+      43: lload_3
+      44: ldc2_w        #22                 // long 128l
+      47: lcmp
+      48: ifge          5
+      51: lload_1
+      52: lreturn
+
+  public static long readVslong(java.io.InputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokestatic  #51                 // Method readVulong:(Ljava/io/InputStream;)J
+       4: lstore_1
+       5: lload_1
+       6: iconst_1
+       7: lushr
+       8: lload_1
+       9: lconst_1
+      10: land
+      11: lneg
+      12: lxor
+      13: lreturn
+
+  public float readFloat(java.io.InputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_0
+       3: getfield      #13                 // Field readBuffer:[B
+       6: iconst_4
+       7: invokevirtual #55                 // Method readFully:(Ljava/io/InputStream;[BI)V
+      10: aload_0
+      11: getfield      #13                 // Field readBuffer:[B
+      14: iconst_0
+      15: baload
+      16: sipush        255
+      19: iand
+      20: iconst_0
+      21: ishl
+      22: aload_0
+      23: getfield      #13                 // Field readBuffer:[B
+      26: iconst_1
+      27: baload
+      28: sipush        255
+      31: iand
+      32: bipush        8
+      34: ishl
+      35: iadd
+      36: aload_0
+      37: getfield      #13                 // Field readBuffer:[B
+      40: iconst_2
+      41: baload
+      42: sipush        255
+      45: iand
+      46: bipush        16
+      48: ishl
+      49: iadd
+      50: aload_0
+      51: getfield      #13                 // Field readBuffer:[B
+      54: iconst_3
+      55: baload
+      56: sipush        255
+      59: iand
+      60: bipush        24
+      62: ishl
+      63: iadd
+      64: istore_2
+      65: iload_2
+      66: invokestatic  #59                 // Method java/lang/Float.intBitsToFloat:(I)F
+      69: freturn
+
+  public void skipFloat(java.io.InputStream, int) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: iload_2
+       2: i2l
+       3: ldc2_w        #65                 // long 4l
+       6: lmul
+       7: invokevirtual #67                 // Method java/io/InputStream.skipNBytes:(J)V
+      10: return
+
+  public void writeFloat(java.io.OutputStream, float) throws java.io.IOException;
+    Code:
+       0: fload_2
+       1: invokestatic  #71                 // Method java/lang/Float.floatToIntBits:(F)I
+       4: istore_3
+       5: aload_0
+       6: getfield      #17                 // Field writeBuffer:[B
+       9: iconst_0
+      10: iload_3
+      11: iconst_0
+      12: ishr
+      13: sipush        255
+      16: iand
+      17: i2b
+      18: bastore
+      19: aload_0
+      20: getfield      #17                 // Field writeBuffer:[B
+      23: iconst_1
+      24: iload_3
+      25: bipush        8
+      27: ishr
+      28: sipush        255
+      31: iand
+      32: i2b
+      33: bastore
+      34: aload_0
+      35: getfield      #17                 // Field writeBuffer:[B
+      38: iconst_2
+      39: iload_3
+      40: bipush        16
+      42: ishr
+      43: sipush        255
+      46: iand
+      47: i2b
+      48: bastore
+      49: aload_0
+      50: getfield      #17                 // Field writeBuffer:[B
+      53: iconst_3
+      54: iload_3
+      55: bipush        24
+      57: ishr
+      58: sipush        255
+      61: iand
+      62: i2b
+      63: bastore
+      64: aload_1
+      65: aload_0
+      66: getfield      #17                 // Field writeBuffer:[B
+      69: iconst_0
+      70: iconst_4
+      71: invokevirtual #26                 // Method java/io/OutputStream.write:([BII)V
+      74: return
+
+  public double readDouble(java.io.InputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokevirtual #75                 // Method readLongLE:(Ljava/io/InputStream;)J
+       5: invokestatic  #78                 // Method java/lang/Double.longBitsToDouble:(J)D
+       8: dreturn
+
+  public long readLongLE(java.io.InputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_0
+       3: getfield      #13                 // Field readBuffer:[B
+       6: bipush        8
+       8: invokevirtual #55                 // Method readFully:(Ljava/io/InputStream;[BI)V
+      11: aload_0
+      12: getfield      #13                 // Field readBuffer:[B
+      15: iconst_0
+      16: baload
+      17: sipush        255
+      20: iand
+      21: iconst_0
+      22: ishl
+      23: aload_0
+      24: getfield      #13                 // Field readBuffer:[B
+      27: iconst_1
+      28: baload
+      29: sipush        255
+      32: iand
+      33: bipush        8
+      35: ishl
+      36: iadd
+      37: aload_0
+      38: getfield      #13                 // Field readBuffer:[B
+      41: iconst_2
+      42: baload
+      43: sipush        255
+      46: iand
+      47: bipush        16
+      49: ishl
+      50: iadd
+      51: i2l
+      52: aload_0
+      53: getfield      #13                 // Field readBuffer:[B
+      56: iconst_3
+      57: baload
+      58: sipush        255
+      61: iand
+      62: i2l
+      63: bipush        24
+      65: lshl
+      66: ladd
+      67: aload_0
+      68: getfield      #13                 // Field readBuffer:[B
+      71: iconst_4
+      72: baload
+      73: sipush        255
+      76: iand
+      77: i2l
+      78: bipush        32
+      80: lshl
+      81: ladd
+      82: aload_0
+      83: getfield      #13                 // Field readBuffer:[B
+      86: iconst_5
+      87: baload
+      88: sipush        255
+      91: iand
+      92: i2l
+      93: bipush        40
+      95: lshl
+      96: ladd
+      97: aload_0
+      98: getfield      #13                 // Field readBuffer:[B
+     101: bipush        6
+     103: baload
+     104: sipush        255
+     107: iand
+     108: i2l
+     109: bipush        48
+     111: lshl
+     112: ladd
+     113: aload_0
+     114: getfield      #13                 // Field readBuffer:[B
+     117: bipush        7
+     119: baload
+     120: sipush        255
+     123: iand
+     124: i2l
+     125: bipush        56
+     127: lshl
+     128: ladd
+     129: lreturn
+
+  private void readFully(java.io.InputStream, byte[], int) throws java.io.IOException;
+    Code:
+       0: iconst_0
+       1: istore        4
+       3: aload_1
+       4: aload_2
+       5: iload         4
+       7: iload_3
+       8: invokevirtual #84                 // Method java/io/InputStream.read:([BII)I
+      11: istore        5
+      13: iload         5
+      15: iload_3
+      16: if_icmpne     20
+      19: return
+      20: iload         5
+      22: ifge          42
+      25: new           #44                 // class java/io/EOFException
+      28: dup
+      29: aload_1
+      30: invokestatic  #87                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      33: invokedynamic #93,  0             // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      38: invokespecial #48                 // Method java/io/EOFException."<init>":(Ljava/lang/String;)V
+      41: athrow
+      42: iload         4
+      44: iload         5
+      46: iadd
+      47: istore        4
+      49: iload_3
+      50: iload         5
+      52: isub
+      53: istore_3
+      54: goto          3
+
+  public void skipDouble(java.io.InputStream, int) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: iload_2
+       2: i2l
+       3: ldc2_w        #97                 // long 8l
+       6: lmul
+       7: invokevirtual #67                 // Method java/io/InputStream.skipNBytes:(J)V
+      10: return
+
+  public void writeDouble(java.io.OutputStream, double) throws java.io.IOException;
+    Code:
+       0: dload_2
+       1: invokestatic  #99                 // Method java/lang/Double.doubleToLongBits:(D)J
+       4: lstore        4
+       6: lload         4
+       8: ldc2_w        #42                 // long -1l
+      11: land
+      12: l2i
+      13: istore        6
+      15: lload         4
+      17: bipush        32
+      19: lushr
+      20: ldc2_w        #42                 // long -1l
+      23: land
+      24: l2i
+      25: istore        7
+      27: aload_0
+      28: getfield      #17                 // Field writeBuffer:[B
+      31: iconst_0
+      32: iload         6
+      34: i2b
+      35: bastore
+      36: aload_0
+      37: getfield      #17                 // Field writeBuffer:[B
+      40: iconst_4
+      41: iload         7
+      43: i2b
+      44: bastore
+      45: aload_0
+      46: getfield      #17                 // Field writeBuffer:[B
+      49: iconst_5
+      50: iload         7
+      52: bipush        8
+      54: iushr
+      55: i2b
+      56: bastore
+      57: aload_0
+      58: getfield      #17                 // Field writeBuffer:[B
+      61: iconst_1
+      62: iload         6
+      64: bipush        8
+      66: iushr
+      67: i2b
+      68: bastore
+      69: aload_0
+      70: getfield      #17                 // Field writeBuffer:[B
+      73: iconst_2
+      74: iload         6
+      76: bipush        16
+      78: iushr
+      79: i2b
+      80: bastore
+      81: aload_0
+      82: getfield      #17                 // Field writeBuffer:[B
+      85: bipush        6
+      87: iload         7
+      89: bipush        16
+      91: iushr
+      92: i2b
+      93: bastore
+      94: aload_0
+      95: getfield      #17                 // Field writeBuffer:[B
+      98: bipush        7
+     100: iload         7
+     102: bipush        24
+     104: iushr
+     105: i2b
+     106: bastore
+     107: aload_0
+     108: getfield      #17                 // Field writeBuffer:[B
+     111: iconst_3
+     112: iload         6
+     114: bipush        24
+     116: iushr
+     117: i2b
+     118: bastore
+     119: aload_1
+     120: aload_0
+     121: getfield      #17                 // Field writeBuffer:[B
+     124: iconst_0
+     125: bipush        8
+     127: invokevirtual #26                 // Method java/io/OutputStream.write:([BII)V
+     130: return
+
+  public static void writeBigInteger(java.io.OutputStream, java.math.BigInteger) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: iconst_1
+       2: invokevirtual #103                // Method java/math/BigInteger.shiftLeft:(I)Ljava/math/BigInteger;
+       5: astore_1
+       6: aload_1
+       7: invokevirtual #109                // Method java/math/BigInteger.signum:()I
+      10: istore_2
+      11: iload_2
+      12: ifge          28
+      15: aload_1
+      16: invokevirtual #112                // Method java/math/BigInteger.negate:()Ljava/math/BigInteger;
+      19: astore_1
+      20: aload_1
+      21: getstatic     #116                // Field java/math/BigInteger.ONE:Ljava/math/BigInteger;
+      24: invokevirtual #120                // Method java/math/BigInteger.subtract:(Ljava/math/BigInteger;)Ljava/math/BigInteger;
+      27: astore_1
+      28: aload_1
+      29: invokevirtual #124                // Method java/math/BigInteger.bitLength:()I
+      32: istore_3
+      33: aload_1
+      34: invokevirtual #127                // Method java/math/BigInteger.longValue:()J
+      37: ldc2_w        #131                // long 9223372036854775807l
+      40: land
+      41: lstore        4
+      43: iinc          3, -63
+      46: iconst_0
+      47: istore        6
+      49: iload         6
+      51: bipush        9
+      53: if_icmpge     109
+      56: iload_3
+      57: ifgt          80
+      60: lload         4
+      62: ldc2_w        #20                 // long -128l
+      65: land
+      66: lconst_0
+      67: lcmp
+      68: ifne          80
+      71: aload_0
+      72: lload         4
+      74: l2i
+      75: i2b
+      76: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+      79: return
+      80: aload_0
+      81: ldc2_w        #22                 // long 128l
+      84: lload         4
+      86: ldc2_w        #24                 // long 127l
+      89: land
+      90: lor
+      91: l2i
+      92: i2b
+      93: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+      96: lload         4
+      98: bipush        7
+     100: lushr
+     101: lstore        4
+     103: iinc          6, 1
+     106: goto          49
+     109: aload_1
+     110: bipush        63
+     112: invokevirtual #136                // Method java/math/BigInteger.shiftRight:(I)Ljava/math/BigInteger;
+     115: astore_1
+     116: goto          33
+
+  public static java.math.BigInteger readBigInteger(java.io.InputStream) throws java.io.IOException;
+    Code:
+       0: getstatic     #139                // Field java/math/BigInteger.ZERO:Ljava/math/BigInteger;
+       3: astore_1
+       4: lconst_0
+       5: lstore_2
+       6: iconst_0
+       7: istore        4
+       9: aload_0
+      10: invokevirtual #36                 // Method java/io/InputStream.read:()I
+      13: i2l
+      14: lstore        5
+      16: lload         5
+      18: ldc2_w        #42                 // long -1l
+      21: lcmp
+      22: ifne          42
+      25: new           #44                 // class java/io/EOFException
+      28: dup
+      29: aload_0
+      30: invokestatic  #87                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      33: invokedynamic #142,  0            // InvokeDynamic #1:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      38: invokespecial #48                 // Method java/io/EOFException."<init>":(Ljava/lang/String;)V
+      41: athrow
+      42: lload_2
+      43: ldc2_w        #24                 // long 127l
+      46: lload         5
+      48: land
+      49: iload         4
+      51: bipush        63
+      53: irem
+      54: lshl
+      55: lor
+      56: lstore_2
+      57: iinc          4, 7
+      60: iload         4
+      62: bipush        63
+      64: if_icmpne     77
+      67: lload_2
+      68: invokestatic  #143                // Method java/math/BigInteger.valueOf:(J)Ljava/math/BigInteger;
+      71: astore_1
+      72: lconst_0
+      73: lstore_2
+      74: goto          104
+      77: iload         4
+      79: bipush        63
+      81: irem
+      82: ifne          104
+      85: aload_1
+      86: lload_2
+      87: invokestatic  #143                // Method java/math/BigInteger.valueOf:(J)Ljava/math/BigInteger;
+      90: iload         4
+      92: bipush        63
+      94: isub
+      95: invokevirtual #103                // Method java/math/BigInteger.shiftLeft:(I)Ljava/math/BigInteger;
+      98: invokevirtual #146                // Method java/math/BigInteger.or:(Ljava/math/BigInteger;)Ljava/math/BigInteger;
+     101: astore_1
+     102: lconst_0
+     103: lstore_2
+     104: lload         5
+     106: ldc2_w        #22                 // long 128l
+     109: lcmp
+     110: ifge          9
+     113: lload_2
+     114: lconst_0
+     115: lcmp
+     116: ifeq          139
+     119: aload_1
+     120: lload_2
+     121: invokestatic  #143                // Method java/math/BigInteger.valueOf:(J)Ljava/math/BigInteger;
+     124: iload         4
+     126: bipush        63
+     128: idiv
+     129: bipush        63
+     131: imul
+     132: invokevirtual #103                // Method java/math/BigInteger.shiftLeft:(I)Ljava/math/BigInteger;
+     135: invokevirtual #146                // Method java/math/BigInteger.or:(Ljava/math/BigInteger;)Ljava/math/BigInteger;
+     138: astore_1
+     139: aload_1
+     140: iconst_0
+     141: invokevirtual #149                // Method java/math/BigInteger.testBit:(I)Z
+     144: istore        7
+     146: iload         7
+     148: ifeq          164
+     151: aload_1
+     152: getstatic     #116                // Field java/math/BigInteger.ONE:Ljava/math/BigInteger;
+     155: invokevirtual #153                // Method java/math/BigInteger.add:(Ljava/math/BigInteger;)Ljava/math/BigInteger;
+     158: astore_1
+     159: aload_1
+     160: invokevirtual #112                // Method java/math/BigInteger.negate:()Ljava/math/BigInteger;
+     163: astore_1
+     164: aload_1
+     165: iconst_1
+     166: invokevirtual #136                // Method java/math/BigInteger.shiftRight:(I)Ljava/math/BigInteger;
+     169: astore_1
+     170: aload_1
+     171: areturn
+
+  public int findClosestNumBits(long);
+    Code:
+       0: aload_0
+       1: aload_0
+       2: lload_1
+       3: invokevirtual #156                // Method findNumBits:(J)I
+       6: invokevirtual #160                // Method getClosestFixedBits:(I)I
+       9: ireturn
+
+  private int findNumBits(long);
+    Code:
+       0: bipush        64
+       2: lload_1
+       3: invokestatic  #164                // Method java/lang/Long.numberOfLeadingZeros:(J)I
+       6: isub
+       7: ireturn
+
+  public long zigzagEncode(long);
+    Code:
+       0: lload_1
+       1: iconst_1
+       2: lshl
+       3: lload_1
+       4: bipush        63
+       6: lshr
+       7: lxor
+       8: lreturn
+
+  public long zigzagDecode(long);
+    Code:
+       0: lload_1
+       1: iconst_1
+       2: lushr
+       3: lload_1
+       4: lconst_1
+       5: land
+       6: lneg
+       7: lxor
+       8: lreturn
+
+  public int percentileBits(long[], int, int, double);
+    Code:
+       0: dload         4
+       2: dconst_1
+       3: dcmpl
+       4: ifgt          14
+       7: dload         4
+       9: dconst_0
+      10: dcmpg
+      11: ifgt          16
+      14: iconst_m1
+      15: ireturn
+      16: aload_0
+      17: getfield      #7                  // Field histBuffer:[I
+      20: iconst_0
+      21: invokestatic  #169                // Method java/util/Arrays.fill:([II)V
+      24: iload_2
+      25: istore        6
+      27: iload         6
+      29: iload_2
+      30: iload_3
+      31: iadd
+      32: if_icmpge     66
+      35: aload_0
+      36: aload_0
+      37: aload_1
+      38: iload         6
+      40: laload
+      41: invokevirtual #156                // Method findNumBits:(J)I
+      44: invokevirtual #175                // Method encodeBitWidth:(I)I
+      47: istore        7
+      49: aload_0
+      50: getfield      #7                  // Field histBuffer:[I
+      53: iload         7
+      55: dup2
+      56: iaload
+      57: iconst_1
+      58: iadd
+      59: iastore
+      60: iinc          6, 1
+      63: goto          27
+      66: iload_3
+      67: i2d
+      68: dconst_1
+      69: dload         4
+      71: dsub
+      72: dmul
+      73: d2i
+      74: istore        6
+      76: aload_0
+      77: getfield      #7                  // Field histBuffer:[I
+      80: arraylength
+      81: iconst_1
+      82: isub
+      83: istore        7
+      85: iload         7
+      87: iflt          119
+      90: iload         6
+      92: aload_0
+      93: getfield      #7                  // Field histBuffer:[I
+      96: iload         7
+      98: iaload
+      99: isub
+     100: istore        6
+     102: iload         6
+     104: ifge          113
+     107: iload         7
+     109: invokestatic  #178                // Method decodeBitWidth:(I)I
+     112: ireturn
+     113: iinc          7, -1
+     116: goto          85
+     119: iconst_0
+     120: ireturn
+
+  public long bytesToLongBE(org.apache.orc.impl.InStream, int) throws java.io.IOException;
+    Code:
+       0: lconst_0
+       1: lstore_3
+       2: lconst_0
+       3: lstore        5
+       5: iload_2
+       6: ifle          32
+       9: iinc          2, -1
+      12: aload_1
+      13: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+      16: i2l
+      17: lstore        5
+      19: lload_3
+      20: lload         5
+      22: iload_2
+      23: bipush        8
+      25: imul
+      26: lshl
+      27: lor
+      28: lstore_3
+      29: goto          5
+      32: lload_3
+      33: lreturn
+
+  int getTotalBytesRequired(int, int);
+    Code:
+       0: iload_1
+       1: iload_2
+       2: imul
+       3: bipush        7
+       5: iadd
+       6: bipush        8
+       8: idiv
+       9: ireturn
+
+  public int getClosestFixedBits(int);
+    Code:
+       0: iload_1
+       1: ifne          6
+       4: iconst_1
+       5: ireturn
+       6: iload_1
+       7: bipush        24
+       9: if_icmpgt     14
+      12: iload_1
+      13: ireturn
+      14: iload_1
+      15: bipush        26
+      17: if_icmpgt     23
+      20: bipush        26
+      22: ireturn
+      23: iload_1
+      24: bipush        28
+      26: if_icmpgt     32
+      29: bipush        28
+      31: ireturn
+      32: iload_1
+      33: bipush        30
+      35: if_icmpgt     41
+      38: bipush        30
+      40: ireturn
+      41: iload_1
+      42: bipush        32
+      44: if_icmpgt     50
+      47: bipush        32
+      49: ireturn
+      50: iload_1
+      51: bipush        40
+      53: if_icmpgt     59
+      56: bipush        40
+      58: ireturn
+      59: iload_1
+      60: bipush        48
+      62: if_icmpgt     68
+      65: bipush        48
+      67: ireturn
+      68: iload_1
+      69: bipush        56
+      71: if_icmpgt     77
+      74: bipush        56
+      76: ireturn
+      77: bipush        64
+      79: ireturn
+
+  public int getClosestAlignedFixedBits(int);
+    Code:
+       0: iload_1
+       1: ifeq          9
+       4: iload_1
+       5: iconst_1
+       6: if_icmpne     11
+       9: iconst_1
+      10: ireturn
+      11: iload_1
+      12: iconst_1
+      13: if_icmple     23
+      16: iload_1
+      17: iconst_2
+      18: if_icmpgt     23
+      21: iconst_2
+      22: ireturn
+      23: iload_1
+      24: iconst_2
+      25: if_icmple     35
+      28: iload_1
+      29: iconst_4
+      30: if_icmpgt     35
+      33: iconst_4
+      34: ireturn
+      35: iload_1
+      36: iconst_4
+      37: if_icmple     49
+      40: iload_1
+      41: bipush        8
+      43: if_icmpgt     49
+      46: bipush        8
+      48: ireturn
+      49: iload_1
+      50: bipush        8
+      52: if_icmple     64
+      55: iload_1
+      56: bipush        16
+      58: if_icmpgt     64
+      61: bipush        16
+      63: ireturn
+      64: iload_1
+      65: bipush        16
+      67: if_icmple     79
+      70: iload_1
+      71: bipush        24
+      73: if_icmpgt     79
+      76: bipush        24
+      78: ireturn
+      79: iload_1
+      80: bipush        24
+      82: if_icmple     94
+      85: iload_1
+      86: bipush        32
+      88: if_icmpgt     94
+      91: bipush        32
+      93: ireturn
+      94: iload_1
+      95: bipush        32
+      97: if_icmple     109
+     100: iload_1
+     101: bipush        40
+     103: if_icmpgt     109
+     106: bipush        40
+     108: ireturn
+     109: iload_1
+     110: bipush        40
+     112: if_icmple     124
+     115: iload_1
+     116: bipush        48
+     118: if_icmpgt     124
+     121: bipush        48
+     123: ireturn
+     124: iload_1
+     125: bipush        48
+     127: if_icmple     139
+     130: iload_1
+     131: bipush        56
+     133: if_icmpgt     139
+     136: bipush        56
+     138: ireturn
+     139: bipush        64
+     141: ireturn
+
+  public int encodeBitWidth(int);
+    Code:
+       0: aload_0
+       1: iload_1
+       2: invokevirtual #160                // Method getClosestFixedBits:(I)I
+       5: istore_1
+       6: iload_1
+       7: iconst_1
+       8: if_icmplt     21
+      11: iload_1
+      12: bipush        24
+      14: if_icmpgt     21
+      17: iload_1
+      18: iconst_1
+      19: isub
+      20: ireturn
+      21: iload_1
+      22: bipush        26
+      24: if_icmpgt     34
+      27: getstatic     #184                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.TWENTYSIX:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      30: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      33: ireturn
+      34: iload_1
+      35: bipush        28
+      37: if_icmpgt     47
+      40: getstatic     #193                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.TWENTYEIGHT:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      43: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      46: ireturn
+      47: iload_1
+      48: bipush        30
+      50: if_icmpgt     60
+      53: getstatic     #196                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.THIRTY:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      56: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      59: ireturn
+      60: iload_1
+      61: bipush        32
+      63: if_icmpgt     73
+      66: getstatic     #199                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.THIRTYTWO:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      69: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      72: ireturn
+      73: iload_1
+      74: bipush        40
+      76: if_icmpgt     86
+      79: getstatic     #202                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.FORTY:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      82: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      85: ireturn
+      86: iload_1
+      87: bipush        48
+      89: if_icmpgt     99
+      92: getstatic     #205                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.FORTYEIGHT:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      95: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      98: ireturn
+      99: iload_1
+     100: bipush        56
+     102: if_icmpgt     112
+     105: getstatic     #208                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.FIFTYSIX:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+     108: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+     111: ireturn
+     112: getstatic     #211                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.SIXTYFOUR:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+     115: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+     118: ireturn
+
+  public static int decodeBitWidth(int);
+    Code:
+       0: iload_0
+       1: getstatic     #214                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.ONE:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+       4: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+       7: if_icmplt     24
+      10: iload_0
+      11: getstatic     #216                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.TWENTYFOUR:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      14: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      17: if_icmpgt     24
+      20: iload_0
+      21: iconst_1
+      22: iadd
+      23: ireturn
+      24: iload_0
+      25: getstatic     #184                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.TWENTYSIX:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      28: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      31: if_icmpne     37
+      34: bipush        26
+      36: ireturn
+      37: iload_0
+      38: getstatic     #193                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.TWENTYEIGHT:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      41: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      44: if_icmpne     50
+      47: bipush        28
+      49: ireturn
+      50: iload_0
+      51: getstatic     #196                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.THIRTY:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      54: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      57: if_icmpne     63
+      60: bipush        30
+      62: ireturn
+      63: iload_0
+      64: getstatic     #199                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.THIRTYTWO:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      67: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      70: if_icmpne     76
+      73: bipush        32
+      75: ireturn
+      76: iload_0
+      77: getstatic     #202                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.FORTY:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      80: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      83: if_icmpne     89
+      86: bipush        40
+      88: ireturn
+      89: iload_0
+      90: getstatic     #205                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.FORTYEIGHT:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+      93: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+      96: if_icmpne     102
+      99: bipush        48
+     101: ireturn
+     102: iload_0
+     103: getstatic     #208                // Field org/apache/orc/impl/SerializationUtils$FixedBitSizes.FIFTYSIX:Lorg/apache/orc/impl/SerializationUtils$FixedBitSizes;
+     106: invokevirtual #190                // Method org/apache/orc/impl/SerializationUtils$FixedBitSizes.ordinal:()I
+     109: if_icmpne     115
+     112: bipush        56
+     114: ireturn
+     115: bipush        64
+     117: ireturn
+
+  public void writeInts(long[], int, int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: ifnull        25
+       4: aload_1
+       5: arraylength
+       6: iconst_1
+       7: if_icmplt     25
+      10: iload_2
+      11: iflt          25
+      14: iload_3
+      15: iconst_1
+      16: if_icmplt     25
+      19: iload         4
+      21: iconst_1
+      22: if_icmpge     26
+      25: return
+      26: iload         4
+      28: lookupswitch  { // 11
+                     1: 128
+                     2: 138
+                     4: 148
+                     8: 158
+                    16: 168
+                    24: 178
+                    32: 188
+                    40: 198
+                    48: 208
+                    56: 218
+                    64: 228
+               default: 238
+          }
+     128: aload_0
+     129: aload_1
+     130: iload_2
+     131: iload_3
+     132: aload         5
+     134: invokevirtual #219                // Method unrolledBitPack1:([JIILjava/io/OutputStream;)V
+     137: return
+     138: aload_0
+     139: aload_1
+     140: iload_2
+     141: iload_3
+     142: aload         5
+     144: invokevirtual #223                // Method unrolledBitPack2:([JIILjava/io/OutputStream;)V
+     147: return
+     148: aload_0
+     149: aload_1
+     150: iload_2
+     151: iload_3
+     152: aload         5
+     154: invokevirtual #226                // Method unrolledBitPack4:([JIILjava/io/OutputStream;)V
+     157: return
+     158: aload_0
+     159: aload_1
+     160: iload_2
+     161: iload_3
+     162: aload         5
+     164: invokevirtual #229                // Method unrolledBitPack8:([JIILjava/io/OutputStream;)V
+     167: return
+     168: aload_0
+     169: aload_1
+     170: iload_2
+     171: iload_3
+     172: aload         5
+     174: invokevirtual #232                // Method unrolledBitPack16:([JIILjava/io/OutputStream;)V
+     177: return
+     178: aload_0
+     179: aload_1
+     180: iload_2
+     181: iload_3
+     182: aload         5
+     184: invokevirtual #235                // Method unrolledBitPack24:([JIILjava/io/OutputStream;)V
+     187: return
+     188: aload_0
+     189: aload_1
+     190: iload_2
+     191: iload_3
+     192: aload         5
+     194: invokevirtual #238                // Method unrolledBitPack32:([JIILjava/io/OutputStream;)V
+     197: return
+     198: aload_0
+     199: aload_1
+     200: iload_2
+     201: iload_3
+     202: aload         5
+     204: invokevirtual #241                // Method unrolledBitPack40:([JIILjava/io/OutputStream;)V
+     207: return
+     208: aload_0
+     209: aload_1
+     210: iload_2
+     211: iload_3
+     212: aload         5
+     214: invokevirtual #244                // Method unrolledBitPack48:([JIILjava/io/OutputStream;)V
+     217: return
+     218: aload_0
+     219: aload_1
+     220: iload_2
+     221: iload_3
+     222: aload         5
+     224: invokevirtual #247                // Method unrolledBitPack56:([JIILjava/io/OutputStream;)V
+     227: return
+     228: aload_0
+     229: aload_1
+     230: iload_2
+     231: iload_3
+     232: aload         5
+     234: invokevirtual #250                // Method unrolledBitPack64:([JIILjava/io/OutputStream;)V
+     237: return
+     238: bipush        8
+     240: istore        6
+     242: iconst_0
+     243: istore        7
+     245: iload_2
+     246: istore        8
+     248: iload         8
+     250: iload_2
+     251: iload_3
+     252: iadd
+     253: if_icmpge     369
+     256: aload_1
+     257: iload         8
+     259: laload
+     260: lstore        9
+     262: iload         4
+     264: istore        11
+     266: iload         11
+     268: iload         6
+     270: if_icmple     324
+     273: iload         7
+     275: i2l
+     276: lload         9
+     278: iload         11
+     280: iload         6
+     282: isub
+     283: lushr
+     284: lor
+     285: l2i
+     286: i2b
+     287: istore        7
+     289: iload         11
+     291: iload         6
+     293: isub
+     294: istore        11
+     296: lload         9
+     298: lconst_1
+     299: iload         11
+     301: lshl
+     302: lconst_1
+     303: lsub
+     304: land
+     305: lstore        9
+     307: aload         5
+     309: iload         7
+     311: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+     314: iconst_0
+     315: istore        7
+     317: bipush        8
+     319: istore        6
+     321: goto          266
+     324: iload         6
+     326: iload         11
+     328: isub
+     329: istore        6
+     331: iload         7
+     333: i2l
+     334: lload         9
+     336: iload         6
+     338: lshl
+     339: lor
+     340: l2i
+     341: i2b
+     342: istore        7
+     344: iload         6
+     346: ifne          363
+     349: aload         5
+     351: iload         7
+     353: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+     356: iconst_0
+     357: istore        7
+     359: bipush        8
+     361: istore        6
+     363: iinc          8, 1
+     366: goto          248
+     369: iload         6
+     371: bipush        8
+     373: if_icmpeq     390
+     376: aload         5
+     378: iload         7
+     380: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+     383: iconst_0
+     384: istore        7
+     386: bipush        8
+     388: istore        6
+     390: return
+
+  private void unrolledBitPack1(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: bipush        8
+       2: istore        5
+       4: iload_3
+       5: bipush        8
+       7: irem
+       8: istore        6
+      10: iload_2
+      11: iload_3
+      12: iadd
+      13: istore        7
+      15: iload         7
+      17: iload         6
+      19: isub
+      20: istore        8
+      22: iconst_0
+      23: istore        9
+      25: iload_2
+      26: istore        10
+      28: iload         10
+      30: iload         8
+      32: if_icmpge     149
+      35: iload         9
+      37: i2l
+      38: aload_1
+      39: iload         10
+      41: laload
+      42: lconst_1
+      43: land
+      44: bipush        7
+      46: lshl
+      47: lor
+      48: aload_1
+      49: iload         10
+      51: iconst_1
+      52: iadd
+      53: laload
+      54: lconst_1
+      55: land
+      56: bipush        6
+      58: lshl
+      59: lor
+      60: aload_1
+      61: iload         10
+      63: iconst_2
+      64: iadd
+      65: laload
+      66: lconst_1
+      67: land
+      68: iconst_5
+      69: lshl
+      70: lor
+      71: aload_1
+      72: iload         10
+      74: iconst_3
+      75: iadd
+      76: laload
+      77: lconst_1
+      78: land
+      79: iconst_4
+      80: lshl
+      81: lor
+      82: aload_1
+      83: iload         10
+      85: iconst_4
+      86: iadd
+      87: laload
+      88: lconst_1
+      89: land
+      90: iconst_3
+      91: lshl
+      92: lor
+      93: aload_1
+      94: iload         10
+      96: iconst_5
+      97: iadd
+      98: laload
+      99: lconst_1
+     100: land
+     101: iconst_2
+     102: lshl
+     103: lor
+     104: aload_1
+     105: iload         10
+     107: bipush        6
+     109: iadd
+     110: laload
+     111: lconst_1
+     112: land
+     113: iconst_1
+     114: lshl
+     115: lor
+     116: aload_1
+     117: iload         10
+     119: bipush        7
+     121: iadd
+     122: laload
+     123: lconst_1
+     124: land
+     125: lor
+     126: l2i
+     127: istore        9
+     129: aload         4
+     131: iload         9
+     133: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+     136: iconst_0
+     137: istore        9
+     139: iload         10
+     141: bipush        8
+     143: iadd
+     144: istore        10
+     146: goto          28
+     149: iload         6
+     151: ifle          201
+     154: bipush        7
+     156: istore        10
+     158: iload         8
+     160: istore        11
+     162: iload         11
+     164: iload         7
+     166: if_icmpge     194
+     169: iload         9
+     171: i2l
+     172: aload_1
+     173: iload         11
+     175: laload
+     176: lconst_1
+     177: land
+     178: iload         10
+     180: lshl
+     181: lor
+     182: l2i
+     183: istore        9
+     185: iinc          10, -1
+     188: iinc          11, 1
+     191: goto          162
+     194: aload         4
+     196: iload         9
+     198: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+     201: return
+
+  private void unrolledBitPack2(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: iconst_4
+       1: istore        5
+       3: iload_3
+       4: iconst_4
+       5: irem
+       6: istore        6
+       8: iload_2
+       9: iload_3
+      10: iadd
+      11: istore        7
+      13: iload         7
+      15: iload         6
+      17: isub
+      18: istore        8
+      20: iconst_0
+      21: istore        9
+      23: iload_2
+      24: istore        10
+      26: iload         10
+      28: iload         8
+      30: if_icmpge     107
+      33: iload         9
+      35: i2l
+      36: aload_1
+      37: iload         10
+      39: laload
+      40: ldc2_w        #253                // long 3l
+      43: land
+      44: bipush        6
+      46: lshl
+      47: lor
+      48: aload_1
+      49: iload         10
+      51: iconst_1
+      52: iadd
+      53: laload
+      54: ldc2_w        #253                // long 3l
+      57: land
+      58: iconst_4
+      59: lshl
+      60: lor
+      61: aload_1
+      62: iload         10
+      64: iconst_2
+      65: iadd
+      66: laload
+      67: ldc2_w        #253                // long 3l
+      70: land
+      71: iconst_2
+      72: lshl
+      73: lor
+      74: aload_1
+      75: iload         10
+      77: iconst_3
+      78: iadd
+      79: laload
+      80: ldc2_w        #253                // long 3l
+      83: land
+      84: lor
+      85: l2i
+      86: istore        9
+      88: aload         4
+      90: iload         9
+      92: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+      95: iconst_0
+      96: istore        9
+      98: iload         10
+     100: iconst_4
+     101: iadd
+     102: istore        10
+     104: goto          26
+     107: iload         6
+     109: ifle          161
+     112: bipush        6
+     114: istore        10
+     116: iload         8
+     118: istore        11
+     120: iload         11
+     122: iload         7
+     124: if_icmpge     154
+     127: iload         9
+     129: i2l
+     130: aload_1
+     131: iload         11
+     133: laload
+     134: ldc2_w        #253                // long 3l
+     137: land
+     138: iload         10
+     140: lshl
+     141: lor
+     142: l2i
+     143: istore        9
+     145: iinc          10, -2
+     148: iinc          11, 1
+     151: goto          120
+     154: aload         4
+     156: iload         9
+     158: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+     161: return
+
+  private void unrolledBitPack4(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: iconst_2
+       1: istore        5
+       3: iload_3
+       4: iconst_2
+       5: irem
+       6: istore        6
+       8: iload_2
+       9: iload_3
+      10: iadd
+      11: istore        7
+      13: iload         7
+      15: iload         6
+      17: isub
+      18: istore        8
+      20: iconst_0
+      21: istore        9
+      23: iload_2
+      24: istore        10
+      26: iload         10
+      28: iload         8
+      30: if_icmpge     80
+      33: iload         9
+      35: i2l
+      36: aload_1
+      37: iload         10
+      39: laload
+      40: ldc2_w        #255                // long 15l
+      43: land
+      44: iconst_4
+      45: lshl
+      46: lor
+      47: aload_1
+      48: iload         10
+      50: iconst_1
+      51: iadd
+      52: laload
+      53: ldc2_w        #255                // long 15l
+      56: land
+      57: lor
+      58: l2i
+      59: istore        9
+      61: aload         4
+      63: iload         9
+      65: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+      68: iconst_0
+      69: istore        9
+      71: iload         10
+      73: iconst_2
+      74: iadd
+      75: istore        10
+      77: goto          26
+      80: iload         6
+      82: ifle          133
+      85: iconst_4
+      86: istore        10
+      88: iload         8
+      90: istore        11
+      92: iload         11
+      94: iload         7
+      96: if_icmpge     126
+      99: iload         9
+     101: i2l
+     102: aload_1
+     103: iload         11
+     105: laload
+     106: ldc2_w        #255                // long 15l
+     109: land
+     110: iload         10
+     112: lshl
+     113: lor
+     114: l2i
+     115: istore        9
+     117: iinc          10, -4
+     120: iinc          11, 1
+     123: goto          92
+     126: aload         4
+     128: iload         9
+     130: invokevirtual #133                // Method java/io/OutputStream.write:(I)V
+     133: return
+
+  private void unrolledBitPack8(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_1
+       7: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      10: return
+
+  private void unrolledBitPack16(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_2
+       7: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      10: return
+
+  private void unrolledBitPack24(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_3
+       7: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      10: return
+
+  private void unrolledBitPack32(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_4
+       7: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      10: return
+
+  private void unrolledBitPack40(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_5
+       7: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      10: return
+
+  private void unrolledBitPack48(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: bipush        6
+       8: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      11: return
+
+  private void unrolledBitPack56(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: bipush        7
+       8: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      11: return
+
+  private void unrolledBitPack64(long[], int, int, java.io.OutputStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: bipush        8
+       8: invokevirtual #257                // Method unrolledBitPackBytes:([JIILjava/io/OutputStream;I)V
+      11: return
+
+  private void unrolledBitPackBytes(long[], int, int, java.io.OutputStream, int) throws java.io.IOException;
+    Code:
+       0: bipush        8
+       2: istore        6
+       4: iload_3
+       5: bipush        8
+       7: irem
+       8: istore        7
+      10: iload_2
+      11: iload_3
+      12: iadd
+      13: istore        8
+      15: iload         8
+      17: iload         7
+      19: isub
+      20: istore        9
+      22: iload_2
+      23: istore        10
+      25: iload         10
+      27: iload         9
+      29: if_icmpge     55
+      32: aload_0
+      33: aload         4
+      35: aload_1
+      36: iload         10
+      38: bipush        8
+      40: iload         5
+      42: invokevirtual #261                // Method writeLongBE:(Ljava/io/OutputStream;[JIII)V
+      45: iload         10
+      47: bipush        8
+      49: iadd
+      50: istore        10
+      52: goto          25
+      55: iload         7
+      57: ifle          73
+      60: aload_0
+      61: aload         4
+      63: iload         10
+      65: aload_1
+      66: iload         7
+      68: iload         5
+      70: invokevirtual #265                // Method writeRemainingLongs:(Ljava/io/OutputStream;I[JII)V
+      73: return
+
+  private void writeRemainingLongs(java.io.OutputStream, int, long[], int, int) throws java.io.IOException;
+    Code:
+       0: iload         4
+       2: istore        6
+       4: iconst_0
+       5: istore        7
+       7: iload         5
+       9: tableswitch   { // 1 to 8
+                     1: 56
+                     2: 89
+                     3: 118
+                     4: 147
+                     5: 176
+                     6: 205
+                     7: 235
+                     8: 265
+               default: 295
+          }
+      56: iload         4
+      58: ifle          295
+      61: aload_0
+      62: getfield      #17                 // Field writeBuffer:[B
+      65: iload         7
+      67: aload_3
+      68: iload_2
+      69: iload         7
+      71: iadd
+      72: laload
+      73: ldc2_w        #269                // long 255l
+      76: land
+      77: l2i
+      78: i2b
+      79: bastore
+      80: iinc          4, -1
+      83: iinc          7, 1
+      86: goto          56
+      89: iload         4
+      91: ifle          295
+      94: aload_0
+      95: aload_1
+      96: aload_3
+      97: iload_2
+      98: iload         7
+     100: iadd
+     101: laload
+     102: iload         7
+     104: iconst_2
+     105: imul
+     106: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     109: iinc          4, -1
+     112: iinc          7, 1
+     115: goto          89
+     118: iload         4
+     120: ifle          295
+     123: aload_0
+     124: aload_1
+     125: aload_3
+     126: iload_2
+     127: iload         7
+     129: iadd
+     130: laload
+     131: iload         7
+     133: iconst_3
+     134: imul
+     135: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     138: iinc          4, -1
+     141: iinc          7, 1
+     144: goto          118
+     147: iload         4
+     149: ifle          295
+     152: aload_0
+     153: aload_1
+     154: aload_3
+     155: iload_2
+     156: iload         7
+     158: iadd
+     159: laload
+     160: iload         7
+     162: iconst_4
+     163: imul
+     164: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     167: iinc          4, -1
+     170: iinc          7, 1
+     173: goto          147
+     176: iload         4
+     178: ifle          295
+     181: aload_0
+     182: aload_1
+     183: aload_3
+     184: iload_2
+     185: iload         7
+     187: iadd
+     188: laload
+     189: iload         7
+     191: iconst_5
+     192: imul
+     193: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     196: iinc          4, -1
+     199: iinc          7, 1
+     202: goto          176
+     205: iload         4
+     207: ifle          295
+     210: aload_0
+     211: aload_1
+     212: aload_3
+     213: iload_2
+     214: iload         7
+     216: iadd
+     217: laload
+     218: iload         7
+     220: bipush        6
+     222: imul
+     223: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     226: iinc          4, -1
+     229: iinc          7, 1
+     232: goto          205
+     235: iload         4
+     237: ifle          295
+     240: aload_0
+     241: aload_1
+     242: aload_3
+     243: iload_2
+     244: iload         7
+     246: iadd
+     247: laload
+     248: iload         7
+     250: bipush        7
+     252: imul
+     253: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     256: iinc          4, -1
+     259: iinc          7, 1
+     262: goto          235
+     265: iload         4
+     267: ifle          295
+     270: aload_0
+     271: aload_1
+     272: aload_3
+     273: iload_2
+     274: iload         7
+     276: iadd
+     277: laload
+     278: iload         7
+     280: bipush        8
+     282: imul
+     283: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     286: iinc          4, -1
+     289: iinc          7, 1
+     292: goto          265
+     295: iload         6
+     297: iload         5
+     299: imul
+     300: istore        8
+     302: aload_1
+     303: aload_0
+     304: getfield      #17                 // Field writeBuffer:[B
+     307: iconst_0
+     308: iload         8
+     310: invokevirtual #26                 // Method java/io/OutputStream.write:([BII)V
+     313: return
+
+  private void writeLongBE(java.io.OutputStream, long[], int, int, int) throws java.io.IOException;
+    Code:
+       0: iload         5
+       2: tableswitch   { // 1 to 8
+                     1: 48
+                     2: 191
+                     3: 289
+                     4: 388
+                     5: 487
+                     6: 586
+                     7: 686
+                     8: 786
+               default: 886
+          }
+      48: aload_0
+      49: getfield      #17                 // Field writeBuffer:[B
+      52: iconst_0
+      53: aload_2
+      54: iload_3
+      55: iconst_0
+      56: iadd
+      57: laload
+      58: ldc2_w        #269                // long 255l
+      61: land
+      62: l2i
+      63: i2b
+      64: bastore
+      65: aload_0
+      66: getfield      #17                 // Field writeBuffer:[B
+      69: iconst_1
+      70: aload_2
+      71: iload_3
+      72: iconst_1
+      73: iadd
+      74: laload
+      75: ldc2_w        #269                // long 255l
+      78: land
+      79: l2i
+      80: i2b
+      81: bastore
+      82: aload_0
+      83: getfield      #17                 // Field writeBuffer:[B
+      86: iconst_2
+      87: aload_2
+      88: iload_3
+      89: iconst_2
+      90: iadd
+      91: laload
+      92: ldc2_w        #269                // long 255l
+      95: land
+      96: l2i
+      97: i2b
+      98: bastore
+      99: aload_0
+     100: getfield      #17                 // Field writeBuffer:[B
+     103: iconst_3
+     104: aload_2
+     105: iload_3
+     106: iconst_3
+     107: iadd
+     108: laload
+     109: ldc2_w        #269                // long 255l
+     112: land
+     113: l2i
+     114: i2b
+     115: bastore
+     116: aload_0
+     117: getfield      #17                 // Field writeBuffer:[B
+     120: iconst_4
+     121: aload_2
+     122: iload_3
+     123: iconst_4
+     124: iadd
+     125: laload
+     126: ldc2_w        #269                // long 255l
+     129: land
+     130: l2i
+     131: i2b
+     132: bastore
+     133: aload_0
+     134: getfield      #17                 // Field writeBuffer:[B
+     137: iconst_5
+     138: aload_2
+     139: iload_3
+     140: iconst_5
+     141: iadd
+     142: laload
+     143: ldc2_w        #269                // long 255l
+     146: land
+     147: l2i
+     148: i2b
+     149: bastore
+     150: aload_0
+     151: getfield      #17                 // Field writeBuffer:[B
+     154: bipush        6
+     156: aload_2
+     157: iload_3
+     158: bipush        6
+     160: iadd
+     161: laload
+     162: ldc2_w        #269                // long 255l
+     165: land
+     166: l2i
+     167: i2b
+     168: bastore
+     169: aload_0
+     170: getfield      #17                 // Field writeBuffer:[B
+     173: bipush        7
+     175: aload_2
+     176: iload_3
+     177: bipush        7
+     179: iadd
+     180: laload
+     181: ldc2_w        #269                // long 255l
+     184: land
+     185: l2i
+     186: i2b
+     187: bastore
+     188: goto          886
+     191: aload_0
+     192: aload_1
+     193: aload_2
+     194: iload_3
+     195: iconst_0
+     196: iadd
+     197: laload
+     198: iconst_0
+     199: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     202: aload_0
+     203: aload_1
+     204: aload_2
+     205: iload_3
+     206: iconst_1
+     207: iadd
+     208: laload
+     209: iconst_2
+     210: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     213: aload_0
+     214: aload_1
+     215: aload_2
+     216: iload_3
+     217: iconst_2
+     218: iadd
+     219: laload
+     220: iconst_4
+     221: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     224: aload_0
+     225: aload_1
+     226: aload_2
+     227: iload_3
+     228: iconst_3
+     229: iadd
+     230: laload
+     231: bipush        6
+     233: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     236: aload_0
+     237: aload_1
+     238: aload_2
+     239: iload_3
+     240: iconst_4
+     241: iadd
+     242: laload
+     243: bipush        8
+     245: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     248: aload_0
+     249: aload_1
+     250: aload_2
+     251: iload_3
+     252: iconst_5
+     253: iadd
+     254: laload
+     255: bipush        10
+     257: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     260: aload_0
+     261: aload_1
+     262: aload_2
+     263: iload_3
+     264: bipush        6
+     266: iadd
+     267: laload
+     268: bipush        12
+     270: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     273: aload_0
+     274: aload_1
+     275: aload_2
+     276: iload_3
+     277: bipush        7
+     279: iadd
+     280: laload
+     281: bipush        14
+     283: invokevirtual #271                // Method writeLongBE2:(Ljava/io/OutputStream;JI)V
+     286: goto          886
+     289: aload_0
+     290: aload_1
+     291: aload_2
+     292: iload_3
+     293: iconst_0
+     294: iadd
+     295: laload
+     296: iconst_0
+     297: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     300: aload_0
+     301: aload_1
+     302: aload_2
+     303: iload_3
+     304: iconst_1
+     305: iadd
+     306: laload
+     307: iconst_3
+     308: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     311: aload_0
+     312: aload_1
+     313: aload_2
+     314: iload_3
+     315: iconst_2
+     316: iadd
+     317: laload
+     318: bipush        6
+     320: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     323: aload_0
+     324: aload_1
+     325: aload_2
+     326: iload_3
+     327: iconst_3
+     328: iadd
+     329: laload
+     330: bipush        9
+     332: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     335: aload_0
+     336: aload_1
+     337: aload_2
+     338: iload_3
+     339: iconst_4
+     340: iadd
+     341: laload
+     342: bipush        12
+     344: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     347: aload_0
+     348: aload_1
+     349: aload_2
+     350: iload_3
+     351: iconst_5
+     352: iadd
+     353: laload
+     354: bipush        15
+     356: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     359: aload_0
+     360: aload_1
+     361: aload_2
+     362: iload_3
+     363: bipush        6
+     365: iadd
+     366: laload
+     367: bipush        18
+     369: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     372: aload_0
+     373: aload_1
+     374: aload_2
+     375: iload_3
+     376: bipush        7
+     378: iadd
+     379: laload
+     380: bipush        21
+     382: invokevirtual #275                // Method writeLongBE3:(Ljava/io/OutputStream;JI)V
+     385: goto          886
+     388: aload_0
+     389: aload_1
+     390: aload_2
+     391: iload_3
+     392: iconst_0
+     393: iadd
+     394: laload
+     395: iconst_0
+     396: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     399: aload_0
+     400: aload_1
+     401: aload_2
+     402: iload_3
+     403: iconst_1
+     404: iadd
+     405: laload
+     406: iconst_4
+     407: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     410: aload_0
+     411: aload_1
+     412: aload_2
+     413: iload_3
+     414: iconst_2
+     415: iadd
+     416: laload
+     417: bipush        8
+     419: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     422: aload_0
+     423: aload_1
+     424: aload_2
+     425: iload_3
+     426: iconst_3
+     427: iadd
+     428: laload
+     429: bipush        12
+     431: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     434: aload_0
+     435: aload_1
+     436: aload_2
+     437: iload_3
+     438: iconst_4
+     439: iadd
+     440: laload
+     441: bipush        16
+     443: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     446: aload_0
+     447: aload_1
+     448: aload_2
+     449: iload_3
+     450: iconst_5
+     451: iadd
+     452: laload
+     453: bipush        20
+     455: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     458: aload_0
+     459: aload_1
+     460: aload_2
+     461: iload_3
+     462: bipush        6
+     464: iadd
+     465: laload
+     466: bipush        24
+     468: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     471: aload_0
+     472: aload_1
+     473: aload_2
+     474: iload_3
+     475: bipush        7
+     477: iadd
+     478: laload
+     479: bipush        28
+     481: invokevirtual #278                // Method writeLongBE4:(Ljava/io/OutputStream;JI)V
+     484: goto          886
+     487: aload_0
+     488: aload_1
+     489: aload_2
+     490: iload_3
+     491: iconst_0
+     492: iadd
+     493: laload
+     494: iconst_0
+     495: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     498: aload_0
+     499: aload_1
+     500: aload_2
+     501: iload_3
+     502: iconst_1
+     503: iadd
+     504: laload
+     505: iconst_5
+     506: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     509: aload_0
+     510: aload_1
+     511: aload_2
+     512: iload_3
+     513: iconst_2
+     514: iadd
+     515: laload
+     516: bipush        10
+     518: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     521: aload_0
+     522: aload_1
+     523: aload_2
+     524: iload_3
+     525: iconst_3
+     526: iadd
+     527: laload
+     528: bipush        15
+     530: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     533: aload_0
+     534: aload_1
+     535: aload_2
+     536: iload_3
+     537: iconst_4
+     538: iadd
+     539: laload
+     540: bipush        20
+     542: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     545: aload_0
+     546: aload_1
+     547: aload_2
+     548: iload_3
+     549: iconst_5
+     550: iadd
+     551: laload
+     552: bipush        25
+     554: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     557: aload_0
+     558: aload_1
+     559: aload_2
+     560: iload_3
+     561: bipush        6
+     563: iadd
+     564: laload
+     565: bipush        30
+     567: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     570: aload_0
+     571: aload_1
+     572: aload_2
+     573: iload_3
+     574: bipush        7
+     576: iadd
+     577: laload
+     578: bipush        35
+     580: invokevirtual #281                // Method writeLongBE5:(Ljava/io/OutputStream;JI)V
+     583: goto          886
+     586: aload_0
+     587: aload_1
+     588: aload_2
+     589: iload_3
+     590: iconst_0
+     591: iadd
+     592: laload
+     593: iconst_0
+     594: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     597: aload_0
+     598: aload_1
+     599: aload_2
+     600: iload_3
+     601: iconst_1
+     602: iadd
+     603: laload
+     604: bipush        6
+     606: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     609: aload_0
+     610: aload_1
+     611: aload_2
+     612: iload_3
+     613: iconst_2
+     614: iadd
+     615: laload
+     616: bipush        12
+     618: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     621: aload_0
+     622: aload_1
+     623: aload_2
+     624: iload_3
+     625: iconst_3
+     626: iadd
+     627: laload
+     628: bipush        18
+     630: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     633: aload_0
+     634: aload_1
+     635: aload_2
+     636: iload_3
+     637: iconst_4
+     638: iadd
+     639: laload
+     640: bipush        24
+     642: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     645: aload_0
+     646: aload_1
+     647: aload_2
+     648: iload_3
+     649: iconst_5
+     650: iadd
+     651: laload
+     652: bipush        30
+     654: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     657: aload_0
+     658: aload_1
+     659: aload_2
+     660: iload_3
+     661: bipush        6
+     663: iadd
+     664: laload
+     665: bipush        36
+     667: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     670: aload_0
+     671: aload_1
+     672: aload_2
+     673: iload_3
+     674: bipush        7
+     676: iadd
+     677: laload
+     678: bipush        42
+     680: invokevirtual #284                // Method writeLongBE6:(Ljava/io/OutputStream;JI)V
+     683: goto          886
+     686: aload_0
+     687: aload_1
+     688: aload_2
+     689: iload_3
+     690: iconst_0
+     691: iadd
+     692: laload
+     693: iconst_0
+     694: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     697: aload_0
+     698: aload_1
+     699: aload_2
+     700: iload_3
+     701: iconst_1
+     702: iadd
+     703: laload
+     704: bipush        7
+     706: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     709: aload_0
+     710: aload_1
+     711: aload_2
+     712: iload_3
+     713: iconst_2
+     714: iadd
+     715: laload
+     716: bipush        14
+     718: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     721: aload_0
+     722: aload_1
+     723: aload_2
+     724: iload_3
+     725: iconst_3
+     726: iadd
+     727: laload
+     728: bipush        21
+     730: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     733: aload_0
+     734: aload_1
+     735: aload_2
+     736: iload_3
+     737: iconst_4
+     738: iadd
+     739: laload
+     740: bipush        28
+     742: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     745: aload_0
+     746: aload_1
+     747: aload_2
+     748: iload_3
+     749: iconst_5
+     750: iadd
+     751: laload
+     752: bipush        35
+     754: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     757: aload_0
+     758: aload_1
+     759: aload_2
+     760: iload_3
+     761: bipush        6
+     763: iadd
+     764: laload
+     765: bipush        42
+     767: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     770: aload_0
+     771: aload_1
+     772: aload_2
+     773: iload_3
+     774: bipush        7
+     776: iadd
+     777: laload
+     778: bipush        49
+     780: invokevirtual #287                // Method writeLongBE7:(Ljava/io/OutputStream;JI)V
+     783: goto          886
+     786: aload_0
+     787: aload_1
+     788: aload_2
+     789: iload_3
+     790: iconst_0
+     791: iadd
+     792: laload
+     793: iconst_0
+     794: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     797: aload_0
+     798: aload_1
+     799: aload_2
+     800: iload_3
+     801: iconst_1
+     802: iadd
+     803: laload
+     804: bipush        8
+     806: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     809: aload_0
+     810: aload_1
+     811: aload_2
+     812: iload_3
+     813: iconst_2
+     814: iadd
+     815: laload
+     816: bipush        16
+     818: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     821: aload_0
+     822: aload_1
+     823: aload_2
+     824: iload_3
+     825: iconst_3
+     826: iadd
+     827: laload
+     828: bipush        24
+     830: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     833: aload_0
+     834: aload_1
+     835: aload_2
+     836: iload_3
+     837: iconst_4
+     838: iadd
+     839: laload
+     840: bipush        32
+     842: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     845: aload_0
+     846: aload_1
+     847: aload_2
+     848: iload_3
+     849: iconst_5
+     850: iadd
+     851: laload
+     852: bipush        40
+     854: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     857: aload_0
+     858: aload_1
+     859: aload_2
+     860: iload_3
+     861: bipush        6
+     863: iadd
+     864: laload
+     865: bipush        48
+     867: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     870: aload_0
+     871: aload_1
+     872: aload_2
+     873: iload_3
+     874: bipush        7
+     876: iadd
+     877: laload
+     878: bipush        56
+     880: invokevirtual #290                // Method writeLongBE8:(Ljava/io/OutputStream;JI)V
+     883: goto          886
+     886: iload         4
+     888: iload         5
+     890: imul
+     891: istore        6
+     893: aload_1
+     894: aload_0
+     895: getfield      #17                 // Field writeBuffer:[B
+     898: iconst_0
+     899: iload         6
+     901: invokevirtual #26                 // Method java/io/OutputStream.write:([BII)V
+     904: return
+
+  private void writeLongBE2(java.io.OutputStream, long, int);
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field writeBuffer:[B
+       4: iload         4
+       6: iconst_0
+       7: iadd
+       8: lload_2
+       9: bipush        8
+      11: lushr
+      12: l2i
+      13: i2b
+      14: bastore
+      15: aload_0
+      16: getfield      #17                 // Field writeBuffer:[B
+      19: iload         4
+      21: iconst_1
+      22: iadd
+      23: lload_2
+      24: iconst_0
+      25: lushr
+      26: l2i
+      27: i2b
+      28: bastore
+      29: return
+
+  private void writeLongBE3(java.io.OutputStream, long, int);
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field writeBuffer:[B
+       4: iload         4
+       6: iconst_0
+       7: iadd
+       8: lload_2
+       9: bipush        16
+      11: lushr
+      12: l2i
+      13: i2b
+      14: bastore
+      15: aload_0
+      16: getfield      #17                 // Field writeBuffer:[B
+      19: iload         4
+      21: iconst_1
+      22: iadd
+      23: lload_2
+      24: bipush        8
+      26: lushr
+      27: l2i
+      28: i2b
+      29: bastore
+      30: aload_0
+      31: getfield      #17                 // Field writeBuffer:[B
+      34: iload         4
+      36: iconst_2
+      37: iadd
+      38: lload_2
+      39: iconst_0
+      40: lushr
+      41: l2i
+      42: i2b
+      43: bastore
+      44: return
+
+  private void writeLongBE4(java.io.OutputStream, long, int);
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field writeBuffer:[B
+       4: iload         4
+       6: iconst_0
+       7: iadd
+       8: lload_2
+       9: bipush        24
+      11: lushr
+      12: l2i
+      13: i2b
+      14: bastore
+      15: aload_0
+      16: getfield      #17                 // Field writeBuffer:[B
+      19: iload         4
+      21: iconst_1
+      22: iadd
+      23: lload_2
+      24: bipush        16
+      26: lushr
+      27: l2i
+      28: i2b
+      29: bastore
+      30: aload_0
+      31: getfield      #17                 // Field writeBuffer:[B
+      34: iload         4
+      36: iconst_2
+      37: iadd
+      38: lload_2
+      39: bipush        8
+      41: lushr
+      42: l2i
+      43: i2b
+      44: bastore
+      45: aload_0
+      46: getfield      #17                 // Field writeBuffer:[B
+      49: iload         4
+      51: iconst_3
+      52: iadd
+      53: lload_2
+      54: iconst_0
+      55: lushr
+      56: l2i
+      57: i2b
+      58: bastore
+      59: return
+
+  private void writeLongBE5(java.io.OutputStream, long, int);
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field writeBuffer:[B
+       4: iload         4
+       6: iconst_0
+       7: iadd
+       8: lload_2
+       9: bipush        32
+      11: lushr
+      12: l2i
+      13: i2b
+      14: bastore
+      15: aload_0
+      16: getfield      #17                 // Field writeBuffer:[B
+      19: iload         4
+      21: iconst_1
+      22: iadd
+      23: lload_2
+      24: bipush        24
+      26: lushr
+      27: l2i
+      28: i2b
+      29: bastore
+      30: aload_0
+      31: getfield      #17                 // Field writeBuffer:[B
+      34: iload         4
+      36: iconst_2
+      37: iadd
+      38: lload_2
+      39: bipush        16
+      41: lushr
+      42: l2i
+      43: i2b
+      44: bastore
+      45: aload_0
+      46: getfield      #17                 // Field writeBuffer:[B
+      49: iload         4
+      51: iconst_3
+      52: iadd
+      53: lload_2
+      54: bipush        8
+      56: lushr
+      57: l2i
+      58: i2b
+      59: bastore
+      60: aload_0
+      61: getfield      #17                 // Field writeBuffer:[B
+      64: iload         4
+      66: iconst_4
+      67: iadd
+      68: lload_2
+      69: iconst_0
+      70: lushr
+      71: l2i
+      72: i2b
+      73: bastore
+      74: return
+
+  private void writeLongBE6(java.io.OutputStream, long, int);
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field writeBuffer:[B
+       4: iload         4
+       6: iconst_0
+       7: iadd
+       8: lload_2
+       9: bipush        40
+      11: lushr
+      12: l2i
+      13: i2b
+      14: bastore
+      15: aload_0
+      16: getfield      #17                 // Field writeBuffer:[B
+      19: iload         4
+      21: iconst_1
+      22: iadd
+      23: lload_2
+      24: bipush        32
+      26: lushr
+      27: l2i
+      28: i2b
+      29: bastore
+      30: aload_0
+      31: getfield      #17                 // Field writeBuffer:[B
+      34: iload         4
+      36: iconst_2
+      37: iadd
+      38: lload_2
+      39: bipush        24
+      41: lushr
+      42: l2i
+      43: i2b
+      44: bastore
+      45: aload_0
+      46: getfield      #17                 // Field writeBuffer:[B
+      49: iload         4
+      51: iconst_3
+      52: iadd
+      53: lload_2
+      54: bipush        16
+      56: lushr
+      57: l2i
+      58: i2b
+      59: bastore
+      60: aload_0
+      61: getfield      #17                 // Field writeBuffer:[B
+      64: iload         4
+      66: iconst_4
+      67: iadd
+      68: lload_2
+      69: bipush        8
+      71: lushr
+      72: l2i
+      73: i2b
+      74: bastore
+      75: aload_0
+      76: getfield      #17                 // Field writeBuffer:[B
+      79: iload         4
+      81: iconst_5
+      82: iadd
+      83: lload_2
+      84: iconst_0
+      85: lushr
+      86: l2i
+      87: i2b
+      88: bastore
+      89: return
+
+  private void writeLongBE7(java.io.OutputStream, long, int);
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field writeBuffer:[B
+       4: iload         4
+       6: iconst_0
+       7: iadd
+       8: lload_2
+       9: bipush        48
+      11: lushr
+      12: l2i
+      13: i2b
+      14: bastore
+      15: aload_0
+      16: getfield      #17                 // Field writeBuffer:[B
+      19: iload         4
+      21: iconst_1
+      22: iadd
+      23: lload_2
+      24: bipush        40
+      26: lushr
+      27: l2i
+      28: i2b
+      29: bastore
+      30: aload_0
+      31: getfield      #17                 // Field writeBuffer:[B
+      34: iload         4
+      36: iconst_2
+      37: iadd
+      38: lload_2
+      39: bipush        32
+      41: lushr
+      42: l2i
+      43: i2b
+      44: bastore
+      45: aload_0
+      46: getfield      #17                 // Field writeBuffer:[B
+      49: iload         4
+      51: iconst_3
+      52: iadd
+      53: lload_2
+      54: bipush        24
+      56: lushr
+      57: l2i
+      58: i2b
+      59: bastore
+      60: aload_0
+      61: getfield      #17                 // Field writeBuffer:[B
+      64: iload         4
+      66: iconst_4
+      67: iadd
+      68: lload_2
+      69: bipush        16
+      71: lushr
+      72: l2i
+      73: i2b
+      74: bastore
+      75: aload_0
+      76: getfield      #17                 // Field writeBuffer:[B
+      79: iload         4
+      81: iconst_5
+      82: iadd
+      83: lload_2
+      84: bipush        8
+      86: lushr
+      87: l2i
+      88: i2b
+      89: bastore
+      90: aload_0
+      91: getfield      #17                 // Field writeBuffer:[B
+      94: iload         4
+      96: bipush        6
+      98: iadd
+      99: lload_2
+     100: iconst_0
+     101: lushr
+     102: l2i
+     103: i2b
+     104: bastore
+     105: return
+
+  private void writeLongBE8(java.io.OutputStream, long, int);
+    Code:
+       0: aload_0
+       1: getfield      #17                 // Field writeBuffer:[B
+       4: iload         4
+       6: iconst_0
+       7: iadd
+       8: lload_2
+       9: bipush        56
+      11: lushr
+      12: l2i
+      13: i2b
+      14: bastore
+      15: aload_0
+      16: getfield      #17                 // Field writeBuffer:[B
+      19: iload         4
+      21: iconst_1
+      22: iadd
+      23: lload_2
+      24: bipush        48
+      26: lushr
+      27: l2i
+      28: i2b
+      29: bastore
+      30: aload_0
+      31: getfield      #17                 // Field writeBuffer:[B
+      34: iload         4
+      36: iconst_2
+      37: iadd
+      38: lload_2
+      39: bipush        40
+      41: lushr
+      42: l2i
+      43: i2b
+      44: bastore
+      45: aload_0
+      46: getfield      #17                 // Field writeBuffer:[B
+      49: iload         4
+      51: iconst_3
+      52: iadd
+      53: lload_2
+      54: bipush        32
+      56: lushr
+      57: l2i
+      58: i2b
+      59: bastore
+      60: aload_0
+      61: getfield      #17                 // Field writeBuffer:[B
+      64: iload         4
+      66: iconst_4
+      67: iadd
+      68: lload_2
+      69: bipush        24
+      71: lushr
+      72: l2i
+      73: i2b
+      74: bastore
+      75: aload_0
+      76: getfield      #17                 // Field writeBuffer:[B
+      79: iload         4
+      81: iconst_5
+      82: iadd
+      83: lload_2
+      84: bipush        16
+      86: lushr
+      87: l2i
+      88: i2b
+      89: bastore
+      90: aload_0
+      91: getfield      #17                 // Field writeBuffer:[B
+      94: iload         4
+      96: bipush        6
+      98: iadd
+      99: lload_2
+     100: bipush        8
+     102: lushr
+     103: l2i
+     104: i2b
+     105: bastore
+     106: aload_0
+     107: getfield      #17                 // Field writeBuffer:[B
+     110: iload         4
+     112: bipush        7
+     114: iadd
+     115: lload_2
+     116: iconst_0
+     117: lushr
+     118: l2i
+     119: i2b
+     120: bastore
+     121: return
+
+  public void readInts(long[], int, int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: iconst_0
+       1: istore        6
+       3: iconst_0
+       4: istore        7
+       6: iload         4
+       8: lookupswitch  { // 11
+                     1: 108
+                     2: 118
+                     4: 128
+                     8: 138
+                    16: 148
+                    24: 158
+                    32: 168
+                    40: 178
+                    48: 188
+                    56: 198
+                    64: 208
+               default: 218
+          }
+     108: aload_0
+     109: aload_1
+     110: iload_2
+     111: iload_3
+     112: aload         5
+     114: invokevirtual #293                // Method unrolledUnPack1:([JIILorg/apache/orc/impl/InStream;)V
+     117: return
+     118: aload_0
+     119: aload_1
+     120: iload_2
+     121: iload_3
+     122: aload         5
+     124: invokevirtual #297                // Method unrolledUnPack2:([JIILorg/apache/orc/impl/InStream;)V
+     127: return
+     128: aload_0
+     129: aload_1
+     130: iload_2
+     131: iload_3
+     132: aload         5
+     134: invokevirtual #300                // Method unrolledUnPack4:([JIILorg/apache/orc/impl/InStream;)V
+     137: return
+     138: aload_0
+     139: aload_1
+     140: iload_2
+     141: iload_3
+     142: aload         5
+     144: invokevirtual #303                // Method unrolledUnPack8:([JIILorg/apache/orc/impl/InStream;)V
+     147: return
+     148: aload_0
+     149: aload_1
+     150: iload_2
+     151: iload_3
+     152: aload         5
+     154: invokevirtual #306                // Method unrolledUnPack16:([JIILorg/apache/orc/impl/InStream;)V
+     157: return
+     158: aload_0
+     159: aload_1
+     160: iload_2
+     161: iload_3
+     162: aload         5
+     164: invokevirtual #309                // Method unrolledUnPack24:([JIILorg/apache/orc/impl/InStream;)V
+     167: return
+     168: aload_0
+     169: aload_1
+     170: iload_2
+     171: iload_3
+     172: aload         5
+     174: invokevirtual #312                // Method unrolledUnPack32:([JIILorg/apache/orc/impl/InStream;)V
+     177: return
+     178: aload_0
+     179: aload_1
+     180: iload_2
+     181: iload_3
+     182: aload         5
+     184: invokevirtual #315                // Method unrolledUnPack40:([JIILorg/apache/orc/impl/InStream;)V
+     187: return
+     188: aload_0
+     189: aload_1
+     190: iload_2
+     191: iload_3
+     192: aload         5
+     194: invokevirtual #318                // Method unrolledUnPack48:([JIILorg/apache/orc/impl/InStream;)V
+     197: return
+     198: aload_0
+     199: aload_1
+     200: iload_2
+     201: iload_3
+     202: aload         5
+     204: invokevirtual #321                // Method unrolledUnPack56:([JIILorg/apache/orc/impl/InStream;)V
+     207: return
+     208: aload_0
+     209: aload_1
+     210: iload_2
+     211: iload_3
+     212: aload         5
+     214: invokevirtual #324                // Method unrolledUnPack64:([JIILorg/apache/orc/impl/InStream;)V
+     217: return
+     218: iload_2
+     219: istore        8
+     221: iload         8
+     223: iload_2
+     224: iload_3
+     225: iadd
+     226: if_icmpge     335
+     229: lconst_0
+     230: lstore        9
+     232: iload         4
+     234: istore        11
+     236: iload         11
+     238: iload         6
+     240: if_icmple     286
+     243: lload         9
+     245: iload         6
+     247: lshl
+     248: lstore        9
+     250: lload         9
+     252: iload         7
+     254: iconst_1
+     255: iload         6
+     257: ishl
+     258: iconst_1
+     259: isub
+     260: iand
+     261: i2l
+     262: lor
+     263: lstore        9
+     265: iload         11
+     267: iload         6
+     269: isub
+     270: istore        11
+     272: aload         5
+     274: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+     277: istore        7
+     279: bipush        8
+     281: istore        6
+     283: goto          236
+     286: iload         11
+     288: ifle          323
+     291: lload         9
+     293: iload         11
+     295: lshl
+     296: lstore        9
+     298: iload         6
+     300: iload         11
+     302: isub
+     303: istore        6
+     305: lload         9
+     307: iload         7
+     309: iload         6
+     311: ishr
+     312: iconst_1
+     313: iload         11
+     315: ishl
+     316: iconst_1
+     317: isub
+     318: iand
+     319: i2l
+     320: lor
+     321: lstore        9
+     323: aload_1
+     324: iload         8
+     326: lload         9
+     328: lastore
+     329: iinc          8, 1
+     332: goto          221
+     335: return
+
+  private void unrolledUnPack1(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: bipush        8
+       2: istore        5
+       4: iload_3
+       5: bipush        8
+       7: irem
+       8: istore        6
+      10: iload_2
+      11: iload_3
+      12: iadd
+      13: istore        7
+      15: iload         7
+      17: iload         6
+      19: isub
+      20: istore        8
+      22: iconst_0
+      23: istore        9
+      25: iload_2
+      26: istore        10
+      28: iload         10
+      30: iload         8
+      32: if_icmpge     156
+      35: aload         4
+      37: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+      40: istore        9
+      42: aload_1
+      43: iload         10
+      45: iload         9
+      47: bipush        7
+      49: iushr
+      50: iconst_1
+      51: iand
+      52: i2l
+      53: lastore
+      54: aload_1
+      55: iload         10
+      57: iconst_1
+      58: iadd
+      59: iload         9
+      61: bipush        6
+      63: iushr
+      64: iconst_1
+      65: iand
+      66: i2l
+      67: lastore
+      68: aload_1
+      69: iload         10
+      71: iconst_2
+      72: iadd
+      73: iload         9
+      75: iconst_5
+      76: iushr
+      77: iconst_1
+      78: iand
+      79: i2l
+      80: lastore
+      81: aload_1
+      82: iload         10
+      84: iconst_3
+      85: iadd
+      86: iload         9
+      88: iconst_4
+      89: iushr
+      90: iconst_1
+      91: iand
+      92: i2l
+      93: lastore
+      94: aload_1
+      95: iload         10
+      97: iconst_4
+      98: iadd
+      99: iload         9
+     101: iconst_3
+     102: iushr
+     103: iconst_1
+     104: iand
+     105: i2l
+     106: lastore
+     107: aload_1
+     108: iload         10
+     110: iconst_5
+     111: iadd
+     112: iload         9
+     114: iconst_2
+     115: iushr
+     116: iconst_1
+     117: iand
+     118: i2l
+     119: lastore
+     120: aload_1
+     121: iload         10
+     123: bipush        6
+     125: iadd
+     126: iload         9
+     128: iconst_1
+     129: iushr
+     130: iconst_1
+     131: iand
+     132: i2l
+     133: lastore
+     134: aload_1
+     135: iload         10
+     137: bipush        7
+     139: iadd
+     140: iload         9
+     142: iconst_1
+     143: iand
+     144: i2l
+     145: lastore
+     146: iload         10
+     148: bipush        8
+     150: iadd
+     151: istore        10
+     153: goto          28
+     156: iload         6
+     158: ifle          204
+     161: bipush        7
+     163: istore        10
+     165: aload         4
+     167: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+     170: istore        9
+     172: iload         8
+     174: istore        11
+     176: iload         11
+     178: iload         7
+     180: if_icmpge     204
+     183: aload_1
+     184: iload         11
+     186: iload         9
+     188: iload         10
+     190: iushr
+     191: iconst_1
+     192: iand
+     193: i2l
+     194: lastore
+     195: iinc          10, -1
+     198: iinc          11, 1
+     201: goto          176
+     204: return
+
+  private void unrolledUnPack2(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: iconst_4
+       1: istore        5
+       3: iload_3
+       4: iconst_4
+       5: irem
+       6: istore        6
+       8: iload_2
+       9: iload_3
+      10: iadd
+      11: istore        7
+      13: iload         7
+      15: iload         6
+      17: isub
+      18: istore        8
+      20: iconst_0
+      21: istore        9
+      23: iload_2
+      24: istore        10
+      26: iload         10
+      28: iload         8
+      30: if_icmpge     98
+      33: aload         4
+      35: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+      38: istore        9
+      40: aload_1
+      41: iload         10
+      43: iload         9
+      45: bipush        6
+      47: iushr
+      48: iconst_3
+      49: iand
+      50: i2l
+      51: lastore
+      52: aload_1
+      53: iload         10
+      55: iconst_1
+      56: iadd
+      57: iload         9
+      59: iconst_4
+      60: iushr
+      61: iconst_3
+      62: iand
+      63: i2l
+      64: lastore
+      65: aload_1
+      66: iload         10
+      68: iconst_2
+      69: iadd
+      70: iload         9
+      72: iconst_2
+      73: iushr
+      74: iconst_3
+      75: iand
+      76: i2l
+      77: lastore
+      78: aload_1
+      79: iload         10
+      81: iconst_3
+      82: iadd
+      83: iload         9
+      85: iconst_3
+      86: iand
+      87: i2l
+      88: lastore
+      89: iload         10
+      91: iconst_4
+      92: iadd
+      93: istore        10
+      95: goto          26
+      98: iload         6
+     100: ifle          146
+     103: bipush        6
+     105: istore        10
+     107: aload         4
+     109: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+     112: istore        9
+     114: iload         8
+     116: istore        11
+     118: iload         11
+     120: iload         7
+     122: if_icmpge     146
+     125: aload_1
+     126: iload         11
+     128: iload         9
+     130: iload         10
+     132: iushr
+     133: iconst_3
+     134: iand
+     135: i2l
+     136: lastore
+     137: iinc          10, -2
+     140: iinc          11, 1
+     143: goto          118
+     146: return
+
+  private void unrolledUnPack4(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: iconst_2
+       1: istore        5
+       3: iload_3
+       4: iconst_2
+       5: irem
+       6: istore        6
+       8: iload_2
+       9: iload_3
+      10: iadd
+      11: istore        7
+      13: iload         7
+      15: iload         6
+      17: isub
+      18: istore        8
+      20: iconst_0
+      21: istore        9
+      23: iload_2
+      24: istore        10
+      26: iload         10
+      28: iload         8
+      30: if_icmpge     73
+      33: aload         4
+      35: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+      38: istore        9
+      40: aload_1
+      41: iload         10
+      43: iload         9
+      45: iconst_4
+      46: iushr
+      47: bipush        15
+      49: iand
+      50: i2l
+      51: lastore
+      52: aload_1
+      53: iload         10
+      55: iconst_1
+      56: iadd
+      57: iload         9
+      59: bipush        15
+      61: iand
+      62: i2l
+      63: lastore
+      64: iload         10
+      66: iconst_2
+      67: iadd
+      68: istore        10
+      70: goto          26
+      73: iload         6
+      75: ifle          121
+      78: iconst_4
+      79: istore        10
+      81: aload         4
+      83: invokevirtual #181                // Method org/apache/orc/impl/InStream.read:()I
+      86: istore        9
+      88: iload         8
+      90: istore        11
+      92: iload         11
+      94: iload         7
+      96: if_icmpge     121
+      99: aload_1
+     100: iload         11
+     102: iload         9
+     104: iload         10
+     106: iushr
+     107: bipush        15
+     109: iand
+     110: i2l
+     111: lastore
+     112: iinc          10, -4
+     115: iinc          11, 1
+     118: goto          92
+     121: return
+
+  private void unrolledUnPack8(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_1
+       7: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      10: return
+
+  private void unrolledUnPack16(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_2
+       7: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      10: return
+
+  private void unrolledUnPack24(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_3
+       7: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      10: return
+
+  private void unrolledUnPack32(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_4
+       7: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      10: return
+
+  private void unrolledUnPack40(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: iconst_5
+       7: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      10: return
+
+  private void unrolledUnPack48(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: bipush        6
+       8: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      11: return
+
+  private void unrolledUnPack56(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: bipush        7
+       8: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      11: return
+
+  private void unrolledUnPack64(long[], int, int, org.apache.orc.impl.InStream) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_2
+       3: iload_3
+       4: aload         4
+       6: bipush        8
+       8: invokevirtual #327                // Method unrolledUnPackBytes:([JIILorg/apache/orc/impl/InStream;I)V
+      11: return
+
+  private void unrolledUnPackBytes(long[], int, int, org.apache.orc.impl.InStream, int) throws java.io.IOException;
+    Code:
+       0: bipush        8
+       2: istore        6
+       4: iload_3
+       5: bipush        8
+       7: irem
+       8: istore        7
+      10: iload_2
+      11: iload_3
+      12: iadd
+      13: istore        8
+      15: iload         8
+      17: iload         7
+      19: isub
+      20: istore        9
+      22: iload_2
+      23: istore        10
+      25: iload         10
+      27: iload         9
+      29: if_icmpge     55
+      32: aload_0
+      33: aload         4
+      35: aload_1
+      36: iload         10
+      38: bipush        8
+      40: iload         5
+      42: invokevirtual #331                // Method readLongBE:(Lorg/apache/orc/impl/InStream;[JIII)V
+      45: iload         10
+      47: bipush        8
+      49: iadd
+      50: istore        10
+      52: goto          25
+      55: iload         7
+      57: ifle          73
+      60: aload_0
+      61: aload_1
+      62: iload         10
+      64: aload         4
+      66: iload         7
+      68: iload         5
+      70: invokevirtual #335                // Method readRemainingLongs:([JILorg/apache/orc/impl/InStream;II)V
+      73: return
+
+  private void readRemainingLongs(long[], int, org.apache.orc.impl.InStream, int, int) throws java.io.IOException;
+    Code:
+       0: iload         4
+       2: iload         5
+       4: imul
+       5: istore        6
+       7: aload_3
+       8: aload_0
+       9: getfield      #13                 // Field readBuffer:[B
+      12: iconst_0
+      13: iload         6
+      15: invokevirtual #339                // Method org/apache/orc/impl/InStream.read:([BII)I
+      18: istore        7
+      20: iload         7
+      22: iload         6
+      24: if_icmpeq     50
+      27: iload         7
+      29: aload_3
+      30: aload_0
+      31: getfield      #13                 // Field readBuffer:[B
+      34: iload         7
+      36: iload         6
+      38: iload         7
+      40: isub
+      41: invokevirtual #339                // Method org/apache/orc/impl/InStream.read:([BII)I
+      44: iadd
+      45: istore        7
+      47: goto          20
+      50: iconst_0
+      51: istore        8
+      53: iload         5
+      55: tableswitch   { // 1 to 8
+                     1: 100
+                     2: 132
+                     3: 161
+                     4: 190
+                     5: 219
+                     6: 248
+                     7: 278
+                     8: 308
+               default: 338
+          }
+     100: iload         4
+     102: ifle          338
+     105: aload_1
+     106: iload_2
+     107: iinc          2, 1
+     110: aload_0
+     111: getfield      #13                 // Field readBuffer:[B
+     114: iload         8
+     116: baload
+     117: sipush        255
+     120: iand
+     121: i2l
+     122: lastore
+     123: iinc          4, -1
+     126: iinc          8, 1
+     129: goto          100
+     132: iload         4
+     134: ifle          338
+     137: aload_1
+     138: iload_2
+     139: iinc          2, 1
+     142: aload_0
+     143: aload_3
+     144: iload         8
+     146: iconst_2
+     147: imul
+     148: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     151: lastore
+     152: iinc          4, -1
+     155: iinc          8, 1
+     158: goto          132
+     161: iload         4
+     163: ifle          338
+     166: aload_1
+     167: iload_2
+     168: iinc          2, 1
+     171: aload_0
+     172: aload_3
+     173: iload         8
+     175: iconst_3
+     176: imul
+     177: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     180: lastore
+     181: iinc          4, -1
+     184: iinc          8, 1
+     187: goto          161
+     190: iload         4
+     192: ifle          338
+     195: aload_1
+     196: iload_2
+     197: iinc          2, 1
+     200: aload_0
+     201: aload_3
+     202: iload         8
+     204: iconst_4
+     205: imul
+     206: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     209: lastore
+     210: iinc          4, -1
+     213: iinc          8, 1
+     216: goto          190
+     219: iload         4
+     221: ifle          338
+     224: aload_1
+     225: iload_2
+     226: iinc          2, 1
+     229: aload_0
+     230: aload_3
+     231: iload         8
+     233: iconst_5
+     234: imul
+     235: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     238: lastore
+     239: iinc          4, -1
+     242: iinc          8, 1
+     245: goto          219
+     248: iload         4
+     250: ifle          338
+     253: aload_1
+     254: iload_2
+     255: iinc          2, 1
+     258: aload_0
+     259: aload_3
+     260: iload         8
+     262: bipush        6
+     264: imul
+     265: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     268: lastore
+     269: iinc          4, -1
+     272: iinc          8, 1
+     275: goto          248
+     278: iload         4
+     280: ifle          338
+     283: aload_1
+     284: iload_2
+     285: iinc          2, 1
+     288: aload_0
+     289: aload_3
+     290: iload         8
+     292: bipush        7
+     294: imul
+     295: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     298: lastore
+     299: iinc          4, -1
+     302: iinc          8, 1
+     305: goto          278
+     308: iload         4
+     310: ifle          338
+     313: aload_1
+     314: iload_2
+     315: iinc          2, 1
+     318: aload_0
+     319: aload_3
+     320: iload         8
+     322: bipush        8
+     324: imul
+     325: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     328: lastore
+     329: iinc          4, -1
+     332: iinc          8, 1
+     335: goto          308
+     338: return
+
+  private void readLongBE(org.apache.orc.impl.InStream, long[], int, int, int) throws java.io.IOException;
+    Code:
+       0: iload         4
+       2: iload         5
+       4: imul
+       5: istore        6
+       7: aload_1
+       8: aload_0
+       9: getfield      #13                 // Field readBuffer:[B
+      12: iconst_0
+      13: iload         6
+      15: invokevirtual #339                // Method org/apache/orc/impl/InStream.read:([BII)I
+      18: istore        7
+      20: iload         7
+      22: iload         6
+      24: if_icmpeq     50
+      27: iload         7
+      29: aload_1
+      30: aload_0
+      31: getfield      #13                 // Field readBuffer:[B
+      34: iload         7
+      36: iload         6
+      38: iload         7
+      40: isub
+      41: invokevirtual #339                // Method org/apache/orc/impl/InStream.read:([BII)I
+      44: iadd
+      45: istore        7
+      47: goto          20
+      50: iload         5
+      52: tableswitch   { // 1 to 8
+                     1: 100
+                     2: 235
+                     3: 333
+                     4: 432
+                     5: 531
+                     6: 630
+                     7: 730
+                     8: 830
+               default: 930
+          }
+     100: aload_2
+     101: iload_3
+     102: iconst_0
+     103: iadd
+     104: aload_0
+     105: getfield      #13                 // Field readBuffer:[B
+     108: iconst_0
+     109: baload
+     110: sipush        255
+     113: iand
+     114: i2l
+     115: lastore
+     116: aload_2
+     117: iload_3
+     118: iconst_1
+     119: iadd
+     120: aload_0
+     121: getfield      #13                 // Field readBuffer:[B
+     124: iconst_1
+     125: baload
+     126: sipush        255
+     129: iand
+     130: i2l
+     131: lastore
+     132: aload_2
+     133: iload_3
+     134: iconst_2
+     135: iadd
+     136: aload_0
+     137: getfield      #13                 // Field readBuffer:[B
+     140: iconst_2
+     141: baload
+     142: sipush        255
+     145: iand
+     146: i2l
+     147: lastore
+     148: aload_2
+     149: iload_3
+     150: iconst_3
+     151: iadd
+     152: aload_0
+     153: getfield      #13                 // Field readBuffer:[B
+     156: iconst_3
+     157: baload
+     158: sipush        255
+     161: iand
+     162: i2l
+     163: lastore
+     164: aload_2
+     165: iload_3
+     166: iconst_4
+     167: iadd
+     168: aload_0
+     169: getfield      #13                 // Field readBuffer:[B
+     172: iconst_4
+     173: baload
+     174: sipush        255
+     177: iand
+     178: i2l
+     179: lastore
+     180: aload_2
+     181: iload_3
+     182: iconst_5
+     183: iadd
+     184: aload_0
+     185: getfield      #13                 // Field readBuffer:[B
+     188: iconst_5
+     189: baload
+     190: sipush        255
+     193: iand
+     194: i2l
+     195: lastore
+     196: aload_2
+     197: iload_3
+     198: bipush        6
+     200: iadd
+     201: aload_0
+     202: getfield      #13                 // Field readBuffer:[B
+     205: bipush        6
+     207: baload
+     208: sipush        255
+     211: iand
+     212: i2l
+     213: lastore
+     214: aload_2
+     215: iload_3
+     216: bipush        7
+     218: iadd
+     219: aload_0
+     220: getfield      #13                 // Field readBuffer:[B
+     223: bipush        7
+     225: baload
+     226: sipush        255
+     229: iand
+     230: i2l
+     231: lastore
+     232: goto          930
+     235: aload_2
+     236: iload_3
+     237: iconst_0
+     238: iadd
+     239: aload_0
+     240: aload_1
+     241: iconst_0
+     242: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     245: lastore
+     246: aload_2
+     247: iload_3
+     248: iconst_1
+     249: iadd
+     250: aload_0
+     251: aload_1
+     252: iconst_2
+     253: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     256: lastore
+     257: aload_2
+     258: iload_3
+     259: iconst_2
+     260: iadd
+     261: aload_0
+     262: aload_1
+     263: iconst_4
+     264: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     267: lastore
+     268: aload_2
+     269: iload_3
+     270: iconst_3
+     271: iadd
+     272: aload_0
+     273: aload_1
+     274: bipush        6
+     276: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     279: lastore
+     280: aload_2
+     281: iload_3
+     282: iconst_4
+     283: iadd
+     284: aload_0
+     285: aload_1
+     286: bipush        8
+     288: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     291: lastore
+     292: aload_2
+     293: iload_3
+     294: iconst_5
+     295: iadd
+     296: aload_0
+     297: aload_1
+     298: bipush        10
+     300: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     303: lastore
+     304: aload_2
+     305: iload_3
+     306: bipush        6
+     308: iadd
+     309: aload_0
+     310: aload_1
+     311: bipush        12
+     313: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     316: lastore
+     317: aload_2
+     318: iload_3
+     319: bipush        7
+     321: iadd
+     322: aload_0
+     323: aload_1
+     324: bipush        14
+     326: invokevirtual #340                // Method readLongBE2:(Lorg/apache/orc/impl/InStream;I)J
+     329: lastore
+     330: goto          930
+     333: aload_2
+     334: iload_3
+     335: iconst_0
+     336: iadd
+     337: aload_0
+     338: aload_1
+     339: iconst_0
+     340: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     343: lastore
+     344: aload_2
+     345: iload_3
+     346: iconst_1
+     347: iadd
+     348: aload_0
+     349: aload_1
+     350: iconst_3
+     351: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     354: lastore
+     355: aload_2
+     356: iload_3
+     357: iconst_2
+     358: iadd
+     359: aload_0
+     360: aload_1
+     361: bipush        6
+     363: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     366: lastore
+     367: aload_2
+     368: iload_3
+     369: iconst_3
+     370: iadd
+     371: aload_0
+     372: aload_1
+     373: bipush        9
+     375: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     378: lastore
+     379: aload_2
+     380: iload_3
+     381: iconst_4
+     382: iadd
+     383: aload_0
+     384: aload_1
+     385: bipush        12
+     387: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     390: lastore
+     391: aload_2
+     392: iload_3
+     393: iconst_5
+     394: iadd
+     395: aload_0
+     396: aload_1
+     397: bipush        15
+     399: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     402: lastore
+     403: aload_2
+     404: iload_3
+     405: bipush        6
+     407: iadd
+     408: aload_0
+     409: aload_1
+     410: bipush        18
+     412: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     415: lastore
+     416: aload_2
+     417: iload_3
+     418: bipush        7
+     420: iadd
+     421: aload_0
+     422: aload_1
+     423: bipush        21
+     425: invokevirtual #344                // Method readLongBE3:(Lorg/apache/orc/impl/InStream;I)J
+     428: lastore
+     429: goto          930
+     432: aload_2
+     433: iload_3
+     434: iconst_0
+     435: iadd
+     436: aload_0
+     437: aload_1
+     438: iconst_0
+     439: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     442: lastore
+     443: aload_2
+     444: iload_3
+     445: iconst_1
+     446: iadd
+     447: aload_0
+     448: aload_1
+     449: iconst_4
+     450: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     453: lastore
+     454: aload_2
+     455: iload_3
+     456: iconst_2
+     457: iadd
+     458: aload_0
+     459: aload_1
+     460: bipush        8
+     462: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     465: lastore
+     466: aload_2
+     467: iload_3
+     468: iconst_3
+     469: iadd
+     470: aload_0
+     471: aload_1
+     472: bipush        12
+     474: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     477: lastore
+     478: aload_2
+     479: iload_3
+     480: iconst_4
+     481: iadd
+     482: aload_0
+     483: aload_1
+     484: bipush        16
+     486: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     489: lastore
+     490: aload_2
+     491: iload_3
+     492: iconst_5
+     493: iadd
+     494: aload_0
+     495: aload_1
+     496: bipush        20
+     498: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     501: lastore
+     502: aload_2
+     503: iload_3
+     504: bipush        6
+     506: iadd
+     507: aload_0
+     508: aload_1
+     509: bipush        24
+     511: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     514: lastore
+     515: aload_2
+     516: iload_3
+     517: bipush        7
+     519: iadd
+     520: aload_0
+     521: aload_1
+     522: bipush        28
+     524: invokevirtual #347                // Method readLongBE4:(Lorg/apache/orc/impl/InStream;I)J
+     527: lastore
+     528: goto          930
+     531: aload_2
+     532: iload_3
+     533: iconst_0
+     534: iadd
+     535: aload_0
+     536: aload_1
+     537: iconst_0
+     538: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     541: lastore
+     542: aload_2
+     543: iload_3
+     544: iconst_1
+     545: iadd
+     546: aload_0
+     547: aload_1
+     548: iconst_5
+     549: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     552: lastore
+     553: aload_2
+     554: iload_3
+     555: iconst_2
+     556: iadd
+     557: aload_0
+     558: aload_1
+     559: bipush        10
+     561: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     564: lastore
+     565: aload_2
+     566: iload_3
+     567: iconst_3
+     568: iadd
+     569: aload_0
+     570: aload_1
+     571: bipush        15
+     573: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     576: lastore
+     577: aload_2
+     578: iload_3
+     579: iconst_4
+     580: iadd
+     581: aload_0
+     582: aload_1
+     583: bipush        20
+     585: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     588: lastore
+     589: aload_2
+     590: iload_3
+     591: iconst_5
+     592: iadd
+     593: aload_0
+     594: aload_1
+     595: bipush        25
+     597: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     600: lastore
+     601: aload_2
+     602: iload_3
+     603: bipush        6
+     605: iadd
+     606: aload_0
+     607: aload_1
+     608: bipush        30
+     610: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     613: lastore
+     614: aload_2
+     615: iload_3
+     616: bipush        7
+     618: iadd
+     619: aload_0
+     620: aload_1
+     621: bipush        35
+     623: invokevirtual #350                // Method readLongBE5:(Lorg/apache/orc/impl/InStream;I)J
+     626: lastore
+     627: goto          930
+     630: aload_2
+     631: iload_3
+     632: iconst_0
+     633: iadd
+     634: aload_0
+     635: aload_1
+     636: iconst_0
+     637: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     640: lastore
+     641: aload_2
+     642: iload_3
+     643: iconst_1
+     644: iadd
+     645: aload_0
+     646: aload_1
+     647: bipush        6
+     649: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     652: lastore
+     653: aload_2
+     654: iload_3
+     655: iconst_2
+     656: iadd
+     657: aload_0
+     658: aload_1
+     659: bipush        12
+     661: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     664: lastore
+     665: aload_2
+     666: iload_3
+     667: iconst_3
+     668: iadd
+     669: aload_0
+     670: aload_1
+     671: bipush        18
+     673: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     676: lastore
+     677: aload_2
+     678: iload_3
+     679: iconst_4
+     680: iadd
+     681: aload_0
+     682: aload_1
+     683: bipush        24
+     685: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     688: lastore
+     689: aload_2
+     690: iload_3
+     691: iconst_5
+     692: iadd
+     693: aload_0
+     694: aload_1
+     695: bipush        30
+     697: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     700: lastore
+     701: aload_2
+     702: iload_3
+     703: bipush        6
+     705: iadd
+     706: aload_0
+     707: aload_1
+     708: bipush        36
+     710: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     713: lastore
+     714: aload_2
+     715: iload_3
+     716: bipush        7
+     718: iadd
+     719: aload_0
+     720: aload_1
+     721: bipush        42
+     723: invokevirtual #353                // Method readLongBE6:(Lorg/apache/orc/impl/InStream;I)J
+     726: lastore
+     727: goto          930
+     730: aload_2
+     731: iload_3
+     732: iconst_0
+     733: iadd
+     734: aload_0
+     735: aload_1
+     736: iconst_0
+     737: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     740: lastore
+     741: aload_2
+     742: iload_3
+     743: iconst_1
+     744: iadd
+     745: aload_0
+     746: aload_1
+     747: bipush        7
+     749: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     752: lastore
+     753: aload_2
+     754: iload_3
+     755: iconst_2
+     756: iadd
+     757: aload_0
+     758: aload_1
+     759: bipush        14
+     761: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     764: lastore
+     765: aload_2
+     766: iload_3
+     767: iconst_3
+     768: iadd
+     769: aload_0
+     770: aload_1
+     771: bipush        21
+     773: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     776: lastore
+     777: aload_2
+     778: iload_3
+     779: iconst_4
+     780: iadd
+     781: aload_0
+     782: aload_1
+     783: bipush        28
+     785: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     788: lastore
+     789: aload_2
+     790: iload_3
+     791: iconst_5
+     792: iadd
+     793: aload_0
+     794: aload_1
+     795: bipush        35
+     797: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     800: lastore
+     801: aload_2
+     802: iload_3
+     803: bipush        6
+     805: iadd
+     806: aload_0
+     807: aload_1
+     808: bipush        42
+     810: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     813: lastore
+     814: aload_2
+     815: iload_3
+     816: bipush        7
+     818: iadd
+     819: aload_0
+     820: aload_1
+     821: bipush        49
+     823: invokevirtual #356                // Method readLongBE7:(Lorg/apache/orc/impl/InStream;I)J
+     826: lastore
+     827: goto          930
+     830: aload_2
+     831: iload_3
+     832: iconst_0
+     833: iadd
+     834: aload_0
+     835: aload_1
+     836: iconst_0
+     837: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     840: lastore
+     841: aload_2
+     842: iload_3
+     843: iconst_1
+     844: iadd
+     845: aload_0
+     846: aload_1
+     847: bipush        8
+     849: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     852: lastore
+     853: aload_2
+     854: iload_3
+     855: iconst_2
+     856: iadd
+     857: aload_0
+     858: aload_1
+     859: bipush        16
+     861: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     864: lastore
+     865: aload_2
+     866: iload_3
+     867: iconst_3
+     868: iadd
+     869: aload_0
+     870: aload_1
+     871: bipush        24
+     873: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     876: lastore
+     877: aload_2
+     878: iload_3
+     879: iconst_4
+     880: iadd
+     881: aload_0
+     882: aload_1
+     883: bipush        32
+     885: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     888: lastore
+     889: aload_2
+     890: iload_3
+     891: iconst_5
+     892: iadd
+     893: aload_0
+     894: aload_1
+     895: bipush        40
+     897: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     900: lastore
+     901: aload_2
+     902: iload_3
+     903: bipush        6
+     905: iadd
+     906: aload_0
+     907: aload_1
+     908: bipush        48
+     910: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     913: lastore
+     914: aload_2
+     915: iload_3
+     916: bipush        7
+     918: iadd
+     919: aload_0
+     920: aload_1
+     921: bipush        56
+     923: invokevirtual #359                // Method readLongBE8:(Lorg/apache/orc/impl/InStream;I)J
+     926: lastore
+     927: goto          930
+     930: return
+
+  private long readLongBE2(org.apache.orc.impl.InStream, int);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field readBuffer:[B
+       4: iload_2
+       5: baload
+       6: sipush        255
+       9: iand
+      10: bipush        8
+      12: ishl
+      13: aload_0
+      14: getfield      #13                 // Field readBuffer:[B
+      17: iload_2
+      18: iconst_1
+      19: iadd
+      20: baload
+      21: sipush        255
+      24: iand
+      25: iconst_0
+      26: ishl
+      27: iadd
+      28: i2l
+      29: lreturn
+
+  private long readLongBE3(org.apache.orc.impl.InStream, int);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field readBuffer:[B
+       4: iload_2
+       5: baload
+       6: sipush        255
+       9: iand
+      10: bipush        16
+      12: ishl
+      13: aload_0
+      14: getfield      #13                 // Field readBuffer:[B
+      17: iload_2
+      18: iconst_1
+      19: iadd
+      20: baload
+      21: sipush        255
+      24: iand
+      25: bipush        8
+      27: ishl
+      28: iadd
+      29: aload_0
+      30: getfield      #13                 // Field readBuffer:[B
+      33: iload_2
+      34: iconst_2
+      35: iadd
+      36: baload
+      37: sipush        255
+      40: iand
+      41: iconst_0
+      42: ishl
+      43: iadd
+      44: i2l
+      45: lreturn
+
+  private long readLongBE4(org.apache.orc.impl.InStream, int);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field readBuffer:[B
+       4: iload_2
+       5: baload
+       6: sipush        255
+       9: iand
+      10: i2l
+      11: bipush        24
+      13: lshl
+      14: aload_0
+      15: getfield      #13                 // Field readBuffer:[B
+      18: iload_2
+      19: iconst_1
+      20: iadd
+      21: baload
+      22: sipush        255
+      25: iand
+      26: bipush        16
+      28: ishl
+      29: i2l
+      30: ladd
+      31: aload_0
+      32: getfield      #13                 // Field readBuffer:[B
+      35: iload_2
+      36: iconst_2
+      37: iadd
+      38: baload
+      39: sipush        255
+      42: iand
+      43: bipush        8
+      45: ishl
+      46: i2l
+      47: ladd
+      48: aload_0
+      49: getfield      #13                 // Field readBuffer:[B
+      52: iload_2
+      53: iconst_3
+      54: iadd
+      55: baload
+      56: sipush        255
+      59: iand
+      60: iconst_0
+      61: ishl
+      62: i2l
+      63: ladd
+      64: lreturn
+
+  private long readLongBE5(org.apache.orc.impl.InStream, int);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field readBuffer:[B
+       4: iload_2
+       5: baload
+       6: sipush        255
+       9: iand
+      10: i2l
+      11: bipush        32
+      13: lshl
+      14: aload_0
+      15: getfield      #13                 // Field readBuffer:[B
+      18: iload_2
+      19: iconst_1
+      20: iadd
+      21: baload
+      22: sipush        255
+      25: iand
+      26: i2l
+      27: bipush        24
+      29: lshl
+      30: ladd
+      31: aload_0
+      32: getfield      #13                 // Field readBuffer:[B
+      35: iload_2
+      36: iconst_2
+      37: iadd
+      38: baload
+      39: sipush        255
+      42: iand
+      43: bipush        16
+      45: ishl
+      46: i2l
+      47: ladd
+      48: aload_0
+      49: getfield      #13                 // Field readBuffer:[B
+      52: iload_2
+      53: iconst_3
+      54: iadd
+      55: baload
+      56: sipush        255
+      59: iand
+      60: bipush        8
+      62: ishl
+      63: i2l
+      64: ladd
+      65: aload_0
+      66: getfield      #13                 // Field readBuffer:[B
+      69: iload_2
+      70: iconst_4
+      71: iadd
+      72: baload
+      73: sipush        255
+      76: iand
+      77: iconst_0
+      78: ishl
+      79: i2l
+      80: ladd
+      81: lreturn
+
+  private long readLongBE6(org.apache.orc.impl.InStream, int);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field readBuffer:[B
+       4: iload_2
+       5: baload
+       6: sipush        255
+       9: iand
+      10: i2l
+      11: bipush        40
+      13: lshl
+      14: aload_0
+      15: getfield      #13                 // Field readBuffer:[B
+      18: iload_2
+      19: iconst_1
+      20: iadd
+      21: baload
+      22: sipush        255
+      25: iand
+      26: i2l
+      27: bipush        32
+      29: lshl
+      30: ladd
+      31: aload_0
+      32: getfield      #13                 // Field readBuffer:[B
+      35: iload_2
+      36: iconst_2
+      37: iadd
+      38: baload
+      39: sipush        255
+      42: iand
+      43: i2l
+      44: bipush        24
+      46: lshl
+      47: ladd
+      48: aload_0
+      49: getfield      #13                 // Field readBuffer:[B
+      52: iload_2
+      53: iconst_3
+      54: iadd
+      55: baload
+      56: sipush        255
+      59: iand
+      60: bipush        16
+      62: ishl
+      63: i2l
+      64: ladd
+      65: aload_0
+      66: getfield      #13                 // Field readBuffer:[B
+      69: iload_2
+      70: iconst_4
+      71: iadd
+      72: baload
+      73: sipush        255
+      76: iand
+      77: bipush        8
+      79: ishl
+      80: i2l
+      81: ladd
+      82: aload_0
+      83: getfield      #13                 // Field readBuffer:[B
+      86: iload_2
+      87: iconst_5
+      88: iadd
+      89: baload
+      90: sipush        255
+      93: iand
+      94: iconst_0
+      95: ishl
+      96: i2l
+      97: ladd
+      98: lreturn
+
+  private long readLongBE7(org.apache.orc.impl.InStream, int);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field readBuffer:[B
+       4: iload_2
+       5: baload
+       6: sipush        255
+       9: iand
+      10: i2l
+      11: bipush        48
+      13: lshl
+      14: aload_0
+      15: getfield      #13                 // Field readBuffer:[B
+      18: iload_2
+      19: iconst_1
+      20: iadd
+      21: baload
+      22: sipush        255
+      25: iand
+      26: i2l
+      27: bipush        40
+      29: lshl
+      30: ladd
+      31: aload_0
+      32: getfield      #13                 // Field readBuffer:[B
+      35: iload_2
+      36: iconst_2
+      37: iadd
+      38: baload
+      39: sipush        255
+      42: iand
+      43: i2l
+      44: bipush        32
+      46: lshl
+      47: ladd
+      48: aload_0
+      49: getfield      #13                 // Field readBuffer:[B
+      52: iload_2
+      53: iconst_3
+      54: iadd
+      55: baload
+      56: sipush        255
+      59: iand
+      60: i2l
+      61: bipush        24
+      63: lshl
+      64: ladd
+      65: aload_0
+      66: getfield      #13                 // Field readBuffer:[B
+      69: iload_2
+      70: iconst_4
+      71: iadd
+      72: baload
+      73: sipush        255
+      76: iand
+      77: bipush        16
+      79: ishl
+      80: i2l
+      81: ladd
+      82: aload_0
+      83: getfield      #13                 // Field readBuffer:[B
+      86: iload_2
+      87: iconst_5
+      88: iadd
+      89: baload
+      90: sipush        255
+      93: iand
+      94: bipush        8
+      96: ishl
+      97: i2l
+      98: ladd
+      99: aload_0
+     100: getfield      #13                 // Field readBuffer:[B
+     103: iload_2
+     104: bipush        6
+     106: iadd
+     107: baload
+     108: sipush        255
+     111: iand
+     112: iconst_0
+     113: ishl
+     114: i2l
+     115: ladd
+     116: lreturn
+
+  private long readLongBE8(org.apache.orc.impl.InStream, int);
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field readBuffer:[B
+       4: iload_2
+       5: baload
+       6: sipush        255
+       9: iand
+      10: i2l
+      11: bipush        56
+      13: lshl
+      14: aload_0
+      15: getfield      #13                 // Field readBuffer:[B
+      18: iload_2
+      19: iconst_1
+      20: iadd
+      21: baload
+      22: sipush        255
+      25: iand
+      26: i2l
+      27: bipush        48
+      29: lshl
+      30: ladd
+      31: aload_0
+      32: getfield      #13                 // Field readBuffer:[B
+      35: iload_2
+      36: iconst_2
+      37: iadd
+      38: baload
+      39: sipush        255
+      42: iand
+      43: i2l
+      44: bipush        40
+      46: lshl
+      47: ladd
+      48: aload_0
+      49: getfield      #13                 // Field readBuffer:[B
+      52: iload_2
+      53: iconst_3
+      54: iadd
+      55: baload
+      56: sipush        255
+      59: iand
+      60: i2l
+      61: bipush        32
+      63: lshl
+      64: ladd
+      65: aload_0
+      66: getfield      #13                 // Field readBuffer:[B
+      69: iload_2
+      70: iconst_4
+      71: iadd
+      72: baload
+      73: sipush        255
+      76: iand
+      77: i2l
+      78: bipush        24
+      80: lshl
+      81: ladd
+      82: aload_0
+      83: getfield      #13                 // Field readBuffer:[B
+      86: iload_2
+      87: iconst_5
+      88: iadd
+      89: baload
+      90: sipush        255
+      93: iand
+      94: bipush        16
+      96: ishl
+      97: i2l
+      98: ladd
+      99: aload_0
+     100: getfield      #13                 // Field readBuffer:[B
+     103: iload_2
+     104: bipush        6
+     106: iadd
+     107: baload
+     108: sipush        255
+     111: iand
+     112: bipush        8
+     114: ishl
+     115: i2l
+     116: ladd
+     117: aload_0
+     118: getfield      #13                 // Field readBuffer:[B
+     121: iload_2
+     122: bipush        7
+     124: iadd
+     125: baload
+     126: sipush        255
+     129: iand
+     130: iconst_0
+     131: ishl
+     132: i2l
+     133: ladd
+     134: lreturn
+
+  public boolean isSafeSubtract(long, long);
+    Code:
+       0: lload_1
+       1: lload_3
+       2: lxor
+       3: lconst_0
+       4: lcmp
+       5: ifge          18
+       8: lload_1
+       9: lload_1
+      10: lload_3
+      11: lsub
+      12: lxor
+      13: lconst_0
+      14: lcmp
+      15: iflt          22
+      18: iconst_1
+      19: goto          23
+      22: iconst_0
+      23: ireturn
+
+  public static double convertFromUtc(java.util.TimeZone, double);
+    Code:
+       0: aload_0
+       1: dload_1
+       2: ldc2_w        #362                // double 1000.0d
+       5: dmul
+       6: d2l
+       7: aload_0
+       8: invokevirtual #364                // Method java/util/TimeZone.getRawOffset:()I
+      11: i2l
+      12: lsub
+      13: invokevirtual #369                // Method java/util/TimeZone.getOffset:(J)I
+      16: istore_3
+      17: dload_1
+      18: iload_3
+      19: i2d
+      20: ldc2_w        #362                // double 1000.0d
+      23: ddiv
+      24: dsub
+      25: dreturn
+
+  public static long convertFromUtc(java.util.TimeZone, long);
+    Code:
+       0: aload_0
+       1: lload_1
+       2: aload_0
+       3: invokevirtual #364                // Method java/util/TimeZone.getRawOffset:()I
+       6: i2l
+       7: lsub
+       8: invokevirtual #369                // Method java/util/TimeZone.getOffset:(J)I
+      11: istore_3
+      12: lload_1
+      13: iload_3
+      14: i2l
+      15: lsub
+      16: lreturn
+
+  public static long convertToUtc(java.util.TimeZone, long);
+    Code:
+       0: aload_0
+       1: lload_1
+       2: invokevirtual #369                // Method java/util/TimeZone.getOffset:(J)I
+       5: istore_3
+       6: lload_1
+       7: iload_3
+       8: i2l
+       9: ladd
+      10: lreturn
+
+  public static org.apache.orc.impl.writer.StreamOptions getCustomizedCodec(org.apache.orc.impl.writer.StreamOptions, org.apache.orc.OrcFile$CompressionStrategy, org.apache.orc.OrcProto$Stream$Kind);
+    Code:
+       0: aload_0
+       1: invokevirtual #372                // Method org/apache/orc/impl/writer/StreamOptions.getCodec:()Lorg/apache/orc/CompressionCodec;
+       4: ifnull        195
+       7: aload_0
+       8: invokevirtual #378                // Method org/apache/orc/impl/writer/StreamOptions.getCodecOptions:()Lorg/apache/orc/CompressionCodec$Options;
+      11: astore_3
+      12: getstatic     #382                // Field org/apache/orc/impl/SerializationUtils$1.$SwitchMap$org$apache$orc$OrcProto$Stream$Kind:[I
+      15: aload_2
+      16: invokevirtual #387                // Method org/apache/orc/OrcProto$Stream$Kind.ordinal:()I
+      19: iaload
+      20: tableswitch   { // 1 to 9
+                     1: 72
+                     2: 72
+                     3: 72
+                     4: 72
+                     5: 120
+                     6: 120
+                     7: 120
+                     8: 120
+                     9: 120
+               default: 146
+          }
+      72: aload_3
+      73: invokeinterface #390,  1          // InterfaceMethod org/apache/orc/CompressionCodec$Options.copy:()Lorg/apache/orc/CompressionCodec$Options;
+      78: getstatic     #395                // Field org/apache/orc/CompressionCodec$DataKind.TEXT:Lorg/apache/orc/CompressionCodec$DataKind;
+      81: invokeinterface #401,  2          // InterfaceMethod org/apache/orc/CompressionCodec$Options.setData:(Lorg/apache/orc/CompressionCodec$DataKind;)Lorg/apache/orc/CompressionCodec$Options;
+      86: astore_3
+      87: aload_1
+      88: getstatic     #405                // Field org/apache/orc/OrcFile$CompressionStrategy.SPEED:Lorg/apache/orc/OrcFile$CompressionStrategy;
+      91: if_acmpne     107
+      94: aload_3
+      95: getstatic     #411                // Field org/apache/orc/CompressionCodec$SpeedModifier.FAST:Lorg/apache/orc/CompressionCodec$SpeedModifier;
+      98: invokeinterface #417,  2          // InterfaceMethod org/apache/orc/CompressionCodec$Options.setSpeed:(Lorg/apache/orc/CompressionCodec$SpeedModifier;)Lorg/apache/orc/CompressionCodec$Options;
+     103: pop
+     104: goto          163
+     107: aload_3
+     108: getstatic     #421                // Field org/apache/orc/CompressionCodec$SpeedModifier.DEFAULT:Lorg/apache/orc/CompressionCodec$SpeedModifier;
+     111: invokeinterface #417,  2          // InterfaceMethod org/apache/orc/CompressionCodec$Options.setSpeed:(Lorg/apache/orc/CompressionCodec$SpeedModifier;)Lorg/apache/orc/CompressionCodec$Options;
+     116: pop
+     117: goto          163
+     120: aload_3
+     121: invokeinterface #390,  1          // InterfaceMethod org/apache/orc/CompressionCodec$Options.copy:()Lorg/apache/orc/CompressionCodec$Options;
+     126: getstatic     #424                // Field org/apache/orc/CompressionCodec$SpeedModifier.FASTEST:Lorg/apache/orc/CompressionCodec$SpeedModifier;
+     129: invokeinterface #417,  2          // InterfaceMethod org/apache/orc/CompressionCodec$Options.setSpeed:(Lorg/apache/orc/CompressionCodec$SpeedModifier;)Lorg/apache/orc/CompressionCodec$Options;
+     134: getstatic     #427                // Field org/apache/orc/CompressionCodec$DataKind.BINARY:Lorg/apache/orc/CompressionCodec$DataKind;
+     137: invokeinterface #401,  2          // InterfaceMethod org/apache/orc/CompressionCodec$Options.setData:(Lorg/apache/orc/CompressionCodec$DataKind;)Lorg/apache/orc/CompressionCodec$Options;
+     142: astore_3
+     143: goto          163
+     146: getstatic     #430                // Field LOG:Lorg/slf4j/Logger;
+     149: aload_2
+     150: invokestatic  #87                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     153: invokedynamic #434,  0            // InvokeDynamic #2:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     158: invokeinterface #435,  2          // InterfaceMethod org/slf4j/Logger.info:(Ljava/lang/String;)V
+     163: aload_0
+     164: invokevirtual #378                // Method org/apache/orc/impl/writer/StreamOptions.getCodecOptions:()Lorg/apache/orc/CompressionCodec$Options;
+     167: aload_3
+     168: invokevirtual #440                // Method java/lang/Object.equals:(Ljava/lang/Object;)Z
+     171: ifne          195
+     174: new           #373                // class org/apache/orc/impl/writer/StreamOptions
+     177: dup
+     178: aload_0
+     179: invokespecial #444                // Method org/apache/orc/impl/writer/StreamOptions."<init>":(Lorg/apache/orc/impl/writer/StreamOptions;)V
+     182: aload_0
+     183: invokevirtual #372                // Method org/apache/orc/impl/writer/StreamOptions.getCodec:()Lorg/apache/orc/CompressionCodec;
+     186: aload_3
+     187: invokevirtual #447                // Method org/apache/orc/impl/writer/StreamOptions.withCodec:(Lorg/apache/orc/CompressionCodec;Lorg/apache/orc/CompressionCodec$Options;)Lorg/apache/orc/impl/writer/StreamOptions;
+     190: astore        4
+     192: aload         4
+     194: areturn
+     195: aload_0
+     196: areturn
+
+  public static long convertBetweenTimezones(java.util.TimeZone, java.util.TimeZone, long);
+    Code:
+       0: aload_0
+       1: lload_2
+       2: invokevirtual #369                // Method java/util/TimeZone.getOffset:(J)I
+       5: i2l
+       6: lstore        4
+       8: aload_1
+       9: lload_2
+      10: invokevirtual #369                // Method java/util/TimeZone.getOffset:(J)I
+      13: i2l
+      14: lstore        6
+      16: lload_2
+      17: lload         4
+      19: ladd
+      20: lload         6
+      22: lsub
+      23: lstore        8
+      25: aload_1
+      26: lload         8
+      28: invokevirtual #369                // Method java/util/TimeZone.getOffset:(J)I
+      31: i2l
+      32: lstore        10
+      34: lload         4
+      36: lload         10
+      38: lsub
+      39: lreturn
+
+  public static java.lang.String bytesVectorToString(org.apache.hadoop.hive.ql.exec.vector.BytesColumnVector, int);
+    Code:
+       0: aload_0
+       1: getfield      #451                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #457                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #460                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          56
+      25: new           #88                 // class java/lang/String
+      28: dup
+      29: aload_0
+      30: getfield      #464                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.vector:[[B
+      33: iload_1
+      34: aaload
+      35: aload_0
+      36: getfield      #468                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.start:[I
+      39: iload_1
+      40: iaload
+      41: aload_0
+      42: getfield      #471                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.length:[I
+      45: iload_1
+      46: iaload
+      47: getstatic     #474                // Field java/nio/charset/StandardCharsets.UTF_8:Ljava/nio/charset/Charset;
+      50: invokespecial #480                // Method java/lang/String."<init>":([BIILjava/nio/charset/Charset;)V
+      53: goto          57
+      56: aconst_null
+      57: areturn
+
+  public static java.sql.Date parseDateFromString(java.lang.String);
+    Code:
+       0: aload_0
+       1: invokestatic  #483                // Method java/sql/Date.valueOf:(Ljava/lang/String;)Ljava/sql/Date;
+       4: astore_1
+       5: aload_1
+       6: areturn
+       7: astore_1
+       8: aconst_null
+       9: areturn
+    Exception table:
+       from    to  target type
+           0     6     7   Class java/lang/IllegalArgumentException
+
+  static {};
+    Code:
+       0: ldc           #8                  // class org/apache/orc/impl/SerializationUtils
+       2: invokestatic  #490                // Method org/slf4j/LoggerFactory.getLogger:(Ljava/lang/Class;)Lorg/slf4j/Logger;
+       5: putstatic     #430                // Field LOG:Lorg/slf4j/Logger;
+       8: return
+}
