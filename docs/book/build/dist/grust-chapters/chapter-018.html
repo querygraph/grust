@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-10-02" />
+  <meta name="dcterms.date" content="2026-10-29" />
   <title>Graph analytics through one Rust implementation</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
@@ -31,7 +31,6 @@
       margin: 0 0.8em 0.2em -1.6em;
       vertical-align: middle;
     }
-    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
     /* CSS for syntax highlighting */
     html { -webkit-text-size-adjust: 100%; }
     pre > code.sourceCode { white-space: pre; position: relative; }
@@ -141,6 +140,18 @@ application can register an independent provider without changing the
 parser, analyzer or executor. The facade exposes these through
 <code>algorithms</code>, <code>cypher</code> and optional
 <code>arrow</code> features.</p>
+<p>The extracted <code>grust-topology</code> kernel has no dependencies.
+A caller that only needs dependency ordering implements
+<code>DirectedGraph</code> over dense node and arc indices, supplies
+reusable <code>Scratch</code> buffers, and calls
+<code>topological_sort</code> with a work-admission callback. The result
+is either a complete order or the entry of a concrete cycle on the
+retained DFS stack. The kernel does not allocate a graph, interpret
+identifiers, or choose a resource policy. <code>grust-algorithms</code>
+uses it behind the existing budgeted projection API; Sail’s declarative
+pipeline scheduler can use the same kernel without importing graph
+stores or Arrow adapters. The extracted crate is an unreleased
+addition.</p>
 <h2 data-number="16.1" id="starting-from-the-facade"><span
 class="header-section-number">16.1</span> Starting from the facade</h2>
 <div class="sourceCode" id="cb1"><pre
@@ -653,7 +664,7 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb5-1"><a href="
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> context <span class="op">=</span> <span class="pp">ExecutionContext::</span>with_accounting(</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    ExecutionLimits <span class="op">{</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        memory_bytes<span class="op">:</span> <span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">30</span><span class="op">,</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        work_units<span class="op">:</span> <span class="dt">usize</span><span class="pp">::</span><span class="cn">MAX</span><span class="op">,</span> <span class="co">// required: an uncounted budget cannot be enforced</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        work_units<span class="op">:</span> <span class="pp">usize::</span><span class="cn">MAX</span><span class="op">,</span> <span class="co">// required: an uncounted budget cannot be enforced</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        batch_rows<span class="op">:</span> <span class="dv">8192</span><span class="op">,</span></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        deadline<span class="op">:</span> <span class="cn">None</span><span class="op">,</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>

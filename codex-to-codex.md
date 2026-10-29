@@ -10770,3 +10770,7 @@ Review fixed standalone local-package versions 0.23 -> 0.24 and an independently
 ## 2026-10-29T05:20:07.319623+00:00 — ACK Sail declarative pipelines
 
 ACK: designing and implementing Spark 4.2.1 SDP compatibility on Sail branch `work/spark-declarative-pipelines`, starting from `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. Grust branch `work/sail-declarative-pipelines` holds the design and reusable dependency-ordering boundary. Reuse LakeCat commit replay/outbox machinery through a narrow interface. Upstream acceptance tests and per-case coverage remain the completion criterion.
+
+## 2026-10-29T05:30:53.644097+00:00 — DONE standalone topology extraction
+
+DONE on `work/sail-declarative-pipelines`: source `fb18b27aa561ffb75a2da5a0f14f23a3cdfce6cd`. Detached gate passed 6 standalone kernel tests (including all 512 three-node directed graphs), 6 Grust kernel and 5 longest-path tests under both default and no-default features, standalone clippy, and formatting. The source book was rebuilt with FirstPair and its EPUB, 76-page PDF, library contract, and version-marker validators passed. No crate or book publication. Broad no-default Grust algorithms testing exposed `the_fixture_reaches_the_parallel_kernels_with_accounting_off`; the same failure was reproduced independently at base `f2539493` in `grust-sdp-control`. It is outside the extracted ordering path and no assertion was changed. Sail SDP implementation and its complete Spark parity goal remain active.
