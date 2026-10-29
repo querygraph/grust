@@ -1,0 +1,142 @@
+{
+  "runner_commit": "7fd30c4187be2e1c735bf84af583b9fff82b540f",
+  "client_spark_version": "4.2.1",
+  "provider": "iceberg",
+  "cases": [
+    {
+      "name": "initial",
+      "outcome": "passed",
+      "rows": [
+        0,
+        1,
+        2
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "location": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-lakecat-6n86a8ia/warehouse/sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683-ab143954-5c16-4f68-9638-7118857de417",
+      "sql": "CREATE MATERIALIZED VIEW `sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683` USING iceberg AS SELECT id AS value FROM range(3);"
+    },
+    {
+      "name": "refresh",
+      "outcome": "passed",
+      "rows": [
+        2,
+        3
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "location": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-lakecat-6n86a8ia/warehouse/sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683-ab143954-5c16-4f68-9638-7118857de417",
+      "sql": "CREATE MATERIALIZED VIEW `sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683` USING iceberg AS SELECT id AS value FROM range(2, 4);"
+    },
+    {
+      "name": "column_comment",
+      "outcome": "passed",
+      "rows": [
+        4
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {
+              "comment": "refreshed"
+            }
+          }
+        ]
+      },
+      "location": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-lakecat-6n86a8ia/warehouse/sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683-ab143954-5c16-4f68-9638-7118857de417",
+      "sql": "CREATE MATERIALIZED VIEW `sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683` (value BIGINT COMMENT 'refreshed') USING iceberg AS SELECT id AS value FROM range(4, 5);"
+    },
+    {
+      "name": "replace_columns",
+      "outcome": "passed",
+      "rows": [
+        "new"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "other",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "location": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-lakecat-6n86a8ia/warehouse/sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683-ab143954-5c16-4f68-9638-7118857de417",
+      "sql": "CREATE MATERIALIZED VIEW `sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683` USING iceberg AS SELECT 'new' AS other;"
+    }
+  ],
+  "case_specs": [
+    {
+      "name": "initial",
+      "definition": "AS SELECT id AS value FROM range(3)",
+      "column": "value",
+      "data_type": "bigint",
+      "rows": [
+        0,
+        1,
+        2
+      ],
+      "comment": null
+    },
+    {
+      "name": "refresh",
+      "definition": "AS SELECT id AS value FROM range(2, 4)",
+      "column": "value",
+      "data_type": "bigint",
+      "rows": [
+        2,
+        3
+      ],
+      "comment": null
+    },
+    {
+      "name": "column_comment",
+      "definition": "(value BIGINT COMMENT 'refreshed') {using} AS SELECT id AS value FROM range(4, 5)",
+      "column": "value",
+      "data_type": "bigint",
+      "rows": [
+        4
+      ],
+      "comment": "refreshed"
+    },
+    {
+      "name": "replace_columns",
+      "definition": "AS SELECT 'new' AS other",
+      "column": "other",
+      "data_type": "string",
+      "rows": [
+        "new"
+      ],
+      "comment": null
+    }
+  ],
+  "table": "sail_pipeline_catalog_11f2ff8ac35f4dca8dff3c0539979683",
+  "server_spark_version": "4.2.1",
+  "catalog": "lakecat",
+  "database": "default",
+  "cleanup": "passed"
+}

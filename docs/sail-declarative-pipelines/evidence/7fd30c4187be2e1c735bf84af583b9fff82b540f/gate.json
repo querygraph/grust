@@ -1,0 +1,42 @@
+{
+  "sail_commit": "7fd30c4187be2e1c735bf84af583b9fff82b540f",
+  "recorded_at": "2026-10-29T11:01:32.529103+00:00",
+  "scope": "Python catalog acceptance runner only; engine code unchanged",
+  "engine_sail_commit": "24533f1f0d32621b54d3f0f78f353be673dc493c",
+  "engine_cli_sha256": "263cba130330b76a16981a628f40bb08e721b7553adf8db8f931ccf5609d04b2",
+  "lakecat_commit": "27e18f390c450c187a34b1c3bb2037c26d107699",
+  "checks": [
+    {
+      "command": "ruff check and format --check scripts/spark-pipelines-tests/catalog.py",
+      "outcome": "pass"
+    },
+    {
+      "command": "catalog.py --remote <memory profile> --provider parquet --storage <owned URI> --warehouse <owned URI> --report memory.json",
+      "outcome": "pass",
+      "cases": 4,
+      "cleanup": "passed"
+    },
+    {
+      "command": "catalog.py --remote <LakeCat profile> --provider iceberg --storage <owned URI> --warehouse <owned URI> --report lakecat.json",
+      "outcome": "pass",
+      "cases": 4,
+      "cleanup": "passed"
+    },
+    {
+      "command": "optimized Python and invalid storage URI controls",
+      "outcome": "pass",
+      "expected_exit_code": 2
+    },
+    {
+      "command": "python failure-control.py",
+      "outcome": "pass",
+      "note": "Deliberate wrong expected rows produces a failed case and successful cleanup."
+    }
+  ],
+  "limits": [
+    "These are focused catalog cases, not original Spark Scala suite executions.",
+    "No Rust source changed; prior engine gates remain associated with 24533f1f0, not rerun for this script.",
+    "Only memory/parquet and LakeCat/Iceberg profiles executed; delta option is not qualified.",
+    "LakeCat profile uses memory storage and allow-all test governance; persisted views, streaming, CDC and durability remain open."
+  ]
+}

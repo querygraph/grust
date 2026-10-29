@@ -471,3 +471,21 @@ warehouse-prefixed route. These are optional catalog capabilities needed for
 persisted pipeline views, not evidence of completed REST view support. Reuse the
 existing view storage, metadata and governance machinery during the focused
 Astra review rather than introduce a pipeline-only catalog interface.
+
+## Review the reusable catalog acceptance runner
+
+Commit `7fd30c4187` adds scripts/spark-pipelines-tests/catalog.py. It uses the
+pinned PySpark 4.2.1 client directly, creates a unique table name and fresh graph
+per refresh, and verifies rows, column names/types/nullability/comments, stable
+table location and final cleanup. Catalog and database are selectable; the
+provider is explicit. JSON captures outcomes and setup/run failures. Optimized
+Python is rejected so its assertions cannot be disabled.
+
+Its [receipt](evidence/7fd30c4187be2e1c735bf84af583b9fff82b540f/gate.json) records
+four passing cases plus cleanup on each of memory/parquet and LakeCat/Iceberg,
+Python lint/format, two invalid-invocation controls, and an injected answer
+mismatch that fails acceptance while cleaning its table. The runner source is
+7fd30c4187; both live servers use the previously verified engine binary 24533f1f0.
+Only the Python script differs between those source trees. No Rust or upstream
+Python-suite rerun is claimed for this unit. The [usage note](CATALOG-ACCEPTANCE.md)
+keeps these focused checks distinct from full SDP acceptance.
