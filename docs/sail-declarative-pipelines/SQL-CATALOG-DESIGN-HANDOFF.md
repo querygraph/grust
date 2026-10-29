@@ -5,7 +5,9 @@ Astra. Shared SET CATALOG expression support now reaches that boundary. This
 initial handoff recorded observed behavior and open decisions. The completed
 [catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) now selects the shared
 resolution and prepare/commit boundaries. The shared resolver prerequisite is
-implemented in 564738318; SQL and pipeline activation remain pending.
+implemented in 564738318. Shared statement origins and native pipeline SQL error
+parameters are implemented in 1f281cdfd/010469d3c. Catalog-expression activation
+remains pending.
 General SQL/catalog semantics belong in Sail. LakeCat remains a catalog adapter.
 
 ## Evidence

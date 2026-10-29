@@ -1,0 +1,46 @@
+{
+  "sail_commit": "1f281cdfddf8dcc1594f9b5e4e5802dbaef7e167",
+  "recorded_at": "2026-10-29T14:58:59.233457+00:00",
+  "gate_checkout": "detached immutable source; own target",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-sql-parser -p sail-sql-analyzer -- --check",
+      "outcome": "pass",
+      "log": "fmt.log"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-sql-parser -p sail-sql-analyzer --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass",
+      "log": "clippy.log"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-sql-analyzer --lib --locked",
+      "outcome": "pass",
+      "passed": 23,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0,
+      "log": "rust.log"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-sql-parser --lib --locked",
+      "outcome": "pass",
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0,
+      "log": "parser-rust.log"
+    }
+  ],
+  "initial_candidate": {
+    "commit": "1bf1a2523f72e678eb14be0df5d8cb6254b43494",
+    "outcome": "compiler E0282 at span conversion; fixed explicit generic parser arguments without changing assertions",
+    "log": "initial-rust.log",
+    "patch": "initial-candidate.patch"
+  },
+  "limits": [
+    "Shared parser/source API only; no new pipeline error wire metadata, CLI build, remote or Scala qualification at this commit.",
+    "Root parser grammar shared with the AST-only adapter; TreeText unchanged.",
+    "Full SDP goal remains incomplete."
+  ]
+}

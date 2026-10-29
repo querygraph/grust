@@ -1,0 +1,78 @@
+{
+  "sail_commit": "010469d3c079285d637752c4cde012ef9bad0b75",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T15:03:53.635233+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "97a0597ac676e9772f0937b13707785e4700e1ea4e43db6eaff1211c05ab555f",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 238,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "pass",
+      "passed": 32,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0,
+      "log": "rust.log"
+    },
+    {
+      "command": "python spark-reference.py",
+      "outcome": "pass",
+      "engine": "Spark 4.2.1 local Connect",
+      "passed": 2,
+      "failed": 0,
+      "report": "spark-reference.json",
+      "test_source_sha256": "98c5b923a55e940006e1fa1c25e8ed44fbf28d5ba954db4572e5ce10737cbf9b"
+    },
+    {
+      "command": "Two exact registration-origin controls against pre-origin engine 5647383189ce71dd97d62fbe97b7013b7bd6e038",
+      "outcome": "failed",
+      "failures": 2,
+      "errors": 0,
+      "xml": "before.xml",
+      "log": "before.log"
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "Both new public controls concern unsupported SELECT registration, not catalog-expression grammar activation.",
+    "No new original Scala-suite, LakeCat/REST adapter, streaming or CDC verdict.",
+    "The broader catalog-expression failing baseline remains unqualified; asynchronous preparation and grammar activation are pending."
+  ],
+  "scope": "Structured pipeline SQL registration errors, original statement intervals and one-based source lines. Shared span API is the separately gated parent 1f281cdfddf8dcc1594f9b5e4e5802dbaef7e167."
+}

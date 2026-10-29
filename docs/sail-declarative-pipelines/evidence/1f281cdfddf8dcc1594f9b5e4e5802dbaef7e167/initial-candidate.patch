@@ -1,0 +1,198 @@
+commit 1bf1a2523f72e678eb14be0df5d8cb6254b43494
+Author: Alexy Khrabrov <deliverable@gmail.com>
+Date:   Thu Oct 29 07:45:49 2026 -0700
+
+    feat: retain original SQL statement spans and source lines
+
+diff --git a/crates/sail-sql-analyzer/src/source.rs b/crates/sail-sql-analyzer/src/source.rs
+index b3911258b..a2bab4449 100644
+--- a/crates/sail-sql-analyzer/src/source.rs
++++ b/crates/sail-sql-analyzer/src/source.rs
+@@ -5,7 +5,7 @@ use chumsky::input::Input;
+ use chumsky::span::SimpleSpan;
+ use sail_sql_parser::ast::statement::Statement;
+ use sail_sql_parser::options::ParserOptions;
+-use sail_sql_parser::parser::create_parser;
++use sail_sql_parser::parser::{create_parser, create_parser_with_spans};
+ use sail_sql_parser::span::TokenSpan;
+ use sail_sql_parser::token::{Keyword, Punctuation, Token};
+ 
+@@ -20,6 +20,13 @@ pub struct SqlSource<'a> {
+     tokens: Vec<(Token<'a>, SimpleSpan<usize>)>,
+ }
+ 
++/// A statement's original text and one-based line within its SQL input.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct StatementOrigin<'a> {
++    pub text: &'a str,
++    pub line: usize,
++}
++
+ impl<'a> SqlSource<'a> {
+     pub fn new(text: &'a str) -> SqlResult<Self> {
+         let options = ParserOptions::default();
+@@ -51,6 +58,34 @@ impl<'a> SqlSource<'a> {
+         }
+     }
+ 
++    pub fn parse_statements_with_spans(&self) -> SqlResult<Vec<(Statement, TokenSpan)>> {
++        let length = self.text.len();
++        let tokens = self
++            .tokens
++            .as_slice()
++            .map((length..length).into(), map_parser_input);
++        create_parser_with_spans::<_, chumsky::extra::Err<chumsky::error::Rich<_, _>>>(
++            &self.options,
++        )
++        .parse(tokens)
++        .into_result()
++        .map_err(SqlError::parser)
++    }
++
++    /// Statement intervals retain trailing trivia, unlike a view's query text.
++    pub fn statement_origin(&self, span: TokenSpan) -> SqlResult<StatementOrigin<'a>> {
++        let invalid = || SqlError::invalid("statement span does not match SQL source");
++        if span.is_empty() {
++            return Err(invalid());
++        }
++        let text = self.text.get(span.start..span.end).ok_or_else(invalid)?;
++        let prefix = self.text.get(..span.start).ok_or_else(invalid)?;
++        Ok(StatementOrigin {
++            text,
++            line: 1 + prefix.bytes().filter(|byte| *byte == b'\n').count(),
++        })
++    }
++
+     /// The current CREATE VIEW grammar ends with AS query. Keep the query's
+     /// original token interval, excluding surrounding trivia and its separator.
+     pub(crate) fn view_query(&self, r#as: TokenSpan) -> SqlResult<&'a str> {
+@@ -87,10 +122,92 @@ impl<'a> SqlSource<'a> {
+ #[cfg(test)]
+ mod tests {
+     use sail_common::spec;
++    use sail_sql_parser::tree::TreeText;
+ 
+     use super::*;
+     use crate::statement::{from_ast_statement, from_ast_statement_with_source};
+ 
++    #[test]
++    fn statement_origins_preserve_trivia_unicode_and_separators() -> SqlResult<()> {
++        let source = SqlSource::new(
++            "/* 雪 */;\n  CREATE VIEW `v;雪` AS SELECT ';' AS x /* tail ; */ ;\n\
++             -- next\n  SELECT 2 -- tail\n",
++        )?;
++        let statements = source.parse_statements_with_spans()?;
++        let origins = statements
++            .iter()
++            .map(|(_, span)| source.statement_origin(*span))
++            .collect::<SqlResult<Vec<_>>>()?;
++        assert_eq!(
++            origins,
++            vec![
++                StatementOrigin {
++                    text: "CREATE VIEW `v;雪` AS SELECT ';' AS x /* tail ; */ ",
++                    line: 2
++                },
++                StatementOrigin {
++                    text: "SELECT 2 -- tail\n",
++                    line: 4
++                },
++            ]
++        );
++        assert_eq!(
++            statements
++                .iter()
++                .map(|(statement, _)| statement.text())
++                .collect::<Vec<_>>(),
++            source
++                .parse_statements()?
++                .iter()
++                .map(TreeText::text)
++                .collect::<Vec<_>>(),
++        );
++        Ok(())
++    }
++
++    #[test]
++    fn statement_origins_include_raw_configuration_values() -> SqlResult<()> {
++        let source = SqlSource::new(
++            ";; SET conf.test = 'a;b' /* configuration */;\r\n\
++             SET CATALOG `catalog`; USE db; SELECT 1; -- after\n",
++        )?;
++        let origins = source
++            .parse_statements_with_spans()?
++            .iter()
++            .map(|(_, span)| source.statement_origin(*span))
++            .collect::<SqlResult<Vec<_>>>()?;
++        assert_eq!(
++            origins.iter().map(|origin| origin.text).collect::<Vec<_>>(),
++            vec![
++                "SET conf.test = 'a;b' /* configuration */",
++                "SET CATALOG `catalog`",
++                "USE db",
++                "SELECT 1",
++            ]
++        );
++        assert_eq!(
++            origins.iter().map(|origin| origin.line).collect::<Vec<_>>(),
++            vec![1, 2, 2, 2]
++        );
++        Ok(())
++    }
++
++    #[test]
++    fn statement_origins_reject_invalid_byte_intervals() -> SqlResult<()> {
++        let source = SqlSource::new("SELECT '雪'")?;
++        for span in [
++            TokenSpan::default(),
++            TokenSpan { start: 9, end: 10 },
++            TokenSpan {
++                start: 0,
++                end: usize::MAX,
++            },
++        ] {
++            assert!(source.statement_origin(span).is_err());
++        }
++        Ok(())
++    }
++
+     fn view(plan: spec::Plan) -> SqlResult<spec::ViewDefinition> {
+         match plan {
+             spec::Plan::Command(spec::CommandPlan {
+diff --git a/crates/sail-sql-parser/src/parser.rs b/crates/sail-sql-parser/src/parser.rs
+index c9f7da692..6c89b0b9b 100644
+--- a/crates/sail-sql-parser/src/parser.rs
++++ b/crates/sail-sql-parser/src/parser.rs
+@@ -143,6 +143,24 @@ where
+ pub fn create_parser<'a, I, E>(
+     options: &'a ParserOptions,
+ ) -> impl Parser<'a, I, Vec<Statement>, E> + Clone
++where
++    I: Input<'a, Token = Token<'a>> + ValueInput<'a>,
++    I::Span: Into<TokenSpan> + Clone,
++    E: ParserExtra<'a, I> + 'a,
++    E::Error: LabelError<'a, I, TokenLabel>,
++{
++    create_parser_with_spans(options).map(|statements| {
++        statements
++            .into_iter()
++            .map(|(statement, _)| statement)
++            .collect()
++    })
++}
++
++/// Parse statements with their original input intervals, excluding separators.
++pub fn create_parser_with_spans<'a, I, E>(
++    options: &'a ParserOptions,
++) -> impl Parser<'a, I, Vec<(Statement, TokenSpan)>, E> + Clone
+ where
+     I: Input<'a, Token = Token<'a>> + ValueInput<'a>,
+     I::Span: Into<TokenSpan> + Clone,
+@@ -157,6 +175,7 @@ where
+         .ignore_then(semicolon.clone().repeated())
+         .ignore_then(
+             statement(options)
++                .map_with(|statement, extra| (statement, extra.span().into()))
+                 .then_ignore(semicolon.clone().ignored().or(end()))
+                 .then_ignore(semicolon.repeated())
+                 .repeated()

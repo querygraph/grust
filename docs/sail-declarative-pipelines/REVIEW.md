@@ -1020,3 +1020,31 @@ its parser/pipeline activation is still pending. Source origins and asynchronous
 preparation will precede expression grammar activation so each review unit can retain
 existing pipeline behavior. Inventory counts and original Scala/full
 batch/REST/streaming/CDC acceptance are unchanged.
+
+## Shared statement origins and structured pipeline SQL errors
+
+Sail 1f281cdfddf8dcc1594f9b5e4e5802dbaef7e167 adds the root parser span entry point and
+checked SqlSource statement origins. The AST-only parser delegates to the same grammar
+and drops spans; TreeText remains unchanged. Three new analyzer tests cover Unicode,
+embedded semicolons, leading/trailing trivia, raw configuration values, CRLF and invalid
+byte intervals. Detached parser six/analyzer 23 tests, formatting and strict Clippy
+pass. The initial compiler inference error and patch are retained.
+
+Sail 010469d3c079285d637752c4cde012ef9bad0b75 uses those origins for
+PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR through existing StructuredSparkError. It
+supplies AnalysisException, SQL state 42000 and the exact
+message/offendingQuery/codeLocation parameter keys. Rust covers both explicit and absent
+paths. Two public controls verify original text and source lines two/four with Unicode
+path/content and retained trailing comments. Both controls fail on the old engine and
+pass unchanged on Spark 4.2.1 and the candidate. See the [qualified
+receipt](evidence/010469d3c079285d637752c4cde012ef9bad0b75/gate.json).
+
+Detached formatting, strict Clippy, CLI build and Ruff pass. The full Connect library
+has 32 passing tests, with no filters. The fresh CLI passes 238 selected pytest cases
+and 67 upstream Python executions, without skips or xfails. File-atomic registration and
+view source preservation remain covered by the selected regressions.
+
+This finishes the statement-origin/diagnostic prerequisite. Asynchronous preparation,
+typed catalog-expression activation and unset-namespace/adaptor acceptance remain
+pending. No original Scala registration is newly marked complete, and inventory counts
+remain unchanged.

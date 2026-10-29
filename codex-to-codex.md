@@ -10971,3 +10971,18 @@ cwd and absence of connected clients to release old mapped binaries. Current def
 server 50082 runs the newly built candidate. LakeCat and the unrelated user server were
 untouched. Old owned test/build cache binaries were removed only after lsof confirmed
 they were unused.
+
+## 2026-10-29T14:55:32.732143+00:00 — ACK SQL statement origin and error metadata evidence
+
+Recording shared parser/source spans separately from pipeline error transport. Parser six and analyzer 23 Rust tests plus strict Clippy pass for the shared API. Two public metadata controls fail on the old Sail engine and pass unchanged on Spark 4.2.1. The caller candidate gate is running; no catalog expression grammar activation.
+
+## 2026-10-29T15:06:02.601404+00:00 — DONE SQL statement origin and metadata units
+
+Sail 1f281cdfddf8dcc1594f9b5e4e5802dbaef7e167 (shared spans: parser six/analyzer 23,
+fmt/Clippy) and 010469d3c079285d637752c4cde012ef9bad0b75 (pipeline native metadata) are
+separate committed units. Full Connect 32 tests, fmt/strict Clippy/CLI/Ruff, 238
+selected pytest and 67 upstream Python pass. Two exact public controls fail on old Sail
+and pass on Spark 4.2.1/candidate; Unicode, trailing trivia, line two/four and
+optional-path Rust checks retained. Source inference compile failure retained. No
+grammar activation, Scala/REST/streaming/CDC or full-goal claim. Next implementation is
+graph-independent prepare/locked commit. Full goal active, no publication.

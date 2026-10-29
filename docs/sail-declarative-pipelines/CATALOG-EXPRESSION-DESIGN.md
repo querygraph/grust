@@ -3,7 +3,8 @@
 This design follows the announced Astra checkpoint. General expression analysis,
 identifier interpretation and catalog selection stay in Sail. LakeCat remains one
 catalog adapter. The shared resolver prerequisite is implemented in 564738318;
-SQL and pipeline activation remain pending. The evidence below is a required
+Statement spans and pipeline diagnostics are implemented in 1f281cdfd and
+010469d3c. Catalog-expression activation remains pending. The evidence below is a required
 failing registration baseline, not a passing SDP verdict.
 
 ## Evidence that determines the boundary
@@ -189,7 +190,9 @@ unset flow database, without falling back to the session's default namespace.
    resolver, with direct resolver tests and no new dependency. Implemented as
    [564738318](evidence/5647383189ce71dd97d62fbe97b7013b7bd6e038/gate.json).
 2. Shared statement spans/origins and structured SQL registration diagnostics,
-   with Unicode, trivia, separators, path and line-number assertions.
+   with Unicode, trivia, separators, path and line-number assertions. Implemented
+   in [1f281cdfd](evidence/1f281cdfddf8dcc1594f9b5e4e5802dbaef7e167/gate.json)
+   and [010469d3c](evidence/010469d3c079285d637752c4cde012ef9bad0b75/gate.json).
 3. Asynchronous preparation plus locked, file-atomic commit, including the new
    typed expression command and its resolver paths before the parser produces
    it. Preserve config capture, error ordering, source text and concurrency.

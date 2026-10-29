@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.205" timestamp="2026-10-29T07:50:28.443443-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_sql_origins" name="test_sql_registration_error_retains_statement_origin[leading-trivia]" time="0.103"><failure message="AssertionError: assert None == 'PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR'&#10; +  where None = getCondition()&#10; +    where getCondition = AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions').getCondition&#10; +      where AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') = &lt;ExceptionInfo AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0...s error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') tblen=7&gt;.value">pipeline = ('4babb767-34bd-4e4c-8143-6b85214faf97', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119dc9bb0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11a020400&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-128/test_sql_registration_error_re0')
+sql = "-- 雪\nSELECT 'é;雪' /* trailing ; */;"
+offending = "SELECT 'é;雪' /* trailing ; */", line = 2
+
+    @pytest.mark.parametrize(
+        ("sql", "offending", "line"),
+        [
+            pytest.param(
+                "-- 雪\nSELECT 'é;雪' /* trailing ; */;",
+                "SELECT 'é;雪' /* trailing ; */",
+                2,
+                id="leading-trivia",
+            ),
+            pytest.param(
+                "SET marker = 1;\n\n-- source\nSELECT 2 -- trailing\n;",
+                "SELECT 2 -- trailing\n",
+                4,
+                id="second-statement",
+            ),
+        ],
+    )
+    def test_sql_registration_error_retains_statement_origin(pipeline, tmp_path, sql, offending, line):
+        _, registry, _ = pipeline
+        path = tmp_path / "é;origin.sql"
+        with pytest.raises(AnalysisException) as error:
+            registry.register_sql(sql, path)
+&gt;       assert error.value.getCondition() == "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR"
+E       AssertionError: assert None == 'PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions').getCondition
+E        +      where AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') = &lt;ExceptionInfo AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0...s error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_sql_origins.py:31: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_sql_origins" name="test_sql_registration_error_retains_statement_origin[second-statement]" time="0.019"><failure message="AssertionError: assert None == 'PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR'&#10; +  where None = getCondition()&#10; +    where getCondition = AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions').getCondition&#10; +      where AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') = &lt;ExceptionInfo AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0...s error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') tblen=7&gt;.value">pipeline = ('ce186a08-ca13-4347-9470-8bef26c24325', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11a01b770&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11a0677e0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-128/test_sql_registration_error_re1')
+sql = 'SET marker = 1;\n\n-- source\nSELECT 2 -- trailing\n;'
+offending = 'SELECT 2 -- trailing\n', line = 4
+
+    @pytest.mark.parametrize(
+        ("sql", "offending", "line"),
+        [
+            pytest.param(
+                "-- 雪\nSELECT 'é;雪' /* trailing ; */;",
+                "SELECT 'é;雪' /* trailing ; */",
+                2,
+                id="leading-trivia",
+            ),
+            pytest.param(
+                "SET marker = 1;\n\n-- source\nSELECT 2 -- trailing\n;",
+                "SELECT 2 -- trailing\n",
+                4,
+                id="second-statement",
+            ),
+        ],
+    )
+    def test_sql_registration_error_retains_statement_origin(pipeline, tmp_path, sql, offending, line):
+        _, registry, _ = pipeline
+        path = tmp_path / "é;origin.sql"
+        with pytest.raises(AnalysisException) as error:
+            registry.register_sql(sql, path)
+&gt;       assert error.value.getCondition() == "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR"
+E       AssertionError: assert None == 'PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions').getCondition
+E        +      where AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r000...: analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') = &lt;ExceptionInfo AnalysisException('[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] /private/var/folders/pv/1m08mp_x2cg0...s error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_sql_origins.py:31: AssertionError</failure></testcase></testsuite></testsuites>
