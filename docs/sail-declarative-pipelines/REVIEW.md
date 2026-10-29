@@ -344,3 +344,10 @@ an upstream mixed-case lookup asymmetry. The unit above covers those six observa
 
 All design and review documents stay in Grust. Preparing these local units
 does not authorize opening an upstream PR or publishing shared crates.
+
+## Model-switch design checkpoint
+
+The next batch work needs a focused failure/event design review. The operator has
+been notified to switch to Astra before this phase begins. The
+[handoff](BATCH-EVENT-DESIGN-HANDOFF.md) records source observations, a Sail baseline,
+and open decisions. No replacement event architecture has been selected.

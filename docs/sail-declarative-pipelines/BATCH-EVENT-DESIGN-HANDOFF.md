@@ -1,0 +1,61 @@
+# Next design checkpoint: batch failures and events
+
+The operator requests notice before a new design phase so they can switch from
+Sol to Astra. That boundary has now been reached for batch failure attribution
+and event delivery. This note records evidence and open decisions; it does not
+choose a new architecture. Streaming checkpoint/recovery and CDC remain later
+design phases.
+
+Baseline Sail is `5a5e256328406b6dcbffd0db83dd39d6f9746553`; its detached gate
+passed 112 selected Sail cases and 67 upstream Python executions. The Spark
+reference remains `617618396087429b5627a86ce933bb0f5d6645cb`.
+
+## Evidence motivating the checkpoint
+
+Spark `ViewSuite.scala:221` registers `pv1 AS SELECT 1 + 1` and `pv2 AS SELECT *
+FROM pv1`. It asserts an ERROR/FAILED event for pv1 containing
+`CREATE_PERMANENT_VIEW_WITHOUT_ALIAS`, and an INFO/SKIPPED event for pv2.
+`DatasetManager.materializeViews` catches publication failures per view, tracks
+failed dependencies, skips affected views, and continues independent publication.
+
+Sail `pipelines/materialize.rs::views` currently returns on its first catalog
+error. `pipelines/analysis.rs::analyze` also returns immediately on a direct
+resolution failure. `pipelines/mod.rs` emits only starting/completed messages and
+uses `outcome?` to propagate errors through the existing executor. There is no
+per-flow failure/event model in these modules. A focused baseline probe of the
+upstream failed-view SQL is retained under
+[evidence](evidence/batch-event-design-boundary/baseline.json).
+
+Spark's internal `PipelineEvent` includes origin, severity, flow/run details,
+and an optional error. Connect `PipelineEventSender.constructProtoEvent` sends
+only timestamp and `messageWithError` in the current wire message. Therefore,
+Connect text assertions alone cannot verify the Scala suite's internal status
+and severity assertions. Internal and wire evidence must be distinguished.
+Spark's sender always enqueues run-progress and terminal flow-progress events;
+nonterminal events may be dropped when its configured queue is full.
+
+## Decisions for the focused design review
+
+- Define the internal flow/run outcomes needed for direct errors, blocked
+  dependencies, publication failure, independent success, cancellation, and
+  terminal completion. Identify which assertions belong to internal tests and
+  which can be observed through Spark Connect.
+- Decide how analysis reports multiple direct and downstream failures while
+  retaining the required outer exception behavior and structured causes.
+- Decide how execution emits progress through Sail's existing Executor response
+  buffering, cancellation, reattachment, and completion handling. Specify
+  backpressure and terminal-event delivery without introducing a second query
+  scheduler or holding registration locks across asynchronous work.
+- Preserve Spark's distinct behavior for table materialization errors, individual
+  view publication failures, and query execution failures. Establish ordering and
+  terminal-run semantics from source and live references before implementing them.
+- Identify the shared permanent-view alias validation change independently from
+  pipeline failure propagation. Preserve Sail's typed AST/spec/planner path.
+- Define granular implementation units and the corresponding upstream assertion
+  ports, including failure injection and cancellation coverage. Keep JobService
+  execution and existing distributed-plan codec requirements intact.
+
+Use the view crosswalk first, then GraphExecution, TriggeredGraphExecution,
+ConstructPipelineEvent, FlowProgressEventLogger, PipelineEventSender and stream
+suites to extend the acceptance scope. The full batch goal remains open; this
+checkpoint is not a request to begin streaming implementation.
