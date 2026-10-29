@@ -1,0 +1,136 @@
+{
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "catalog": "sail",
+  "database": "default",
+  "cases": [
+    {
+      "name": "unqualified_create",
+      "sql_files": [
+        "SET CATALOG sail; CREATE MATERIALIZED VIEW scope_78552c3366_unqualified AS SELECT 7 AS value"
+      ],
+      "stage": "run",
+      "registration": "passed",
+      "outcome": "failed",
+      "error_type": "AnalysisException",
+      "error": "Database not found: ``",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "two_part_create",
+      "sql_files": [
+        "SET CATALOG sail; CREATE MATERIALIZED VIEW default.scope_78552c3366_two AS SELECT 7 AS value"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "use_after_set",
+      "sql_files": [
+        "SET CATALOG sail; USE DATABASE default; CREATE MATERIALIZED VIEW scope_78552c3366_use AS SELECT 7 AS value"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "file_reset",
+      "sql_files": [
+        "SET CATALOG sail",
+        "CREATE MATERIALIZED VIEW scope_78552c3366_reset AS SELECT 7 AS value"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "temporary_after_set",
+      "sql_files": [
+        "SET CATALOG sail; CREATE TEMPORARY VIEW intermediate AS SELECT 7 AS value; USE DATABASE default; CREATE MATERIALIZED VIEW scope_78552c3366_private AS SELECT * FROM intermediate"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "unqualified_external_read",
+      "sql_files": [
+        "SET CATALOG sail; CREATE MATERIALIZED VIEW default.scope_78552c3366_read AS SELECT * FROM scope_78552c3366_input"
+      ],
+      "stage": "run",
+      "registration": "passed",
+      "outcome": "failed",
+      "error_type": "AnalysisException",
+      "error": "cannot qualify pipeline relation `scope_78552c3366_input`",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "invalid_catalog_expression",
+      "sql_files": [
+        "SET CATALOG CONCAT(foo, '1')"
+      ],
+      "stage": "register",
+      "outcome": "failed",
+      "error_type": "IllegalArgumentException",
+      "error": "invalid argument: found ( at 18:19 expected ';', or end of input",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "multipart_catalog_expression",
+      "sql_files": [
+        "SET CATALOG test.cat"
+      ],
+      "stage": "register",
+      "outcome": "failed",
+      "error_type": "IllegalArgumentException",
+      "error": "invalid argument: found . at 16:17 expected ';', or end of input",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "constant_catalog_expression",
+      "sql_files": [
+        "SET CATALOG CONCAT('s', 'ail'); USE DATABASE default; CREATE MATERIALIZED VIEW scope_78552c3366_constant AS SELECT 7 AS value"
+      ],
+      "stage": "register",
+      "outcome": "failed",
+      "error_type": "IllegalArgumentException",
+      "error": "invalid argument: found ( at 18:19 expected ';', or end of input",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    }
+  ]
+}

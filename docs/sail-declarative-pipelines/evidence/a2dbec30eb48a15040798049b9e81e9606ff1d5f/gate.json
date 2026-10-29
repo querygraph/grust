@@ -1,0 +1,48 @@
+{
+  "sail_commit": "a2dbec30eb48a15040798049b9e81e9606ff1d5f",
+  "engine_commit": "39f070e62540eacdb260ee2c241027e53838899f",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T11:53:23.969383+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached immutable test source; existing verified engine binary unchanged",
+  "cli_sha256": "aa2023c28d29ae2f6bec6f0270a6c42d79cfa330f3f3f226934555e9bb21e58d",
+  "checks": [
+    {
+      "command": "ruff check and format --check python/pysail/tests/spark/pipelines/test_sql_namespace.py",
+      "outcome": "pass"
+    },
+    {
+      "command": "pytest replay of selected nodes listed in pytest.xml using remote engine 39f070e62540eacdb260ee2c241027e53838899f",
+      "outcome": "pass",
+      "passed": 199,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "tests_run": 67,
+      "server_spark_version": "4.2.1",
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python spark-reference.py",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "cases": 4,
+      "test_source_commit": "a2dbec30eb48a15040798049b9e81e9606ff1d5f"
+    },
+    {
+      "command": "Compare CLI SHA256 with engine receipt and verify test-only diff",
+      "outcome": "pass"
+    }
+  ],
+  "limits": [
+    "No additional Rust build, Clippy or native-extension execution claim for this test-only commit.",
+    "One configured catalog exercised; complete original multi-catalog/streaming fixture remains unqualified.",
+    "Catalog-expression support and missing-namespace validation stage remain open.",
+    "No whole Scala-suite, distributed, streaming or CDC verdict."
+  ]
+}

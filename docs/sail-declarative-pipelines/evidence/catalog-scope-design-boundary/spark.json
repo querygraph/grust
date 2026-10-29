@@ -1,0 +1,145 @@
+{
+  "engine": "spark",
+  "spark_version": "4.2.1",
+  "catalog": "spark_catalog",
+  "database": "default",
+  "cases": [
+    {
+      "name": "unqualified_create",
+      "sql_files": [
+        "SET CATALOG spark_catalog; CREATE MATERIALIZED VIEW scope_de8e50b27f_unqualified AS SELECT 7 AS value"
+      ],
+      "stage": "register",
+      "outcome": "failed",
+      "error_type": "UnknownException",
+      "error": "(java.lang.AssertionError) assertion failed\n\nJVM stacktrace:\njava.lang.AssertionError\n\tat scala.Predef$.assert(Predef.scala:264)\n\tat org.apache.spark.sql.catalyst.TableIdentifier.<init>(identifiers.scala:103)\n\tat org.apache.spark.sql.catalyst.TableIdentifier.copy(identifiers.scala:101)\n\tat org.apache.spark.sql.pipelines.graph.IdentifierHelper$.fullyQualifyIdentifier(GraphIdentifierManager.scala:333)\n\tat org.apache.spark.sql.pipelines.graph.GraphIdentifierManager$.parseAndQualifyTableIdentifier(GraphIdentifierManager.scala:128)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext$CreateMaterializedViewAsSelectHandler$.handle(SqlGraphRegistrationContext.scala:265)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:157)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "two_part_create",
+      "sql_files": [
+        "SET CATALOG spark_catalog; CREATE MATERIALIZED VIEW default.scope_de8e50b27f_two AS SELECT 7 AS value"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "use_after_set",
+      "sql_files": [
+        "SET CATALOG spark_catalog; USE DATABASE default; CREATE MATERIALIZED VIEW scope_de8e50b27f_use AS SELECT 7 AS value"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "file_reset",
+      "sql_files": [
+        "SET CATALOG spark_catalog",
+        "CREATE MATERIALIZED VIEW scope_de8e50b27f_reset AS SELECT 7 AS value"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "temporary_after_set",
+      "sql_files": [
+        "SET CATALOG spark_catalog; CREATE TEMPORARY VIEW intermediate AS SELECT 7 AS value; USE DATABASE default; CREATE MATERIALIZED VIEW scope_de8e50b27f_private AS SELECT * FROM intermediate"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "unqualified_external_read",
+      "sql_files": [
+        "SET CATALOG spark_catalog; CREATE MATERIALIZED VIEW default.scope_de8e50b27f_read AS SELECT * FROM scope_de8e50b27f_input"
+      ],
+      "stage": "run",
+      "registration": "passed",
+      "outcome": "failed",
+      "error_type": "AnalysisException",
+      "error": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.scope_de8e50b27f_read\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "invalid_catalog_expression",
+      "sql_files": [
+        "SET CATALOG CONCAT(foo, '1')"
+      ],
+      "stage": "register",
+      "outcome": "failed",
+      "error_type": "AnalysisException",
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `foo` cannot be resolved.  SQLSTATE: 42703; line 1 pos 19;\n'SetCatalogCommand 'CONCAT('foo, 1)\n\n\nOffending query:\nSET CATALOG CONCAT(foo, '1')\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-yjz72m34/invalid_catalog_expression-0.sql:1 SQLSTATE: 42000\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.SqlGraphElementRegistrationException\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext$SetCatalogCommandHandler$.handle(SqlGraphRegistrationContext.scala:557)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:146)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSET CATALOG CONCAT(foo, '1')\n",
+        "message": "Failed to resolve catalog expression: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `foo` cannot be resolved.  SQLSTATE: 42703; line 1 pos 19;\n'SetCatalogCommand 'CONCAT('foo, 1)\n",
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-yjz72m34/invalid_catalog_expression-0.sql:1"
+      }
+    },
+    {
+      "name": "multipart_catalog_expression",
+      "sql_files": [
+        "SET CATALOG test.cat"
+      ],
+      "stage": "register",
+      "outcome": "failed",
+      "error_type": "AnalysisException",
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`test`.`cat`) is not allowed. SQLSTATE: 42000\n\nOffending query:\nSET CATALOG test.cat\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-yjz72m34/multipart_catalog_expression-0.sql:1 SQLSTATE: 42000\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.SqlGraphElementRegistrationException\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext$SetCatalogCommandHandler$.handle(SqlGraphRegistrationContext.scala:557)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:146)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSET CATALOG test.cat\n",
+        "message": "Failed to resolve catalog expression: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`test`.`cat`) is not allowed. SQLSTATE: 42000",
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-yjz72m34/multipart_catalog_expression-0.sql:1"
+      }
+    },
+    {
+      "name": "constant_catalog_expression",
+      "sql_files": [
+        "SET CATALOG CONCAT('s', 'park_catalog'); USE DATABASE default; CREATE MATERIALIZED VIEW scope_de8e50b27f_constant AS SELECT 7 AS value"
+      ],
+      "stage": "read",
+      "registration": "passed",
+      "run": "passed",
+      "rows": [
+        [
+          7
+        ]
+      ],
+      "outcome": "passed"
+    }
+  ]
+}

@@ -718,3 +718,26 @@ reviewed inventory to 67 and the unaudited remainder to 395. Eight of the SQL
 suite's 38 registrations are reviewed. Full batch acceptance, original Scala
 suite execution, Astra failure/event and persisted-view design, streaming and
 CDC remain outstanding. No new architecture is selected by these units.
+
+## Review SQL file-local catalog scope and shared expression boundary
+
+Commit `a2dbec30eb` adds four namespace regression cases: explicit namespace after
+SET CATALOG, USE after SET, reset between SQL files, and a private view after a
+catalog/namespace change. They verify persisted rows, session defaults remaining
+unchanged by registration, private-view absence and owned-table/database cleanup.
+The [receipt](evidence/a2dbec30eb48a15040798049b9e81e9606ff1d5f/gate.json) records
+Ruff, 199 selected pytest cases, 67 upstream Python executions and four matching
+Spark 4.2.1 reference checks. Parent engine 39f070e625 already passes all four;
+its CLI hash is unchanged. No additional Rust/native gate or runtime fix claimed.
+
+The separate nine-case paired probe retains real gaps: a missing namespace after
+SET fails too late in Sail; foldable catalog expressions are unsupported; invalid
+expression errors differ; external-read attribution overlaps the event design.
+The [SQL catalog handoff](SQL-CATALOG-DESIGN-HANDOFF.md) records the typed general
+SQL design boundary without selecting an architecture. Operator notified to
+switch to Astra before that design phase. General catalog changes belong in Sail.
+
+Two additional SQL registrations are audited, with one partial port and one
+unmapped expression grid. Total reviewed 69; unaudited 393. SQL suite reviewed
+10 of 38. Full multi-catalog/streaming source fixture and original Scala suite
+remain unexecuted. No full batch or SDP acceptance claim.

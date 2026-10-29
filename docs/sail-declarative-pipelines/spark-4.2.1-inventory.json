@@ -3922,8 +3922,20 @@
       "line": 634,
       "method": "test",
       "name_expression": "\"Use database and set catalog works\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_namespace.py::test_catalog_scope_is_local_to_sql_file[explicit-namespace]",
+        "python/pysail/tests/spark/pipelines/test_sql_namespace.py::test_catalog_scope_is_local_to_sql_file[use-after-set]",
+        "python/pysail/tests/spark/pipelines/test_sql_namespace.py::test_catalog_scope_is_local_to_sql_file[file-reset]",
+        "python/pysail/tests/spark/pipelines/test_sql_namespace.py::test_catalog_scope_is_local_to_sql_file[private-view]"
+      ],
+      "coverage_review": {
+        "phase": "batch-sql-catalog",
+        "covered_assertions": "With one configured catalog, SET CATALOG followed by explicit namespace or USE writes the intended namespace; SQL-file defaults reset for the next file; a private view resolves after a namespace change and remains unpublished. Session catalog/database are unchanged by registration.",
+        "remaining_assertions": "Original fixture switches to a second catalog and checks five exact downstream outputs with CTE/join and STREAM constructs; those combined assertions are unported. Original Scala suite is unexecuted.",
+        "sail_evidence": "evidence/a2dbec30eb48a15040798049b9e81e9606ff1d5f/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:739",
@@ -3932,7 +3944,18 @@
       "method": "gridTest",
       "name_expression": "\"Set catalog throws error if catalog name expression cannot be resolved\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-sql-catalog",
+        "covered_assertions": "None mapped. Paired probes confirm both engines reject both invalid inputs at registration, with different error surfaces.",
+        "remaining_assertions": "Spark returns PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR with Failed to resolve catalog expression; Sail rejects unsupported grammar as an argument/parser error. Shared catalog-expression support and wrapping remain open.",
+        "gap_evidence": "evidence/catalog-scope-design-boundary",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "CONCAT(foo, '1')",
+          "test.cat"
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:759",
