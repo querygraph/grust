@@ -1,0 +1,234 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/execution.rs b/crates/sail-spark-connect/src/pipelines/execution.rs
+index fde3056e4..abaa1bfe2 100644
+--- a/crates/sail-spark-connect/src/pipelines/execution.rs
++++ b/crates/sail-spark-connect/src/pipelines/execution.rs
+@@ -36,9 +36,11 @@ pub(super) async fn execute(
+     }
+     let spark = ctx.extension::<SparkSession>()?;
+     super::materialize::tables(ctx, graph, &analyzed, &selection).await?;
++    super::materialize::views(ctx, graph, &analyzed).await?;
+     let mut resolved = BTreeMap::new();
+     for output in &graph.outputs {
+         if output.kind != OutputType::TemporaryView
++            && output.view.is_none()
+             && !selection.runs(&output.name)
+             && selection.required.contains(&output.name)
+         {
+@@ -55,10 +57,18 @@ pub(super) async fn execute(
+             .find(|x| x.name == name)
+             .ok_or_else(|| SparkError::internal("analyzed output missing"))?;
+         if !selection.required.contains(&name)
+-            || (output.kind != OutputType::TemporaryView && !selection.runs(&name))
++            || (output.kind != OutputType::TemporaryView
++                && output.view.is_none()
++                && !selection.runs(&name))
+         {
+             continue;
+         }
++        if output.view.is_some() {
++            // Resolve the stored view after its selected upstream tables have
++            // been written, so consumers do not retain pre-write table scans.
++            resolved.insert(name.clone(), read_output(ctx, name).await?);
++            continue;
++        }
+         let flow = graph
+             .flows
+             .iter()
+@@ -83,7 +93,7 @@ pub(super) async fn execute(
+             resolved.insert(name, plan);
+             continue;
+         }
+-        run_command(ctx, config, publication_command(output, flow), Some(&scope)).await?;
++        run_command(ctx, config, table_write_command(output, flow), Some(&scope)).await?;
+         // Downstream flows scan the newly committed table. They must not inline
+         // and recompute the producer's definition, especially for nondeterminism.
+         resolved.insert(name.clone(), read_output(ctx, name).await?);
+@@ -110,15 +120,7 @@ pub(super) async fn run_command(
+     Ok(())
+ }
+ 
+-fn publication_command(output: &Output, flow: &Flow) -> spec::CommandNode {
+-    if let Some(mut definition) = output.view.clone() {
+-        definition.replace = true;
+-        definition.if_not_exists = false;
+-        return spec::CommandNode::CreateView {
+-            view: output.name.clone().into(),
+-            definition,
+-        };
+-    }
++fn table_write_command(output: &Output, flow: &Flow) -> spec::CommandNode {
+     let details = match &output.definition.details {
+         Some(pc::define_output::Details::TableDetails(details)) => details.clone(),
+         _ => pc::define_output::TableDetails::default(),
+diff --git a/crates/sail-spark-connect/src/pipelines/materialize.rs b/crates/sail-spark-connect/src/pipelines/materialize.rs
+index 2dc35e5bf..27743db09 100644
+--- a/crates/sail-spark-connect/src/pipelines/materialize.rs
++++ b/crates/sail-spark-connect/src/pipelines/materialize.rs
+@@ -1,4 +1,5 @@
+ use std::collections::BTreeMap;
++use std::sync::Mutex;
+ 
+ use datafusion::prelude::SessionContext;
+ use sail_catalog::error::{CatalogError, CatalogObject};
+@@ -9,7 +10,7 @@ use sail_common_datafusion::datasource::DataSourceRegistry;
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_plan::error::PlanError;
+ 
+-use super::analysis::AnalyzedGraph;
++use super::analysis::{AnalyzedGraph, GraphScope};
+ use super::execution::run_command;
+ use super::graph::{GraphDefinition, analysis, quoted};
+ use super::selection::Selection;
+@@ -240,3 +241,47 @@ pub(super) async fn tables(
+     }
+     Ok(())
+ }
++
++/// Publish every persisted view from its analyzed definition, regardless of
++/// table refresh selection. An excluded upstream table need not exist yet.
++pub(super) async fn views(
++    ctx: &SessionContext,
++    graph: &GraphDefinition,
++    analyzed: &AnalyzedGraph,
++) -> SparkResult<()> {
++    let spark = ctx.extension::<SparkSession>()?;
++    for name in &analyzed.order {
++        let output = graph
++            .outputs
++            .iter()
++            .find(|output| &output.name == name)
++            .ok_or_else(|| SparkError::internal("analyzed output missing"))?;
++        let Some(mut definition) = output.view.clone() else {
++            continue;
++        };
++        let flow = graph
++            .flows
++            .iter()
++            .find(|flow| &flow.target == name)
++            .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", quoted(name)))?;
++        let scope = GraphScope {
++            graph,
++            resolved: &analyzed.relations,
++            reads: Mutex::default(),
++            flow,
++        };
++        definition.replace = true;
++        definition.if_not_exists = false;
++        run_command(
++            ctx,
++            spark.plan_config_with_overrides(flow.sql_conf.clone())?,
++            spec::CommandNode::CreateView {
++                view: name.clone().into(),
++                definition,
++            },
++            Some(&scope),
++        )
++        .await?;
++    }
++    Ok(())
++}
+diff --git a/python/pysail/testing/spark/steps/pipelines.py b/python/pysail/testing/spark/steps/pipelines.py
+index 3989414cb..f59880391 100644
+--- a/python/pysail/testing/spark/steps/pipelines.py
++++ b/python/pysail/testing/spark/steps/pipelines.py
+@@ -29,6 +29,12 @@ def run_pipeline(pipeline):
+     run()
+ 
+ 
++@when(parsers.parse("the pipeline refreshes {names}"))
++def refresh_pipeline(names, pipeline):
++    _, _, run = pipeline
++    run(refresh=[name.strip() for name in names.split(",")])
++
++
+ @when("the pipeline is validated")
+ def validate_pipeline(pipeline):
+     _, _, run = pipeline
+@@ -52,3 +58,8 @@ def pipeline_sql_file_with_error(name, condition, docstring, pipeline):
+ @then(parsers.parse("pipeline dataset {name} is not published"))
+ def dataset_not_published(name, pipeline_spark):
+     assert not pipeline_spark.catalog.tableExists(name)
++
++
++@then(parsers.parse("pipeline dataset {name} is published"))
++def dataset_published(name, pipeline_spark):
++    assert pipeline_spark.catalog.tableExists(name)
+diff --git a/python/pysail/tests/spark/pipelines/features/views.feature b/python/pysail/tests/spark/pipelines/features/views.feature
+index 17318e3b8..ffe4f76f6 100644
+--- a/python/pysail/tests/spark/pipelines/features/views.feature
++++ b/python/pysail/tests/spark/pipelines/features/views.feature
+@@ -136,3 +136,74 @@ Feature: Persistent pipeline views
+       """
+     When the pipeline is validated
+     Then pipeline dataset output is not published
++
++  Scenario: Persistent views are published outside a table refresh selection
++    Given pipeline SQL file selection.sql
++      """
++      CREATE MATERIALIZED VIEW chosen AS SELECT 1 AS value;
++      CREATE VIEW output AS SELECT 2 AS value;
++      """
++    When the pipeline refreshes chosen
++    When query
++      """
++      SELECT * FROM output
++      """
++    Then query result
++      | value |
++      | 2     |
++    When query
++      """
++      SELECT * FROM chosen
++      """
++    Then query result
++      | value |
++      | 1     |
++
++  Scenario: Persistent views are published before a table write fails
++    Given pipeline SQL file failure.sql
++      """
++      CREATE MATERIALIZED VIEW raw(id BIGINT, missing STRING) AS SELECT * FROM range(2);
++      CREATE VIEW output AS SELECT * FROM raw;
++      """
++    When the pipeline fails with input schema for INSERT has 1 fields, but table schema has 2 fields
++    When query
++      """
++      SELECT count(*) AS rows FROM output
++      """
++    Then query result
++      | rows |
++      | 0    |
++
++  Scenario: Selected tables read fresh data through an unselected persistent view
++    Given pipeline SQL file chain.sql
++      """
++      CREATE MATERIALIZED VIEW raw AS SELECT * FROM range(1, 4);
++      CREATE VIEW output AS SELECT * FROM raw;
++      CREATE MATERIALIZED VIEW chosen AS SELECT sum(id) AS value FROM output;
++      """
++    When the pipeline refreshes raw, chosen
++    When query
++      """
++      SELECT * FROM chosen
++      """
++    Then query result
++      | value |
++      | 6     |
++
++  Scenario: Persistent view metadata does not require an excluded upstream table
++    Given pipeline SQL file excluded.sql
++      """
++      CREATE MATERIALIZED VIEW raw AS SELECT * FROM range(2);
++      CREATE VIEW output AS SELECT * FROM raw;
++      CREATE MATERIALIZED VIEW chosen AS SELECT 1 AS value;
++      """
++    When the pipeline refreshes chosen
++    Then pipeline dataset output is published
++    Then pipeline dataset raw is not published
++    When query
++      """
++      SELECT * FROM chosen
++      """
++    Then query result
++      | value |
++      | 1     |

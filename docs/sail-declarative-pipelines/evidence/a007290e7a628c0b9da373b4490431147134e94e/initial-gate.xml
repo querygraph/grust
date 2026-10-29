@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="5" time="18.182" timestamp="2026-10-29T02:10:50.297664-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_features" name="test_persistent_views_are_published_outside_a_table_refresh_selection" time="17.837" /><testcase classname="python.pysail.tests.spark.pipelines.test_features" name="test_persistent_views_are_published_before_a_table_write_fails" time="0.044" /><testcase classname="python.pysail.tests.spark.pipelines.test_features" name="test_selected_tables_read_fresh_data_through_an_unselected_persistent_view" time="0.056" /><testcase classname="python.pysail.tests.spark.pipelines.test_features" name="test_persistent_view_metadata_does_not_require_an_excluded_upstream_table" time="0.047" /><testcase classname="python.pysail.tests.spark.pipelines.test_features" name="test_refreshing_a_persistent_view_does_not_read_its_excluded_upstream_table" time="0.024"><failure message="pyspark.errors.exceptions.connect.AnalysisException: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: raw">fixturefunc = &lt;function refresh_pipeline at 0x109766e80&gt;
+request = &lt;FixtureRequest for &lt;Function test_refreshing_a_persistent_view_does_not_read_its_excluded_upstream_table&gt;&gt;
+kwargs = {'names': 'output', 'pipeline': ('b19bc26e-39ce-410e-aaf2-eefdf7d57375', &lt;pyspark.pipelines.spark_connect_graph_elemen...tGraphElementRegistry object at 0x11746fdd0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x117470e00&gt;)}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -&gt; FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+&gt;           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/testing/spark/steps/pipelines.py:35: in refresh_pipeline
+    run(refresh=[name.strip() for name in names.split(",")])
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x11746f260&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Table not found: [TAB... found: raw"
+	debug_error_string = "INTERNAL:Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: raw"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: raw
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</failure></testcase></testsuite></testsuites>

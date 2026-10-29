@@ -1,0 +1,80 @@
+{
+  "sail_commit": "a007290e7a628c0b9da373b4490431147134e94e",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T09:17:33.618529+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "6e6c75a1ef07ded34db3f5f041edfff7ee64a0582ce6bf756d2ca842362b5861",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 106,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "python spark-reference.py; validate recorded expected outcomes",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "scenarios": 5,
+      "note": "Targeted SQL observations mirror the five BDD scenarios. Spark and Sail error-message assertions differ; no exact diagnostic parity claim."
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "View-publication failure aggregation, independent flow progress, and exact event/error semantics remain unqualified.",
+    "Reference scenarios were targeted observations, not a run of Spark's Scala engine suites."
+  ],
+  "retained_failures": [
+    {
+      "server_source": "bbda0c14d59920b650618cb8682fc68261106079",
+      "failed": 3,
+      "evidence": "before.log",
+      "note": "Three new BDD cases ran from the implementation checkout against the prior committed CLI."
+    },
+    {
+      "server_source": "5615341f802e799441accc605984868159f4cc2d",
+      "test_source_commit": "a007290e7a628c0b9da373b4490431147134e94e",
+      "passed": 4,
+      "failed": 1,
+      "evidence": "initial-gate.xml",
+      "note": "Five new BDD cases ran from the implementation checkout against this intermediate CLI; the fifth scenario was added after the candidate was created."
+    },
+    {
+      "server_source": "9a0ec8a9cfba8809fe95ffd4b3cd091f88162a06",
+      "passed": 105,
+      "failed": 1,
+      "evidence": "second-gate.xml",
+      "note": "Detached gate on the intermediate candidate exposed eager loading of an excluded upstream table."
+    }
+  ]
+}

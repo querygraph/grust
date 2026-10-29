@@ -5,11 +5,11 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
-Current batch source `bbda0c14d5` publishes declared table schemas before batch
-writes and refreshes existing tables through catalog operations. Its detached
-gate passed 101 selected Sail cases and 67 unchanged upstream Python executions.
-These counts do not establish full SDP parity. Persisted-view materialization
-ordering, diagnostics, catalog properties, and the remaining acceptance crosswalk
+Current batch source `a007290e7a` publishes table and persisted-view metadata
+before batch writes and refreshes existing tables through catalog operations.
+Its detached gate passed 106 selected Sail cases and 67 unchanged upstream Python
+executions. These counts do not establish full SDP parity. Diagnostics, catalog
+properties, publication failure events, and the remaining acceptance crosswalk
 are still open; streaming and CDC follow batch acceptance.
 
 ## Review the batch implementation
@@ -229,10 +229,40 @@ session catalog returns `comment: null`, while Sail omits the key. Byte-for-byte
 metadata JSON parity is not claimed. Existing-table truncation, schema changes,
 and properties use separate commands, so they are not an atomic catalog update.
 The nested-field guard covers the ordinary append-by-name path; Delta and
-generated/default-column paths need their own coverage. Persisted views still
-publish during flow execution; publishing every persisted view before data writes
-is the next materialization gap. Clustering, pipeline property validation,
-structured diagnostics, and complete batch acceptance remain outstanding.
+generated/default-column paths need their own coverage. At this milestone,
+persisted views still published during flow execution; the next unit corrects
+that sequence. Clustering, pipeline property validation, structured diagnostics,
+and complete batch acceptance remain outstanding.
+
+## Review persisted-view materialization ordering
+
+Commit `a007290e7a` publishes all persisted views in dependency order after table
+metadata materialization and before executing any batch write. Table refresh
+selection does not filter view publication. A view definition is materialized
+against the analyzed graph, so its excluded upstream table need not already exist.
+Actual catalog inputs are loaded when an executing flow consumes them. This keeps
+view-only refreshes free of unnecessary table reads and gives selected consumers
+fresh producer data through their views.
+
+The [receipt](evidence/a007290e7a628c0b9da373b4490431147134e94e/gate.json) records
+106 passing Sail cases: 92 pipeline cases and 14 shared writer/catalog regressions.
+The 67 unchanged upstream Python executions, formatting, strict Clippy, CLI build,
+and Python lint also passed in the detached gate. Five focused SQL scenarios
+were observed against Spark 4.2.1: unselected view publication, a view surviving
+a failed table write, selected producers/consumers connected through an unselected
+view, an absent excluded upstream table, and a view-only refresh. The reference
+records Spark's original exception; the Sail BDD failure scenario still uses
+Sail's existing diagnostic text, so these are behavioral comparisons rather than
+identical error-message assertions.
+
+The three-case failing baseline, initial five-case probe (four passed, one failed),
+and subsequent full gate (105 passed, one failed) are retained. The last failure
+exposed an eager read of an excluded table during a view-only refresh; the final
+unit moves that read to the consuming flow. Review the small changes in
+`pipelines/execution.rs` and `pipelines/materialize.rs` alongside the five BDD
+scenarios. No new physical plan or catalog API was introduced. Handling multiple
+view-publication failures, independent flow progress, and exact event/error
+semantics still require dedicated acceptance work.
 
 ## Constraints for subsequent units
 
