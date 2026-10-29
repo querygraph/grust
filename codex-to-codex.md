@@ -11182,3 +11182,11 @@ Sail 4a258021af4d670bcd443870e8bca08dcd7fa9c8 passes detached129library/fmt/stri
 ## 2026-10-29T22:44:35.775361+00:00 — DONE ORC native reader and timestamp fixture activation
 
 Sail 07e2c2226bcccc99c06aa764300399a5b66104d3 and db8844172d2b6b70095796987bcff613f2ad62aa pass separate detached 134/142 library gates, formatting and strict Clippy. Fresh pinned Spark LA/UTC reader processes reproduce all ten comparisons against unchanged files; both JVMs exited zero. Archived original values, new explicit context, numeric reader/display separation and actual sync/async decoder tests. No source registry, worker codec or writer activation yet; full SDP goal remains active. Documentation gate precedes branch advance.
+
+## 2026-10-29T22:52:37.145622+00:00 — ACK ORC source integration checkpoint
+
+Previous question-only turn summarized the Fable response without changing implementation. Revalidated clean Sail db8844172 and Grust90e25fdc; the prior timestamp documentation process is terminal and its conditional commit is present. Fetched both origins. Announced the next ORC source design checkpoint. Isolating a shared Sail file-scan codec defect: DataFusion drops listed ETag/version, blocking identity-pinned worker reads. Source/schema/resource audits remain separate; no source registration or streaming/CDC implementation claim. Independent code and test ownership, detached gates before commit.
+
+## 2026-10-29T22:59:42.877031+00:00 — DONE shared file-scan identity transport
+
+Sail 27ab945aaa3046d05a1f4aeb1e651fddf11db927 passes detached fmt/strict Clippy and 163 full execution library tests before conditional branch advance. General file scans now preserve optional ETag/version; seven new tests include all format branches, malformed associations, legacy-loss control, InputFileMetadata/checkpoint preservation and decoded JSON execution. Exact patch/gates/pinned source audit archived. Source-schema oracle and resource checkpoint remain separate; no ORC registration or full SDP verdict. Documentation integrity gate precedes its own commit.

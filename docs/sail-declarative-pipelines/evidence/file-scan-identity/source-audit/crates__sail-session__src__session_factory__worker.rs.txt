@@ -1,0 +1,22 @@
+30: impl SessionFactory<()> for WorkerSessionFactory {
+31:     fn create(&mut self, _info: ()) -> Result<SessionContext> {
+32:         let runtime = self.runtime_env.create(Ok)?;
+33:         // We still add default features for the worker session
+34:         // since we need built-in functions to be available for the codec
+35:         // when decoding the execution plan.
+36:         let mut config = SessionConfig::default()
+37:             .with_extension(Arc::new(DeltaTableCache::default()))
+38:             .with_extension(Arc::new(RepartitionBufferConfig::new(
+39:                 self.config.cluster.task_stream_buffer,
+40:             )));
+41:         let execution = &mut config.options_mut().execution;
+42:         execution.batch_size = ConfigNonZeroUsize::try_new(self.config.execution.batch_size)?;
+43:         execution.spill_compression =
+44:             super::temporary_file_compression(self.config.runtime.temporary_files.compression);
+45:         super::apply_parquet_config(&mut execution.parquet, &self.config.parquet);
+46:         let state = SessionStateBuilder::new()
+47:             .with_config(config)
+48:             .with_runtime_env(runtime)
+49:             .with_default_features()
+50:             .build();
+51:         let session = SessionContext::new_with_state(state);

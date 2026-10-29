@@ -1,0 +1,23 @@
+360: impl TryFrom<&protobuf::Field> for Field {
+361:     type Error = Error;
+362:     fn try_from(field: &protobuf::Field) -> Result<Self, Self::Error> {
+363:         let datatype = field.arrow_type.as_deref().required("arrow_type")?;
+364:         let field = Self::new(field.name.as_str(), datatype, field.nullable)
+365:             .with_metadata(field.metadata.clone());
+366:         Ok(field)
+367:     }
+368: }
+369: 
+370: impl TryFrom<&protobuf::Schema> for Schema {
+371:     type Error = Error;
+372: 
+373:     fn try_from(
+374:         schema: &protobuf::Schema,
+375:     ) -> datafusion_common::Result<Self, Self::Error> {
+376:         let fields = schema
+377:             .columns
+378:             .iter()
+379:             .map(Field::try_from)
+380:             .collect::<datafusion_common::Result<Vec<_>, _>>()?;
+381:         Ok(Self::new_with_metadata(fields, schema.metadata.clone()))
+382:     }

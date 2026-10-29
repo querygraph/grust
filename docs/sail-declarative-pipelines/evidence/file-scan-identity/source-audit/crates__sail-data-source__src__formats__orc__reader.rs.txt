@@ -1,0 +1,100 @@
+10: /// Reads bounded ORC ranges against the object identity supplied by listing.
+11: ///
+12: /// Every nonempty read requires an object version or a usable ETag. Both are
+13: /// sent when present; size and modification time alone are not an identity.
+14: /// Consistency relies on the store's version/conditional-read contract. In
+15: /// particular, a local filesystem's metadata-derived ETag cannot establish an
+16: /// immutable snapshot against out-of-band writes that preserve that metadata.
+17: #[derive(Debug)]
+
+28:     async fn read_range(&self, offset: u64, length: u64) -> io::Result<Bytes> {
+29:         let end = offset.checked_add(length).ok_or_else(|| {
+30:             io::Error::new(io::ErrorKind::InvalidInput, "ORC byte range overflows u64")
+31:         })?;
+32:         if end > self.meta.size {
+33:             return Err(io::Error::new(
+34:                 io::ErrorKind::InvalidInput,
+35:                 format!(
+36:                     "ORC byte range {offset}..{end} exceeds object size {}",
+37:                     self.meta.size
+38:                 ),
+39:             ));
+40:         }
+41:         // Vec/Bytes allocations cannot exceed isize::MAX, even when usize is
+42:         // wide enough to represent the requested length.
+43:         let length = usize::try_from(length)
+44:             .ok()
+45:             .filter(|length| *length <= isize::MAX as usize)
+46:             .ok_or_else(|| {
+47:                 io::Error::new(
+48:                     io::ErrorKind::InvalidInput,
+49:                     "ORC byte range length exceeds the addressable buffer size",
+50:                 )
+51:             })?;
+52:         if length == 0 {
+53:             return Ok(Bytes::new());
+54:         }
+55: 
+56:         let has_version = self
+57:             .meta
+58:             .version
+59:             .as_deref()
+60:             .is_some_and(|version| !version.is_empty());
+61:         let has_etag = self
+62:             .meta
+63:             .e_tag
+64:             .as_deref()
+65:             .is_some_and(|etag| !etag.is_empty() && etag != "*" && !etag.starts_with("W/"));
+66:         if !has_version && !has_etag {
+67:             return Err(io::Error::new(
+68:                 io::ErrorKind::Unsupported,
+69:                 format!(
+70:                     "ORC range reads require a version or usable ETag for object {}",
+71:                     self.meta.location
+72:                 ),
+73:             ));
+74:         }
+75: 
+76:         let range = offset..end;
+77:         let result = self
+78:             .store
+79:             .get_opts(
+80:                 &self.meta.location,
+81:                 GetOptions {
+82:                     range: Some(GetRange::Bounded(range.clone())),
+83:                     version: self.meta.version.clone(),
+84:                     if_match: self.meta.e_tag.clone(),
+85:                     ..Default::default()
+86:                 },
+87:             )
+88:             .await
+89:             .map_err(io::Error::from)?;
+90:         if result.range != range {
+91:             return Err(io::Error::new(
+92:                 io::ErrorKind::InvalidData,
+93:                 format!(
+94:                     "ORC object store returned range {:?} for requested range {range:?}",
+95:                     result.range
+96:                 ),
+97:             ));
+98:         }
+99:         if result.meta.location != self.meta.location
+100:             || result.meta.size != self.meta.size
+101:             || self
+102:                 .meta
+103:                 .version
+104:                 .as_ref()
+105:                 .is_some_and(|version| result.meta.version.as_ref() != Some(version))
+106:             || self
+107:                 .meta
+108:                 .e_tag
+109:                 .as_ref()
+110:                 .is_some_and(|etag| result.meta.e_tag.as_ref() != Some(etag))
+111:         {
+112:             return Err(io::Error::new(
+113:                 io::ErrorKind::InvalidData,
+114:                 format!(
+115:                     "ORC object store returned a different object identity for {}",
+116:                     self.meta.location
+117:                 ),
+118:             ));

@@ -1,0 +1,658 @@
+commit b922b67ece1437422d62e717fc0e01175d1d0dec
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 15:57:32 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 15:57:32 2026 -0700
+
+    fix: preserve file object identity across worker scan transport
+
+diff --git a/crates/sail-execution/proto/sail/plan/physical.proto b/crates/sail-execution/proto/sail/plan/physical.proto
+index 5932b4c02..7feeb82cd 100644
+--- a/crates/sail-execution/proto/sail/plan/physical.proto
++++ b/crates/sail-execution/proto/sail/plan/physical.proto
+@@ -80,6 +80,26 @@ message ExtendedPhysicalPlanNode {
+     DeltaMaintenanceExecNode delta_maintenance = 65;
+     DeltaOptimizeRewriteExecNode delta_optimize_rewrite = 66;
+   }
++  // Only leaf file scan nodes carry this supplement. DataFusion's base scan
++  // encoding omits object ETags and versions. Older workers ignore this field,
++  // so identity preservation requires workers using the same codec revision.
++  optional FileScanIdentity file_scan_identity = 67;
++}
++
++message FileScanIdentity {
++  // Positions must match the base scan's groups and files exactly.
++  repeated FileGroupIdentity groups = 1;
++}
++
++message FileGroupIdentity {
++  repeated FileObjectIdentity files = 1;
++}
++
++message FileObjectIdentity {
++  string location = 1;
++  // Preserve absence separately from an explicitly empty value.
++  optional string e_tag = 2;
++  optional string version = 3;
+ }
+ 
+ message InputFileMetadataExecNode {
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 701c9acea..e9782d68c 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -61,7 +61,7 @@ use datafusion::physical_plan::work_table::WorkTableExec;
+ use datafusion::physical_plan::{ExecutionPlan, PlanProperties};
+ use datafusion_proto::generated::datafusion_common as gen_datafusion_common;
+ use datafusion_proto::physical_plan::from_proto::{
+-    parse_physical_sort_exprs, parse_protobuf_file_scan_config, parse_protobuf_partitioning,
++    parse_physical_sort_exprs, parse_protobuf_partitioning,
+ };
+ use datafusion_proto::physical_plan::to_proto::{
+     serialize_file_scan_config, serialize_partitioning, serialize_physical_sort_exprs,
+@@ -355,6 +355,10 @@ use crate::proto::encode::{
+ #[cfg(test)]
+ use crate::proto::encode::{try_encode_physical_expr, try_encode_physical_plan};
+ 
++mod file_scan_identity;
++
++use file_scan_identity::{encode_file_scan_identity, parse_file_scan_config_with_identity};
++
+ pub struct RemoteExecutionCodec;
+ 
+ impl Debug for RemoteExecutionCodec {
+@@ -373,11 +377,28 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+     ) -> Result<Arc<dyn ExecutionPlan>> {
+         let node = ExtendedPhysicalPlanNode::decode(buf)
+             .map_err(|e| plan_datafusion_err!("failed to decode plan: {e}"))?;
+-        let ExtendedPhysicalPlanNode { node_kind } = node;
++        let ExtendedPhysicalPlanNode {
++            node_kind,
++            file_scan_identity,
++        } = node;
+         let node_kind = match node_kind {
+             Some(x) => x,
+             None => return plan_err!("no physical plan node found"),
+         };
++        if file_scan_identity.is_some()
++            && !matches!(
++                &node_kind,
++                NodeKind::NdJson(_)
++                    | NodeKind::Csv(_)
++                    | NodeKind::Parquet(_)
++                    | NodeKind::Arrow(_)
++                    | NodeKind::Text(_)
++                    | NodeKind::BinarySource(_)
++                    | NodeKind::Avro(_)
++            )
++        {
++            return plan_err!("File scan identity requires a leaf file scan node");
++        }
+         match node_kind {
+             NodeKind::Range(r#gen::RangeExecNode {
+                 start,
+@@ -632,11 +653,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                     self.try_decode_file_compression_type(file_compression_type)?;
+                 let base_config = try_decode_message(&base_config)?;
+                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+-                let source = parse_protobuf_file_scan_config(
++                let source = parse_file_scan_config_with_identity(
+                     &base_config,
+                     &PhysicalPlanDecodeContext::new(ctx, self),
+                     proto_converter,
+                     Arc::new(JsonSource::new(table_schema)),
++                    file_scan_identity.as_ref(),
+                 )?;
+                 let source = FileScanConfigBuilder::from(source)
+                     .with_file_compression_type(file_compression_type)
+@@ -653,11 +675,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                 let csv_options: CsvOptions = (&options).try_into()?;
+                 let file_compression_type: FileCompressionType = csv_options.compression.into();
+                 let source = CsvSource::new(table_schema).with_csv_options(csv_options);
+-                let source = parse_protobuf_file_scan_config(
++                let source = parse_file_scan_config_with_identity(
+                     &base_config,
+                     &PhysicalPlanDecodeContext::new(ctx, self),
+                     proto_converter,
+                     Arc::new(source),
++                    file_scan_identity.as_ref(),
+                 )?;
+                 let source = FileScanConfigBuilder::from(source)
+                     .with_file_compression_type(file_compression_type)
+@@ -731,11 +754,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                 if let Some(predicate) = predicate {
+                     source = source.with_predicate(predicate);
+                 }
+-                let source = parse_protobuf_file_scan_config(
++                let source = parse_file_scan_config_with_identity(
+                     &base_config,
+                     &PhysicalPlanDecodeContext::new(ctx, self),
+                     proto_converter,
+                     Arc::new(source),
++                    file_scan_identity.as_ref(),
+                 )?;
+                 let struct_field_matching =
+                     Self::try_decode_struct_field_matching(struct_field_matching)?;
+@@ -772,11 +796,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+             NodeKind::Arrow(r#gen::ArrowExecNode { base_config }) => {
+                 let base_config = try_decode_message(&base_config)?;
+                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+-                let source = parse_protobuf_file_scan_config(
++                let source = parse_file_scan_config_with_identity(
+                     &base_config,
+                     &PhysicalPlanDecodeContext::new(ctx, self),
+                     proto_converter,
+                     Arc::new(ArrowSource::new_file_source(table_schema)),
++                    file_scan_identity.as_ref(),
+                 )?;
+                 Ok(Arc::new(DataSourceExec::new(Arc::new(source))))
+             }
+@@ -800,11 +825,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                 };
+                 let base_config = try_decode_message(&base_config)?;
+                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+-                let source = parse_protobuf_file_scan_config(
++                let source = parse_file_scan_config_with_identity(
+                     &base_config,
+                     &PhysicalPlanDecodeContext::new(ctx, self),
+                     proto_converter,
+                     Arc::new(TextSource::new(table_schema, whole_text, line_sep)),
++                    file_scan_identity.as_ref(),
+                 )?;
+                 let source = FileScanConfigBuilder::from(source)
+                     .with_file_compression_type(file_compression_type)
+@@ -814,11 +840,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+             NodeKind::BinarySource(r#gen::BinarySourceExecNode { base_config }) => {
+                 let base_config = try_decode_message(&base_config)?;
+                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+-                let source = parse_protobuf_file_scan_config(
++                let source = parse_file_scan_config_with_identity(
+                     &base_config,
+                     &PhysicalPlanDecodeContext::new(ctx, self),
+                     proto_converter,
+                     Arc::new(BinarySource::new(table_schema)),
++                    file_scan_identity.as_ref(),
+                 )?;
+                 let source = FileScanConfigBuilder::from(source).build();
+                 Ok(Arc::new(DataSourceExec::new(Arc::new(source))))
+@@ -826,11 +853,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+             NodeKind::Avro(r#gen::AvroExecNode { base_config }) => {
+                 let base_config = try_decode_message(&base_config)?;
+                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+-                let source = parse_protobuf_file_scan_config(
++                let source = parse_file_scan_config_with_identity(
+                     &base_config,
+                     &PhysicalPlanDecodeContext::new(ctx, self),
+                     proto_converter,
+                     Arc::new(AvroSource::new(table_schema)),
++                    file_scan_identity.as_ref(),
+                 )?;
+                 Ok(Arc::new(DataSourceExec::new(Arc::new(source))))
+             }
+@@ -2199,6 +2227,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+         buf: &mut Vec<u8>,
+         proto_converter: &dyn PhysicalProtoConverterExtension,
+     ) -> Result<()> {
++        let mut file_scan_identity = None;
+         let node_kind = if let Some(range) = node.downcast_ref::<RangeExec>() {
+             let schema = try_encode_schema(range.original_schema().as_ref())?;
+             let projection = self.try_encode_projection(range.projection())?;
+@@ -2469,6 +2498,11 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                 };
+             if let Some(file_scan) = source.downcast_ref::<FileScanConfig>() {
+                 let file_source = file_scan.file_source();
++                // The metadata wrapper recursively encodes its inner scan, which
++                // carries identity once; the outer wrapper must not duplicate it.
++                if !file_source.is::<InputFileMetadataSource>() {
++                    file_scan_identity = Some(encode_file_scan_identity(file_scan));
++                }
+                 if let Some(metadata_source) = file_source.downcast_ref::<InputFileMetadataSource>()
+                 {
+                     let mut source_config = file_scan.clone();
+@@ -3463,6 +3497,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+         };
+         let node = ExtendedPhysicalPlanNode {
+             node_kind: Some(node_kind),
++            file_scan_identity,
+         };
+         node.encode(buf)
+             .map_err(|e| plan_datafusion_err!("failed to encode plan: {e}"))
+@@ -7106,6 +7141,7 @@ mod tests {
+                 row_level_mode: None,
+                 write_context_json: String::new(),
+             })),
++            file_scan_identity: None,
+         };
+ 
+         let converter = RemotePhysicalProtoConverter::default();
+@@ -9213,3 +9249,6 @@ mod ansi_string_cast_tests;
+ 
+ #[cfg(test)]
+ mod time_precision_cast_tests;
++
++#[cfg(test)]
++mod file_scan_identity_tests;
+diff --git a/crates/sail-execution/src/proto/codec/file_scan_identity.rs b/crates/sail-execution/src/proto/codec/file_scan_identity.rs
+new file mode 100644
+index 000000000..c50d5e064
+--- /dev/null
++++ b/crates/sail-execution/src/proto/codec/file_scan_identity.rs
+@@ -0,0 +1,82 @@
++use std::sync::Arc;
++
++use datafusion::common::{Result, plan_err};
++use datafusion::datasource::physical_plan::{FileScanConfig, FileSource};
++use datafusion_proto::physical_plan::from_proto::parse_protobuf_file_scan_config;
++use datafusion_proto::physical_plan::{PhysicalPlanDecodeContext, PhysicalProtoConverterExtension};
++use datafusion_proto::protobuf::FileScanExecConf;
++
++use crate::plan::r#gen::{FileGroupIdentity, FileObjectIdentity, FileScanIdentity};
++
++/// Preserve fields omitted by DataFusion's shared file scan protobuf.
++pub(super) fn encode_file_scan_identity(config: &FileScanConfig) -> FileScanIdentity {
++    FileScanIdentity {
++        groups: config
++            .file_groups
++            .iter()
++            .map(|group| FileGroupIdentity {
++                files: group
++                    .iter()
++                    .map(|file| FileObjectIdentity {
++                        location: file.object_meta.location.as_ref().to_owned(),
++                        e_tag: file.object_meta.e_tag.clone(),
++                        version: file.object_meta.version.clone(),
++                    })
++                    .collect(),
++            })
++            .collect(),
++    }
++}
++
++/// Restore identity before the caller applies format-specific scan properties.
++///
++/// A missing supplement retains the behavior of plans encoded by older Sail
++/// versions. Identity usability and conditional reads remain the file source's
++/// responsibility; transport preserves optional strings without normalizing them.
++pub(super) fn parse_file_scan_config_with_identity(
++    proto: &FileScanExecConf,
++    ctx: &PhysicalPlanDecodeContext<'_>,
++    proto_converter: &dyn PhysicalProtoConverterExtension,
++    file_source: Arc<dyn FileSource>,
++    identity: Option<&FileScanIdentity>,
++) -> Result<FileScanConfig> {
++    let mut config = parse_protobuf_file_scan_config(proto, ctx, proto_converter, file_source)?;
++    let Some(identity) = identity else {
++        return Ok(config);
++    };
++    if identity.groups.len() != config.file_groups.len() {
++        return plan_err!(
++            "File scan identity group count {} does not match scan group count {}",
++            identity.groups.len(),
++            config.file_groups.len()
++        );
++    }
++    for (group_index, (group, identities)) in config
++        .file_groups
++        .iter_mut()
++        .zip(&identity.groups)
++        .enumerate()
++    {
++        if identities.files.len() != group.len() {
++            return plan_err!(
++                "File scan identity file count {} does not match group {group_index} file count {}",
++                identities.files.len(),
++                group.len()
++            );
++        }
++        for (file_index, identity) in identities.files.iter().enumerate() {
++            let meta = &mut group[file_index].object_meta;
++            if identity.location != meta.location.as_ref() {
++                return plan_err!(
++                    "File scan identity location '{}' does not match group {group_index} file \
++                     {file_index} location '{}'",
++                    identity.location,
++                    meta.location
++                );
++            }
++            meta.e_tag = identity.e_tag.clone();
++            meta.version = identity.version.clone();
++        }
++    }
++    Ok(config)
++}
+diff --git a/crates/sail-execution/src/proto/codec/file_scan_identity_tests.rs b/crates/sail-execution/src/proto/codec/file_scan_identity_tests.rs
+new file mode 100644
+index 000000000..f734fd8aa
+--- /dev/null
++++ b/crates/sail-execution/src/proto/codec/file_scan_identity_tests.rs
+@@ -0,0 +1,330 @@
++#![expect(clippy::unwrap_used)]
++
++use bytes::Bytes;
++use chrono::{TimeZone, Utc};
++use datafusion::arrow::array::Int64Array;
++use datafusion::datasource::listing::PartitionedFile;
++use datafusion::datasource::physical_plan::FileGroup;
++use datafusion::execution::object_store::ObjectStoreUrl;
++use datafusion::physical_plan::{ExecutionPlanProperties, collect};
++use object_store::ObjectStore;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++
++use super::*;
++use crate::proto::converter::RemotePhysicalProtoConverter;
++
++const FORMATS: [&str; 7] = ["json", "csv", "parquet", "arrow", "avro", "text", "binary"];
++
++fn scan(format: &str) -> Result<FileScanConfig> {
++    let schema = TableSchema::new(
++        Arc::new(Schema::new(vec![Field::new("value", DataType::Utf8, true)])),
++        vec![Arc::new(Field::new("part", DataType::Int32, false))],
++    );
++    let source: Arc<dyn FileSource> = match format {
++        "json" => Arc::new(JsonSource::new(schema)),
++        "csv" => Arc::new(CsvSource::new(schema)),
++        "parquet" => Arc::new(ParquetSource::new(schema)),
++        "arrow" => Arc::new(ArrowSource::new_file_source(schema)),
++        "avro" => Arc::new(AvroSource::new(schema)),
++        "text" => Arc::new(TextSource::new(schema, false, None)),
++        "binary" => Arc::new(BinarySource::new(schema)),
++        _ => return plan_err!("unknown test format {format}"),
++    };
++    let mut files = Vec::new();
++    for (index, (tag, version)) in [
++        (None, Some("")),
++        (Some(""), None),
++        (Some("\"etag-value\""), Some("version-value")),
++        (None, None),
++    ]
++    .into_iter()
++    .enumerate()
++    {
++        // Duplicate paths with different ranges/identities must remain distinct
++        // occurrences. A map keyed only by path would lose this information.
++        let mut file = PartitionedFile::new("same.object", 100);
++        file.object_meta.last_modified = Utc.timestamp_opt(1_700_000_000, 123_456_789).unwrap();
++        file.object_meta.e_tag = tag.map(str::to_owned);
++        file.object_meta.version = version.map(str::to_owned);
++        file.partition_values = vec![ScalarValue::Int32(Some(index as i32))];
++        if index < 3 {
++            file = file.with_range(index as i64 * 20, index as i64 * 20 + 20);
++        }
++        files.push(file);
++    }
++    Ok(
++        FileScanConfigBuilder::new(ObjectStoreUrl::local_filesystem(), source)
++            .with_file_groups(vec![
++                FileGroup::from(files[..2].to_vec()),
++                FileGroup::from(vec![]),
++                FileGroup::from(files[2..].to_vec()),
++            ])
++            .with_projection_indices(Some(vec![1, 0]))?
++            .with_limit(Some(7))
++            .build(),
++    )
++}
++
++fn decoded_config(plan: &Arc<dyn ExecutionPlan>) -> &FileScanConfig {
++    plan.downcast_ref::<DataSourceExec>()
++        .unwrap()
++        .data_source()
++        .downcast_ref::<FileScanConfig>()
++        .unwrap()
++}
++
++fn assert_files(expected: &FileScanConfig, actual: &FileScanConfig, identities: bool) {
++    assert_eq!(actual.object_store_url, expected.object_store_url);
++    assert_eq!(actual.file_groups.len(), expected.file_groups.len());
++    for (left, right) in expected.file_groups.iter().zip(&actual.file_groups) {
++        assert_eq!(left.files().len(), right.files().len());
++        for (left, right) in left.iter().zip(right.iter()) {
++            assert_eq!(right.object_meta.location, left.object_meta.location);
++            assert_eq!(right.object_meta.size, left.object_meta.size);
++            assert_eq!(
++                right.object_meta.last_modified,
++                left.object_meta.last_modified
++            );
++            assert_eq!(right.partition_values, left.partition_values);
++            assert_eq!(
++                right.range.as_ref().map(|range| (range.start, range.end)),
++                left.range.as_ref().map(|range| (range.start, range.end))
++            );
++            if identities {
++                assert_eq!(right.object_meta.e_tag, left.object_meta.e_tag);
++                assert_eq!(right.object_meta.version, left.object_meta.version);
++            } else {
++                assert_eq!(right.object_meta.e_tag, None);
++                assert_eq!(right.object_meta.version, None);
++            }
++        }
++    }
++}
++
++fn encode_node(source: Arc<dyn DataSource>) -> Result<ExtendedPhysicalPlanNode> {
++    let remote = Arc::new(RemoteDataSourceExec::new(&DataSourceExec::new(source)));
++    let mut bytes = Vec::new();
++    RemoteExecutionCodec.try_encode(
++        remote,
++        &mut bytes,
++        &RemotePhysicalProtoConverter::default(),
++    )?;
++    Ok(ExtendedPhysicalPlanNode::decode(bytes.as_slice()).unwrap())
++}
++
++fn decode_node(node: &ExtendedPhysicalPlanNode) -> Result<Arc<dyn ExecutionPlan>> {
++    RemoteExecutionCodec.try_decode(
++        &node.encode_to_vec(),
++        &[],
++        &TaskContext::default(),
++        &RemotePhysicalProtoConverter::default(),
++    )
++}
++
++#[test]
++fn all_file_formats_preserve_identity_options_and_file_occurrences() -> Result<()> {
++    for format in FORMATS {
++        let original = scan(format)?;
++        let plan = DataSourceExec::from_data_source(original.clone()) as Arc<dyn ExecutionPlan>;
++        let bytes = crate::proto::encode_remote_physical_plan(&RemoteExecutionCodec, plan.clone())?;
++        let decoded = crate::proto::decode_remote_physical_plan(
++            &TaskContext::default(),
++            &RemoteExecutionCodec,
++            &bytes,
++        )?;
++        assert_files(&original, decoded_config(&decoded), true);
++        assert_eq!(decoded.schema(), plan.schema(), "{format}");
++        assert_eq!(decoded.schema().field(0).name(), "part");
++        assert_eq!(decoded.schema().field(1).name(), "value");
++        assert_eq!(decoded_config(&decoded).limit, Some(7));
++        assert_eq!(decoded.fetch(), plan.fetch());
++        assert_eq!(decoded.output_partitioning().partition_count(), 3);
++    }
++    Ok(())
++}
++
++#[test]
++fn legacy_absence_and_empty_file_groups_remain_readable() -> Result<()> {
++    for format in FORMATS {
++        let original = scan(format)?;
++        assert!(
++            original
++                .file_groups
++                .iter()
++                .flat_map(FileGroup::iter)
++                .any(|file| {
++                    file.object_meta
++                        .e_tag
++                        .as_ref()
++                        .is_some_and(|tag| !tag.is_empty())
++                        && file
++                            .object_meta
++                            .version
++                            .as_ref()
++                            .is_some_and(|version| !version.is_empty())
++                })
++        );
++        let mut node = encode_node(Arc::new(original.clone()))?;
++        assert!(node.file_scan_identity.is_some());
++        node.file_scan_identity = None;
++        assert_files(&original, decoded_config(&decode_node(&node)?), false);
++        for groups in [vec![], vec![FileGroup::from(vec![])]] {
++            let empty = FileScanConfigBuilder::from(original.clone())
++                .with_file_groups(groups)
++                .build();
++            let node = encode_node(Arc::new(empty.clone()))?;
++            assert_files(&empty, decoded_config(&decode_node(&node)?), true);
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn malformed_sidecar_shape_or_location_is_rejected() -> Result<()> {
++    let original = encode_node(Arc::new(scan("json")?))?;
++    let identity = original.file_scan_identity.as_ref().unwrap();
++    assert_eq!(identity.groups.len(), 3);
++    assert_eq!(identity.groups[0].files.len(), 2);
++    let mut variants = Vec::new();
++    let mut value = identity.clone();
++    value.groups.pop();
++    variants.push(value);
++    let mut value = identity.clone();
++    value.groups.push(value.groups[1].clone());
++    variants.push(value);
++    let mut value = identity.clone();
++    value.groups[0].files.pop();
++    variants.push(value);
++    let mut value = identity.clone();
++    let extra = value.groups[0].files[0].clone();
++    value.groups[0].files.push(extra);
++    variants.push(value);
++    let mut value = identity.clone();
++    value.groups[0].files[0].location = "different.object".to_string();
++    variants.push(value);
++    let mut value = identity.clone();
++    let unexpected = value.groups[0].files[0].clone();
++    value.groups[1].files.push(unexpected);
++    variants.push(value);
++    for identity in variants {
++        let mut node = original.clone();
++        node.file_scan_identity = Some(identity);
++        assert!(decode_node(&node).is_err());
++    }
++    Ok(())
++}
++
++#[test]
++fn input_file_metadata_preserves_inner_identity_and_rejects_outer_sidecars() -> Result<()> {
++    let original = scan("json")?;
++    let source = Arc::new(InputFileMetadataSource::try_new(
++        original.file_source.clone(),
++    )?);
++    let wrapped = FileScanConfigBuilder::from(original.clone())
++        .with_source(source)
++        .build();
++    let mut node = encode_node(Arc::new(wrapped.clone()))?;
++    assert!(matches!(
++        node.node_kind,
++        Some(NodeKind::InputFileMetadata(_))
++    ));
++    assert!(node.file_scan_identity.is_none());
++    let decoded = decode_node(&node)?;
++    let config = decoded_config(&decoded);
++    assert_files(&wrapped, config, true);
++    assert!(config.file_source.is::<InputFileMetadataSource>());
++    assert_eq!(
++        decoded.schema(),
++        DataSourceExec::from_data_source(wrapped).schema()
++    );
++    node.file_scan_identity = encode_node(Arc::new(original))?.file_scan_identity;
++    assert!(decode_node(&node).is_err());
++    Ok(())
++}
++
++#[test]
++fn non_file_nodes_reject_even_empty_identity_sidecars() -> Result<()> {
++    let schema = Arc::new(Schema::new(vec![Field::new("value", DataType::Utf8, true)]));
++    let source = MemorySourceConfig::try_new(&[vec![]], schema, None)?;
++    let mut node = encode_node(Arc::new(source))?;
++    assert!(node.file_scan_identity.is_none());
++    decode_node(&node)?;
++    node.file_scan_identity = Some(r#gen::FileScanIdentity { groups: vec![] });
++    assert!(decode_node(&node).is_err());
++    Ok(())
++}
++
++#[test]
++fn checkpoint_partitioning_survives_identity_restoration() -> Result<()> {
++    let original = scan("parquet")?;
++    let key = Arc::new(Column::new("part", 0)) as Arc<dyn PhysicalExpr>;
++    let source = Arc::new(CheckpointDataSource::new(
++        Arc::new(original.clone()),
++        Partitioning::Hash(vec![key], 3),
++    ));
++    let node = encode_node(source)?;
++    let decoded = decode_node(&node)?;
++    assert_files(&original, decoded_config(&decoded), true);
++    let Partitioning::Hash(expressions, 3) = decoded.output_partitioning() else {
++        return plan_err!("checkpoint partitioning lost during identity restoration");
++    };
++    let column = expressions[0].downcast_ref::<Column>().unwrap();
++    assert_eq!(column.name(), "part");
++    assert_eq!(column.index(), 0);
++    Ok(())
++}
++
++#[tokio::test]
++async fn decoded_json_scan_executes_from_registered_memory_store() -> Result<()> {
++    let store = Arc::new(InMemory::new());
++    let path = Path::from("identity/data.json");
++    store
++        .put(
++            &path,
++            Bytes::from_static(b"{\"value\":1}\n{\"value\":2}\n").into(),
++        )
++        .await?;
++    let mut meta = store.head(&path).await?;
++    // Exercise exact optional-string transport independently of whether this
++    // JSON opener implements conditional GET. This test makes no such claim.
++    meta.version = Some(String::new());
++    let file = PartitionedFile::new_from_meta(meta.clone());
++    let schema = Arc::new(Schema::new(vec![Field::new(
++        "value",
++        DataType::Int64,
++        true,
++    )]));
++    let config = FileScanConfigBuilder::new(
++        ObjectStoreUrl::parse("memory://identity")?,
++        Arc::new(JsonSource::new(schema)),
++    )
++    .with_file_groups(vec![FileGroup::from(vec![file])])
++    .build();
++    let context = Arc::new(TaskContext::default());
++    context
++        .runtime_env()
++        .register_object_store(&url::Url::parse("memory://identity").unwrap(), store);
++    let plan = DataSourceExec::from_data_source(config) as Arc<dyn ExecutionPlan>;
++    let bytes = crate::proto::encode_remote_physical_plan(&RemoteExecutionCodec, plan)?;
++    let decoded =
++        crate::proto::decode_remote_physical_plan(&context, &RemoteExecutionCodec, &bytes)?;
++    assert_eq!(
++        decoded_config(&decoded).file_groups[0].files()[0].object_meta,
++        meta
++    );
++    let batches = collect(decoded, context).await?;
++    let values = batches
++        .iter()
++        .flat_map(|batch| {
++            batch
++                .column(0)
++                .as_any()
++                .downcast_ref::<Int64Array>()
++                .unwrap()
++                .iter()
++        })
++        .collect::<Vec<_>>();
++    assert_eq!(values, [Some(1), Some(2)]);
++    Ok(())
++}

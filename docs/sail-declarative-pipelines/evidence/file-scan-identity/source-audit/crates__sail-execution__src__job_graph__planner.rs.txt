@@ -1,0 +1,38 @@
+113: fn materialize_shared_file_scan_builds(
+114:     plan: Arc<dyn ExecutionPlan>,
+115: ) -> ExecutionResult<Arc<dyn ExecutionPlan>> {
+116:     Ok(plan
+117:         .transform_up(|plan| {
+118:             let shared_build = plan
+119:                 .downcast_ref::<HashJoinExec>()
+120:                 .is_some_and(|join| join.mode == PartitionMode::CollectLeft)
+121:                 || plan.is::<CrossJoinExec>()
+122:                 || plan.is::<NestedLoopJoinExec>()
+123:                 || plan.is::<PiecewiseMergeJoinExec>();
+124:             if !shared_build {
+125:                 return Ok(Transformed::no(plan));
+126:             }
+127:             let (left, right) = plan.children().two()?;
+128:             if left.is::<CoalescePartitionsExec>()
+129:                 || left.output_partitioning().partition_count() != 1
+130:                 || right.output_partitioning().partition_count() <= 1
+131:                 || !left.exists(|node| {
+132:                     Ok(node.downcast_ref::<DataSourceExec>().is_some_and(|source| {
+133:                         source
+134:                             .data_source()
+135:                             .downcast_ref::<FileScanConfig>()
+136:                             .is_some()
+137:                     }))
+138:                 })?
+139:             {
+140:                 return Ok(Transformed::no(plan));
+141:             }
+142:             let children = vec![
+143:                 Arc::new(CoalescePartitionsExec::new(Arc::clone(left))) as Arc<dyn ExecutionPlan>,
+144:                 Arc::clone(right),
+145:             ];
+146:             Ok(Transformed::yes(replace_children_if_necessary(
+147:                 plan, children,
+148:             )?))
+149:         })?
+150:         .data)

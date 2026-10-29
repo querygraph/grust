@@ -1,0 +1,62 @@
+    Checking orc-rust v0.9.0 (/Users/alexy/src/sail-sdp-gate/vendor/orc-rust)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+    Checking sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+    Checking sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+error: unused import: `object_store::ObjectStore`
+  --> crates/sail-execution/src/proto/codec/file_scan_identity_tests.rs:10:5
+   |
+10 | use object_store::ObjectStore;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `-D unused-imports` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error: use of deprecated associated function `datafusion::datasource::table_schema::TableSchema::new`: use TableSchema::builder(file_schema).with_table_partition_cols(cols).build() (or TableSchema::from(file_schema) for no partition columns)
+  --> crates/sail-execution/src/proto/codec/file_scan_identity_tests.rs:20:31
+   |
+20 |     let schema = TableSchema::new(
+   |                               ^^^
+   |
+   = note: `-D deprecated` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(deprecated)]`
+
+error[E0599]: no method named `put` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-execution/src/proto/codec/file_scan_identity_tests.rs:283:10
+     |
+ 282 | /     store
+ 283 | |         .put(
+     | |         -^^^ method not found in `std::sync::Arc<object_store::memory::InMemory>`
+     | |_________|
+     |
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1226:8
+     |
+1226 |       fn put(&self, location: &Path, payload: PutPayload) -> impl Future<Output = Result<PutResult>>;
+     |          --- the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `ObjectStoreExt` which provides `put` is implemented but not in scope; perhaps you want to import it
+     |
+   3 + use object_store::ObjectStoreExt;
+     |
+
+error[E0599]: no method named `head` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-execution/src/proto/codec/file_scan_identity_tests.rs:288:26
+     |
+ 288 |     let mut meta = store.head(&path).await?;
+     |                          ^^^^ method not found in `std::sync::Arc<object_store::memory::InMemory>`
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1307:8
+     |
+1307 |     fn head(&self, location: &Path) -> impl Future<Output = Result<ObjectMeta>>;
+     |        ---- the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `ObjectStoreExt` which provides `head` is implemented but not in scope; perhaps you want to import it
+     |
+   3 + use object_store::ObjectStoreExt;
+     |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-execution` (lib test) due to 4 previous errors

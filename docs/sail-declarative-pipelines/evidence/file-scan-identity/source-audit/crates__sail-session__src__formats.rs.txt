@@ -1,0 +1,54 @@
+1: use std::sync::Arc;
+2: 
+3: use datafusion::common::Result;
+4: use sail_common_datafusion::datasource::DataSourceRegistry;
+5: use sail_data_source::formats::arrow::ArrowDataSource;
+6: use sail_data_source::formats::avro::AvroDataSource;
+7: use sail_data_source::formats::binary::BinaryDataSource;
+8: use sail_data_source::formats::console::ConsoleDataSource;
+9: use sail_data_source::formats::csv::CsvDataSource;
+10: use sail_data_source::formats::json::JsonDataSource;
+11: use sail_data_source::formats::noop::NoopDataSource;
+12: use sail_data_source::formats::parquet::ParquetDataSource;
+13: use sail_data_source::formats::python::{PythonDataSourceAdapter, discover_data_sources};
+14: use sail_data_source::formats::rate::RateDataSource;
+15: use sail_data_source::formats::socket::SocketDataSource;
+16: use sail_data_source::formats::text::TextDataSource;
+17: use sail_delta_lake::DeltaLakeSource;
+18: use sail_iceberg::IcebergLakeSource;
+19: 
+20: pub(crate) fn create_data_source_registry() -> Result<Arc<DataSourceRegistry>> {
+21:     let registry = Arc::new(DataSourceRegistry::new());
+22:     register_builtin_data_sources(&registry)?;
+23:     register_external_data_sources(&registry)?;
+24:     Ok(registry)
+25: }
+26: 
+27: fn register_builtin_data_sources(registry: &DataSourceRegistry) -> Result<()> {
+28:     registry.register_data_source(Arc::new(ArrowDataSource::default()))?;
+29:     registry.register_data_source(Arc::new(AvroDataSource::default()))?;
+30:     registry.register_data_source(Arc::new(BinaryDataSource::default()))?;
+31:     registry.register_data_source(Arc::new(CsvDataSource::default()))?;
+32:     registry.register_data_source(Arc::new(JsonDataSource::default()))?;
+33:     registry.register_data_source(Arc::new(ParquetDataSource::default()))?;
+34:     registry.register_data_source(Arc::new(TextDataSource::default()))?;
+35:     registry.register_data_source(Arc::new(SocketDataSource))?;
+36:     registry.register_data_source(Arc::new(RateDataSource))?;
+37:     registry.register_data_source(Arc::new(ConsoleDataSource))?;
+38:     registry.register_data_source(Arc::new(NoopDataSource))?;
+39:     registry.register_data_source(Arc::new(DeltaLakeSource))?;
+40:     registry.register_data_source(Arc::new(IcebergLakeSource))?;
+41:     Ok(())
+
+59:     fn separates_data_sources_from_lake_sources() -> Result<()> {
+60:         let registry = DataSourceRegistry::new();
+61:         register_builtin_data_sources(&registry)?;
+62: 
+63:         for name in ["parquet", "rate", "console"] {
+64:             assert!(registry.get_data_source(name).is_ok());
+65:             assert!(registry.get_lake_source(name).is_err());
+66:         }
+67:         for name in ["delta", "iceberg"] {
+68:             assert!(registry.get_data_source(name).is_ok());
+69:             assert!(registry.get_lake_source(name).is_ok());
+70:         }

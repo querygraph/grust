@@ -1,0 +1,45 @@
+137:     /// Returns whether this file source supports repartitioning files by byte ranges.
+138:     ///
+139:     /// When this returns `true`, files can be split into multiple partitions
+140:     /// based on byte offsets for parallel reading.
+141:     ///
+142:     /// When this returns `false`, files cannot be repartitioned (e.g., CSV files
+143:     /// with `newlines_in_values` enabled cannot be split because record boundaries
+144:     /// cannot be determined by byte offset alone).
+145:     ///
+146:     /// The default implementation returns `true`. File sources that cannot support
+147:     /// repartitioning should override this method.
+148:     fn supports_repartitioning(&self) -> bool {
+149:         true
+150:     }
+151: 
+152:     /// If supported by the [`FileSource`], redistribute files across partitions
+153:     /// according to their size. Allows custom file formats to implement their
+154:     /// own repartitioning logic.
+155:     ///
+156:     /// The default implementation uses [`FileGroupPartitioner`]. See that
+157:     /// struct for more details.
+158:     fn repartitioned(
+159:         &self,
+160:         target_partitions: usize,
+161:         repartition_file_min_size: usize,
+162:         output_ordering: Option<LexOrdering>,
+163:         config: &FileScanConfig,
+164:     ) -> Result<Option<FileScanConfig>> {
+165:         if config.file_compression_type.is_compressed() || !self.supports_repartitioning()
+166:         {
+167:             return Ok(None);
+168:         }
+169: 
+170:         let repartitioned_file_groups_option = FileGroupPartitioner::new()
+171:             .with_target_partitions(target_partitions)
+172:             .with_repartition_file_min_size(repartition_file_min_size)
+173:             .with_preserve_order_within_groups(output_ordering.is_some())
+174:             .repartition_file_groups(&config.file_groups);
+175: 
+176:         if let Some(repartitioned_file_groups) = repartitioned_file_groups_option {
+177:             let mut source = config.clone();
+178:             source.file_groups = repartitioned_file_groups;
+179:             return Ok(Some(source));
+180:         }
+181:         Ok(None)

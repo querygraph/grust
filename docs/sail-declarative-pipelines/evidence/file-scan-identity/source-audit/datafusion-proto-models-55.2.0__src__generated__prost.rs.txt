@@ -1,0 +1,67 @@
+1916: pub struct FileScanExecConf {
+1917:     #[prost(message, repeated, tag = "1")]
+1918:     pub file_groups: ::prost::alloc::vec::Vec<FileGroup>,
+1919:     #[prost(message, optional, tag = "2")]
+1920:     pub schema: ::core::option::Option<super::datafusion_common::Schema>,
+1921:     #[prost(uint32, repeated, tag = "4")]
+1922:     pub projection: ::prost::alloc::vec::Vec<u32>,
+1923:     #[prost(message, optional, tag = "5")]
+1924:     pub limit: ::core::option::Option<ScanLimit>,
+1925:     #[prost(message, optional, tag = "6")]
+1926:     pub statistics: ::core::option::Option<super::datafusion_common::Statistics>,
+1927:     #[prost(string, repeated, tag = "7")]
+1928:     pub table_partition_cols: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+1929:     #[prost(string, tag = "8")]
+1930:     pub object_store_url: ::prost::alloc::string::String,
+1931:     #[prost(message, repeated, tag = "9")]
+1932:     pub output_ordering: ::prost::alloc::vec::Vec<PhysicalSortExprNodeCollection>,
+1933:     #[prost(message, optional, tag = "11")]
+1934:     pub constraints: ::core::option::Option<super::datafusion_common::Constraints>,
+1935:     #[prost(uint64, optional, tag = "12")]
+1936:     pub batch_size: ::core::option::Option<u64>,
+1937:     #[prost(message, optional, tag = "13")]
+1938:     pub projection_exprs: ::core::option::Option<ProjectionExprs>,
+1939:     #[prost(message, optional, tag = "15")]
+1940:     pub output_partitioning: ::core::option::Option<Partitioning>,
+1941: }
+1942: #[derive(Clone, PartialEq, ::prost::Message)]
+1943: pub struct ParquetScanExecNode {
+1944:     #[prost(message, optional, tag = "1")]
+1945:     pub base_conf: ::core::option::Option<FileScanExecConf>,
+1946:     #[prost(message, optional, tag = "3")]
+1947:     pub predicate: ::core::option::Option<PhysicalExprNode>,
+1948:     #[prost(message, optional, tag = "4")]
+1949:     pub parquet_options: ::core::option::Option<
+1950:         super::datafusion_common::TableParquetOptions,
+
+2395: pub struct PartitionedFile {
+2396:     #[prost(string, tag = "1")]
+2397:     pub path: ::prost::alloc::string::String,
+2398:     #[prost(uint64, tag = "2")]
+2399:     pub size: u64,
+2400:     #[prost(uint64, tag = "3")]
+2401:     pub last_modified_ns: u64,
+2402:     #[prost(message, repeated, tag = "4")]
+2403:     pub partition_values: ::prost::alloc::vec::Vec<
+2404:         super::datafusion_common::ScalarValue,
+2405:     >,
+2406:     #[prost(message, optional, tag = "5")]
+2407:     pub range: ::core::option::Option<FileRange>,
+2408:     #[prost(message, optional, tag = "6")]
+2409:     pub statistics: ::core::option::Option<super::datafusion_common::Statistics>,
+2410:     #[prost(message, optional, tag = "7")]
+2411:     pub arrow_schema: ::core::option::Option<super::datafusion_common::Schema>,
+2412: }
+2413: #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+2414: pub struct FileRange {
+2415:     #[prost(int64, tag = "1")]
+2416:     pub start: i64,
+2417:     #[prost(int64, tag = "2")]
+2418:     pub end: i64,
+2419: }
+2420: #[derive(Clone, PartialEq, ::prost::Message)]
+2421: pub struct PartitionStats {
+2422:     #[prost(int64, tag = "1")]
+2423:     pub num_rows: i64,
+2424:     #[prost(int64, tag = "2")]
+2425:     pub num_batches: i64,

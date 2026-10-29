@@ -1,0 +1,215 @@
+55: impl FileScanConfig {
+56:     /// Serialize the shared, format-agnostic part of a file scan into a
+57:     /// [`protobuf::FileScanExecConf`].
+58:     ///
+59:     /// Each concrete [`FileSource::try_to_proto`]
+60:     /// wraps the returned value in its own `*ScanExecNode`. Byte-compatible with
+61:     /// the former `serialize_file_scan_config` in `datafusion-proto`.
+62:     pub fn try_to_proto(
+63:         &self,
+64:         ctx: &ExecutionPlanEncodeCtx<'_>,
+65:     ) -> Result<protobuf::FileScanExecConf> {
+66:         let file_groups = self
+67:             .file_groups
+68:             .iter()
+69:             .map(TryInto::try_into)
+70:             .collect::<Result<Vec<_>>>()?;
+71: 
+72:         let mut output_ordering = vec![];
+73:         for order in &self.output_ordering {
+74:             let nodes = sort_exprs_try_to_proto(order.iter(), &ctx.expr_ctx())?;
+75:             output_ordering.push(protobuf::PhysicalSortExprNodeCollection {
+76:                 physical_sort_expr_nodes: nodes,
+77:             });
+78:         }
+79: 
+80:         let output_partitioning = self
+81:             .output_partitioning
+82:             .as_ref()
+83:             .map(|partitioning| partitioning.try_to_proto(&ctx.expr_ctx()))
+84:             .transpose()?;
+85: 
+86:         // Fields must be added to the schema so that they can persist in the
+87:         // protobuf, and then removed from the schema in `try_from_proto`.
+88:         let mut fields = self
+89:             .file_schema()
+90:             .fields()
+91:             .iter()
+92:             .cloned()
+93:             .collect::<Vec<_>>();
+94:         fields.extend(self.table_partition_cols().iter().cloned());
+95:         let schema =
+96:             Schema::new(fields).with_metadata(self.file_schema().metadata.clone());
+97: 
+98:         let projection_exprs = self
+99:             .file_source()
+100:             .projection()
+101:             .as_ref()
+102:             .map(|projection_exprs| {
+103:                 Ok::<_, DataFusionError>(protobuf::ProjectionExprs {
+104:                     projections: projection_exprs
+105:                         .iter()
+106:                         .map(|expr| {
+107:                             Ok(protobuf::ProjectionExpr {
+108:                                 alias: expr.alias.to_string(),
+109:                                 expr: Some(ctx.encode_expr(&expr.expr)?),
+110:                             })
+111:                         })
+112:                         .collect::<Result<Vec<_>>>()?,
+113:                 })
+114:             })
+115:             .transpose()?;
+116: 
+117:         Ok(protobuf::FileScanExecConf {
+118:             file_groups,
+119:             statistics: Some((&self.statistics()).into()),
+120:             limit: self.limit.map(|l| protobuf::ScanLimit { limit: l as u32 }),
+121:             projection: vec![],
+122:             schema: Some((&schema).try_into()?),
+123:             table_partition_cols: self
+124:                 .table_partition_cols()
+125:                 .iter()
+126:                 .map(|x| x.name().clone())
+127:                 .collect::<Vec<_>>(),
+128:             object_store_url: self.object_store_url.to_string(),
+129:             output_ordering,
+130:             constraints: Some(self.constraints.clone().into()),
+131:             batch_size: self.batch_size.map(|s| s as u64),
+132:             projection_exprs,
+133:             output_partitioning,
+134:         })
+135:     }
+136: 
+137:     /// Reconstruct a [`FileScanConfig`] from a [`protobuf::FileScanExecConf`]
+138:     /// and a `file_source` the caller has already rebuilt (typically from the
+139:     /// table schema via [`FileScanConfig::parse_table_schema_from_proto`]).
+140:     ///
+141:     /// Byte-compatible with the former `parse_protobuf_file_scan_config`.
+142:     pub fn try_from_proto(
+143:         conf: &protobuf::FileScanExecConf,
+144:         ctx: &ExecutionPlanDecodeCtx<'_>,
+145:         file_source: Arc<dyn FileSource>,
+146:     ) -> Result<FileScanConfig> {
+147:         let schema = parse_file_scan_schema(conf)?;
+148: 
+149:         let constraints = conf
+150:             .constraints
+151:             .as_ref()
+152:             .ok_or_else(|| {
+153:                 internal_datafusion_err!(
+154:                     "FileScanExecConf is missing required field 'constraints'"
+155:                 )
+156:             })?
+157:             .try_into()?;
+158:         let statistics = conf
+159:             .statistics
+160:             .as_ref()
+161:             .ok_or_else(|| {
+162:                 internal_datafusion_err!(
+163:                     "FileScanExecConf is missing required field 'statistics'"
+164:                 )
+165:             })?
+166:             .try_into()?;
+167: 
+168:         let file_groups = conf
+169:             .file_groups
+170:             .iter()
+171:             .map(TryInto::try_into)
+172:             .collect::<Result<Vec<_>>>()?;
+173: 
+174:         let object_store_url = match conf.object_store_url.is_empty() {
+175:             false => ObjectStoreUrl::parse(&conf.object_store_url)?,
+176:             true => ObjectStoreUrl::local_filesystem(),
+177:         };
+178: 
+179:         let mut output_ordering = vec![];
+180:         for node_collection in &conf.output_ordering {
+181:             let sort_exprs = sort_exprs_try_from_proto(
+182:                 &node_collection.physical_sort_expr_nodes,
+183:                 &ctx.expr_ctx(&schema),
+184:             )?;
+185:             output_ordering.extend(LexOrdering::new(sort_exprs));
+186:         }
+187: 
+188:         let output_partitioning = conf
+189:             .output_partitioning
+190:             .as_ref()
+191:             .map(|partitioning| {
+192:                 Partitioning::try_from_proto(partitioning, &ctx.expr_ctx(&schema))
+193:             })
+194:             .transpose()?
+195:             .flatten();
+196: 
+197:         // Parse projection expressions if present and apply to the file source.
+198:         let file_source = if let Some(proto_projection_exprs) = &conf.projection_exprs {
+199:             let projection_exprs: Vec<ProjectionExpr> = proto_projection_exprs
+200:                 .projections
+201:                 .iter()
+202:                 .map(|proto_expr| {
+203:                     let expr = ctx.decode_expr(
+204:                         proto_expr.expr.as_ref().ok_or_else(|| {
+205:                             internal_datafusion_err!("ProjectionExpr missing expr field")
+206:                         })?,
+207:                         &schema,
+208:                     )?;
+209:                     Ok(ProjectionExpr::new(expr, proto_expr.alias.clone()))
+210:                 })
+211:                 .collect::<Result<Vec<_>>>()?;
+212: 
+213:             let projection_exprs = ProjectionExprs::new(projection_exprs);
+214: 
+215:             file_source
+216:                 .try_pushdown_projection(&projection_exprs)?
+217:                 .unwrap_or(file_source)
+218:         } else {
+219:             file_source
+220:         };
+221: 
+222:         let config_builder = FileScanConfigBuilder::new(object_store_url, file_source)
+223:             .with_file_groups(file_groups)
+224:             .with_constraints(constraints)
+225:             .with_statistics(statistics)
+226:             .with_limit(conf.limit.as_ref().map(|sl| sl.limit as usize))
+227:             .with_output_ordering(output_ordering)
+228:             .with_output_partitioning(output_partitioning)
+229:             .with_batch_size(conf.batch_size.map(|s| s as usize));
+230:         Ok(config_builder.build())
+231:     }
+232: 
+233:     /// Parse a [`TableSchema`] (file schema + partition columns) from a
+234:     /// [`protobuf::FileScanExecConf`]. File sources use this to rebuild their
+235:     /// concrete source before calling [`FileScanConfig::try_from_proto`].
+236:     ///
+237:     /// Byte-compatible with the former `parse_table_schema_from_proto`.
+238:     pub fn parse_table_schema_from_proto(
+239:         conf: &protobuf::FileScanExecConf,
+240:     ) -> Result<TableSchema> {
+241:         let schema = parse_file_scan_schema(conf)?;
+242: 
+243:         // Reacquire the partition column types from the schema before removing
+244:         // them below.
+245:         let table_partition_cols = conf
+246:             .table_partition_cols
+247:             .iter()
+248:             .map(|col| Ok(Arc::new(schema.field_with_name(col)?.clone())))
+249:             .collect::<Result<Vec<_>>>()?;
+250: 
+251:         // Remove partition columns from the schema after recreating
+252:         // table_partition_cols because the partition columns are not in the
+253:         // file. They are present to allow the partition column types to be
+254:         // reconstructed after serde.
+255:         let file_schema = Arc::new(
+256:             Schema::new(
+257:                 schema
+258:                     .fields()
+259:                     .iter()
+260:                     .filter(|field| !table_partition_cols.contains(field))
+261:                     .cloned()
+262:                     .collect::<Vec<_>>(),
+263:             )
+264:             .with_metadata(schema.metadata.clone()),
+265:         );
+266: 
+267:         Ok(TableSchema::builder(file_schema)
+268:             .with_table_partition_cols(table_partition_cols)
+269:             .build())

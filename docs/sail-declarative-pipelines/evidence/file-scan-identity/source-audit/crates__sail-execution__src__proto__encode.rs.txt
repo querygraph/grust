@@ -1,0 +1,21 @@
+34: pub fn encode_remote_physical_plan(
+35:     codec: &dyn PhysicalExtensionCodec,
+36:     plan: Arc<dyn ExecutionPlan>,
+37: ) -> Result<Vec<u8>> {
+38:     let plan = plan
+39:         .transform(|node| {
+40:             if let Some(data_source) = node.downcast_ref::<DataSourceExec>() {
+41:                 // TODO: Add SQL planner support and distributed SQL tests for
+42:                 // DataFusion's `file_row_index()`.
+43:                 let node =
+44:                     Arc::new(RemoteDataSourceExec::new(data_source)) as Arc<dyn ExecutionPlan>;
+45:                 Ok(Transformed::yes(node))
+46:             } else {
+47:                 Ok(Transformed::no(node))
+48:             }
+49:         })
+50:         .data()?;
+51:     // TODO(distributed-execution): Route dynamic-filter updates and completion from each producer
+52:     // to every consumer with the same expression ID across stage boundaries, including
+53:     // attempt-scoped recreation on retry and route cleanup on cancellation.
+54:     try_encode_physical_plan(codec, plan)

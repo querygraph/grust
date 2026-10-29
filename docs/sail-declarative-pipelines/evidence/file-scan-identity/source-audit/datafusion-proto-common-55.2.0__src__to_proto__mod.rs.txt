@@ -1,0 +1,13 @@
+92: impl TryFrom<&Field> for protobuf::Field {
+93:     type Error = Error;
+94: 
+95:     fn try_from(field: &Field) -> Result<Self, Self::Error> {
+96:         let arrow_type = field.data_type().try_into()?;
+97:         Ok(Self {
+98:             name: field.name().to_owned(),
+99:             arrow_type: Some(Box::new(arrow_type)),
+100:             nullable: field.is_nullable(),
+101:             children: Vec::new(),
+102:             metadata: field.metadata().clone(),
+103:         })
+104:     }

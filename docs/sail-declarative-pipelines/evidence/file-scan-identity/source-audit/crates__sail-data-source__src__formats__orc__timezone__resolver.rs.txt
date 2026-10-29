@@ -1,0 +1,56 @@
+13: const SEMANTICS_VERSION: u32 = 1;
+14: 
+15: /// Captured reader rules for the bundled Java timezone compatibility profile.
+16: ///
+17: /// The driver supplies its reader timezone once. Workers validate this descriptor
+18: /// against their compiled profile instead of consulting their local timezone.
+19: /// The SQL session's Arrow/display timezone is independent of these reader rules.
+20: /// Deserialization must be followed by `native_options` to validate the identity.
+21: #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+22: #[serde(deny_unknown_fields)]
+23: pub struct OrcJavaTimeZoneConfig {
+24:     semantics_version: u32,
+25:     profile_bundle_sha256: String,
+26:     reader_timezone: String,
+27: }
+28: 
+29: impl OrcJavaTimeZoneConfig {
+30:     pub fn for_reader_timezone(reader_timezone: String) -> Result<Self> {
+31:         let config = Self {
+32:             semantics_version: SEMANTICS_VERSION,
+33:             profile_bundle_sha256: PROFILE_BUNDLE_SHA256.to_string(),
+34:             reader_timezone,
+35:         };
+36:         config.native_options()?;
+37:         Ok(config)
+38:     }
+39: 
+40:     pub fn reader_timezone(&self) -> &str {
+41:         &self.reader_timezone
+42:     }
+43: 
+44:     pub fn profile_bundle_sha256(&self) -> &str {
+45:         &self.profile_bundle_sha256
+46:     }
+47: 
+48:     pub fn native_options(&self) -> Result<TimestampTimeZoneOptions> {
+49:         if self.semantics_version != SEMANTICS_VERSION {
+50:             return plan_err!(
+51:                 "Unsupported ORC Java timezone semantics version {}",
+52:                 self.semantics_version
+53:             );
+54:         }
+55:         if self.profile_bundle_sha256 != PROFILE_BUNDLE_SHA256 {
+56:             return plan_err!(
+57:                 "ORC Java timezone profile identity mismatch: requested {}, compiled {}",
+58:                 self.profile_bundle_sha256,
+59:                 PROFILE_BUNDLE_SHA256
+60:             );
+61:         }
+62:         let resolver = Arc::new(JavaTimeZoneResolver {
+63:             profiles: embedded_profiles()?,
+64:         });
+65:         let reader = resolver
+66:             .resolve(&self.reader_timezone)
+67:             .map_err(|error| DataFusionError::External(Box::new(error)))?;
+68:         Ok(TimestampTimeZoneOptions::new(reader, resolver))

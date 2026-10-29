@@ -1,0 +1,72 @@
+43: #[derive(Debug)]
+44: pub struct DynamicObjectStoreRegistry {
+45:     stores: DashMap<ObjectStoreKey, Arc<dyn ObjectStore>>,
+46:     runtime: RuntimeHandle,
+47: }
+48: 
+49: impl DynamicObjectStoreRegistry {
+50:     pub fn new(runtime: RuntimeHandle) -> Self {
+51:         let stores: DashMap<ObjectStoreKey, Arc<dyn ObjectStore>> = DashMap::new();
+52:         stores.insert(
+53:             ObjectStoreKey {
+54:                 scheme: "file".to_string(),
+55:                 authority: "".to_string(),
+56:                 session_fingerprint: None,
+57:             },
+58:             Arc::new(LoggingObjectStore::new(Arc::new(LocalFileSystem::new()))),
+59:         );
+60:         Self { stores, runtime }
+61:     }
+62: 
+63:     pub fn register_session_store(
+64:         &self,
+65:         url: &Url,
+66:         session_fingerprint: &str,
+67:         store: Arc<dyn ObjectStore>,
+68:     ) -> Option<Arc<dyn ObjectStore>> {
+69:         let key = ObjectStoreKey::new(url, Some(session_fingerprint));
+70:         self.stores.insert(key, store)
+71:     }
+72: 
+73:     pub fn get_store_with_session(
+74:         &self,
+75:         url: &Url,
+76:         session_fingerprint: Option<&str>,
+77:     ) -> Result<Arc<dyn ObjectStore>> {
+78:         if let Some(session_fingerprint) = session_fingerprint {
+79:             let key = ObjectStoreKey::new(url, Some(session_fingerprint));
+80:             if let Some(store) = self.stores.get(&key) {
+81:                 return Ok(store.clone());
+82:             }
+83:         }
+84:         self.get_store(url)
+85:     }
+86: }
+87: 
+88: impl ObjectStoreRegistry for DynamicObjectStoreRegistry {
+89:     fn register_store(
+90:         &self,
+91:         url: &Url,
+92:         store: Arc<dyn ObjectStore>,
+93:     ) -> Option<Arc<dyn ObjectStore>> {
+94:         let key = ObjectStoreKey::new(url, None);
+95:         self.stores.insert(key, store)
+96:     }
+97: 
+98:     fn get_store(&self, url: &Url) -> Result<Arc<dyn ObjectStore>> {
+99:         let key = ObjectStoreKey::new(url, None);
+100: 
+101:         // Use entry API for atomic get-or-insert
+102:         let store = self
+103:             .stores
+104:             .entry(key)
+105:             .or_try_insert_with(|| -> object_store::Result<Arc<dyn ObjectStore>> {
+106:                 Ok(Arc::new(RuntimeAwareObjectStore::try_new(
+107:                     || get_dynamic_object_store(url),
+108:                     self.runtime.io().clone(),
+109:                 )?))
+110:             })?
+111:             .clone();
+112: 
+113:         Ok(store)
+114:     }

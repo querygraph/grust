@@ -1,0 +1,127 @@
+1: syntax = "proto3";
+2: 
+3: package sail.plan;
+4: 
+5: // All DataFusion data structures are represented as opaque bytes.
+6: // The encoding and decoding of these data structures are handled
+7: // in the code.
+8: // We do not explicitly use the DataFusion message types since there may be
+9: // breaking changes across DataFusion versions, and it is difficult to
+10: // keep the proto definitions in sync with the DataFusion proto crate.
+11: 
+12: message ExtendedPhysicalPlanNode {
+13:   oneof NodeKind {
+14:     RangeExecNode range = 1;
+15:     ShowStringExecNode show_string = 2;
+16:     // We have removed shuffle read and write nodes.
+17:     StageInputExecNode stage_input = 3;
+18:     SystemTableExecNode system_table = 4;
+19:     SchemaPivotExecNode schema_pivot = 5;
+20:     MapPartitionsExecNode map_partitions = 6;
+21:     // TODO: This can be removed once it is supported by DataFusion.
+22:     MemoryExecNode memory = 7;
+23:     ValuesExecNode values = 8;
+24:     NdJsonExecNode nd_json = 9;
+25:     ArrowExecNode arrow = 10;
+26:     WorkTableExecNode work_table = 11;
+27:     RecursiveQueryExecNode recursive_query = 12;
+28:     SortMergeJoinExecNode sort_merge_join = 13;
+29:     PartialSortExecNode partial_sort = 14;
+30:     TextExecNode text = 15;
+31:     DeltaWriterExecNode delta_writer = 16;
+32:     DeltaCommitExecNode delta_commit = 17;
+33:     DeltaScanByAddsExecNode delta_scan_by_adds = 18;
+34:     DeltaDiscoveryExecNode delta_discovery = 19;
+35:     DeltaRemoveActionsExecNode delta_remove_actions = 20;
+36:     DeltaLogReplayExecNode delta_log_replay = 21;
+37:     DeltaMetadataStatsExecNode delta_metadata_stats = 22;
+38:     AvroExecNode avro = 23;
+39:     ConsoleSinkExecNode console_sink = 24;
+40:     SocketSourceExecNode socket_source = 25;
+41:     RateSourceExecNode rate_source = 26;
+42:     TextSinkExecNode text_sink = 27;
+43:     BinarySourceExecNode binary_source = 28;
+44:     StreamCollectorExecNode stream_collector = 29;
+45:     StreamLimitExecNode stream_limit = 30;
+46:     StreamFilterExecNode stream_filter = 31;
+47:     StreamSourceAdapterExecNode stream_source_adapter = 32;
+48:     IcebergWriterExecNode iceberg_writer = 33;
+49:     IcebergCommitExecNode iceberg_commit = 34;
+50:     IcebergManifestScanExecNode iceberg_manifest_scan = 35;
+51:     IcebergDiscoveryExecNode iceberg_discovery = 36;
+52:     IcebergScanByDataFilesExecNode iceberg_scan_by_data_files = 37;
+53:     IcebergDeleteApplyExecNode iceberg_delete_apply = 38;
+54:     MergeCardinalityCheckExecNode merge_cardinality_check = 39;
+55:     PythonDataSourceExecNode python_data_source = 40;
+56:     MonotonicIdExecNode monotonic_id = 41;
+57:     PythonDataSourceWriteExecNode python_data_source_write = 42;
+58:     PythonDataSourceWriteCommitExecNode python_data_source_write_commit = 43;
+59:     CatalogCommandExecNode catalog_command = 44;
+60:     BarrierExecNode barrier = 45;
+61:     SparkPartitionIdExecNode spark_partition_id = 46;
+62:     DeletionVectorRowsWriterExecNode deletion_vector_rows_writer = 47;
+63:     CoalesceExecNode coalesce = 48;
+64:     FileDeleteExecNode file_delete = 49;
+65:     NoopSinkExecNode noop_sink = 50;
+66:     CsvExecNode csv = 51;
+67:     ParquetExecNode parquet = 52;
+68:     RemoteCheckpointWriteExecNode remote_checkpoint_write = 53;
+69:     RemoteCheckpointCommitExecNode remote_checkpoint_commit = 54;
+70:     IcebergMergeMetadataExecNode iceberg_merge_metadata = 55;
+71:     IcebergEqualityDeleteWriterExecNode iceberg_equality_delete_writer = 56;
+72:     PartitionedTopKExecNode partitioned_top_k = 57;
+73:     IcebergMetadataScanExecNode iceberg_metadata_scan = 58;
+74:     LakeProcedureExecNode lake_procedure = 59;
+75:     IcebergProcedureExecNode iceberg_procedure = 60;
+76:     IcebergMetadataRelationExecNode iceberg_metadata_relation = 61;
+77:     IcebergFileTasksExecNode iceberg_file_tasks = 62;
+78:     IcebergRewriteExecNode iceberg_rewrite = 63;
+79:     InputFileMetadataExecNode input_file_metadata = 64;
+80:     DeltaMaintenanceExecNode delta_maintenance = 65;
+81:     DeltaOptimizeRewriteExecNode delta_optimize_rewrite = 66;
+82:   }
+83: }
+84: 
+85: message InputFileMetadataExecNode {
+86:   // A ProjectionExec over the unwrapped file source. Encoding the complete
+87:   // plan preserves physical expressions, aliases, and schema metadata.
+88:   bytes projection_plan = 1;
+
+742: message NdJsonExecNode {
+743:   bytes base_config = 1;
+744:   CompressionTypeVariant file_compression_type = 2;
+745: }
+746: 
+747: message CsvExecNode {
+748:   bytes base_config = 1;
+749:   bytes options = 2;
+750: }
+751: 
+752: message ParquetExecNode {
+753:   bytes base_config = 1;
+754:   bytes options = 2;
+755:   optional bytes predicate = 3;
+756:   bytes output_partitioning = 4;
+757:   StructFieldMatching struct_field_matching = 5;
+758:   SchemaEvolutionTimezoneMode timezone_mode = 6;
+759:   repeated bytes virtual_columns = 7;
+760: }
+761: 
+762: message ArrowExecNode {
+763:   bytes base_config = 1;
+764: }
+765: 
+766: message TextExecNode {
+767:   bytes base_config = 1;
+768:   CompressionTypeVariant file_compression_type = 2;
+769:   bool whole_text = 3;
+770:   optional bytes line_sep = 4;
+771: }
+772: 
+773: message BinarySourceExecNode {
+774:   bytes base_config = 1;
+775: }
+776: 
+777: message AvroExecNode {
+778:   bytes base_config = 1;
+779: }

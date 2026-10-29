@@ -1294,3 +1294,7 @@ Sail `4a258021af` passes 129 library tests plus formatting/strict Clippy. [Evide
 ## Review ORC timestamp activation
 
 Sail `07e2c2226b` and `db8844172d` separately pass 134/142 library tests with formatting/strict Clippy. [Evidence](evidence/orc-timestamp-activation/provenance.json) covers actual native timezone decoding, three Spark files, one foreign file and ten fresh Spark comparisons with directly observed reader identity. Public file-source/worker/writer integration remains pending; no additional SDP or CLI pass is claimed.
+
+### Shared file-scan identity transport (2026-10-29T22:59:42.877031+00:00)
+
+Sail `27ab945aaa3046d05a1f4aeb1e651fddf11db927` preserves listed ETags/versions across all seven existing file-format codecs with exact group/file/path validation. Detached fmt/strict Clippy and 163 execution library tests pass, including legacy-loss control, wrapper/checkpoint preservation and decoded JSON execution. [Receipt](evidence/file-scan-identity/provenance.json). No ORC source, writer, new CLI or full SDP verdict; mixed-version workers are outside this identity guarantee.

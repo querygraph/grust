@@ -1,0 +1,67 @@
+55:         proto: &PhysicalPlanNode,
+56:         canceled: &CancellationToken,
+57:         context: Arc<TaskContext>,
+58:     ) -> ExecutionResult<SendableRecordBatchStream> {
+59:         let plan = proto_to_physical_plan(&context, &RemoteExecutionCodec, proto)?;
+60:         let plan = self.rewrite_file_scans(plan)?;
+61:         let plan = self.rewrite_shuffle(
+62:             key,
+63:             &definition.inputs,
+64:             &definition.output,
+65:             plan,
+66:             context.clone(),
+67:         )?;
+68:         debug!(
+69:             "{} execution plan\n{}",
+70:             TaskKeyDisplay(key),
+71:             DisplayableExecutionPlan::new(plan.as_ref()).indent(true)
+72:         );
+73:         let plan = trace_execution_plan(
+74:             plan,
+75:             TracingExecOptions {
+76:                 metrics: global_metrics(),
+77:                 session_id: Some(self.session_id.clone()),
+78:                 job_id: Some(key.job_id.into()),
+79:                 stage: Some(key.stage),
+80:                 attempt: Some(key.attempt),
+81:                 operator_id: None,
+82:             },
+83:         )?;
+84:         if canceled.is_cancelled() {
+85:             return Err(ExecutionError::InternalError(
+86:                 "task canceled during preparation".into(),
+87:             ));
+88:         }
+89:         Ok(plan.execute(key.partition, context)?)
+90:     }
+91: 
+92:     fn rewrite_file_scans(
+93:         &self,
+94:         plan: Arc<dyn ExecutionPlan>,
+95:     ) -> ExecutionResult<Arc<dyn ExecutionPlan>> {
+96:         let result = plan.transform(|node| {
+97:             if let Some(ds) = node.downcast_ref::<DataSourceExec>()
+98:                 && let Some(base_config) = ds.data_source().downcast_ref::<FileScanConfig>()
+99:             {
+100:                 // DataFusion file scans can use process-local sibling state to let
+101:                 // partitions steal work from a shared queue of all file groups. In Sail
+102:                 // cluster mode each partition runs as an isolated task with its own
+103:                 // deserialized plan, so that queue would be recreated in every task and
+104:                 // every task would scan every file. Preserve-order disables sibling
+105:                 // work sharing and keeps each task on its own file group.
+106:                 let mut builder =
+107:                     FileScanConfigBuilder::from(base_config.clone()).with_preserve_order(true);
+108:                 if ds.downcast_to_file_source::<ParquetSource>().is_some()
+109:                     && base_config.expr_adapter_factory.is_none()
+110:                 {
+111:                     let adapter_factory: Arc<dyn PhysicalExprAdapterFactory> =
+112:                         Arc::new(SchemaEvolutionPhysicalExprAdapterFactory {});
+113:                     builder = builder.with_expr_adapter(Some(adapter_factory));
+114:                 }
+115:                 return Ok(Transformed::yes(
+116:                     DataSourceExec::from_data_source(builder.build()) as Arc<dyn ExecutionPlan>,
+117:                 ));
+118:             }
+119:             Ok(Transformed::no(node))
+120:         });
+121:         Ok(result.data()?)

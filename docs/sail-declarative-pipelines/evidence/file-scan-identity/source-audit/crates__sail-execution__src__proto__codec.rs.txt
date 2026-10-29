@@ -1,0 +1,436 @@
+367:     fn try_decode(
+368:         &self,
+369:         buf: &[u8],
+370:         inputs: &[Arc<dyn ExecutionPlan>],
+371:         ctx: &TaskContext,
+372:         proto_converter: &dyn PhysicalProtoConverterExtension,
+373:     ) -> Result<Arc<dyn ExecutionPlan>> {
+374:         let node = ExtendedPhysicalPlanNode::decode(buf)
+375:             .map_err(|e| plan_datafusion_err!("failed to decode plan: {e}"))?;
+376:         let ExtendedPhysicalPlanNode { node_kind } = node;
+377:         let node_kind = match node_kind {
+378:             Some(x) => x,
+379:             None => return plan_err!("no physical plan node found"),
+380:         };
+381:         match node_kind {
+
+667:             NodeKind::Parquet(r#gen::ParquetExecNode {
+668:                 base_config,
+669:                 options,
+670:                 predicate,
+671:                 output_partitioning,
+672:                 struct_field_matching,
+673:                 timezone_mode,
+674:                 virtual_columns,
+675:             }) => {
+676:                 let mut base_config = try_decode_message(&base_config)?;
+677:                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+678:                 let virtual_columns = virtual_columns
+679:                     .iter()
+680:                     .map(|column| try_decode_field_ref(column))
+681:                     .collect::<Result<Vec<_>>>()?;
+682:                 let mut names = table_schema
+683:                     .table_schema()
+684:                     .fields()
+685:                     .iter()
+686:                     .map(|field| field.name().clone())
+687:                     .collect::<std::collections::HashSet<_>>();
+688:                 for field in &virtual_columns {
+689:                     datafusion::datasource::physical_plan::parquet::ParquetVirtualColumn::try_from(
+690:                         field,
+691:                     )?;
+692:                     if !names.insert(field.name().clone()) {
+693:                         return plan_err!("Duplicate Parquet virtual column '{}'", field.name());
+694:                     }
+695:                 }
+696:                 let table_schema = TableSchema::builder(Arc::clone(table_schema.file_schema()))
+697:                     .with_table_partition_cols(table_schema.table_partition_cols().clone())
+698:                     .with_virtual_columns(virtual_columns)
+699:                     .build();
+700:                 // DataFusion's base config omits virtual fields, but expression
+701:                 // decoding needs the complete file/partition/virtual schema.
+702:                 base_config.schema = Some(table_schema.table_schema().as_ref().try_into()?);
+703:                 let predicate_schema = Arc::clone(table_schema.table_schema());
+704:                 let options =
+705:                     try_decode_message::<gen_datafusion_common::TableParquetOptions>(&options)?;
+706:                 let options: TableParquetOptions = (&options).try_into()?;
+707:                 let predicate = predicate
+708:                     .map(|predicate| {
+709:                         try_decode_physical_expr_with_converter(
+710:                             ctx,
+711:                             self,
+712:                             proto_converter,
+713:                             &predicate,
+714:                             predicate_schema.as_ref(),
+715:                         )
+716:                     })
+717:                     .transpose()?;
+718:                 let object_store_url = match base_config.object_store_url.is_empty() {
+719:                     false => datafusion::execution::object_store::ObjectStoreUrl::parse(
+720:                         &base_config.object_store_url,
+721:                     )?,
+722:                     true => datafusion::execution::object_store::ObjectStoreUrl::local_filesystem(),
+723:                 };
+724:                 let store = ctx.runtime_env().object_store(object_store_url)?;
+725:                 let metadata_cache = ctx.runtime_env().cache_manager.get_file_metadata_cache();
+726:                 let reader_factory =
+727:                     Arc::new(CachedParquetFileReaderFactory::new(store, metadata_cache));
+728:                 let mut source = ParquetSource::new(table_schema)
+729:                     .with_parquet_file_reader_factory(reader_factory)
+730:                     .with_table_parquet_options(options);
+731:                 if let Some(predicate) = predicate {
+732:                     source = source.with_predicate(predicate);
+733:                 }
+734:                 let source = parse_protobuf_file_scan_config(
+735:                     &base_config,
+736:                     &PhysicalPlanDecodeContext::new(ctx, self),
+737:                     proto_converter,
+738:                     Arc::new(source),
+739:                 )?;
+740:                 let struct_field_matching =
+741:                     Self::try_decode_struct_field_matching(struct_field_matching)?;
+742:                 let timezone_mode = Self::try_decode_schema_evolution_timezone_mode(timezone_mode)?;
+743:                 let adapter_factory = match timezone_mode {
+744:                     SchemaEvolutionTimezoneMode::Strict => {
+745:                         SchemaEvolutionPhysicalExprAdapterFactoryWithMatching::new(
+746:                             struct_field_matching,
+747:                         )
+748:                     }
+749:                     SchemaEvolutionTimezoneMode::Relaxed => {
+750:                         SchemaEvolutionPhysicalExprAdapterFactoryWithMatching::new_relaxed_timezone(
+751:                             struct_field_matching,
+752:                         )
+753:                     }
+754:                 };
+755:                 let source = FileScanConfigBuilder::from(source)
+756:                     .with_expr_adapter(Some(Arc::new(adapter_factory)))
+757:                     .build();
+758:                 let scan = DataSourceExec::new(Arc::new(source));
+759:                 let scan = if output_partitioning.is_empty() {
+760:                     scan
+761:                 } else {
+762:                     let output_partitioning = self.try_decode_partitioning(
+763:                         &output_partitioning,
+764:                         &scan.schema(),
+765:                         ctx,
+766:                         proto_converter,
+767:                     )?;
+768:                     scan.with_partitioning(output_partitioning)
+769:                 };
+770:                 Ok(Arc::new(scan))
+
+814:             NodeKind::BinarySource(r#gen::BinarySourceExecNode { base_config }) => {
+815:                 let base_config = try_decode_message(&base_config)?;
+816:                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+817:                 let source = parse_protobuf_file_scan_config(
+818:                     &base_config,
+819:                     &PhysicalPlanDecodeContext::new(ctx, self),
+820:                     proto_converter,
+821:                     Arc::new(BinarySource::new(table_schema)),
+822:                 )?;
+823:                 let source = FileScanConfigBuilder::from(source).build();
+824:                 Ok(Arc::new(DataSourceExec::new(Arc::new(source))))
+825:             }
+826:             NodeKind::Avro(r#gen::AvroExecNode { base_config }) => {
+827:                 let base_config = try_decode_message(&base_config)?;
+828:                 let table_schema = FileScanConfig::parse_table_schema_from_proto(&base_config)?;
+829:                 let source = parse_protobuf_file_scan_config(
+830:                     &base_config,
+831:                     &PhysicalPlanDecodeContext::new(ctx, self),
+832:                     proto_converter,
+833:                     Arc::new(AvroSource::new(table_schema)),
+834:                 )?;
+835:                 Ok(Arc::new(DataSourceExec::new(Arc::new(source))))
+
+2150:             NodeKind::InputFileMetadata(r#gen::InputFileMetadataExecNode { projection_plan }) => {
+2151:                 let projection_plan = try_decode_physical_plan_with_converter(
+2152:                     ctx,
+2153:                     self,
+2154:                     proto_converter,
+2155:                     &projection_plan,
+2156:                 )?;
+2157:                 let projection = projection_plan
+2158:                     .downcast_ref::<ProjectionExec>()
+2159:                     .ok_or_else(|| {
+2160:                         plan_datafusion_err!(
+2161:                             "InputFileMetadataExecNode payload is not a ProjectionExec"
+2162:                         )
+2163:                     })?;
+2164:                 let scan = projection
+2165:                     .input()
+2166:                     .downcast_ref::<DataSourceExec>()
+2167:                     .ok_or_else(|| {
+2168:                         plan_datafusion_err!(
+2169:                             "InputFileMetadataExecNode projection input is not a DataSourceExec"
+2170:                         )
+2171:                     })?;
+2172:                 let config = scan
+2173:                     .data_source()
+2174:                     .downcast_ref::<FileScanConfig>()
+2175:                     .ok_or_else(|| {
+2176:                         plan_datafusion_err!("InputFileMetadataExecNode input is not a file scan")
+2177:                     })?;
+2178:                 let source = Arc::new(InputFileMetadataSource::try_new_with_projection(
+2179:                     Arc::clone(&config.file_source),
+2180:                     projection.projection_expr().clone(),
+2181:                 )?) as Arc<dyn FileSource>;
+2182:                 let statistics = Statistics::new_unknown(source.table_schema().table_schema());
+2183:                 let mut config = FileScanConfigBuilder::from(config.clone())
+2184:                     .with_source(source)
+2185:                     .with_statistics(statistics)
+2186:                     .with_output_ordering(Vec::new())
+2187:                     .with_output_partitioning(None)
+2188:                     .build();
+2189:                 config.constraints = Constraints::default();
+2190:                 Ok(Arc::new(DataSourceExec::new(Arc::new(config))))
+2191:             }
+2192:             _ => plan_err!("unsupported physical plan node: {node_kind:?}"),
+2193:         }
+
+2456:         } else if let Some(data_source) = node.downcast_ref::<RemoteDataSourceExec>() {
+2457:             let data_source = data_source.data_source();
+2458:             let (source, output_partitioning) =
+2459:                 if let Some(checkpoint) = data_source.downcast_ref::<CheckpointDataSource>() {
+2460:                     (
+2461:                         checkpoint.source(),
+2462:                         self.try_encode_partitioning(
+2463:                             checkpoint.checkpoint_partitioning(),
+2464:                             proto_converter,
+2465:                         )?,
+2466:                     )
+2467:                 } else {
+2468:                     (data_source, Vec::new())
+2469:                 };
+2470:             if let Some(file_scan) = source.downcast_ref::<FileScanConfig>() {
+2471:                 let file_source = file_scan.file_source();
+2472:                 if let Some(metadata_source) = file_source.downcast_ref::<InputFileMetadataSource>()
+2473:                 {
+2474:                     let mut source_config = file_scan.clone();
+2475:                     source_config.file_source = Arc::clone(metadata_source.file_source());
+2476:                     let source_scan = DataSourceExec::new(Arc::new(source_config));
+2477:                     let remote_scan =
+2478:                         Arc::new(RemoteDataSourceExec::new(&source_scan)) as Arc<dyn ExecutionPlan>;
+2479:                     let projection = Arc::new(ProjectionExec::try_new(
+2480:                         metadata_source
+2481:                             .metadata_projection()
+2482:                             .as_ref()
+2483:                             .iter()
+2484:                             .cloned(),
+2485:                         remote_scan,
+2486:                     )?) as Arc<dyn ExecutionPlan>;
+2487:                     let projection_plan =
+2488:                         try_encode_physical_plan_with_converter(self, proto_converter, projection)?;
+2489:                     NodeKind::InputFileMetadata(r#gen::InputFileMetadataExecNode {
+2490:                         projection_plan,
+2491:                     })
+2492:                 } else if let Some(text_source) = file_source.downcast_ref::<TextSource>() {
+2493:                     let base_config = try_encode_message(serialize_file_scan_config(
+2494:                         file_scan,
+2495:                         self,
+2496:                         proto_converter,
+2497:                     )?)?;
+2498:                     let file_compression_type =
+2499:                         self.try_encode_file_compression_type(file_scan.file_compression_type)?;
+2500:                     NodeKind::Text(r#gen::TextExecNode {
+2501:                         base_config,
+2502:                         file_compression_type,
+2503:                         whole_text: text_source.whole_text(),
+2504:                         line_sep: text_source.line_sep().map(|x| vec![x]),
+2505:                     })
+2506:                 } else if file_source.is::<BinarySource>() {
+2507:                     let base_config = try_encode_message(serialize_file_scan_config(
+2508:                         file_scan,
+2509:                         self,
+2510:                         proto_converter,
+2511:                     )?)?;
+2512:                     NodeKind::BinarySource(r#gen::BinarySourceExecNode { base_config })
+2513:                 } else if let Some(csv_source) = file_source.downcast_ref::<CsvSource>() {
+2514:                     let base_config = try_encode_message(serialize_file_scan_config(
+2515:                         file_scan,
+2516:                         self,
+2517:                         proto_converter,
+2518:                     )?)?;
+2519:                     let mut csv_options = csv_source.options().clone();
+2520:                     csv_options.compression = file_scan.file_compression_type.into();
+2521:                     let options = try_encode_message(gen_datafusion_common::CsvOptions::try_from(
+2522:                         &csv_options,
+2523:                     )?)?;
+2524:                     NodeKind::Csv(r#gen::CsvExecNode {
+2525:                         base_config,
+2526:                         options,
+2527:                     })
+2528:                 } else if let Some(parquet_source) = file_source.downcast_ref::<ParquetSource>() {
+2529:                     let base_config = try_encode_message(serialize_file_scan_config(
+2530:                         file_scan,
+2531:                         self,
+2532:                         proto_converter,
+2533:                     )?)?;
+2534:                     let options = gen_datafusion_common::TableParquetOptions::try_from(
+2535:                         parquet_source.table_parquet_options(),
+2536:                     )?;
+2537:                     let options = try_encode_message(options)?;
+2538:                     let predicate = parquet_source
+2539:                         .filter()
+2540:                         .map(|predicate| {
+2541:                             try_encode_physical_expr_with_converter(
+2542:                                 self,
+2543:                                 proto_converter,
+2544:                                 &predicate,
+2545:                             )
+2546:                         })
+2547:                         .transpose()?;
+2548:                     let (struct_field_matching, timezone_mode) =
+2549:                         Self::parquet_schema_evolution_modes(file_scan)?;
+2550:                     NodeKind::Parquet(r#gen::ParquetExecNode {
+2551:                         base_config,
+2552:                         options,
+2553:                         predicate,
+2554:                         output_partitioning,
+2555:                         struct_field_matching: Self::try_encode_struct_field_matching(
+2556:                             struct_field_matching,
+2557:                         ),
+2558:                         timezone_mode: Self::try_encode_schema_evolution_timezone_mode(
+2559:                             timezone_mode,
+2560:                         ),
+2561:                         virtual_columns: parquet_source
+2562:                             .table_schema()
+2563:                             .virtual_columns()
+2564:                             .iter()
+2565:                             .map(try_encode_field_ref)
+2566:                             .collect::<Result<Vec<_>>>()?,
+2567:                     })
+2568:                 } else if file_source.is::<JsonSource>() {
+2569:                     let base_config = try_encode_message(serialize_file_scan_config(
+2570:                         file_scan,
+2571:                         self,
+2572:                         proto_converter,
+2573:                     )?)?;
+2574:                     let file_compression_type =
+2575:                         self.try_encode_file_compression_type(file_scan.file_compression_type)?;
+2576:                     NodeKind::NdJson(r#gen::NdJsonExecNode {
+2577:                         base_config,
+2578:                         file_compression_type,
+2579:                     })
+2580:                 } else if file_source.is::<ArrowSource>() {
+2581:                     let base_config = try_encode_message(serialize_file_scan_config(
+2582:                         file_scan,
+2583:                         self,
+2584:                         proto_converter,
+2585:                     )?)?;
+2586:                     NodeKind::Arrow(r#gen::ArrowExecNode { base_config })
+2587:                 } else if file_source.is::<AvroSource>() {
+2588:                     let base_config = try_encode_message(serialize_file_scan_config(
+2589:                         file_scan,
+2590:                         self,
+2591:                         proto_converter,
+2592:                     )?)?;
+2593:                     NodeKind::Avro(r#gen::AvroExecNode { base_config })
+2594:                 } else {
+2595:                     return plan_err!("unsupported data source node: {data_source:?}");
+
+3464:         let node = ExtendedPhysicalPlanNode {
+3465:             node_kind: Some(node_kind),
+3466:         };
+3467:         node.encode(buf)
+3468:             .map_err(|e| plan_datafusion_err!("failed to encode plan: {e}"))
+
+5358:                 r#gen::IcebergSnapshotUpdateKind::RewriteDataFiles
+5359:             }
+5360:             SnapshotUpdateKind::RowLevelRewrite => {
+5361:                 r#gen::IcebergSnapshotUpdateKind::RowLevelRewrite
+5362:             }
+5363:         }) as i32
+5364:     }
+5365: 
+5366:     fn try_decode_json<T: DeserializeOwned>(&self, value: &str, description: &str) -> Result<T> {
+5367:         serde_json::from_str(value)
+5368:             .map_err(|e| plan_datafusion_err!("failed to decode {description}: {e}"))
+5369:     }
+5370: 
+5371:     fn try_encode_json<T: Serialize + ?Sized>(
+5372:         &self,
+5373:         value: &T,
+5374:         description: &str,
+5375:     ) -> Result<String> {
+5376:         serde_json::to_string(value)
+5377:             .map_err(|e| plan_datafusion_err!("failed to encode {description}: {e}"))
+5378:     }
+5379: 
+5380:     fn try_decode_lakehouse_table(&self, value: &str) -> Result<Option<LakehouseExecutionContext>> {
+5381:         if value.is_empty() {
+5382:             Ok(None)
+5383:         } else {
+
+7355:     #[test]
+7356:     fn test_round_trip_parquet_virtual_row_positions() -> Result<()> {
+7357:         use datafusion::datasource::listing::PartitionedFile;
+7358:         use datafusion::datasource::physical_plan::FileGroup;
+7359:         use datafusion::execution::object_store::ObjectStoreUrl;
+7360:         use datafusion::parquet::arrow::RowNumber;
+7361: 
+7362:         let file_schema = Arc::new(Schema::new(vec![Field::new(
+7363:             "value",
+7364:             DataType::Int64,
+7365:             false,
+7366:         )]));
+7367:         let position =
+7368:             Arc::new(Field::new("position", DataType::Int64, false).with_extension_type(RowNumber));
+7369:         let table_schema = TableSchema::builder(file_schema.clone())
+7370:             .with_table_partition_cols(vec![Arc::new(Field::new("part", DataType::Int32, false))])
+7371:             .with_virtual_columns(vec![position.clone()])
+7372:             .build();
+7373:         let mut file = PartitionedFile::new("unused.parquet", 0);
+7374:         file.partition_values = vec![ScalarValue::Int32(Some(3))];
+7375:         let config = FileScanConfigBuilder::new(
+7376:             ObjectStoreUrl::local_filesystem(),
+7377:             Arc::new(ParquetSource::new(table_schema)),
+7378:         )
+7379:         .with_file_groups(vec![FileGroup::from(vec![file])])
+7380:         .with_projection_indices(Some(vec![2, 0, 1]))?
+7381:         .build();
+7382:         let plan: Arc<dyn ExecutionPlan> = DataSourceExec::from_data_source(config);
+7383:         let codec = RemoteExecutionCodec;
+7384:         let bytes = crate::proto::encode_remote_physical_plan(&codec, Arc::clone(&plan))?;
+7385:         let decoded =
+7386:             crate::proto::decode_remote_physical_plan(&TaskContext::default(), &codec, &bytes)?;
+7387:         assert_eq!(decoded.schema(), plan.schema());
+7388:         let scan = decoded
+7389:             .downcast_ref::<DataSourceExec>()
+7390:             .ok_or_else(|| plan_datafusion_err!("decoded plan is not a Parquet scan"))?;
+7391:         let config = scan
+7392:             .data_source()
+7393:             .downcast_ref::<FileScanConfig>()
+7394:             .ok_or_else(|| plan_datafusion_err!("decoded source is not a file scan"))?;
+7395:         let schema = config.file_source.table_schema();
+7396:         assert_eq!(schema.file_schema(), &file_schema);
+7397:         assert_eq!(schema.virtual_columns().as_ref(), &[position]);
+7398:         assert_eq!(schema.table_partition_cols()[0].name(), "part");
+7399:         assert_eq!(
+7400:             config.file_groups[0].files()[0].partition_values,
+7401:             vec![ScalarValue::Int32(Some(3))]
+7402:         );
+7403:         let converter = crate::proto::converter::RemotePhysicalProtoConverter::default();
+7404:         let mut bytes = Vec::new();
+7405:         let remote = Arc::new(RemoteDataSourceExec::new(
+7406:             plan.downcast_ref::<DataSourceExec>()
+7407:                 .ok_or_else(|| plan_datafusion_err!("original plan is not a Parquet scan"))?,
+7408:         ));
+7409:         codec.try_encode(remote, &mut bytes, &converter)?;
+7410:         let mut node = try_decode_message::<ExtendedPhysicalPlanNode>(&bytes)?;
+7411:         let Some(NodeKind::Parquet(parquet)) = node.node_kind.as_mut() else {
+7412:             return plan_err!("Expected Parquet codec node");
+7413:         };
+7414:         parquet
+7415:             .virtual_columns
+7416:             .push(parquet.virtual_columns[0].clone());
+7417:         assert!(
+7418:             codec
+7419:                 .try_decode(
+7420:                     &node.encode_to_vec(),
+7421:                     &[],
+7422:                     &TaskContext::default(),
+7423:                     &converter
+7424:                 )
+7425:                 .is_err()
+7426:         );
+7427:         Ok(())

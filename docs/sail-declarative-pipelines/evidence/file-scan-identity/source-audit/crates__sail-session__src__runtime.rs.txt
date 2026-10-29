@@ -1,0 +1,25 @@
+45:     {
+46:         let registry = DynamicObjectStoreRegistry::new(self.runtime.clone());
+47:         let cache_config = CacheManagerConfig::default()
+48:             .with_file_statistics_cache(self.create_file_statistics_cache())
+49:             .with_list_files_cache(self.create_file_listing_cache())
+50:             .with_file_metadata_cache(Some(self.create_file_metadata_cache()));
+51:         let cache_config = match &self.config.parquet.file_statistics_cache.r#type {
+52:             CacheType::None => cache_config.with_file_statistics_cache_limit(0),
+53:             CacheType::Global | CacheType::Session => cache_config,
+54:         };
+55:         let cache_config = match &self.config.execution.file_listing_cache.r#type {
+56:             CacheType::None => cache_config.with_list_files_cache_limit(0),
+57:             CacheType::Global | CacheType::Session => cache_config,
+58:         };
+59:         let cache_config = match &self.config.parquet.file_metadata_cache.r#type {
+60:             CacheType::None => cache_config.with_metadata_cache_limit(0),
+61:             CacheType::Global | CacheType::Session => cache_config,
+62:         };
+63:         let builder = RuntimeEnvBuilder::default()
+64:             .with_object_store_registry(Arc::new(registry))
+65:             .with_cache_manager(cache_config)
+66:             .with_memory_pool(self.create_memory_pool())
+67:             .with_disk_manager_builder(self.create_disk_manager_builder());
+68:         let builder = mutator(builder)?;
+69:         Ok(Arc::new(builder.build()?))

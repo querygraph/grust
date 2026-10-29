@@ -1,0 +1,43 @@
+635: 
+636:     // Default constructor for `DataSourceExec`, setting the `cooperative` flag to `true`.
+637:     pub fn new(data_source: Arc<dyn DataSource>) -> Self {
+638:         let cache = Self::compute_properties(&data_source);
+639:         Self {
+640:             data_source,
+641:             cache: Arc::new(cache),
+642:             execution_state: Arc::new(OnceLock::new()),
+643:         }
+644:     }
+645: 
+646:     /// Return the source object
+647:     pub fn data_source(&self) -> &Arc<dyn DataSource> {
+648:         &self.data_source
+649:     }
+650: 
+651:     pub fn with_data_source(mut self, data_source: Arc<dyn DataSource>) -> Self {
+652:         self.cache = Arc::new(Self::compute_properties(&data_source));
+653:         self.data_source = data_source;
+654:         self.execution_state = Arc::new(OnceLock::new());
+655:         self
+656:     }
+657: 
+658:     /// Assign constraints
+659:     pub fn with_constraints(mut self, constraints: Constraints) -> Self {
+660:         Arc::make_mut(&mut self.cache).set_constraints(constraints);
+661:         self
+662:     }
+663: 
+664:     /// Assign output partitioning
+665:     pub fn with_partitioning(mut self, partitioning: Partitioning) -> Self {
+666:         Arc::make_mut(&mut self.cache).partitioning = partitioning;
+667:         self
+668:     }
+669: 
+670:     fn compute_properties(data_source: &Arc<dyn DataSource>) -> PlanProperties {
+671:         PlanProperties::new(
+672:             data_source.eq_properties(),
+673:             data_source.output_partitioning(),
+674:             EmissionType::Incremental,
+675:             Boundedness::Bounded,
+676:         )
+677:         .with_scheduling_type(data_source.scheduling_type())

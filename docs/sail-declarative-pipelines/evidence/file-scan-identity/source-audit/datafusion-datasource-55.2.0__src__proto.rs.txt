@@ -1,0 +1,94 @@
+66: impl TryFrom<&PartitionedFile> for protobuf::PartitionedFile {
+67:     type Error = DataFusionError;
+68: 
+69:     fn try_from(file: &PartitionedFile) -> Result<Self> {
+70:         let last_modified = file.object_meta.last_modified;
+71:         let last_modified_ns = last_modified.timestamp_nanos_opt().ok_or_else(|| {
+72:             DataFusionError::Plan(format!(
+73:                 "Invalid timestamp on PartitionedFile::ObjectMeta: {last_modified}"
+74:             ))
+75:         })? as u64;
+76:         Ok(protobuf::PartitionedFile {
+77:             arrow_schema: file
+78:                 .arrow_schema
+79:                 .as_ref()
+80:                 .map(|s| s.as_ref().try_into())
+81:                 .transpose()?,
+82:             path: file.object_meta.location.as_ref().to_owned(),
+83:             size: file.object_meta.size,
+84:             last_modified_ns,
+85:             partition_values: file
+86:                 .partition_values
+87:                 .iter()
+88:                 .map(|v| v.try_into())
+89:                 .collect::<Result<Vec<_>, _>>()?,
+90:             range: file.range.as_ref().map(TryInto::try_into).transpose()?,
+91:             statistics: file.statistics.as_ref().map(|s| s.as_ref().into()),
+92:         })
+93:     }
+94: }
+95: 
+96: impl TryFrom<&protobuf::PartitionedFile> for PartitionedFile {
+97:     type Error = DataFusionError;
+98: 
+99:     fn try_from(file: &protobuf::PartitionedFile) -> Result<Self> {
+100:         let mut pf = PartitionedFile::new_from_meta(ObjectMeta {
+101:             location: Path::parse(file.path.as_str()).map_err(|e| {
+102:                 internal_datafusion_err!("Invalid object_store path: {e}")
+103:             })?,
+104:             last_modified: Utc.timestamp_nanos(file.last_modified_ns as i64),
+105:             size: file.size,
+106:             e_tag: None,
+107:             version: None,
+108:         })
+109:         .with_partition_values(
+110:             file.partition_values
+111:                 .iter()
+112:                 .map(|v| v.try_into())
+113:                 .collect::<Result<Vec<_>, _>>()?,
+114:         );
+115:         if let Some(proto_schema) = file.arrow_schema.as_ref() {
+116:             pf = pf.with_arrow_schema(Arc::new(
+117:                 proto_schema.try_into().map_err(DataFusionError::from)?,
+118:             ));
+119:         }
+120:         if let Some(range) = file.range.as_ref() {
+121:             let range = FileRange::try_from(range)?;
+122:             pf = pf.with_range(range.start, range.end);
+123:         }
+124:         if let Some(proto_stats) = file.statistics.as_ref() {
+125:             // The wire format carries statistics for the full table schema (file + partition
+126:             // columns), so assign directly — `with_statistics` would append the partition
+127:             // column stats a second time.
+128:             pf.statistics = Some(Arc::new(proto_stats.try_into()?));
+129:         }
+130:         Ok(pf)
+131:     }
+132: }
+133: 
+134: impl TryFrom<&FileGroup> for protobuf::FileGroup {
+135:     type Error = DataFusionError;
+136: 
+137:     fn try_from(group: &FileGroup) -> Result<Self> {
+138:         Ok(protobuf::FileGroup {
+139:             files: group
+140:                 .files()
+141:                 .iter()
+142:                 .map(TryInto::try_into)
+143:                 .collect::<Result<Vec<_>>>()?,
+144:         })
+145:     }
+146: }
+147: 
+148: impl TryFrom<&protobuf::FileGroup> for FileGroup {
+149:     type Error = DataFusionError;
+150: 
+151:     fn try_from(group: &protobuf::FileGroup) -> Result<Self> {
+152:         Ok(FileGroup::new(
+153:             group
+154:                 .files
+155:                 .iter()
+156:                 .map(TryInto::try_into)
+157:                 .collect::<Result<Vec<_>>>()?,
+158:         ))
+159:     }

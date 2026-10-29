@@ -1,0 +1,63 @@
+204:     fn repartition_evenly_by_size(
+205:         &self,
+206:         file_groups: &[FileGroup],
+207:     ) -> Option<Vec<FileGroup>> {
+208:         let target_partitions = self.target_partitions;
+209:         let repartition_file_min_size = self.repartition_file_min_size;
+210:         let flattened_files = file_groups.iter().flat_map(FileGroup::iter).collect_vec();
+211: 
+212:         let total_size = flattened_files
+213:             .iter()
+214:             .map(|f| f.effective_size())
+215:             .sum::<u64>();
+216:         if total_size < (repartition_file_min_size as u64) || total_size == 0 {
+217:             return None;
+218:         }
+219: 
+220:         let target_partition_size = total_size.div_ceil(target_partitions as u64);
+221: 
+222:         let current_partition_index: usize = 0;
+223:         let current_partition_size: u64 = 0;
+224: 
+225:         // Partition byte range evenly for all `PartitionedFile`s
+226:         let repartitioned_files = flattened_files
+227:             .into_iter()
+228:             .scan(
+229:                 (current_partition_index, current_partition_size),
+230:                 |(current_partition_index, current_partition_size), source_file| {
+231:                     let mut produced_files = vec![];
+232:                     let (mut range_start, file_end) = source_file.range();
+233:                     while range_start < file_end {
+234:                         let range_end = min(
+235:                             range_start
+236:                                 + (target_partition_size - *current_partition_size),
+237:                             file_end,
+238:                         );
+239: 
+240:                         let mut produced_file = source_file.clone();
+241:                         produced_file.range = Some(FileRange {
+242:                             start: range_start as i64,
+243:                             end: range_end as i64,
+244:                         });
+245:                         produced_files.push((*current_partition_index, produced_file));
+246: 
+247:                         if *current_partition_size + (range_end - range_start)
+248:                             >= target_partition_size
+249:                         {
+250:                             *current_partition_index += 1;
+251:                             *current_partition_size = 0;
+252:                         } else {
+253:                             *current_partition_size += range_end - range_start;
+254:                         }
+255:                         range_start = range_end;
+256:                     }
+257:                     Some(produced_files)
+258:                 },
+259:             )
+260:             .flatten()
+261:             .chunk_by(|(partition_idx, _)| *partition_idx)
+262:             .into_iter()
+263:             .map(|(_, group)| FileGroup::new(group.map(|(_, vals)| vals).collect_vec()))
+264:             .collect_vec();
+265: 
+266:         Some(repartitioned_files)

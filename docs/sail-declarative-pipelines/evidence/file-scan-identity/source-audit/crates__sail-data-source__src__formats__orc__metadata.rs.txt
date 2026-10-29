@@ -1,0 +1,63 @@
+44:     /// Configure a native reader and its matching physical-to-logical bridge.
+45:     ///
+46:     /// `metadata` must describe the same immutable file as `reader`, and should
+47:     /// have been read with explicit metadata/depth limits. The complete logical
+48:     /// schema is validated before selecting columns or creating a native schema.
+49:     /// Reader timezone rules select numeric conversion; `session_timezone` only
+50:     /// labels the logical output. Precision is microseconds with checked truncation.
+51:     ///
+52:     /// `projection` contains strictly increasing, unique top-level field ordinals;
+53:     /// `None` selects all fields and `Some(&[])` selects none. Final request order
+54:     /// and duplicate columns belong to the caller's subsequent output projection.
+55:     ///
+56:     /// Callers may set execution controls such as batch size, byte range and row
+57:     /// selection on the returned builder. They must not replace its schema,
+58:     /// projection, precision or timezone options: the returned bridge is paired
+59:     /// with this exact configuration. Field checks cannot detect a replacement
+60:     /// timezone policy that happens to produce the same physical schema.
+61:     pub fn try_new_reader<R>(
+62:         reader: R,
+63:         metadata: Arc<FileMetadata>,
+64:         session_timezone: &str,
+65:         reader_timezone: &OrcJavaTimeZoneConfig,
+66:         projection: Option<&[usize]>,
+67:     ) -> Result<(ArrowReaderBuilder<R>, Self)> {
+68:         let logical = infer_schema(&metadata, session_timezone)?;
+69:         let (logical, mask) = match projection {
+70:             Some(indices) => {
+71:                 if let Some(index) = indices
+72:                     .iter()
+73:                     .find(|&&index| index >= logical.fields().len())
+74:                 {
+75:                     return plan_err!(
+76:                         "ORC physical projection index {index} is out of bounds for {} fields",
+77:                         logical.fields().len()
+78:                     );
+79:                 }
+80:                 if indices.windows(2).any(|pair| pair[0] >= pair[1]) {
+81:                     return plan_err!(
+82:                         "ORC physical projection must contain strictly increasing, unique top-level field indices"
+83:                     );
+84:                 }
+85:                 let root = metadata.root_data_type();
+86:                 let mask = ProjectionMask::roots(
+87:                     root,
+88:                     indices
+89:                         .iter()
+90:                         .map(|&index| root.children()[index].data_type().column_index()),
+91:                 );
+92:                 (Arc::new(logical.project(indices)?), Some(mask))
+93:             }
+94:             None => (logical, None),
+95:         };
+96:         let mut builder = ArrowReaderBuilder::new_with_metadata(reader, metadata)
+97:             .with_timestamp_precision(TimestampPrecision::Microsecond)
+98:             .with_timestamp_read_options(
+99:                 TimestampReadOptions::new().with_precision_loss(TimestampPrecisionLoss::Truncate),
+100:             )
+101:             .with_timestamp_time_zone_options(reader_timezone.native_options()?);
+102:         if let Some(mask) = mask {
+103:             builder = builder.with_projection(mask);
+104:         }
+105:         let physical = builder.schema();
+106:         Ok((builder, Self { physical, logical }))

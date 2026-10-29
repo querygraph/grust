@@ -1,0 +1,88 @@
+125: pub struct PartitionedFile {
+126:     /// Path for the file (e.g. URL, filesystem path, etc)
+127:     pub object_meta: ObjectMeta,
+128:     /// Values of partition columns to be appended to each row.
+129:     ///
+130:     /// These MUST have the same count, order, and type than the [`table_partition_cols`].
+131:     ///
+132:     /// You may use [`wrap_partition_value_in_dict`] to wrap them if you have used [`wrap_partition_type_in_dict`] to wrap the column type.
+133:     ///
+134:     ///
+135:     /// [`wrap_partition_type_in_dict`]: crate::file_scan_config::wrap_partition_type_in_dict
+136:     /// [`wrap_partition_value_in_dict`]: crate::file_scan_config::wrap_partition_value_in_dict
+137:     /// [`table_partition_cols`]: https://github.com/apache/datafusion/blob/main/datafusion/core/src/datasource/file_format/options.rs#L87
+138:     pub partition_values: Vec<ScalarValue>,
+139:     /// An optional file range for a more fine-grained parallel execution
+140:     pub range: Option<FileRange>,
+141:     /// Optional statistics that describe the data in this file if known.
+142:     ///
+143:     /// DataFusion relies on these statistics for planning (in particular to sort file groups),
+144:     /// so if they are incorrect, incorrect answers may result.
+145:     ///
+146:     /// These statistics cover the full table schema: file columns plus partition columns.
+147:     /// When set via [`Self::with_statistics`], partition column statistics are automatically
+148:     /// computed from [`Self::partition_values`] with exact min/max/null_count/distinct_count.
+149:     pub statistics: Option<Arc<Statistics>>,
+150:     /// The known lexicographical ordering of the rows in this file, if any.
+151:     ///
+152:     /// This describes how the data within the file is sorted with respect to one or more
+153:     /// columns, and is used by the optimizer for planning operations that depend on input
+154:     /// ordering (e.g. merges, sorts, and certain aggregations).
+155:     ///
+156:     /// When available, this is typically inferred from file-level metadata exposed by the
+157:     /// underlying format (for example, Parquet `sorting_columns`), but it may also be set
+158:     /// explicitly via [`Self::with_ordering`].
+159:     pub ordering: Option<LexOrdering>,
+160:     /// User-defined per-file metadata, keyed by Rust type. Multiple
+161:     /// independent components can each attach their own data here without
+162:     /// conflict — see [`FileExtensions`].
+163:     pub extensions: FileExtensions,
+164:     /// The estimated size of the parquet metadata, in bytes
+165:     pub metadata_size_hint: Option<usize>,
+166:     pub table_reference: Option<TableReference>,
+167:     /// A user-provided physical Arrow schema for this file.
+168:     ///
+169:     /// This schema describes only the columns stored in the file. It must not
+170:     /// include partition columns; those are represented separately by
+171:     /// [`Self::partition_values`] and the scan's table partition columns.
+172:     ///
+173:     /// When provided, this field will be used by the Parquet reader to avoid
+174:     /// parsing the Arrow schema from the `ARROW:schema` metadata key. Other
+175:     /// built-in file sources ignore it for now.
+176:     pub arrow_schema: Option<SchemaRef>,
+
+180:     /// Create a simple file without metadata or partition
+181:     pub fn new(path: impl Into<String>, size: u64) -> Self {
+182:         Self {
+183:             arrow_schema: None,
+184:             object_meta: ObjectMeta {
+185:                 location: Path::from(path.into()),
+186:                 last_modified: chrono::Utc.timestamp_nanos(0),
+187:                 size,
+188:                 e_tag: None,
+189:                 version: None,
+190:             },
+191:             partition_values: vec![],
+192:             range: None,
+193:             statistics: None,
+194:             ordering: None,
+195:             extensions: FileExtensions::new(),
+196:             metadata_size_hint: None,
+197:             table_reference: None,
+198:         }
+199:     }
+200: 
+201:     /// Create a file from a known ObjectMeta without partition
+202:     pub fn new_from_meta(object_meta: ObjectMeta) -> Self {
+203:         Self {
+204:             arrow_schema: None,
+205:             object_meta,
+206:             partition_values: vec![],
+207:             range: None,
+208:             statistics: None,
+209:             ordering: None,
+210:             extensions: FileExtensions::new(),
+211:             metadata_size_hint: None,
+212:             table_reference: None,
+213:         }
+214:     }
