@@ -1,0 +1,157 @@
+{
+  "recorded_at": "2026-10-29T19:22:34.627419+00:00",
+  "review_parent": "4990093f37e8dcd5ed1071e1d2bb37b024889a04",
+  "preserved_review_sha256": "7473e6be29a2723812913e24cb35957e739c2e4ad7ac702de47f19fe55b9e5e5",
+  "scope": "Pinned source inspection and documentation consistency only; no new runtime tests.",
+  "sources": [
+    {
+      "id": "spark_scd2_rejection",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowPlanner.scala",
+      "git_blob": "8251780524a2da0666dcc589c554c7d7101ac2b1",
+      "sha256": "d3249af35b58ba39df4e9029f5b79de3bdc8764f16981d5561db45d76634e495",
+      "excerpts": [
+        {
+          "first_line": 98,
+          "last_line": 102,
+          "text": "          case ScdType.Type2 =>\n            throw new AnalysisException(\n              errorClass = \"AUTOCDC_SCD2_NOT_SUPPORTED\",\n              messageParameters = Map.empty\n            )"
+        }
+      ]
+    },
+    {
+      "id": "spark_public_scd1_argument",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "python/pyspark/pipelines/api.py",
+      "git_blob": "5cbc003708f202eeb61a18c0d8c59d6e5b7ad8d1",
+      "sha256": "9856e5befd6daf1cef1db47c399d3f40ddca61cfe58b438b66a1074b6c58b65e",
+      "excerpts": [
+        {
+          "first_line": 539,
+          "last_line": 539,
+          "text": "    stored_as_scd_type: Optional[Literal[1, \"1\"]] = None,"
+        },
+        {
+          "first_line": 584,
+          "last_line": 585,
+          "text": "    :param stored_as_scd_type: The SCD type for the target table. Only 1 (or \"1\") is supported. \\\n        When not specified, the server default applies."
+        },
+        {
+          "first_line": 655,
+          "last_line": 663,
+          "text": "    if stored_as_scd_type is not None and str(stored_as_scd_type) != \"1\":\n        raise PySparkTypeError(\n            errorClass=\"NOT_EXPECTED_TYPE\",\n            messageParameters={\n                \"arg_name\": \"stored_as_scd_type\",\n                \"expected_type\": \"Literal[1, '1']\",\n                \"arg_type\": type(stored_as_scd_type).__name__,\n            },\n        )"
+        }
+      ]
+    },
+    {
+      "id": "sail_empty_commit_exits",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "8d044db3860b4f55e49543c833246af31e986e2e",
+      "path": "crates/sail-delta-lake/src/physical_plan/commit_exec.rs",
+      "git_blob": "a6ae01d245597aee1b9286a7e5c9fee787f1e136",
+      "sha256": "3479841360c71aa50eb3dd2d99ab86db515433e5bb9ddf15a1ae8d0befdb4e44",
+      "excerpts": [
+        {
+          "first_line": 653,
+          "last_line": 681,
+          "text": "            if !has_data {\n                return commit_count_batch(schema, 0);\n            }\n\n            // Prepend initial actions\n            let mut final_actions = initial_actions;\n            final_actions.extend(actions);\n            if !table_exists {\n                final_actions = apply_identity_high_water_marks(final_actions, None)?;\n            }\n            let kinds: Vec<&'static str> = final_actions\n                .iter()\n                .map(|a| match a {\n                    CommitAction::Protocol(_) => \"Protocol\",\n                    CommitAction::Metadata(_) => \"Metadata\",\n                    CommitAction::Add(_) => \"Add\",\n                    CommitAction::Remove(_) => \"Remove\",\n                    _ => \"Other\",\n                })\n                .collect();\n            log::trace!(\n                \"final_actions_len: {}, final_action_kinds: {:?}\",\n                final_actions.len(),\n                kinds\n            );\n\n            if !has_commit_payload_actions(&final_actions) {\n                return commit_count_batch(schema, 0);\n            }"
+        },
+        {
+          "first_line": 1172,
+          "last_line": 1176,
+          "text": "fn has_commit_payload_actions(actions: &[CommitAction]) -> bool {\n    actions\n        .iter()\n        .any(|action| !matches!(action, CommitAction::CommitInfo(_)))\n}"
+        }
+      ]
+    },
+    {
+      "id": "sail_application_transaction_actions",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "8d044db3860b4f55e49543c833246af31e986e2e",
+      "path": "crates/sail-delta-lake/src/transaction/mod.rs",
+      "git_blob": "701fce39d708f1dc0cc1b811541834036054d52b",
+      "sha256": "16171135c0b436c8e75c94d6cc17dc45ac16cba683fd144921f506139c9f40c2",
+      "excerpts": [
+        {
+          "first_line": 658,
+          "last_line": 660,
+          "text": "        for txn in &app_transactions {\n            actions.push(CommitAction::Txn(txn.clone()));\n        }"
+        },
+        {
+          "first_line": 1107,
+          "last_line": 1117,
+          "text": "\n//     /// Add an additional application transaction to the commit\n//     pub fn with_application_transaction(mut self, txn: Transaction) -> Self {\n//         self.app_transaction.push(txn);\n//         self\n//     }\n\n//     /// Override application transactions for the commit\n//     pub fn with_application_transactions(mut self, txn: Vec<Transaction>) -> Self {\n//         self.app_transaction = txn;\n//         self"
+        }
+      ]
+    },
+    {
+      "id": "iggy_committed_and_minted_frontiers",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/partitions/src/iggy_partition.rs",
+      "git_blob": "0b8853295ab8b7d96fb5a8be8e8eb0a9b10c4578",
+      "sha256": "ffb2ef118972524a84558dce8aa99ac4579d3575d4f2d17340ca6008b85d815a",
+      "excerpts": [
+        {
+          "first_line": 3212,
+          "last_line": 3261,
+          "text": "    /// One past the highest COMMITTED offset, `0` while the offset space is\n    /// still empty. The value stamped into the durable record, and what a\n    /// transfer offer advertises.\n    ///\n    /// Not [`Self::mint_frontier`]: after a reservation-seeded boot the append\n    /// point stands a lease block above this, and neither the record nor an\n    /// offer may claim offsets no message reached.\n    #[must_use]\n    pub fn offset_frontier(&self) -> u64 {\n        if self.offset_space.committed_seeded {\n            self.offset.load(Ordering::Acquire).saturating_add(1)\n        } else {\n            0\n        }\n    }\n\n    /// [`Self::offset_frontier`] as it stood once every op below `op` was\n    /// applied, read off the stamped entries this replica still holds.\n    ///\n    /// `None` when an applied op from `op` up to the first one that minted\n    /// offsets is no longer retained, so the frontier there cannot be known.\n    #[must_use]\n    pub fn offset_frontier_before(&self, op: u64) -> Option<u64> {\n        let journal = &self.log.journal().inner;\n        for applied in op..=self.consensus.commit_min() {\n            let entry = journal.repair_entry(applied)?;\n            if let Some(batch) = materialization_batch_meta(&entry, None).ok()? {\n                return Some(batch.base_offset);\n            }\n        }\n        Some(self.offset_frontier())\n    }\n\n    /// The offset the next mint will take, which is where the segment chain has\n    /// to be anchored for the appends that follow to land contiguously.\n    ///\n    /// Above [`Self::offset_frontier`] by exactly the offsets this replica has\n    /// journaled but not committed, plus -- on the first boot after a crash that\n    /// took acked-but-unflushed messages with it -- the lease block the durable\n    /// reservation claimed. That gap is the whole point: the reservation is the\n    /// only surviving witness that those offsets were handed to a client, so the\n    /// counter resumes above them instead of re-minting them.\n    #[must_use]\n    pub fn mint_frontier(&self) -> u64 {\n        if self.offset_space.append_live {\n            self.dirty_offset.load(Ordering::Relaxed).saturating_add(1)\n        } else {\n            0\n        }\n    }"
+        }
+      ]
+    },
+    {
+      "id": "iggy_public_partition_details",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/common/src/types/partition/mod.rs",
+      "git_blob": "b00e77aa0eeed7de0c391be23df5ebc465db873a",
+      "sha256": "d3efef7cf02b5e27d5b97c68c6930acb2a36b29ea921467d117738b548d4be2f",
+      "excerpts": [
+        {
+          "first_line": 24,
+          "last_line": 52,
+          "text": "/// `Partition` represents the information about a partition.\n/// It consists of the following fields:\n/// - `id`: unique identifier of the partition.\n/// - `created_at`: the timestamp of the partition creation.\n/// - `segments_count`: the number of segments in the partition.\n/// - `current_offset`: the current offset of the partition.\n/// - `size_bytes`: the size of the partition in bytes.\n/// - `messages_count`: the number of messages in the partition.\n/// - `context`: the partition incarnation and the metadata operation the details were read at.\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct Partition {\n    /// Unique identifier of the partition.\n    pub id: u32,\n    /// The timestamp of the partition creation.\n    pub created_at: IggyTimestamp,\n    /// The number of segments in the partition.\n    pub segments_count: u32,\n    /// The current offset of the partition.\n    pub current_offset: u64,\n    /// The size of the partition in bytes.\n    pub size: IggyByteSize,\n    /// The number of messages in the partition.\n    pub messages_count: u64,\n    /// The partition incarnation and the metadata operation the details were read at. The\n    /// owner generation is zero because the details belong to no consumer group.\n    pub context: PartitionContext,\n}"
+        }
+      ]
+    },
+    {
+      "id": "spark_auxiliary_recreation",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowExecution.scala",
+      "git_blob": "c4cd358344ca1e49c726990744ee86f2e16d6a87",
+      "sha256": "2d12d8f7952651e87d86cce83e99c9fdd9d4dc7561a3acb9998a91f8db41339c",
+      "excerpts": [
+        {
+          "first_line": 404,
+          "last_line": 438,
+          "text": "  protected def createAuxiliaryTableIfNotExists(spark: SparkSession): TableIdentifier = {\n    val auxIdent = AutoCdcAuxiliaryTable.identifier(destination.identifier)\n    val (catalog, v2Identifier) = PipelinesCatalogUtils.resolveTableCatalog(spark, auxIdent)\n\n    if (!catalog.tableExists(v2Identifier)) {\n      val properties = mutable.Map.empty[String, String]\n\n      // Inherit the target's format so MERGE semantics line up. When unspecified, omit the\n      // provider so the catalog falls back to its default.\n      destination.format.foreach { fmt => properties(TableCatalog.PROP_PROVIDER) = fmt }\n\n      // Record which SCD strategy this auxiliary table serves so downstream readers can\n      // identify it without having to inspect the schema.\n      properties(AutoCdcAuxiliaryTable.scdTypePropertyKey) = changeArgs.storedAsScdType.label\n\n      // Persist the AutoCDC key column names as a JSON list on first creation. The value\n      // is stored verbatim by the catalog.\n      properties(AutoCdcAuxiliaryTable.keyColumnNamesProperty) =\n        AutoCdcAuxiliaryTable.serializeKeyColumnNames(auxiliaryKeyColumnNames)\n\n      // Table creation is not atomic with the table exists check, and [[createTable]] will fail\n      // with TableAlreadyExistsException if some asynchronous process creates the table between\n      // the [[tableExists]] check and [[createTable]]. This is both rare (we don't support\n      // multi-AutoCDC-flow targets so there are no race conditions within a single pipeline) and\n      // acceptable - users can cleanly retry the failed flow when this happens. SQL offers an\n      // atomic CREATE IF NOT EXISTS, but would require special casing of the table properties\n      // in DDL and we would lose compile-time syntax and type safety.\n      catalog.createTable(\n        v2Identifier,\n        new TableInfo.Builder()\n          .withColumns(CatalogV2Util.structTypeToV2Columns(auxiliaryTableSchema))\n          .withProperties(properties.asJava)\n          .build()\n      )\n    }"
+        }
+      ]
+    },
+    {
+      "id": "spark_auxiliary_recreation_fixture",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/AutoCdcScd1AuxiliaryTableDurabilitySuite.scala",
+      "git_blob": "3453235cbae84ff10eda0e100fd42a8883cbe65c",
+      "sha256": "443e932adb111a164d285b992beb4c12941cb853d40ec8aaade8b0dbf9ab35f2",
+      "excerpts": [
+        {
+          "first_line": 184,
+          "last_line": 220,
+          "text": "  test(\"if the AutoCDC auxiliary table is dropped between runs, it is transparently \" +\n    \"recreated\") {\n    val session = spark\n    import session.implicits._\n\n    spark.sql(\n      s\"CREATE TABLE $catalog.$namespace.target \" +\n      s\"(id INT NOT NULL, version BIGINT NOT NULL, $cdcMetadataDdl)\"\n    )\n\n    // Single MemoryStream reused across both runs so the streaming checkpoint can resume.\n    val stream = MemoryStream[(Int, Long)]\n    def buildCtx(): TestGraphRegistrationContext =\n      singleAutoCdcFlowPipeline(\n        flowName = \"auto_cdc_flow\",\n        target = \"target\",\n        sourceDf = stream.toDF().toDF(\"id\", \"version\"),\n        keys = Seq(\"id\"),\n        sequencing = functions.col(\"version\"))\n\n    stream.addData((1, 1L))\n    runPipeline(buildCtx())\n    assert(spark.catalog.tableExists(auxTableNameFor(\"target\")))\n\n    // Manually drop the auxiliary table.\n    spark.sql(s\"DROP TABLE ${auxTableNameFor(\"target\")}\")\n    assert(!spark.catalog.tableExists(auxTableNameFor(\"target\")))\n\n    stream.addData((1, 2L))\n    runPipeline(buildCtx())\n\n    // The dropped auxiliary table must be transparently recreated.\n    assert(spark.catalog.tableExists(auxTableNameFor(\"target\")))\n    checkAnswer(\n      spark.table(s\"$catalog.$namespace.target\"),\n      Seq(Row(1, 2L, cdcMeta(None, Some(2L))))\n    )"
+        }
+      ]
+    }
+  ],
+  "existing_receipts": [
+    "../8d044db3860b4f55e49543c833246af31e986e2e/gate.json",
+    "../orc-dependency-hardening/provenance.json"
+  ],
+  "limitations": [
+    "No streaming or CDC runtime implementation in this change.",
+    "No fresh Sail, Spark, broker, cloud-store, crash or distributed execution tests.",
+    "No-op completion, frontier mapping, auxiliary recovery and cancellation rules are design obligations, not newly qualified capabilities."
+  ]
+}

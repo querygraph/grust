@@ -1230,3 +1230,143 @@ receipt remains 273 selected Python and 67 upstream Python executions.
 These amendments make the proposal implementable without weakening Spark's
 semantics or Sail's architectural boundaries. They leave the batch-first goal
 active and expose the remaining correctness obligations before runtime work.
+
+## Astra Ultra follow-through: corrections and implementation gates
+
+Recorded: 2026-10-29T19:22:34.627419+00:00. This addendum follows a second reading of Fable's
+review and the response above. It preserves both verbatim, corrects the scope and
+status statements below, and adds four concrete recovery obligations. Source
+observations use Sail `8d044db3860b4f55e49543c833246af31e986e2e`, Spark 4.2.1
+`617618396087429b5627a86ce933bb0f5d6645cb`, and Iggy
+`153fdf466aea94b7bcb90681ee7274f9f76ec00d`. The
+[source audit](evidence/fable-astra-follow-through/source-audit.json) records
+paths, line spans and blob hashes. This pass ran documentation checks, not new
+runtime, broker or crash tests.
+
+### Corrected scope and current implementation
+
+The earlier response's step 6 says "remaining SCD1/SCD2"; that wording is wrong.
+The target is **SCD1 plus faithful SCD2 rejection**, not an SCD2 implementation.
+Spark's `graph/FlowPlanner.scala:98–102` raises
+`AUTOCDC_SCD2_NOT_SUPPORTED`; `python/pyspark/pipelines/api.py:539,584,655–663`
+restricts the public argument to 1/"1". Preserve both boundaries and their tests.
+
+The combined catalog/CTE fixture marked pending above is now covered at Sail
+`8d044db38`: both original SQL files and all five output assertions pass for
+memory/memory and memory/LakeCat profiles. Its
+[receipt](evidence/8d044db3860b4f55e49543c833246af31e986e2e/gate.json) records
+41 Connect Rust tests, 277 selected Python tests and 67 upstream Python executions.
+These are selected gates, not full SDP qualification. The canonical inventory
+remains 462 registrations, 97 assertion-audited and 59 partial behavioral ports.
+
+[ORC dependency hardening](evidence/orc-dependency-hardening/provenance.json)
+has three local commits; it does not yet provide a Sail ORC source or writer.
+The [ORC design](ORC-SOURCE-DESIGN.md) retains the metadata budget/type-tree and
+portable dependency prerequisites. Streaming/Iggy runtime and CDC execution
+remain unimplemented. General catalog behavior stays in Sail; LakeCat remains
+one supported adapter.
+
+### 1. A successful no-op still needs a durable completion result
+
+**Source observation.** Sail's `DeltaCommitExec` returns a zero count before
+building a commit when it receives no action rows, or no commit payload actions
+(`physical_plan/commit_exec.rs:653–680`). Application transactions are appended
+later in `CommitData` (`transaction/mod.rs:658–660`). Wiring an annotation only
+into that later builder would miss the earlier exits. This is a prerequisite
+for the proposed streaming writer, not a demonstrated defect in ordinary batch
+writes.
+
+A filtered microbatch can consume input and emit nothing; a CDC auxiliary or
+target MERGE can legitimately change no rows. Recovery must distinguish each
+completed effect from one that never ran. For an annotated Delta operation,
+carry its transaction identity to the commit operator independently of data
+actions, and support a transaction-only completion commit when necessary.
+An alternative no-op certificate must be durable and bound to the same intent,
+table incarnation and conditional validation; a returned row count is insufficient.
+Keep ordinary unannotated empty-write behavior unchanged.
+
+Add separate acceptance cases for filtered-empty append, unchanged auxiliary
+MERGE, absent-key delete and fully suppressed stale CDC input. Lose the response
+after completion, restart, and confirm the original intent exactly once without
+requiring an Add/Remove action. If operator state changes despite zero output,
+its receipt remains required too.
+
+### 2. Iggy's frontier must name committed, readable input
+
+**Source observation.** Pinned Iggy distinguishes `offset_frontier()` (one past
+the highest committed offset, zero before any commit) from `mint_frontier()`
+(which can include uncommitted allocations and crash-reservation gaps), in
+`core/partitions/src/iggy_partition.rs:3212–3260`. Public `Partition` details
+expose `current_offset`, `messages_count` and context, without the internal
+committed-seeded flag (`core/common/src/types/partition/mod.rs:24–52`).
+
+Before implementing `frontier()`, specify and test the exact public broker
+operation that supplies a committed frontier tied to the partition incarnation.
+Do not assume `current_offset + 1` distinguishes a new empty partition from a
+first message at offset zero, or that an allocation frontier proves readability.
+If the pinned public API cannot establish that distinction, the adapter needs a
+small broker/SDK capability extension or an explicitly unsupported case.
+
+Broker tests must cover empty, first-offset-zero, retained-empty, concurrent
+append and crash-reservation states. Persist the captured bound for the run;
+later arrivals must not extend it. A gap or unreadable promised range remains an
+explicit error, with no progress or acknowledgment past it. This refines the
+existing fail-closed rule; it does not claim a broker defect from source inspection.
+
+### 3. Preserve auxiliary recreation parity at completed-run boundaries
+
+**Source observation.** Spark's `graph/FlowExecution.scala:404–438` recreates a
+missing auxiliary table. `AutoCdcScd1AuxiliaryTableDurabilitySuite.scala:184–220`
+requires this between completed runs with the same stream/checkpoint. That
+fixture contains only upserts; it proves no restoration of deleted tombstones.
+
+Reconcile this with the earlier physical-identity requirement explicitly:
+
+- With the prior run fully completed and no unresolved effects for the target,
+  preserve Spark's recreation behavior. Record the new auxiliary incarnation
+  before the next intent; retain the history of the old incarnation.
+- If a pending intent names the missing auxiliary incarnation, recreation does
+  not prove its effect completed. Stop for reconciliation or reset; do not accept
+  a receipt from a replacement table merely because its qualified name matches.
+- Dropping auxiliary state destroys its tombstones. Transparent recreation is
+  compatibility with that destructive action, not lossless recovery. Add a
+  separate delete/late-upsert test so this boundary cannot be misreported.
+
+Apply the check under the target-wide coordination contract, including other
+pipelines' unfinished effects. A flow-local idle flag alone is insufficient.
+
+### 4. Cancellation is not proof that a sink did not commit
+
+The existing instruction to stop progress/acknowledgment on cancellation must
+retain the pending intent and any confirmed effect receipts. Cancellation can
+race a submitted remote commit; dropping the job stream does not establish
+rollback. Stop new work and acknowledgments, then let the next valid owner
+resolve the original intent through sink lookup. Never reuse its batch identity
+for a different range or reset by deleting the unresolved record.
+
+Test both orders: cancellation before the commit is accepted, and cancellation
+after acceptance with the response lost. For CDC, inject the same race separately
+at auxiliary and target commits. These are required recovery tests, not claims
+that such a runner currently exists.
+
+### Concrete handoff to implementation
+
+The design is feasible, but the current documents are not yet a complete
+streaming/CDC implementation specification. Treat the following as review gates;
+each implementation row should become multiple small commits where needed.
+
+| Boundary | What must be settled or demonstrated before advancing |
+| --- | --- |
+| Batch completion | Preserve original Spark assertions, finish outstanding batch work and keep provider-specific failures visible. The ORC dependency work is a prerequisite, not an SDP pass. |
+| Next Astra design checkpoint | Select the atomic ownership/progress mechanism, prove actual sink fencing and reset behavior, define the stateless/stateful admission boundary, and specify source frontiers and receipt retention. Announce this checkpoint before starting it. |
+| Sol: control and Delta vertical slice | Implement the agreed pure transitions, one store adapter and write annotations/codec separately; then one stateless test-source flow. Gate original-intent recovery, no-op receipts, takeover, cancel and reset before adding another provider. |
+| Stateful and table-source design | Set operator identity/state recovery, output modes and watermark rules, plus table incarnation/version/branch semantics. Bounded batch execution alone cannot close these items. |
+| Sol: Iggy integration | Port the optional dependency and codecs; prove committed frontier capture, explicit range replay, gap rejection and post-progress acknowledgment with pinned broker durability settings. Iggy remains a required deliverable. |
+| CDC Astra checkpoint, then Sol | Freeze target-wide coordination, prepared-input replay and two-effect receipts; preserve auxiliary recreation and SCD1/SCD2-rejection parity. Implement arguments, plans, MERGEs, lifecycle and fault tests as separate review units. |
+
+Sail's existing physical operators continue to own data commits; the run actor
+owns intent/progress/acknowledgment and uses `JobService`. Audit Grust/LakeCat
+reuse by concrete module contracts, keeping the imported dependency surface small.
+Fable's day estimates remain provisional until the first recovery-tested vertical
+slice; they omit work if stateful streaming is treated as ordinary batch queries.
+No new runtime capability or full-goal completion follows from this review.

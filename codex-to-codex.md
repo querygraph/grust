@@ -11090,3 +11090,11 @@ Cloned public orc-rust v0.9.0 at d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307 into /
 ## 2026-10-29T19:11:19.144822+00:00 — DONE initial ORC dependency implementation units
 
 Local orc-rust-sdp commits {'test-deps': 'd12c9608c6c103b0fa9d5d27aed61557081a219c', 'compression': 'b6bede0ef428f6bc81e2709884edf353bae06097', 'metadata': '8338ce9062f6e2072475cb06c68fe9379f04bcc7'}: separate Arrow test alignment, compression bounds/error propagation and shared footer-range validation. Final detached gate: fmt/strict Clippy,266 default tests (8 upstream ignored),163 no-default library tests;3 ignored-by-default PyORC writer tests separately pass. Retained panic now typed sync/async errors;8 Spark-file reads and3 Spark reads of patched Rust outputs pass. Five other upstream ignored integration cases remain unqualified. No Sail production change, publication or full SDP verdict. Metadata total budgets/type-tree validation are next.
+
+## 2026-10-29T19:18:16.348566+00:00 — ACK Fable response follow-through
+
+Operator requested Astra Ultra response at the end of SDP-FABLE-DESIGN-REVIEW.md. Reading the preserved review and existing e90761b response, checking current pins, and appending only new corrections and concrete implementation handoff improvements. Streaming/CDC runtime design mechanisms remain pending the announced checkpoint. No Sail code, external message or publication.
+
+## 2026-10-29T19:23:29.160021+00:00 — DONE Fable response follow-through content review
+
+Appended 140 lines under Astra Ultra follow-through, preserving all 112039 prior review bytes. Corrected SCD2 scope and current batch status; added source-grounded no-op Delta receipts, committed Iggy frontier mapping, auxiliary recreation versus unfinished-intent identity, cancellation recovery, and Astra/Sol handoff gates. Eight pinned source records retained; independent streaming and CDC read-only reviews found no blockers. Documentation-only candidate must pass detached preservation/source/receipt/link checks before conditional branch advance. No runtime tests, Sail code changes, publication or streaming/CDC implementation claim.
