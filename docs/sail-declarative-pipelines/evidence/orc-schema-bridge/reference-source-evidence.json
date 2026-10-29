@@ -1,0 +1,143 @@
+{
+  "sources": [
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/orc/OrcUtils.scala",
+      "start_line": 132,
+      "end_line": 182,
+      "excerpt": "  def toCatalystSchema(schema: TypeDescription): StructType = {\n    import TypeDescription.Category\n\n    def toCatalystType(orcType: TypeDescription): DataType = {\n      orcType.getCategory match {\n        case Category.STRUCT => toStructType(orcType)\n        case Category.LIST => toArrayType(orcType)\n        case Category.MAP => toMapType(orcType)\n        // A Spark TIMESTAMP_LTZ column (catalyst type attribute `timestamp`) and a foreign ORC\n        // TIMESTAMP column (no attribute) are both read as TimestampType, so do not let the\n        // parser resolve `timestamp` by spark.sql.timestampType.\n        case Category.TIMESTAMP if Option(orcType.getAttributeValue(CATALYST_TYPE_ATTRIBUTE_NAME))\n            .forall(_ == TimestampType.typeName) =>\n          TimestampType\n        case _ =>\n          val catalystTypeAttrValue = orcType.getAttributeValue(CATALYST_TYPE_ATTRIBUTE_NAME)\n          if (catalystTypeAttrValue != null) {\n            CatalystSqlParser.parseDataType(catalystTypeAttrValue)\n          } else {\n            CatalystSqlParser.parseDataType(orcType.toString)\n          }\n      }\n    }\n\n    def toStructType(orcType: TypeDescription): StructType = {\n      val fieldNames = orcType.getFieldNames.asScala\n      val fieldTypes = orcType.getChildren.asScala\n      val fields = new ArrayBuffer[StructField]()\n      fieldNames.zip(fieldTypes).foreach {\n        case (fieldName, fieldType) =>\n          val catalystType = toCatalystType(fieldType)\n          fields += StructField(fieldName, catalystType)\n      }\n      StructType(fields.toArray)\n    }\n\n    def toArrayType(orcType: TypeDescription): ArrayType = {\n      val elementType = orcType.getChildren.get(0)\n      ArrayType(toCatalystType(elementType))\n    }\n\n    def toMapType(orcType: TypeDescription): MapType = {\n      val Seq(keyType, valueType) = orcType.getChildren.asScala.toSeq\n      val catalystKeyType = toCatalystType(keyType)\n      val catalystValueType = toCatalystType(valueType)\n      MapType(catalystKeyType, catalystValueType)\n    }\n\n    // The Spark query engine has not completely supported CHAR/VARCHAR type yet, and here we\n    // replace the orc CHAR/VARCHAR with STRING type.\n    CharVarcharUtils.replaceCharVarcharWithStringInSchema(toStructType(schema))"
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/orc/OrcUtils.scala",
+      "start_line": 331,
+      "end_line": 388,
+      "excerpt": "  def orcTypeDescription(dt: DataType): TypeDescription = {\n    def getInnerTypeDecription(dt: DataType): Option[TypeDescription] = {\n      dt match {\n        case y: YearMonthIntervalType =>\n          val typeDesc = new TypeDescription(TypeDescription.Category.INT)\n          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, y.typeName)\n          Some(typeDesc)\n        case d: DayTimeIntervalType =>\n          val typeDesc = new TypeDescription(TypeDescription.Category.LONG)\n          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, d.typeName)\n          Some(typeDesc)\n        case n: TimestampNTZType =>\n          val typeDesc = new TypeDescription(TypeDescription.Category.LONG)\n          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, n.typeName)\n          Some(typeDesc)\n        case tm: TimeType =>\n          val typeDesc = new TypeDescription(TypeDescription.Category.LONG)\n          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, tm.typeName)\n          Some(typeDesc)\n        case t: TimestampType =>\n          val typeDesc = new TypeDescription(TypeDescription.Category.TIMESTAMP)\n          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, t.typeName)\n          Some(typeDesc)\n        case _: StringType =>\n          val typeDesc = new TypeDescription(TypeDescription.Category.STRING)\n          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, StringType.typeName)\n          Some(typeDesc)\n        case _ => None\n      }\n    }\n\n    dt match {\n      case s: StructType =>\n        val result = new TypeDescription(TypeDescription.Category.STRUCT)\n        s.fields.foreach { f =>\n          getInnerTypeDecription(f.dataType) match {\n            case Some(t) => result.addField(f.name, t)\n            case None => result.addField(f.name, orcTypeDescription(f.dataType))\n          }\n        }\n        result\n      case a: ArrayType =>\n        val result = new TypeDescription(TypeDescription.Category.LIST)\n        getInnerTypeDecription(a.elementType) match {\n          case Some(t) => result.addChild(t)\n          case None => result.addChild(orcTypeDescription(a.elementType))\n        }\n        result\n      case m: MapType =>\n        val result = new TypeDescription(TypeDescription.Category.MAP)\n        getInnerTypeDecription(m.keyType) match {\n          case Some(t) => result.addChild(t)\n          case None => result.addChild(orcTypeDescription(m.keyType))\n        }\n        getInnerTypeDecription(m.valueType) match {\n          case Some(t) => result.addChild(t)\n          case None => result.addChild(orcTypeDescription(m.valueType))\n        }"
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/orc/OrcSerializer.scala",
+      "start_line": 98,
+      "end_line": 116,
+      "excerpt": "    case IntegerType | _: YearMonthIntervalType =>\n      if (reuseObj) {\n        val result = new IntWritable()\n        (getter, ordinal) =>\n          result.set(getter.getInt(ordinal))\n          result\n      } else {\n        (getter, ordinal) => new IntWritable(getter.getInt(ordinal))\n      }\n\n\n    case LongType | _: DayTimeIntervalType | _: TimestampNTZType | _: TimeType =>\n      if (reuseObj) {\n        val result = new LongWritable()\n        (getter, ordinal) =>\n          result.set(getter.getLong(ordinal))\n          result\n      } else {\n        (getter, ordinal) => new LongWritable(getter.getLong(ordinal))"
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/api/src/main/scala/org/apache/spark/sql/util/ArrowUtils.scala",
+      "start_line": 64,
+      "end_line": 74,
+      "excerpt": "      case DateType => new ArrowType.Date(DateUnit.DAY)\n      case TimestampType if timeZoneId == null =>\n        throw SparkException.internalError(\"Missing timezoneId where it is mandatory.\")\n      case TimestampType => new ArrowType.Timestamp(TimeUnit.MICROSECOND, timeZoneId)\n      case TimestampNTZType =>\n        new ArrowType.Timestamp(TimeUnit.MICROSECOND, null)\n      case _: TimeType => new ArrowType.Time(TimeUnit.NANOSECOND, 8 * 8)\n      case NullType => ArrowType.Null.INSTANCE\n      case _: YearMonthIntervalType => new ArrowType.Interval(IntervalUnit.YEAR_MONTH)\n      case _: DayTimeIntervalType => new ArrowType.Duration(TimeUnit.MICROSECOND)\n      case CalendarIntervalType => new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO)"
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/expressions/Cast.scala",
+      "start_line": 828,
+      "end_line": 838,
+      "excerpt": "  private[this] def castToTime(from: DataType, to: TimeType): Any => Any = from match {\n    case _: StringType =>\n      if (ansiEnabled) {\n        buildCast[UTF8String](_, s => DateTimeUtils.stringToTimeAnsi(s, getContextOrNull()))\n      } else {\n        buildCast[UTF8String](_, s => DateTimeUtils.stringToTime(s).orNull)\n      }\n    case _: TimeType =>\n      buildCast[Long](_, nanos => DateTimeUtils.truncateTimeToPrecision(nanos, to.precision))\n  }\n"
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/catalyst/src/main/scala/org/apache/spark/sql/internal/SQLConf.scala",
+      "start_line": 7435,
+      "end_line": 7443,
+      "excerpt": "  val TIME_TYPE_ENABLED =\n    buildConf(\"spark.sql.timeType.enabled\")\n      .internal()\n      .doc(\"When true, the TIME data type is supported.\")\n      .version(\"4.1.0\")\n      .booleanConf\n      .createWithDefault(Utils.isTesting)\n\n  val PROTOBUF_EXTENSIONS_SUPPORT_ENABLED ="
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/java/org/apache/spark/sql/execution/datasources/orc/OrcColumnarBatchReader.java",
+      "start_line": 130,
+      "end_line": 143,
+      "excerpt": "      InputSplit inputSplit,\n      TaskAttemptContext taskAttemptContext,\n      OrcTail orcTail) throws IOException {\n    FileSplit fileSplit = (FileSplit)inputSplit;\n    Configuration conf = taskAttemptContext.getConfiguration();\n    Reader reader = OrcFile.createReader(\n      fileSplit.getPath(),\n      OrcFile.readerOptions(conf)\n        .maxLength(OrcConf.MAX_FILE_LENGTH.getLong(conf))\n        .filesystem(fileSplit.getPath().getFileSystem(conf))\n        .orcTail(orcTail));\n    Reader.Options options =\n      OrcInputFormat.buildOptions(conf, reader, fileSplit.getStart(), fileSplit.getLength());\n    recordReader = reader.rows(options);"
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/java/org/apache/spark/sql/execution/datasources/orc/OrcAtomicColumnVector.java",
+      "start_line": 102,
+      "end_line": 111,
+      "excerpt": "  }\n\n  @Override\n  public long getLong(int rowId) {\n    int index = getRowIndex(rowId);\n    if (isTimestamp) {\n      return DateTimeUtils.fromJavaTimestamp(timestampData.asScratchTimestamp(index));\n    } else {\n      return longData.vector[index];\n    }"
+    },
+    {
+      "repository": "/Users/alexy/src/orc-rust-sdp",
+      "pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "path": "src/array_decoder/timestamp.rs",
+      "start_line": 127,
+      "end_line": 190,
+      "excerpt": "/// is specified for the stripe.\npub fn new_timestamp_decoder(\n    column: &Column,\n    field_type: ArrowDataType,\n    stripe: &Stripe,\n) -> Result<Box<dyn ArrayBatchDecoder>> {\n    let seconds_since_unix_epoch = match stripe.writer_tz() {\n        Some(writer_tz) => {\n            // If writer timezone exists then we must take the ORC epoch according\n            // to that timezone, and find seconds since UTC UNIX epoch for the base.\n            writer_tz\n                .with_ymd_and_hms(2015, 1, 1, 0, 0, 0)\n                .unwrap()\n                .timestamp()\n        }\n        None => {\n            // No writer timezone, we can assume UTC, so we can use known fixed value\n            // for the base offset.\n            ORC_EPOCH_UTC_SECONDS_SINCE_UNIX_EPOCH\n        }\n    };\n\n    match field_type {\n        ArrowDataType::Timestamp(TimeUnit::Second, None) => {\n            Ok(get_timestamp_decoder::<TimestampSecondType>(\n                column,\n                stripe,\n                seconds_since_unix_epoch,\n            ))\n        }\n        ArrowDataType::Timestamp(TimeUnit::Millisecond, None) => {\n            Ok(get_timestamp_decoder::<TimestampMillisecondType>(\n                column,\n                stripe,\n                seconds_since_unix_epoch,\n            ))\n        }\n        ArrowDataType::Timestamp(TimeUnit::Microsecond, None) => {\n            Ok(get_timestamp_decoder::<TimestampMicrosecondType>(\n                column,\n                stripe,\n                seconds_since_unix_epoch,\n            ))\n        }\n        ArrowDataType::Timestamp(TimeUnit::Nanosecond, None) => {\n            Ok(get_timestamp_decoder::<TimestampNanosecondType>(\n                column,\n                stripe,\n                seconds_since_unix_epoch,\n            ))\n        }\n        ArrowDataType::Decimal128(Decimal128Type::MAX_PRECISION, NANOSECOND_DIGITS) => {\n            Ok(Box::new(decimal128_decoder(\n                column,\n                stripe,\n                seconds_since_unix_epoch,\n                stripe.writer_tz(),\n            )))\n        }\n        _ => MismatchedSchemaSnafu {\n            orc_type: column.data_type().clone(),\n            arrow_type: field_type,\n        }\n        .fail(),"
+    },
+    {
+      "repository": "/Users/alexy/src/orc-rust-sdp",
+      "pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "path": "src/array_decoder/timestamp.rs",
+      "start_line": 234,
+      "end_line": 289,
+      "excerpt": "/// Wrapper around PrimitiveArrayDecoder to decode timestamps which are encoded in\n/// timezone of the writer to their UTC value.\nstruct TimestampOffsetArrayDecoder<T: ArrowTimestampType> {\n    inner: PrimitiveArrayDecoder<T>,\n    writer_tz: chrono_tz::Tz,\n}\n\nimpl<T: ArrowTimestampType> ArrayBatchDecoder for TimestampOffsetArrayDecoder<T> {\n    fn next_batch(\n        &mut self,\n        batch_size: usize,\n        parent_present: Option<&NullBuffer>,\n    ) -> Result<ArrayRef> {\n        let array = self\n            .inner\n            .next_primitive_batch(batch_size, parent_present)?;\n\n        let convert_timezone = |ts| {\n            // Convert from writer timezone to reader timezone (which we default to UTC)\n            // TODO: more efficient way of doing this?\n            let microseconds_in_timeunit = match T::UNIT {\n                TimeUnit::Second => 1_000_000,\n                TimeUnit::Millisecond => 1_000,\n                TimeUnit::Microsecond => 1,\n                TimeUnit::Nanosecond => -1, // not used in this case\n            };\n\n            match T::UNIT {\n                TimeUnit::Second | TimeUnit::Millisecond | TimeUnit::Microsecond => self\n                    .writer_tz\n                    .timestamp_micros(ts * microseconds_in_timeunit)\n                    .single()\n                    .map(|dt| {\n                        dt.naive_local().and_utc().timestamp_micros() / microseconds_in_timeunit\n                    }),\n                TimeUnit::Nanosecond => self\n                    .writer_tz\n                    .timestamp_nanos(ts)\n                    .naive_local()\n                    .and_utc()\n                    .timestamp_nanos_opt(),\n            }\n        };\n        let array = array\n            // first try to convert all non-nullable batches to non-nullable batches\n            .try_unary::<_, T, _>(|ts| convert_timezone(ts).ok_or(()))\n            // in the rare case one of the values was out of the timeunit's range (eg. see\n            // <https://docs.rs/chrono/latest/chrono/struct.DateTime.html#method.timestamp_nanos_opt>),\n            // for nanoseconds), try again by allowing a nullable batch as output\n            .unwrap_or_else(|()| array.unary_opt::<_, T>(convert_timezone));\n        let array = Arc::new(array) as ArrayRef;\n        Ok(array)\n    }\n\n    fn skip_values(&mut self, n: usize, parent_present: Option<&NullBuffer>) -> Result<()> {\n        self.inner.skip_values(n, parent_present)"
+    },
+    {
+      "repository": "/Users/alexy/src/orc-rust-sdp",
+      "pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "path": "src/encoding/timestamp.rs",
+      "start_line": 225,
+      "end_line": 276,
+      "excerpt": "    }\n    let seconds_since_epoch = data + base;\n    // Timestamps below the UNIX epoch with nanoseconds > 999_999 need to be\n    // adjusted to have 1 second subtracted due to ORC-763:\n    // https://issues.apache.org/jira/browse/ORC-763\n    let seconds = if seconds_since_epoch < 0 && nanoseconds > 999_999 {\n        seconds_since_epoch - 1\n    } else {\n        seconds_since_epoch\n    };\n    // Convert into nanoseconds since epoch, which Arrow uses as native representation\n    // of timestamps\n    // The timestamp may overflow i64 as ORC encodes them as a pair of (seconds, nanoseconds)\n    // while we encode them as a single i64 of nanoseconds in Arrow.\n    let nanoseconds_since_epoch =\n        (seconds as i128 * NANOSECONDS_IN_SECOND as i128) + (nanoseconds as i128);\n    // Returning seconds & nanoseconds only for error message\n    // TODO: does the error message really need those details? Can simplify by removing.\n    (nanoseconds_since_epoch, seconds, nanoseconds)\n}\n\nfn decode_timestamp<T: ArrowTimestampType>(\n    base: i64,\n    seconds_since_orc_base: i64,\n    nanoseconds: i64,\n) -> Result<i64> {\n    let (nanoseconds_since_epoch, seconds, nanoseconds) =\n        decode(base, seconds_since_orc_base, nanoseconds);\n\n    let nanoseconds_in_timeunit = match T::UNIT {\n        TimeUnit::Second => 1_000_000_000,\n        TimeUnit::Millisecond => 1_000_000,\n        TimeUnit::Microsecond => 1_000,\n        TimeUnit::Nanosecond => 1,\n    };\n\n    // Error if loss of precision\n    // TODO: make this configurable (e.g. can succeed but truncate)\n    ensure!(\n        nanoseconds_since_epoch % nanoseconds_in_timeunit == 0,\n        DecodeTimestampSnafu {\n            seconds,\n            nanoseconds,\n            to_time_unit: T::UNIT,\n        }\n    );\n\n    // Convert to i64 and error if overflow\n    let num_since_epoch = (nanoseconds_since_epoch / nanoseconds_in_timeunit)\n        .try_into()\n        .or_else(|_| {\n            DecodeTimestampSnafu {"
+    },
+    {
+      "repository": "/Users/alexy/src/orc-rust-sdp",
+      "pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "path": "src/schema.rs",
+      "start_line": 540,
+      "end_line": 578,
+      "excerpt": "            DataType::Decimal {\n                precision, scale, ..\n            } => ArrowDataType::Decimal128(*precision as u8, *scale as i8), // TODO: safety of cast?\n            DataType::Timestamp { .. } => ArrowDataType::Timestamp(time_unit, None),\n            DataType::TimestampWithLocalTimezone { .. } => {\n                ArrowDataType::Timestamp(time_unit, Some(\"UTC\".into()))\n            }\n            DataType::Date { .. } => ArrowDataType::Date32,\n            DataType::Struct { children, .. } => {\n                let children = children\n                    .iter()\n                    .map(|col| {\n                        let dt = col\n                            .data_type()\n                            .to_arrow_data_type_with_options(options.clone());\n                        Field::new(col.name(), dt, true)\n                    })\n                    .collect();\n                ArrowDataType::Struct(children)\n            }\n            DataType::List { child, .. } => {\n                let child = child.to_arrow_data_type_with_options(options);\n                ArrowDataType::new_list(child, true)\n            }\n            DataType::Map { key, value, .. } => {\n                // TODO: this needs to be kept in sync with MapArrayDecoder\n                //       move to common location?\n                // TODO: should it be \"keys\" and \"values\" (like arrow-rs)\n                //       or \"key\" and \"value\" like PyArrow and in Schema.fbs?\n                let key = key.to_arrow_data_type_with_options(options.clone());\n                let key = Field::new(\"keys\", key, false);\n                let value = value.to_arrow_data_type_with_options(options);\n                let value = Field::new(\"values\", value, true);\n\n                let dt = ArrowDataType::Struct(vec![key, value].into());\n                let dt = Arc::new(Field::new(\"entries\", dt, false));\n                ArrowDataType::Map(dt, false)\n            }\n            DataType::Union { variants, .. } => {"
+    },
+    {
+      "repository": "/Users/alexy/src/orc-rust-sdp",
+      "pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "path": "src/array_decoder/list.rs",
+      "start_line": 62,
+      "end_line": 87,
+      "excerpt": "impl ArrayBatchDecoder for ListArrayDecoder {\n    fn next_batch(\n        &mut self,\n        batch_size: usize,\n        parent_present: Option<&NullBuffer>,\n    ) -> Result<ArrayRef> {\n        let present =\n            derive_present_vec(&mut self.present, parent_present, batch_size).transpose()?;\n\n        let mut lengths = vec![0; batch_size];\n        if let Some(present) = &present {\n            self.lengths.decode_spaced(&mut lengths, present)?;\n        } else {\n            self.lengths.decode(&mut lengths)?;\n        }\n        let total_length: i64 = lengths.iter().sum();\n        // Fetch child array as one Array with total_length elements\n        let child_array = self.inner.next_batch(total_length as usize, None)?;\n        let offsets = OffsetBuffer::from_lengths(lengths.into_iter().map(|l| l as usize));\n        let null_buffer = present;\n\n        let array = ListArray::try_new(self.field.clone(), offsets, child_array, null_buffer)\n            .context(ArrowSnafu)?;\n        let array = Arc::new(array);\n        Ok(array)\n    }"
+    },
+    {
+      "repository": "/Users/alexy/src/orc-rust-sdp",
+      "pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "path": "src/array_decoder/struct_decoder.rs",
+      "start_line": 58,
+      "end_line": 78,
+      "excerpt": "impl ArrayBatchDecoder for StructArrayDecoder {\n    fn next_batch(\n        &mut self,\n        batch_size: usize,\n        parent_present: Option<&NullBuffer>,\n    ) -> Result<ArrayRef> {\n        let present =\n            derive_present_vec(&mut self.present, parent_present, batch_size).transpose()?;\n\n        let child_arrays = self\n            .decoders\n            .iter_mut()\n            .map(|child| child.next_batch(batch_size, present.as_ref()))\n            .collect::<Result<Vec<_>>>()?;\n\n        let null_buffer = present;\n        let array = StructArray::try_new(self.fields.clone(), child_arrays, null_buffer)\n            .context(ArrowSnafu)?;\n        let array = Arc::new(array);\n        Ok(array)\n    }"
+    },
+    {
+      "repository": "/Users/alexy/src/orc-rust-sdp",
+      "pin": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "path": "src/array_decoder/map.rs",
+      "start_line": 73,
+      "end_line": 104,
+      "excerpt": "impl ArrayBatchDecoder for MapArrayDecoder {\n    fn next_batch(\n        &mut self,\n        batch_size: usize,\n        parent_present: Option<&NullBuffer>,\n    ) -> Result<ArrayRef> {\n        let present =\n            derive_present_vec(&mut self.present, parent_present, batch_size).transpose()?;\n\n        let mut lengths = vec![0; batch_size];\n        if let Some(present) = &present {\n            self.lengths.decode_spaced(&mut lengths, present)?;\n        } else {\n            self.lengths.decode(&mut lengths)?;\n        }\n        let total_length: i64 = lengths.iter().sum();\n        // Fetch key and value arrays, each with total_length elements\n        // Fetch child array as one Array with total_length elements\n        let keys_array = self.keys.next_batch(total_length as usize, None)?;\n        let values_array = self.values.next_batch(total_length as usize, None)?;\n        // Compose the keys + values array into a StructArray with two entries\n        let entries =\n            StructArray::try_new(self.fields.clone(), vec![keys_array, values_array], None)\n                .context(ArrowSnafu)?;\n        let offsets = OffsetBuffer::from_lengths(lengths.into_iter().map(|l| l as usize));\n\n        let field = Arc::new(Field::new_struct(\"entries\", self.fields.clone(), false));\n        let array =\n            MapArray::try_new(field, offsets, entries, present, false).context(ArrowSnafu)?;\n        let array = Arc::new(array);\n        Ok(array)\n    }"
+    }
+  ],
+  "observed_pitfalls": [
+    "TIME(0..6) is physical ORC LONG nanoseconds, Arrow Time64(Nanosecond); precision does not rescale bits. Spark requires spark.sql.timeType.enabled=true.",
+    "String-to-TIME(0/3) can retain six fractional digits; Time-to-Time casts truncate. Preserve declared precision metadata separately from raw nanoseconds.",
+    "Year-month interval is physical INT total months, JVM Arrow Interval(YearMonth); day-time is physical LONG microseconds, Arrow Duration(Microsecond). PySpark cannot collect/convert year-month interval; string and numeric projections succeed.",
+    "NTZ is physical LONG microseconds. Physical TIMESTAMP yields naive writer wallclock from native default decoder. Both UTC and LA SQL fixtures were written by JVM America/Los_Angeles, confirmed in stripe footers.",
+    "Spark reader uses plain ORC ReaderOptions with useUTCTimestamp=false, so ORC Java reads wallclock using reader JVM TimeZone.getDefault; session timezone does not configure the ORC reader. Installed ORC exact bytecode is retained in OrcFile_ReaderOptions-javap.txt and TreeReaderFactory_TimestampTreeReader-javap.txt.",
+    "UTC SQL Spark-written LTZ -1us reads back +999999us in Spark itself; NTZ -1us stays correct. Source and file-read expected values are separate.",
+    "Foreign TIMESTAMP without attribute stays Spark LTZ under TIMESTAMP_NTZ config. Foreign CHAR/VARCHAR become String, retain __CHAR_VARCHAR_TYPE_STRING metadata; CHAR padding is preserved.",
+    "Foreign UTC-writer TIMESTAMP is interpreted by Spark reader JVM LA: 2020-01-02 03:04:05.123456789 reads 11:04:05.123456 UTC. Writer-based instant semantics do not automatically match Spark across reader JVM timezones.",
+    "Native microsecond timestamp decode rejects submicrosecond nanos; Spark truncates. Default nanosecond decode has narrower date range. Native microsecond mode is source-reviewed, not executed by existing probe.",
+    "Rebuild nested Struct/List/Map arrays recursively preserving offsets/null buffers and field metadata. Parent struct null, all-null fields, null container, empty container, null element are distinct. Native map child names keys/values differ from Spark Arrow key/value. Map stringification order is not semantic equality.",
+    "Changing Arrow schema alone cannot decode physical LONG as Timestamp/Time/Duration; native hints must match decoder-supported physical types before a separate array bridge.",
+    "Post-hoc naive wallclock conversion loses DST-fold information; ORC Java preserves original instant when writer and reader timezone rules match, otherwise applies writer-to-reader timezone conversion before exposing instant."
+  ],
+  "limitations": [
+    "Focused local fixtures, not full Spark ORC conformance or benchmarks.",
+    "Retained default-TIME rejection, PySpark interval conversion failures, initial SQL typo log and map-key JSON serializer failure log.",
+    "Existing bounded native executable used for default nanosecond reads only; no builds or repository modifications during reference collection."
+  ]
+}

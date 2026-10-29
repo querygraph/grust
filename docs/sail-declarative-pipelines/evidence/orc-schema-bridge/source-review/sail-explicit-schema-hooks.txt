@@ -1,0 +1,67 @@
+85:     async fn scan(&self, ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig>;
+86: 
+87:     /// Whether validating an explicit schema requires the physical file schema.
+88:     fn requires_explicit_schema_validation(&self) -> bool {
+89:         false
+90:     }
+91: 
+92:     /// Validate a user-provided file schema against the physical file schema.
+93:     fn validate_explicit_schema(&self, _schema: &Schema, _physical: &Schema) -> Result<()> {
+94:         Ok(())
+95:     }
+96: 
+
+183:         let compression = read_format.infer_compression(ctx, &sampled_files).await?;
+184: 
+185:         let (schema, partition_fields) = match schema {
+186:             Some(schema) if !schema.fields().is_empty() => {
+187:                 let physical = if read_format.requires_explicit_schema_validation() {
+188:                     Some(
+189:                         read_format
+190:                             .infer_schema(ctx, &sampled_files, compression)
+191:                             .await?,
+192:                     )
+193:                 } else if read_case_sensitive {
+194:                     None
+195:                 } else {
+196:                     read_format
+197:                         .infer_schema(ctx, &sampled_files, compression)
+198:                         .await
+199:                         .ok()
+200:                 };
+201:                 // Spark matches a user-specified schema against the physical file
+202:                 // columns case-insensitively by default (`spark.sql.caseSensitive=false`).
+203:                 // Reconcile the user column names to the physical names up front so that both
+204:                 // the file stats and reader (which resolve columns by exact name) find the data.
+205:                 let schema = if read_case_sensitive {
+206:                     schema
+207:                 } else if let Some(physical) = &physical {
+208:                     reconcile_schema_names_case_insensitive(schema, physical)?
+209:                 } else {
+210:                     // Keeps the user schema if physical schema inference is unavailable.
+211:                     schema
+212:                 };
+213:                 // When the partition columns are not specified, auto-discover
+214:                 // them from `key=value` segments in the listing paths.
+215:                 // Without this, columns that exist only in the directory tree
+216:                 // are treated as file columns, and the file reader fails
+217:                 // because the file itself does not contain them.
+218:                 let partition_by = if partition_by.is_empty() {
+219:                     infer_partitions(&sampled_files)?
+220:                         .into_iter()
+221:                         .filter(|name| {
+222:                             schema
+223:                                 .fields()
+224:                                 .iter()
+225:                                 .any(|f| f.name().eq_ignore_ascii_case(name))
+226:                         })
+227:                         .collect::<Vec<_>>()
+228:                 } else {
+229:                     partition_by
+230:                 };
+231:                 let (partition_fields, schema) =
+232:                     get_partition_columns_and_file_schema(&schema, partition_by)?;
+233:                 if let Some(physical) = physical {
+234:                     read_format.validate_explicit_schema(&schema, &physical)?;
+235:                 }
+236:                 (Arc::new(schema), partition_fields)

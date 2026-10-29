@@ -1,0 +1,239 @@
+commit 12101592aa462ddf6dc44c7e64d0c494c92089a5
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 15:13:42 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 15:13:42 2026 -0700
+
+    fix: preserve declared schemas in decoded ORC batches
+
+diff --git a/src/array_decoder/mod.rs b/src/array_decoder/mod.rs
+index 6074b53..376e60e 100644
+--- a/src/array_decoder/mod.rs
++++ b/src/array_decoder/mod.rs
+@@ -548,17 +548,11 @@ impl NaiveStripeDecoder {
+                 ))
+             }
+         } else {
+-            //TODO(weny): any better way?
+-            let fields = self
+-                .schema_ref
+-                .fields
+-                .into_iter()
+-                .map(|field| field.name())
+-                .zip(fields)
+-                .collect::<Vec<_>>();
+-
++            // Keep the declared nullability and metadata stable across batches,
++            // including batches that happen to contain no null values.
+             Ok(Some(
+-                RecordBatch::try_from_iter(fields).context(error::ConvertRecordBatchSnafu)?,
++                RecordBatch::try_new(Arc::clone(&self.schema_ref), fields)
++                    .context(error::ConvertRecordBatchSnafu)?,
+             ))
+         }
+     }
+diff --git a/tests/reader_schema.rs b/tests/reader_schema.rs
+new file mode 100644
+index 0000000..4536e9c
+--- /dev/null
++++ b/tests/reader_schema.rs
+@@ -0,0 +1,199 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use arrow::{
++    array::{Int64Array, RecordBatch, RecordBatchReader},
++    datatypes::{DataType, Field, Schema, SchemaRef},
++};
++use bytes::Bytes;
++use orc_rust::{projection::ProjectionMask, ArrowReaderBuilder, ArrowWriterBuilder};
++
++fn file() -> Bytes {
++    let schema = Arc::new(Schema::new(vec![
++        Field::new("id", DataType::Int64, true),
++        Field::new("value", DataType::Int64, true),
++    ]));
++    let batch = RecordBatch::try_new(
++        schema.clone(),
++        vec![
++            Arc::new(Int64Array::from(vec![0, 1, 2, 3])),
++            Arc::new(Int64Array::from(vec![Some(10), None, Some(30), None])),
++        ],
++    )
++    .unwrap();
++    let mut encoded = Vec::new();
++    let mut writer = ArrowWriterBuilder::new(&mut encoded, schema)
++        .try_build()
++        .unwrap();
++    writer.write(&batch).unwrap();
++    writer.close().unwrap();
++    Bytes::from(encoded)
++}
++
++fn configured<R>(
++    builder: ArrowReaderBuilder<R>,
++    names: &[&str],
++    batch_size: usize,
++    custom_metadata: bool,
++) -> (ArrowReaderBuilder<R>, SchemaRef) {
++    let projection = ProjectionMask::named_roots(builder.file_metadata().root_data_type(), names);
++    let mut builder = builder
++        .with_projection(projection)
++        .with_batch_size(batch_size);
++    let mut expected = builder.schema();
++    assert!(expected.fields().iter().all(|field| field.is_nullable()));
++    if custom_metadata {
++        // The writer does not encode Arrow field metadata in ORC. Supply a
++        // decoding schema to exercise the reader's explicit schema contract.
++        let fields = expected
++            .fields()
++            .iter()
++            .map(|field| {
++                field.as_ref().clone().with_metadata(HashMap::from([(
++                    "field.note".to_string(),
++                    format!("declared {}", field.name()),
++                )]))
++            })
++            .collect::<Vec<_>>();
++        expected = Arc::new(Schema::new_with_metadata(
++            fields,
++            HashMap::from([("schema.note".to_string(), "declared schema".to_string())]),
++        ));
++        builder = builder.with_schema(expected.clone());
++    }
++    (builder, expected)
++}
++
++fn assert_batches(batches: &[RecordBatch], expected: &SchemaRef, batch_size: usize) {
++    assert_eq!(batches.len(), 4 / batch_size);
++    assert_eq!(batches.iter().map(RecordBatch::num_rows).sum::<usize>(), 4);
++    for batch in batches {
++        assert_eq!(&batch.schema(), expected);
++        assert_eq!(batch.num_rows(), batch_size);
++    }
++    for (index, field) in expected.fields().iter().enumerate() {
++        let actual = batches
++            .iter()
++            .flat_map(|batch| {
++                batch
++                    .column(index)
++                    .as_any()
++                    .downcast_ref::<Int64Array>()
++                    .unwrap()
++                    .iter()
++                    .collect::<Vec<_>>()
++            })
++            .collect::<Vec<_>>();
++        let values = match field.name().as_str() {
++            "id" => vec![Some(0), Some(1), Some(2), Some(3)],
++            "value" => vec![Some(10), None, Some(30), None],
++            name => panic!("unexpected field {name}"),
++        };
++        assert_eq!(actual, values);
++    }
++}
++
++#[test]
++fn sync_batches_preserve_declared_schema_with_nulls_metadata_and_projection() {
++    let file = file();
++    for batch_size in [1, 2] {
++        for names in [&["id", "value"][..], &["value"][..], &[][..]] {
++            for custom_metadata in [false, true] {
++                let builder = ArrowReaderBuilder::try_new(file.clone()).unwrap();
++                let (builder, expected) = configured(builder, names, batch_size, custom_metadata);
++                let reader = builder.build();
++                assert_eq!(reader.schema(), expected);
++                let batches = reader.collect::<Result<Vec<_>, _>>().unwrap();
++                assert_batches(&batches, &expected, batch_size);
++            }
++        }
++    }
++}
++
++fn non_nullable_schema() -> SchemaRef {
++    Arc::new(Schema::new(vec![
++        Field::new("id", DataType::Int64, false),
++        Field::new("value", DataType::Int64, false),
++    ]))
++}
++
++#[test]
++fn sync_non_nullable_override_rejects_a_decoded_null() {
++    let schema = non_nullable_schema();
++    let mut reader = ArrowReaderBuilder::try_new(file())
++        .unwrap()
++        .with_schema(schema.clone())
++        .with_batch_size(1)
++        .build();
++    assert_eq!(reader.next().unwrap().unwrap().schema(), schema);
++    let error = reader.next().unwrap().unwrap_err().to_string();
++    assert!(
++        error.contains("Failed to convert to record batch"),
++        "{error}"
++    );
++    assert!(
++        error.contains("Column 'value' is declared as non-nullable but contains null values"),
++        "{error}"
++    );
++}
++
++#[cfg(feature = "async")]
++#[tokio::test]
++async fn async_batches_preserve_declared_schema_with_nulls_metadata_and_projection() {
++    use futures::TryStreamExt;
++    let file = file();
++    for batch_size in [1, 2] {
++        for names in [&["id", "value"][..], &["value"][..], &[][..]] {
++            for custom_metadata in [false, true] {
++                let builder = ArrowReaderBuilder::try_new_async(std::io::Cursor::new(file.clone()))
++                    .await
++                    .unwrap();
++                let (builder, expected) = configured(builder, names, batch_size, custom_metadata);
++                let reader = builder.build_async();
++                assert_eq!(reader.schema(), expected);
++                let batches = reader.try_collect::<Vec<_>>().await.unwrap();
++                assert_batches(&batches, &expected, batch_size);
++            }
++        }
++    }
++}
++
++#[cfg(feature = "async")]
++#[tokio::test]
++async fn async_non_nullable_override_rejects_a_decoded_null() {
++    use futures::TryStreamExt;
++    let schema = non_nullable_schema();
++    let mut reader = ArrowReaderBuilder::try_new_async(std::io::Cursor::new(file()))
++        .await
++        .unwrap()
++        .with_schema(schema.clone())
++        .with_batch_size(1)
++        .build_async();
++    assert_eq!(reader.try_next().await.unwrap().unwrap().schema(), schema);
++    let error = reader.try_next().await.unwrap_err().to_string();
++    assert!(
++        error.contains("Failed to convert to record batch"),
++        "{error}"
++    );
++    assert!(
++        error.contains("Column 'value' is declared as non-nullable but contains null values"),
++        "{error}"
++    );
++}

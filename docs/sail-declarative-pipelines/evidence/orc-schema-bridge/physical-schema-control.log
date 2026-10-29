@@ -1,0 +1,29 @@
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-data-source` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 10.72s
+     Running unittests src/lib.rs (/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_data_source-854f291b2ec46b86)
+
+running 1 test
+test formats::orc::fixture_tests::spark_time_files_preserve_values_independently_of_declared_precision ... FAILED
+
+failures:
+
+---- formats::orc::fixture_tests::spark_time_files_preserve_values_independently_of_declared_precision stdout ----
+
+thread 'formats::orc::fixture_tests::spark_time_files_preserve_values_independently_of_declared_precision' (85879980) panicked at crates/sail-data-source/src/formats/orc/fixture_tests.rs:52:13:
+assertion `left == right` failed
+  left: [Field { name: "id", data_type: Int32 }, Field { name: "t0", data_type: Int64 }, Field { name: "t3", data_type: Int64 }, Field { name: "t6", data_type: Int64 }]
+ right: [Field { name: "id", data_type: Int32, nullable: true }, Field { name: "t0", data_type: Int64, nullable: true }, Field { name: "t3", data_type: Int64, nullable: true }, Field { name: "t6", data_type: Int64, nullable: true }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    formats::orc::fixture_tests::spark_time_files_preserve_values_independently_of_declared_precision
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 116 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p sail-data-source --lib`

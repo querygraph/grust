@@ -11162,3 +11162,11 @@ Sail2f5192d50/aacea1ecf/dce4bd751/39e63d686 separately pass detached Rust gates;
 ## 2026-10-29T21:52:18.043642+00:00 — DONE opt-in ORC timezone mechanism
 
 Native ed6e9acf4f/0653cb2287 passed separate detached gates; final 308 default passes, eight ignored, 193 no-default. Sail a829c91a0538fafbb99c711ceeea951244065e7b vendors exact package 2b02ad3d62af0cd96084c546217c124364ac0ce09ca088f9b5c0281ec3a6f731, nine patches and 68 hashed files; data-source 93/fmt/strict Clippy pass with unchanged lock. Archived one-profile Java 306041 offset comparisons/22 independent boundary checks and raw inheritance evidence. Native default behavior preserved; opt-in predicate pruning disabled, Arrow Timestamp outputs only. Full profiles, worker identity and Sail ORC registration remain open; public runtime pin remains 1e1d3760a. Documentation integrity gate precedes branch advance.
+
+## 2026-10-29T21:58:17.066984+00:00 — ACK ORC schema and array bridge
+
+Previous question-only turn summarized the completed Fable response and did not advance implementation. Revalidated Sail a829c91a0 and the four preserved bridge drafts; resuming their separate schema/array qualification. Full Java profile export proof proceeds independently under the existing ORC temporal checkpoint. Streaming/CDC runtime remains pending named design gates. Separate detached Rust gates and evidence review precede each branch advance.
+
+## 2026-10-29T22:21:47.414214+00:00 — DONE ORC schema and array bridge
+
+orc-schema 7ac8e1fe84dae4438920c8d8e3c7680af7a8111a: 104 library passes; orc-arrays c61fdec30902ff66bd684d6a70679462a9a4a883: 114 library passes; orc-batch-schema-vendor 28d46b84512c5155bde01c2cfab8862e983a022d: 114 library passes; orc-fixtures 3eb9ea2630e59f8e08681cf06a97f4ac58e475ba: 117 library passes. All pass detached fmt/strict Clippy before conditional branch advance. Archived exact patches, failure evidence and Spark fixtures; no new CLI/SDP verdict. Source/worker/writer activation and full timezone integration remain open. Documentation integrity gate precedes its own branch advance.

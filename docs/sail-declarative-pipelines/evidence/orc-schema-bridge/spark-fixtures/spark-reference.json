@@ -1,0 +1,422 @@
+{
+  "spark_version": "4.2.1",
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "settings": {
+    "spark.sql.timeType.enabled": "true",
+    "spark.sql.session.timeZone": "UTC"
+  },
+  "cases": [
+    {
+      "name": "time_precisions",
+      "file": "time_precisions.orc",
+      "sha256": "7504f8007af001893ccd60b873ded01bffae4b4cf4af95b1e054e7b07ff92986",
+      "sql": "SELECT id, CAST(t AS TIME(0)) AS t0, CAST(t AS TIME(3)) AS t3, CAST(t AS TIME(6)) AS t6\nFROM VALUES (0, '00:00:00'), (1, '12:34:56.123456'), (2, '23:59:59.999999'), (3, CAST(NULL AS STRING)) AS v(id,t)",
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t0",
+            "type": "time(0)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t3",
+            "type": "time(3)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t6",
+            "type": "time(6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "t0": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            },
+            "t3": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            },
+            "t6": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "time_cast_precisions",
+      "file": "time_cast_precisions.orc",
+      "sha256": "7d35e93498ee4f9a8c9e3478fac25ad2034d1b51156e71e91a9ad6e1d2e8f80c",
+      "sql": "SELECT id, CAST(CAST(t AS TIME(6)) AS TIME(0)) AS t0, CAST(CAST(t AS TIME(6)) AS TIME(3)) AS t3, CAST(t AS TIME(6)) AS t6\nFROM VALUES (0, '00:00:00'), (1, '12:34:56.123456'), (2, '23:59:59.999999'), (3, CAST(NULL AS STRING)) AS v(id,t)",
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t0",
+            "type": "time(0)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t3",
+            "type": "time(3)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "t6",
+            "type": "time(6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "t0": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296000000000,
+                86399000000000,
+                null
+              ]
+            },
+            "t3": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123000000,
+                86399999000000,
+                null
+              ]
+            },
+            "t6": {
+              "type": "time64[ns]",
+              "storage_values": [
+                0,
+                45296123456000,
+                86399999999000,
+                null
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "intervals",
+      "file": "intervals.orc",
+      "sha256": "b02504d4005b396caca0518c4d19cba1efddfe991a4fc2cb10b7b39a38f86f06",
+      "sql": "SELECT id, CAST(ym AS INTERVAL YEAR TO MONTH) AS ym, CAST(y AS INTERVAL YEAR) AS y, CAST(m AS INTERVAL MONTH) AS m,\nCAST(dt AS INTERVAL DAY TO SECOND) AS dt, CAST(d AS INTERVAL DAY) AS d, CAST(h AS INTERVAL HOUR) AS h, CAST(mi AS INTERVAL MINUTE) AS mi, CAST(sec AS INTERVAL SECOND) AS sec\nFROM VALUES\n(0, '1-2', '2', '14', '2 03:04:05.123456', '2', '27', '65', '1.000001'),\n(1, '-1-2', '-2', '-14', '-2 03:04:05.123456', '-2', '-27', '-65', '-1.000001'),\n(2, '0-0', '0', '0', '0 00:00:00.000000', '0', '0', '0', '0.000001'),\n(3, CAST(NULL AS STRING), NULL, NULL, NULL, NULL, NULL, NULL, NULL) AS v(id,ym,y,m,dt,d,h,mi,sec)",
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ym",
+            "type": "interval year to month",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "y",
+            "type": "interval year",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "m",
+            "type": "interval month",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "dt",
+            "type": "interval day to second",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "d",
+            "type": "interval day",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "h",
+            "type": "interval hour",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mi",
+            "type": "interval minute",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sec",
+            "type": "interval second",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "numeric_projection_sql": [
+        "id",
+        "CAST(CAST(ym AS INTERVAL YEAR TO MONTH) AS INT) AS ym_months",
+        "CAST(CAST(y AS INTERVAL YEAR TO MONTH) AS INT) AS y_months",
+        "CAST(CAST(m AS INTERVAL YEAR TO MONTH) AS INT) AS m_months",
+        "CAST(CAST(CAST(dt AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS dt_micros",
+        "CAST(CAST(CAST(d AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS d_micros",
+        "CAST(CAST(CAST(h AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS h_micros",
+        "CAST(CAST(CAST(mi AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS mi_micros",
+        "CAST(CAST(CAST(sec AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS sec_micros"
+      ],
+      "read_numeric": {
+        "outcome": "passed",
+        "value": [
+          {
+            "id": 0,
+            "ym_months": 14,
+            "y_months": 24,
+            "m_months": 14,
+            "dt_micros": 183845123456,
+            "d_micros": 172800000000,
+            "h_micros": 97200000000,
+            "mi_micros": 3900000000,
+            "sec_micros": 1000001
+          },
+          {
+            "id": 1,
+            "ym_months": -14,
+            "y_months": -24,
+            "m_months": -14,
+            "dt_micros": -183845123456,
+            "d_micros": -172800000000,
+            "h_micros": -97200000000,
+            "mi_micros": -3900000000,
+            "sec_micros": -1000001
+          },
+          {
+            "id": 2,
+            "ym_months": 0,
+            "y_months": 0,
+            "m_months": 0,
+            "dt_micros": 0,
+            "d_micros": 0,
+            "h_micros": 0,
+            "mi_micros": 0,
+            "sec_micros": 1
+          },
+          {
+            "id": 3,
+            "ym_months": null,
+            "y_months": null,
+            "m_months": null,
+            "dt_micros": null,
+            "d_micros": null,
+            "h_micros": null,
+            "mi_micros": null,
+            "sec_micros": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "daytime_time_nested",
+      "file": "daytime_time_nested.orc",
+      "sha256": "7cdc3539c79448ae70f152cf1672d191eb18267a804c9044e526e6de86c9d1d8",
+      "sql": "SELECT 0 AS id, INTERVAL '-2 03:04:05.123456' DAY TO SECOND AS dt,\narray(INTERVAL '-1.000001' SECOND, CAST(NULL AS INTERVAL SECOND), INTERVAL '0.000001' SECOND) AS ds,\nmap(CAST('01:02:03.123' AS TIME(3)), INTERVAL '-1.000001' SECOND) AS tm,\nnamed_struct('t', CAST('12:34:56.123456' AS TIME(6)), 'd', INTERVAL '-0.000001' SECOND) AS st\nUNION ALL SELECT 1, NULL, NULL, NULL, NULL\nUNION ALL SELECT 2, INTERVAL '0' DAY, array(), map(), named_struct('t', CAST(NULL AS TIME(6)), 'd', CAST(NULL AS INTERVAL SECOND))",
+      "read_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "dt",
+            "type": "interval day to second",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ds",
+            "type": {
+              "type": "array",
+              "elementType": "interval second",
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "tm",
+            "type": {
+              "type": "map",
+              "keyType": "time(3)",
+              "valueType": "interval second",
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "st",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "t",
+                  "type": "time(6)",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "d",
+                  "type": "interval second",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "read_arrow": {
+        "outcome": "passed",
+        "value": {
+          "schema": "id: int32\ndt: duration[us]\nds: list<element: duration[us]>\n  child 0, element: duration[us]\ntm: map<time64[ns], duration[us]>\n  child 0, entries: struct<key: time64[ns] not null, value: duration[us]> not null\n      child 0, key: time64[ns] not null\n      child 1, value: duration[us]\nst: struct<t: time64[ns], d: duration[us]>\n  child 0, t: time64[ns]\n  child 1, d: duration[us]",
+          "columns": {
+            "id": {
+              "type": "int32",
+              "values": [
+                0,
+                1,
+                2
+              ]
+            },
+            "dt": {
+              "type": "duration[us]",
+              "storage_values": [
+                -183845123456,
+                null,
+                0
+              ]
+            },
+            "ds": {
+              "type": "list<element: duration[us]>",
+              "values": [
+                [
+                  "-1 day, 23:59:58.999999",
+                  null,
+                  "0:00:00.000001"
+                ],
+                null,
+                []
+              ]
+            },
+            "tm": {
+              "type": "map<time64[ns], duration[us]>",
+              "values": [
+                [
+                  [
+                    "01:02:03.123000",
+                    "-1 day, 23:59:58.999999"
+                  ]
+                ],
+                null,
+                []
+              ]
+            },
+            "st": {
+              "type": "struct<t: time64[ns], d: duration[us]>",
+              "values": [
+                {
+                  "t": "12:34:56.123456",
+                  "d": "-1 day, 23:59:59.999999"
+                },
+                null,
+                {
+                  "t": null,
+                  "d": null
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

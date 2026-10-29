@@ -1,0 +1,191 @@
+132:   def toCatalystSchema(schema: TypeDescription): StructType = {
+133:     import TypeDescription.Category
+134: 
+135:     def toCatalystType(orcType: TypeDescription): DataType = {
+136:       orcType.getCategory match {
+137:         case Category.STRUCT => toStructType(orcType)
+138:         case Category.LIST => toArrayType(orcType)
+139:         case Category.MAP => toMapType(orcType)
+140:         // A Spark TIMESTAMP_LTZ column (catalyst type attribute `timestamp`) and a foreign ORC
+141:         // TIMESTAMP column (no attribute) are both read as TimestampType, so do not let the
+142:         // parser resolve `timestamp` by spark.sql.timestampType.
+143:         case Category.TIMESTAMP if Option(orcType.getAttributeValue(CATALYST_TYPE_ATTRIBUTE_NAME))
+144:             .forall(_ == TimestampType.typeName) =>
+145:           TimestampType
+146:         case _ =>
+147:           val catalystTypeAttrValue = orcType.getAttributeValue(CATALYST_TYPE_ATTRIBUTE_NAME)
+148:           if (catalystTypeAttrValue != null) {
+149:             CatalystSqlParser.parseDataType(catalystTypeAttrValue)
+150:           } else {
+151:             CatalystSqlParser.parseDataType(orcType.toString)
+152:           }
+153:       }
+154:     }
+155: 
+156:     def toStructType(orcType: TypeDescription): StructType = {
+157:       val fieldNames = orcType.getFieldNames.asScala
+158:       val fieldTypes = orcType.getChildren.asScala
+159:       val fields = new ArrayBuffer[StructField]()
+160:       fieldNames.zip(fieldTypes).foreach {
+161:         case (fieldName, fieldType) =>
+162:           val catalystType = toCatalystType(fieldType)
+163:           fields += StructField(fieldName, catalystType)
+164:       }
+165:       StructType(fields.toArray)
+166:     }
+167: 
+168:     def toArrayType(orcType: TypeDescription): ArrayType = {
+169:       val elementType = orcType.getChildren.get(0)
+170:       ArrayType(toCatalystType(elementType))
+171:     }
+172: 
+173:     def toMapType(orcType: TypeDescription): MapType = {
+174:       val Seq(keyType, valueType) = orcType.getChildren.asScala.toSeq
+175:       val catalystKeyType = toCatalystType(keyType)
+176:       val catalystValueType = toCatalystType(valueType)
+177:       MapType(catalystKeyType, catalystValueType)
+178:     }
+179: 
+180:     // The Spark query engine has not completely supported CHAR/VARCHAR type yet, and here we
+181:     // replace the orc CHAR/VARCHAR with STRING type.
+182:     CharVarcharUtils.replaceCharVarcharWithStringInSchema(toStructType(schema))
+183:   }
+
+226:   def requestedColumnIds(
+227:       isCaseSensitive: Boolean,
+228:       dataSchema: StructType,
+229:       requiredSchema: StructType,
+230:       orcSchema: TypeDescription,
+231:       conf: Configuration): Option[(Array[Int], Boolean)] = {
+232:     def checkTimestampCompatibility(orcCatalystSchema: StructType, dataSchema: StructType): Unit = {
+233:       orcCatalystSchema.fields.map(_.dataType).zip(dataSchema.fields.map(_.dataType)).foreach {
+234:         case (TimestampType, TimestampNTZType) =>
+235:           throw QueryExecutionErrors.cannotConvertOrcTimestampToTimestampNTZError()
+236:         case (TimestampNTZType, TimestampType) =>
+237:           throw QueryExecutionErrors.cannotConvertOrcTimestampNTZToTimestampLTZError()
+238:         case (t1: StructType, t2: StructType) => checkTimestampCompatibility(t1, t2)
+239:         case _ =>
+240:       }
+241:     }
+242: 
+243:     checkTimestampCompatibility(toCatalystSchema(orcSchema), dataSchema)
+244:     val orcFieldNames = orcSchema.getFieldNames.asScala
+245:     val forcePositionalEvolution = OrcConf.FORCE_POSITIONAL_EVOLUTION.getBoolean(conf)
+246:     if (orcFieldNames.isEmpty) {
+247:       // SPARK-8501: Some old empty ORC files always have an empty schema stored in their footer.
+248:       None
+249:     } else {
+250:       if (forcePositionalEvolution || orcFieldNames.forall(_.startsWith("_col"))) {
+251:         // This is either an ORC file written by an old version of Hive and there are no field
+252:         // names in the physical schema, or `orc.force.positional.evolution=true` is forced because
+253:         // the file was written by a newer version of Hive where
+254:         // `orc.force.positional.evolution=true` was set (possibly because columns were renamed so
+255:         // the physical schema doesn't match the data schema).
+256:         // In these cases we map the physical schema to the data schema by index.
+257:         assert(orcFieldNames.length <= dataSchema.length, "The given data schema " +
+258:           s"${dataSchema.catalogString} (length:${dataSchema.length}) " +
+259:           s"has fewer ${orcFieldNames.length - dataSchema.length} fields than " +
+260:           s"the actual ORC physical schema $orcSchema (length:${orcFieldNames.length}), " +
+261:           "no idea which columns were dropped, fail to read.")
+262:         // for ORC file written by Hive, no field names
+263:         // in the physical schema, there is a need to send the
+264:         // entire dataSchema instead of required schema.
+265:         // So pruneCols is not done in this case
+266:         Some(requiredSchema.fieldNames.map { name =>
+267:           val index = dataSchema.fieldIndex(name)
+268:           if (index < orcFieldNames.length) {
+269:             index
+270:           } else {
+271:             -1
+272:           }
+273:         }, false)
+274:       } else {
+275:         if (isCaseSensitive) {
+276:           Some(requiredSchema.fieldNames.zipWithIndex.map { case (name, idx) =>
+277:             if (orcFieldNames.indexWhere(caseSensitiveResolution(_, name)) != -1) {
+278:               idx
+279:             } else {
+280:               -1
+281:             }
+282:           }, true)
+283:         } else {
+284:           // Do case-insensitive resolution only if in case-insensitive mode
+285:           val caseInsensitiveOrcFieldMap = orcFieldNames.groupBy(_.toLowerCase(Locale.ROOT))
+286:           Some(requiredSchema.fieldNames.zipWithIndex.map { case (requiredFieldName, idx) =>
+287:             caseInsensitiveOrcFieldMap
+288:               .get(requiredFieldName.toLowerCase(Locale.ROOT))
+289:               .map { matchedOrcFields =>
+290:                 if (matchedOrcFields.size > 1) {
+291:                   // Need to fail if there is ambiguity, i.e. more than one field is matched.
+292:                   val matchedOrcFieldsString = matchedOrcFields.mkString("[", ", ", "]")
+293:                   throw QueryExecutionErrors.foundDuplicateFieldInCaseInsensitiveModeError(
+294:                     requiredFieldName, matchedOrcFieldsString)
+295:                 } else {
+296:                   idx
+297:                 }
+298:               }.getOrElse(-1)
+299:           }, true)
+300:         }
+301:       }
+302:     }
+303:   }
+
+331:   def orcTypeDescription(dt: DataType): TypeDescription = {
+332:     def getInnerTypeDecription(dt: DataType): Option[TypeDescription] = {
+333:       dt match {
+334:         case y: YearMonthIntervalType =>
+335:           val typeDesc = new TypeDescription(TypeDescription.Category.INT)
+336:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, y.typeName)
+337:           Some(typeDesc)
+338:         case d: DayTimeIntervalType =>
+339:           val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+340:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, d.typeName)
+341:           Some(typeDesc)
+342:         case n: TimestampNTZType =>
+343:           val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+344:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, n.typeName)
+345:           Some(typeDesc)
+346:         case tm: TimeType =>
+347:           val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+348:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, tm.typeName)
+349:           Some(typeDesc)
+350:         case t: TimestampType =>
+351:           val typeDesc = new TypeDescription(TypeDescription.Category.TIMESTAMP)
+352:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, t.typeName)
+353:           Some(typeDesc)
+354:         case _: StringType =>
+355:           val typeDesc = new TypeDescription(TypeDescription.Category.STRING)
+356:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, StringType.typeName)
+357:           Some(typeDesc)
+358:         case _ => None
+359:       }
+360:     }
+361: 
+362:     dt match {
+363:       case s: StructType =>
+364:         val result = new TypeDescription(TypeDescription.Category.STRUCT)
+365:         s.fields.foreach { f =>
+366:           getInnerTypeDecription(f.dataType) match {
+367:             case Some(t) => result.addField(f.name, t)
+368:             case None => result.addField(f.name, orcTypeDescription(f.dataType))
+369:           }
+370:         }
+371:         result
+372:       case a: ArrayType =>
+373:         val result = new TypeDescription(TypeDescription.Category.LIST)
+374:         getInnerTypeDecription(a.elementType) match {
+375:           case Some(t) => result.addChild(t)
+376:           case None => result.addChild(orcTypeDescription(a.elementType))
+377:         }
+378:         result
+379:       case m: MapType =>
+380:         val result = new TypeDescription(TypeDescription.Category.MAP)
+381:         getInnerTypeDecription(m.keyType) match {
+382:           case Some(t) => result.addChild(t)
+383:           case None => result.addChild(orcTypeDescription(m.keyType))
+384:         }
+385:         getInnerTypeDecription(m.valueType) match {
+386:           case Some(t) => result.addChild(t)
+387:           case None => result.addChild(orcTypeDescription(m.valueType))
+388:         }
+389:         result

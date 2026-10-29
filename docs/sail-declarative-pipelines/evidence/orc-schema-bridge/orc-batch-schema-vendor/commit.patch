@@ -1,0 +1,163 @@
+commit 28d46b84512c5155bde01c2cfab8862e983a022d
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 15:18:23 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 15:18:23 2026 -0700
+
+    build: vendor ORC declared batch schema preservation
+
+diff --git a/vendor/orc-rust/.cargo_vcs_info.json b/vendor/orc-rust/.cargo_vcs_info.json
+index 6941dfb6a..3acacd550 100644
+--- a/vendor/orc-rust/.cargo_vcs_info.json
++++ b/vendor/orc-rust/.cargo_vcs_info.json
+@@ -1,6 +1,6 @@
+ {
+   "git": {
+-    "sha1": "0653cb2287e6bdb8352aeafbaa816ff25da72f76"
++    "sha1": "ec6baa46860fb3df95c23a72124e736c5334a418"
+   },
+   "path_in_vcs": ""
+ }
+\ No newline at end of file
+diff --git a/vendor/orc-rust/SOURCE.json b/vendor/orc-rust/SOURCE.json
+index 234234bfc..b9c3756e7 100644
+--- a/vendor/orc-rust/SOURCE.json
++++ b/vendor/orc-rust/SOURCE.json
+@@ -1,6 +1,6 @@
+ {
+   "repository": "https://github.com/datafusion-contrib/orc-rust",
+-  "commit": "0653cb2287e6bdb8352aeafbaa816ff25da72f76",
++  "commit": "ec6baa46860fb3df95c23a72124e736c5334a418",
+   "source_kind": "Locally patched upstream package; patch revisions have not been published to the upstream repository.",
+   "upstream_tag": "v0.9.0",
+   "upstream_commit": "d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307",
+@@ -40,11 +40,15 @@
+     {
+       "commit": "0653cb2287e6bdb8352aeafbaa816ff25da72f76",
+       "subject": "test: qualify ORC timezone inheritance and reader pruning boundaries"
++    },
++    {
++      "commit": "ec6baa46860fb3df95c23a72124e736c5334a418",
++      "subject": "fix: preserve declared schemas in decoded ORC batches"
+     }
+   ],
+   "package": {
+     "command": "cargo +1.98.1 package --locked --no-verify",
+-    "sha256": "2b02ad3d62af0cd96084c546217c124364ac0ce09ca088f9b5c0281ec3a6f731",
++    "sha256": "2b7de6d9a96923adddeb40f644f56add25df6f0ac8ae53daa9c76741a424dcff",
+     "excluded_files": [
+       "Cargo.lock"
+     ],
+@@ -54,7 +58,7 @@
+     "note": "Cargo-normalized manifest; upstream package omits integration fixtures and benchmarks. Source tests were run in the full detached source checkout."
+   },
+   "files_sha256": {
+-    ".cargo_vcs_info.json": "1833f70a29919d079e673aaaf57e6baf73e315b7c06c9c9422f57ce4dda3aad5",
++    ".cargo_vcs_info.json": "a676e724d5d12c890ad1052807da3301a7f03ac6cdb217b5be127eefbf4c12dd",
+     "Cargo.toml": "0a69cbe6449e27e1be0f020c1f0e9393a135b99fa00a115e45a0e7e7b8726385",
+     "Cargo.toml.orig": "58ccc950aa988bb2c70c7850de74c1ac9ad182773452dc9a08a0b25cceeb7874",
+     "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+@@ -62,13 +66,13 @@
+     "src/array_decoder/decimal.rs": "dc5f37e42304a4ac84d521ab5c0c1823f55a49549f225d5c27995f0bcbcf540d",
+     "src/array_decoder/list.rs": "f2bcb848b3b188147cc488cbe26c13f8a99a7fb3e320410ee716c1758f012ce8",
+     "src/array_decoder/map.rs": "24bef4f153ed5a52a4b23742edf006078313e818d56e8c086198341329f69daf",
+-    "src/array_decoder/mod.rs": "fbfd44cc35d0df82355f5d28a52d965394d6636d0c311b6c8a61a9f016d00e57",
++    "src/array_decoder/mod.rs": "7cadad17e516a5ae2d4828a386e11d5dc1ff7736c41b9680f4ed5ca47757e5b6",
+     "src/array_decoder/string.rs": "04b6244c315100525c9a7d37bc7e1537be699070522393772ddf2c203e49f2d3",
+     "src/array_decoder/struct_decoder.rs": "521c29e4ef19fa36a1c301a6214b69c851496f535b2f0666205e6731b49a97a2",
+     "src/array_decoder/timestamp.rs": "97fa9d02382de00cb16b813fef94e9bc7b0cf92236d5e20ddd90a803be2a5496",
+     "src/array_decoder/union.rs": "461b9b9ab606f34b83e877fabe3eaae1c0ab9c1db15a4af8aa80b9724909f953",
+     "src/arrow_reader.rs": "dbe5bd1be2aa240bd57ec009a4e6991d3951f2e41e2c1c8b36e0e4f6c787a97d",
+-    "src/arrow_writer.rs": "51cef8ce0fdf27d3b11eeb01d86d6a3f529fa8cee9387ac3b60a983c418d3711",
++    "src/arrow_writer.rs": "319283de0f4e72a879ee54c050206687abb864adbf57b58067deb1cc3441d730",
+     "src/async_arrow_reader.rs": "fa78ffe94c35532df8c433d66834ca377a761368a6178cf307e2b20595a0752a",
+     "src/bin/orc/bloom.rs": "74a3b31909802030a2c1a53a9fc081f39515701236e6222431a86761367529dd",
+     "src/bin/orc/common.rs": "02c348b38c209e5cd28916b41976ac19737cd310ca0acef78d5af79575458977",
+diff --git a/vendor/orc-rust/src/array_decoder/mod.rs b/vendor/orc-rust/src/array_decoder/mod.rs
+index 6074b53b3..376e60eab 100644
+--- a/vendor/orc-rust/src/array_decoder/mod.rs
++++ b/vendor/orc-rust/src/array_decoder/mod.rs
+@@ -548,17 +548,11 @@ impl NaiveStripeDecoder {
+                 ))
+             }
+         } else {
+-            //TODO(weny): any better way?
+-            let fields = self
+-                .schema_ref
+-                .fields
+-                .into_iter()
+-                .map(|field| field.name())
+-                .zip(fields)
+-                .collect::<Vec<_>>();
+-
++            // Keep the declared nullability and metadata stable across batches,
++            // including batches that happen to contain no null values.
+             Ok(Some(
+-                RecordBatch::try_from_iter(fields).context(error::ConvertRecordBatchSnafu)?,
++                RecordBatch::try_new(Arc::clone(&self.schema_ref), fields)
++                    .context(error::ConvertRecordBatchSnafu)?,
+             ))
+         }
+     }
+diff --git a/vendor/orc-rust/src/arrow_writer.rs b/vendor/orc-rust/src/arrow_writer.rs
+index c9f93a797..ebb48a743 100644
+--- a/vendor/orc-rust/src/arrow_writer.rs
++++ b/vendor/orc-rust/src/arrow_writer.rs
+@@ -420,7 +420,20 @@ mod tests {
+         .unwrap();
+ 
+         let rows = roundtrip(std::slice::from_ref(&batch));
+-        assert_eq!(batch, rows[0]);
++        // ORC does not store Arrow non-nullability; inferred fields are nullable.
++        let expected_schema = Arc::new(Schema::new(vec![
++            Field::new("f32", ArrowDataType::Float32, true),
++            Field::new("f64", ArrowDataType::Float64, true),
++            Field::new("int8", ArrowDataType::Int8, true),
++            Field::new("int16", ArrowDataType::Int16, true),
++            Field::new("int32", ArrowDataType::Int32, true),
++            Field::new("int64", ArrowDataType::Int64, true),
++            Field::new("utf8", ArrowDataType::Utf8, true),
++            Field::new("binary", ArrowDataType::Binary, true),
++            Field::new("boolean", ArrowDataType::Boolean, true),
++        ]));
++        let expected = RecordBatch::try_new(expected_schema, batch.columns().to_vec()).unwrap();
++        assert_eq!(expected, rows[0]);
+     }
+ 
+     #[test]
+@@ -472,9 +485,10 @@ mod tests {
+             "".as_bytes(),
+             "123".as_bytes(),
+         ]));
++        // ORC does not store Arrow non-nullability; inferred fields are nullable.
+         let schema = Schema::new(vec![
+-            Field::new("large_utf8", ArrowDataType::Utf8, false),
+-            Field::new("large_binary", ArrowDataType::Binary, false),
++            Field::new("large_utf8", ArrowDataType::Utf8, true),
++            Field::new("large_binary", ArrowDataType::Binary, true),
+         ]);
+         let batch = RecordBatch::try_new(Arc::new(schema), vec![utf8_array, binary_array]).unwrap();
+         assert_eq!(batch, rows[0]);
+@@ -835,6 +849,13 @@ mod tests {
+             false,
+         )]));
+         let batch = RecordBatch::try_new(schema.clone(), vec![array]).unwrap();
++        // ORC does not store Arrow non-nullability; inferred fields are nullable.
++        let expected_schema = Arc::new(Schema::new(vec![Field::new(
++            "value",
++            ArrowDataType::Utf8,
++            true,
++        )]));
++        let expected = RecordBatch::try_new(expected_schema, batch.columns().to_vec()).unwrap();
+ 
+         for (compression, expected_kind, expected_block_size) in [
+             (None, proto::CompressionKind::None, None),
+@@ -875,7 +896,7 @@ mod tests {
+ 
+             let reader = ArrowReaderBuilder::try_new(file).unwrap().build();
+             let rows = reader.collect::<Result<Vec<_>, _>>().unwrap();
+-            assert_eq!(rows, vec![batch.clone()]);
++            assert_eq!(rows, vec![expected.clone()]);
+         }
+ 
+         let file = write_file(

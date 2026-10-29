@@ -1,0 +1,17 @@
+46:   /**
+47:    * Replaces CharType/VarcharType with StringType recursively in the given struct type. If a
+48:    * top-level StructField's data type is CharType/VarcharType or has nested CharType/VarcharType,
+49:    * this method will add the original type string to the StructField's metadata, so that we can
+50:    * re-construct the original data type with CharType/VarcharType later when needed.
+51:    */
+52:   def replaceCharVarcharWithStringInSchema(st: StructType): StructType = {
+53:     StructType(st.map { field =>
+54:       if (hasCharVarchar(field.dataType)) {
+55:         val metadata = new MetadataBuilder().withMetadata(field.metadata)
+56:           .putString(CHAR_VARCHAR_TYPE_STRING_METADATA_KEY, field.dataType.catalogString).build()
+57:         field.copy(dataType = replaceCharVarcharWithString(field.dataType), metadata = metadata)
+58:       } else {
+59:         field
+60:       }
+61:     })
+62:   }

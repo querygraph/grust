@@ -1,0 +1,441 @@
+{
+  "recorded_at": "2026-10-29T22:21:47.414214+00:00",
+  "units": [
+    {
+      "label": "orc-schema",
+      "commit": "7ac8e1fe84dae4438920c8d8e3c7680af7a8111a",
+      "base": "a829c91a0538fafbb99c711ceeea951244065e7b",
+      "library_passed": 104
+    },
+    {
+      "label": "orc-arrays",
+      "commit": "c61fdec30902ff66bd684d6a70679462a9a4a883",
+      "base": "7ac8e1fe84dae4438920c8d8e3c7680af7a8111a",
+      "library_passed": 114
+    },
+    {
+      "label": "orc-batch-schema-vendor",
+      "commit": "28d46b84512c5155bde01c2cfab8862e983a022d",
+      "base": "c61fdec30902ff66bd684d6a70679462a9a4a883",
+      "library_passed": 114
+    },
+    {
+      "label": "orc-fixtures",
+      "commit": "3eb9ea2630e59f8e08681cf06a97f4ac58e475ba",
+      "base": "28d46b84512c5155bde01c2cfab8862e983a022d",
+      "library_passed": 117
+    }
+  ],
+  "native_commit": "ec6baa46860fb3df95c23a72124e736c5334a418",
+  "native_default_passed": 312,
+  "native_default_ignored": 8,
+  "native_no_default_library_passed": 193,
+  "scope": "ORC schema inference, physical-to-logical array conversion, and four Spark-written fixture regressions. No registered source/writer, CLI, worker codec, or additional SDP runtime verdict.",
+  "spark_version": "4.2.1",
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "limitations": [
+    "Naive native timestamps cannot be relabeled LTZ; actual timezone provider activation remains required.",
+    "Requested-schema evolution and timestamp-compatibility checking belong to later source integration.",
+    "Missing legacy decimal/character parameters remain explicit unsupported compatibility cases.",
+    "Primitive inconsistent Catalyst annotations are a conservative Sail support boundary, not claimed Spark-identical rejection.",
+    "Full profile generation and resolution, FileSource, codecs, registration and writer integration remain open.",
+    "Public runtime evidence remains 285 selected Sail pytest and 67 upstream Python tests at 1e1d3760a; full SDP qualification remains incomplete."
+  ],
+  "files": [
+    {
+      "path": "initial-format-failure/candidate.json",
+      "bytes": 364,
+      "sha256": "45c12b341ab2d9303a91e9bd429ef2c7ae926050afabd3f508b93d2b168a24ef"
+    },
+    {
+      "path": "initial-format-failure/candidate.patch",
+      "bytes": 36968,
+      "sha256": "0884c0062417d6bdbe1f50dc0a966e6f8879b39b520461371e5b05a662156af3"
+    },
+    {
+      "path": "initial-format-failure/fmt.log",
+      "bytes": 474,
+      "sha256": "9d552326c58b06f081d0370594a17d64159d78720125d906ab258f928015bd59"
+    },
+    {
+      "path": "initial-format-failure/gate.json",
+      "bytes": 703,
+      "sha256": "f77968b4bb3db99ddbf5439ef61a19d46e8afe848e999c33f42ed3713669aca0"
+    },
+    {
+      "path": "native-batch-schema/candidate.json",
+      "bytes": 219,
+      "sha256": "5bfc91722b1042316ce729e7b79c3cd27d8b794e4a925d4cbb537d2836002e0f"
+    },
+    {
+      "path": "native-batch-schema/clippy.log",
+      "bytes": 126,
+      "sha256": "e56031634b38b211add4120a3d94c4b35d8ca478e418245eca5a42333adbf9d9"
+    },
+    {
+      "path": "native-batch-schema/commit.patch",
+      "bytes": 11643,
+      "sha256": "7dce944787ee0138d86e2cbae760128ce83d40037b793264c35c07b6890fc9d7"
+    },
+    {
+      "path": "native-batch-schema/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native-batch-schema/initial-writer-expectations/candidate.json",
+      "bytes": 192,
+      "sha256": "1509cd47e71a56d86f64289fc6290b52c3e4b103bee3499c7f8a0fbf05ed5a19"
+    },
+    {
+      "path": "native-batch-schema/initial-writer-expectations/candidate.patch",
+      "bytes": 8868,
+      "sha256": "171c1e52ff760b9e94559b2786db614b6673c1ae8f4ad633bc97f3421db90bb0"
+    },
+    {
+      "path": "native-batch-schema/initial-writer-expectations/clippy.log",
+      "bytes": 126,
+      "sha256": "bb9dad9dbc0ad5d3c4aa4bbd963f7c0f608b2d8cbaf25335ea527042db248912"
+    },
+    {
+      "path": "native-batch-schema/initial-writer-expectations/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native-batch-schema/initial-writer-expectations/tests.log",
+      "bytes": 20541,
+      "sha256": "d66ed3b83268f0a20303a0464b42340a85db6ee8dc7d8c0364f184d11cdea03d"
+    },
+    {
+      "path": "native-batch-schema/no-default.log",
+      "bytes": 14337,
+      "sha256": "9827def1eade414867f3fb99a0256e8bb2d9cad4b671cee282750e946352fd6f"
+    },
+    {
+      "path": "native-batch-schema/tests.log",
+      "bytes": 22613,
+      "sha256": "f4d16e2debe63bfeacbe2cf00f260c243eb7f8d4b6dd2fab0c9d6e4c1272396b"
+    },
+    {
+      "path": "orc-arrays/candidate.json",
+      "bytes": 308,
+      "sha256": "418fe122a63401c88092d5318180624c8cbf487e890d066a02c0b75df2f9edf1"
+    },
+    {
+      "path": "orc-arrays/clippy.log",
+      "bytes": 154,
+      "sha256": "a8d9b59dd036c5653fe660144a36f06c66f9d818a0a0006fdc76269e7bc97261"
+    },
+    {
+      "path": "orc-arrays/commit.patch",
+      "bytes": 25094,
+      "sha256": "aaf35269eb7057a93c454abbb0e3f0773c9f925acbdb883c48efc95f9322fdb2"
+    },
+    {
+      "path": "orc-arrays/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "orc-arrays/gate.json",
+      "bytes": 1510,
+      "sha256": "2f04a0b7e2d90b1bc7526e69e9801e29fffc9ac41f145b5cf52fa1926433c3f2"
+    },
+    {
+      "path": "orc-arrays/rust.log",
+      "bytes": 10039,
+      "sha256": "29662ce7ae77db66381bcdf2ddd84595e58d8fee4ac75ff15e128e65e3ee6a47"
+    },
+    {
+      "path": "orc-batch-schema-vendor/SOURCE.json",
+      "bytes": 8991,
+      "sha256": "b0d52e405c87b58b30cd8b19783844f11623333c965ec99d773481480265308d"
+    },
+    {
+      "path": "orc-batch-schema-vendor/candidate.json",
+      "bytes": 153,
+      "sha256": "a0c4fa9c8bf81af3feec35c37e0720958429ad67b6ccd85592fd53b65c9c2f23"
+    },
+    {
+      "path": "orc-batch-schema-vendor/clippy.log",
+      "bytes": 232,
+      "sha256": "064a8d0dd8ec796b9e592190b57c0d5acb42d5b060c36bd71ebb90556ebe787c"
+    },
+    {
+      "path": "orc-batch-schema-vendor/commit.patch",
+      "bytes": 8025,
+      "sha256": "9e056f2c575caada7497674ba9c5bd515780b27054f91e3656a63835942b99e5"
+    },
+    {
+      "path": "orc-batch-schema-vendor/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "orc-batch-schema-vendor/gate.json",
+      "bytes": 1549,
+      "sha256": "454be75d1a7b8017b9a8abd2bed4efbbf1c7db8a061231c1d6122db4b8feda27"
+    },
+    {
+      "path": "orc-batch-schema-vendor/install.json",
+      "bytes": 1406,
+      "sha256": "4595a4d96db56be9fb765ba0c7791fed9dc0d0f1bd48863e4d985648a3290c57"
+    },
+    {
+      "path": "orc-batch-schema-vendor/orc-rust-0.9.0.crate",
+      "bytes": 158651,
+      "sha256": "2b7de6d9a96923adddeb40f644f56add25df6f0ac8ae53daa9c76741a424dcff"
+    },
+    {
+      "path": "orc-batch-schema-vendor/package-gate.log",
+      "bytes": 327,
+      "sha256": "6adb14494eb67e0b23c29db4fa25ccb85aee12c1e91d3acf486d562bd10ab0bc"
+    },
+    {
+      "path": "orc-batch-schema-vendor/package.log",
+      "bytes": 1371,
+      "sha256": "75a36a86bb9279e084622305938e2f821000516be433574bf1da8a222e13fc5e"
+    },
+    {
+      "path": "orc-batch-schema-vendor/rust.log",
+      "bytes": 10117,
+      "sha256": "8e1f2fbcbc08f2a9a1c1da036809777cbae2bf0abcc5759cef81ec4b62b58dca"
+    },
+    {
+      "path": "orc-fixtures/candidate.json",
+      "bytes": 602,
+      "sha256": "223e21b299d32b44b38506fb418943bb40577708c21fa48bd2530a88a2771a74"
+    },
+    {
+      "path": "orc-fixtures/clippy.log",
+      "bytes": 154,
+      "sha256": "7388b2ee09175579b68183e5eee5ba5562dd022d05f057047d9062e058da89e0"
+    },
+    {
+      "path": "orc-fixtures/commit.patch",
+      "bytes": 30240,
+      "sha256": "567e9081f110225f6dac2351a09e6b6c0b50bfa27622a88178860433e81e235e"
+    },
+    {
+      "path": "orc-fixtures/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "orc-fixtures/gate.json",
+      "bytes": 1516,
+      "sha256": "36e916737a79d3f8f03885c5f4920562628bfdeb539819387071bc161327b0f6"
+    },
+    {
+      "path": "orc-fixtures/rust.log",
+      "bytes": 10352,
+      "sha256": "4b9e29e53091d56636fc51882792017902ae38d23fa88a5f789a7024dd3519d1"
+    },
+    {
+      "path": "orc-fixtures-initial/candidate.json",
+      "bytes": 298,
+      "sha256": "0c5282b7924ff4befa47630c8b8f2a05bedf927e9ed1c1aaa0c8c6779e0a85fa"
+    },
+    {
+      "path": "orc-fixtures-initial/candidate.patch",
+      "bytes": 30116,
+      "sha256": "522f8fea10e35be9e8f275eb0ec0af0a7e7af56d3039d86b1f9f20384f51fc76"
+    },
+    {
+      "path": "orc-fixtures-initial/clippy.log",
+      "bytes": 828,
+      "sha256": "f2b4dfbc56e1dbf39b285a843bcf4e267c34bfcd53ecf30bcdb396f6aceb13c1"
+    },
+    {
+      "path": "orc-fixtures-initial/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "orc-fixtures-initial/gate.json",
+      "bytes": 1145,
+      "sha256": "e19601dd71b1b2087dfce2395da4ec80a94e009a8cf64b39cfe5b247eb55e189"
+    },
+    {
+      "path": "orc-schema/candidate.json",
+      "bytes": 364,
+      "sha256": "27367ac2c748ce63d68a02954c8cf57b03c8e44e63ee66171a674cdc49220382"
+    },
+    {
+      "path": "orc-schema/clippy.log",
+      "bytes": 154,
+      "sha256": "91bad1264709ad79ef6f08fcd026895619ac4f32761e8efebf2c050aabf9111e"
+    },
+    {
+      "path": "orc-schema/commit.patch",
+      "bytes": 36990,
+      "sha256": "da06552b204edc44ec1b134337d5fdff11dfb6189f8cb7011ce1e89a6281eb90"
+    },
+    {
+      "path": "orc-schema/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "orc-schema/gate.json",
+      "bytes": 1510,
+      "sha256": "3fb56c55bdf2a16ee6c7a610629e73965b60a3f7d09079398d5dc54334bd6e57"
+    },
+    {
+      "path": "orc-schema/rust.log",
+      "bytes": 9015,
+      "sha256": "10df331c12eaad0ba9caf007b57243a4121fff3c239a80b975d319bff2adc3cd"
+    },
+    {
+      "path": "physical-schema-control.json",
+      "bytes": 298,
+      "sha256": "570d2a9b578e0a411cd4d4f4e81cde8cb3e399c4b16ec80adff569891cd6e8ed"
+    },
+    {
+      "path": "physical-schema-control.log",
+      "bytes": 1809,
+      "sha256": "114badedd878fcbed7de5a252aa637a9762e405a8b016246c762b29cd1ae9006"
+    },
+    {
+      "path": "physical-schema-failure/candidate.json",
+      "bytes": 298,
+      "sha256": "1b6bde05602910d2ea6ca683d5ed06878c112adcbdeceeecd0ac18db363fef11"
+    },
+    {
+      "path": "physical-schema-failure/candidate.patch",
+      "bytes": 30097,
+      "sha256": "8c33919845885530cebd0b9b2b8db605e960b05e70a20863a107d208ad2d375b"
+    },
+    {
+      "path": "physical-schema-failure/clippy.log",
+      "bytes": 154,
+      "sha256": "812769686d4afeb9a279a1b8e6d6e81c0d6cf9593bb960797cd7905072a949c2"
+    },
+    {
+      "path": "physical-schema-failure/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "physical-schema-failure/gate.json",
+      "bytes": 1495,
+      "sha256": "e7d56ecf5bb9786cf9432b91aba5d00088b69274ec240f5d02ec885a1bc9fdff"
+    },
+    {
+      "path": "physical-schema-failure/rust.log",
+      "bytes": 12052,
+      "sha256": "ffe072f9b7df1aba25ef2af16a517b565e3e7b8e63c48ef0b45185088661a9d7"
+    },
+    {
+      "path": "reference-expected.json",
+      "bytes": 117350,
+      "sha256": "5bfc52739c3fa3c780146af441750154128d05040fda0e994eebe19a68289861"
+    },
+    {
+      "path": "reference-generate.py",
+      "bytes": 10728,
+      "sha256": "6130417d107ac5b2703620cd7166a92f6f8b1b694196ba8450e14ccaa86c51ee"
+    },
+    {
+      "path": "reference-source-evidence.json",
+      "bytes": 27258,
+      "sha256": "148b3cef6aeefe8f6f36d61f36e9e8580a9bfa5e5c5ebddd93df0a56db3a2c3a"
+    },
+    {
+      "path": "reference-validation.json",
+      "bytes": 2997,
+      "sha256": "4b80eee272b3329a6e6c56369ee53abeaa2c8056dac56170d34cc4b4a56f0039"
+    },
+    {
+      "path": "source-review/README.md",
+      "bytes": 1208,
+      "sha256": "23758717ddd5fd6247ecfff226e851fb65f9cb240761f7328ddebde58beb047e"
+    },
+    {
+      "path": "source-review/native-reader-schema.txt",
+      "bytes": 1054,
+      "sha256": "b4a11387de9349e91db1f4660ac0095917ebd055280af51eda310a2c49d8963d"
+    },
+    {
+      "path": "source-review/orc-category-javap.txt",
+      "bytes": 17366,
+      "sha256": "a7f49d61d163b55638bdd764b181d0dab99d4977ccb08abab6c2f3e1c8936277"
+    },
+    {
+      "path": "source-review/orc-type-description-javap.txt",
+      "bytes": 94264,
+      "sha256": "9d160ef519cbf307064b8e56e3023f8cf1f788af850258df096f27202757e214"
+    },
+    {
+      "path": "source-review/sail-draft-metadata.rs.txt",
+      "bytes": 6746,
+      "sha256": "ad8d7b5998ee790cd42a7dc88fcf116881d3faa37f1f8662c13669285f488566"
+    },
+    {
+      "path": "source-review/sail-draft-metadata_tests.rs.txt",
+      "bytes": 16444,
+      "sha256": "2114d9a640e5c678d9fe5d4635945d49c15934cb99074a4e52cc366bf5a4c61c"
+    },
+    {
+      "path": "source-review/sail-explicit-schema-hooks.txt",
+      "bytes": 3531,
+      "sha256": "6c93b9b7628a1c5359323b44409a22b3404ace17d286af908c5127c0f8f33e6a"
+    },
+    {
+      "path": "source-review/sail-schema-candidate.txt",
+      "bytes": 13311,
+      "sha256": "e420597820cd1a01a7e431291337eb8f0420237fcafcc385a66d3f20613b6f8b"
+    },
+    {
+      "path": "source-review/source-audit.json",
+      "bytes": 9787,
+      "sha256": "0ffd7177b8f03f7c9b5b6deff1c8db96c3384a9c6cb4d6bdcce7dd1d53853f0b"
+    },
+    {
+      "path": "source-review/spark-char-varchar.txt",
+      "bytes": 925,
+      "sha256": "7899c5b593e15d5d934c565f24709fbc88d0ea19b31893b40d06e662494891e1"
+    },
+    {
+      "path": "source-review/spark-orc-utils.txt",
+      "bytes": 9675,
+      "sha256": "105f1bd76fb79daa3d583512b630c1115cdc31c47c4901a1d823e8a0df12b2fd"
+    },
+    {
+      "path": "source-review/spark-struct-catalog.txt",
+      "bytes": 497,
+      "sha256": "ad9b68d1997950187df25e57634c02d5f53cddc0c64d71a7598935b02f7eef2d"
+    },
+    {
+      "path": "source-review/spark-type-parser.txt",
+      "bytes": 887,
+      "sha256": "50657f4ce88cea9f1e9eb9ec1711382ba77ffd17d58699f55b33deb0f1ebaa86"
+    },
+    {
+      "path": "spark-fixtures/daytime_time_nested.orc",
+      "bytes": 1170,
+      "sha256": "7cdc3539c79448ae70f152cf1672d191eb18267a804c9044e526e6de86c9d1d8"
+    },
+    {
+      "path": "spark-fixtures/intervals.orc",
+      "bytes": 1173,
+      "sha256": "b02504d4005b396caca0518c4d19cba1efddfe991a4fc2cb10b7b39a38f86f06"
+    },
+    {
+      "path": "spark-fixtures/spark-reference.json",
+      "bytes": 12875,
+      "sha256": "09507f5ea17646ac37ad35f301ff93d6c6f095c1eec735ec9a4f60bd4bf09dbe"
+    },
+    {
+      "path": "spark-fixtures/time_cast_precisions.orc",
+      "bytes": 699,
+      "sha256": "7d35e93498ee4f9a8c9e3478fac25ad2034d1b51156e71e91a9ad6e1d2e8f80c"
+    },
+    {
+      "path": "spark-fixtures/time_precisions.orc",
+      "bytes": 648,
+      "sha256": "7504f8007af001893ccd60b873ded01bffae4b4cf4af95b1e054e7b07ff92986"
+    }
+  ]
+}

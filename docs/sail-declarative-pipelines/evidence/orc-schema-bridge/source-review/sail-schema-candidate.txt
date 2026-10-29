@@ -1,0 +1,269 @@
+50: 
+51: /// Infer Spark logical types from a validated ORC footer.
+52: ///
+53: /// Spark 4.2.1 OrcUtils.toCatalystSchema/orcTypeDescription establish the physical
+54: /// encodings and Catalyst annotations. Field nullability is recursive; map keys
+55: /// remain non-null. Container names follow Sail's logical schema; the reader
+56: /// adapts native ORC container fields by position. Callers reading untrusted files
+57: /// must bound metadata bytes and schema depth through `MetadataReadOptions`.
+58: pub fn infer_schema(metadata: &FileMetadata, session_timezone: &str) -> Result<SchemaRef> {
+59:     let root = convert(metadata.column_types(), 0, session_timezone)?;
+60:     let DataType::Struct(fields) = root.data_type else {
+61:         return Err(invalid(0, "expected a STRUCT root"));
+62:     };
+63:     let mut schema_metadata = HashMap::new();
+64:     if let Some(version) = metadata.user_custom_metadata().get(SPARK_VERSION) {
+65:         let version = std::str::from_utf8(version)
+66:             .map_err(|_| invalid(0, "Spark version metadata is not UTF-8"))?;
+67:         schema_metadata.insert(SPARK_VERSION.to_string(), version.to_string());
+68:     }
+69:     Ok(Arc::new(Schema::new_with_metadata(fields, schema_metadata)))
+70: }
+71: 
+72: fn invalid(column: usize, message: impl std::fmt::Display) -> DataFusionError {
+73:     DataFusionError::Plan(format!("Invalid ORC schema at column {column}: {message}"))
+74: }
+75: 
+76: fn convert(types: &[proto::Type], column: usize, timezone: &str) -> Result<LogicalType> {
+77:     let ty = types
+78:         .get(column)
+79:         .ok_or_else(|| invalid(column, "type ID is out of bounds"))?;
+80:     let kind = ty
+81:         .kind
+82:         .and_then(|kind| Kind::try_from(kind).ok())
+83:         .ok_or_else(|| invalid(column, "missing or unknown type kind"))?;
+84:     // Spark OrcUtils.toCatalystSchema recurses into containers before looking
+85:     // up Catalyst attributes, so even malformed container annotations are ignored.
+86:     let annotation = if matches!(kind, Kind::Struct | Kind::List | Kind::Map) {
+87:         None
+88:     } else {
+89:         catalyst_annotation(ty, column)?
+90:     };
+91:     let native = match kind {
+92:         Kind::Boolean => LogicalType::new(DataType::Boolean, "boolean"),
+93:         Kind::Byte => LogicalType::new(DataType::Int8, "tinyint"),
+94:         Kind::Short => LogicalType::new(DataType::Int16, "smallint"),
+95:         Kind::Int => LogicalType::new(DataType::Int32, "int"),
+96:         Kind::Long => LogicalType::new(DataType::Int64, "bigint"),
+97:         Kind::Float => LogicalType::new(DataType::Float32, "float"),
+98:         Kind::Double => LogicalType::new(DataType::Float64, "double"),
+99:         Kind::String => LogicalType::new(DataType::Utf8, "string"),
+100:         Kind::Char | Kind::Varchar => {
+101:             let length = ty.maximum_length.ok_or_else(|| {
+102:                 DataFusionError::NotImplemented(format!(
+103:                     "ORC character column {column} requires an explicit maximum length"
+104:                 ))
+105:             })?;
+106:             let name = if kind == Kind::Char {
+107:                 "char"
+108:             } else {
+109:                 "varchar"
+110:             };
+111:             LogicalType::new(DataType::Utf8, character_type(name, length, column)?)
+112:                 .with_char_varchar(true)
+113:         }
+114:         Kind::Binary => LogicalType::new(DataType::Binary, "binary"),
+115:         // An unannotated ORC TIMESTAMP is LTZ regardless of the configured
+116:         // default SQL timestamp type. All Spark timestamps use microseconds.
+117:         Kind::Timestamp | Kind::TimestampInstant => LogicalType::new(
+118:             DataType::Timestamp(TimeUnit::Microsecond, Some(timezone.into())),
+119:             "timestamp",
+120:         ),
+121:         Kind::Date => LogicalType::new(DataType::Date32, "date"),
+122:         Kind::Decimal => decimal_type(ty, column)?,
+123:         Kind::Struct => {
+124:             let children = ty
+125:                 .subtypes
+126:                 .iter()
+127:                 .map(|&child| convert(types, child as usize, timezone))
+128:                 .collect::<Result<Vec<_>>>()?;
+129:             let has_char_varchar = children.iter().any(|child| child.has_char_varchar);
+130:             // Spark StructType.catalogString uses raw names, unlike .sql, which
+131:             // quotes identifiers. JSON serialization below handles JSON escaping.
+132:             let catalog_type = children
+133:                 .iter()
+134:                 .zip(&ty.field_names)
+135:                 .map(|(child, name)| format!("{name}:{}", child.catalog_type))
+
+180:             .with_char_varchar(has_char_varchar)
+181:         }
+182:         Kind::Union => {
+183:             return Err(DataFusionError::NotImplemented(
+184:                 "ORC UNION is not a Spark SQL data type".to_string(),
+185:             ));
+186:         }
+187:     };
+188:     match annotation {
+189:         Some(value) => annotated_type(kind, native, value, column, timezone),
+190:         None => Ok(native),
+191:     }
+192: }
+193: 
+194: fn catalyst_annotation(ty: &proto::Type, column: usize) -> Result<Option<&str>> {
+195:     let mut attributes = ty
+196:         .attributes
+197:         .iter()
+198:         .filter(|attribute| attribute.key.as_deref() == Some(CATALYST_TYPE));
+199:     let Some(attribute) = attributes.next() else {
+200:         return Ok(None);
+201:     };
+202:     if attributes.next().is_some() {
+203:         return Err(invalid(column, "duplicate Catalyst type annotation"));
+204:     }
+205:     attribute
+206:         .value
+207:         .as_deref()
+208:         .map(Some)
+209:         .ok_or_else(|| invalid(column, "Catalyst type annotation has no value"))
+210: }
+211: 
+212: fn character_type(name: &str, length: u32, column: usize) -> Result<String> {
+213:     if length > i32::MAX as u32 {
+214:         return Err(invalid(
+
+220: }
+221: 
+222: fn decimal_type(ty: &proto::Type, column: usize) -> Result<LogicalType> {
+223:     // The native reader defaults missing protobuf fields to zero. Do not pretend
+224:     // that this implements the Java reader's legacy decimal defaults.
+225:     let (Some(precision), Some(scale)) = (ty.precision, ty.scale) else {
+226:         return Err(DataFusionError::NotImplemented(format!(
+227:             "ORC decimal column {column} requires explicit precision and scale"
+228:         )));
+229:     };
+230:     if !(1..=38).contains(&precision) || scale > precision {
+231:         return Err(invalid(
+232:             column,
+233:             format!("invalid decimal precision {precision} and scale {scale}"),
+234:         ));
+235:     }
+236:     Ok(LogicalType::new(
+237:         DataType::Decimal128(precision as u8, scale as i8),
+238:         format!("decimal({precision},{scale})"),
+239:     ))
+240: }
+241: 
+242: fn annotated_type(
+243:     kind: Kind,
+244:     native: LogicalType,
+245:     value: &str,
+246:     column: usize,
+247:     timezone: &str,
+248: ) -> Result<LogicalType> {
+249:     let parsed = parse_data_type(value)
+250:         .map_err(|error| invalid(column, format!("Catalyst annotation {value:?}: {error}")))?;
+251:     // The shared SQL converter still maps TIME to legacy storage-unit types.
+252:     // Keep SQL syntax validation, but preserve the declared semantic precision
+253:     // here until that independent converter adopts spec::DataType::Time.
+254:     let parsed = match parsed {
+255:         AstDataType::Time(_, precision) => {
+256:             let precision = precision.as_ref().map_or(6, |(_, value, _)| value.value);
+257:             let precision = i32::try_from(precision).map_err(|_| {
+258:                 invalid(
+259:                     column,
+260:                     format!("TIME precision {precision} is out of range"),
+261:                 )
+262:             })?;
+263:             spec::DataType::Time { precision }
+264:         }
+265:         other => from_ast_data_type(other)
+266:             .map_err(|error| invalid(column, format!("Catalyst annotation {value:?}: {error}")))?,
+267:     };
+268:     let mut metadata = HashMap::new();
+269:     let mut catalog_type = native.catalog_type;
+270:     let mut has_char_varchar = false;
+271:     let data_type = match parsed {
+272:         spec::DataType::Time { precision } => {
+273:             if kind != Kind::Long {
+274:                 return Err(invalid(
+275:                     column,
+276:                     format!("TIME annotation requires LONG storage, found {kind:?}"),
+277:                 ));
+278:             }
+279:             let time = spec::SparkTimeMetadata::try_new(precision)
+280:                 .map_err(|error| invalid(column, error))?;
+281:             metadata.insert(
+282:                 spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
+283:                 time.to_json().map_err(|error| invalid(column, error))?,
+284:             );
+285:             catalog_type = format!("time({precision})");
+286:             // Spark stores nanoseconds at every declared precision. A string
+287:             // cast to TIME(0) can retain fractions; preserve those stored bits.
+288:             DataType::Time64(TimeUnit::Nanosecond)
+289:         }
+290:         spec::DataType::Boolean if kind == Kind::Boolean => DataType::Boolean,
+291:         spec::DataType::Int8 if kind == Kind::Byte => DataType::Int8,
+292:         spec::DataType::Int16 if kind == Kind::Short => DataType::Int16,
+293:         spec::DataType::Int32 if kind == Kind::Int => DataType::Int32,
+294:         spec::DataType::Int64 if kind == Kind::Long => DataType::Int64,
+295:         spec::DataType::Float32 if kind == Kind::Float => DataType::Float32,
+296:         spec::DataType::Float64 if kind == Kind::Double => DataType::Float64,
+297:         spec::DataType::ConfiguredUtf8 { utf8_type }
+298:             if matches!(kind, Kind::String | Kind::Char | Kind::Varchar) =>
+299:         {
+300:             catalog_type = match utf8_type {
+301:                 spec::Utf8Type::Char { length } => {
+302:                     has_char_varchar = true;
+303:                     character_type("char", length, column)?
+304:                 }
+305:                 spec::Utf8Type::VarChar { length } => {
+306:                     has_char_varchar = true;
+307:                     character_type("varchar", length, column)?
+308:                 }
+309:                 spec::Utf8Type::Configured => "string".to_string(),
+310:             };
+311:             DataType::Utf8
+312:         }
+313:         spec::DataType::ConfiguredBinary if kind == Kind::Binary => DataType::Binary,
+314:         spec::DataType::Date32 if kind == Kind::Date => DataType::Date32,
+315:         spec::DataType::Decimal128 { precision, scale }
+316:             if native.data_type == DataType::Decimal128(precision, scale) =>
+317:         {
+318:             native.data_type
+319:         }
+320:         spec::DataType::Timestamp {
+321:             time_unit: spec::TimeUnit::Microsecond,
+322:             timestamp_type: spec::TimestampType::WithoutTimeZone,
+323:         } if kind == Kind::Long => {
+324:             catalog_type = "timestamp_ntz".to_string();
+325:             DataType::Timestamp(TimeUnit::Microsecond, None)
+326:         }
+327:         spec::DataType::Timestamp {
+328:             time_unit: spec::TimeUnit::Microsecond,
+329:             timestamp_type: spec::TimestampType::Configured | spec::TimestampType::WithLocalTimeZone,
+330:         } if matches!(kind, Kind::Timestamp | Kind::TimestampInstant) => {
+331:             DataType::Timestamp(TimeUnit::Microsecond, Some(timezone.into()))
+332:         }
+333:         spec::DataType::Interval {
+334:             interval_unit,
+335:             start_field,
+336:             end_field,
+337:         } if (interval_unit == spec::IntervalUnit::YearMonth && kind == Kind::Int)
+338:             || (interval_unit == spec::IntervalUnit::DayTime && kind == Kind::Long) =>
+339:         {
+340:             let interval =
+341:                 spec::SparkIntervalMetadata::try_new(interval_unit, start_field, end_field)
+342:                     .map_err(|error| invalid(column, error))?
+343:                     .ok_or_else(|| invalid(column, "unsupported interval annotation"))?;
+344:             metadata.insert(
+345:                 spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
+346:                 interval.to_json().map_err(|error| invalid(column, error))?,
+347:             );
+348:             let start = interval_field_name(interval.start_field());
+349:             let end = interval_field_name(interval.end_field());
+350:             catalog_type = if start == end {
+351:                 format!("interval {start}")
+352:             } else {
+353:                 format!("interval {start} to {end}")
+354:             };
+355:             match interval_unit {
+356:                 spec::IntervalUnit::YearMonth => DataType::Interval(IntervalUnit::YearMonth),
+357:                 _ => DataType::Duration(TimeUnit::Microsecond),
+358:             }
+359:         }
+360:         _ => {
+361:             return Err(invalid(
+362:                 column,
+363:                 format!("unsupported or inconsistent Catalyst annotation {value:?} for {kind:?}"),
+364:             ));
+365:         }

@@ -1,0 +1,969 @@
+commit a40abc256007853f28a7a6e4e692029a656032bb
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 15:02:54 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 15:02:54 2026 -0700
+
+    feat: infer Spark logical types from validated ORC metadata
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 83f3af703..cf8285322 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -7367,6 +7367,7 @@ dependencies = [
+  "once_cell",
+  "orc-rust",
+  "percent-encoding",
++ "prost 0.13.5",
+  "pyo3",
+  "regex",
+  "sail-build-scripts",
+@@ -7374,7 +7375,9 @@ dependencies = [
+  "sail-common-datafusion",
+  "sail-physical-plan",
+  "sail-sql-analyzer",
++ "sail-sql-parser",
+  "serde",
++ "serde_json",
+  "thiserror",
+  "tokio",
+  "tokio-stream",
+diff --git a/crates/sail-data-source/Cargo.toml b/crates/sail-data-source/Cargo.toml
+index cab16630f..4da974ff4 100644
+--- a/crates/sail-data-source/Cargo.toml
++++ b/crates/sail-data-source/Cargo.toml
+@@ -12,9 +12,11 @@ sail-common = { path = "../sail-common" }
+ sail-common-datafusion = { path = "../sail-common-datafusion" }
+ sail-physical-plan = { path = "../sail-physical-plan" }
+ sail-sql-analyzer = { path = "../sail-sql-analyzer" }
++sail-sql-parser = { path = "../sail-sql-parser" }
+ 
+ async-trait = { workspace = true }
+ serde = { workspace = true }
++serde_json = { workspace = true }
+ futures = { workspace = true }
+ arrow-pyarrow = { workspace = true }
+ datafusion = { workspace = true }
+@@ -48,3 +50,7 @@ educe = { workspace = true }
+ 
+ [build-dependencies]
+ sail-build-scripts = { path = "../sail-build-scripts" }
++
++[dev-dependencies]
++# ORC's public footer messages use the older protobuf runtime.
++prost013 = { package = "prost", version = "0.13.5" }
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index 0afd6942d..b1bc97607 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -1,3 +1,5 @@
+ mod reader;
++mod schema;
+ 
+ pub use reader::OrcObjectReader;
++pub use schema::infer_schema as infer_orc_schema;
+diff --git a/crates/sail-data-source/src/formats/orc/schema.rs b/crates/sail-data-source/src/formats/orc/schema.rs
+new file mode 100644
+index 000000000..6f3aa8c23
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/schema.rs
+@@ -0,0 +1,388 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use arrow::datatypes::{DataType, Field, Fields, IntervalUnit, Schema, SchemaRef, TimeUnit};
++use datafusion_common::{DataFusionError, Result};
++use orc_rust::proto::{self, r#type::Kind};
++use orc_rust::reader::metadata::FileMetadata;
++use sail_common::spec;
++use sail_sql_analyzer::data_type::from_ast_data_type;
++use sail_sql_analyzer::parser::parse_data_type;
++use sail_sql_parser::ast::data_type::DataType as AstDataType;
++
++const CATALYST_TYPE: &str = "spark.sql.catalyst.type";
++const SPARK_VERSION: &str = "org.apache.spark.version";
++const CHAR_VARCHAR_TYPE: &str = "__CHAR_VARCHAR_TYPE_STRING";
++
++struct LogicalType {
++    data_type: DataType,
++    metadata: HashMap<String, String>,
++    catalog_type: String,
++    has_char_varchar: bool,
++}
++
++impl LogicalType {
++    fn new(data_type: DataType, catalog_type: impl Into<String>) -> Self {
++        Self {
++            data_type,
++            metadata: HashMap::new(),
++            catalog_type: catalog_type.into(),
++            has_char_varchar: false,
++        }
++    }
++
++    fn with_char_varchar(mut self, present: bool) -> Self {
++        self.has_char_varchar = present;
++        self
++    }
++
++    fn into_field(mut self, name: &str, nullable: bool, preserve_char_type: bool) -> Field {
++        if preserve_char_type && self.has_char_varchar {
++            self.metadata.insert(
++                spec::SPARK_METADATA_JSON_KEY.to_string(),
++                serde_json::json!({ (CHAR_VARCHAR_TYPE): self.catalog_type }).to_string(),
++            );
++        }
++        Field::new(name, self.data_type, nullable).with_metadata(self.metadata)
++    }
++}
++
++/// Infer Spark logical types from a validated ORC footer.
++///
++/// Spark 4.2.1 OrcUtils.toCatalystSchema/orcTypeDescription establish the physical
++/// encodings and Catalyst annotations. Field nullability is recursive; map keys
++/// remain non-null. Container names follow Sail's logical schema; the reader
++/// adapts native ORC container fields by position. Callers reading untrusted files
++/// must bound metadata bytes and schema depth through `MetadataReadOptions`.
++pub fn infer_schema(metadata: &FileMetadata, session_timezone: &str) -> Result<SchemaRef> {
++    let root = convert(metadata.column_types(), 0, session_timezone)?;
++    let DataType::Struct(fields) = root.data_type else {
++        return Err(invalid(0, "expected a STRUCT root"));
++    };
++    let mut schema_metadata = HashMap::new();
++    if let Some(version) = metadata.user_custom_metadata().get(SPARK_VERSION) {
++        let version = std::str::from_utf8(version)
++            .map_err(|_| invalid(0, "Spark version metadata is not UTF-8"))?;
++        schema_metadata.insert(SPARK_VERSION.to_string(), version.to_string());
++    }
++    Ok(Arc::new(Schema::new_with_metadata(fields, schema_metadata)))
++}
++
++fn invalid(column: usize, message: impl std::fmt::Display) -> DataFusionError {
++    DataFusionError::Plan(format!("Invalid ORC schema at column {column}: {message}"))
++}
++
++fn convert(types: &[proto::Type], column: usize, timezone: &str) -> Result<LogicalType> {
++    let ty = types
++        .get(column)
++        .ok_or_else(|| invalid(column, "type ID is out of bounds"))?;
++    let kind = ty
++        .kind
++        .and_then(|kind| Kind::try_from(kind).ok())
++        .ok_or_else(|| invalid(column, "missing or unknown type kind"))?;
++    // Spark OrcUtils.toCatalystSchema recurses into containers before looking
++    // up Catalyst attributes, so even malformed container annotations are ignored.
++    let annotation = if matches!(kind, Kind::Struct | Kind::List | Kind::Map) {
++        None
++    } else {
++        catalyst_annotation(ty, column)?
++    };
++    let native = match kind {
++        Kind::Boolean => LogicalType::new(DataType::Boolean, "boolean"),
++        Kind::Byte => LogicalType::new(DataType::Int8, "tinyint"),
++        Kind::Short => LogicalType::new(DataType::Int16, "smallint"),
++        Kind::Int => LogicalType::new(DataType::Int32, "int"),
++        Kind::Long => LogicalType::new(DataType::Int64, "bigint"),
++        Kind::Float => LogicalType::new(DataType::Float32, "float"),
++        Kind::Double => LogicalType::new(DataType::Float64, "double"),
++        Kind::String => LogicalType::new(DataType::Utf8, "string"),
++        Kind::Char | Kind::Varchar => {
++            let length = ty.maximum_length.ok_or_else(|| {
++                DataFusionError::NotImplemented(format!(
++                    "ORC character column {column} requires an explicit maximum length"
++                ))
++            })?;
++            let name = if kind == Kind::Char {
++                "char"
++            } else {
++                "varchar"
++            };
++            LogicalType::new(DataType::Utf8, character_type(name, length, column)?)
++                .with_char_varchar(true)
++        }
++        Kind::Binary => LogicalType::new(DataType::Binary, "binary"),
++        // An unannotated ORC TIMESTAMP is LTZ regardless of the configured
++        // default SQL timestamp type. All Spark timestamps use microseconds.
++        Kind::Timestamp | Kind::TimestampInstant => LogicalType::new(
++            DataType::Timestamp(TimeUnit::Microsecond, Some(timezone.into())),
++            "timestamp",
++        ),
++        Kind::Date => LogicalType::new(DataType::Date32, "date"),
++        Kind::Decimal => decimal_type(ty, column)?,
++        Kind::Struct => {
++            let children = ty
++                .subtypes
++                .iter()
++                .map(|&child| convert(types, child as usize, timezone))
++                .collect::<Result<Vec<_>>>()?;
++            let has_char_varchar = children.iter().any(|child| child.has_char_varchar);
++            // Spark StructType.catalogString uses raw names, unlike .sql, which
++            // quotes identifiers. JSON serialization below handles JSON escaping.
++            let catalog_type = children
++                .iter()
++                .zip(&ty.field_names)
++                .map(|(child, name)| format!("{name}:{}", child.catalog_type))
++                .collect::<Vec<_>>()
++                .join(",");
++            let fields = children
++                .into_iter()
++                .zip(&ty.field_names)
++                .map(|(child, name)| child.into_field(name, true, column == 0))
++                .collect::<Fields>();
++            LogicalType::new(DataType::Struct(fields), format!("struct<{catalog_type}>"))
++                .with_char_varchar(has_char_varchar)
++        }
++        Kind::List => {
++            let child = convert(types, ty.subtypes[0] as usize, timezone)?;
++            let catalog_type = format!("array<{}>", child.catalog_type);
++            let has_char_varchar = child.has_char_varchar;
++            LogicalType::new(
++                DataType::List(Arc::new(child.into_field(
++                    spec::SAIL_LIST_FIELD_NAME,
++                    true,
++                    false,
++                ))),
++                catalog_type,
++            )
++            .with_char_varchar(has_char_varchar)
++        }
++        Kind::Map => {
++            let key = convert(types, ty.subtypes[0] as usize, timezone)?;
++            let value = convert(types, ty.subtypes[1] as usize, timezone)?;
++            let catalog_type = format!("map<{},{}>", key.catalog_type, value.catalog_type);
++            let has_char_varchar = key.has_char_varchar || value.has_char_varchar;
++            let fields = vec![
++                key.into_field(spec::SAIL_MAP_KEY_FIELD_NAME, false, false),
++                value.into_field(spec::SAIL_MAP_VALUE_FIELD_NAME, true, false),
++            ];
++            LogicalType::new(
++                DataType::Map(
++                    Arc::new(Field::new(
++                        spec::SAIL_MAP_FIELD_NAME,
++                        DataType::Struct(fields.into()),
++                        false,
++                    )),
++                    false,
++                ),
++                catalog_type,
++            )
++            .with_char_varchar(has_char_varchar)
++        }
++        Kind::Union => {
++            return Err(DataFusionError::NotImplemented(
++                "ORC UNION is not a Spark SQL data type".to_string(),
++            ));
++        }
++    };
++    match annotation {
++        Some(value) => annotated_type(kind, native, value, column, timezone),
++        None => Ok(native),
++    }
++}
++
++fn catalyst_annotation(ty: &proto::Type, column: usize) -> Result<Option<&str>> {
++    let mut attributes = ty
++        .attributes
++        .iter()
++        .filter(|attribute| attribute.key.as_deref() == Some(CATALYST_TYPE));
++    let Some(attribute) = attributes.next() else {
++        return Ok(None);
++    };
++    if attributes.next().is_some() {
++        return Err(invalid(column, "duplicate Catalyst type annotation"));
++    }
++    attribute
++        .value
++        .as_deref()
++        .map(Some)
++        .ok_or_else(|| invalid(column, "Catalyst type annotation has no value"))
++}
++
++fn character_type(name: &str, length: u32, column: usize) -> Result<String> {
++    if length > i32::MAX as u32 {
++        return Err(invalid(
++            column,
++            "character length exceeds Spark's integer range",
++        ));
++    }
++    Ok(format!("{name}({length})"))
++}
++
++fn decimal_type(ty: &proto::Type, column: usize) -> Result<LogicalType> {
++    // The native reader defaults missing protobuf fields to zero. Do not pretend
++    // that this implements the Java reader's legacy decimal defaults.
++    let (Some(precision), Some(scale)) = (ty.precision, ty.scale) else {
++        return Err(DataFusionError::NotImplemented(format!(
++            "ORC decimal column {column} requires explicit precision and scale"
++        )));
++    };
++    if !(1..=38).contains(&precision) || scale > precision {
++        return Err(invalid(
++            column,
++            format!("invalid decimal precision {precision} and scale {scale}"),
++        ));
++    }
++    Ok(LogicalType::new(
++        DataType::Decimal128(precision as u8, scale as i8),
++        format!("decimal({precision},{scale})"),
++    ))
++}
++
++fn annotated_type(
++    kind: Kind,
++    native: LogicalType,
++    value: &str,
++    column: usize,
++    timezone: &str,
++) -> Result<LogicalType> {
++    let parsed = parse_data_type(value)
++        .map_err(|error| invalid(column, format!("Catalyst annotation {value:?}: {error}")))?;
++    // The shared SQL converter still maps TIME to legacy storage-unit types.
++    // Keep SQL syntax validation, but preserve the declared semantic precision
++    // here until that independent converter adopts spec::DataType::Time.
++    let parsed = match parsed {
++        AstDataType::Time(_, precision) => {
++            let precision = precision.as_ref().map_or(6, |(_, value, _)| value.value);
++            let precision = i32::try_from(precision).map_err(|_| {
++                invalid(
++                    column,
++                    format!("TIME precision {precision} is out of range"),
++                )
++            })?;
++            spec::DataType::Time { precision }
++        }
++        other => from_ast_data_type(other)
++            .map_err(|error| invalid(column, format!("Catalyst annotation {value:?}: {error}")))?,
++    };
++    let mut metadata = HashMap::new();
++    let mut catalog_type = native.catalog_type;
++    let mut has_char_varchar = false;
++    let data_type = match parsed {
++        spec::DataType::Time { precision } => {
++            if kind != Kind::Long {
++                return Err(invalid(
++                    column,
++                    format!("TIME annotation requires LONG storage, found {kind:?}"),
++                ));
++            }
++            let time = spec::SparkTimeMetadata::try_new(precision)
++                .map_err(|error| invalid(column, error))?;
++            metadata.insert(
++                spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++                time.to_json().map_err(|error| invalid(column, error))?,
++            );
++            catalog_type = format!("time({precision})");
++            // Spark stores nanoseconds at every declared precision. A string
++            // cast to TIME(0) can retain fractions; preserve those stored bits.
++            DataType::Time64(TimeUnit::Nanosecond)
++        }
++        spec::DataType::Boolean if kind == Kind::Boolean => DataType::Boolean,
++        spec::DataType::Int8 if kind == Kind::Byte => DataType::Int8,
++        spec::DataType::Int16 if kind == Kind::Short => DataType::Int16,
++        spec::DataType::Int32 if kind == Kind::Int => DataType::Int32,
++        spec::DataType::Int64 if kind == Kind::Long => DataType::Int64,
++        spec::DataType::Float32 if kind == Kind::Float => DataType::Float32,
++        spec::DataType::Float64 if kind == Kind::Double => DataType::Float64,
++        spec::DataType::ConfiguredUtf8 { utf8_type }
++            if matches!(kind, Kind::String | Kind::Char | Kind::Varchar) =>
++        {
++            catalog_type = match utf8_type {
++                spec::Utf8Type::Char { length } => {
++                    has_char_varchar = true;
++                    character_type("char", length, column)?
++                }
++                spec::Utf8Type::VarChar { length } => {
++                    has_char_varchar = true;
++                    character_type("varchar", length, column)?
++                }
++                spec::Utf8Type::Configured => "string".to_string(),
++            };
++            DataType::Utf8
++        }
++        spec::DataType::ConfiguredBinary if kind == Kind::Binary => DataType::Binary,
++        spec::DataType::Date32 if kind == Kind::Date => DataType::Date32,
++        spec::DataType::Decimal128 { precision, scale }
++            if native.data_type == DataType::Decimal128(precision, scale) =>
++        {
++            native.data_type
++        }
++        spec::DataType::Timestamp {
++            time_unit: spec::TimeUnit::Microsecond,
++            timestamp_type: spec::TimestampType::WithoutTimeZone,
++        } if kind == Kind::Long => {
++            catalog_type = "timestamp_ntz".to_string();
++            DataType::Timestamp(TimeUnit::Microsecond, None)
++        }
++        spec::DataType::Timestamp {
++            time_unit: spec::TimeUnit::Microsecond,
++            timestamp_type: spec::TimestampType::Configured | spec::TimestampType::WithLocalTimeZone,
++        } if matches!(kind, Kind::Timestamp | Kind::TimestampInstant) => {
++            DataType::Timestamp(TimeUnit::Microsecond, Some(timezone.into()))
++        }
++        spec::DataType::Interval {
++            interval_unit,
++            start_field,
++            end_field,
++        } if (interval_unit == spec::IntervalUnit::YearMonth && kind == Kind::Int)
++            || (interval_unit == spec::IntervalUnit::DayTime && kind == Kind::Long) =>
++        {
++            let interval =
++                spec::SparkIntervalMetadata::try_new(interval_unit, start_field, end_field)
++                    .map_err(|error| invalid(column, error))?
++                    .ok_or_else(|| invalid(column, "unsupported interval annotation"))?;
++            metadata.insert(
++                spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
++                interval.to_json().map_err(|error| invalid(column, error))?,
++            );
++            let start = interval_field_name(interval.start_field());
++            let end = interval_field_name(interval.end_field());
++            catalog_type = if start == end {
++                format!("interval {start}")
++            } else {
++                format!("interval {start} to {end}")
++            };
++            match interval_unit {
++                spec::IntervalUnit::YearMonth => DataType::Interval(IntervalUnit::YearMonth),
++                _ => DataType::Duration(TimeUnit::Microsecond),
++            }
++        }
++        _ => {
++            return Err(invalid(
++                column,
++                format!("unsupported or inconsistent Catalyst annotation {value:?} for {kind:?}"),
++            ));
++        }
++    };
++    Ok(LogicalType {
++        data_type,
++        metadata,
++        catalog_type,
++        has_char_varchar,
++    })
++}
++
++fn interval_field_name(field: spec::IntervalFieldType) -> &'static str {
++    match field {
++        spec::IntervalFieldType::Year => "year",
++        spec::IntervalFieldType::Month => "month",
++        spec::IntervalFieldType::Day => "day",
++        spec::IntervalFieldType::Hour => "hour",
++        spec::IntervalFieldType::Minute => "minute",
++        spec::IntervalFieldType::Second => "second",
++    }
++}
++
++#[cfg(test)]
++#[path = "schema_tests.rs"]
++#[expect(clippy::unwrap_used, clippy::panic)]
++mod tests;
+diff --git a/crates/sail-data-source/src/formats/orc/schema_tests.rs b/crates/sail-data-source/src/formats/orc/schema_tests.rs
+new file mode 100644
+index 000000000..56e8ab4cc
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/schema_tests.rs
+@@ -0,0 +1,505 @@
++use bytes::Bytes;
++use orc_rust::proto;
++use orc_rust::reader::metadata::{MetadataReadOptions, read_metadata_with_options};
++use prost013::Message;
++
++use super::*;
++
++fn primitive(kind: Kind) -> proto::Type {
++    proto::Type {
++        kind: Some(kind as i32),
++        maximum_length: matches!(kind, Kind::Char | Kind::Varchar).then_some(5),
++        ..Default::default()
++    }
++}
++
++fn annotated(kind: Kind, value: &str) -> proto::Type {
++    proto::Type {
++        attributes: vec![proto::StringPair {
++            key: Some(CATALYST_TYPE.to_string()),
++            value: Some(value.to_string()),
++        }],
++        ..primitive(kind)
++    }
++}
++
++fn container(kind: Kind, children: &[u32]) -> proto::Type {
++    proto::Type {
++        subtypes: children.to_vec(),
++        field_names: if kind == Kind::Struct {
++            children.iter().map(|id| format!("column_{id}")).collect()
++        } else {
++            vec![]
++        },
++        ..primitive(kind)
++    }
++}
++
++fn metadata(types: Vec<proto::Type>) -> FileMetadata {
++    let footer = proto::Footer {
++        types,
++        metadata: vec![
++            proto::UserMetadataItem {
++                name: Some(SPARK_VERSION.to_string()),
++                value: Some(b"4.2.1".to_vec()),
++            },
++            proto::UserMetadataItem {
++                name: Some("foreign.binary.metadata".to_string()),
++                value: Some(vec![255]),
++            },
++        ],
++        ..Default::default()
++    }
++    .encode_to_vec();
++    let postscript = proto::PostScript {
++        footer_length: Some(footer.len() as u64),
++        metadata_length: Some(0),
++        compression: Some(proto::CompressionKind::None as i32),
++        magic: Some("ORC".to_string()),
++        ..Default::default()
++    }
++    .encode_to_vec();
++    let mut bytes = b"ORC".to_vec();
++    bytes.extend(footer);
++    bytes.extend(&postscript);
++    bytes.push(postscript.len().try_into().unwrap());
++    read_metadata_with_options(
++        &mut Bytes::from(bytes),
++        MetadataReadOptions {
++            max_encoded_metadata_bytes: Some(64 * 1024),
++            max_decoded_metadata_bytes: Some(64 * 1024),
++            max_schema_depth: Some(16),
++        },
++    )
++    .unwrap()
++}
++
++fn flat_metadata(children: Vec<proto::Type>) -> FileMetadata {
++    let mut types = vec![container(
++        Kind::Struct,
++        &(1..=children.len() as u32).collect::<Vec<_>>(),
++    )];
++    types.extend(children);
++    metadata(types)
++}
++
++#[test]
++fn primitive_types_and_characters_follow_spark_schema() {
++    let cases = [
++        (Kind::Boolean, DataType::Boolean),
++        (Kind::Byte, DataType::Int8),
++        (Kind::Short, DataType::Int16),
++        (Kind::Int, DataType::Int32),
++        (Kind::Long, DataType::Int64),
++        (Kind::Float, DataType::Float32),
++        (Kind::Double, DataType::Float64),
++        (Kind::String, DataType::Utf8),
++        (Kind::Char, DataType::Utf8),
++        (Kind::Varchar, DataType::Utf8),
++        (Kind::Binary, DataType::Binary),
++        (Kind::Date, DataType::Date32),
++    ];
++    let metadata = flat_metadata(
++        cases
++            .iter()
++            .map(|(kind, _)| {
++                if *kind == Kind::String {
++                    annotated(*kind, "string")
++                } else {
++                    primitive(*kind)
++                }
++            })
++            .collect(),
++    );
++    let schema = infer_schema(&metadata, "UTC").unwrap();
++    for (field, (_, expected)) in schema.fields().iter().zip(cases) {
++        assert_eq!(field.data_type(), &expected);
++        assert!(field.is_nullable());
++    }
++    assert_eq!(schema.metadata().len(), 1);
++    assert_eq!(schema.metadata()[SPARK_VERSION], "4.2.1");
++}
++
++#[test]
++fn timestamps_are_microseconds_with_explicit_ltz_and_ntz_semantics() {
++    let metadata = flat_metadata(vec![
++        primitive(Kind::Timestamp),
++        annotated(Kind::Timestamp, "timestamp"),
++        primitive(Kind::TimestampInstant),
++        annotated(Kind::Long, "timestamp_ntz"),
++    ]);
++    let schema = infer_schema(&metadata, "America/Los_Angeles").unwrap();
++    for field in &schema.fields()[..3] {
++        assert_eq!(
++            field.data_type(),
++            &DataType::Timestamp(TimeUnit::Microsecond, Some("America/Los_Angeles".into()))
++        );
++    }
++    assert_eq!(
++        schema.field(3).data_type(),
++        &DataType::Timestamp(TimeUnit::Microsecond, None)
++    );
++}
++
++#[test]
++fn time_preserves_nanoseconds_and_declared_precision() {
++    let metadata = flat_metadata(
++        (0..=6)
++            .map(|precision| annotated(Kind::Long, &format!("time({precision})")))
++            .collect(),
++    );
++    let schema = infer_schema(&metadata, "UTC").unwrap();
++    for (precision, field) in schema.fields().iter().enumerate() {
++        assert_eq!(field.data_type(), &DataType::Time64(TimeUnit::Nanosecond));
++        assert_eq!(
++            field.metadata()[spec::SAIL_SPARK_TIME_METADATA_KEY],
++            spec::SparkTimeMetadata::try_new(precision as i32)
++                .unwrap()
++                .to_json()
++                .unwrap()
++        );
++    }
++    let default_field = schema.field(6).clone().with_name("column_1");
++    for annotation in ["time", "TIME ( 6 )", "time /* precision */ (6)"] {
++        let schema = infer_schema(
++            &flat_metadata(vec![annotated(Kind::Long, annotation)]),
++            "UTC",
++        )
++        .unwrap();
++        assert_eq!(schema.field(0), &default_field);
++    }
++    for precision in [-1i64, 7, 9, i64::from(i32::MAX) + 1] {
++        let metadata = flat_metadata(vec![annotated(Kind::Long, &format!("time({precision})"))]);
++        assert!(infer_schema(&metadata, "UTC").is_err(), "TIME({precision})");
++    }
++}
++
++#[test]
++fn time_annotations_require_long_storage_and_valid_sql_syntax() {
++    for kind in [Kind::Int, Kind::String, Kind::Timestamp] {
++        let metadata = flat_metadata(vec![annotated(kind, "time(0)")]);
++        let error = infer_schema(&metadata, "UTC").unwrap_err().to_string();
++        assert!(
++            error.contains("TIME annotation requires LONG storage"),
++            "{error}"
++        );
++    }
++    for annotation in ["time(1, 2)", "time(1) garbage", "time(1.5)", "time()"] {
++        let metadata = flat_metadata(vec![annotated(Kind::Long, annotation)]);
++        assert!(infer_schema(&metadata, "UTC").is_err(), "{annotation}");
++    }
++}
++
++#[test]
++fn intervals_retain_sail_field_qualifiers() {
++    for (kind, value, expected, start, end) in [
++        (
++            Kind::Int,
++            "interval year to month",
++            DataType::Interval(IntervalUnit::YearMonth),
++            spec::IntervalFieldType::Year,
++            spec::IntervalFieldType::Month,
++        ),
++        (
++            Kind::Int,
++            "interval month",
++            DataType::Interval(IntervalUnit::YearMonth),
++            spec::IntervalFieldType::Month,
++            spec::IntervalFieldType::Month,
++        ),
++        (
++            Kind::Long,
++            "interval hour to second",
++            DataType::Duration(TimeUnit::Microsecond),
++            spec::IntervalFieldType::Hour,
++            spec::IntervalFieldType::Second,
++        ),
++        (
++            Kind::Long,
++            "interval minute",
++            DataType::Duration(TimeUnit::Microsecond),
++            spec::IntervalFieldType::Minute,
++            spec::IntervalFieldType::Minute,
++        ),
++    ] {
++        let metadata = flat_metadata(vec![annotated(kind, value)]);
++        let schema = infer_schema(&metadata, "UTC").unwrap();
++        let field = schema.field(0);
++        assert_eq!(field.data_type(), &expected);
++        let interval = spec::SparkIntervalMetadata::from_json(
++            &field.metadata()[spec::SAIL_SPARK_INTERVAL_METADATA_KEY],
++        )
++        .unwrap();
++        assert_eq!(interval.start_field(), start);
++        assert_eq!(interval.end_field(), end);
++    }
++}
++
++#[test]
++fn nested_fields_ignore_container_annotations_and_preserve_logical_metadata() {
++    let mut types = vec![
++        container(Kind::Struct, &[1, 3]),
++        container(Kind::List, &[2]),
++        annotated(Kind::Long, "interval day to second"),
++        container(Kind::Map, &[4, 5]),
++        primitive(Kind::String),
++        container(Kind::Struct, &[6, 7]),
++        annotated(Kind::Long, "timestamp_ntz"),
++        annotated(Kind::Long, "time(1)"),
++    ];
++    // Spark ignores all container attributes, including root duplicates and
++    // missing values, rather than parsing or validating them as leaf annotations.
++    for id in [0, 1, 3, 5] {
++        types[id].attributes = vec![
++            proto::StringPair {
++                key: Some(CATALYST_TYPE.to_string()),
++                value: None,
++            },
++            proto::StringPair {
++                key: Some(CATALYST_TYPE.to_string()),
++                value: Some("not_a_type".to_string()),
++            },
++        ];
++    }
++    let schema = infer_schema(&metadata(types), "UTC").unwrap();
++    let DataType::List(item) = schema.field(0).data_type() else {
++        panic!("expected LIST");
++    };
++    assert_eq!(item.name(), "item");
++    assert!(item.is_nullable());
++    assert!(
++        item.metadata()
++            .contains_key(spec::SAIL_SPARK_INTERVAL_METADATA_KEY)
++    );
++    let DataType::Map(entries, sorted) = schema.field(1).data_type() else {
++        panic!("expected MAP");
++    };
++    assert!(!sorted);
++    assert_eq!(entries.name(), "entries");
++    assert!(!entries.is_nullable());
++    let DataType::Struct(pair) = entries.data_type() else {
++        panic!("expected map entries STRUCT");
++    };
++    assert_eq!(pair[0].name(), spec::SAIL_MAP_KEY_FIELD_NAME);
++    assert!(!pair[0].is_nullable());
++    assert_eq!(pair[1].name(), spec::SAIL_MAP_VALUE_FIELD_NAME);
++    assert!(pair[1].is_nullable());
++    let DataType::Struct(nested) = pair[1].data_type() else {
++        panic!("expected nested STRUCT");
++    };
++    assert_eq!(nested[0].name(), "column_6");
++    assert!(nested[0].is_nullable());
++    assert_eq!(
++        nested[0].data_type(),
++        &DataType::Timestamp(TimeUnit::Microsecond, None)
++    );
++    assert_eq!(
++        nested[1].data_type(),
++        &DataType::Time64(TimeUnit::Nanosecond)
++    );
++    assert_eq!(
++        nested[1].metadata()[spec::SAIL_SPARK_TIME_METADATA_KEY],
++        spec::SparkTimeMetadata::try_new(1)
++            .unwrap()
++            .to_json()
++            .unwrap()
++    );
++}
++
++#[test]
++fn invalid_annotations_fail_and_unrelated_attributes_are_ignored() {
++    for (kind, annotation) in [
++        (Kind::Long, "not_a_type"),
++        (Kind::Timestamp, "timestamp_ntz"),
++        (Kind::Long, "timestamp"),
++        (Kind::Int, "interval day to second"),
++        (Kind::Long, "interval year to month"),
++        (Kind::String, "int"),
++        (Kind::Decimal, "decimal(5,2)"),
++        (Kind::Long, "array<int>"),
++    ] {
++        let mut ty = annotated(kind, annotation);
++        if kind == Kind::Decimal {
++            ty.precision = Some(10);
++            ty.scale = Some(2);
++        }
++        let metadata = flat_metadata(vec![ty]);
++        assert!(
++            infer_schema(&metadata, "UTC").is_err(),
++            "{kind:?}/{annotation}"
++        );
++    }
++    let mut duplicate = annotated(Kind::Long, "timestamp_ntz");
++    duplicate.attributes.push(duplicate.attributes[0].clone());
++    let mut missing = annotated(Kind::String, "string");
++    missing.attributes[0].value = None;
++    for ty in [duplicate, missing] {
++        assert!(infer_schema(&flat_metadata(vec![ty]), "UTC").is_err());
++    }
++    let mut foreign = primitive(Kind::Long);
++    foreign.attributes.push(proto::StringPair {
++        key: Some("foreign.logical.type".to_string()),
++        value: Some("opaque".to_string()),
++    });
++    let schema = infer_schema(&flat_metadata(vec![foreign]), "UTC").unwrap();
++    assert_eq!(schema.field(0).data_type(), &DataType::Int64);
++    assert!(schema.field(0).metadata().is_empty());
++}
++
++#[test]
++fn decimal_limits_are_checked_before_native_arrow_conversion() {
++    for (precision, scale) in [(1, 0), (18, 4), (38, 38)] {
++        let ty = proto::Type {
++            precision: Some(precision),
++            scale: Some(scale),
++            ..primitive(Kind::Decimal)
++        };
++        let schema = infer_schema(&flat_metadata(vec![ty]), "UTC").unwrap();
++        assert_eq!(
++            schema.field(0).data_type(),
++            &DataType::Decimal128(precision as u8, scale as i8)
++        );
++    }
++    for (precision, scale) in [
++        (Some(0), Some(0)),
++        (Some(39), Some(0)),
++        (Some(256), Some(0)),
++        (Some(10), Some(11)),
++    ] {
++        let ty = proto::Type {
++            precision,
++            scale,
++            ..primitive(Kind::Decimal)
++        };
++        assert!(matches!(
++            infer_schema(&flat_metadata(vec![ty]), "UTC"),
++            Err(DataFusionError::Plan(_))
++        ));
++    }
++    // Missing legacy protobuf fields are a compatibility boundary, not a
++    // malformed decimal: the native reader has no Java legacy-default policy.
++    for (precision, scale) in [(None, Some(0)), (Some(10), None), (None, None)] {
++        let ty = proto::Type {
++            precision,
++            scale,
++            ..primitive(Kind::Decimal)
++        };
++        assert!(matches!(
++            infer_schema(&flat_metadata(vec![ty]), "UTC"),
++            Err(DataFusionError::NotImplemented(_))
++        ));
++    }
++}
++
++#[test]
++fn character_metadata_preserves_full_top_level_catalog_types() {
++    let odd_name = "a`b\"c\\d";
++    let metadata = metadata(vec![
++        container(Kind::Struct, &[1, 2, 3]),
++        primitive(Kind::Char),
++        proto::Type {
++            maximum_length: Some(10),
++            ..primitive(Kind::Varchar)
++        },
++        container(Kind::List, &[4]),
++        container(Kind::Map, &[5, 6]),
++        primitive(Kind::String),
++        proto::Type {
++            field_names: [odd_name, "t", "ym", "dt", "ntz", "dec"]
++                .map(str::to_string)
++                .to_vec(),
++            ..container(Kind::Struct, &[7, 8, 9, 10, 11, 12])
++        },
++        proto::Type {
++            maximum_length: Some(4),
++            ..primitive(Kind::Char)
++        },
++        annotated(Kind::Long, "time(1)"),
++        annotated(Kind::Int, "interval month"),
++        annotated(Kind::Long, "interval hour to second"),
++        annotated(Kind::Long, "timestamp_ntz"),
++        proto::Type {
++            precision: Some(18),
++            scale: Some(4),
++            ..primitive(Kind::Decimal)
++        },
++    ]);
++    let schema = infer_schema(&metadata, "UTC").unwrap();
++    let expected = [
++        "char(5)".to_string(),
++        "varchar(10)".to_string(),
++        format!(
++            "array<map<string,struct<{odd_name}:char(4),t:time(1),ym:interval month,dt:interval hour to second,ntz:timestamp_ntz,dec:decimal(18,4)>>>"
++        ),
++    ];
++    for (field, expected) in schema.fields().iter().zip(expected) {
++        let metadata: serde_json::Value =
++            serde_json::from_str(&field.metadata()[spec::SPARK_METADATA_JSON_KEY]).unwrap();
++        assert_eq!(
++            metadata,
++            serde_json::json!({ (CHAR_VARCHAR_TYPE): expected })
++        );
++    }
++    assert_eq!(schema.field(0).data_type(), &DataType::Utf8);
++    assert_eq!(schema.field(1).data_type(), &DataType::Utf8);
++    let DataType::List(item) = schema.field(2).data_type() else {
++        panic!("expected LIST")
++    };
++    assert!(!item.metadata().contains_key(spec::SPARK_METADATA_JSON_KEY));
++    let DataType::Map(entries, _) = item.data_type() else {
++        panic!("expected MAP")
++    };
++    let DataType::Struct(pair) = entries.data_type() else {
++        panic!("expected map STRUCT")
++    };
++    let DataType::Struct(fields) = pair[1].data_type() else {
++        panic!("expected nested STRUCT")
++    };
++    assert_eq!(fields[0].name(), odd_name);
++    assert_eq!(fields[0].data_type(), &DataType::Utf8);
++    assert!(
++        !fields[0]
++            .metadata()
++            .contains_key(spec::SPARK_METADATA_JSON_KEY)
++    );
++}
++
++#[test]
++fn character_annotations_and_length_validation_are_explicit() {
++    let schema = infer_schema(
++        &flat_metadata(vec![annotated(Kind::String, "CHAR (3)")]),
++        "UTC",
++    )
++    .unwrap();
++    let metadata: serde_json::Value =
++        serde_json::from_str(&schema.field(0).metadata()[spec::SPARK_METADATA_JSON_KEY]).unwrap();
++    assert_eq!(metadata[CHAR_VARCHAR_TYPE], "char(3)");
++    for kind in [Kind::Char, Kind::Varchar] {
++        let mut ty = primitive(kind);
++        ty.maximum_length = Some(0);
++        assert!(infer_schema(&flat_metadata(vec![ty.clone()]), "UTC").is_ok());
++        ty.maximum_length = None;
++        assert!(matches!(
++            infer_schema(&flat_metadata(vec![ty.clone()]), "UTC"),
++            Err(DataFusionError::NotImplemented(_))
++        ));
++        ty.maximum_length = Some(u32::MAX);
++        assert!(matches!(
++            infer_schema(&flat_metadata(vec![ty]), "UTC"),
++            Err(DataFusionError::Plan(_))
++        ));
++    }
++}
++
++#[test]
++fn rejects_union_instead_of_exposing_a_non_spark_type() {
++    let metadata = metadata(vec![
++        container(Kind::Struct, &[1]),
++        container(Kind::Union, &[2]),
++        primitive(Kind::Int),
++    ]);
++    assert!(matches!(
++        infer_schema(&metadata, "UTC"),
++        Err(DataFusionError::NotImplemented(message)) if message.contains("UNION")
++    ));
++}

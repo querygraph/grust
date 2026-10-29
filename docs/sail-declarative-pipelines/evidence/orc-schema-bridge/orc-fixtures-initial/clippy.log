@@ -1,0 +1,20 @@
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+error[E0599]: no method named `unwrap` found for struct `orc_rust::ArrowReader<R>` in the current scope
+  --> crates/sail-data-source/src/formats/orc/fixture_tests.rs:49:10
+   |
+45 |       let reader = ArrowReaderBuilder::new_with_metadata(bytes, metadata)
+   |  __________________-
+46 | |         .with_timestamp_precision(TimestampPrecision::Microsecond)
+47 | |         .with_batch_size(batch_size)
+48 | |         .build()
+49 | |         .unwrap();
+   | |_________-^^^^^^
+   |
+help: there is a method `wrap` with a similar name
+   |
+49 -         .unwrap();
+49 +         .wrap();
+   |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-data-source` (lib test) due to 1 previous error

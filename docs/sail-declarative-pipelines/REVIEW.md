@@ -1278,3 +1278,7 @@ The [public TIME gate](evidence/time-semantics/public/provenance.json) at `1e1d3
 ## Review opt-in ORC timezone conversion
 
 Native `ed6e9acf4f` separates immutable rule providers from per-reader writer inheritance; `0653cb2287` separately tests sync/async ranges, skipped stripes and pruning. Sail `a829c91a05` is an exact mechanical vendor update. [Evidence](evidence/orc-timezone-options/provenance.json): 308 native default passes/eight ignored, 193 no-default library passes, 93 Sail data-source passes and strict Clippy/formatting. The archived Java proof covers one profile; complete profile generation and Sail ORC source/writer activation remain open. No new SDP pass follows from this dependency gate.
+
+## Review ORC schema and array bridge
+
+Sail `7ac8e1fe84`, `c61fdec309`, `28d46b8451`, `3eb9ea2630` separately qualify schema inference, array conversion and four Spark-written fixture regressions. [Evidence](evidence/orc-schema-bridge/provenance.json) records 104/114/114/117 passing data-source library tests with formatting and strict Clippy. The source remains unregistered; LTZ decoding, requested-schema evolution, distributed transport and writer integration still need qualification. Streaming/Iggy and CDC runtime remain unimplemented.

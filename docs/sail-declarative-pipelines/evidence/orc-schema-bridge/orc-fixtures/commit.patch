@@ -1,0 +1,837 @@
+commit 3eb9ea2630e59f8e08681cf06a97f4ac58e475ba
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 15:20:34 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 15:20:34 2026 -0700
+
+    test: qualify ORC logical types against Spark-written files
+
+diff --git a/crates/sail-data-source/src/formats/orc/fixture_tests.rs b/crates/sail-data-source/src/formats/orc/fixture_tests.rs
+new file mode 100644
+index 000000000..0dbdd0183
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/fixture_tests.rs
+@@ -0,0 +1,290 @@
++//! Spark 4.2.1 ORC files, including their generation SQL and reference results,
++//! live in tests/fixtures/orc. These tests exercise the real native decoder and
++//! logical bridge together; they do not exercise a registered Sail file source.
++
++#![expect(clippy::unwrap_used)]
++
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use arrow::array::{Array, ArrayRef, ListArray, MapArray, PrimitiveArray, StructArray};
++use arrow::compute::concat_batches;
++use arrow::datatypes::{
++    ArrowPrimitiveType, DataType, DurationMicrosecondType, Field, Fields, Int32Type, IntervalUnit,
++    IntervalYearMonthType, Time64NanosecondType, TimeUnit,
++};
++use arrow::record_batch::RecordBatch;
++use bytes::Bytes;
++use orc_rust::ArrowReaderBuilder;
++use orc_rust::reader::metadata::{MetadataReadOptions, read_metadata_with_options};
++use orc_rust::schema::TimestampPrecision;
++use sail_common::spec;
++use sail_common::spec::IntervalFieldType::{Day, Hour, Minute, Month, Second, Year};
++
++use super::OrcSchemaBridge;
++
++const TIME: &[u8] = include_bytes!("../../../tests/fixtures/orc/time_precisions.orc");
++const CAST_TIME: &[u8] = include_bytes!("../../../tests/fixtures/orc/time_cast_precisions.orc");
++const INTERVALS: &[u8] = include_bytes!("../../../tests/fixtures/orc/intervals.orc");
++const NESTED: &[u8] = include_bytes!("../../../tests/fixtures/orc/daytime_time_nested.orc");
++
++fn read_fixture(file: &'static [u8], batch_size: usize) -> RecordBatch {
++    let mut bytes = Bytes::from_static(file);
++    let metadata = Arc::new(
++        read_metadata_with_options(
++            &mut bytes,
++            MetadataReadOptions {
++                max_encoded_metadata_bytes: Some(64 * 1024),
++                max_decoded_metadata_bytes: Some(64 * 1024),
++                max_schema_depth: Some(16),
++            },
++        )
++        .unwrap(),
++    );
++    let bridge = OrcSchemaBridge::try_new(&metadata, "UTC").unwrap();
++    let reader = ArrowReaderBuilder::new_with_metadata(bytes, metadata)
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_batch_size(batch_size)
++        .build();
++    let batches = reader
++        .map(|batch| {
++            let batch = batch.unwrap();
++            assert_eq!(batch.schema().fields(), bridge.physical_schema().fields());
++            bridge.adapt_batch(batch).unwrap()
++        })
++        .collect::<Vec<_>>();
++    assert!(batches.iter().all(|batch| batch.num_rows() <= batch_size));
++    concat_batches(bridge.schema(), &batches).unwrap()
++}
++
++fn values<T: ArrowPrimitiveType>(array: &ArrayRef) -> Vec<Option<T::Native>> {
++    array
++        .as_any()
++        .downcast_ref::<PrimitiveArray<T>>()
++        .unwrap()
++        .iter()
++        .collect()
++}
++
++fn time_field(name: &str, precision: i32) -> Field {
++    Field::new(name, DataType::Time64(TimeUnit::Nanosecond), true).with_metadata(HashMap::from([(
++        spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++        spec::SparkTimeMetadata::try_new(precision)
++            .unwrap()
++            .to_json()
++            .unwrap(),
++    )]))
++}
++
++fn interval_field(
++    name: &str,
++    start: spec::IntervalFieldType,
++    end: spec::IntervalFieldType,
++) -> Field {
++    let (unit, data_type) = if matches!(start, Year | Month) {
++        (
++            spec::IntervalUnit::YearMonth,
++            DataType::Interval(IntervalUnit::YearMonth),
++        )
++    } else {
++        (
++            spec::IntervalUnit::DayTime,
++            DataType::Duration(TimeUnit::Microsecond),
++        )
++    };
++    Field::new(name, data_type, true).with_metadata(HashMap::from([(
++        spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
++        spec::SparkIntervalMetadata::try_new(unit, Some(start), Some(end))
++            .unwrap()
++            .unwrap()
++            .to_json()
++            .unwrap(),
++    )]))
++}
++
++fn assert_schema(batch: &RecordBatch, fields: Vec<Field>) {
++    assert_eq!(batch.schema().fields(), &Fields::from(fields));
++    assert_eq!(
++        batch.schema().metadata()["org.apache.spark.version"],
++        "4.2.1"
++    );
++}
++
++#[test]
++fn spark_time_files_preserve_values_independently_of_declared_precision() {
++    for batch_size in [1, 2, 16] {
++        for (file, truncated) in [(TIME, false), (CAST_TIME, true)] {
++            let batch = read_fixture(file, batch_size);
++            assert_eq!(batch.num_rows(), 4);
++            assert_schema(
++                &batch,
++                vec![
++                    Field::new("id", DataType::Int32, true),
++                    time_field("t0", 0),
++                    time_field("t3", 3),
++                    time_field("t6", 6),
++                ],
++            );
++            assert_eq!(
++                values::<Int32Type>(batch.column(0)),
++                [Some(0), Some(1), Some(2), Some(3)]
++            );
++            for (column, precision) in [(1, 0), (2, 3), (3, 6)] {
++                let factor = if truncated {
++                    10_i64.pow(9 - precision as u32)
++                } else {
++                    1
++                };
++                assert_eq!(
++                    values::<Time64NanosecondType>(batch.column(column)),
++                    [
++                        Some(0),
++                        Some(45_296_123_456_000 / factor * factor),
++                        Some(86_399_999_999_000 / factor * factor),
++                        None
++                    ]
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn spark_interval_file_matches_reference_numeric_projections() {
++    // Spark's Python Arrow path cannot represent year-month intervals. The
++    // reference therefore uses SQL numeric projections before collection.
++    for batch_size in [1, 2, 16] {
++        let batch = read_fixture(INTERVALS, batch_size);
++        assert_eq!(batch.num_rows(), 4);
++        assert_schema(
++            &batch,
++            vec![
++                Field::new("id", DataType::Int32, true),
++                interval_field("ym", Year, Month),
++                interval_field("y", Year, Year),
++                interval_field("m", Month, Month),
++                interval_field("dt", Day, Second),
++                interval_field("d", Day, Day),
++                interval_field("h", Hour, Hour),
++                interval_field("mi", Minute, Minute),
++                interval_field("sec", Second, Second),
++            ],
++        );
++        for (column, months) in [(1, 14), (2, 24), (3, 14)] {
++            assert_eq!(
++                values::<IntervalYearMonthType>(batch.column(column)),
++                [Some(months), Some(-months), Some(0), None]
++            );
++        }
++        for (column, micros, third) in [
++            (4, 183_845_123_456, 0),
++            (5, 172_800_000_000, 0),
++            (6, 97_200_000_000, 0),
++            (7, 3_900_000_000, 0),
++            (8, 1_000_001, 1),
++        ] {
++            assert_eq!(
++                values::<DurationMicrosecondType>(batch.column(column)),
++                [Some(micros), Some(-micros), Some(third), None]
++            );
++        }
++    }
++}
++
++#[test]
++fn spark_nested_file_preserves_null_empty_and_nonempty_containers() {
++    for batch_size in [1, 2, 16] {
++        let batch = read_fixture(NESTED, batch_size);
++        assert_eq!(batch.num_rows(), 3);
++        assert_schema(
++            &batch,
++            vec![
++                Field::new("id", DataType::Int32, true),
++                interval_field("dt", Day, Second),
++                Field::new(
++                    "ds",
++                    DataType::List(Arc::new(interval_field(
++                        spec::SAIL_LIST_FIELD_NAME,
++                        Second,
++                        Second,
++                    ))),
++                    true,
++                ),
++                Field::new(
++                    "tm",
++                    DataType::Map(
++                        Arc::new(Field::new(
++                            spec::SAIL_MAP_FIELD_NAME,
++                            DataType::Struct(
++                                vec![
++                                    time_field(spec::SAIL_MAP_KEY_FIELD_NAME, 3)
++                                        .with_nullable(false),
++                                    interval_field(spec::SAIL_MAP_VALUE_FIELD_NAME, Second, Second),
++                                ]
++                                .into(),
++                            ),
++                            false,
++                        )),
++                        false,
++                    ),
++                    true,
++                ),
++                Field::new(
++                    "st",
++                    DataType::Struct(
++                        vec![time_field("t", 6), interval_field("d", Second, Second)].into(),
++                    ),
++                    true,
++                ),
++            ],
++        );
++        assert_eq!(
++            values::<DurationMicrosecondType>(batch.column(1)),
++            [Some(-183_845_123_456), None, Some(0)]
++        );
++        let list = batch
++            .column(2)
++            .as_any()
++            .downcast_ref::<ListArray>()
++            .unwrap();
++        assert_eq!(list.value_offsets(), [0, 3, 3, 3]);
++        assert_eq!(
++            (0..3).map(|i| list.is_null(i)).collect::<Vec<_>>(),
++            [false, true, false]
++        );
++        assert_eq!(
++            values::<DurationMicrosecondType>(list.values()),
++            [Some(-1_000_001), None, Some(1)]
++        );
++
++        let map = batch.column(3).as_any().downcast_ref::<MapArray>().unwrap();
++        assert_eq!(map.value_offsets(), [0, 1, 1, 1]);
++        assert_eq!(
++            (0..3).map(|i| map.is_null(i)).collect::<Vec<_>>(),
++            [false, true, false]
++        );
++        assert_eq!(
++            values::<Time64NanosecondType>(map.keys()),
++            [Some(3_723_123_000_000)]
++        );
++        assert_eq!(
++            values::<DurationMicrosecondType>(map.values()),
++            [Some(-1_000_001)]
++        );
++
++        let structure = batch
++            .column(4)
++            .as_any()
++            .downcast_ref::<StructArray>()
++            .unwrap();
++        assert_eq!(
++            (0..3).map(|i| structure.is_null(i)).collect::<Vec<_>>(),
++            [false, true, false]
++        );
++        // Child slots underneath a null parent are not logical values.
++        let times = values::<Time64NanosecondType>(structure.column(0));
++        let durations = values::<DurationMicrosecondType>(structure.column(1));
++        assert_eq!((times[0], times[2]), (Some(45_296_123_456_000), None));
++        assert_eq!((durations[0], durations[2]), (Some(-1), None));
++    }
++}
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index 329e59af9..ef98d51cb 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -5,3 +5,6 @@ mod schema;
+ pub use metadata::OrcSchemaBridge;
+ pub use reader::OrcObjectReader;
+ pub use schema::infer_schema as infer_orc_schema;
++
++#[cfg(test)]
++mod fixture_tests;
+diff --git a/crates/sail-data-source/tests/fixtures/orc/daytime_time_nested.orc b/crates/sail-data-source/tests/fixtures/orc/daytime_time_nested.orc
+new file mode 100644
+index 0000000000000000000000000000000000000000..a7181c8bde21d8a2e59261675ee211612152de6d
+GIT binary patch
+literal 1170
+zcmeYdau#G@;9?VE;b0D6&;~MvxtJLk7=(B@n1$Fl7z9`(*a8^bf#Ql>>_Bl45EA2H
+z5)$C}e|7zXn_L165)eiJqa{$46hak02U7rJ5+_Fkhd={|L<5I4P+A%xEdVrxi=(l#
+zN`Oh?e@7KT?fyXRst~uyaWD!=a5Qv3*>?K|qX3kafYJdB=0KH_5S2nel{{cefEGyr
+zaR7rXP?m>_1?&+PkP|}~7&Nx(|5ecDWn|dFr3rMQ5Y&PdC%2wDBO)LXz{t#?z^%QL
+z?*XqdP`5b36Fflk**F*l7$q137&#dj+?bdgSQ!}pFOXzls9+48!~N<%ILN?a!0>Zo
+zJOE|_!#s~suBDNIfe9w%z}Ns3tzuw1y6q-w12<3s15g227DPZKgHo1l3Sj{Afu=by
+zG>9;Q9iPC$z{<kl<R&P{;2+9faQ)TYL_>x6)8D_om2C?Xh$>8<=J$Gvfce_&sZp8}
+z#df;qvTWNl^~0qY-90jMI{On;as=WHeYpA$e`B3dRUs+G;4GRT{>R6>ZPLaoycy*h
+z7p?Pot{w}K<Su5u#k%N$M24OK_qoPr4HgA=&xkDGRbalukn5un;{$Pw!u_`_3`(2|
+z>I+O?{(tau!T%ao>DM=Yu9#Ie<@RazZomKab2vFXCWR^ATv@K1a$43${(juO>Gx*)
+zx(gLLNHn*;Kf+Tr&9UF{J)hCsiq8xza;)9ou39Voo}sxY^yGr)D_(Ww|DKkwuQJ0f
+z%znY;<FkdBIix1PSox~E#cxm9$uCP!N&Bp+IVgRAi=je*;Ztm?bd#R?JL83l1=qV)
+zFB8#K4Eyqr2@-0RjBB|WmR$|74e*}BY+%f3c4nbm+N##&oo6msR~)?ltnAR-PqrpU
+z@9tyti|UOm$~V6K$7ibG#K|FtmJ4;VDQ(PAa`C#wXwTrpV8<X>aysYR-TTKTy<JnJ
+z%d>Cyfzw9wSws(B6h838J*WO+T-lcSVsEc4y1FAHe$qwNtiLR3vi~03GOb!xbJ|UO
+z*`HavHCLp}e53YZmltD&$b~z3+pj1Ez1C$EK3?{48`I&7><2`Gmt6Jd=a>0=RB8DY
+z?-^|`wQiS}{=SuREA^zwy={gu!fy)ZE&8bWZ$q7h{U6q)m*zcoe$e(UW}#>10|myz
+z&((Y5H##|2uDaM#x9F3k#HmlpI*JpucQUJVz1(sBHq!*_okE?Dq^uekni{>TzrDI#
+zzvy3&m9&_a&j*(YYJa3oCA0@0<U79TA8$;i#`TwyW&tlADE#sIyMCo@Gq0T~n-KQE
+zK6c3Z5>IGHOQy|zLzg>Y-?kPp-g?<6dyb=tS%6idp+P{2iGfFBC8Ggn(-&rD{~%{c
+E0LaLi@&Et;
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/sail-data-source/tests/fixtures/orc/intervals.orc b/crates/sail-data-source/tests/fixtures/orc/intervals.orc
+new file mode 100644
+index 0000000000000000000000000000000000000000..950bd23332f4949f9c0a5892757ce2fc0eaeefb9
+GIT binary patch
+literal 1173
+zcmeYdau#G@;9?VE;a~}1&;~MvxtJLk7=(B@ScKR(7zEfPcmf!Vf#Tv^>_Bl40Ln1~
+z<)j5<Bp3o1vC8QS7~qtH>T?I0sfaLB3}~hR$N#JAAKc^;Xt)NVKqg>U_5bUxcA%<;
+zZ$JvSs`Zm*USSnz*Z`tHs+@r~$|GzP0ousN@qhNJc3FXjIY1Jm#u}(b8lgr2sD_K9
+zv9n5`sk2IgDS(laf#Co%0~0F)!~X}|3=DouGSUnPj)6WB2PUJ;z)-;yI*0o;1CV(2
+z9~^{WEnta&^4JCjAW@Glq3f(Ng8@iPN0(r{@T!jiNc18}h%+$cG0C+w$+a{xFfcu1
+zV9?mA|2Khw!Izn#$%U7nVQC+G+GD-%k>8vmekn+s1kd!`VfZc9`py~=r<z-xr)<AB
+zwpDjYAE@QM!=-qxo<%?8JBuWP^_v5R4_J0E_c5v;kS*ZhVBgeGqhLIN^$Bb498Ja;
+zAa~CK-U4<R=0^v1ZdK*eV+7l(aJZC(!GxXb03#PTO>yxdr=$pWARj69MDT)=3ToU-
+zB1JDO4nfHSC9;IjV<tkFi=q4(D`$uf->&Z}?_TMMMmy(n%S=DHOiqm%5*`N_eR&wz
+zM1$-Nav!lN@bWuP%{pfh;lO;U;)2}w2oGE7@Egg#KipohAD_0SoAcKO&(ax=Kf*62
+zbT={9x<)QB-;ot~FC*2Q(}uww2!(dVeq^$duBv07r@!&&-b!QNIGuai_v%irKKlFU
+z>e^3nGxrGV7fM;B&e?Dw-N#TT_>O`nU#VTm%62RJ9iJZ<{F0I|TJTc&!1ZI1cYc3!
+z-LGu5;JNw%5s9jOY{z~b%M`x8JnwV<q8#tzzo$h;#Qm&#chCK1ZS+i|gQpoUEzw%A
+zLg}an%d3X+H-9|5wc46gmK(i~_%$(2<5$S#lWxyW@JQ`0oO!*_``L`G+ScwbEM96(
+zIJo=xw9u4{UzU^iC={CrBptP=NLa|&pcNGKi(zGey@SS|<mb1$4P2Nb^bbwoncn}V
+zrkgJz*Dhg)f>7TShJ(LalvVVYoEp9g8alBYdAfS8yd<^&PdBdA|EDou^4iJ=%(EG!
+zRcEy`ly8mNBw-!*hF5~E;gMUaxP_kMZ7(j4Y0Ltw5)BOkN=ytq8nYM;IGesOGy4ZQ
+GO9BA*3TTS}
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/sail-data-source/tests/fixtures/orc/spark-reference.json b/crates/sail-data-source/tests/fixtures/orc/spark-reference.json
+new file mode 100644
+index 000000000..d12680430
+--- /dev/null
++++ b/crates/sail-data-source/tests/fixtures/orc/spark-reference.json
+@@ -0,0 +1,422 @@
++{
++  "spark_version": "4.2.1",
++  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
++  "settings": {
++    "spark.sql.timeType.enabled": "true",
++    "spark.sql.session.timeZone": "UTC"
++  },
++  "cases": [
++    {
++      "name": "time_precisions",
++      "file": "time_precisions.orc",
++      "sha256": "7504f8007af001893ccd60b873ded01bffae4b4cf4af95b1e054e7b07ff92986",
++      "sql": "SELECT id, CAST(t AS TIME(0)) AS t0, CAST(t AS TIME(3)) AS t3, CAST(t AS TIME(6)) AS t6\nFROM VALUES (0, '00:00:00'), (1, '12:34:56.123456'), (2, '23:59:59.999999'), (3, CAST(NULL AS STRING)) AS v(id,t)",
++      "read_schema": {
++        "type": "struct",
++        "fields": [
++          {
++            "name": "id",
++            "type": "integer",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "t0",
++            "type": "time(0)",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "t3",
++            "type": "time(3)",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "t6",
++            "type": "time(6)",
++            "nullable": true,
++            "metadata": {}
++          }
++        ]
++      },
++      "read_arrow": {
++        "outcome": "passed",
++        "value": {
++          "schema": "id: int32\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
++          "columns": {
++            "id": {
++              "type": "int32",
++              "values": [
++                0,
++                1,
++                2,
++                3
++              ]
++            },
++            "t0": {
++              "type": "time64[ns]",
++              "storage_values": [
++                0,
++                45296123456000,
++                86399999999000,
++                null
++              ]
++            },
++            "t3": {
++              "type": "time64[ns]",
++              "storage_values": [
++                0,
++                45296123456000,
++                86399999999000,
++                null
++              ]
++            },
++            "t6": {
++              "type": "time64[ns]",
++              "storage_values": [
++                0,
++                45296123456000,
++                86399999999000,
++                null
++              ]
++            }
++          }
++        }
++      }
++    },
++    {
++      "name": "time_cast_precisions",
++      "file": "time_cast_precisions.orc",
++      "sha256": "7d35e93498ee4f9a8c9e3478fac25ad2034d1b51156e71e91a9ad6e1d2e8f80c",
++      "sql": "SELECT id, CAST(CAST(t AS TIME(6)) AS TIME(0)) AS t0, CAST(CAST(t AS TIME(6)) AS TIME(3)) AS t3, CAST(t AS TIME(6)) AS t6\nFROM VALUES (0, '00:00:00'), (1, '12:34:56.123456'), (2, '23:59:59.999999'), (3, CAST(NULL AS STRING)) AS v(id,t)",
++      "read_schema": {
++        "type": "struct",
++        "fields": [
++          {
++            "name": "id",
++            "type": "integer",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "t0",
++            "type": "time(0)",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "t3",
++            "type": "time(3)",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "t6",
++            "type": "time(6)",
++            "nullable": true,
++            "metadata": {}
++          }
++        ]
++      },
++      "read_arrow": {
++        "outcome": "passed",
++        "value": {
++          "schema": "id: int32\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
++          "columns": {
++            "id": {
++              "type": "int32",
++              "values": [
++                0,
++                1,
++                2,
++                3
++              ]
++            },
++            "t0": {
++              "type": "time64[ns]",
++              "storage_values": [
++                0,
++                45296000000000,
++                86399000000000,
++                null
++              ]
++            },
++            "t3": {
++              "type": "time64[ns]",
++              "storage_values": [
++                0,
++                45296123000000,
++                86399999000000,
++                null
++              ]
++            },
++            "t6": {
++              "type": "time64[ns]",
++              "storage_values": [
++                0,
++                45296123456000,
++                86399999999000,
++                null
++              ]
++            }
++          }
++        }
++      }
++    },
++    {
++      "name": "intervals",
++      "file": "intervals.orc",
++      "sha256": "b02504d4005b396caca0518c4d19cba1efddfe991a4fc2cb10b7b39a38f86f06",
++      "sql": "SELECT id, CAST(ym AS INTERVAL YEAR TO MONTH) AS ym, CAST(y AS INTERVAL YEAR) AS y, CAST(m AS INTERVAL MONTH) AS m,\nCAST(dt AS INTERVAL DAY TO SECOND) AS dt, CAST(d AS INTERVAL DAY) AS d, CAST(h AS INTERVAL HOUR) AS h, CAST(mi AS INTERVAL MINUTE) AS mi, CAST(sec AS INTERVAL SECOND) AS sec\nFROM VALUES\n(0, '1-2', '2', '14', '2 03:04:05.123456', '2', '27', '65', '1.000001'),\n(1, '-1-2', '-2', '-14', '-2 03:04:05.123456', '-2', '-27', '-65', '-1.000001'),\n(2, '0-0', '0', '0', '0 00:00:00.000000', '0', '0', '0', '0.000001'),\n(3, CAST(NULL AS STRING), NULL, NULL, NULL, NULL, NULL, NULL, NULL) AS v(id,ym,y,m,dt,d,h,mi,sec)",
++      "read_schema": {
++        "type": "struct",
++        "fields": [
++          {
++            "name": "id",
++            "type": "integer",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "ym",
++            "type": "interval year to month",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "y",
++            "type": "interval year",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "m",
++            "type": "interval month",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "dt",
++            "type": "interval day to second",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "d",
++            "type": "interval day",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "h",
++            "type": "interval hour",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "mi",
++            "type": "interval minute",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "sec",
++            "type": "interval second",
++            "nullable": true,
++            "metadata": {}
++          }
++        ]
++      },
++      "numeric_projection_sql": [
++        "id",
++        "CAST(CAST(ym AS INTERVAL YEAR TO MONTH) AS INT) AS ym_months",
++        "CAST(CAST(y AS INTERVAL YEAR TO MONTH) AS INT) AS y_months",
++        "CAST(CAST(m AS INTERVAL YEAR TO MONTH) AS INT) AS m_months",
++        "CAST(CAST(CAST(dt AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS dt_micros",
++        "CAST(CAST(CAST(d AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS d_micros",
++        "CAST(CAST(CAST(h AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS h_micros",
++        "CAST(CAST(CAST(mi AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS mi_micros",
++        "CAST(CAST(CAST(sec AS INTERVAL DAY TO SECOND) AS DECIMAL(30,6)) * 1000000 AS BIGINT) AS sec_micros"
++      ],
++      "read_numeric": {
++        "outcome": "passed",
++        "value": [
++          {
++            "id": 0,
++            "ym_months": 14,
++            "y_months": 24,
++            "m_months": 14,
++            "dt_micros": 183845123456,
++            "d_micros": 172800000000,
++            "h_micros": 97200000000,
++            "mi_micros": 3900000000,
++            "sec_micros": 1000001
++          },
++          {
++            "id": 1,
++            "ym_months": -14,
++            "y_months": -24,
++            "m_months": -14,
++            "dt_micros": -183845123456,
++            "d_micros": -172800000000,
++            "h_micros": -97200000000,
++            "mi_micros": -3900000000,
++            "sec_micros": -1000001
++          },
++          {
++            "id": 2,
++            "ym_months": 0,
++            "y_months": 0,
++            "m_months": 0,
++            "dt_micros": 0,
++            "d_micros": 0,
++            "h_micros": 0,
++            "mi_micros": 0,
++            "sec_micros": 1
++          },
++          {
++            "id": 3,
++            "ym_months": null,
++            "y_months": null,
++            "m_months": null,
++            "dt_micros": null,
++            "d_micros": null,
++            "h_micros": null,
++            "mi_micros": null,
++            "sec_micros": null
++          }
++        ]
++      }
++    },
++    {
++      "name": "daytime_time_nested",
++      "file": "daytime_time_nested.orc",
++      "sha256": "7cdc3539c79448ae70f152cf1672d191eb18267a804c9044e526e6de86c9d1d8",
++      "sql": "SELECT 0 AS id, INTERVAL '-2 03:04:05.123456' DAY TO SECOND AS dt,\narray(INTERVAL '-1.000001' SECOND, CAST(NULL AS INTERVAL SECOND), INTERVAL '0.000001' SECOND) AS ds,\nmap(CAST('01:02:03.123' AS TIME(3)), INTERVAL '-1.000001' SECOND) AS tm,\nnamed_struct('t', CAST('12:34:56.123456' AS TIME(6)), 'd', INTERVAL '-0.000001' SECOND) AS st\nUNION ALL SELECT 1, NULL, NULL, NULL, NULL\nUNION ALL SELECT 2, INTERVAL '0' DAY, array(), map(), named_struct('t', CAST(NULL AS TIME(6)), 'd', CAST(NULL AS INTERVAL SECOND))",
++      "read_schema": {
++        "type": "struct",
++        "fields": [
++          {
++            "name": "id",
++            "type": "integer",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "dt",
++            "type": "interval day to second",
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "ds",
++            "type": {
++              "type": "array",
++              "elementType": "interval second",
++              "containsNull": true
++            },
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "tm",
++            "type": {
++              "type": "map",
++              "keyType": "time(3)",
++              "valueType": "interval second",
++              "valueContainsNull": true
++            },
++            "nullable": true,
++            "metadata": {}
++          },
++          {
++            "name": "st",
++            "type": {
++              "type": "struct",
++              "fields": [
++                {
++                  "name": "t",
++                  "type": "time(6)",
++                  "nullable": true,
++                  "metadata": {}
++                },
++                {
++                  "name": "d",
++                  "type": "interval second",
++                  "nullable": true,
++                  "metadata": {}
++                }
++              ]
++            },
++            "nullable": true,
++            "metadata": {}
++          }
++        ]
++      },
++      "read_arrow": {
++        "outcome": "passed",
++        "value": {
++          "schema": "id: int32\ndt: duration[us]\nds: list<element: duration[us]>\n  child 0, element: duration[us]\ntm: map<time64[ns], duration[us]>\n  child 0, entries: struct<key: time64[ns] not null, value: duration[us]> not null\n      child 0, key: time64[ns] not null\n      child 1, value: duration[us]\nst: struct<t: time64[ns], d: duration[us]>\n  child 0, t: time64[ns]\n  child 1, d: duration[us]",
++          "columns": {
++            "id": {
++              "type": "int32",
++              "values": [
++                0,
++                1,
++                2
++              ]
++            },
++            "dt": {
++              "type": "duration[us]",
++              "storage_values": [
++                -183845123456,
++                null,
++                0
++              ]
++            },
++            "ds": {
++              "type": "list<element: duration[us]>",
++              "values": [
++                [
++                  "-1 day, 23:59:58.999999",
++                  null,
++                  "0:00:00.000001"
++                ],
++                null,
++                []
++              ]
++            },
++            "tm": {
++              "type": "map<time64[ns], duration[us]>",
++              "values": [
++                [
++                  [
++                    "01:02:03.123000",
++                    "-1 day, 23:59:58.999999"
++                  ]
++                ],
++                null,
++                []
++              ]
++            },
++            "st": {
++              "type": "struct<t: time64[ns], d: duration[us]>",
++              "values": [
++                {
++                  "t": "12:34:56.123456",
++                  "d": "-1 day, 23:59:59.999999"
++                },
++                null,
++                {
++                  "t": null,
++                  "d": null
++                }
++              ]
++            }
++          }
++        }
++      }
++    }
++  ]
++}
+diff --git a/crates/sail-data-source/tests/fixtures/orc/time_cast_precisions.orc b/crates/sail-data-source/tests/fixtures/orc/time_cast_precisions.orc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e36579f89035389ff111cd21336c31a7d042ce8f
+GIT binary patch
+literal 699
+zcmeYdau#G@;9?VE;a~}1&;~MvxtJLk7=(B@ScKR(7zEfPcmf!_f#S+s>_Bl45R%|v
+z77_x=HQZQuyKAYsM8l1q*;hVV2QcDN_x<nWNg#En`cK}$qi(~8?^8hPHq1D93apNk
+zf#Co%0~0F)!~X}G3=CCF5C;UMO#gL&VXnsNj2s3`xn)Z-8|G>%)mJxQk=qo)0F;~i
+z!(asigT_|<zX~O>ObjN>Tx=X{0t^z|j1m$|5*o}bi~@`j>_9;V0VWAnAk7G*#hIB|
+zSR}-Sm^c`Kn2C$Q`kjLD1lA|En+*lnCpA86*b%GBcL-{1&QT_YEi7DFT;Oo!;zJJ2
+z2zD+hTp<`C0}3lpIDrBK9uN^SEDQ<?3ph8l)XfgK#t3$Lf-3_rJHrwl4rYN1Oj6uH
+zYBr-pv_iNBi;@Hfj}QwZ6ElkxQ)Y@3Q;7i(8w0VK5)%irk{Sn#l@gbDaY15Hwq9{z
+zj$U$NNn%cAafx0@WkISCdr4+)s)m84v6-fpB9}ydQMz7YL1J=7s$N-YQE_H|o)D{v
+zo{^rR0gDybb5>}cvm(KB4io%57$O*xSdH|I^$a)|6gW3<WH9M)+TRx0!^p5S;rik;
+e9PbzfSS1=71eBN<cr;QBIGesOGy4ZQO8@|V39~o=
+
+literal 0
+HcmV?d00001
+
+diff --git a/crates/sail-data-source/tests/fixtures/orc/time_precisions.orc b/crates/sail-data-source/tests/fixtures/orc/time_precisions.orc
+new file mode 100644
+index 0000000000000000000000000000000000000000..9dae92a877cc3b39712e17a45ba72a4269fdb50a
+GIT binary patch
+literal 648
+zcmeYdau#G@;9?VE;a~}1&;~MvxtJLk7=(B@ScKR(7zEfPcmf!_f#S+s>_Bl45R%|v
+z77_x=ZTRqg%A}?05*ub5Jay-zbpRu^)p0T~9AIW(Vr5|X|3H(0p^6FOfS{CRn?e}o
+zYAVhBVL-0j3I+y^t@?izN@AH9OqjXYIM@UjB)AzRB$y;Lm{}MF7$w+&f(!yo60AU)
+z5lD+OGqbQrhzl`sFaR+V7lZXX1>*^<Pi!|E3b0RVeAcidR+X;{YHZF^Mg|vVt}HHa
+zxN`9!hh_vjmlUoLjF4euxMHs^vVsxpyaZQ<P&S4o+#JjT7nr0#)NDqHXoYYM79|M|
+z9w8P+CT12Xrpy#6rV;}nHU?rdB_<ALB{dEfD<v-R;)2AYY`x;b9KGbklEj?K;u5`*
+z%7RoO_L9upR1E`7V>3-HMJ|c_qIA8)g2d#ERK2p)qT<Z_JRw#SJtI9s0~RZ=2dvOM
+zV1>s64io%57$O*xSdH|I^$b`Toa+5_DsC`6O}xJN9LIG=0al5I1_31|1|AI$1J0%|
+K%*_5l&Jq9)t(MRL
+
+literal 0
+HcmV?d00001
+

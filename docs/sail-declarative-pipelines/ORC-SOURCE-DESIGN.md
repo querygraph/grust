@@ -93,8 +93,10 @@ still need Sail resource accounting. Cache reuse must verify object-store and
 version/ETag identity plus the applicable validation policy; size/mtime alone is
 insufficient. Existing unrestricted constructors remain compatible, so Sail must
 choose the bounded entry points. The probe's4MiB/depth64 settings are evidence
-parameters, not adopted production limits. No bounded remote reader is implemented
-yet; production resource exhaustion must be reported explicitly.
+parameters, not adopted production limits. Sail's separately qualified
+`OrcObjectReader` now supplies bounded version/ETag range reads; registered file
+source integration and decoded-buffer resource accounting remain incomplete.
+Production resource exhaustion must be reported explicitly.
 
 Derive the Spark-facing schema recursively from physical types and recognized
 Spark attributes. Preserve nullability, decimals, structs, lists and maps. Normalize
@@ -325,3 +327,22 @@ The opt-in path uses caller-supplied ORC 2015 epoch and UTC-offset rules, applie
 Native predicate row-group pruning is disabled under this opt-in path because stored timestamp bounds need not bound converted values. Manual row selection remains supported. Sail must also avoid unsafe file/stripe pruning before the native reader runs; this source integration is not yet activated.
 
 The [portable mechanism proof](evidence/orc-timezone-options/mechanism-proof/TIMEZONE-PROVIDER-MECHANISM-PROOF.md) selects small Java-normalized profiles in the optional Sail ORC adapter, with no JVM or timezone database added to the native dependency. One Los Angeles profile passes 306,041 Java offset comparisons and 22 independently checked boundary conversions, including both microsecond endpoints and year 9999/10000. It uses explicit historical transitions, a 400-year future cycle and a stored Java-parsed 2015 epoch. Name/alias and stripe-inheritance evidence is retained. This proves the one-profile mechanism, not a complete all-zone exporter. Full profile generation/verification, Java-compatible writer-name resolution, worker profile identity and integrated Spark ORC fixture checks remain required.
+
+## Qualified schema and physical-to-logical bridge
+
+Recorded: 2026-10-29T22:21:47.414214+00:00. Four separate Sail units pass detached formatting, strict all-target/all-feature Clippy and complete data-source library gates:
+
+| Unit | Commit | Library tests passed |
+| --- | --- | --- |
+| orc-schema | `7ac8e1fe84` | 104 |
+| orc-arrays | `c61fdec309` | 114 |
+| orc-batch-schema-vendor | `28d46b8451` | 114 |
+| orc-fixtures | `3eb9ea2630` | 117 |
+
+The [evidence packet](evidence/orc-schema-bridge/provenance.json) retains exact patches, raw gates, the initial formatting failure, source review, and Spark fixture provenance. Schema inference uses the already validated native footer and existing Sail SQL parser. It preserves semantic TIME precision independently of nanosecond storage, interval qualifiers, recursive nullability, LTZ/NTZ distinctions and top-level CHAR/VARCHAR catalog metadata. Spark ignores Catalyst annotations on containers; regression tests include invalid and duplicate annotations at those positions. Missing legacy decimal/character parameters remain explicit unsupported cases. Primitive inconsistent annotations are not claimed to reproduce Spark errors.
+
+The separately gated array bridge preserves structural positions, offsets and validity while translating native encodings. Naive timestamp-to-LTZ relabeling remains rejected until actual timezone conversion is wired. Requested-schema evolution belongs to the later file source. Four exact Spark-written ORC files exercise TIME casts, signed intervals, nested maps/structs/lists and null/empty containers through the native decoder and bridge at batch sizes 1, 2 and 16. Their source SQL, Spark read schemas and observed reference results accompany the small fixtures.
+
+The real-file gate first failed all three new regressions: the native decoder rebuilt nonempty batch schemas from values, making nullability vary by batch and dropping metadata. The retained control prints the actual schema difference. Native `ec6baa4686` preserves the declared schema and adds sync/async tests for null patterns, metadata, projections and non-nullable override errors. Its detached gate passes 312 default tests (8 existing ignored) and 193 no-default library tests. Sail vendors the exact qualified package separately; fixture assertions were not weakened. The earlier fixture compiler failure is also retained.
+
+These are library foundations. FileSource, worker codec, registry, writer and timezone-profile activation are still incomplete. No public ORC or additional SDP test pass is claimed.

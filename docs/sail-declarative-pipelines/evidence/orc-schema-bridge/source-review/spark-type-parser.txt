@@ -1,0 +1,21 @@
+344:         case INTERVAL =>
+345:           if (currentCtx.fromDayTime != null) {
+346:             visitDayTimeIntervalDataType(currentCtx)
+347:           } else if (currentCtx.fromYearMonth != null) {
+348:             visitYearMonthIntervalDataType(currentCtx)
+349:           } else {
+350:             CalendarIntervalType
+351:           }
+352:         case TIMESTAMP if currentCtx.withLocalTimeZone() != null =>
+353:           TimestampType
+354:         case TIMESTAMP if currentCtx.withoutTimeZone() != null =>
+355:           TimestampNTZType
+356:         case TIMESTAMP =>
+357:           SqlApiConf.get.timestampType
+358:         case TIME =>
+359:           val precision = if (currentCtx.precision == null) {
+360:             TimeType.DEFAULT_PRECISION
+361:           } else {
+362:             currentCtx.precision.getText.toInt
+363:           }
+364:           TimeType(precision)

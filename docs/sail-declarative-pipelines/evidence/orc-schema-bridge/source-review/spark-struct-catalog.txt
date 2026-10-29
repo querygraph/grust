@@ -1,0 +1,13 @@
+433:   override def catalogString: String = {
+434:     // in catalogString, we should not truncate
+435:     val stringConcat = new StringConcat()
+436:     val len = fields.length
+437:     stringConcat.append("struct<")
+438:     var i = 0
+439:     while (i < len) {
+440:       stringConcat.append(s"${fields(i).name}:${fields(i).dataType.catalogString}")
+441:       i += 1
+442:       if (i < len) stringConcat.append(",")
+443:     }
+444:     stringConcat.append(">")
+445:     stringConcat.toString

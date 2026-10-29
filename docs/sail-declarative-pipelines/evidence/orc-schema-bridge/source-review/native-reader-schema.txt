@@ -1,0 +1,20 @@
+215:     /// Unless [`with_schema`](Self::with_schema) was called, this is computed dynamically
+216:     /// based on the current projection and the underlying file format.
+217:     pub fn schema(&self) -> SchemaRef {
+218:         let projected_data_type = self
+219:             .file_metadata
+220:             .root_data_type()
+221:             .project(&self.projection);
+222:         let metadata = self
+223:             .file_metadata
+224:             .user_custom_metadata()
+225:             .iter()
+226:             .map(|(key, value)| (key.clone(), String::from_utf8_lossy(value).to_string()))
+227:             .collect::<HashMap<_, _>>();
+228:         self.schema_ref.clone().unwrap_or_else(|| {
+229:             let options = ArrowSchemaOptions::new()
+230:                 .with_timestamp_precision(self.timestamp_precision)
+231:                 .with_timestamp_as_instant(self.timestamp_time_zone_options.is_some());
+232:             Arc::new(projected_data_type.create_arrow_schema_with_options(&metadata, options))
+233:         })
+234:     }
