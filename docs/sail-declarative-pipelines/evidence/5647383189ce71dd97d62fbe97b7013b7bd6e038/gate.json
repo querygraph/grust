@@ -1,0 +1,91 @@
+{
+  "sail_commit": "5647383189ce71dd97d62fbe97b7013b7bd6e038",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T14:38:07.849609+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "2ec10ddb83b8661546e51e53c5225579b8d44d74623a6ee6435b2a6e7165c218",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-plan -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-plan -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 236,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-plan --lib --locked",
+      "outcome": "pass",
+      "passed": 22,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0,
+      "new_catalog_resolver_tests": 8,
+      "log": "rust.log"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "pass",
+      "passed": 31,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0,
+      "log": "connect-rust.log"
+    },
+    {
+      "command": "python spark-foldability.py",
+      "outcome": "observed",
+      "engine": "Spark 4.2.1 classic parser/analyzer",
+      "cases": 11,
+      "report": "spark-foldability.json"
+    },
+    {
+      "command": "python spark-division.py",
+      "outcome": "observed",
+      "engine": "Spark 4.2.1 classic parser/analyzer",
+      "cases": 4,
+      "report": "spark-division.json"
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "Eight direct Rust helper tests; new public SQL/pipeline expression forms are not wired or qualified by this commit.",
+    "Existing 13-case registration baseline remains historical failing evidence, not a newly passing catalog-expression matrix.",
+    "Helper tests check rejection stage/markers; no blanket Catalyst inner error-condition or timezone-value parity claim.",
+    "No Python changes or new native extension build; no Ruff execution needed.",
+    "No LakeCat provider, original Scala-suite, full batch, streaming or CDC qualification."
+  ],
+  "initial_candidate": {
+    "commit": "33b896b6d0518337944ce3f14d007a15b0037316",
+    "passed": 21,
+    "failed": 1,
+    "rust_log": "initial-rust.log",
+    "patch": "initial-candidate.patch",
+    "cause": "Sail arithmetic literal-zero fast paths ran during resolution, before catalog string-type validation. Spark independently confirms the unchanged WRONG_TYPE assertion for all three operators. Fast paths are deferred only in constant mode; ordinary queries retain their prior behavior."
+  },
+  "scope": "Shared resolver and request-local foldability policy only. No SQL expression grammar, new spec command or pipeline prepare/commit activation yet. No dependency changes."
+}

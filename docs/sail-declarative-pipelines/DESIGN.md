@@ -54,7 +54,8 @@ LakeCat machinery only where a small dependency boundary is actually needed.
 The [catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) defines shared
 typed SQL expression resolution and asynchronous preparation followed by locked,
 file-atomic pipeline registration. Its retained baseline passes 13 checks on
-Spark and fails eleven on the unchanged Sail engine; implementation is pending.
+Spark and fails eleven on its recorded Sail engine. The shared resolver
+prerequisite is implemented; SQL and pipeline activation remain pending.
 
 | Existing component | Reuse and required change |
 | --- | --- |

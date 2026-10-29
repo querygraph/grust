@@ -1,0 +1,84 @@
+{
+  "recorded_at": "2026-10-29T14:15:20.903178+00:00",
+  "spark_version": "4.2.1",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "SQL parser plus Analyzer execute/checkAnalysis and SetCatalogCommand.getCatalogName; no command execution or catalog mutation",
+  "cases": [
+    {
+      "expression": "current_catalog()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_catalog() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "current_database()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_schema() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "current_schema()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_schema() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "current_user()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_user() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "session_user()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression session_user() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "user()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression user() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "current_timezone()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_timezone() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "version()",
+      "outcome": "rejected",
+      "exception_type": "ParseException",
+      "message": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near '4.2'. SQLSTATE: 42601 (line 1, pos 0)\n\n== SQL ==\n4.2.1 617618396087429b5627a86ce933bb0f5d6645cb\n^^^\n",
+      "condition": "PARSE_SYNTAX_ERROR"
+    },
+    {
+      "expression": "CONCAT('`', CAST(current_timestamp() AS STRING), '`')",
+      "outcome": "resolved",
+      "catalog": "2026-10-29 07:15:21.663308",
+      "plan": "SetCatalogCommand concat(`, cast(current_timestamp() as string), `)\n"
+    },
+    {
+      "expression": "typeof(rand())",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is \"typeof(rand())\". SQLSTATE: 42K0E; line 1 pos 0;\nSetCatalogCommand typeof(rand(2613070571780947830))\n",
+      "condition": "INVALID_NON_DETERMINISTIC_EXPRESSIONS"
+    },
+    {
+      "expression": "COALESCE('catalog', CAST(rand() AS STRING))",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is \"coalesce(catalog, CAST(rand() AS STRING))\". SQLSTATE: 42K0E; line 1 pos 0;\nSetCatalogCommand coalesce(catalog, cast(rand(-8279586951371399741) as string))\n",
+      "condition": "INVALID_NON_DETERMINISTIC_EXPRESSIONS"
+    }
+  ]
+}

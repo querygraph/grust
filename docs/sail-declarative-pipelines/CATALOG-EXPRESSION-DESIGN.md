@@ -2,8 +2,9 @@
 
 This design follows the announced Astra checkpoint. General expression analysis,
 identifier interpretation and catalog selection stay in Sail. LakeCat remains one
-catalog adapter. Implementation is pending; the evidence below is a required
-failing baseline, not a passing SDP verdict.
+catalog adapter. The shared resolver prerequisite is implemented in 564738318;
+SQL and pipeline activation remain pending. The evidence below is a required
+failing registration baseline, not a passing SDP verdict.
 
 ## Evidence that determines the boundary
 
@@ -185,14 +186,16 @@ unset flow database, without falling back to the session's default namespace.
 ## Human-reviewable implementation units
 
 1. Shared constant-resolution mode, non-foldability annotations and catalog-name
-   resolver, with direct resolver tests and no new dependency.
-2. Typed SET CATALOG expression AST/spec and ordinary SQL wiring. Preserve direct
-   Catalog API semantics; update only the affected golden expectations and run
-   the complete existing library/golden tests.
-3. Shared statement spans/origins and structured SQL registration diagnostics,
+   resolver, with direct resolver tests and no new dependency. Implemented as
+   [564738318](evidence/5647383189ce71dd97d62fbe97b7013b7bd6e038/gate.json).
+2. Shared statement spans/origins and structured SQL registration diagnostics,
    with Unicode, trivia, separators, path and line-number assertions.
-4. Asynchronous preparation plus locked, file-atomic commit. Preserve config
-   capture, error ordering, source text and concurrency behavior.
+3. Asynchronous preparation plus locked, file-atomic commit, including the new
+   typed expression command and its resolver paths before the parser produces
+   it. Preserve config capture, error ordering, source text and concurrency.
+4. Activate the SET CATALOG expression AST/lowering and ordinary SQL wiring once
+   pipeline preparation can consume it. Preserve direct Catalog API semantics;
+   update only affected goldens and run complete library/golden tests.
 5. Unset-namespace guard and batch acceptance across ordinary SQL, pipeline files,
    both original invalid-expression grid instances, file reset/private views,
    two memory catalogs and the configured LakeCat REST adapter where applicable.
@@ -204,6 +207,7 @@ Only extend LakeCat if a provider operation/capability gap is actually exposed;
 do not implement shared expression or namespace semantics in it.
 
 These units are ready for implementation without another architecture selection.
+The order above keeps existing pipeline SET CATALOG working at each commit.
 Exact metadata/control coverage remains subject to their gates. General SQL
 variable/command-parameter support is not silently added through this path.
 The original Scala suites, full batch acceptance, ORC, failure/event behavior,

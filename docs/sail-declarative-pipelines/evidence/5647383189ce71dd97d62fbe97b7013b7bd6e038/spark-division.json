@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-10-29T14:24:52.393482+00:00",
+  "spark_version": "4.2.1",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "SQL parser plus Analyzer execute/checkAnalysis and SetCatalogCommand.getCatalogName; no command execution or catalog mutation",
+  "cases": [
+    {
+      "expression": "1 / 0",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression (CAST(1 AS DOUBLE) / CAST(0 AS DOUBLE)) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is double. SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE"
+    },
+    {
+      "expression": "1 DIV 0",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression (CAST(1 AS BIGINT) div CAST(0 AS BIGINT)) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is bigint. SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE"
+    },
+    {
+      "expression": "1 % 0",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression (1 % 0) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is int. SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE"
+    },
+    {
+      "expression": "CAST(1 / 0 AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "ArithmeticException",
+      "message": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error. SQLSTATE: 22012\n== SQL (line 1, position 18) ==\nSET CATALOG CAST(1 / 0 AS STRING)\n                 ^^^^^\n",
+      "condition": "DIVIDE_BY_ZERO"
+    }
+  ]
+}

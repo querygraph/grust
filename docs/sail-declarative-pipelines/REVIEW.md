@@ -986,3 +986,37 @@ adapter acceptance. SQL inventory counts remain 29 partial/nine unmapped, overal
 reviewed/365 unaudited. The original two-instance error grid now links its failing
 reproduction; it remains unmapped. No new production, CLI, Scala-suite, publication,
 REST, streaming or CDC qualification is claimed.
+
+## Shared catalog-name resolver and request-local constant mode
+
+Sail 5647383189ce71dd97d62fbe97b7013b7bd6e038 implements the first catalog-expression
+unit: a shared PlanResolver::resolve_catalog_name entry point, request-local constant
+mode, foldability annotations and pre-evaluation guards. No new dependency, SQL grammar
+activation or pipeline expression wiring is included. See the [qualified
+receipt](evidence/5647383189ce71dd97d62fbe97b7013b7bd6e038/gate.json).
+
+Eight new direct Rust tests cover scalar/identifier forms, quoting and multipart
+boundaries, typed-null/type priority, ANSI cast errors, time simplification, unchanged
+ordinary resolution, registered-function canaries and early subquery rejection.
+Non-foldable builders and registered function bodies are not invoked in constant mode.
+The ordinary registered canary still runs once when explicitly evaluated outside that
+mode.
+
+The initial candidate passed 21 planner tests and failed the unchanged assertion for
+bare 1 / 0. An independent Spark probe confirms WRONG_TYPE for /, DIV and %, while CAST
+of division to STRING reaches DIVIDE_BY_ZERO. Sail's literal-zero shortcuts were
+executing during resolution; constant mode now defers those shortcuts until after type
+validation. Ordinary queries retain the existing fast paths. The initial patch and
+failed log are retained.
+
+Detached formatting, strict Clippy and CLI build pass. All 22 planner and 31 Connect
+library tests pass without filters. The fresh CLI passes 236 selected pytest cases and
+67 upstream Python executions; the selected set adds four IDENTIFIER parameter cases and
+six signed-zero/projected-DIV cases to the previous 226-case set. No skip or xfail is
+counted as a pass.
+
+The public 13-case catalog registration baseline is not rerun or relabeled as passing:
+its parser/pipeline activation is still pending. Source origins and asynchronous
+preparation will precede expression grammar activation so each review unit can retain
+existing pipeline behavior. Inventory counts and original Scala/full
+batch/REST/streaming/CDC acceptance are unchanged.

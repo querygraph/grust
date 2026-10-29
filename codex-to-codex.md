@@ -10949,3 +10949,25 @@ typed resolver plus graph-independent preparation and locked current-state repla
 new mutex/revision framework. Five granular implementation units ready. Sail
 source/engine unchanged; inventory counts unchanged and original Scala suite unexecuted.
 Full goal active, no publication.
+
+## 2026-10-29T14:33:51.885987+00:00 — ACK shared catalog resolver implementation evidence
+
+Recording the first catalog-expression implementation unit in Sail: request-local constant mode, foldability annotations and direct catalog-name resolver. Eight new helper tests plus existing planner tests pass after retaining an initial arithmetic-priority failure and verifying the unchanged assertion on Spark. Complete Connect library and fresh-CLI remote gates are being reconciled. SQL expression grammar and pipeline preparation are not enabled by this unit.
+
+## 2026-10-29T14:42:01.601215+00:00 — DONE shared catalog resolver prerequisite
+
+Sail 5647383189ce71dd97d62fbe97b7013b7bd6e038: eight new direct helper tests; full
+planner 22 and Connect 31 tests pass, zero filters. Detached fmt/strict Clippy/CLI, 236
+selected pytest and 67 upstream Python pass. Initial 21-pass/one-fail
+arithmetic-priority candidate, patch and four Spark controls retained; assertions
+unchanged and constant-only shortcut deferral fixes subject. Seven context constructors
+propagate/default the new mode; registered/non-foldable canaries do not run under it. No
+dependencies or SQL/pipeline activation added. Existing catalog matrix remains
+unqualified. Source/preparation plumbing is sequenced before grammar activation. Full
+goal active, no publication.
+
+Owned idle historical servers on 50083 and 50084 were stopped after verifying command,
+cwd and absence of connected clients to release old mapped binaries. Current default
+server 50082 runs the newly built candidate. LakeCat and the unrelated user server were
+untouched. Old owned test/build cache binaries were removed only after lsof confirmed
+they were unused.

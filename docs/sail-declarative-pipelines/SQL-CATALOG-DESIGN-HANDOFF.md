@@ -4,7 +4,8 @@ The operator requests notice before a new design phase so they can switch to
 Astra. Shared SET CATALOG expression support now reaches that boundary. This
 initial handoff recorded observed behavior and open decisions. The completed
 [catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) now selects the shared
-resolution and prepare/commit boundaries; implementation remains pending.
+resolution and prepare/commit boundaries. The shared resolver prerequisite is
+implemented in 564738318; SQL and pipeline activation remain pending.
 General SQL/catalog semantics belong in Sail. LakeCat remains a catalog adapter.
 
 ## Evidence

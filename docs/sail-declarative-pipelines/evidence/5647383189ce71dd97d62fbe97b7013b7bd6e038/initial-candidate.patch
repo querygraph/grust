@@ -1,0 +1,688 @@
+commit 33b896b6d0518337944ce3f14d007a15b0037316
+Author: Alexy Khrabrov <deliverable@gmail.com>
+Date:   Thu Oct 29 07:16:11 2026 -0700
+
+    feat: resolve foldable catalog expressions through the shared planner
+
+diff --git a/crates/sail-plan/src/function/aggregate.rs b/crates/sail-plan/src/function/aggregate.rs
+index e3a603877..c9297481e 100644
+--- a/crates/sail-plan/src/function/aggregate.rs
++++ b/crates/sail-plan/src/function/aggregate.rs
+@@ -1131,6 +1131,7 @@ mod tests {
+             order_by: vec![],
+             preserve_count_argument_columns: false,
+             function_context: FunctionContextInput {
++                require_foldable: false,
+                 argument_display_names: &argument_display_names,
+                 plan_config: &plan_config,
+                 session_context: &session_context,
+diff --git a/crates/sail-plan/src/function/common.rs b/crates/sail-plan/src/function/common.rs
+index 504594751..437d9253f 100644
+--- a/crates/sail-plan/src/function/common.rs
++++ b/crates/sail-plan/src/function/common.rs
+@@ -28,6 +28,8 @@ pub struct FunctionContextInput<'a> {
+     pub plan_config: &'a Arc<PlanConfig>,
+     pub session_context: &'a SessionContext,
+     pub schema: &'a DFSchemaRef,
++    /// Require foldability before a builder can erase function provenance.
++    pub require_foldable: bool,
+ }
+ 
+ pub struct ScalarFunctionInput<'a> {
+@@ -41,6 +43,17 @@ pub(crate) type ScalarFunction =
+ pub(crate) struct ScalarFunctionBuilder;
+ 
+ impl ScalarFunctionBuilder {
++    pub fn non_foldable(function: ScalarFunction) -> ScalarFunction {
++        Arc::new(move |input| {
++            if input.function_context.require_foldable {
++                return Err(PlanError::analysis(
++                    "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
++                ));
++            }
++            function(input)
++        })
++    }
++
+     pub fn nullary<F, R>(f: F) -> ScalarFunction
+     where
+         F: Fn() -> R + Send + Sync + 'static,
+diff --git a/crates/sail-plan/src/function/generator.rs b/crates/sail-plan/src/function/generator.rs
+index 890ad6ed5..2e84b7081 100644
+--- a/crates/sail-plan/src/function/generator.rs
++++ b/crates/sail-plan/src/function/generator.rs
+@@ -87,6 +87,9 @@ pub(super) fn list_built_in_generator_functions() -> Vec<(&'static str, ScalarFu
+         ("variant_explode", F::custom(variant_explode)),
+         ("variant_explode_outer", F::custom(variant_explode)),
+     ]
++    .into_iter()
++    .map(|(name, function)| (name, F::non_foldable(function)))
++    .collect()
+ }
+ 
+ pub fn get_outer_built_in_generator_functions(name: &str) -> &str {
+diff --git a/crates/sail-plan/src/function/scalar/datetime.rs b/crates/sail-plan/src/function/scalar/datetime.rs
+index 561e5e8c0..a393cde3f 100644
+--- a/crates/sail-plan/src/function/scalar/datetime.rs
++++ b/crates/sail-plan/src/function/scalar/datetime.rs
+@@ -1427,7 +1427,10 @@ pub(super) fn list_built_in_datetime_functions() -> Vec<(&'static str, ScalarFun
+             "current_timestamp",
+             F::custom(current_timestamp_microseconds),
+         ),
+-        ("current_timezone", F::custom(current_timezone)),
++        (
++            "current_timezone",
++            F::non_foldable(F::custom(current_timezone)),
++        ),
+         ("date_add", F::custom(|input| dateadd(input, "date_add"))),
+         ("date_diff", F::custom(datediff)),
+         (
+diff --git a/crates/sail-plan/src/function/scalar/misc.rs b/crates/sail-plan/src/function/scalar/misc.rs
+index 98dfc2ad6..fb4d572d1 100644
+--- a/crates/sail-plan/src/function/scalar/misc.rs
++++ b/crates/sail-plan/src/function/scalar/misc.rs
+@@ -200,11 +200,20 @@ pub(super) fn list_built_in_misc_functions() -> Vec<(&'static str, ScalarFunctio
+         ("bitmap_bit_position", F::custom(bitmap_bit_position)),
+         ("bitmap_bucket_number", F::custom(bitmap_bucket_number)),
+         ("bitmap_count", F::unary(bitmap_fn::bitmap_count)),
+-        ("current_catalog", F::custom(current_catalog)),
+-        ("current_database", F::custom(current_database)),
++        (
++            "current_catalog",
++            F::non_foldable(F::custom(current_catalog)),
++        ),
++        (
++            "current_database",
++            F::non_foldable(F::custom(current_database)),
++        ),
+         ("current_path", F::unknown("current_path")),
+-        ("current_schema", F::custom(current_database)),
+-        ("current_user", F::custom(current_user)),
++        (
++            "current_schema",
++            F::non_foldable(F::custom(current_database)),
++        ),
++        ("current_user", F::non_foldable(F::custom(current_user))),
+         ("from_avro", F::unknown("from_avro")),
+         ("from_protobuf", F::unknown("from_protobuf")),
+         ("equal_null", F::binary_op(Operator::IsNotDistinctFrom)),
+@@ -303,7 +312,7 @@ pub(super) fn list_built_in_misc_functions() -> Vec<(&'static str, ScalarFunctio
+         ("raise_error", F::udf(RaiseError::new())),
+         ("reflect", F::unknown("reflect")),
+         ("schema_of_avro", F::unknown("schema_of_avro")),
+-        ("session_user", F::custom(current_user)),
++        ("session_user", F::non_foldable(F::custom(current_user))),
+         ("spark_partition_id", F::udf(SparkPartitionId::new())),
+         ("to_avro", F::unknown("to_avro")),
+         ("to_protobuf", F::unknown("to_protobuf")),
+@@ -311,7 +320,7 @@ pub(super) fn list_built_in_misc_functions() -> Vec<(&'static str, ScalarFunctio
+         ("try_aes_decrypt", F::udf(SparkTryAESDecrypt::new())),
+         ("try_reflect", F::unknown("try_reflect")),
+         ("typeof", F::custom(type_of)),
+-        ("user", F::custom(current_user)),
++        ("user", F::non_foldable(F::custom(current_user))),
+         ("uuid", F::nullary(expr_fn::uuid)),
+         ("version", F::udf(SparkVersion::new())),
+     ]
+diff --git a/crates/sail-plan/src/function/window.rs b/crates/sail-plan/src/function/window.rs
+index 57aee49f9..38b4aeb56 100644
+--- a/crates/sail-plan/src/function/window.rs
++++ b/crates/sail-plan/src/function/window.rs
+@@ -903,6 +903,7 @@ mod tests {
+                 ignore_nulls: None,
+                 distinct: false,
+                 function_context: FunctionContextInput {
++                    require_foldable: false,
+                     argument_display_names: &argument_display_names,
+                     plan_config: &plan_config,
+                     session_context: &session_context,
+diff --git a/crates/sail-plan/src/resolver/constant.rs b/crates/sail-plan/src/resolver/constant.rs
+new file mode 100644
+index 000000000..94b2fc374
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/constant.rs
+@@ -0,0 +1,119 @@
++use std::sync::Arc;
++
++use arrow::datatypes::DataType;
++use datafusion::optimizer::simplify_expressions::ExprSimplifier;
++use datafusion_common::DFSchema;
++use datafusion_common::tree_node::TreeNode;
++use datafusion_expr::simplify::SimplifyContextBuilder;
++use datafusion_expr::{Expr, ExprSchemable, Volatility};
++use sail_catalog::utils::quote_names_if_needed;
++use sail_common::spec;
++use sail_common_datafusion::literal::{LiteralEvaluator, LiteralValue};
++use sail_sql_analyzer::expression::from_ast_object_name;
++use sail_sql_analyzer::parser::parse_object_name;
++
++use crate::error::{PlanError, PlanResult};
++use crate::resolver::PlanResolver;
++use crate::resolver::state::PlanResolverState;
++
++impl PlanResolver<'_> {
++    /// Resolve SQL's catalog-name expression without selecting a catalog or
++    /// executing a query. Direct Catalog API names do not need this SQL parsing.
++    pub async fn resolve_catalog_name(&self, expression: spec::Expr) -> PlanResult<String> {
++        let expression = match expression {
++            spec::Expr::UnresolvedAttribute { name, .. } => {
++                spec::Expr::Literal(spec::Literal::Utf8 {
++                    value: Some(quote_names_if_needed(name.parts())),
++                })
++            }
++            spec::Expr::IdentifierClause { expr } => *expr,
++            expression => expression,
++        };
++        let schema = Arc::new(DFSchema::empty());
++        let mut state = PlanResolverState::new();
++        state.config_mut().require_foldable = true;
++        let resolved = self
++            .resolve_expression(expression, &schema, &mut state)
++            .await
++            .map_err(|error| PlanError::analysis(error.to_string()))?;
++        let context = SimplifyContextBuilder::default()
++            .with_schema(schema.clone())
++            .with_current_time()
++            .build();
++        let simplifier = ExprSimplifier::new(context);
++        let resolved = simplifier
++            .coerce(resolved, &schema)
++            .map_err(|error| PlanError::analysis(error.to_string()))?;
++        // Type validation precedes evaluation: an integer division by zero is
++        // a wrong-type error here, while its CAST AS STRING may fail execution.
++        if !matches!(
++            resolved.get_type(schema.as_ref())?,
++            DataType::Utf8 | DataType::LargeUtf8 | DataType::Utf8View
++        ) {
++            return Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type",
++            ));
++        }
++        let resolved = simplifier.simplify(resolved)?;
++        let scalar = LiteralEvaluator::new().evaluate(&resolved)?;
++        if scalar.is_null() {
++            return Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
++            ));
++        }
++        let text = LiteralValue(&scalar).try_to_string()?;
++        let name = from_ast_object_name(
++            parse_object_name(text).map_err(|error| PlanError::analysis(error.to_string()))?,
++        )?;
++        match Vec::<String>::from(name).as_slice() {
++            [name] => Ok(name.clone()),
++            _ => Err(PlanError::analysis(
++                "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name",
++            )),
++        }
++    }
++
++    /// Check before simplification or physical evaluation can erase a volatile
++    /// function or row-dependent child. Resolution calls this for each child too.
++    pub(super) fn require_constant_expression(expression: &Expr) -> PlanResult<()> {
++        let non_constant = expression.exists(|node| {
++            Ok(match node {
++                Expr::Literal(..)
++                | Expr::Alias(..)
++                | Expr::BinaryExpr(..)
++                | Expr::Negative(..)
++                | Expr::Cast(..)
++                | Expr::TryCast(..)
++                | Expr::Not(..)
++                | Expr::IsNull(..)
++                | Expr::IsNotNull(..)
++                | Expr::IsTrue(..)
++                | Expr::IsNotTrue(..)
++                | Expr::IsFalse(..)
++                | Expr::IsNotFalse(..)
++                | Expr::IsUnknown(..)
++                | Expr::IsNotUnknown(..)
++                | Expr::Between(..)
++                | Expr::Like(..)
++                | Expr::SimilarTo(..)
++                | Expr::Case(..)
++                | Expr::InList(..) => false,
++                Expr::ScalarFunction(function) => {
++                    function.func.signature().volatility == Volatility::Volatile
++                        || function.func.as_async().is_some()
++                }
++                _ => true,
++            })
++        })?;
++        if non_constant {
++            Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
++            ))
++        } else {
++            Ok(())
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-plan/src/resolver/constant/tests.rs b/crates/sail-plan/src/resolver/constant/tests.rs
+new file mode 100644
+index 000000000..1736f5b17
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/constant/tests.rs
+@@ -0,0 +1,279 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++use std::sync::atomic::{AtomicUsize, Ordering};
++
++use datafusion::execution::SessionStateBuilder;
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_common::{DFSchema, ScalarValue};
++use datafusion_expr::{ColumnarValue, Volatility, create_udf, lit};
++use sail_catalog::manager::{CatalogManager, CatalogManagerOptions};
++use sail_catalog::provider::CatalogProvider;
++use sail_catalog_memory::MemoryCatalogProvider;
++use sail_common::spec;
++use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_common_datafusion::literal::LiteralEvaluator;
++use sail_common_datafusion::session::plan::PlanService;
++use sail_sql_analyzer::expression::from_ast_expression;
++use sail_sql_analyzer::parser::parse_expression;
++
++use super::*;
++use crate::catalog::SparkCatalogObjectDisplay;
++use crate::config::PlanConfig;
++use crate::formatter::SparkPlanFormatter;
++use crate::function::common::{FunctionContextInput, ScalarFunctionBuilder, ScalarFunctionInput};
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
++    let provider = MemoryCatalogProvider::new("catalog".into(), vec!["db"].try_into()?, None);
++    let catalog = CatalogManager::try_new(CatalogManagerOptions {
++        catalogs: HashMap::from([(
++            "catalog".into(),
++            Arc::new(provider) as Arc<dyn CatalogProvider>,
++        )]),
++        default_catalog: "catalog".into(),
++        default_database: vec!["db".into()],
++        global_temporary_database: vec!["global_temp".into()],
++    })?;
++    let config = SessionConfig::new()
++        .with_extension(Arc::new(catalog))
++        .with_extension(Arc::new(PlanService::new(
++            Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
++            Box::new(SparkPlanFormatter),
++        )));
++    Ok(SessionContext::new_with_state(
++        SessionStateBuilder::new().with_config(config).build(),
++    ))
++}
++
++fn expression(sql: &str) -> PlanResult<spec::Expr> {
++    Ok(from_ast_expression(parse_expression(sql)?)?)
++}
++
++#[tokio::test]
++async fn catalog_names_use_shared_expression_and_identifier_resolution() -> TestResult {
++    let context = context()?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    for (sql, expected) in [
++        ("catalog", "catalog"),
++        ("'catalog'", "catalog"),
++        ("CONCAT('cat', 'alog')", "catalog"),
++        ("CAST('catalog' AS STRING)", "catalog"),
++        ("LOWER('CATALOG')", "catalog"),
++        ("'`test.cat`'", "test.cat"),
++        ("`test.cat`", "test.cat"),
++        ("'`a``b`'", "a`b"),
++        ("'``'", ""),
++        ("IDENTIFIER('catalog')", "catalog"),
++        ("IDENTIFIER(CONCAT('cat', 'alog'))", "catalog"),
++        ("CONCAT('not_', 'configured')", "not_configured"),
++    ] {
++        assert_eq!(
++            resolver.resolve_catalog_name(expression(sql)?).await?,
++            expected,
++            "{sql}"
++        );
++    }
++    let catalog = context.extension::<CatalogManager>()?;
++    assert_eq!(catalog.default_catalog()?.as_ref(), "catalog");
++    assert_eq!(Vec::<String>::from(catalog.default_database()?), vec!["db"]);
++    Ok(())
++}
++
++#[tokio::test]
++async fn catalog_validation_preserves_foldability_type_and_null_priority() -> TestResult {
++    let context = context()?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    for (sql, marker) in [
++        ("1", "WRONG_TYPE"),
++        ("NULL", "WRONG_TYPE"),
++        ("1 / 0", "WRONG_TYPE"),
++        ("CAST(NULL AS STRING)", "NOT_A_CONSTANT_STRING.NULL"),
++        ("'test.cat'", "MULTI_PART_NAME"),
++        ("test.cat", "MULTI_PART_NAME"),
++        ("CONCAT(foo, '1')", "foo"),
++        ("CAST(rand() AS STRING)", "NOT_CONSTANT"),
++        ("typeof(rand())", "NOT_CONSTANT"),
++        (
++            "COALESCE('catalog', CAST(rand() AS STRING))",
++            "NOT_CONSTANT",
++        ),
++        ("current_catalog()", "NOT_CONSTANT"),
++        ("current_database()", "NOT_CONSTANT"),
++        ("current_schema()", "NOT_CONSTANT"),
++        ("current_user()", "NOT_CONSTANT"),
++        ("session_user()", "NOT_CONSTANT"),
++        ("user()", "NOT_CONSTANT"),
++        ("current_timezone()", "NOT_CONSTANT"),
++        (
++            "CONCAT_WS('', TRANSFORM(ARRAY('cat', 'alog'), x -> x))",
++            "NOT_CONSTANT",
++        ),
++        ("explode(ARRAY('catalog'))", "NOT_CONSTANT"),
++    ] {
++        let error = resolver
++            .resolve_catalog_name(expression(sql)?)
++            .await
++            .err()
++            .ok_or_else(|| PlanError::internal(format!("expected rejection: {sql}")))?;
++        assert!(
++            matches!(error, PlanError::AnalysisError(_)),
++            "{sql}: {error}"
++        );
++        assert!(error.to_string().contains(marker), "{sql}: {error}");
++    }
++    assert!(
++        resolver
++            .resolve_catalog_name(expression("''")?)
++            .await
++            .is_err()
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn catalog_time_expressions_use_query_scoped_simplification() -> TestResult {
++    let context = context()?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let name = resolver
++        .resolve_catalog_name(expression(
++            "CONCAT('`', CAST(current_timestamp() AS STRING), '`')",
++        )?)
++        .await?;
++    chrono::NaiveDateTime::parse_from_str(&name, "%Y-%m-%d %H:%M:%S%.f")?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn catalog_scalar_errors_follow_the_selected_ansi_mode() -> TestResult {
++    let context = context()?;
++    let sql = "CAST(CAST('not-an-int' AS INT) AS STRING)";
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let error = resolver
++        .resolve_catalog_name(expression(sql)?)
++        .await
++        .err()
++        .ok_or_else(|| PlanError::internal("expected ANSI cast failure"))?;
++    assert!(matches!(error, PlanError::DataFusionError(_)), "{error}");
++    let config = PlanConfig {
++        ansi_mode: false,
++        ..Default::default()
++    };
++    let resolver = PlanResolver::new(&context, Arc::new(config));
++    let error = resolver
++        .resolve_catalog_name(expression(sql)?)
++        .await
++        .err()
++        .ok_or_else(|| PlanError::internal("expected typed-null failure"))?;
++    assert!(matches!(error, PlanError::AnalysisError(_)), "{error}");
++    assert!(error.to_string().contains("NOT_A_CONSTANT_STRING.NULL"));
++    Ok(())
++}
++
++#[tokio::test]
++async fn constant_mode_does_not_leak_into_ordinary_resolution() -> TestResult {
++    let context = context()?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    assert!(
++        resolver
++            .resolve_catalog_name(expression("current_catalog()")?)
++            .await
++            .is_err()
++    );
++    let resolved = resolver
++        .resolve_expression(
++            expression("current_catalog()")?,
++            &Arc::new(DFSchema::empty()),
++            &mut PlanResolverState::new(),
++        )
++        .await?;
++    assert_eq!(
++        LiteralEvaluator::new().evaluate(&resolved)?,
++        ScalarValue::Utf8(Some("catalog".into()))
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn constant_mode_rejects_registered_functions_before_invocation() -> TestResult {
++    let context = context()?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let observed = calls.clone();
++    context
++        .extension::<CatalogManager>()?
++        .register_function(create_udf(
++            "canary",
++            vec![],
++            DataType::Utf8,
++            Volatility::Immutable,
++            Arc::new(move |_| {
++                observed.fetch_add(1, Ordering::SeqCst);
++                Ok(ColumnarValue::Scalar(ScalarValue::Utf8(Some(
++                    "catalog".into(),
++                ))))
++            }),
++        ))?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    assert!(
++        resolver
++            .resolve_catalog_name(expression("CONCAT(canary(), '')")?)
++            .await
++            .is_err()
++    );
++    assert_eq!(calls.load(Ordering::SeqCst), 0);
++    let resolved = resolver
++        .resolve_expression(
++            expression("canary()")?,
++            &Arc::new(DFSchema::empty()),
++            &mut PlanResolverState::new(),
++        )
++        .await?;
++    assert_eq!(
++        LiteralEvaluator::new().evaluate(&resolved)?,
++        ScalarValue::Utf8(Some("catalog".into()))
++    );
++    assert_eq!(calls.load(Ordering::SeqCst), 1);
++    Ok(())
++}
++
++#[tokio::test]
++async fn subqueries_are_rejected_before_requiring_session_extensions() -> TestResult {
++    let context = SessionContext::new();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let error = resolver
++        .resolve_catalog_name(expression("(SELECT 'catalog')")?)
++        .await
++        .err()
++        .ok_or_else(|| PlanError::internal("expected subquery rejection"))?;
++    assert!(error.to_string().contains("NOT_CONSTANT"), "{error}");
++    Ok(())
++}
++
++#[test]
++fn non_foldable_annotation_prevents_builder_invocation() -> TestResult {
++    let calls = Arc::new(AtomicUsize::new(0));
++    let observed = calls.clone();
++    let builder = ScalarFunctionBuilder::non_foldable(ScalarFunctionBuilder::custom(move |_| {
++        observed.fetch_add(1, Ordering::SeqCst);
++        Ok(lit("catalog"))
++    }));
++    let context = SessionContext::new();
++    let config = Arc::new(PlanConfig::default());
++    let schema = Arc::new(DFSchema::empty());
++    for require_foldable in [true, false] {
++        let result = builder(ScalarFunctionInput {
++            arguments: vec![],
++            function_context: FunctionContextInput {
++                require_foldable,
++                argument_display_names: &[],
++                plan_config: &config,
++                session_context: &context,
++                schema: &schema,
++            },
++        });
++        assert_eq!(result.is_err(), require_foldable);
++        assert_eq!(calls.load(Ordering::SeqCst), usize::from(!require_foldable));
++    }
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/expression/attribute.rs b/crates/sail-plan/src/resolver/expression/attribute.rs
+index 8bf18cf40..d86a77f50 100644
+--- a/crates/sail-plan/src/resolver/expression/attribute.rs
++++ b/crates/sail-plan/src/resolver/expression/attribute.rs
+@@ -121,6 +121,7 @@ impl PlanResolver<'_> {
+             let expr = get_built_in_function(function_name)?(ScalarFunctionInput {
+                 arguments: vec![],
+                 function_context: FunctionContextInput {
++                    require_foldable: state.config().require_foldable,
+                     argument_display_names: &[],
+                     plan_config: &self.config,
+                     session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/expression/function.rs b/crates/sail-plan/src/resolver/expression/function.rs
+index 34c7ee0b2..22e3099b3 100644
+--- a/crates/sail-plan/src/resolver/expression/function.rs
++++ b/crates/sail-plan/src/resolver/expression/function.rs
+@@ -79,6 +79,16 @@ impl PlanResolver<'_> {
+ 
+         let canonical_function_name = function_name.to_ascii_lowercase();
+         let catalog_manager = self.ctx.extension::<CatalogManager>()?;
++        if state.config().require_foldable
++            && (catalog_manager
++                .get_function(&canonical_function_name)?
++                .is_some()
++                || is_higher_order_function(&canonical_function_name))
++        {
++            return Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] user-defined or higher-order function is not foldable",
++            ));
++        }
+         if let Some(udf) = catalog_manager.get_function(&canonical_function_name)?
+             && udf.inner().is::<PySparkUnresolvedUDF>()
+         {
+@@ -168,6 +178,7 @@ impl PlanResolver<'_> {
+                         let input = ScalarFunctionInput {
+                             arguments,
+                             function_context: FunctionContextInput {
++                                require_foldable: state.config().require_foldable,
+                                 argument_display_names: &argument_display_names,
+                                 plan_config: &self.config,
+                                 session_context: self.ctx,
+@@ -227,6 +238,7 @@ impl PlanResolver<'_> {
+                                         .config()
+                                         .preserve_count_argument_columns,
+                                     function_context: FunctionContextInput {
++                                        require_foldable: state.config().require_foldable,
+                                         argument_display_names: &argument_display_names,
+                                         plan_config: &self.config,
+                                         session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/expression/mod.rs b/crates/sail-plan/src/resolver/expression/mod.rs
+index f2f56bc71..13484ba17 100644
+--- a/crates/sail-plan/src/resolver/expression/mod.rs
++++ b/crates/sail-plan/src/resolver/expression/mod.rs
+@@ -106,7 +106,24 @@ impl PlanResolver<'_> {
+     ) -> PlanResult<NamedExpr> {
+         use spec::Expr;
+ 
+-        match expr {
++        if state.config().require_foldable
++            && matches!(
++                &expr,
++                Expr::InSubquery { .. }
++                    | Expr::ScalarSubquery { .. }
++                    | Expr::Exists { .. }
++                    | Expr::Subquery { .. }
++                    | Expr::Table { .. }
++                    | Expr::Window { .. }
++                    | Expr::LambdaFunction { .. }
++                    | Expr::CommonInlineUserDefinedFunction(_)
++            )
++        {
++            return Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
++            ));
++        }
++        let resolved = match expr {
+             Expr::Literal(literal) => self.resolve_expression_literal(literal, state),
+             Expr::UnresolvedAttribute {
+                 name,
+@@ -340,7 +357,11 @@ impl PlanResolver<'_> {
+             Expr::NamedArgument { .. } => Err(PlanError::invalid(
+                 "named argument expression can only be used in UDF arguments",
+             )),
++        }?;
++        if state.config().require_foldable {
++            Self::require_constant_expression(&resolved.expr)?;
+         }
++        Ok(resolved)
+     }
+ 
+     pub(super) async fn resolve_named_expressions(
+diff --git a/crates/sail-plan/src/resolver/expression/window.rs b/crates/sail-plan/src/resolver/expression/window.rs
+index 895fabe2b..da1f16f9d 100644
+--- a/crates/sail-plan/src/resolver/expression/window.rs
++++ b/crates/sail-plan/src/resolver/expression/window.rs
+@@ -156,6 +156,7 @@ impl PlanResolver<'_> {
+                         ignore_nulls,
+                         distinct: is_distinct,
+                         function_context: FunctionContextInput {
++                            require_foldable: state.config().require_foldable,
+                             argument_display_names: &argument_display_names,
+                             plan_config: &self.config,
+                             session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/mod.rs b/crates/sail-plan/src/resolver/mod.rs
+index f73fb6769..989d430db 100644
+--- a/crates/sail-plan/src/resolver/mod.rs
++++ b/crates/sail-plan/src/resolver/mod.rs
+@@ -5,6 +5,7 @@ use datafusion::prelude::SessionContext;
+ use crate::config::PlanConfig;
+ 
+ mod command;
++mod constant;
+ mod constraint;
+ mod data_type;
+ mod expression;
+diff --git a/crates/sail-plan/src/resolver/query/join.rs b/crates/sail-plan/src/resolver/query/join.rs
+index 98216f8ec..556a3b9d4 100644
+--- a/crates/sail-plan/src/resolver/query/join.rs
++++ b/crates/sail-plan/src/resolver/query/join.rs
+@@ -295,6 +295,7 @@ impl PlanResolver<'_> {
+                         let expression = coalesce_function(ScalarFunctionInput {
+                             arguments,
+                             function_context: FunctionContextInput {
++                                require_foldable: state.config().require_foldable,
+                                 argument_display_names: &[],
+                                 plan_config: &self.config,
+                                 session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/state.rs b/crates/sail-plan/src/resolver/state.rs
+index a099edd1d..31f0e813b 100644
+--- a/crates/sail-plan/src/resolver/state.rs
++++ b/crates/sail-plan/src/resolver/state.rs
+@@ -55,6 +55,8 @@ impl FieldInfo {
+ 
+ #[derive(Debug, Clone, Default)]
+ pub(super) struct PlanResolverStateConfig {
++    /// Reject non-foldable expressions before lowering can erase their provenance.
++    pub require_foldable: bool,
+     pub arrow_allow_large_var_types: bool,
+     /// Keep source columns in COUNT arguments while resolving SQL PIVOT aggregates.
+     /// Implicit pivot grouping needs those references before the aggregate is rewritten.
