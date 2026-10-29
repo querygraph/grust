@@ -1,0 +1,32 @@
+{
+  "sail_commit": "57734881a197e38438df026d5c35a5a3b4a9ed0d",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T07:04:12.516782+00:00",
+  "change": "test runner only",
+  "server_binary_source_commit": "9e909f0f4cb81b41133dfd721fbea1fb6af036e7",
+  "cli_sha256": "451b9a55e6b93077b2dff3b98c83e5c4ed5fa5e7af5e2b11ae318fde9ada3baf",
+  "checks": [
+    {
+      "command": "ruff check and ruff format --check scripts/spark-pipelines-tests/run.py",
+      "outcome": "pass"
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "same runner against a CLI server without PySpark on its Python path",
+      "outcome": "expected rejection before test collection",
+      "detail": "Spark version query failed with ModuleNotFoundError for pyspark; the runner exited nonzero."
+    }
+  ],
+  "limits": [
+    "The runner verifies server and client versions; 67 executions still include client-only and inherited cases.",
+    "No full Scala engine, streaming, CDC, or distributed parity claim."
+  ]
+}

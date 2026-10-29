@@ -1,0 +1,65 @@
+{
+  "sail_commit": "9e909f0f4cb81b41133dfd721fbea1fb6af036e7",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T07:04:12.516782+00:00",
+  "platform": "macOS arm64",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "rustfmt_toolchain": "rustc 1.98.0-nightly (57d06900f 2026-05-27)",
+  "cli_sha256": "451b9a55e6b93077b2dff3b98c83e5c4ed5fa5e7af5e2b11ae318fde9ada3baf",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "server_environment": {
+    "PYTHONPATH": "<pinned PySpark 4.2.1 environment>/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "<pinned PySpark 4.2.1 environment>"
+  },
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false. Linker warned about __eh_frame size."
+    },
+    {
+      "command": "SparkSession.version; spark.sql.session.localRelationSizeLimit",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "local_relation_size_limit": "3221225472"
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q python/pysail/tests/spark/pipelines --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 52,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and ruff format --check python/pysail/tests/spark/pipelines/test_schema.py",
+      "outcome": "pass"
+    }
+  ],
+  "earlier_attempts": [
+    {
+      "outcome": "invalid build artifact",
+      "detail": "The linker returned success but debug stripping ran out of disk and left a 160-byte binary. Retired task-owned build artifacts were removed, the CLI was rebuilt, and the executable was checked before testing."
+    },
+    {
+      "outcome": "test setup error",
+      "detail": "A first test launch preceded restoration of the native-module link required for pytest collection. Collection was rerun after the module was available."
+    },
+    {
+      "outcome": "51 passed, 1 failed",
+      "detail": "The standalone server could not import PySpark and used Spark 3.5 config defaults. createDataFrame failed before schema validation because spark.sql.session.localRelationSizeLimit was missing. Setting the server Python environment to the pinned 4.2.1 installation fixed the gate; assertions and production code were unchanged."
+    }
+  ],
+  "limits": [
+    "Batch schema compatibility only; schema/comment publication remains outstanding.",
+    "No distributed cluster execution claim.",
+    "Spark StructType merge has further metadata/nested-type semantics beyond the Arrow merge currently used."
+  ]
+}

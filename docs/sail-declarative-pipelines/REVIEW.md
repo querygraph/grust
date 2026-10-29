@@ -67,6 +67,51 @@ counts. The static source inventory currently has 462 registration call sites,
 including shared helpers and parameterized declarations; it is not a denominator
 for a completion percentage.
 
+## Review persisted views
+
+| Commit | Boundary and manual review |
+| --- | --- |
+| `f52d4f7d8e` | Accept `USE database` without requiring `DATABASE` or `SCHEMA`. Check that `USE CATALOG` retains its distinct parse. |
+| `56fc0ee93c` | Store and restore a persisted view's creation namespace using Spark's catalog properties. Check qualified-name resolution, old views without properties, and malformed namespace metadata. This is shared catalog behavior. |
+| `aabdda2a8d` | Publish pipeline persisted views through the existing catalog view command. Check that the output remains a view, resolves in its creation namespace, retains comments, and rejects references to private pipeline views. |
+
+The combined source at `aabdda2a8d786b58854c03e82718a07a2312d473` passed
+nightly formatting, strict Clippy, and CLI compilation in the detached gate.
+All 49 pipeline tests passed through that CLI server. The initial combined
+pytest invocation also selected 20 catalog cases, which their custom-server
+fixture skipped under `SPARK_REMOTE`. Those 20 cases were then run separately
+with `SPARK_REMOTE` unset and a native extension from the same source tree:
+20 passed, none skipped. The 71 deselected cases belonged to the unrelated
+remainder of the catalog suite. All 67 unchanged upstream Python executions
+also passed. The [receipt](evidence/aabdda2a8d786b58854c03e82718a07a2312d473/gate.json)
+records the two test modes separately; there is no claim that 69 tests ran
+against the remote CLI server.
+
+Declared schema/comment publication and full batch acceptance remain open.
+The next phases are streaming and CDC, in that order; see the
+[Iggy source review](STREAMING-REUSE.md) before implementing streaming.
+
+## Review declared-schema constraints and the version guard
+
+| Commit | Boundary and manual review |
+| --- | --- |
+| `9e909f0f4c` | Enforce Spark's post-merge equality with a declared schema. Reject undeclared inferred columns and nullable input for a non-nullable declaration before writes. Verify six Python schema cases, including an extra nullable declared field. |
+| `57734881a1` | Require the compatibility runner's server to report Spark 4.2.1 before collecting tests. This closes a gap where the client version was pinned but the standalone server's embedded Python could not find PySpark. |
+
+The schema source passed nightly formatting, strict Clippy, CLI compilation,
+and all 52 pipeline tests with no skips in the detached gate. The server's
+version and a 4.2-specific configuration key were verified explicitly. The
+runner then passed all 67 unchanged upstream Python executions and rejected a
+control server whose Python environment lacked PySpark before test collection.
+Receipts are under `evidence/9e909f0f4cb81b41133dfd721fbea1fb6af036e7` and
+`evidence/57734881a197e38438df026d5c35a5a3b4a9ed0d`.
+
+Earlier CLI receipts did not verify the server's Spark configuration version.
+The native fixtures found the installed PySpark 4.2.1, while the standalone
+process needed its Python path set explicitly. The new nullable-input case
+exposed that difference before entering pipeline validation. Historical
+receipts now disclose this limit; their recorded outcomes are retained.
+
 ## Constraints for subsequent units
 
 - Keep pipeline declarations in Sail's typed SQL AST and analyzer. Registration
