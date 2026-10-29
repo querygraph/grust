@@ -1,0 +1,81 @@
+{
+  "sail_commit": "8d044db3860b4f55e49543c833246af31e986e2e",
+  "parent_commit": "87a7c941d30c952e6c928e1a6d2b4aec2b45abf6",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "lakecat_commit": "27e18f390c450c187a34b1c3bb2037c26d107699",
+  "recorded_at": "2026-10-29T18:41:41.814627+00:00",
+  "cli_sha256": "f9376f7e782d312411a1ec50ee4b388e5ea5ddbce1ec5b37df921966bf2f106d",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached immutable Sail source with its own target directory",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "passed"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "passed"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "passed",
+      "tests": 41,
+      "new_tests": 1,
+      "new_assertion_cases": 8
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "passed"
+    },
+    {
+      "command": "ruff check and format --check changed Python files",
+      "outcome": "passed"
+    },
+    {
+      "command": "pytest selected-nodes.json against fresh verified CLI",
+      "outcome": "passed",
+      "tests": 277,
+      "skipped": 0
+    },
+    {
+      "command": "scripts/spark-pipelines-tests/run.py --spark-source pinned Spark checkout --remote sc://localhost:50082",
+      "outcome": "passed",
+      "tests": 67,
+      "skipped": 0
+    },
+    {
+      "command": "spark-reference.py using Spark 4.2.1",
+      "outcome": "passed",
+      "cases": 4
+    },
+    {
+      "command": "catalog_scope.py memory/memory and memory/LakeCat profiles",
+      "outcome": "passed",
+      "original_assertions_per_profile": 5,
+      "additional_input_assertions_per_profile": 2,
+      "cleanup": "passed"
+    },
+    {
+      "command": "LakeCat REST default and generated namespace checks",
+      "outcome": "passed",
+      "statuses": [
+        200,
+        404
+      ]
+    }
+  ],
+  "catalog_profile": {
+    "primary": "memory/parquet",
+    "secondary_memory": "memory/parquet",
+    "secondary_lakecat": "iceberg-rest/iceberg",
+    "lakecat_uri": "http://127.0.0.1:51881/catalog",
+    "lakecat_storage": "memory store, allow-all local test governance and local files"
+  },
+  "limits": [
+    "Original Scala suite has not executed against Sail; standalone runner preserves the five assertions through public Connect.",
+    "Recursive CTE parity, general case-insensitive CTE resolution and streaming in expression subqueries remain outside this classifier change.",
+    "Parent namespace reports are six passes each at 87a7c941d, not fresh runs at this commit.",
+    "No streaming runtime, CDC, broker, distributed execution, production LakeCat durability or new native-extension verdict.",
+    "The two-catalog combined fixture was run on Sail profiles, not a separate Spark JVM two-catalog profile; four isolated CTE pipeline cases were paired on Spark."
+  ]
+}

@@ -11062,3 +11062,11 @@ Sail 87a7c941d is immutable in the detached gate. Re-running six namespace pairs
 ## 2026-10-29T18:32:47.419473+00:00 — ACK/DONE requested Astra Ultra response to Fable
 
 Appended a source-checked response preserving the entire existing review prefix. Retained three paired Spark 4.2.1/Sail max_by checks, one Spark AvailableNow state experiment, and six finite protocol models. Corrected state, fencing, restore and shared-target CDC assumptions; no streaming/CDC runtime implementation or publication. Current catalog task remains pending; its earlier SqlPipelineSuite:633 reference should read :634. Documentation/evidence gates precede branch advance.
+
+## 2026-10-29T18:39:01.618422+00:00 — ACK batch CTE stream classification and combined catalog acceptance
+
+Sail 87a7c941d reproduces SqlPipelineSuite:634 failure at STREAM(batch CTE). Four exact public CTE checks pass on Spark 4.2.1 and fail on the parent Sail. Narrow shared classifier fix is in detached gates; scopes follow current PlanResolver exact bare-name semantics. Original combined five assertions retained in reusable memory/LakeCat runner. Recursive and general case-matching parity are not claimed. No streaming runtime design phase started.
+
+## 2026-10-29T18:41:41.814627+00:00 — DONE batch CTE classification and combined catalog acceptance
+
+Sail 8d044db3860b4f55e49543c833246af31e986e2e: detached fmt/strict Clippy, 41 Connect Rust tests, CLI build, Ruff, 277 selected pytest and 67 upstream executions pass. Four new CTE cases pass unchanged on Spark 4.2.1 and Sail; parent four failures retained. Both original combined SQL files and five output assertions pass with memory/memory and memory/LakeCat profiles; cleanup and independent REST 200/404 checks pass. Inventory counts unchanged because case634 was already partial. General semantics stay in Sail; no LakeCat production change. Full goal active; streaming/CDC runtime and broader batch gaps remain, no publication.

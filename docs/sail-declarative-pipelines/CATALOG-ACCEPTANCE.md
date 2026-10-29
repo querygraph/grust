@@ -97,3 +97,23 @@ materialization with successful cleanup, three invalid-invocation controls and
 an independent REST check that the temporary LakeCat namespace is absent. Delta
 arguments are accepted but unqualified by these receipts. LakeCat durability,
 authentication and distributed operation remain outside this isolated profile.
+
+## Combined catalog, CTE and file-scope fixture
+
+`scripts/spark-pipelines-tests/catalog_scope.py` preserves SqlPipelineSuite:634's
+two SQL files and all five output assertions. This includes the batch CTE read
+through `STREAM(mv2)`, a join, private view resolution after catalog changes,
+two-part output reads and namespace reset for the next file. Unique namespaces,
+preconfigured catalogs and explicit providers adapt the fixture to the public
+Connect API. Seven outputs (five original assertions and two upstream input
+checks), provider/schema metadata, private-view isolation and cleanup are checked.
+
+Use the same options as the namespace matrix, replacing `namespaces.py` with
+`catalog_scope.py`. Omit `--database` to create an isolated pipeline namespace.
+The [receipt](evidence/8d044db3860b4f55e49543c833246af31e986e2e/gate.json) records passing memory/memory and
+memory/LakeCat profiles on Sail `8d044db386`. An independent REST check confirms
+the generated LakeCat namespace is absent and the default namespace still exists.
+The retained parent run fails specifically at `STREAM(batch CTE)`; the fixture
+was not weakened to obtain a pass. Four isolated CTE pipeline assertions also
+pass unchanged on Spark 4.2.1 and the new Sail CLI. This does not claim execution
+of Spark's original Scala suite or its original two-catalog JVM test substrate.

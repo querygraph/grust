@@ -134,3 +134,13 @@ now have partial wire ports. ORC remains a verified failure with a passing Spark
 fixture/control; the [shared file-source handoff](FILE-SOURCE-DESIGN-HANDOFF.md)
 records it explicitly. Original streaming output, writer setup, per-flow failure
 container/attribution and missing-file instance remain unqualified.
+
+
+SqlPipelineSuite:634's combined two-file fixture now has all five original output
+assertions retained in `catalog_scope.py`, including `STREAM` of a batch CTE.
+Both memory/memory and memory/LakeCat profiles pass with schema/provider checks
+and metadata cleanup; see the [receipt](evidence/8d044db3860b4f55e49543c833246af31e986e2e/gate.json).
+The inventory remains 462 static registrations, 97 audited and 59 partial ports:
+this strengthens an already mapped case and does not establish original Scala
+execution. Four paired Spark 4.2.1 CTE cases support the shared classifier fix;
+277 selected Python and 67 upstream executions pass on the new CLI.

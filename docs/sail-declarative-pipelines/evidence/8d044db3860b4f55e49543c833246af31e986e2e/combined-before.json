@@ -1,0 +1,46 @@
+{
+  "runner_commit": "87a7c941d30c952e6c928e1a6d2b4aec2b45abf6",
+  "upstream": "SqlPipelineSuite:634:Use database and set catalog works",
+  "scope": "Assertion port through public Connect, not original Scala suite execution",
+  "adapter_changes": [
+    "unique namespaces",
+    "preconfigured catalogs",
+    "explicit storage providers"
+  ],
+  "outputs": [],
+  "server_spark_version": "4.2.1",
+  "namespaces": {
+    "pipeline": [
+      "primary",
+      "sdp_scope_57556ab86d834db5a7d7b92b02ae7195_pipeline"
+    ],
+    "database": [
+      "primary",
+      "sdp_scope_57556ab86d834db5a7d7b92b02ae7195_other"
+    ],
+    "catalog": [
+      "secondary",
+      "sdp_scope_57556ab86d834db5a7d7b92b02ae7195_secondary"
+    ]
+  },
+  "files": [
+    {
+      "path": "file1.sql",
+      "sql": "\nCREATE MATERIALIZED VIEW mv USING parquet AS SELECT * FROM RANGE(3);\nUSE DATABASE `sdp_scope_57556ab86d834db5a7d7b92b02ae7195_other`;\nCREATE MATERIALIZED VIEW mv2 USING parquet AS SELECT * FROM RANGE(1, 5);\nCREATE MATERIALIZED VIEW mv3 USING parquet AS\nWITH mv AS (SELECT * FROM `primary`.`sdp_scope_57556ab86d834db5a7d7b92b02ae7195_pipeline`.mv)\nSELECT mv2.id FROM mv JOIN mv2 ON mv.id=mv2.id;\nSET CATALOG `secondary`;\nUSE DATABASE `sdp_scope_57556ab86d834db5a7d7b92b02ae7195_secondary`;\nCREATE TEMPORARY VIEW tv AS SELECT * FROM `primary`.`sdp_scope_57556ab86d834db5a7d7b92b02ae7195_pipeline`.mv;\nCREATE MATERIALIZED VIEW mv4 USING parquet AS\nWITH mv2 AS (SELECT * FROM `primary`.`sdp_scope_57556ab86d834db5a7d7b92b02ae7195_other`.mv2)\nSELECT * FROM STREAM(mv2) WHERE mv2.id % 2 == 0;\nUSE NAMESPACE `primary`.`sdp_scope_57556ab86d834db5a7d7b92b02ae7195_other`;\nCREATE MATERIALIZED VIEW mv5 USING parquet AS SELECT * FROM mv2;\nCREATE MATERIALIZED VIEW mv6 USING parquet AS SELECT * FROM tv;\n"
+    },
+    {
+      "path": "file2.sql",
+      "sql": "CREATE MATERIALIZED VIEW mv6 USING parquet AS SELECT * FROM `primary`.`sdp_scope_57556ab86d834db5a7d7b92b02ae7195_other`.mv5;"
+    }
+  ],
+  "failure": {
+    "stage": "run",
+    "error_type": "AnalysisException",
+    "error": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `secondary`.`sdp_scope_57556ab86d834db5a7d7b92b02ae7195_secondary`.`mv4`"
+  },
+  "cleanup": {
+    "outcome": "passed",
+    "errors": []
+  },
+  "outcome": "failed"
+}

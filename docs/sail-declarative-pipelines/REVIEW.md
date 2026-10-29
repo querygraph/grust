@@ -1190,3 +1190,23 @@ ordinary-cast probe improves from four to nineteen passes; five failures remain
 explicit: malformed decimal/date/timestamp, decimal overflow and numeric overflow.
 Historical failing packets remain immutable. This closes the recorded primitive
 ANSI catalog diagnostic gap, not full cast, catalog, batch or SDP acceptance.
+
+
+## Review batch CTE classification and combined catalog acceptance
+
+Sail `8d044db386` makes the shared streaming classifier follow nonrecursive CTE
+bindings. A bare CTE read inherits its definition's status, so `STREAM(batch_cte)`
+can materialize as Spark 4.2.1 does. Qualified names retain their explicit read
+flag; unused streaming definitions remain streaming. The scope map uses the same
+exact names as PlanResolver, restores sibling scopes and conservatively masks
+outer homonyms for recursive CTEs. This is not recursive or case-matching parity.
+
+The [receipt](evidence/8d044db3860b4f55e49543c833246af31e986e2e/gate.json) records fmt, strict Clippy, 41 full Connect
+Rust tests, CLI build, Ruff, 277 selected pytest and 67 upstream executions.
+Four new pipeline cases pass unchanged on Spark and Sail; all four fail on the
+parent CLI. The combined SqlPipelineSuite:634 port now passes all five original
+assertions across two memory catalogs and across memory/LakeCat REST, with cleanup
+and an independent REST namespace check. No LakeCat source change is needed.
+The complete parent fixture failure is retained. Historical source-review claims
+remain snapshots; these receipts supersede only their pending combined-fixture
+status. Full batch acceptance, streaming/Iggy and CDC remain unfinished.

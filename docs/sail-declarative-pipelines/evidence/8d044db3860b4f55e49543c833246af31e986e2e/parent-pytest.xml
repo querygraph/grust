@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="0.448" timestamp="2026-10-29T11:37:06.544427-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[batch]" time="0.107"><failure message="pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x119689400&gt;
+pipeline = ('d75ba185-6e21-41f2-bed6-b4fc0ff0b0d5', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11939a1e0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1196b51c0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-139/test_stream_of_batch_cte_batch0')
+query = 'WITH x AS (SELECT 1 AS id) SELECT * FROM STREAM(x)', expected = [1]
+
+    @pytest.mark.parametrize(
+        ("query", "expected"),
+        [
+            ("WITH x AS (SELECT 1 AS id) SELECT * FROM STREAM(x)", [1]),
+            (
+                "WITH x AS (SELECT 1 AS id), y AS (SELECT * FROM STREAM(x)) SELECT * FROM STREAM(y)",
+                [1],
+            ),
+            (
+                ("WITH x AS (SELECT 1 AS id) SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x))"),
+                [2],
+            ),
+            (
+                (
+                    "WITH x AS (SELECT 1 AS id) "
+                    "SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x)) "
+                    "UNION ALL SELECT * FROM STREAM(x)"
+                ),
+                [1, 2],
+            ),
+        ],
+        ids=["batch", "sequential", "shadowing", "scope-restoration"],
+    )
+    def test_stream_of_batch_cte(pipeline_spark, pipeline, tmp_path, query, expected):
+        _, registry, run = pipeline
+        registry.register_sql(f"CREATE MATERIALIZED VIEW cte_output AS {query}", tmp_path / "cte_stream.sql")
+&gt;       run()
+
+python/pysail/tests/spark/pipelines/test_cte_stream.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119689520&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[INVALID_FLOW_QUERY_T..._string = "INTERNAL:[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[sequential]" time="0.021"><failure message="pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1196ac8c0&gt;
+pipeline = ('3fb54e8d-9ef8-459b-b3fb-600c313a4308', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1196aff80&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11971c720&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-139/test_stream_of_batch_cte_seque0')
+query = 'WITH x AS (SELECT 1 AS id), y AS (SELECT * FROM STREAM(x)) SELECT * FROM STREAM(y)'
+expected = [1]
+
+    @pytest.mark.parametrize(
+        ("query", "expected"),
+        [
+            ("WITH x AS (SELECT 1 AS id) SELECT * FROM STREAM(x)", [1]),
+            (
+                "WITH x AS (SELECT 1 AS id), y AS (SELECT * FROM STREAM(x)) SELECT * FROM STREAM(y)",
+                [1],
+            ),
+            (
+                ("WITH x AS (SELECT 1 AS id) SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x))"),
+                [2],
+            ),
+            (
+                (
+                    "WITH x AS (SELECT 1 AS id) "
+                    "SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x)) "
+                    "UNION ALL SELECT * FROM STREAM(x)"
+                ),
+                [1, 2],
+            ),
+        ],
+        ids=["batch", "sequential", "shadowing", "scope-restoration"],
+    )
+    def test_stream_of_batch_cte(pipeline_spark, pipeline, tmp_path, query, expected):
+        _, registry, run = pipeline
+        registry.register_sql(f"CREATE MATERIALIZED VIEW cte_output AS {query}", tmp_path / "cte_stream.sql")
+&gt;       run()
+
+python/pysail/tests/spark/pipelines/test_cte_stream.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x1196af0b0&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[INVALID_FLOW_QUERY_T..._string = "INTERNAL:[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[shadowing]" time="0.022"><failure message="pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1196aff50&gt;
+pipeline = ('99654aa9-80aa-424e-b9b4-7122472b7e39', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1197219a0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11971e020&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-139/test_stream_of_batch_cte_shado0')
+query = 'WITH x AS (SELECT 1 AS id) SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x))'
+expected = [2]
+
+    @pytest.mark.parametrize(
+        ("query", "expected"),
+        [
+            ("WITH x AS (SELECT 1 AS id) SELECT * FROM STREAM(x)", [1]),
+            (
+                "WITH x AS (SELECT 1 AS id), y AS (SELECT * FROM STREAM(x)) SELECT * FROM STREAM(y)",
+                [1],
+            ),
+            (
+                ("WITH x AS (SELECT 1 AS id) SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x))"),
+                [2],
+            ),
+            (
+                (
+                    "WITH x AS (SELECT 1 AS id) "
+                    "SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x)) "
+                    "UNION ALL SELECT * FROM STREAM(x)"
+                ),
+                [1, 2],
+            ),
+        ],
+        ids=["batch", "sequential", "shadowing", "scope-restoration"],
+    )
+    def test_stream_of_batch_cte(pipeline_spark, pipeline, tmp_path, query, expected):
+        _, registry, run = pipeline
+        registry.register_sql(f"CREATE MATERIALIZED VIEW cte_output AS {query}", tmp_path / "cte_stream.sql")
+&gt;       run()
+
+python/pysail/tests/spark/pipelines/test_cte_stream.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x1196ae120&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[INVALID_FLOW_QUERY_T..._string = "INTERNAL:[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[scope-restoration]" time="0.025"><failure message="pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1197217c0&gt;
+pipeline = ('cbbb041e-86ec-4b46-89be-897992c6f0a7', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1197ac560&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11971fc40&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-139/test_stream_of_batch_cte_scope0')
+query = 'WITH x AS (SELECT 1 AS id) SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x)) UNION ALL SELECT * FROM STREAM(x)'
+expected = [1, 2]
+
+    @pytest.mark.parametrize(
+        ("query", "expected"),
+        [
+            ("WITH x AS (SELECT 1 AS id) SELECT * FROM STREAM(x)", [1]),
+            (
+                "WITH x AS (SELECT 1 AS id), y AS (SELECT * FROM STREAM(x)) SELECT * FROM STREAM(y)",
+                [1],
+            ),
+            (
+                ("WITH x AS (SELECT 1 AS id) SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x))"),
+                [2],
+            ),
+            (
+                (
+                    "WITH x AS (SELECT 1 AS id) "
+                    "SELECT * FROM (WITH x AS (SELECT 2 AS id) SELECT * FROM STREAM(x)) "
+                    "UNION ALL SELECT * FROM STREAM(x)"
+                ),
+                [1, 2],
+            ),
+        ],
+        ids=["batch", "sequential", "shadowing", "scope-restoration"],
+    )
+    def test_stream_of_batch_cte(pipeline_spark, pipeline, tmp_path, query, expected):
+        _, registry, run = pipeline
+        registry.register_sql(f"CREATE MATERIALIZED VIEW cte_output AS {query}", tmp_path / "cte_stream.sql")
+&gt;       run()
+
+python/pysail/tests/spark/pipelines/test_cte_stream.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119721a00&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[INVALID_FLOW_QUERY_T..._string = "INTERNAL:[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`cte_output`
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</failure></testcase></testsuite></testsuites>
