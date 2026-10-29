@@ -512,3 +512,26 @@ General catalog behavior continues to belong in Sail. LakeCat remains one
 supported catalog; the earlier shared Iceberg-comment fix and reusable catalog
 runner demonstrate that boundary. Failure/events and persisted REST views still
 need the focused Astra design review before architectural implementation.
+
+## Review once-option validation priority
+
+Commit `a587b7e6d8` rejects any explicitly supplied DefineFlow.once value in the
+command handler before graph lookup or required flow-field validation. This
+matches Spark 4.2.1 for true and false, existing and missing graphs, and omitted
+and named flows. The existing structured-error transport now provides
+AnalysisException, DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED, the flowName parameter
+and SQL state 0A000. The later graph guard is removed rather than duplicated.
+
+The [receipt](evidence/a587b7e6d86d734a816d6455ad922d2a1faf7258/gate.json)
+records eight matching Spark reference assertions, 137 selected Sail pytest
+cases and 67 upstream Python executions, plus formatting, strict Clippy, CLI
+build and Python lint. All pass. All eight new assertions failed on the parent
+Sail build; that baseline is retained. This protocol validation change adds no
+new execution architecture and makes no streaming/CDC support claim.
+
+The Connect server assertion audit now covers its 19 static registration sites,
+including the true/false once grid and four identifier grids. Three have partial
+behavioral ports and 16 remain unmapped. The [crosswalk](CROSSWALK.md) keeps
+internal registry checks, protocol responses, streaming fixtures and absent
+assertions explicit. Across the audited suites 57 registrations are reviewed;
+405 remain unaudited. No whole Scala suite has run against Sail.

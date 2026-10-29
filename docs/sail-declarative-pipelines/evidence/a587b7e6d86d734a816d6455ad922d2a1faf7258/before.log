@@ -1,0 +1,630 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_______ test_once_option_is_rejected_before_graph_lookup[None-True-True] _______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1194c9df0>
+pipeline = ('90a96dca-4828-463e-a660-8171ce201014', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1194ca3f0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1194fc040>)
+once = True, graph_exists = True, flow_name = None
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+>           pipeline_spark.client.execute_command(command)
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1194cbf50>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "missing argument: flow name"
+	debug_error_string = "INTERNAL:missing argument: flow name"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: missing argument: flow name
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+______ test_once_option_is_rejected_before_graph_lookup[None-True-False] _______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1194f1310>
+pipeline = ('e196fc2d-7de0-4e3d-aff6-dd5644977ad7', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1195445f0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11953f420>)
+once = False, graph_exists = True, flow_name = None
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+>           pipeline_spark.client.execute_command(command)
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1194f1550>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "missing argument: flow name"
+	debug_error_string = "INTERNAL:missing argument: flow name"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: missing argument: flow name
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+______ test_once_option_is_rejected_before_graph_lookup[None-False-True] _______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1194f1460>
+pipeline = ('6694b392-3a2b-40ab-8b5e-85c885164df0', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119545d90>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119664ae0>)
+once = True, graph_exists = False, flow_name = None
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+>           pipeline_spark.client.execute_command(command)
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1194f2300>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[DATAFLOW_GRAPH_NOT_F...or_string = "INTERNAL:[DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkException: [DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkException
+______ test_once_option_is_rejected_before_graph_lookup[None-False-False] ______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1195458b0>
+pipeline = ('7f341d14-f61b-4f1a-98a1-335c7f0b2310', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1196586b0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119666660>)
+once = False, graph_exists = False, flow_name = None
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+>           pipeline_spark.client.execute_command(command)
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119545c40>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[DATAFLOW_GRAPH_NOT_F...or_string = "INTERNAL:[DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkException: [DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkException
+____ test_once_option_is_rejected_before_graph_lookup[named_flow-True-True] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1196583b0>
+pipeline = ('813a1d8b-a5dd-44e8-8860-e37f85eb4800', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11965aed0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1196740e0>)
+once = True, graph_exists = True, flow_name = 'named_flow'
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+            pipeline_spark.client.execute_command(command)
+>       assert error.value.getCondition() == "DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED"
+E       AssertionError: assert None == 'DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED] named_flow').getCondition
+E        +      where AnalysisException('[DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED] named_flow') = <ExceptionInfo AnalysisException('[DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED] named_flow') tblen=6>.value
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:40: AssertionError
+___ test_once_option_is_rejected_before_graph_lookup[named_flow-True-False] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1196595e0>
+pipeline = ('4045bee8-5b2c-4f14-9d58-e4dd722ed765', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119661550>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119675f80>)
+once = False, graph_exists = True, flow_name = 'named_flow'
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+            pipeline_spark.client.execute_command(command)
+>       assert error.value.getCondition() == "DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED"
+E       AssertionError: assert None == 'DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED] named_flow').getCondition
+E        +      where AnalysisException('[DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED] named_flow') = <ExceptionInfo AnalysisException('[DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED] named_flow') tblen=6>.value
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:40: AssertionError
+___ test_once_option_is_rejected_before_graph_lookup[named_flow-False-True] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119661100>
+pipeline = ('966eb8fd-1fee-4be9-9d27-92539ddff725', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119663bf0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119677a60>)
+once = True, graph_exists = False, flow_name = 'named_flow'
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+>           pipeline_spark.client.execute_command(command)
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119661400>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[DATAFLOW_GRAPH_NOT_F...or_string = "INTERNAL:[DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkException: [DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkException
+___ test_once_option_is_rejected_before_graph_lookup[named_flow-False-False] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119620aa0>
+pipeline = ('f0da7a94-5443-4418-8118-4b3d638d7d9b', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119622510>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1196118a0>)
+once = False, graph_exists = False, flow_name = 'named_flow'
+
+    @pytest.mark.parametrize("once", [True, False])
+    @pytest.mark.parametrize("graph_exists", [True, False])
+    @pytest.mark.parametrize("flow_name", [None, "named_flow"])
+    def test_once_option_is_rejected_before_graph_lookup(pipeline_spark, pipeline, once, graph_exists, flow_name):
+        graph_id, _, _ = pipeline
+        command = pb.Command()
+        flow = command.pipeline_command.define_flow
+        flow.dataflow_graph_id = graph_id if graph_exists else "graph-that-does-not-exist"
+        flow.once = once
+        if flow_name is not None:
+            flow.flow_name = flow_name
+        with pytest.raises(errors.AnalysisException) as error:
+>           pipeline_spark.client.execute_command(command)
+
+python/pysail/tests/spark/pipelines/test_lifecycle_errors.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119621ac0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[DATAFLOW_GRAPH_NOT_F...or_string = "INTERNAL:[DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkException: [DATAFLOW_GRAPH_NOT_FOUND] Dataflow graph with id graph-that-does-not-exist could not be found
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkException
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-True-True]
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-True-False]
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-False-True]
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-False-False]
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-True-True]
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-True-False]
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-False-True]
+FAILED python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-False-False]
+8 failed in 0.63s

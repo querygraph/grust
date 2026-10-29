@@ -722,7 +722,13 @@
       "method": "test",
       "name_expression": "\"CreateDataflowGraph request creates a new graph\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Explicit create-graph result presence/nonempty identifier is not asserted by a dedicated mapped test.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:39",
@@ -731,7 +737,13 @@
       "method": "test",
       "name_expression": "\"create dataflow graph falls back to current database in session\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Create graph after USE DATABASE; inspect captured defaultDatabase equals test_db.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:54",
@@ -740,7 +752,13 @@
       "method": "test",
       "name_expression": "\"create dataflow graph set session catalog and database to pipeline \" +\n      \"default catalog and database\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Explicit graph catalog/database captured and applied to current session catalog/database.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:80",
@@ -748,8 +766,17 @@
       "line": 80,
       "method": "test",
       "name_expression": "\"Define a flow for a graph that does not exist\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_missing_graph_has_structured_error[define_output]"
+      ],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "Define-output against a missing graph rejects with DATAFLOW_GRAPH_NOT_FOUND; port additionally checks mapped exception, graphId parameter and SQL state.",
+        "remaining_assertions": "Original Scala uses an Exception message substring check and a populated DefineOutput (name mv/type MATERIALIZED_VIEW); port uses minimal command and structured condition. Original Scala transport test is unexecuted.",
+        "sail_evidence": "evidence/a587b7e6d86d734a816d6455ad922d2a1faf7258/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:100",
@@ -757,8 +784,28 @@
       "line": 100,
       "method": "gridTest",
       "name_expression": "\"Define flow 'once' argument not supported\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-True-True]",
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-True-False]",
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-False-True]",
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[None-False-False]",
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-True-True]",
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-True-False]",
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-False-True]",
+        "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py::test_once_option_is_rejected_before_graph_lookup[named_flow-False-False]"
+      ],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "Explicit once=true and once=false reject with DEFINE_FLOW_ONCE_OPTION_NOT_SUPPORTED. Ports also check AnalysisException, flowName and SQL state, with missing/existing graphs and omitted/named flow names.",
+        "remaining_assertions": "Original Scala grid and its message assertion have not executed against Sail; ports assert structured condition through the Python client.",
+        "sail_evidence": "evidence/a587b7e6d86d734a816d6455ad922d2a1faf7258/pytest.xml",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          true,
+          false
+        ]
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:118",
@@ -767,7 +814,13 @@
       "method": "test",
       "name_expression": "\"Cross dependency between SQL dataset and non-SQL dataset is valid and can be registered\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-graph",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Mixed protocol range flow and SQL implicit/explicit flows: three flows, two tables, no views; exact input sets and destination identifiers.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:199",
@@ -776,7 +829,13 @@
       "method": "test",
       "name_expression": "\"simple graph resolution test\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-graph",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Two tables and one private view: exact flow/table/view counts and dependency sets, including a cross join and streaming-table output registration.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:244",
@@ -785,7 +844,13 @@
       "method": "test",
       "name_expression": "\"execute pipeline end-to-end test\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Batch source -> streaming table -> batch MV; each final count five.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:272",
@@ -794,7 +859,13 @@
       "method": "test",
       "name_expression": "\"create streaming tables, materialized views, and temporary views\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Multiple namespaces and private view across materialized/streaming outputs; each persisted final count five.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:305",
@@ -803,7 +874,13 @@
       "method": "test",
       "name_expression": "\"dataflow graphs are session-specific\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "session-lifecycle",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Different user/session IDs each own one graph and their own named output; assert registry counts and contents.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:394",
@@ -812,7 +889,13 @@
       "method": "test",
       "name_expression": "\"dataflow graphs are cleaned up when session is closed\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "session-lifecycle",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Close session, inspect session manager absence and retained holder graph registry empty.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:461",
@@ -821,7 +904,13 @@
       "method": "test",
       "name_expression": "\"multiple dataflow graphs can exist in the same session\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Two graphs in one session each retain their own registered dataset; inspect both graph definitions.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:502",
@@ -829,8 +918,17 @@
       "line": 502,
       "method": "test",
       "name_expression": "\"dropping a dataflow graph removes it from session\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_execution.py::test_drop_graph_preserves_tables"
+      ],
+      "coverage_review": {
+        "phase": "session-lifecycle",
+        "covered_assertions": "Dropped graph becomes unavailable for a later start; published table stays readable.",
+        "remaining_assertions": "Internal graph-registry size transitions one to zero and the unexecuted registered-output fixture are not directly checked.",
+        "sail_evidence": "evidence/a587b7e6d86d734a816d6455ad922d2a1faf7258/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:603",
@@ -839,7 +937,18 @@
       "method": "namedGridTest",
       "name_expression": "\"DefineOutput returns resolved data name for default catalog/schema\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Three default-schema output grids: temporary view, quoted table, MV; exact response presence and catalog/namespace/table identifiers.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "TEMPORARY_VIEW",
+          "TABLE",
+          "MV"
+        ]
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:632",
@@ -848,7 +957,18 @@
       "method": "namedGridTest",
       "name_expression": "\"DefineOutput returns resolved data name for custom schema\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Three custom-schema output grids: temporary view, quoted table, MV; exact graph/result presence and resolved identifier including quoted database behavior.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "TEMPORARY_VIEW",
+          "TABLE",
+          "MV"
+        ]
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:719",
@@ -857,7 +977,17 @@
       "method": "namedGridTest",
       "name_expression": "\"DefineFlow returns resolved data name for default catalog/schema\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Two default-schema flow grids: quoted MV and registered temporary-view target; exact result presence and resolved identifiers.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "MV",
+          "TV"
+        ]
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:781",
@@ -866,7 +996,17 @@
       "method": "namedGridTest",
       "name_expression": "\"DefineFlow returns resolved data name for custom catalog/schema\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Two custom-schema flow grids: MV and temporary-view target; exact result presence and resolved identifiers.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "MV",
+          "TV"
+        ]
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:854",
@@ -875,7 +1015,13 @@
       "method": "test",
       "name_expression": "\"SPARK-54452: spark.sql() inside a pipeline flow function should return a sql_command_result\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "PipelineAnalysisContext with flowName on ExecutePlan SQL command returns sql_command_result containing the exact input named-table Relation, without resolving absent table.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:903",
@@ -884,7 +1030,13 @@
       "method": "test",
       "name_expression": "\"SPARK-54452: spark.sql() outside a pipeline flow function should return a \" +\n      \"sql_command_result\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-protocol",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "PipelineAnalysisContext without flowName on ExecutePlan SQL command returns sql_command_result containing the exact input range SQL Relation.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/analysis/ReadOptionsPropagationOnAnalysisSuite.scala:112",

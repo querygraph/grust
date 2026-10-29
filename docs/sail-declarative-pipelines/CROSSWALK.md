@@ -8,7 +8,7 @@ do not qualify this whole inventory.
 The first assertion-level audit covers all 11 `ViewSuite.scala` registrations at
 Spark `617618396087429b5627a86ce933bb0f5d6645cb`. Seven have partial behavioral
 ports in Sail; four remain unmapped. None is marked fully qualified. A further 27 materialization registrations have now been reviewed; the remaining
-424 call sites still need an assertion-level audit. These are inventory counts,
+405 call sites still need an assertion-level audit after the additional server-suite review below. These are inventory counts,
 not a completion percentage.
 
 Each audited record in [the inventory](spark-4.2.1-inventory.json) now identifies
@@ -58,3 +58,20 @@ catalog providers, including LakeCat. LakeCat changes should implement its
 provider adapter, storage/CAS, authorization and persistence requirements; shared
 catalog commands, schema evolution and Iceberg semantics remain in Sail. The failure/event design
 checkpoint remains ready for Astra.
+
+## Connect server audit
+
+All 19 SparkDeclarativePipelinesServerSuite registrations are reviewed. Three
+have partial behavioral ports; 16 remain unmapped. Across the three audited
+suites this is 57 reviewed registrations, with 405 still awaiting review. There
+is no full Scala-suite verdict. The [validation record](evidence/server-crosswalk/validation.json)
+binds the pinned source hash and passing Sail test nodes to the updated inventory.
+
+The once-option grid covers both boolean values. Two output-identifier grids
+have three instances each; two flow-identifier grids have two each. These grids
+need exact response/identifier assertions. Session isolation, session-close
+cleanup, multiple-graph contents, mixed SQL/protocol dependencies and analysis
+context response shapes remain explicit gaps. Two end-to-end registrations
+require streaming and remain in that later phase. The missing-graph test is
+named as a flow test in Spark but actually sends DefineOutput; its partial port
+is mapped to the command it exercises.
