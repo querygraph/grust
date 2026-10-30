@@ -1793,3 +1793,23 @@ with only dedent/header/one declaration rewrap. Initial failures are retained.
 Fable aggregate/window and actual-resolver clock fixtures remain pending; lowering/
 error-chain are separate next imports. No durable streaming/CDC/public activation
 or full original Scala acceptance. Public CLI pin remains7723dc4de; inventory unchanged.
+
+
+## 2026-10-30 — pure lowerer/typed causes and actual Sail clocks integrated
+
+[Signature fixtures](evidence/admission-signature-fixtures/README.md)0e pass134+114
+libraries. [Inline UDTF review](evidence/fable-inline-udtf-binding-review/README.md)
+confirms dynamic Python analyze bypasses pre-resolution helper exclusion; original
+1pass/1fail and initial Fields compile failure retained. [Guard](evidence/bounded-inline-udtf-guard/README.md)
+7b passes134+117 libraries and unchanged independent2-case replay against peer.
+Owned dynamic Python analysis remains required, not permanently excluded.
+
+[Pure lowerer](evidence/bounded-lowerer-root-integration/README.md)bc imports40b
+(all5 blobs),134+130 libraries; [typed causes](evidence/bounded-lower-error-chain/README.md)
+ae imports dea (both blobs),134+131 libraries, provider downcast preserved.
+[Actual Sail clock tests/final public gate](evidence/bounded-resolved-clocks/README.md)
+09d2f0cb8 passes324 combined libraries, strict Clippy/fmt and fresh300 public+67
+upstream Python, Spark4.2.1, owned server exit0/no listeners, before conditional
+advancement. Snapshot identities are declared, scope unused, no public lowerer,
+broker/target/durable CDC or C0 authority activation. Full original Scala suite and
+inventory coverage unchanged. CF-0199 requests peer batch C5/event import manifest.

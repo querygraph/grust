@@ -1,0 +1,198 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs b/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs
+index c4318a2ba..5553ec890 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs
+@@ -2,12 +2,18 @@
+ 
+ use std::sync::Arc;
+ 
+-use datafusion::arrow::datatypes::{DataType, Field, Schema};
+-use datafusion::common::{Result as DFResult, TableReference};
++use datafusion::arrow::array::ArrayRef;
++use datafusion::arrow::datatypes::{DataType, Field, FieldRef, Schema};
++use datafusion::common::{Result as DFResult, ScalarValue, TableReference};
+ use datafusion::datasource::{MemTable, provider_as_source};
++use datafusion::logical_expr::expr::WindowFunction;
++use datafusion::logical_expr::function::{
++    AccumulatorArgs, PartitionEvaluatorArgs, WindowUDFFieldArgs,
++};
+ use datafusion::logical_expr::{
+-    ColumnarValue, Expr, JoinType, LogicalPlanBuilder, ScalarFunctionArgs, ScalarUDF,
+-    ScalarUDFImpl, Signature, Volatility, col, exists, lit, scalar_subquery,
++    Accumulator, AggregateUDF, AggregateUDFImpl, ColumnarValue, Expr, JoinType, LogicalPlanBuilder,
++    PartitionEvaluator, ScalarFunctionArgs, ScalarUDF, ScalarUDFImpl, Signature, Volatility,
++    WindowUDF, WindowUDFImpl, col, exists, lit, scalar_subquery,
+ };
+ 
+ use super::super::intent::BatchIntent;
+@@ -189,6 +195,115 @@ fn stable_clock() -> Expr {
+     .call(vec![])
+ }
+ 
++/// A `Stable` aggregate with a trivial accumulator. The Aggregate and
++/// Window plan nodes are rejected before their expressions are audited,
++/// so the aggregate and window arms of the signature walk are reached
++/// through a hand-built projection carrying the expression.
++#[derive(Debug, PartialEq, Eq, Hash)]
++struct StableAggregate {
++    signature: Signature,
++}
++
++impl AggregateUDFImpl for StableAggregate {
++    fn name(&self) -> &str {
++        "stable_aggregate_test"
++    }
++    fn signature(&self) -> &Signature {
++        &self.signature
++    }
++    fn return_type(&self, _: &[DataType]) -> DFResult<DataType> {
++        Ok(DataType::Int64)
++    }
++    fn accumulator(&self, _: AccumulatorArgs) -> DFResult<Box<dyn Accumulator>> {
++        Ok(Box::new(Counter(0)))
++    }
++}
++
++#[derive(Debug)]
++struct Counter(i64);
++
++impl Accumulator for Counter {
++    fn update_batch(&mut self, values: &[ArrayRef]) -> DFResult<()> {
++        let rows = values.first().map_or(0, |array| array.len());
++        self.0 += i64::try_from(rows).unwrap_or(i64::MAX);
++        Ok(())
++    }
++    fn evaluate(&mut self) -> DFResult<ScalarValue> {
++        Ok(ScalarValue::Int64(Some(self.0)))
++    }
++    fn size(&self) -> usize {
++        std::mem::size_of_val(self)
++    }
++    fn state(&mut self) -> DFResult<Vec<ScalarValue>> {
++        Ok(vec![ScalarValue::Int64(Some(self.0))])
++    }
++    fn merge_batch(&mut self, states: &[ArrayRef]) -> DFResult<()> {
++        self.update_batch(states)
++    }
++}
++
++fn stable_aggregate() -> Arc<AggregateUDF> {
++    Arc::new(AggregateUDF::from(StableAggregate {
++        signature: Signature::exact(vec![DataType::Int64], Volatility::Stable),
++    }))
++}
++
++/// A `Stable` window function whose evaluator is never run.
++#[derive(Debug, PartialEq, Eq, Hash)]
++struct StableWindow {
++    signature: Signature,
++}
++
++impl WindowUDFImpl for StableWindow {
++    fn name(&self) -> &str {
++        "stable_window_test"
++    }
++    fn signature(&self) -> &Signature {
++        &self.signature
++    }
++    fn partition_evaluator(
++        &self,
++        _: PartitionEvaluatorArgs,
++    ) -> DFResult<Box<dyn PartitionEvaluator>> {
++        Ok(Box::new(NeverEvaluated))
++    }
++    fn field(&self, args: WindowUDFFieldArgs) -> DFResult<FieldRef> {
++        Ok(Arc::new(Field::new(args.name(), DataType::Int64, true)))
++    }
++}
++
++#[derive(Debug)]
++struct NeverEvaluated;
++
++impl PartitionEvaluator for NeverEvaluated {}
++
++fn stable_window() -> Arc<WindowUDF> {
++    Arc::new(WindowUDF::from(StableWindow {
++        signature: Signature::exact(vec![DataType::Int64], Volatility::Stable),
++    }))
++}
++
++/// Shared body of the aggregate/window cases: the projection is admitted,
++/// not replayable, and the evidence names the function as stable.
++fn assert_projection_not_replayable(expr: Expr, name: &str) -> TestResult {
++    let f = Fixture::new()?;
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .project(vec![expr.alias("x")])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(!evidence.replayable, "{evidence:?}");
++    assert!(
++        evidence
++            .operators
++            .iter()
++            .any(|op| op.reason.contains(&format!("`{name}` is stable"))),
++        "{evidence:?}"
++    );
++    Ok(())
++}
++
+ /// Shared body of the stable-clock cases: the function must be declared
+ /// `Stable` (not merely assumed so), the plan is admitted, and it is not
+ /// replayable in content, with the evidence naming the function.
+@@ -468,6 +583,54 @@ fn immutable_builtin_functions_remain_content_replayable() -> TestResult {
+     Ok(())
+ }
+ 
++#[test]
++fn a_stable_aggregate_signature_is_not_content_replayable() -> TestResult {
++    assert_projection_not_replayable(
++        stable_aggregate().call(vec![col("v")]),
++        "stable_aggregate_test",
++    )
++}
++
++#[test]
++fn a_stable_aggregate_used_as_a_window_is_not_content_replayable() -> TestResult {
++    let window = WindowFunction::new(
++        WindowFunctionDefinition::AggregateUDF(stable_aggregate()),
++        vec![col("v")],
++    );
++    assert_projection_not_replayable(
++        Expr::WindowFunction(Box::new(window)),
++        "stable_aggregate_test",
++    )
++}
++
++#[test]
++fn a_stable_window_function_is_not_content_replayable() -> TestResult {
++    let window = WindowFunction::new(
++        WindowFunctionDefinition::WindowUDF(stable_window()),
++        vec![col("v")],
++    );
++    assert_projection_not_replayable(Expr::WindowFunction(Box::new(window)), "stable_window_test")
++}
++
++#[test]
++fn an_immutable_aggregate_signature_keeps_content_replayable() -> TestResult {
++    // Control: a real Immutable aggregate (`count`) in the same position.
++    let f = Fixture::new()?;
++    let count = datafusion::functions_aggregate::expr_fn::count(col("v"));
++    let Expr::AggregateFunction(function) = &count else {
++        return Err("count fixture must remain an aggregate function".into());
++    };
++    assert_eq!(function.func.signature().volatility, Volatility::Immutable);
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .project(vec![count.alias("n")])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(evidence.replayable, "{evidence:?}");
++    Ok(())
++}
++
+ #[test]
+ fn a_volatile_expression_is_admitted_but_not_replayable() -> TestResult {
+     let f = Fixture::new()?;

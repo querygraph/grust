@@ -384,11 +384,14 @@ is found on authority but receives the selected view in its provider callback.
 Catalog-table/lake-relation opt-in paths have source/type checks, not separate new
 provider-qualified fixtures. Native config-state mutation, not SQL/RPC SET, is used.
 
-Write/procedure/row-level factories and earlier catalog/metadata I/O remain open.
+Writer/schema factories now receive the selected Session at7723dc4de; lake
+row-target metadata and path/catalog property callbacks do so atd6d802d22 (below).
+Procedure/delta metadata/row-operation factories and earlier catalog I/O remain open.
 Public callers/final execution have not migrated, and no owned registry is installed
 by default. Context capture/execution transfer, typed primary+cleanup, cluster,
 provider bounds/outcomes/recovery and full original Spark SDP acceptance still need
-implementation/qualification. Next implementation unit: write/procedure propagation.
+implementation/qualification. Remaining provider propagation precedes the next
+substantial capture/execution/analyzer API design checkpoint.
 
 The [independent lowerer review sequence](evidence/fable-local-lowering-review/README.md)
 retains original9dc failures, a19's two range fixes plus JSON failure and afb's
@@ -398,3 +401,39 @@ neutral bounded contract/errors; pure control/source model; binding/admission wi
 minimal GraphScope constructor; pure lowering with its sha2 consumer edge. No
 execution guard removal, async/Iggy/C5/event/CDC stack or shared runtime changes.
 This is component preparation, not production streaming/effect approval.
+
+
+## Writer/schema and lake metadata callback propagation
+
+[Writer/schema packet](evidence/resolver-writer-session/README.md): Sail7723dc4de
+routes create_writer, infer_schema and existing write infer_metadata sites through
+the selected Session.49 library/49 optimized tests and300+67 public regressions pass;
+separate unchanged writer/schema bypasses fail. [Lake metadata/property packet](evidence/lake-metadata-session-callbacks/README.md):
+d6d802d22 routes row-target infer_metadata and both path/catalog table_properties.
+55 libraries/6 optimized CPU-load cases pass; unchanged three-site bypass fails3
+scoped cases and passes3 legacy cases. Actual command resolution exercises named
+catalog and path properties; DELETE stops at its subsequent source callback, before
+planning/executing a mutation. Captured config/store/scope identity is preserved;
+lookup/access authority stays with existing managers. Latest CLI remains7723dc4de.
+
+These additions do not install an owned registry or migrate public callers/final
+execution. Native analyzer-only behavior still needs its exact seam; replacing it
+with optimizer/new SessionContext or silently recapturing authority is not selected.
+
+## Inline dynamic Python schema analysis is a planning helper
+
+[Source review](evidence/fable-inline-udtf-binding-review/README.md) identifies a
+second spelling of a resolver helper: the binder rejected ReadType::Udtf but allowed
+CommonInlineUserDefinedTableFunction based only on arguments. A Python UDTF with
+return_type=None invokes PySparkUdtfPayload::analyze (unpickle and Python callback)
+during resolution, before post-resolution admission and outside the lowerer's
+unused scope. Independent binding-only probe confirms dynamic schema admitted,
+static-schema control accepted:1pass/1fail. No Python payload executed in the probe.
+
+The initial bounded subset must refuse that unowned helper before resolution while
+preserving argument/subquery classification for declared schemas. This is a
+transitional guard, not completed Spark UDTF support. An owned dynamic-analysis
+operation, cancellation/join outcome and unchanged phase/error behavior remain
+required work under the preparation design. No Python worker/ownership API or C0
+staging/reconstruction authority is selected here. Correction qualification and
+root integration are recorded separately in REVIEW and the handoff.
