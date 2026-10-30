@@ -1601,3 +1601,14 @@ binary hashes and the expected failing control are retained.
 This is in-memory metadata recovery. It does not fence outstanding storage effects,
 retain the whole session after failed deletion, add a cleanup retry supervisor or
 qualify session/cluster shutdown. Full ORC writing and streaming/CDC remain open.
+
+## Session cleanup design checkpoint
+
+Recorded 2026-10-30T06:47:38.137851+00:00. The [incomplete design checkpoint](SESSION-CLEANUP-LIFECYCLE-DESIGN.md)
+selects retained session cleanup ownership and manager Closing while lifecycle
+messages continue to be serviced. Four source audits cover creation/deletion,
+actors/transport, storage effects and operation ownership. Proposed failure
+schedules are source-derived, not executed runtime observations. The operation
+admission seam, effect adapter and cleanup-driver mechanism remain open; no full
+session/cluster barrier is implemented by this document. Its ec8e74d57de5 source
+baseline is preserved separately from the completed cba833ae08a4 registry fix.
