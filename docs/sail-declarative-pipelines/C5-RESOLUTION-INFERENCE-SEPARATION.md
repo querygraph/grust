@@ -1,6 +1,8 @@
 # C5: separating flow resolution from schema inference (proposal)
 
-Status: proposal for Codex's decision, revised after CF-0064; no Sail edit.
+Status: proposal for Codex's decision, revised after CF-0064 and CF-0066; the
+failure model (`pipelines/failures.rs`) is offered as Sail `bc23c8db6`; the
+resolution algorithm below is not implemented.
 Pinned Spark `617618396`; Sail base `779cb136d`; Fable head `33a883091`.
 Revision 1 (first-direct-error identity, A/B attribution difference) is
 withdrawn; what replaces it is below.
@@ -54,47 +56,87 @@ differentiate between upstream and downstream errors") and
 So the model is per flow: every failed flow carries its own typed cause, the
 wrapper carries both maps, and nothing is flattened to a first error.
 
-## Per-flow failure model for Sail
+## Per-flow failure model for Sail (offered as `bc23c8db6`)
 
-```text
-struct FlowFailure { flow: Name, cause: SparkError }      // typed, never a string
-struct UnresolvedPipeline {
-    direct: BTreeMap<Name, SparkError>,                   // the flow's own failure
-    downstream: BTreeMap<Name, SparkError>,               // UnresolvedDataset { dataset } naming the first failed/pending input it read
-}
-```
+`pipelines/failures.rs`: `FailureReport { direct: BTreeMap<Name, SparkError>,
+downstream: BTreeMap<Name, SparkError> }`, `unresolved_dataset(dataset)`
+building `UnresolvedDatasetException`'s exact message, `message()` rendering
+Spark's template verbatim with both sorted unquoted lists, and
+`into_error()` producing `SparkError::AnalysisError`, which the existing path
+maps to class `org.apache.spark.sql.AnalysisException` with that message and
+no condition (demonstrated by converting to a tonic `Status` and reading the
+`ErrorInfo`). Unwired.
 
-Resolution loop (`analysis.rs`), smallest change preserving downstream
-binding:
+## Resolution algorithm, revised after CF-0066
 
-1. A flow whose resolution returns an error other than `UnresolvedRelation`
-   is a **direct failure**: record `direct[flow] = error`, mark its output
-   failed, continue.
-2. An output whose flows all resolved runs `schema::infer` as today (this is
-   what `VirtualTableInput.load` does for readers). If the merge fails, the
-   failure is attributed the way Spark attributes it: **to the first flow
-   that reads this output** if any flow reads it (Spark raises it inside the
-   reader's analysis, so the reader is the direct failure and the merged
-   output itself is not a failed flow), otherwise to the output's own
-   flow(s) as `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA`, which is what Spark's
-   last-phase `inferredSchema` raises when nothing read it. Either way the
-   output is marked failed so no further flow binds to it.
-3. A flow whose read hits a failed or still-pending output stays pending.
-   When a pass makes no progress, every pending flow becomes a **downstream
-   failure** with `UnresolvedDataset { dataset }` naming the first failed or
-   pending input it requested, unless the pending set contains no failed
-   input at all, in which case `detectCycle` over the pending subgraph runs
-   first and raises `PIPELINE_CIRCULAR_DEPENDENCY` with Spark's
-   `CircularDependencyException` message (`PipelinesErrors.scala:191–200`),
-   exactly `GraphValidations.scala:288–329`'s order: cycle in the failed
-   subgraph before the wrapper.
-4. If either map is non-empty, raise `UnresolvedPipeline` as a Spark
-   `AnalysisException` with Spark's exact message template (no error
-   condition, as upstream), carrying both maps.
-5. Otherwise continue to the post-resolution validations of `769914891`.
+The loop keeps **resolved flow plans** separately from any table schema;
+a table's schema is never stored as a resolution result. Two inference
+points exist, both derived from the resolved flow plans:
 
-The downstream cause name and message are Spark's
-(`UnresolvedDatasetException`), with the dataset in unquoted form.
+- **demand-time** (`VirtualTableInput.load` in Spark): when a flow's read of
+  a local table is resolved, `GraphScope::resolve` computes that table's
+  schema from the flows of that table resolved so far (declared schema if
+  present, else the merge); the reader binds to an empty relation with that
+  schema;
+- **final** (`inferredSchema` in Spark): after every flow has resolved and
+  after the other post-resolution validations, every table's schema is
+  inferred from all of its flows for materialisation.
+
+Failure handling, per flow:
+
+1. **Direct failure.** A flow whose own resolution fails (any `PlanError`
+   other than `UnresolvedRelation`) is recorded in `direct` with its typed
+   cause, and its output is marked failed. A demand-time merge failure is a
+   direct failure of **the reader whose resolution computed it**: if B and D
+   both read a table whose flows merge badly, each of B and D records its
+   own cause when its own resolution runs (CF-0066 point 1). The callback
+   that preserves this is narrow: `GraphScope::resolve(name)` returns
+   `PlanError::AnalysisError` built from the merge error for that reader,
+   through the same `From` path the loop already uses for any resolution
+   error; nothing is guessed after the fact.
+2. **Downstream failure.** A flow whose read hits a failed or still-pending
+   table stays pending. When a pass makes no progress, each pending flow is
+   recorded in `downstream` with `unresolved_dataset(<first failed or pending
+   input it requested>)`.
+3. **Cycle detection runs over the failed subgraph unconditionally**
+   (CF-0066 point 3): before the wrapper is raised, build the map from each
+   failed or pending flow to the failed or pending flows that write its
+   requested inputs (`GraphValidations.scala:299–312`) and run `detectCycle`
+   (`:339–355`); a cycle raises `PIPELINE_CIRCULAR_DEPENDENCY` with Spark's
+   `CircularDependencyException` message, whether or not another component
+   of the graph failed for a different reason.
+4. If either map is non-empty, raise the wrapper (`FailureReport::into_error`).
+5. **Tables nobody read** (CF-0066 point 2): a table whose flows all resolved
+   but which no flow read is not a failure during analysis. Its schema is
+   inferred in the final phase, after the post-resolution validations of
+   `769914891`, where a merge failure raises
+   `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` (or the declared-schema
+   incompatibility) as Spark's last phase does. No synthetic direct failure
+   of its flows is recorded.
+
+Order of phases after the loop: wrapper or cycle (step 3–4) → Auto CDC
+multiflow → MV multiflow → resettability → streamingness → temporary-view
+Auto CDC → final inference per table. Downstream binding is preserved
+because demand-time inference happens exactly where Spark does it, inside
+the reader's resolution.
+
+Fixtures (both declaration orders where ordering matters):
+
+- the two `ConnectInvalidPipelineSuite` cases, exact key sets and nested
+  conditions;
+- A incompatible, B and D both read A, C undefined: direct `{B, D, C}`, each
+  of B and D carrying its own merge cause;
+- A incompatible, nobody reads A, nothing else fails: analysis succeeds, the
+  final phase raises `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` for A, no
+  wrapper;
+- A incompatible, nobody reads A, C undefined: wrapper with direct `{C}`
+  only; A's inference failure is never reached;
+- disconnected cycle (`x` reads `y`, `y` reads `x`) plus an independent
+  undefined source `z`: `PIPELINE_CIRCULAR_DEPENDENCY` first;
+- disconnected cycle plus a downstream chain (`b` reads undefined, `c` reads
+  `b`): still the cycle first, then on removing the cycle the wrapper with
+  direct `{b}`, downstream `{c}`;
+- the post-resolution phases unchanged when nothing fails.
 
 ## Transport boundary, compared from source
 
@@ -147,7 +189,9 @@ Connect exposure in Sail, two separately reviewable units:
 - the post-resolution phases unchanged when nothing fails; the existing
   both-order fixtures move to the wrapper message.
 
-Scope: `analysis.rs` (loop failure path, classification, wrapper), a small
-`UnresolvedDataset` builder in `pipelines/graph.rs` or a new
-`pipelines/failures.rs`, tests, and the three Fable Python tests. No
-`PlanResolver`, session or event-path change.
+Scope: `analysis.rs` (resolved-plan map, demand-time schema callback in
+`GraphScope::resolve`, failure recording, failed-subgraph cycle check,
+wrapper, final inference phase), `schema.rs` (split merge from declared
+check so both inference points reuse it), tests, and the three Fable Python
+tests. `pipelines/failures.rs` is already offered. No `PlanResolver`,
+session or event-path change.
