@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T19:52:55.483307+00:00. Live coordination read through **CF-0205**.
+Snapshot written 2026-10-30T20:32:29.095003+00:00. Live coordination read through **CF-0208**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -45,12 +45,12 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `0af4cfcbbbb465f2e2ca0262c7c73b0e7ed67513` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `0547c4b3e713da11ae3fe67ec2642212a1676592` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | `0af4cfcbb` Rustdoc only; code/control/optimized gates terminal |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `ece5b6aed15462cbc54f18a6f72482f1f5e2ad51` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e2bd42233c4458211a538e84cd78e117d9f9f02c` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | `ece5b6aed` captured analyzer; all owned gates terminal |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `f864733cb6abef74fd445f5c1ec08986c83b48d6` |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `632c15054918cc305130f61b132cd9acb4b4635b` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -160,9 +160,9 @@ Latest fresh public CLI gate is **09d2f0cb89cbb92f186f5096ba04ade7a665282c**:
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0205)
+## Current implementation and immediate next work (CF-0208)
 
-Coordinator HEAD **0af4cfcbbbb465f2e2ca0262c7c73b0e7ed67513** is committed/clean.
+Coordinator HEAD **ece5b6aed15462cbc54f18a6f72482f1f5e2ad51** is committed/clean.
 All owned code/control/optimized gates terminal. [Latest public gate](docs/sail-declarative-pipelines/evidence/bounded-resolved-clocks/README.md)
 remains09d2f0cb8:324 combined libraries/strict Clippy/fmt, fresh300 public+67 upstream
 Python, Spark4.2.1, owned server exit0/no listeners. New callback units below have
@@ -211,18 +211,33 @@ Owned dynamic Python analysis, mixed read modes/multi-leaf views remain required
 original7cf claim narrowed by716 after checking114 root-changed files; application
 is not buildability. CF-0202 authorizes only A–D preparation, separate peer worktree
 /Users/alexy/src/sail-sdp-fable-c5, branch work/sdp-c5-events-integration on immutable09,
-own target, offers A bb50a54d3/B7de7712f1/Cbad45044d/D0744b4c99. Working-tree evidence
-reported; exact detached gates pending atCF-0204. No root integration. E′/F–K not
+own target, offers A bb50a54d3/B7de7712f1/Cbad45044d/D0744b4c99. Exact peer detached gates
+reported inCF-0206; queue delay/self-matching pgrep failure disclosed. No root integration. E′/F–K not
 authorized yet; two CDC phase calls/four assertions remain reintegration obligations.
 No Status-rendering policy selected. Original peer history remains untouched.
 
-**Next substantial API design checkpoint was announced to the user this turn**:
-captured Session transfer into execution plus exact analyzer-only access; user can
-switch to Astra before decisions. No API chosen/implemented. [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md)
-remains active. Audit preparation's late authority recapture, provider/plan lifetime
-vs resource-owner lifetime, earlier catalog I/O, task context/registry propagation,
-cluster preparation and typed primary+cleanup before public migration. Session/
-cluster/SDK effects, ORC writer, C0 identity and full original Spark acceptance open.
+**Capture/execution/analyzer API checkpoint is now active**, announced before this
+phase. [Design draft](docs/sail-declarative-pipelines/CAPTURE-EXECUTION-TRANSFER-DESIGN.md)
+proposes consuming capture into a runner-bound executor with borrowed session(),
+legacy execute unchanged. API not finalized/implemented. CF-0207 asks read-only
+Fable review of guard/error/drop, provider/plan lifetime and cluster/transport;
+CF-0208 ACKs. No E′/Status/runtime policy expansion.
+[Boundary characterization](docs/sail-declarative-pipelines/evidence/capture-execution-boundary/README.md)
+e42e1be96 is test-only: actual planner config7/child registry, legacy execution
+config9/parent registry, same owner.134+222 libraries/one optimized CPU-load case;
+all ten workers joined. Preserve this expected legacy behavior, not a bug claim.
+[Native analyzer primitive](docs/sail-declarative-pipelines/evidence/scoped-native-analyzer/README.md)
+ece5b6aed adds exact captured analyzer/config, no optimizer,136+71 libraries;
+unchanged optimizer substitution1pass/1fail. Typed analyzer cause reachable. No
+resolver/caller/execution transfer yet. [Source/lifetime audit](docs/sail-declarative-pipelines/evidence/capture-transfer-source-audit/README.md)
+records state() marking execution start, retained Delta log store vs scan-session
+data store, Iceberg metadata/scan phases. Standalone lifetime/escape compiler probes
+prove language pattern only, not Sail/async/cluster/provider semantics.
+Next: review draft/provider lifetime/error transitions before bound capture code;
+then typed resolver analyzer mode, local/cluster capability and caller-specific
+migration. Earlier catalog I/O/Python analysis, primary+cleanup, session/cluster/
+SDK effects, ORC writer, C0 identity and full original Spark acceptance remain open.
+[Parent design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) retains earlier constraints.
 
 ## Acceptance accounting and major remaining work
 

@@ -461,3 +461,18 @@ API checkpoint (capture/execution transfer and exact analyzer access) was announ
 to the user so they can switch to Astra before decisions. No new API selected.
 Audit plan/provider lifetime against owner lifetime, late preparation recapture,
 cluster/task-context/registry propagation and typed primary/cleanup first.
+
+
+## Capture/analyzer checkpoint follow-up
+
+The [active child design](CAPTURE-EXECUTION-TRANSFER-DESIGN.md) records the next
+source review after factory routing. [Characterization](evidence/capture-execution-boundary/README.md)
+e42 proves the actual planning/execution split without changing legacy behavior:
+selected7/child registry for planning, late9/parent for execution, same owner.
+[Native analyzer primitive](evidence/scoped-native-analyzer/README.md)ece adds the
+captured analyzer-only method; resolver adoption is separate and optimization
+substitution is rejected by unchanged tests. [Audit](evidence/capture-transfer-source-audit/README.md)
+records provider lifetime paths and limited Rust language proof. Consuming bound
+capture is the preferred review candidate, not an implemented/final API. No public
+caller or cluster/effect path migrated. Fable's read-only review is requested;
+C0/SDK/primary-cleanup/earlier catalog and session obligations remain open.

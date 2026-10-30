@@ -1,0 +1,16 @@
+error[E0597]: `runner` does not live long enough
+  --> /tmp/sail-sdp-captured-preparation-escape.rs:25:83
+   |
+24 |         let runner = 7;
+   |             ------ binding `runner` declared here
+25 |         let preparation: Box<dyn Preparation + '_> = Box::new(BorrowedPreparation(&runner));
+   |                                                                                   ^^^^^^^ borrowed value does not live long enough
+26 |         captured = preparation.capture();
+27 |     }
+   |     - `runner` dropped here while still borrowed
+28 |     assert_eq!(captured.value(), 7);
+   |                -------- borrow later used here
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0597`.

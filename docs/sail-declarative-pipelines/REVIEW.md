@@ -1832,3 +1832,20 @@ preparation authorized on09; peer offers posted, detached gates pending. E′/F�
 Status policy and CDC reintegration obligations remain open. User notified before
 next capture/execution-transfer/analyzer API phase; no new API selected. Full
 original Spark4.2.1 objective/inventory unchanged.
+
+
+## 2026-10-30 — capture boundary characterized; exact native analyzer primitive
+
+[Boundary](evidence/capture-execution-boundary/README.md)e42e1be96 is test-only:
+planner sees captured7/child registry; legacy execution sees9/parent, same owner.
+134+222 libraries/one optimized under ten joined CPU workers, strict Clippy/fmt.
+[Captured analyzer](evidence/scoped-native-analyzer/README.md)ece5b6aed uses native
+execute_and_check/config, no optimize,136+71 libraries; unchanged optimizer control
+1pass/1fail, typed error preserved. No caller/execution/cluster/effect activation.
+[Source/lifetime audit](evidence/capture-transfer-source-audit/README.md) pins native
+provider phases, DataFusion state() timing and standalone object-lifetime/escape
+proof (not a Sail API verdict). [Draft](CAPTURE-EXECUTION-TRANSFER-DESIGN.md) prefers
+consuming bound capture with legacy unchanged; exact API and migration unresolved.
+CF-0207/0208 request/ACK read-only peer review. CF-0206 posts peer A–D exact gates
+and discloses prior self-matching pgrep wait-loop delay; no root A–D integration.
+Latest public CLI remains09d2f0cb8; full original Spark inventory unchanged.
