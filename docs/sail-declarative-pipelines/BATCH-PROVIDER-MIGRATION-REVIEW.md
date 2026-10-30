@@ -66,24 +66,46 @@ replace = true, …)` and runs it with the flow's `queryContext` catalog and
 
 ## 2. Findings
 
-- **2.1 Fusion precedence is "upstream view's flow overwrites consumer,
-  in input-read order", and Sail does neither today.** Because the
-  consumer's confs are set before any input is read and each upstream
-  `Flow` input's confs are written afterwards by `setConfString`, a key set
-  on both takes the upstream value; two upstream views conflicting on a key
-  resolve to whichever is read last. Sail resolves a consumer under its own
-  `sql_conf` only, and resolves each temporary view's body under the view's
-  own `sql_conf` before splicing the plan (`execution.rs:69–84`,
-  `analysis.rs:124`). So a conf set only on the consumer does not reach the
-  view body in Sail but does in Spark, and a conf set only on the view does
-  not reach the consumer's analysis in Sail but does in Spark. The draft's
-  "preserve the ordering/precedence of that fusion" and its direction text
-  "resolve required temporary views … preserving each definition's own SQL
-  config" describe two different behaviours; the second is Sail's current
-  one. Pick one explicitly in the design (the Spark rule is the one above)
-  and make the parity check a fixture with a conf that changes analysis
-  visibly, for example `spark.sql.caseSensitive` on view and consumer in
-  each combination.
+- **2.1 Conf fusion (corrected after CF-0250): a union with conflicts
+  rejected, not an overwrite.** The earlier text read only
+  `readGraphInput`'s `setConf` and called the rule "upstream overwrites
+  consumer in input-read order". That overwrite happens inside the first
+  analysis pass only. The rule that determines a flow's conf is
+  `CoreDataflowNodeProcessor.attemptResolveFlow`
+  (`CoreDataflowNodeProcessor.scala:118–190`): after the first successful
+  call, it collects `FlowConf(key, value, flowIdentifier)` for the flow's own
+  confs plus the confs of every **`Flow`** input it actually used
+  (`f.inputs`, so views; `VirtualTableInput` tables contribute nothing);
+  if any key carries more than one distinct value across those flows it
+  throws `AnalysisException("DUPLICATE_FLOW_SQL_CONF", key, datasetName,
+flowName1, flowName2)` (names sorted by value); otherwise `newSqlConf` is
+  the union, and if it differs from the flow's own confs the flow function
+  is called again under the union. `ResolvedFlow.sqlConf` is
+  `funcResult.sqlConf` (`Flow.scala:194`), so the merged conf is what
+  `BatchTableWrite.sqlConf` (`FlowPlanner.scala:49`) applies with
+  `withSqlConf` around `reanalyzeFlow`. Pipeline-level defaults are folded in
+  at registration as `defaultSqlConf ++ flowDef.sqlConf`
+  (`GraphRegistrationContext.scala:62`), so a flow's own value wins over the
+  pipeline default and does not count as a conflict. `FlowFunctionResult.
+sqlConf` is the raw confs passed to that call (`FlowAnalysis.scala:72`),
+  which is the phase distinction CF-0250 names: raw per call, merged on the
+  resolved flow. Spark's own tests pin this: `ConnectValidPipelineSuite`
+  "Connect retains and fuses confs" (`:264–288`, `d` over `a→b` and `c`
+  yields the union of all four), "Confs aren't fused past materialization
+  points" (`:289–321`, a table `b` reading view `a` gets `a`'s conf, but a
+  consumer of `b` does not), "Setting the same conf with the same value is
+  totally cool" (`:322–345`), "Pipeline level default spark confs are
+  applied with correct precedence" (`:460–490`); `ConnectInvalidPipelineSuite`
+  "view-table conf conflict" (`:350–373`) and "view-view conf conflict"
+  (`:374–`) assert `DUPLICATE_FLOW_SQL_CONF`. Sail today applies neither
+  the union nor the conflict check: a consumer resolves under its own
+  `sql_conf` and each view body under the view's own (`execution.rs`,
+  `reanalysis.rs`, `analysis.rs:124`). The design's target should therefore
+  be: resolve a command's view closure and its own query under the union of
+  the consumer's and the traversed views' flow confs, fail with
+  `DUPLICATE_FLOW_SQL_CONF` on conflicting values, stop the union at tables,
+  and fold pipeline defaults under flow confs; the `BTreeSet` dependency
+  topology is sufficient for this because the rule is order-independent.
 - **2.2 Persisted views are not materialization points in Spark.** The
   closure stops at tables only; an upstream persisted view's defining flow is
   re-analyzed inside the consumer's subgraph. Sail publishes the view at
