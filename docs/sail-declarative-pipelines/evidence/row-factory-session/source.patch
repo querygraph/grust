@@ -1,0 +1,312 @@
+diff --git a/crates/sail-plan/src/resolver/command/delete.rs b/crates/sail-plan/src/resolver/command/delete.rs
+index 7512337fc..090d94890 100644
+--- a/crates/sail-plan/src/resolver/command/delete.rs
++++ b/crates/sail-plan/src/resolver/command/delete.rs
+@@ -55,7 +55,7 @@ impl PlanResolver<'_> {
+         registry
+             .get_lake_source(&target_format)?
+             .plan_row_level_operation(
+-                &self.ctx.state(),
++                self.provider_session().as_session(),
+                 RowLevelOperation::Delete(Box::new(delete_info)),
+             )
+             .await
+diff --git a/crates/sail-plan/src/resolver/command/merge.rs b/crates/sail-plan/src/resolver/command/merge.rs
+index 9a69fc44b..23d3d63c8 100644
+--- a/crates/sail-plan/src/resolver/command/merge.rs
++++ b/crates/sail-plan/src/resolver/command/merge.rs
+@@ -206,10 +206,10 @@ impl PlanResolver<'_> {
+ 
+         let registry = self.ctx.extension::<DataSourceRegistry>()?;
+         let lake_source = registry.get_lake_source(&target_format)?;
+-        let session_state = self.ctx.state();
++        let session = self.provider_session();
+         Ok(lake_source
+             .plan_row_level_operation(
+-                &session_state,
++                session.as_session(),
+                 RowLevelOperation::Merge(Box::new(MergeInfo {
+                     target: Arc::new(target_plan),
+                     source: Arc::new(source_plan),
+diff --git a/crates/sail-plan/src/resolver/command/truncate.rs b/crates/sail-plan/src/resolver/command/truncate.rs
+index d0d21273d..049771f16 100644
+--- a/crates/sail-plan/src/resolver/command/truncate.rs
++++ b/crates/sail-plan/src/resolver/command/truncate.rs
+@@ -68,7 +68,7 @@ impl PlanResolver<'_> {
+         let target_plan = Arc::new(self.resolve_row_level_table_plan(table, state).await?);
+         let truncate = source
+             .plan_row_level_operation(
+-                &self.ctx.state(),
++                self.provider_session().as_session(),
+                 RowLevelOperation::Truncate {
+                     target_plan,
+                     target: Box::new(target),
+diff --git a/crates/sail-plan/src/resolver/command/update.rs b/crates/sail-plan/src/resolver/command/update.rs
+index d25e56dae..bc9499fa5 100644
+--- a/crates/sail-plan/src/resolver/command/update.rs
++++ b/crates/sail-plan/src/resolver/command/update.rs
+@@ -240,7 +240,7 @@ impl PlanResolver<'_> {
+         registry
+             .get_lake_source(&target_format)?
+             .plan_row_level_operation(
+-                &self.ctx.state(),
++                self.provider_session().as_session(),
+                 RowLevelOperation::Update(Box::new(UpdateInfo {
+                     target_plan: Arc::new(target_plan),
+                     target,
+diff --git a/crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs b/crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs
+index 9e68ff030..8df84e35f 100644
+--- a/crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs
+@@ -5,7 +5,7 @@ use sail_common_datafusion::lakesource::{LakeSource, LakeSourceMetadata};
+ 
+ use super::*;
+ 
+-struct CheckingLake {
++pub(super) struct CheckingLake {
+     owner: Option<Arc<TaskResourceScope>>,
+     calls: Arc<AtomicUsize>,
+ }
+@@ -24,14 +24,11 @@ impl DataSource for CheckingLake {
+         datafusion_common::internal_err!("metadata test must not plan a writer")
+     }
+ }
+-#[tonic::async_trait]
+-impl LakeSource for CheckingLake {
+-    async fn infer_metadata(
+-        &self,
+-        session: &dyn Session,
+-        info: SourceInfo,
+-    ) -> Result<LakeSourceMetadata> {
+-        assert_eq!(info.paths, ["/input"]);
++impl CheckingLake {
++    pub(super) fn new(owner: Option<Arc<TaskResourceScope>>, calls: Arc<AtomicUsize>) -> Self {
++        Self { owner, calls }
++    }
++    pub(super) async fn metadata(&self, session: &dyn Session) -> Result<LakeSourceMetadata> {
+         self.calls.fetch_add(1, Ordering::SeqCst);
+         let store = session
+             .runtime_env()
+@@ -65,6 +62,18 @@ impl LakeSource for CheckingLake {
+         })
+     }
+ }
++#[tonic::async_trait]
++impl LakeSource for CheckingLake {
++    async fn infer_metadata(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<LakeSourceMetadata> {
++        assert_eq!(info.paths, ["/input"]);
++        self.metadata(session).await
++    }
++}
++
+ async fn metadata_case(scoped: bool, properties: bool, catalog: bool) -> TestResult {
+     let fixture = Fixture::new().await?;
+     let calls = Arc::new(AtomicUsize::new(0));
+diff --git a/crates/sail-plan/src/resolver/query/row_factory_session_tests.rs b/crates/sail-plan/src/resolver/query/row_factory_session_tests.rs
+new file mode 100644
+index 000000000..7296f4161
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/row_factory_session_tests.rs
+@@ -0,0 +1,187 @@
++use datafusion_expr::TableSource;
++use sail_common_datafusion::datasource::{DataSource, SinkInfo, SourceInfo};
++use sail_common_datafusion::lakesource::{LakeSource, LakeSourceMetadata, RowLevelOperation};
++
++use super::lake_metadata::CheckingLake;
++use super::*;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++enum Kind {
++    Delete,
++    Update,
++    Truncate,
++    Merge,
++}
++struct RowSource {
++    metadata: CheckingLake,
++    kind: Kind,
++    planned: Arc<AtomicUsize>,
++}
++#[tonic::async_trait]
++impl DataSource for RowSource {
++    fn name(&self) -> &str {
++        "iceberg"
++    }
++    fn as_lake_source(self: Arc<Self>) -> Option<Arc<dyn LakeSource>> {
++        Some(self)
++    }
++    async fn create_source(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<Arc<dyn TableSource>> {
++        let metadata = self.metadata.infer_metadata(session, info).await?;
++        Ok(provider_as_source(Arc::new(MemTable::try_new(
++            metadata.schema,
++            vec![vec![]],
++        )?)))
++    }
++    async fn create_writer(&self, _: &dyn Session, _: SinkInfo) -> Result<LogicalPlan> {
++        datafusion_common::internal_err!("row factory probe must not plan a writer")
++    }
++}
++#[tonic::async_trait]
++impl LakeSource for RowSource {
++    async fn infer_metadata(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<LakeSourceMetadata> {
++        self.metadata.infer_metadata(session, info).await
++    }
++    async fn plan_row_level_operation(
++        &self,
++        session: &dyn Session,
++        operation: RowLevelOperation,
++    ) -> Result<LogicalPlan> {
++        let kind = match operation {
++            RowLevelOperation::Delete(_) => Kind::Delete,
++            RowLevelOperation::Update(_) => Kind::Update,
++            RowLevelOperation::Truncate { .. } => Kind::Truncate,
++            RowLevelOperation::Merge(_) => Kind::Merge,
++        };
++        assert_eq!(kind, self.kind);
++        self.planned.fetch_add(1, Ordering::SeqCst);
++        self.metadata.metadata(session).await?;
++        datafusion_common::plan_err!("row factory probe completed before mutation planning")
++    }
++}
++async fn row_factory(scoped: bool, kind: Kind) -> TestResult {
++    let fixture = Fixture::new().await?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let planned = Arc::new(AtomicUsize::new(0));
++    fixture
++        .ctx
++        .extension::<DataSourceRegistry>()?
++        .register_data_source(Arc::new(RowSource {
++            metadata: CheckingLake::new(scoped.then(|| fixture.resources.clone()), calls.clone()),
++            kind,
++            planned: planned.clone(),
++        }))?;
++    let table = vec!["iceberg", "/input"].into();
++    let command = match kind {
++        Kind::Delete => spec::CommandNode::Delete {
++            table,
++            table_alias: None,
++            condition: None,
++        },
++        Kind::Update => spec::CommandNode::Update {
++            table,
++            table_alias: None,
++            assignments: vec![(
++                spec::ObjectName::bare("id"),
++                spec::Expr::Literal(spec::Literal::Int64 { value: Some(1) }),
++            )],
++            condition: None,
++        },
++        Kind::Truncate => spec::CommandNode::TruncateTable { table },
++        Kind::Merge => spec::CommandNode::MergeInto(spec::MergeInto {
++            target: table,
++            target_alias: None,
++            source: spec::MergeSource::Query {
++                input: Box::new(input()),
++                alias: None,
++            },
++            on_condition: spec::ExprWithSource {
++                expr: spec::Expr::Literal(spec::Literal::Boolean { value: Some(true) }),
++                source: None,
++            },
++            clauses: vec![spec::MergeClause::Matched(spec::MergeMatchedClause {
++                condition: None,
++                action: spec::MergeMatchedAction::Delete,
++            })],
++            with_schema_evolution: false,
++        }),
++    };
++    let resolver = if scoped {
++        fixture.resolver()
++    } else {
++        PlanResolver::new(&fixture.ctx, Arc::new(PlanConfig::default()))
++            .with_relation_scope(&fixture.inputs)
++    };
++    let result = resolver
++        .resolve_command_plan(
++            spec::CommandPlan::new(command),
++            &mut PlanResolverState::new(),
++        )
++        .await;
++    let error = match result {
++        Err(error) => error,
++        Ok(_) => return Err("row factory must stop before mutation planning".into()),
++    };
++    assert!(
++        error
++            .to_string()
++            .contains("row factory probe completed before mutation planning"),
++        "{kind:?}: {error}"
++    );
++    assert_eq!(planned.load(Ordering::SeqCst), 1);
++    assert_eq!(
++        calls.load(Ordering::SeqCst),
++        3,
++        "target metadata, read source, row factory"
++    );
++    assert_eq!(
++        fixture.calls.load(Ordering::SeqCst),
++        0,
++        "no physical planning"
++    );
++    assert_eq!(
++        fixture.resources.drain().await?.registered,
++        if scoped { 3 } else { 0 }
++    );
++    assert!(fixture.ctx.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
++#[tokio::test]
++async fn delete_factory_uses_selected_session() -> TestResult {
++    row_factory(true, Kind::Delete).await
++}
++#[tokio::test]
++async fn delete_factory_keeps_legacy_authority() -> TestResult {
++    row_factory(false, Kind::Delete).await
++}
++#[tokio::test]
++async fn update_factory_uses_selected_session() -> TestResult {
++    row_factory(true, Kind::Update).await
++}
++#[tokio::test]
++async fn update_factory_keeps_legacy_authority() -> TestResult {
++    row_factory(false, Kind::Update).await
++}
++#[tokio::test]
++async fn truncate_factory_uses_selected_session() -> TestResult {
++    row_factory(true, Kind::Truncate).await
++}
++#[tokio::test]
++async fn truncate_factory_keeps_legacy_authority() -> TestResult {
++    row_factory(false, Kind::Truncate).await
++}
++#[tokio::test]
++async fn merge_factory_uses_selected_session() -> TestResult {
++    row_factory(true, Kind::Merge).await
++}
++#[tokio::test]
++async fn merge_factory_keeps_legacy_authority() -> TestResult {
++    row_factory(false, Kind::Merge).await
++}
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index 91bb2f9ec..b93d63938 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -322,3 +322,6 @@ mod writers;
+ 
+ #[path = "lake_metadata_session_tests.rs"]
+ mod lake_metadata;
++
++#[path = "row_factory_session_tests.rs"]
++mod row_factories;

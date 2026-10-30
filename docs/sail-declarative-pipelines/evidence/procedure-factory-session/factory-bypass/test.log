@@ -1,0 +1,38 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 23.60s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 4 tests
+test resolver::query::session_tests::procedures::catalog_procedure_keeps_legacy_authority ... ok
+test resolver::query::session_tests::procedures::predicate_procedure_keeps_legacy_authority ... ok
+test resolver::query::session_tests::procedures::catalog_procedure_uses_selected_session ... FAILED
+test resolver::query::session_tests::procedures::predicate_procedure_uses_selected_session ... FAILED
+
+failures:
+
+---- resolver::query::session_tests::procedures::catalog_procedure_uses_selected_session stdout ----
+
+thread 'resolver::query::session_tests::procedures::catalog_procedure_uses_selected_session' (89887525) panicked at crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs:151:5:
+error in DataFusion: Internal error: session extension not found: task resource scope.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- resolver::query::session_tests::procedures::predicate_procedure_uses_selected_session stdout ----
+
+thread 'resolver::query::session_tests::procedures::predicate_procedure_uses_selected_session' (89887527) panicked at crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs:151:5:
+error in DataFusion: Internal error: session extension not found: task resource scope.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues
+
+
+failures:
+    resolver::query::session_tests::procedures::catalog_procedure_uses_selected_session
+    resolver::query::session_tests::procedures::predicate_procedure_uses_selected_session
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 67 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

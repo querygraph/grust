@@ -437,3 +437,27 @@ operation, cancellation/join outcome and unchanged phase/error behavior remain
 required work under the preparation design. No Python worker/ownership API or C0
 staging/reconstruction authority is selected here. Correction qualification and
 root integration are recorded separately in REVIEW and the handoff.
+
+
+## Remaining factory routing completed; API checkpoint announced
+
+[Row factories](evidence/row-factory-session/README.md), Sail1a80c0a95,
+route DELETE/UPDATE/TRUNCATE/MERGE,63 libraries/8 optimized. [Delta metadata](evidence/delta-metadata-session/README.md),
+63b660ac0, routes path-feature/existing-catalog constraint callbacks,67/4 optimized.
+[Procedures](evidence/procedure-factory-session/README.md),41759759b, routes factory
+and predicate metadata,71/4 optimized. All exact fmt/strict Clippy; independent
+unchanged controls prove scope propagation and legacy fallback; ten CPU-load workers
+joined per optimized run. Delta callers may skip metadata errors, so successful
+scope admissions are checked independently. Probes stop before implementations/
+physical planning, not real backend mutation qualification. Initial Delta fixture
+failures retained. [Rustdoc0af](evidence/resolver-factory-coverage-doc/README.md)
+reflects current coverage with no non-doc change. Latest CLI still09d2f0cb8.
+
+The earlier next-unit lists are historical: procedure/Delta/row-operation factory
+routing is now implemented. Native analyzer-only paths remain on ctx.state; no
+optimizer substitution or fresh context introduced. Public captured-Session callers,
+earlier catalog I/O and final execution have not migrated. The next substantial
+API checkpoint (capture/execution transfer and exact analyzer access) was announced
+to the user so they can switch to Astra before decisions. No new API selected.
+Audit plan/provider lifetime against owner lifetime, late preparation recapture,
+cluster/task-context/registry propagation and typed primary/cleanup first.

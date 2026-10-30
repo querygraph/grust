@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T19:07:58.975252+00:00. Live coordination read through **CF-0199**.
+Snapshot written 2026-10-30T19:52:55.483307+00:00. Live coordination read through **CF-0205**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -45,12 +45,12 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `09d2f0cb89cbb92f186f5096ba04ade7a665282c` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `9f351a7f50ffa63c8eeeee1913a41abc5a83c989` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | `09d2f0cb8` actual clocks/public gate (all owned gates terminal) |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `0af4cfcbbbb465f2e2ca0262c7c73b0e7ed67513` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `0547c4b3e713da11ae3fe67ec2642212a1676592` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | `0af4cfcbb` Rustdoc only; code/control/optimized gates terminal |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `38864cd0e0fd8a73e83780e1629ed8101ff9acfb` |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `f864733cb6abef74fd445f5c1ec08986c83b48d6` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -160,68 +160,69 @@ Latest fresh public CLI gate is **09d2f0cb89cbb92f186f5096ba04ade7a665282c**:
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0199)
+## Current implementation and immediate next work (CF-0205)
 
-Coordinator HEAD **09d2f0cb89cbb92f186f5096ba04ade7a665282c** is committed/clean.
-All owned code/public gates terminal. [Actual Sail clock/public gate](docs/sail-declarative-pipelines/evidence/bounded-resolved-clocks/README.md):
-134 common-datafusion+55 plan+135 Connect libraries (324), strict all-target/all-
-feature Clippy/fmt; fresh CLI300 public+67 upstream Python executions pass, Spark
-4.2.1, owned server exit0/no listeners. This is the latest CLI pin; not full Scala
-acceptance. Public callers still do not supply the selected operation Session.
+Coordinator HEAD **0af4cfcbbbb465f2e2ca0262c7c73b0e7ed67513** is committed/clean.
+All owned code/control/optimized gates terminal. [Latest public gate](docs/sail-declarative-pipelines/evidence/bounded-resolved-clocks/README.md)
+remains09d2f0cb8:324 combined libraries/strict Clippy/fmt, fresh300 public+67 upstream
+Python, Spark4.2.1, owned server exit0/no listeners. New callback units below have
+no fresh CLI verdict. Public callers still do not install a captured Session.
 
-Historical [local preparation](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md),
-[ScopedSession](docs/sail-declarative-pipelines/evidence/scoped-session/README.md),
-[helper routing](docs/sail-declarative-pipelines/evidence/resolver-query-session/README.md),
-[read](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md),
+[Read](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md),
 [writer/schema](docs/sail-declarative-pipelines/evidence/resolver-writer-session/README.md) and
-[lake metadata/property callbacks](docs/sail-declarative-pipelines/evidence/lake-metadata-session-callbacks/README.md)
-packets preserve exact gates and unchanged bypass failures. d6 passes55 libraries/
-6 optimized CPU-load tests; its bypass fails3 scoped cases, passes3 legacy cases.
+[lake metadata/properties](docs/sail-declarative-pipelines/evidence/lake-metadata-session-callbacks/README.md)
+preserve their exact historical gates and bypass failures. The existing
+[preparation](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md),
+[ScopedSession](docs/sail-declarative-pipelines/evidence/scoped-session/README.md) and
+[helper](docs/sail-declarative-pipelines/evidence/resolver-query-session/README.md) seams remain opt-in.
 
-[Neutral bounded contract](docs/sail-declarative-pipelines/evidence/bounded-contract-root-integration/README.md)
-f7 imports44cbb94cc; [control](docs/sail-declarative-pipelines/evidence/bounded-control-root-integration/README.md)
-853 imports15e206694; [binding](docs/sail-declarative-pipelines/evidence/bounded-binding-root-integration/README.md)
-2d3f9d499 imports d77 with temporary test field expectations; [admission](docs/sail-declarative-pipelines/evidence/bounded-admission-root-integration/README.md)
-d0 imports corrected8f, removes those expectations and extracts tests. [Signature fixtures](docs/sail-declarative-pipelines/evidence/admission-signature-fixtures/README.md)
-0e imports b32 test-only,134+114 libraries. Synthetic projections exercise the
-signature walker; they do not qualify executable aggregate/window support.
+[Row factories](docs/sail-declarative-pipelines/evidence/row-factory-session/README.md)
+1a80c0a95: DELETE/UPDATE/TRUNCATE/MERGE selected-Session routing,63 libraries/
+8 optimized CPU-load cases; unchanged four-site bypass fails4 scoped/passes4 legacy.
+[Delta metadata](docs/sail-declarative-pipelines/evidence/delta-metadata-session/README.md)
+63b660ac0: path feature/catalog constraint callbacks,67 libraries/4 optimized;
+independent path/catalog bypass each3pass/1 corresponding scoped failure. Completion
+counts detect metadata errors otherwise skipped. Initial input-schema/read-count
+fixture failures retained. [Procedure callbacks](docs/sail-declarative-pipelines/evidence/procedure-factory-session/README.md)
+41759759b: catalog and predicate procedures,71 libraries/4 optimized; unchanged
+factory bypass2pass/2scopedfail, metadata bypass3pass/1predicatefail. All strict
+Clippy/fmt; ten load workers joined per optimized run. Probes stop before mutation/
+implementation/physical planning; real SDK behavior/public activation unqualified.
+[Rustdoc0af](docs/sail-declarative-pipelines/evidence/resolver-factory-coverage-doc/README.md)
+changes no non-doc source from417; fmt/diff checks only. Native analyzers unchanged.
 
-[Original clock failure](docs/sail-declarative-pipelines/evidence/fable-stable-admission-review/README.md)
-and [unchanged correction replay](docs/sail-declarative-pipelines/evidence/fable-stable-admission-correction-review/README.md)
-preserve9pass/2fail→3pass. Actual Sail current_timestamp/now/current_date lowering
-now stays non-replayable; resolved abs control stays replayable. No new dependency;
-existing test-only SQL resolution_context reused. Original phase/provenance remains.
+The pure bounded stack is imported: [contract](docs/sail-declarative-pipelines/evidence/bounded-contract-root-integration/README.md),
+[control](docs/sail-declarative-pipelines/evidence/bounded-control-root-integration/README.md),
+[binding](docs/sail-declarative-pipelines/evidence/bounded-binding-root-integration/README.md),
+[admission](docs/sail-declarative-pipelines/evidence/bounded-admission-root-integration/README.md),
+[signature fixtures](docs/sail-declarative-pipelines/evidence/admission-signature-fixtures/README.md),
+[lowerer](docs/sail-declarative-pipelines/evidence/bounded-lowerer-root-integration/README.md),
+[typed causes](docs/sail-declarative-pipelines/evidence/bounded-lower-error-chain/README.md) and actual clocks above.
+[Clock failure](docs/sail-declarative-pipelines/evidence/fable-stable-admission-review/README.md)/
+[unchanged correction](docs/sail-declarative-pipelines/evidence/fable-stable-admission-correction-review/README.md),
+[inline UDTF failure](docs/sail-declarative-pipelines/evidence/fable-inline-udtf-binding-review/README.md)/
+[guard/replay](docs/sail-declarative-pipelines/evidence/bounded-inline-udtf-guard/README.md) and
+[lowerer controls](docs/sail-declarative-pipelines/evidence/fable-local-lowering-review/README.md) remain retained.
+Scope is unused in pure lowerer; snapshots declare inputs, not complete replay
+identity/backend pin proof. No broker/target/checkpoint/durable CDC/public activation.
+Owned dynamic Python analysis, mixed read modes/multi-leaf views remain required.
 
-[Dynamic inline UDTF review](docs/sail-declarative-pipelines/evidence/fable-inline-udtf-binding-review/README.md)
-finds return_type=None triggers Python analyze during resolution outside lowerer
-scope: original8907014d7 fails dynamic case/static control passes. [Guard](docs/sail-declarative-pipelines/evidence/bounded-inline-udtf-guard/README.md)
-7b imports d1 byte-for-byte,134+117 libraries; original fixtures replay unchanged
-against d1 atab016afa0:2pass. Static-schema subquery reads still classified. This
-is a temporary unowned-helper guard, not complete Python UDTF support; owned
-dynamic analysis remains required follow-up. No payload executed by these probes.
+[C5 manifest review](docs/sail-declarative-pipelines/evidence/fable-c5-integration-manifest-review/README.md):
+original7cf claim narrowed by716 after checking114 root-changed files; application
+is not buildability. CF-0202 authorizes only A–D preparation, separate peer worktree
+/Users/alexy/src/sail-sdp-fable-c5, branch work/sdp-c5-events-integration on immutable09,
+own target, offers A bb50a54d3/B7de7712f1/Cbad45044d/D0744b4c99. Working-tree evidence
+reported; exact detached gates pending atCF-0204. No root integration. E′/F–K not
+authorized yet; two CDC phase calls/four assertions remain reintegration obligations.
+No Status-rendering policy selected. Original peer history remains untouched.
 
-[Lowerer](docs/sail-declarative-pipelines/evidence/bounded-lowerer-root-integration/README.md)
-bc imports40b all five blobs identical,134+130 libraries/13 lowerer cases; only
-existing Connect sha2 consumer edge added. [Typed error chain](docs/sail-declarative-pipelines/evidence/bounded-lower-error-chain/README.md)
-ae imports dea both blobs identical,134+131 libraries; arbitrary provider type
-reachable through standard source/downcast. 09 imports56ae actual clock tests,
-all three blobs identical and final324/public gate above. Fable co-authorship kept.
-Scope remains unused in pure lowerer; snapshots record declared inputs, not every
-replay dependency or actual backend pin. No broker/target/checkpoint/CDC activation.
-[Earlier lowerer controls](docs/sail-declarative-pipelines/evidence/fable-local-lowering-review/README.md) remain retained.
-
-Fable components /Users/alexy/src/sail-sdp-fable-components, branch
-work/sdp-pure-components-integration, own target, through d1f2fd565. Do not import
-redundant efb extraction or replay this stack again. CF-0199 asks a read-only batch
-C5/event import manifest against09: minimal units, prerequisites/shared files and
-original Spark assertions, no code/runtime policy change yet. Original offers stay.
-Mixed modes/multi-leaf views, C5/events/CDC consumers remain required follow-up.
-
-Next root implementation: remaining procedure/delta metadata/row-operation Session
-factory propagation. Earlier catalog I/O, exact native analyzer seam, capture/
-execution transfer, typed primary+cleanup, session/cluster and byte/outcome/recovery
-remain open. [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) stays active for Astra.
-Notify user before starting the next substantial capture/execution/analyzer API phase.
+**Next substantial API design checkpoint was announced to the user this turn**:
+captured Session transfer into execution plus exact analyzer-only access; user can
+switch to Astra before decisions. No API chosen/implemented. [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md)
+remains active. Audit preparation's late authority recapture, provider/plan lifetime
+vs resource-owner lifetime, earlier catalog I/O, task context/registry propagation,
+cluster preparation and typed primary+cleanup before public migration. Session/
+cluster/SDK effects, ORC writer, C0 identity and full original Spark acceptance open.
 
 ## Acceptance accounting and major remaining work
 

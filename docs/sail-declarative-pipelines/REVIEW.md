@@ -1813,3 +1813,22 @@ upstream Python, Spark4.2.1, owned server exit0/no listeners, before conditional
 advancement. Snapshot identities are declared, scope unused, no public lowerer,
 broker/target/durable CDC or C0 authority activation. Full original Scala suite and
 inventory coverage unchanged. CF-0199 requests peer batch C5/event import manifest.
+
+
+## 2026-10-30 — remaining provider callbacks routed; next design checkpoint announced
+
+[Row factories](evidence/row-factory-session/README.md)1a pass63 libraries/8 optimized,
+unchanged4scopedfail/4legacy controls. [Delta metadata](evidence/delta-metadata-session/README.md)
+63b passes67/4 optimized, independent3pass/1fail controls; initial schema/count
+fixtures retained. [Procedures](evidence/procedure-factory-session/README.md)417
+passes71/4 optimized; factory2pass/2fail and metadata3pass/1fail unchanged controls.
+Strict all-target/all-feature Clippy/fmt for each, ten load workers joined; no
+physical/mutation implementation planned by probes. [Rustdoc0af](evidence/resolver-factory-coverage-doc/README.md)
+non-doc code identical, fmt/diff only. Public CLI remains09, no SDK/public migration.
+
+[C5 manifest review](evidence/fable-c5-integration-manifest-review/README.md) narrows
+root-change claim and separates clean application from buildability. Only A–D
+preparation authorized on09; peer offers posted, detached gates pending. E′/F–K,
+Status policy and CDC reintegration obligations remain open. User notified before
+next capture/execution-transfer/analyzer API phase; no new API selected. Full
+original Spark4.2.1 objective/inventory unchanged.

@@ -1,0 +1,203 @@
+diff --git a/crates/sail-plan/src/resolver/command/delta.rs b/crates/sail-plan/src/resolver/command/delta.rs
+index 3f1c517a5..80331a1c5 100644
+--- a/crates/sail-plan/src/resolver/command/delta.rs
++++ b/crates/sail-plan/src/resolver/command/delta.rs
+@@ -205,7 +205,7 @@ impl PlanResolver<'_> {
+             read_case_sensitive: self.config.case_sensitive,
+         };
+         let metadata = match lake_source
+-            .infer_metadata(&self.ctx.state(), source_info)
++            .infer_metadata(self.provider_session().as_session(), source_info)
+             .await
+         {
+             Ok(metadata) => metadata,
+@@ -646,7 +646,10 @@ impl PlanResolver<'_> {
+             }],
+             read_case_sensitive: self.config.case_sensitive,
+         };
+-        match lake_source.infer_metadata(&self.ctx.state(), source).await {
++        match lake_source
++            .infer_metadata(self.provider_session().as_session(), source)
++            .await
++        {
+             Ok(metadata) => Ok(Some(metadata)),
+             Err(e) => {
+                 log::debug!(
+diff --git a/crates/sail-plan/src/resolver/query/delta_metadata_session_tests.rs b/crates/sail-plan/src/resolver/query/delta_metadata_session_tests.rs
+new file mode 100644
+index 000000000..85f9d4687
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/delta_metadata_session_tests.rs
+@@ -0,0 +1,161 @@
++use datafusion_expr::TableSource;
++use sail_catalog::provider::{CreateTableMode, CreateTableOptions};
++use sail_common_datafusion::datasource::{DataSource, SinkInfo, SourceInfo};
++use sail_common_datafusion::lakesource::{LakeSource, LakeSourceMetadata};
++
++use super::lake_metadata::CheckingLake;
++use super::*;
++
++struct DeltaSource {
++    metadata: CheckingLake,
++    writers: Arc<AtomicUsize>,
++}
++#[tonic::async_trait]
++impl DataSource for DeltaSource {
++    fn name(&self) -> &str {
++        "delta"
++    }
++    fn as_lake_source(self: Arc<Self>) -> Option<Arc<dyn LakeSource>> {
++        Some(self)
++    }
++    async fn create_source(&self, _: &dyn Session, _: SourceInfo) -> Result<Arc<dyn TableSource>> {
++        datafusion_common::internal_err!("Delta metadata probe must not create a source")
++    }
++    async fn infer_schema(&self, _: &dyn Session, _: SourceInfo) -> Result<SchemaRef> {
++        Ok(Arc::new(Schema::new(vec![Field::new(
++            "id",
++            DataType::Int64,
++            false,
++        )])))
++    }
++    async fn create_writer(&self, _: &dyn Session, _: SinkInfo) -> Result<LogicalPlan> {
++        self.writers.fetch_add(1, Ordering::SeqCst);
++        datafusion_common::plan_err!("Delta metadata probe stops before writer planning")
++    }
++}
++#[tonic::async_trait]
++impl LakeSource for DeltaSource {
++    async fn infer_metadata(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<LakeSourceMetadata> {
++        self.metadata.infer_metadata(session, info).await
++    }
++}
++async fn delta_metadata(scoped: bool, catalog: bool) -> TestResult {
++    let fixture = Fixture::new().await?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let writers = Arc::new(AtomicUsize::new(0));
++    fixture
++        .ctx
++        .extension::<DataSourceRegistry>()?
++        .register_data_source(Arc::new(DeltaSource {
++            metadata: CheckingLake::new(scoped.then(|| fixture.resources.clone()), calls.clone()),
++            writers: writers.clone(),
++        }))?;
++    let save_type = if catalog {
++        fixture
++            .ctx
++            .extension::<CatalogManager>()?
++            .create_table(
++                &["target"],
++                CreateTableOptions {
++                    columns: vec![],
++                    comment: None,
++                    constraints: vec![],
++                    location: Some("/input".into()),
++                    format: "delta".into(),
++                    partition_by: vec![],
++                    sort_by: vec![],
++                    bucket_by: None,
++                    mode: CreateTableMode::Create,
++                    properties: vec![],
++                    is_external: true,
++                    is_write_precondition: false,
++                },
++            )
++            .await?;
++        spec::SaveType::Table {
++            table: spec::ObjectName::bare("target"),
++            save_method: spec::TableSaveMethod::InsertInto,
++        }
++    } else {
++        spec::SaveType::Path("/input".into())
++    };
++    let command = spec::CommandNode::Write(spec::Write {
++        input: Box::new(spec::QueryPlan::new(spec::QueryNode::Project {
++            input: Some(Box::new(input())),
++            expressions: vec![spec::Expr::Alias {
++                expr: Box::new(attribute("a")),
++                name: vec!["id".into()],
++                metadata: None,
++            }],
++        })),
++        source: Some("delta".into()),
++        save_type,
++        mode: Some(spec::SaveMode::Append),
++        sort_columns: vec![],
++        partitioning_columns: vec![],
++        clustering_columns: vec![],
++        bucket_by: None,
++        options: vec![],
++    });
++    let resolver = if scoped {
++        fixture.resolver()
++    } else {
++        PlanResolver::new(&fixture.ctx, Arc::new(PlanConfig::default()))
++            .with_relation_scope(&fixture.inputs)
++    };
++    let result = resolver
++        .resolve_command_plan(
++            spec::CommandPlan::new(command),
++            &mut PlanResolverState::new(),
++        )
++        .await;
++    let error = match result {
++        Err(error) => error,
++        Ok(_) => return Err("writer probe must stop resolution".into()),
++    };
++    assert!(
++        error
++            .to_string()
++            .contains("Delta metadata probe stops before writer planning"),
++        "{error}"
++    );
++    assert_eq!(writers.load(Ordering::SeqCst), 1);
++    assert_eq!(
++        calls.load(Ordering::SeqCst),
++        1,
++        "path feature or catalog constraint metadata"
++    );
++    // Both callers can skip a failed metadata inference. The admission count
++    // proves the scoped GET completed rather than merely attempting the callback.
++    assert_eq!(
++        fixture.resources.drain().await?.registered,
++        usize::from(scoped)
++    );
++    assert_eq!(
++        fixture.calls.load(Ordering::SeqCst),
++        0,
++        "no physical planning"
++    );
++    assert!(fixture.ctx.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
++#[tokio::test]
++async fn delta_path_metadata_uses_selected_session() -> TestResult {
++    delta_metadata(true, false).await
++}
++#[tokio::test]
++async fn delta_path_metadata_keeps_legacy_authority() -> TestResult {
++    delta_metadata(false, false).await
++}
++#[tokio::test]
++async fn delta_catalog_metadata_uses_selected_session() -> TestResult {
++    delta_metadata(true, true).await
++}
++#[tokio::test]
++async fn delta_catalog_metadata_keeps_legacy_authority() -> TestResult {
++    delta_metadata(false, true).await
++}
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index b93d63938..919a4e92f 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -325,3 +325,6 @@ mod lake_metadata;
+ 
+ #[path = "row_factory_session_tests.rs"]
+ mod row_factories;
++
++#[path = "delta_metadata_session_tests.rs"]
++mod delta_metadata;

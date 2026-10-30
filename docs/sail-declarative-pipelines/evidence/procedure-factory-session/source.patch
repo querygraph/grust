@@ -1,0 +1,232 @@
+diff --git a/crates/sail-plan/src/resolver/command/procedure.rs b/crates/sail-plan/src/resolver/command/procedure.rs
+index f0b028031..56e675fce 100644
+--- a/crates/sail-plan/src/resolver/command/procedure.rs
++++ b/crates/sail-plan/src/resolver/command/procedure.rs
+@@ -345,7 +345,7 @@ impl PlanResolver<'_> {
+                 };
+                 let metadata = registry
+                     .get_lake_source(&call.lake_source)?
+-                    .infer_metadata(&self.ctx.state(), *info.clone())
++                    .infer_metadata(self.provider_session().as_session(), *info.clone())
+                     .await?;
+                 let names = state.register_fields(metadata.schema.fields());
+                 let schema = Arc::new(DFSchema::try_from(
+@@ -409,9 +409,9 @@ impl PlanResolver<'_> {
+                 );
+             }
+         }
+-        let session = self.ctx.state();
++        let session = self.provider_session();
+         let plan = provider
+-            .plan_procedure(&session, planning_target, &call)
++            .plan_procedure(session.as_session(), planning_target, &call)
+             .await?;
+         Ok(LogicalPlan::Extension(Extension {
+             node: Arc::new(LakeProcedureNode::try_new(
+diff --git a/crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs b/crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs
+new file mode 100644
+index 000000000..7b9d32283
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs
+@@ -0,0 +1,190 @@
++use datafusion_expr::TableSource;
++use sail_common_datafusion::datasource::{DataSource, SinkInfo, SourceInfo};
++use sail_common_datafusion::lakeprocedure::{
++    LakeProcedure, LakeProcedureAccess, LakeProcedureCall, LakeProcedureDataType,
++    LakeProcedureParameter, LakeProcedurePlan, LakeProcedurePlanningTarget, LakeProcedureProvider,
++    LakeProcedureResolution, LakeProcedureTarget,
++};
++use sail_common_datafusion::lakesource::{LakeSource, LakeSourceMetadata};
++
++use super::lake_metadata::CheckingLake;
++use super::*;
++
++struct ProcedureSource {
++    metadata: CheckingLake,
++    predicate: bool,
++    planned: Arc<AtomicUsize>,
++}
++impl ProcedureSource {
++    fn descriptor(&self) -> LakeProcedure {
++        LakeProcedure {
++            name: "probe".into(),
++            parameters: if self.predicate {
++                vec![
++                    LakeProcedureParameter::required("table", LakeProcedureDataType::Utf8),
++                    LakeProcedureParameter::required("where", LakeProcedureDataType::SqlPredicate),
++                ]
++            } else {
++                vec![]
++            },
++            output: vec![],
++            access: LakeProcedureAccess::MetadataRead,
++            target: if self.predicate {
++                LakeProcedureTarget::TableOrPath {
++                    parameter: "table".into(),
++                }
++            } else {
++                LakeProcedureTarget::Catalog
++            },
++        }
++    }
++}
++#[tonic::async_trait]
++impl DataSource for ProcedureSource {
++    fn name(&self) -> &str {
++        "delta"
++    }
++    fn as_lake_source(self: Arc<Self>) -> Option<Arc<dyn LakeSource>> {
++        Some(self)
++    }
++    async fn create_source(&self, _: &dyn Session, _: SourceInfo) -> Result<Arc<dyn TableSource>> {
++        datafusion_common::internal_err!("procedure probe must not create a source")
++    }
++    async fn create_writer(&self, _: &dyn Session, _: SinkInfo) -> Result<LogicalPlan> {
++        datafusion_common::internal_err!("procedure probe must not create a writer")
++    }
++}
++#[tonic::async_trait]
++impl LakeSource for ProcedureSource {
++    fn procedure_provider(self: Arc<Self>) -> Option<Arc<dyn LakeProcedureProvider>> {
++        Some(self)
++    }
++    async fn infer_metadata(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<LakeSourceMetadata> {
++        self.metadata.infer_metadata(session, info).await
++    }
++}
++#[tonic::async_trait]
++impl LakeProcedureProvider for ProcedureSource {
++    fn resolve_procedure(&self, namespace: &[String], name: &str) -> LakeProcedureResolution {
++        if namespace == ["system"] && name == "probe" {
++            self.get_procedure(name)
++        } else {
++            LakeProcedureResolution::Unrecognized
++        }
++    }
++    fn get_procedure(&self, name: &str) -> LakeProcedureResolution {
++        if name == "probe" {
++            LakeProcedureResolution::Supported(self.descriptor())
++        } else {
++            LakeProcedureResolution::Unrecognized
++        }
++    }
++    async fn plan_procedure(
++        &self,
++        session: &dyn Session,
++        target: LakeProcedurePlanningTarget,
++        call: &LakeProcedureCall,
++    ) -> Result<LakeProcedurePlan> {
++        assert_eq!(call.invocation.procedure, self.descriptor());
++        match target {
++            LakeProcedurePlanningTarget::Catalog { catalog } => {
++                assert!(!self.predicate);
++                assert_eq!(catalog, "catalog");
++            }
++            LakeProcedurePlanningTarget::Table { info, predicates } => {
++                assert!(self.predicate);
++                assert_eq!(info.paths, ["/input"]);
++                assert_eq!(predicates.len(), 1);
++                assert_eq!(predicates[0].name, "where");
++            }
++        }
++        self.planned.fetch_add(1, Ordering::SeqCst);
++        self.metadata.metadata(session).await?;
++        datafusion_common::plan_err!("procedure probe stops before implementation planning")
++    }
++}
++fn text(value: &str) -> spec::Expr {
++    spec::Expr::Literal(spec::Literal::Utf8 {
++        value: Some(value.into()),
++    })
++}
++async fn procedure(scoped: bool, predicate: bool) -> TestResult {
++    let fixture = Fixture::new().await?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let planned = Arc::new(AtomicUsize::new(0));
++    fixture
++        .ctx
++        .extension::<DataSourceRegistry>()?
++        .register_data_source(Arc::new(ProcedureSource {
++            metadata: CheckingLake::new(scoped.then(|| fixture.resources.clone()), calls.clone()),
++            predicate,
++            planned: planned.clone(),
++        }))?;
++    let command = spec::CommandNode::CallProcedure {
++        procedure: vec!["system", "probe"].into(),
++        arguments: if predicate {
++            vec![text("delta.`/input`"), text("true")]
++        } else {
++            vec![]
++        },
++        named_arguments: vec![],
++    };
++    let resolver = if scoped {
++        fixture.resolver()
++    } else {
++        PlanResolver::new(&fixture.ctx, Arc::new(PlanConfig::default()))
++    };
++    let result = resolver
++        .resolve_command_plan(
++            spec::CommandPlan::new(command),
++            &mut PlanResolverState::new(),
++        )
++        .await;
++    let error = match result {
++        Err(error) => error,
++        Ok(_) => return Err("procedure probe must stop resolution".into()),
++    };
++    assert!(
++        error
++            .to_string()
++            .contains("procedure probe stops before implementation planning"),
++        "{error}"
++    );
++    assert_eq!(planned.load(Ordering::SeqCst), 1);
++    assert_eq!(calls.load(Ordering::SeqCst), 1 + usize::from(predicate));
++    assert_eq!(
++        fixture.resources.drain().await?.registered,
++        if scoped {
++            1 + usize::from(predicate)
++        } else {
++            0
++        }
++    );
++    assert_eq!(
++        fixture.calls.load(Ordering::SeqCst),
++        0,
++        "no physical planning"
++    );
++    assert!(fixture.ctx.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
++#[tokio::test]
++async fn catalog_procedure_uses_selected_session() -> TestResult {
++    procedure(true, false).await
++}
++#[tokio::test]
++async fn catalog_procedure_keeps_legacy_authority() -> TestResult {
++    procedure(false, false).await
++}
++#[tokio::test]
++async fn predicate_procedure_uses_selected_session() -> TestResult {
++    procedure(true, true).await
++}
++#[tokio::test]
++async fn predicate_procedure_keeps_legacy_authority() -> TestResult {
++    procedure(false, true).await
++}
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index 919a4e92f..56e60a08e 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -328,3 +328,6 @@ mod row_factories;
+ 
+ #[path = "delta_metadata_session_tests.rs"]
+ mod delta_metadata;
++
++#[path = "procedure_factory_session_tests.rs"]
++mod procedures;
