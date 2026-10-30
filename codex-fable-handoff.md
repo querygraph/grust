@@ -1,5 +1,8 @@
 # Fable: Sail streaming and CDC handoff
 
+For a replacement agent resuming current work, start with the living
+[FABLE-HANDOFF.md](FABLE-HANDOFF.md), then read the live coordination channel.
+
 Start work in **`/Users/alexy/src/sail-sdp-fable`**, branch
 `work/sdp-streaming-cdc-fable`, based on Sail
 `779cb136d988c759a381ea1ace6c2e7649e3dbbc`.
