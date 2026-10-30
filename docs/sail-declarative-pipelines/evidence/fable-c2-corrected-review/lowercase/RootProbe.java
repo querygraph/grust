@@ -1,0 +1,2 @@
+import java.io.*;import java.util.*;import java.nio.charset.StandardCharsets;
+public class RootProbe{public static void main(String[] args)throws Exception{var reader=new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8));for(String line;(line=reader.readLine())!=null;){var s=new String(HexFormat.of().parseHex(line),StandardCharsets.UTF_8);System.out.println(HexFormat.of().formatHex(s.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8)));}}}
