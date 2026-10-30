@@ -182,12 +182,32 @@ calls. Two rules:
    owner can drive: on reconnect or a replayed request it re-checks the
    first offset and incarnation before yielding rows; on a retention gap it
    fails closed; on cancellation it drops its consumer without acknowledging.
-2. **No Iggy types cross the seam.** The adapter lives in its own crate
-   (`sail-data-source` behind the existing `iggy` feature, where the pinned
-   sail-iggy work already sits) and exposes only `BoundedSource`; cursors are
-   `pos:<offset>` tokens and incarnations the `PartitionContext.incarnation`
-   rendered as a token. The control model (`pipelines/streaming`) never links
-   the client.
+2. **No Iggy types cross the seam, and no dependency cycle.** Revised
+   (CF-0053): `BoundedSource` currently lives in the private
+   `sail-spark-connect::pipelines::streaming`, and `sail-data-source` cannot
+   implement a trait from `sail-spark-connect` because `sail-spark-connect`,
+   `sail-plan`, `sail-execution` and `sail-session` already depend on
+   `sail-data-source`. The smallest protocol-neutral contract moves one layer
+   down, to `sail-common-datafusion`, which both already depend on and which
+   already has `serde`, `async-trait`, `datafusion` and the existing
+   `streaming/{source.rs, event}` module:
+
+   | Moves to `sail-common-datafusion/src/streaming/bounded.rs` | Stays in `sail-spark-connect::pipelines::streaming` |
+   | --- | --- |
+   | `Cursor`, `Incarnation`, `PartitionId`, `Partition`, `SourceDescriptor`, `Range` (serde types, no behaviour) | `RunFrontier`, `Progress`, `BatchIntent`, `next_intent`, `PlanError` (the control model) |
+   | `ScanError` as a plain enum with `Display`; **no** Spark error conversion | `impl From<ScanError> for SparkError`, `impl From<PlanError> for SparkError` |
+   | `#[async_trait] trait BoundedSource { schema; describe; earliest; frontier; plan_end (sync, pure); scan }` | `DeterministicSource` (test adapter) and the tests |
+
+   Dependency edges after the move: `sail-common-datafusion` gains nothing;
+   `sail-spark-connect` already depends on it; the Iggy adapter in
+   `sail-data-source` (behind a new `iggy` feature, since the pinned sail-iggy
+   feature is not in the current coordinator manifest) implements the trait
+   and links the SDK there and only there. The adapter's cursors are
+   `pos:<offset>` tokens and its incarnations the `PartitionContext.incarnation`
+   rendered as a token. Implementation is one small unit: move the types,
+   re-export them from the Connect module so existing tests keep their paths,
+   convert the two `From` impls, and change nothing else; it is coordinated
+   before editing because it touches a shared lower crate.
 
 What the pinned-broker observations (`fable-iggy-harness`) force into the
 adapter: compare the first returned offset with `start` and fail closed
@@ -236,7 +256,34 @@ Original questions, kept for the record:
    assumes after.
 
 
-## 9. Revision log
+## 9. Prepared content authority: a C0 decision, not a patch
+
+Codex's component probe (CF-0053) constructs two Arrow batches that compare
+equal, ids `[1, 2]` with a nullable `Int64` payload `[10, null]`, whose hidden
+physical values beneath the null cell differ. Both satisfy the non-null unique
+key condition; `seal` produces different content digests and `verify` of the
+equal batch fails with `ContentMismatch`. The unit-5 digest is therefore a
+**physical IPC fingerprint after key ordering**, not a representation-
+independent logical canonicalization. The behaviour is fail-closed, which is
+the safe side, but it means the same logical rows can be refused on replay
+depending on how an engine materialised them.
+
+This is not patched by normalising `Int64` nulls: nested structs, lists,
+dictionaries, sliced arrays and validity-masked values all carry physical
+bytes that a logical comparison ignores. The C0 design must choose and version
+one authority, with the other explicitly rejected:
+
+| Option | Obligations |
+| --- | --- |
+| A. Canonical logical encoding | define a versioned encoding that writes only logical values (null cells as a null marker and nothing else; nested, list, dictionary-decoded and sliced arrays re-encoded densely); prove it with null/nested/dictionary/slice/offset tests on every supported type; reject types the encoding does not cover; the digest is then reconstruction-stable |
+| B. Stored sealed-byte authority | the sealed rows themselves are staged durably (the design review's "publish an immutable reconciled-batch manifest") and recovery reads those bytes; `verify` compares the staged bytes' digest, never a reconstruction; reconstruction is permitted only as a cross-check that may fail closed but never certifies |
+
+Until that choice is recorded by Astra, the component keeps its present
+fail-closed semantics, `B12` stays open, and no caller may treat a passing
+`verify` of reconstructed rows as proof of logical equality. Codex has flagged
+this checkpoint to the user.
+
+## 10. Revision log
 
 - After CF-0044: read mode bound before resolution through a reserved
   qualified name (§2); absent binding versus recorded empty intent (§2);
@@ -247,3 +294,8 @@ Original questions, kept for the record:
   `seal` versus `cancel` corrected, one owned scope per attempt from the
   runner (§3); public dry run stays resolution/admission (§5); adapter calls
   owned by the attempt's scope with an explicit provider disposition (§6).
+- After CF-0053: the bounded-source contract moves to
+  `sail-common-datafusion::streaming::bounded` with the exact split and
+  dependency edges (§6); the prepared content digest is named a physical
+  fingerprint and the C0 authority choice is set out with both options'
+  obligations (§9).
