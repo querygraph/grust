@@ -16,17 +16,20 @@ The higher layer registers the complete lifetime before awaiting Creation:
 ```rust
 let (supervisor, creation) = prepare(provider_factory, max_parts);
 resources.spawn(move |canceled| async move {
-    supervisor.run(canceled).await.map_err(|error| {
-        DataFusionError::External(Box::new(error))
-    })
+    supervisor.run(canceled).await.map_err(
+        sail_execution::owned_multipart::execution_error
+    )
 })?;
 let mut upload = creation.wait().await?;
 ```
 
-This illustrates the ownership seam, not an installed production adapter. The
-adapter belongs in a layer already depending on both crates; sail-execution,
-sail-session and sail-cache have both edges. Do not make common-datafusion depend
-on the object-store service merely to exercise it. A failed registration must drop
+Sail `beebb83d0df5aff947bd1e20e0a69626c98c14bc` now implements this adapter in
+sail-execution::owned_multipart::create, with execution_error preserving original
+typed Complete failures alongside nonretryable unknown-commit classification.
+[Actual scope/adapter evidence](evidence/execution-owned-multipart/README.md).
+The adapter is not installed into checkpoint routing. Its layer already depends
+on both crates; sail-session and sail-cache also have both edges. Do not make
+common-datafusion depend on the object-store service merely to exercise it. A failed registration must drop
 the supervisor and observer without calling the provider. An abandoned observer
 before the first poll also avoids creation. Cancellation/observer loss during
 creation does not drop the provider future: a returned upload is explicitly aborted
@@ -123,8 +126,9 @@ and nested runtime wrappers need explicit held-effect qualification. No checkpoi
 writer is routed into this new API, no public success/Deleted/RPC acknowledgement is
 changed, and the incremental/sink execution guard remains.
 
-Next reviewable units are: an execution-owner adapter preserving all typed outcomes;
-provider/runtime-wrapper ownership hooks; isolated registry/context routing with
+The execution-owner adapter is done at the stated component boundary. Next
+reviewable units are provider/runtime-wrapper ownership hooks (including runtime-
+loss uncertainty); isolated registry/context routing with
 config/function/cache preservation and sibling-scope isolation; actual checkpoint
 publication and failure cleanup; then session/cluster drainage. Each combined tree
 needs its own gate. The existing late-publication baseline must become a real

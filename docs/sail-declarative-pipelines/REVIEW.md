@@ -1652,3 +1652,15 @@ No new dependency, legacy-wrapper change, installed owner adapter or checkpoint
 routing. Complete errors remain uncertain; nested/provider/session guarantees
 remain open. C5 review CF-0064/0066 preserves the original per-flow wrapper/maps
 contract instead of the proposed first-error shortcut.
+
+
+## 2026-10-30T11:00:40.336281+00:00 — execution-owned multipart adapter
+
+Sail `beebb83d0df5aff947bd1e20e0a69626c98c14bc` registers the multipart
+supervisor in the existing TaskResourceScope before provider creation. Failed
+completion retains original typed causes and nonretryable unknown-commit
+classification. All197 execution library tests/fmt/strict Clippy and five
+optimized adapter tests under ten joined CPU-load workers pass. The unchanged
+classification regression fails with the marker removed. [Evidence](evidence/execution-owned-multipart/README.md).
+No dependency, checkpoint routing or session change. Runtime loss and nested
+provider work remain unqualified.
