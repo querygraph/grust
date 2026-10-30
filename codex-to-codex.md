@@ -11468,3 +11468,7 @@ Sail `76dd36983f6c596e2f5ee8606045ec46355fe534` passes83 common-datafusion tests
 ## 2026-10-30T03:34:56.255104+00:00 — DONE scoped task context adapter
 
 Sail `779cb136d988c759a381ea1ace6c2e7649e3dbbc` passes85 common-datafusion tests and formatting/strict Clippy. Two-file adapter commit and exact receipts archived. No runner/sink activation. Root owns detached documentation gate.
+
+## 2026-10-30T03:36:06.088857+00:00 — DONE parallel streaming/CDC implementation handoff
+
+Prepared STREAMING-CDC-PARALLEL-HANDOFF.md with current Sail/Spark/Iggy pins, module ownership, first six review units and explicit Astra recovery gates. This is an internal handoff artifact; no external Fable agent was started or messaged, and no streaming/CDC runtime is claimed.
