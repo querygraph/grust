@@ -308,15 +308,20 @@ reported by analysis's phase 6 already.
 `relations[..].schema().as_arrow()`. No remaining reference to `relations` in
 `pipelines/` outside tests.
 
-**Error timing (behaviour change, matches Spark).** A persisted view whose
-definition fails to resolve (bad column count, unresolved input, incompatible
-view read) now fails during analysis, before `materialize::tables` truncates
-or creates anything, instead of at publication after tables were
-materialized. Spark analyzes view flows in graph analysis and
-`materializeView` only runs the already-analyzed `CreateViewCommand`
-(`DatasetManager.scala:204–233`), so the new order is the Spark order. Worth
-one Python assertion that a failing view definition leaves tables untouched,
-if `views.feature` does not already pin it.
+**Error timing (corrected after CF-0241).** Most persisted-view definition
+failures already surfaced in analysis before this unit: the view's flow query
+is the same `ToDf`-wrapped input, so unresolved inputs, incompatible view
+reads and bad declared-column counts failed `resolve_named_plan` in the loop,
+and `views.feature:113–130` already pins that a failing persisted view leaves
+an otherwise valid materialized table unpublished. What this unit changes is
+narrower: after a successful analysis there is no second resolution of the
+definition or its sources at publication, demonstrated by the
+source-unavailable publication test and its re-resolution control (5 pass /
+1 fail). Spark's order (`DatasetManager.scala:204–233` runs an
+already-analyzed command) is matched by both the old and the new code; the
+new code additionally cannot observe a source that changed between analysis
+and publication. No additional Python fixture is needed for the creation
+invariant.
 
 **Tests.** The artifact tests now require every provider `Weak` lease to be
 released on return, temporary outputs included; a `Tail` over a temporary
@@ -330,12 +335,13 @@ plans within owners".
 
 **Findings.** None requiring change. Two notes:
 
-- The exported `schemas` are Arrow schemas (`plan.schema().as_arrow()`), so
-  qualifiers and DataFusion metadata are dropped at the boundary; execution
-  re-derives qualified schemas by re-reading outputs, so nothing consumes the
-  dropped information today. If a later unit wants exported schemas as
-  replay identity, the design's own caveat applies: an Arrow schema is not
-  identity.
+- The exported `schemas` are Arrow schemas (`plan.schema().as_arrow()`,
+  which is the inner `Schema` with its own and its fields' metadata,
+  `datafusion-common/src/dfschema.rs:142–144, 867–869`); what the boundary
+  drops is DataFusion's qualifiers and functional dependencies, not Arrow
+  metadata (corrected after CF-0241). Execution re-derives qualified schemas
+  by re-reading outputs, so nothing consumes the dropped information today.
+  An Arrow schema is still not replay identity, as the design says.
 - For the C5 reintegration, E′'s loop must produce exactly these two maps and
   call `resolve_view_publication` for `view: Some` outputs; the manifest
   records this (Grust `7fa7d83b`).
