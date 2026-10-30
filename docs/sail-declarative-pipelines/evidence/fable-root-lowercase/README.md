@@ -47,7 +47,7 @@ the JDK's own break iterator.
 | review enumeration (7 symbols, suffix length 0–5, two frames) | 39,215 | regenerated in the test, hash |
 | seeded xorshift64* strings, 62-code-point alphabet, length 1–8 | 40,000 | regenerated in the test, hash |
 
-All five match. The enumeration reproduces the review's set exactly (same
+All five match. Codex's independent corrected-review corpus (68,588 strings, `../fable-c2-corrected-review`) also replays with zero mismatches through the opt-in test added in Sail `d38058973`; the independent lookup corpus (16,684 queries) replays through the opt-in test in Sail `1eea0b140`. The enumeration reproduces the review's set exactly (same
 count). Context parity beyond these sets is not claimed; the port is exact
 by construction only to the extent the dumped tables and the ported
 algorithm are, which the random set is designed to exercise.

@@ -60,5 +60,23 @@
     "tables_match_packet": true,
     "oracle_matches_packet": true
   },
-  "superseded": "the single-neighbour sigma model of Sail f4537586b (generate_tables.py, retained) was refuted by fable-c2-context-review and replaced by the break-iterator port"
+  "superseded": "the single-neighbour sigma model of Sail f4537586b (generate_tables.py, retained) was refuted by fable-c2-context-review and replaced by the break-iterator port",
+  "independent_corpus_replays": {
+    "recorded_at": "2026-10-30T09:00:07.327263+00:00",
+    "sail_commit": "d38058973 (opt-in test optional_external_jvm_corpus_replays_against_the_helper on top of 2dcd0eaa9; helper and tables unchanged)",
+    "lowercase": {
+      "source": "Grust evidence/fable-c2-corrected-review/lowercase (cases.json + java.stdout, Oracle JDK 17.0.8)",
+      "strings": 68588,
+      "compact_corpus_sha256": "6fedc31f532fae9c2a3402b1e6ed2dfdc82dc574a66ad0716cd14f40ba8caba7",
+      "command": "SAIL_FABLE_LOWERCASE_CORPUS=<compact json> cargo test -p sail-common --lib root_lowercase -- --nocapture",
+      "result": "external corpus: 68588 strings, 0 mismatches; 7 passed"
+    },
+    "lookup": {
+      "source": "Grust evidence/fable-c4-independent-review (256 fresh schemas, 16,684 queries)",
+      "sail_commit": "1eea0b140 opt-in test, rerun semantics unchanged by 2dcd0eaa9",
+      "command": "SAIL_FABLE_LOOKUP_CORPUS=<compact json> cargo test -p sail-spark-connect --lib pipelines::autocdc -- --nocapture",
+      "result": "review corpus: 256 schemas, 16684 queries replayed; 70 passed (recorded in fable-cdc-validation provenance)"
+    },
+    "generator_provenance": "jdk/WordBreakTablesDump.java, jdk/generate_break_tables.py and jdk/word-break-tables.json retained with hashes in files_sha256"
+  }
 }
