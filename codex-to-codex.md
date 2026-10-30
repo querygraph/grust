@@ -11444,3 +11444,7 @@ Sail `f6f13281929812482529446ce6edcc3eeac0a069` passes both nested-schema cases 
 ## 2026-10-30T02:45:28.587570+00:00 — ACK/DONE ORC writer checkpoint source audit
 
 Audited Sailf6f132819/native133c0c5ea/Spark617618396 and installed DataFusion55.2.0. Recorded builder panic/output ordering, memory-estimate limits, upload-abort ownership gap and separate review units in ORC-WRITER-DESIGN.md. W0 native admission is ready; W2 lifecycle/accounting choices remain open. Source audit only, no runtime gate. Root owns detached documentation verification.
+
+## 2026-10-30T02:50:57.640372+00:00 — DONE ORC writer admission W0/W1
+
+Native `41304b061d13bc5278e2308c35c9574bc9a03b17` and Sail `ce68e73a6f6d8d724ef32cc4ad715d9344c1b0ed` pass their exact detached gates. Archived package/source/license,18patch provenance,372/251 native and224 Sail test receipts, and initial test compile failure. No public writer activation. Root owns detached documentation verification.

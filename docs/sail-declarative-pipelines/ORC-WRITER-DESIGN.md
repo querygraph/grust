@@ -138,3 +138,7 @@ with detached source gates. Writing remains explicitly unsupported until the
 activated path meets its stated contract. Keep unsupported upstream assertions in
 the coverage inventory. No full SDP, streaming/Iggy or CDC completion follows
 from this checkpoint.
+
+## Writer admission foundation
+
+Recorded 2026-10-30T02:50:57.640372+00:00. [Native `41304b061d` and Sail `ce68e73a6f`](evidence/orc-writer-admission/README.md) complete W0/W1: builder schema/zero-batch rejection precedes output, followed by an exact18-patch vendor update. Native372 default/251 no-default and Sail224 library tests pass with formatting/strict Clippy. Four new native tests exercise rejection-before-output and supported empty/multi-stripe files. The initial test-only compile failure is retained. Semantic writer admission, byte accounting, cancellation/upload ownership and public writing remain open.

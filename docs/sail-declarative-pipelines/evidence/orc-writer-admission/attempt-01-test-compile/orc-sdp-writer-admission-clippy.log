@@ -1,0 +1,33 @@
+    Checking orc-rust v0.9.0 (/Users/alexy/src/orc-rust-sdp-gate)
+error[E0277]: a value of type `std::result::Result<std::vec::Vec<_>, error::OrcError>` cannot be built from an iterator over elements of type `std::result::Result<arrow::array::RecordBatch, arrow::error::ArrowError>`
+   --> src/writer_admission_tests.rs:106:24
+    |
+106 |             .collect::<crate::error::Result<Vec<_>>>()
+    |              -------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ value of type `std::result::Result<std::vec::Vec<_>, error::OrcError>` cannot be built from `std::iter::Iterator<Item=std::result::Result<arrow::array::RecordBatch, arrow::error::ArrowError>>`
+    |              |
+    |              required by a bound introduced by this call
+    |
+help: the trait `FromIterator<std::result::Result<_, arrow::error::ArrowError>>` is not implemented for `std::result::Result<std::vec::Vec<_>, _>`
+      but trait `FromIterator<std::result::Result<_, error::OrcError>>` is implemented for `std::result::Result<std::vec::Vec<arrow::array::RecordBatch>, _>`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/result.rs:2114:0
+    = help: for that trait implementation, expected `error::OrcError`, found `arrow::error::ArrowError`
+note: required by a bound in `std::iter::Iterator::collect`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/iter/traits/iterator.rs:2077:4
+
+error[E0277]: a value of type `std::result::Result<std::vec::Vec<_>, error::OrcError>` cannot be built from an iterator over elements of type `std::result::Result<arrow::array::RecordBatch, arrow::error::ArrowError>`
+   --> src/writer_admission_tests.rs:140:20
+    |
+140 |         .collect::<crate::error::Result<Vec<_>>>()
+    |          -------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ value of type `std::result::Result<std::vec::Vec<_>, error::OrcError>` cannot be built from `std::iter::Iterator<Item=std::result::Result<arrow::array::RecordBatch, arrow::error::ArrowError>>`
+    |          |
+    |          required by a bound introduced by this call
+    |
+help: the trait `FromIterator<std::result::Result<_, arrow::error::ArrowError>>` is not implemented for `std::result::Result<std::vec::Vec<_>, _>`
+      but trait `FromIterator<std::result::Result<_, error::OrcError>>` is implemented for `std::result::Result<std::vec::Vec<arrow::array::RecordBatch>, _>`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/result.rs:2114:0
+    = help: for that trait implementation, expected `error::OrcError`, found `arrow::error::ArrowError`
+note: required by a bound in `std::iter::Iterator::collect`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/iter/traits/iterator.rs:2077:4
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `orc-rust` (lib test) due to 2 previous errors

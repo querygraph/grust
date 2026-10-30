@@ -1,0 +1,9 @@
+# Native writer admission and Sail vendor snapshot
+
+Recorded 2026-10-30T02:50:57.640372+00:00. Native `41304b061d13bc5278e2308c35c9574bc9a03b17` validates physical schemas and positive encoding batch size before output. Four new tests prove zero write calls on unsupported later fields and zero batch size, successful empty-file close/read for20 admitted timestamp/primitive physical types, and nullable two-batch multi-stripe values. Native formatting/strict Clippy pass,372 default test/doc executions pass with eight existing ignored, and251 no-default library tests pass.
+
+The first candidate failed to compile two test collect expressions because the reader returns ArrowError rather than OrcError. Its exact candidate, patch and Clippy diagnostic remain retained. The fix changes the test error type inference only; production arrow_writer.rs is byte-identical between the two candidates. No assertion was loosened.
+
+Sail `ce68e73a6f6d8d724ef32cc4ad715d9344c1b0ed` mechanically vendors the exact package, including18 native patches, LICENSE and per-file hashes. Its formatting/strict Clippy and224 data-source library tests pass; Cargo.lock remains unchanged. The package's Cargo.lock is retained inside the original tarball but excluded from the runtime vendor tree by existing policy. Native gates/package resolved the existing Arrow59.2.0 lock; the ignored implementation-checkout lock is not the evidence source.
+
+This is writer preparation. Low-level StripeWriter::new remains infallible and may panic on unsupported direct use. Builder admission does not qualify Spark logical field metadata, new encoders, hard memory limits or async upload cleanup. Sail ORC writing remains explicitly unsupported. No new public CLI, SDP, streaming/Iggy or CDC pass is claimed. Native/source/package/gate bytes are retained and inventoried by provenance.json.

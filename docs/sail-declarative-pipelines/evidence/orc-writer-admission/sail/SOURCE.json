@@ -1,0 +1,170 @@
+{
+  "repository": "https://github.com/datafusion-contrib/orc-rust",
+  "commit": "41304b061d13bc5278e2308c35c9574bc9a03b17",
+  "source_kind": "Locally patched upstream package; patch revisions have not been published to the upstream repository.",
+  "upstream_tag": "v0.9.0",
+  "upstream_commit": "d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307",
+  "patches": [
+    {
+      "commit": "d12c9608c6c103b0fa9d5d27aed61557081a219c",
+      "subject": "build: align test Arrow dependencies with the library"
+    },
+    {
+      "commit": "b6bede0ef428f6bc81e2709884edf353bae06097",
+      "subject": "fix: bound ORC compression blocks and return decoder errors"
+    },
+    {
+      "commit": "8338ce9062f6e2072475cb06c68fe9379f04bcc7",
+      "subject": "fix: validate ORC footer ranges before reading and slicing"
+    },
+    {
+      "commit": "9cc3c855956cdc25ab2870689871cf2f1c44090d",
+      "subject": "feat: support a total ORC decoded output budget"
+    },
+    {
+      "commit": "4e8e80c84228196f174af4cdf8405301437b794a",
+      "subject": "fix: validate ORC schema trees before recursive construction"
+    },
+    {
+      "commit": "91910faa90e70587655e40788495a8a936fdf8fe",
+      "subject": "feat: expose bounded ORC metadata and reusable validated types"
+    },
+    {
+      "commit": "579c04b3aedefc007f09371894f01c90ef9e75c2",
+      "subject": "feat: opt into checked timestamp precision truncation"
+    },
+    {
+      "commit": "ed6e9acf4fe9dbe0f3a22adef3da027a1c263bf6",
+      "subject": "feat: opt into caller-supplied ORC timestamp timezone rules"
+    },
+    {
+      "commit": "0653cb2287e6bdb8352aeafbaa816ff25da72f76",
+      "subject": "test: qualify ORC timezone inheritance and reader pruning boundaries"
+    },
+    {
+      "commit": "ec6baa46860fb3df95c23a72124e736c5334a418",
+      "subject": "fix: preserve declared schemas in decoded ORC batches"
+    },
+    {
+      "commit": "056c06617384ba409d035c66f04aff39d14a10bb",
+      "subject": "feat: bound decoded ORC stripe footers per reader"
+    },
+    {
+      "commit": "2ecec391db0699019b55f731fc9eefd8971b3802",
+      "subject": "fix: validate ORC stripe and stream arithmetic before reads"
+    },
+    {
+      "commit": "bc0c0cef83ba4bb297aaf6941ba0f328a95a2663",
+      "subject": "fix: propagate ORC PRESENT stream decoding failures"
+    },
+    {
+      "commit": "9f23442e7f9e019c0ec3b0a2d6491929967d41e3",
+      "subject": "fix: validate materialized ORC lengths before allocation"
+    },
+    {
+      "commit": "e9690a1eaefa35963554f44d45b8a54fd0ab0196",
+      "subject": "fix: validate ORC skip counts and exact byte consumption"
+    },
+    {
+      "commit": "5937e8a8f1154aff333818dc365ffc6367c84d5f",
+      "subject": "fix: build ORC dictionaries from bounded length chunks"
+    },
+    {
+      "commit": "133c0c5ea13578bd6905070dee11f0e66750cd9a",
+      "subject": "fix: decode ORC delta extremes without arithmetic panics"
+    },
+    {
+      "commit": "41304b061d13bc5278e2308c35c9574bc9a03b17",
+      "subject": "fix: validate ORC writer schemas before emitting bytes"
+    }
+  ],
+  "package": {
+    "command": "cargo +1.98.1 package --locked --no-verify",
+    "sha256": "c32b165208a8ca985f2904b0fee5b77769c4ea7ce8ef23e5454c8a79593e2662",
+    "excluded_files": [
+      "Cargo.lock"
+    ],
+    "additional_files": [
+      "LICENSE from the same source commit"
+    ],
+    "note": "Cargo-normalized manifest; upstream package omits integration fixtures and benchmarks. Source tests were run in the full detached source checkout."
+  },
+  "files_sha256": {
+    ".cargo_vcs_info.json": "b94919ec58d6ae272f88ef9d104f8007de251c8b864ad31e96787beac19e0426",
+    "Cargo.toml": "0a69cbe6449e27e1be0f020c1f0e9393a135b99fa00a115e45a0e7e7b8726385",
+    "Cargo.toml.orig": "58ccc950aa988bb2c70c7850de74c1ac9ad182773452dc9a08a0b25cceeb7874",
+    "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "README.md": "88394b7c22866cbaf2b95bbf93659ae9ed2ccfa2bacb57f7b9cb328f26cd815f",
+    "src/array_decoder/decimal.rs": "dc5f37e42304a4ac84d521ab5c0c1823f55a49549f225d5c27995f0bcbcf540d",
+    "src/array_decoder/length.rs": "1b40b8aac1b051269efde813953cd672360e76744313d4ae403963b1b85301d0",
+    "src/array_decoder/length/tests.rs": "cb3a05d0bb4357b7fa5829b2706453ad1d8a56d1d061cfa3419288e07d7c7756",
+    "src/array_decoder/list.rs": "c46f8a4ee46e2ed872c635c8e3cab7e4f2ab2aef3c9e06c2aad89c185335acc2",
+    "src/array_decoder/map.rs": "dcd55994e3c63934d6a9110d96325a117b58948cd025dec140928fabb8334e5e",
+    "src/array_decoder/mod.rs": "9cfeb86f38957f8bf4d236c3b64b7e42b59ef24b224ce2f4332a8ca9e6f39de7",
+    "src/array_decoder/present_tests.rs": "d7f568735cc7a85a3993aef7be89becd13ce77e14f5e215b48414acac2063182",
+    "src/array_decoder/string.rs": "d655b02dac286f061c7fd21e930438da7625f6ac534671329883eea866821a36",
+    "src/array_decoder/string/dictionary.rs": "7eb2fe2c3ffe43421ce4392800ffeba579717e836b6848dff86ed7b6a3495760",
+    "src/array_decoder/struct_decoder.rs": "521c29e4ef19fa36a1c301a6214b69c851496f535b2f0666205e6731b49a97a2",
+    "src/array_decoder/timestamp.rs": "97fa9d02382de00cb16b813fef94e9bc7b0cf92236d5e20ddd90a803be2a5496",
+    "src/array_decoder/union.rs": "461b9b9ab606f34b83e877fabe3eaae1c0ab9c1db15a4af8aa80b9724909f953",
+    "src/arrow_reader.rs": "b6a7ddbfc1c05dea7fe27af46ed3c6801403b27a7c886fb3129561c2dd09095b",
+    "src/arrow_writer.rs": "2e32866dd5be08007298225da6b45e95aedeb2afbbc6b67fa2ce0ff57fc27ff2",
+    "src/async_arrow_reader.rs": "0810dd6d06b07191f5d4535b66a159a2ce2f13311b7138f073b30cdd1d31cf69",
+    "src/bin/orc/bloom.rs": "74a3b31909802030a2c1a53a9fc081f39515701236e6222431a86761367529dd",
+    "src/bin/orc/common.rs": "02c348b38c209e5cd28916b41976ac19737cd310ca0acef78d5af79575458977",
+    "src/bin/orc/export.rs": "ead4b01058a54b7d884887ee4464f7672c28f9abf1a9f8b5553953accffd39a3",
+    "src/bin/orc/index.rs": "5312742875f76ca74b52471cfc62ab501b6d18384fac58c318faea6a31acfc84",
+    "src/bin/orc/info.rs": "2ec60cafa1d0f7c9d66fea684b121840f3687c528129844dce1992bfb13efe8b",
+    "src/bin/orc/layout.rs": "a5986330accb644307d6d0cf800894fcce6eafca6d557c48c55f92fdd909fb9e",
+    "src/bin/orc/main.rs": "bf4daf3f5ce5a89f2c17a746d8274cc868c3eb9e977169226827a4aa9a34af15",
+    "src/bin/orc/stats.rs": "3e4fc8d9e689504a084e35c58da184aac1be19002ebd8472088a15dd9663a458",
+    "src/bloom_filter.rs": "d6bd0d3a87b9e8264f15ea3eb6c198b7a50b22fab553edf2d18b899f9c4302a6",
+    "src/column.rs": "5188d56cceec9f27a1e166ff8f1a6b47ce20d3418b717ab2d361bb71b5656970",
+    "src/compression.rs": "151444705721d9a3feac30dce92af250a7a5cf9e4608ebdb0efa3fb0976107bc",
+    "src/compression_bounds_tests.rs": "d5e4a30860211c2aabb4b13a72c2ce4f62dd66a25fb47659c28b5c55234de4b7",
+    "src/encoding/boolean.rs": "fab1b464ec02b7cfdc7147dfa42d78fbbbae9fa128a322916c43196530a7f082",
+    "src/encoding/byte.rs": "a5cb1e96d17157a74f103dfc5cb50f89fb0301fe041bfafc26a0621f5bd5f073",
+    "src/encoding/decimal.rs": "38504d2792dde24728e0e94b925120e8c2bbe6214a394c2f9f54eccda24e53a1",
+    "src/encoding/float.rs": "53874dc57316a2cd85cecc9656509988903bb31de1868b1c54b76835add07b9d",
+    "src/encoding/integer/mod.rs": "c70e33c0d89a58cbff70bf855eb299a427a1ae43717f8c75a33eb9d4763c0844",
+    "src/encoding/integer/rle_v1.rs": "1ed93a9ee1c0f155df4a44f62908637630ae73138248749171a16714f06f6963",
+    "src/encoding/integer/rle_v2/delta.rs": "25ffed5c7248603c682ff423e538bae22ec55c53f540d94a2fb744aa81c75906",
+    "src/encoding/integer/rle_v2/delta/safety_tests.rs": "1586fd7079e510d75fe54994550c53bf6ee7df6be16fe540757d738b3017f97f",
+    "src/encoding/integer/rle_v2/direct.rs": "090ea39a0379c97a1628202082e6055677659420949f2752cec4f751fbba71a3",
+    "src/encoding/integer/rle_v2/mod.rs": "f3de74a9ce05b4e9ec0db40f569d9f500a4a3cf8bacf8204952c78fbf171aaa6",
+    "src/encoding/integer/rle_v2/patched_base.rs": "9819d500be4f28823075373ff2f7e29a00e4221c3c47711fd02b8e9b6e9d6444",
+    "src/encoding/integer/rle_v2/short_repeat.rs": "a51262729f39bf4f2f5c04774489e486e86d4cd5e3c50b3a716b970d0bcaf77f",
+    "src/encoding/integer/util.rs": "aaef853e1e62d45b69daf37c324631d30c308e34c277109cc1a188c1bf8674e0",
+    "src/encoding/mod.rs": "49e0af9060eedc9747d6d6c9c685b0a15d91373e5bceb1f66406ae002bd308ad",
+    "src/encoding/rle.rs": "aed6ecbf30d3f71c2d13c3757e6b16cde01e3207445e0f7652cae65009088f21",
+    "src/encoding/timestamp.rs": "f0328b85dcef963e72e7b8e11c4e5bf0c2f0b5670145f1fee001dc161a497f6e",
+    "src/encoding/util.rs": "6c0b71288029a1ff7e6a08421a7ab182ad1f3c9bdd595af12d07809ef762aede",
+    "src/error.rs": "04a78f3e93f3f19e8e39c01a75d814b2b292e5bbadd14cc0682baa14bcf078e1",
+    "src/lib.rs": "fdec2af92747841367f4e0ba086a82dbca0e8b44bc6776a1b278ab18195efd08",
+    "src/memory.rs": "64a767aae7c852523cfa9f31db4e71f1d8558aeea83874d465bedd1b21f3febb",
+    "src/predicate.rs": "8701c1280b7bd56b77f5d02138c07de9c6b091180e2c02edb580fcd1dbd9efca",
+    "src/projection.rs": "9302c5cb0613dbb75eb11fc604b835f85484119b3e31fa0ad4dd0f2f13e71fd4",
+    "src/proto.rs": "d13325a41f781118f06b7e856983339212c015ef82e34f9c7fca9154070a4f0a",
+    "src/reader/metadata.rs": "bedde03fd3e056a51065d4123693845f090d4dc5780272429936ca5625df5d09",
+    "src/reader/metadata/tests.rs": "0d139122e7cc3fb3454ed33b0d2a1a09551a3ae8852830e7d3088ff72c671bd8",
+    "src/reader/mod.rs": "358c472597d505087ff9d5e65d6fb586899e47ec1e1ca282f6098612c02fa72a",
+    "src/row_group_filter.rs": "48f3ba71650f6543ce1993bdccfaf125d71deb2687a3038e763754a31133bfc0",
+    "src/row_index.rs": "2c47e86cf094f719f24c20c3134b51e4233069906e433880784be84ef6da9017",
+    "src/row_selection.rs": "82d2ef55fabf790a865e3336e46ff1f5d52e71e7b1624223c414f204e8a7dc0e",
+    "src/schema.rs": "bb7cf829fb770989b68030080036f37ea74efcf07219867047e45fa360c2ac09",
+    "src/schema/validation.rs": "aec9a39d24d077b87a9ba05c3b01c4302281de02efe47c1f38f3907d9f131d1b",
+    "src/schema/validation/tests.rs": "aa234f3f9b5f7724ac94cba90e993570502a7cb2344f4f352829f8a4d88da6c7",
+    "src/statistics.rs": "0e937e6c5f97ca6cfd837107c13e38b1b96a063b3cb9b66f16ffd06eb21d0ae0",
+    "src/stripe.rs": "f318bcc422865e884dd540226fc6675b65aadf936464f4bbf70ce44d0e760645",
+    "src/stripe_bounds_tests.rs": "47558b1d360389623565c9a147411f254ce3f02d2ee7dda613974abf5965935e",
+    "src/stripe_footer_bounds_tests.rs": "76ce7925486e59eb22ce0c8cf22bef30df34fa71a3c625a7ed347b71fbc09e02",
+    "src/timestamp.rs": "41d8b452a28e1750ce5102178bc212d683f1858704c6ba464976a64bba2e2c40",
+    "src/timestamp_tests.rs": "fd0208a7622926ba66207227fb90b5a7cacf15170d0290cdacfa7000ba8a37eb",
+    "src/timestamp_timezone.rs": "91d7259666176a49039e93dc37ea336b18cdbe8c86ff5b1731a4d5a7e3f506fb",
+    "src/timestamp_timezone_tests.rs": "136a62dde6947cf7d6102243ddf9fac77450840cbe37df65f8ce8f23004eda26",
+    "src/writer/column.rs": "6fd1b0903ebff69f9d4debe1b6fb169e9b91050b14585137c1b8dab3a5ccad6e",
+    "src/writer/mod.rs": "58f92fcec92c29bd47a9660452542b7dacc2d4bd0eb8ae0246c1d4e1e3019af7",
+    "src/writer/stripe.rs": "6c76d30deb39f9242121aab8084ec7b0458d989a14de34081ca81544c07da924",
+    "src/writer_admission_tests.rs": "bd2f3044c72c48d973dac145d2d84a5d659a3b5a1966857db628229f15130121"
+  }
+}

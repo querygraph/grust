@@ -705,3 +705,7 @@ Recorded 2026-10-30T02:38:29.438219+00:00. [Sail `6d0c4beea4`](evidence/ctas-emp
 ## ORC writer implementation checkpoint
 
 Recorded 2026-10-30T02:45:28.587570+00:00. The [writer checkpoint](ORC-WRITER-DESIGN.md) audits exact native and Sail sink boundaries and defines W0–W7 review units. Builder validation before output is the first settled dependency change. Async abort ownership and actual byte accounting remain explicit design prerequisites for the sink; existing stripe-size estimates and generic upload wrappers do not prove those properties. Source evidence is archived; no new writer runtime or SDP pass is claimed.
+
+## Writer admission foundation
+
+Recorded 2026-10-30T02:50:57.640372+00:00. [Native `41304b061d` and Sail `ce68e73a6f`](evidence/orc-writer-admission/README.md) complete W0/W1: builder schema/zero-batch rejection precedes output, followed by an exact18-patch vendor update. Native372 default/251 no-default and Sail224 library tests pass with formatting/strict Clippy. Four new native tests exercise rejection-before-output and supported empty/multi-stripe files. The initial test-only compile failure is retained. Semantic writer admission, byte accounting, cancellation/upload ownership and public writing remain open.
