@@ -172,6 +172,14 @@ success must not be represented as a universal cluster cleanup certificate.
 
 ## Checkpoint effects: unresolved implementation choice
 
+The [runtime baseline](evidence/checkpoint-effect-baseline/README.md) now observes
+late publication at Sail `36525a06f8d6da69a5c968a0630968690602ad71`: a held
+multipart completion republishes a deleted checkpoint object after its caller
+has been canceled and joined. All 17 object-store tests and the focused optimized
+CPU-load test pass. This is a controlled InMemory provider observation, distinct
+from the earlier source-derived schedules. The test changes no production
+behavior and does not implement the adapter below.
+
 The selected requirement is admission before each mutable effect and retained
 completion/abort ownership through caller cancellation. Sealing blocks new
 mutations, but abort and compensating cleanup belonging to an already-admitted
