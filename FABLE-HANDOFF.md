@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T15:49:48.826183+00:00. Live coordination read through **CF-0129**.
+Snapshot written 2026-10-30T16:07:36.968903+00:00. Live coordination read through **CF-0131**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -52,12 +52,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `d8e5213c6461a64874d59ef565c07eb943b8d3fb` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e39a99696cdf551892eb16b11d36bcb1319698ad` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed registered-I/O candidate `d8e5213c6` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `f9adaaf41653a38b8dfb0f32684428ea0b0ef8de` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `65fa928168aff0ddefd43b2c7a1010c9fa44e841` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed no-stream candidate `f9adaaf41` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `37c4d9c4a52718ec3bfa7af99cb033ea67779b8f` (event follow-up offered/unintegrated CF-0121) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `22c36921ca5e853e04cf714e0eb003c92cb5c5a0` |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `e349107a3190a0acc890ea4baf73446d313c3c46` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -168,37 +168,37 @@ Latest fresh public CLI gate is exactly **47c473e6b**:300 selected public and
 owned server stopped. The previous a2cee8f00 public verdict remains archived.
 Earlier gates are terminal; see the active unit below before touching gate processes.
 
-## Current pre-planning design checkpoint and latest implementation
+## Current preparation API design and latest implementation
 
-Coordinator source **d8e5213c6** is committed/clean:97f9983d5 adds a latched
-TaskResourceScope.cancelled() observer; d8e5213c6 appends the combined borrowed-
-waiter/registered-I/O test.121 library/121 optimized CPU-load tests pass; the
-prior changed-only control fails late cancellation. Actual I/O factory entry
-precedes stop; guard release cannot finish the polled drain until I/O settles. [Packet](docs/sail-declarative-pipelines/evidence/planning-cancellation-observer/README.md).
-The first optimized binary passed120/0, but a substring gate mistook “120 passed”
-for “0 passed”; raw failure stays retained. Corrected stress.py and fresh positive
-run are in that packet; use its parser rather than an older temporary helper.
-No root-owned build/test/server/load handle remains live. Public gate remains47c473e6b.
+Coordinator source **f9adaaf41** is committed/clean: StreamPreparation.finish()
+and cancel() consume the guard, return the existing control and never take the
+caller's typed result. Finish seals without cancel, cancel latches it; a later
+finish cannot erase a prior request.124 library/124 optimized tests, fmt/strict
+Clippy pass; assignment-controla151a55b9 fails the unchanged cancellation test.
+[Packet](docs/sail-declarative-pipelines/evidence/preparation-no-stream/README.md).
 
-[Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) is active,
-flagged to the user for Astra. Direction: runner-visible finite move-only preparation
-lease before callbacks, caller-polled cancellation and exact owner handoff; CF-0127
-adds distinct analysis/frontier/attempt owners and typed primary-error retention.
-Exact runner/handoff/context, effect-outcome and writer memory APIs are not selected.
-Probe27b82ad25 demonstrates shared catalog but copied config/UDF state; restoring
-original config before build overwrites the shared default catalog and removes a
-parent table. Post-build restore avoids overwrite but native SET is still local.
-[Probe packet](docs/sail-declarative-pipelines/evidence/planning-context-design-probe/README.md)
-retains initial disabled-SQL-feature compile failure and the corrected native-path
-three-case experiment; this test-only candidate is not in the product branch.
-No generic context clone/merge-back/runtime swap; route resolver helper queries too.
+[Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) remains
+active for Astra. Selected shape: begin returns a move-only object bound to its
+runner; execute(plan) consumes that object rather than passing it back to an
+arbitrary runner. resources/control plus no-stream finish/cancel preserve caller
+borrows and typed errors. Actual runner trait/core/stop wiring remains unimplemented.
+Admission precedes authoritative SET; execution snapshot capture must occur at an
+explicit later phase. Its exact API and simultaneous-error transport remain open.
+CF-0131 confirms compatibility with Fable lowering/flow.sql_conf, not shared scope.
 
-Prior facadebebabdb9e is [qualified](docs/sail-declarative-pipelines/evidence/owned-store-facade/README.md)
-at214 execution library/12 optimized tests, with both ownership and condition
-controls. Its eight-part fixture is not a production policy; conditional conflicts
-still fail scope reports. Registry/planning/session activation, actual provider/
-writer children/runtime-loss joins, recovery and full SDP acceptance remain open.
-Next: exact lease/error handoff API and session-authority route, then integration.
+Prior97f9983d5 observer and d8e5213c6 registered-I/O tests are
+[qualified](docs/sail-declarative-pipelines/evidence/planning-cancellation-observer/README.md):
+actual I/O can settle after cancellation and its waiter/guard are gone; drainage
+still waits. Use that packet's corrected stress parser; its first wrapper misread
+“120 passed” as “0 passed”, while raw tests passed and all workers joined.
+[Context probe](docs/sail-declarative-pipelines/evidence/planning-context-design-probe/README.md):
+config/UDF copies share catalogs; native SET on the clone is not authoritative.
+Bootstrap hazard affects default/custom contexts, not normal Sail server catalogs;
+no global runtime swap or whole-state merge-back.
+
+Prior facadebebabdb9e remains qualified at214 execution/12 optimized tests; routing,
+byte/outcome/recovery policy and provider/child/session/cluster joins remain open.
+Next: implement the finite local preparation object and explicit context capture.
 
 ## Acceptance accounting and major remaining work
 

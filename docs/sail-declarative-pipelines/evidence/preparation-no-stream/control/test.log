@@ -1,0 +1,24 @@
+   Compiling sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-common-datafusion` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 11.25s
+     Running unittests src/lib.rs (target/debug/deps/sail_common_datafusion-20ecac8d8c7980a2)
+
+running 1 test
+
+thread 'managed_stream::preparation::finish_tests::successful_finish_cannot_erase_an_earlier_cancel_request' (89104582) panicked at crates/sail-common-datafusion/src/managed_stream/preparation_finish_tests.rs:77:5:
+assertion failed: before.result().is_err_and(|error| error.to_string().contains("canceled"))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test managed_stream::preparation::finish_tests::successful_finish_cannot_erase_an_earlier_cancel_request ... FAILED
+
+failures:
+
+failures:
+    managed_stream::preparation::finish_tests::successful_finish_cannot_erase_an_earlier_cancel_request
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 123 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p sail-common-datafusion --lib`

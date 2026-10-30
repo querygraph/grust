@@ -133,12 +133,44 @@ must not satisfy it, and observing cancellation must not become proof of joined
 storage effects. Preserve current pull-driven execution; no detached planner or
 batch-forwarding task is introduced merely to make lifetimes 'static.
 
-An API sketch for review, not an implemented signature, is an object-safe
-begin_preparation on JobRunner returning an opaque lease, and execute_prepared
-consuming that lease plus a physical plan. The lease must bind its runner identity,
-session, preparation identity and exact scope; reject duplicate/cross-runner use
-before provider invocation. Ordinary execute may remain a compatibility entry
-for already-prepared plans, but it cannot claim earlier planning ownership.
+Selected API shape: the preparation object is itself the bound executor. The
+caller never passes it back to an arbitrary runner. Its private implementation
+retains the runner core and admitted job identity; consuming the object prevents
+duplicate execution, and there is no cross-runner argument to accidentally accept.
+The common object-safe surface under review is:
+
+```rust
+#[tonic::async_trait]
+trait JobPreparation: Send + Sync {
+    fn resources(&self) -> &Arc<TaskResourceScope>;
+    fn control(&self) -> ManagedStreamControl;
+    fn finish(self: Box<Self>) -> ManagedStreamControl;
+    fn cancel(self: Box<Self>) -> ManagedStreamControl;
+    async fn execute(
+        self: Box<Self>,
+        plan: Arc<dyn ExecutionPlan>,
+    ) -> Result<SendableRecordBatchStream>;
+}
+// JobRunner::begin_preparation(&SessionContext) -> Result<Box<dyn JobPreparation>>
+```
+
+This is the selected ownership shape, not an implemented runner trait or a final
+execution-context signature. begin must publish admission before planning and
+bind the authoritative context by identity, but must not blindly freeze execution
+configuration before handle_sql_config can mutate it. The capture/freeze point
+and private operation state still need an explicit API. Merely refreshing from the
+parent at execute would retain today's late capture but would not establish
+frozen per-query semantics against concurrent SET. Resolve that before activation.
+
+The typed primary result stays with the caller; finish/cancel take no error input.
+The returned control supplies cleanup observation, while cancel's control outcome
+is cancellation. StreamPreparation's new no-stream finish/cancel operations are
+the corresponding lower seam: finish seals without cancellation; cancel latches
+cancellation; neither manufactures a stream or coerces a caller's error. A prior
+cancellation cannot be cleared by finishing. Simultaneous primary/cleanup failures
+still need their transport policy; returning control is not permission to ignore
+its cleanup result. Legacy execute remains a compatibility entry for already-
+prepared plans and cannot claim ownership of earlier planning.
 
 Keep the admission owner in the existing runner lifecycle rather than introducing
 an unobserved JobService side registry whose work runner.stop would miss. A cluster
@@ -224,8 +256,9 @@ AsyncWrite before that point. No mechanism is selected by this note.
 
 ## Incremental implementation and acceptance order
 
-1. Add the latched cancellation observer and borrowed-preparation regression.
-   This is a component seam, not admission or planning routing.
+1. Implemented: latched cancellation observation, borrowed/registered-I/O model,
+   and no-stream preparation finish/cancel. These are component seams, not runner
+   admission or planning routing.
 2. Resolve the exact lease/handoff API with finite local admission/stop tests:
    held planning entered before stop, stop before admission, dropped RPC, panic,
    ordinary failure with clean cleanup, and already-admitted mutation settlement.

@@ -1714,3 +1714,8 @@ Sail `bebabdb9e7ef7d072ea39f9ec9ac536af86a3f50` retains mutation futures and mul
 ## 2026-10-30T15:49:48.826808+00:00 — registered I/O after cancellation of its borrowed waiter
 
 Test-only Sail `d8e5213c6461a64874d59ef565c07eb943b8d3fb` qualifies CF-0127's combined model: actual I/O entry precedes stop; dropping the caller does not end the registered task; scope drainage stays pending until known settlement and preserves primary cancellation separately.121 library/121 optimized tests plus fmt/strict Clippy pass. [Packet](evidence/planning-cancellation-observer/README.md) retains the earlier positive variant and exact final qualification. The design incorporates Fable's three owners, authority and typed-error constraints, plus resolver helper queries that execute during planning. Exact runner/context/outcome/memory APIs remain open; no production routing or whole SDK/session verdict.
+
+
+## 2026-10-30T16:07:36.969625+00:00 — no-stream preparation exits and bound-executor API
+
+Sail `f9adaaf41653a38b8dfb0f32684428ea0b0ef8de` adds finish/cancel exits without consuming the caller result.124 library/124 optimized tests plus fmt/strict Clippy pass; monotonic-cancellation control fails unchanged assertion. [Evidence](evidence/preparation-no-stream/README.md). [Design](PRE-PLANNING-OWNERSHIP-DESIGN.md) selects a move-only preparation executor bound to its runner, avoiding cross-runner ticket handoff; CF-0131 confirms compatibility with unit4 lowering. Exact context capture after authoritative config mutation and simultaneous-error transport remain open; no runner/registry/protocol activation.
