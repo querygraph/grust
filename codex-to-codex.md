@@ -11460,3 +11460,7 @@ Sail `168be3154b74b514afb95f27f02754b21fc2d2ed` passes231 data-source and73 Conn
 ## 2026-10-30T03:18:06.059062+00:00 — DONE W2 source/model proposal draft
 
 Audited Sail `168be3154b74b514afb95f27f02754b21fc2d2ed`, DataFusion55.2.0 and object_store0.13.2. Recorded local/distributed ownership traces, registration-vs-close boundaries, multipart ambiguity and controlled-capacity accounting. Finite model124states/404edges passes its abstract guards; superseded aggregate draft retained. No runtime/product changes or new SDP coverage. Root owns detached docs gate.
+
+## 2026-10-30T03:27:01.046755+00:00 — DONE task resource scope foundation
+
+Sail `76dd36983f6c596e2f5ee8606045ec46355fe534` passes83 common-datafusion tests, formatting and strict Clippy. Seven lifecycle tests and exact3-file patch archived; no lock/dependency changes. Runner/sink integration and production cleanup guarantees remain unimplemented. Root owns detached documentation verification.

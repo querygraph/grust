@@ -1519,3 +1519,7 @@ Recorded 2026-10-30T03:07:43.744292+00:00. [Sail `168be3154b`](evidence/orc-writ
 ## W2 ownership and accounting proposal
 
 Recorded 2026-10-30T03:18:06.059062+00:00. The [ownership proposal](ORC-WRITER-OWNERSHIP.md) covers both LocalJobRunner and distributed task monitors, fresh per-attempt scopes, graceful drain ownership, unknown upload outcomes and per-allocation accounting. Exact sources and a bounded124-state protocol model are retained. Actor shutdown and task cancellation currently do not prove upload cleanup; direct upload handles and driver acknowledgment need explicit implementation. W2a–W2d refine the next units. No production cleanup, memory-bound or public writer verdict follows from this proposal.
+
+## Resource scope foundation implementation
+
+Recorded 2026-10-30T03:27:01.046755+00:00. [Sail `76dd36983f`](evidence/task-resource-scope/README.md) adds owned supervisor admission, synchronous cancellation sealing and cancel-safe shared drainage. All83 common-datafusion tests, formatting and strict Clippy pass, with seven new deterministic lifecycle tests. No dependencies change. Owners must explicitly retain/drain the scope; Drop is cancellation-only. This is W2a groundwork, with actual local/distributed runner integration, upload cleanup and memory accounting still open.

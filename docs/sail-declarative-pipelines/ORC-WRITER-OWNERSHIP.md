@@ -174,3 +174,7 @@ These units refine W2; they do not mark it implemented or qualify public ORC
 writing. Keep the original writer-to-CTAS-to-MV and later streaming assertions in
 the full Spark acceptance inventory. Existing source, options and native admission
 commits remain useful prerequisites.
+
+## Resource scope foundation implementation
+
+Recorded 2026-10-30T03:27:01.046755+00:00. [Sail `76dd36983f`](evidence/task-resource-scope/README.md) adds owned supervisor admission, synchronous cancellation sealing and cancel-safe shared drainage. All83 common-datafusion tests, formatting and strict Clippy pass, with seven new deterministic lifecycle tests. No dependencies change. Owners must explicitly retain/drain the scope; Drop is cancellation-only. This is W2a groundwork, with actual local/distributed runner integration, upload cleanup and memory accounting still open.
