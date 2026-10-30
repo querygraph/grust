@@ -1,8 +1,10 @@
 # Provider and runtime ownership checkpoint
 
 Status: partial design; runtime-interruption prerequisite implemented at Sail
-`9d83baa8ba77b947dcadbb8b2921309a667c8f97`. Provider hook choice and writer routing
-are not implemented. This continues [multipart ownership](OWNED-MULTIPART-SUPERVISOR-DESIGN.md)
+`9d83baa8ba77b947dcadbb8b2921309a667c8f97`, wrapper Drop policy fixed at
+`a2cee8f0037af5910deac0f0473e4387caa7c9cf`, and interrupted observers fixed at
+`070caa80b6695942318dbc24c90dae6e6bc0dfd7`. Broader provider hooks and writer
+routing remain unimplemented. This continues [multipart ownership](OWNED-MULTIPART-SUPERVISOR-DESIGN.md)
 and [the earlier effect checkpoint](evidence/checkpoint-effect-adapter-design/README.md).
 
 ## Observed boundary and implemented prerequisite
@@ -43,9 +45,10 @@ namespace and reject automatic replay, never masquerade as a clean barrier.
 - RuntimeAwareObjectStore retains an inner client and its I/O Handle. PUT/creation/
   complete/abort spawn tasks on that handle. Part creation enters that runtime
   synchronously in caller order; returned part futures await tracked I/O tasks.
-- RuntimeAwareMultipartUpload.abort uses a timed part wait, and Drop can spawn
-  cleanup. Successful complete/abort set finished. Failed complete leaves finished
-  false, so Drop can attempt abort despite uncertain publication.
+- RuntimeAwareMultipartUpload.abort still uses a timed part wait, and an open
+  abandoned upload's Drop can spawn cleanup. The pre-a2cee8f00 implementation left
+  finished=false after failed complete and then attempted Drop abort despite
+  uncertain publication. The new policy below fixes that specific second disposition.
 - The new whole-lifetime supervisor is stronger than a plain outer forwarder: it
   retains the entire creation future, every returned part future, and the final
   complete/abort future. This may already join known nested I/O tasks on successful
@@ -53,6 +56,32 @@ namespace and reject automatic replay, never masquerade as a clean barrier.
 - RuntimeEnvFactory erases the registry into RuntimeEnv. Server mutators can replace
   RuntimeEnvBuilder's registry and later SessionStateBuilder's runtime/config.
   Typed metadata must match the final active registry, not an earlier default.
+
+## Selected smaller prerequisite: wrapper-local Drop policy
+
+Fable CF-0088 identified a smaller seam; root's actual publication control confirmed
+it. Sail a2cee8f00 records completion admission locally before the I/O hop and
+suppresses automatic Drop abort afterward, while retaining the inner mutex-protected
+confirmed-finished state. This is history, not a declaration that commit succeeded.
+Successful explicit abort also disables redundant Drop work. An unpolled complete
+retains abandoned-upload cleanup; explicit informed abort after failure remains
+available. No descriptor, contextual marker or shared mutable job owner was added.
+[Exact control, 38 library/optimized tests and fresh public gate](evidence/uncertain-runtime-drop/README.md).
+One/two native wrappers, actual nested store creation on distinct I/O runtimes and
+pre-provider first-poll observer loss are covered. Failed complete may leave parts
+until a provider-qualified explicit cleanup or lifecycle policy; that cost is stated.
+
+Fable also found the direct-observer classification gap: an Interrupted result had
+no Complete-stage cause and could appear retryable before the caller drained its
+scope. Sail070caa80b makes mutation result observers and the multipart mapper
+conservatively nonretryable, retaining original observer errors and the scope's
+actual JoinError. Generic observers remain generic. [Evidence](evidence/interrupted-mutation-observers/README.md).
+
+The smaller fixes make A/B unnecessary for this particular abort defect. Neither
+broader hook is selected. Next determine how much existing whole-lifetime retention
+already qualifies on successful paths, then design only the remaining owner/routing
+seam. Complete tasks use plain JoinHandles and can detach across a lost runtime;
+part tasks use AbortOnDropHandle. These are different failure boundaries.
 
 ## Candidate A: explicit provider descriptors
 
@@ -115,7 +144,7 @@ controls. Do not conflate a cleanup-mode marker with a mutable ambient job owner
 
 1. **Done:** interrupted owned mutation becomes nonretryable uncertainty while
    retaining JoinError; generic resources and normal returned failures unchanged.
-2. Run the current whole supervisor against known nested RuntimeAware wrappers:
+2. Partially done: run the current whole supervisor against known nested RuntimeAware wrappers:
    hold creation/parts/complete/abort, lose observers, seal/cancel the scope, and
    distinguish joined futures from timeout/Drop work. Include a provider that
    publishes then returns complete error; record any implicit abort after it.

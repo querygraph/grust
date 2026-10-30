@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T11:36:36.310168+00:00. Live coordination read through **CF-0085**.
+Snapshot written 2026-10-30T12:28:31.799133+00:00. Live coordination read through **CF-0102**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -56,12 +56,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `9d83baa8ba77b947dcadbb8b2921309a667c8f97` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `987bd84902e0fdd208707b77a06b2c5cbafa29de` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `9d83baa8b` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `070caa80b6695942318dbc24c90dae6e6bc0dfd7` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `4405f6e99555a12aae16321521231e8b4e488532` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `070caa80b` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `798cd35c9fdb47ec3800367aa9e1d6d19231d779` (offered, detached gate CF-0078) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `17e84c923a5f6e2e8aac12aae5c55282fcbbf809` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `7962984bee362157e0a3b4ca5df8fe047b02d829` (offered, detached gate CF-0102) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `aa97bc2d291ae08097f98305e3417f184beea2fe` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -164,16 +164,17 @@ Recent implementation units relevant to the current work:
 | `4cb9aec14` | Whole multipart supervisor in sail-object-store, no new dependency or routing. 33 library + 16 optimized CPU-load tests pass; notification control fails unchanged regression. [Packet](docs/sail-declarative-pipelines/evidence/owned-multipart/README.md) |
 | `beebb83d0` | Execution adapter registers the lifetime with existing TaskResourceScope, retaining typed completion uncertainty. 197 library +5 optimized tests pass; removing the marker fails unchanged classification regression. [Packet](docs/sail-declarative-pipelines/evidence/execution-owned-multipart/README.md) |
 | `9d83baa8b` | Explicit mutation-supervisor interruption retains typed JoinError + nonretryable uncertainty for owned PUT/multipart. 111 common +198 execution library tests and111+6 optimized tests pass; unchanged publication/runtime-loss control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/owned-mutation-runtime-loss/README.md) |
+| `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
+| `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest public runtime gate at `34eb270d00`: 15 physical-plan library tests, formatting,
-strict all-target/all-feature Clippy, a fresh exact-commit CLI, 300 selected public
-cases and 67 upstream Python executions pass. An unchanged-production control
-fails the precise lost-nonretryable-cause assertion. The initial test-style Clippy
-failure is retained. Owned server was stopped; do not assume any current process
-is live from this historical result. No root-owned build/test handle is pending
-at this handoff snapshot; the owned PUT, multipart and execution-adapter library/release gates are terminal too.
-Documentation gates are short-lived and must be polled
-if a replacement arrives during one.
+Latest fresh public CLI gate is exactly `a2cee8f00`:300 selected public cases and
+67 upstream Python executions pass, with a rebuilt CLI/source/binary receipt and
+owned server stopped. Its38 object-store library/optimized tests pass too. Later
+070caa80b has its own112+198 library and112+6 optimized component verdict; the public
+verdict is not widened to that later tree. Earlier typed-error34eb270d00's15 physical
+library tests and lost-nonretryable-cause control remain archived in their own packet.
+No root-owned build/test/server handle is pending at this snapshot; all load workers
+were joined. Reinspect live handles if a successor arrives during a later gate.
 
 ## Acceptance accounting and major remaining work
 
@@ -226,6 +227,8 @@ consumer units during integration rather than blindly cherry-picking that defect
 | `33a883091` | Approved move-only lower bounded-source contract extraction; detached common/common-datafusion/Connect and249 Python gate CF-0062. Offered, not integrated. |
 | `bc23c8db6` / `105967e17` | Typed per-flow report and callback carrier, unwired, detached gates CF-0070/0073. Source review CF-0071 requires retaining maps in the raised error, not dropping them when constructing its message. Not integrated. |
 | `798cd35c9` | Retained report variant + actual AnalysisException Status mapping, detached gate CF-0078. Fixes source-level map loss; unwired/unintegrated. |
+| `92ab01326` / `b61da2c98` | Typed merge-error prerequisite then C5 loop; the loop also corrects raw JVM renderer parameters (64 cases), preserves scopes via two constructor call-site edits, and leaves event diagnostics as strict xfail. Offered/unintegrated;133 Rust +265 Python/1 xfail gate. |
+| `f93efc3c9` / `2561606e9` / `7962984be` | Source error-only types (no async conversion), phase6 no-flow ordering, phase4 table/streamingness predicate. Latest detached gate133 Rust +277 Python/1 xfail (CF-0102). Offered/unintegrated. |
 
 Grust offers: kernel727baa3e; evidence5538854f/aba8ef64 (lowercase),31997f0f
 (CDC validation),275e666b (microbatch),834cae55 (streaming/prepared),8b0bd605
@@ -304,34 +307,23 @@ The minimal Grust column kernel is now integrated in Sail
 all16 library tests/fmt/strict Clippy pass, and only its own lock stanza is new.
 No Connect dependency yet; consumer manifest/lock edge must land together.
 [Evidence](docs/sail-declarative-pipelines/evidence/grust-columns-integration/README.md).
-CF-0058 records C5 source review: previous global streamingness/CDC checks move after
-resolution, but in-loop schema-merge versus unrelated missing-source ordering remains
-a parity gap. Fable is asked for a minimal phase-separation proposal and explicit
-unresolved-error collection semantics; source review is not a new runtime verdict.
-CF-0064/0066 reject the first-error shortcut: original Scala suites inspect the
-outer UnresolvedPipelineException and complete nested cause maps. Draft7548f336
-moves toward that model but still guesses reader attribution/final inference timing;
-all readers must receive actual demand-time inference causes; unobserved inference
-must follow the exact reference validation/final phase, not synthetic flow failures. Cycle detection covers the failed
-subgraph, including disconnected failures. Fable offered the model/callback carrier
-and fixed raised-error retention at798cd35c9; the loop is still unwired.
-CF-0082 approves revision3's analysis.rs/schema.rs loop scope after corrected source
-review: DataflowGraphTransformer gates table installation on all producer flows
-resolving. CF-0074's inference from VirtualTableInput alone omitted that gate;
-failed producers do block declared-schema readers. Preserve classification from
-requestedInputs, successful flows separately from failed destinations, same-named-
-flow validation phase, per-reader demand inference and final raw inference phase.
-Raw phase9 requires SparkException/CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE/42825 with
-left/right SQL-type parameters. Fable's39-case JVM oracle says nested failures report
-the outer/root field pair; it is preparing a separate typed-merge-error prerequisite
-before the loop. No merge/coercion changes, PlanResolver/session/events or guard removal.
-Async source error-only scope is also approved after semantic corrections: boxed
-causes, deterministic refusal shape unchanged, no Clone/Eq promise for opaque errors.
-Async conversion awaits ownership review; PositionStore is deferred. Read timeouts
-may have executed; retry eligibility needs stateless captured binding and disabled
-position commits. Dropping SDK futures proves neither joined workers nor clean drain.
-Read-back is an observation, not SDP durability; C0 remains unselected. Next coordinator
-integration still includes definition/validation/dedup and lower source contracts.
+C5 review/decisions are in CF-0058,0064,0066,0074,0082,0089,0095,0099. Current
+truth: the retained wrapper/callback carrier, typed root-pair merge error and revised
+loop are offered; none integrated. The two source corrections to Codex's earlier
+reading are retained in the channel: same-named-flow inference can run before final
+inference even without declaration; table installation waits for all producers, so
+declared-schema readers do not bypass failed-producer availability. Fable's b61da2c98
+implements the reviewed loop and fixes the private SMALLINT/CHAR/VARCHAR formatter
+against raw64-case JVM parameters, public toDDL unchanged. Keep that formatter
+correction reviewable during integration rather than silently accepting the original
+renderer-normalised evidence. Phase6 and phase4 follow-ups address later source
+findings; latest7962984be has133 Rust/277 Python +1 strict xfail for missing flow-failure
+events. Full original-suite phase parity still needs independent combined review.
+Async source error-only types f93efc3c9 are offered, no signatures changed. Async
+conversion awaits ownership review; PositionStore/C0 remain deferred. A timed-out
+read may have executed, SDK future drop does not prove clean drain, and read-back
+is not durability. Current proposals/evidence live in the Fable docs worktree; read
+the live channel and exact immutable offers before integration or scope decisions.
 
 ## Runtime and ORC work Codex must continue
 
@@ -363,8 +355,8 @@ supervisor, register its entire run before creation, then await a command handle
 It retains raw creation/part/complete/abort futures, bounded FIFO part admission,
 concurrent uploads, shared typed errors and exactly one disposition. Notifications
 happen outside the admission lock and capacity is released before result wakeup.
-Failed complete remains uncertain without blind abort. The legacy wrapper and
-checkpoint routing are unchanged. The TaskResourceScope adapter is done below. Read the
+Failed complete remains uncertain without blind abort. Native wrapper Drop policy
+is corrected below; checkpoint routing remains unchanged. The TaskResourceScope adapter is done below. Read the
 [concrete design](docs/sail-declarative-pipelines/OWNED-MULTIPART-SUPERVISOR-DESIGN.md).
 33 library/16 optimized tests pass, all ten load workers joined. Initial fixture
 compile failure, failed notification control, canceled wrong-checkout run and
@@ -382,14 +374,19 @@ are unchanged. Actual PUT and multipart publication-before-runtime-loss regressi
 pass; the unchanged multipart control fails on old production. 111+198 library and
 111+6 optimized CPU-load tests pass, ten workers joined per run. This covers the
 supervisor-runtime boundary, not every nested I/O/provider-returned-error path.
-The announced provider/runtime phase is underway: [new checkpoint](docs/sail-declarative-pipelines/PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md)
-compares immutable typed descriptors with a retained-creation context marker for
-known wrappers. Neither hook is selected/implemented. Next proof: actual nested
-RuntimeAware wrappers under the whole supervisor, including publish-then-error
-and implicit Drop abort. Fable is reviewing alternatives (CF-0084/0085) without code
-scope overlap. Then isolated registry/context routing, actual checkpoint integration,
-truthful session/manager shutdown and distributed qualification. Keep gates granular. Never authorize prefix
-deletion on an unconfirmed stop or timeout, and do not treat cancellation as join.
+The provider/runtime phase produced a smaller seam from Fable's CF-0088 review:
+Native RuntimeAwareMultipartUpload records complete admission before its I/O hop and
+suppresses later Drop abort, while explicit informed abort/unpolled cleanup remain.
+No descriptor/context marker was added. Known nested wraps on distinct runtimes and
+pre-I/O observer loss are tested.070caa80b additionally makes direct interrupted
+mutation observers nonretryable before drain, retaining RecvError and real JoinError;
+generic resource observers stay generic. Full raw disposal/recovery remains open.
+[Current design](docs/sail-declarative-pipelines/PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md)
+records why descriptor/context alternatives were not selected for this defect.
+Next: qualify remaining nested child/returned-PUT-error paths, then isolated
+registry/context routing and actual checkpoint integration; truthful session/manager
+shutdown and distributed qualification remain. Keep prefix deletion contingent on
+confirmed settlement. An error report alone is not retained raw recovery identity.
 
 Session architecture keeps policy in sail-session: retained cleanup ownership,
 Creating/Running/Deleting/DeletionFailed/Deleted/Failed, no resurrection, manager

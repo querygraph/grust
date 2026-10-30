@@ -1677,3 +1677,15 @@ cooperative settlement and returned factory errors retain their prior semantics.
 [Evidence](evidence/owned-mutation-runtime-loss/README.md),
 [provider/runtime checkpoint](PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md). No dependency,
 registry, writer or session activation. Hook alternatives remain unselected.
+
+
+## 2026-10-30T12:20:28.361241+00:00 — runtime-wrapper Drop disposition
+
+Sail `a2cee8f0037af5910deac0f0473e4387caa7c9cf`: 38 object-store library/optimized tests, fmt/strict Clippy and300 selected public +67 upstream Python tests pass. Native Drop stops aborting after complete admission; explicit abort/unpolled cleanup remain. [Evidence](evidence/uncertain-runtime-drop/README.md).
+No dependency or checkpoint/session activation; full barrier/SDP acceptance remains open.
+
+
+## 2026-10-30T12:20:28.361470+00:00 — interrupted mutation observers
+
+Sail `070caa80b6695942318dbc24c90dae6e6bc0dfd7`: 112 common +198 execution library tests/fmt/strict Clippy and112+6 optimized tests pass. Interrupted mutation observers classify uncertainty before drainage; typed observer/join errors remain. Two unchanged real-publication controls fail before the fix. [Evidence](evidence/interrupted-mutation-observers/README.md).
+No dependency or checkpoint/session activation; full barrier/SDP acceptance remains open.

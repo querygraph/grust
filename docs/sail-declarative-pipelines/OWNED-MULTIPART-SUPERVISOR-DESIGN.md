@@ -15,7 +15,7 @@ The higher layer registers the complete lifetime before awaiting Creation:
 
 ```rust
 let (supervisor, creation) = prepare(provider_factory, max_parts);
-resources.spawn(move |canceled| async move {
+resources.spawn_mutation(move |canceled| async move {
     supervisor.run(canceled).await.map_err(
         sail_execution::owned_multipart::execution_error
     )
@@ -109,8 +109,9 @@ qualified recovery rule, including any required cleanup, remains necessary befor
 activation. The enclosing checkpoint protocol must apply its nonretryable unknown-
 commit classification; this lower component does not manufacture a clean abort.
 
-Task panic/runtime loss drops observers as Interrupted; the retained task owner must
-also retain its real JoinError. Neither result means clean settlement. Error-return
+Task panic/runtime loss drops observers as Interrupted; the retained task owner
+also retains its real JoinError. Mutation registration marks that loss nonretryable;
+070caa80b also classifies interrupted mutation observers before drainage. Neither result means clean settlement. Error-return
 paths may drop a provider whose own Drop spawns work; they remain failures rather
 than cleanup-qualified success. The adapter must distinguish operation failure from
 confirmed disposal if it later wants to permit safe compensation after successful
@@ -119,9 +120,11 @@ retains those errors; a successful abort does not erase a failed operation.
 
 ## Limits and next units
 
-The legacy RuntimeAwareMultipartUpload implementation is unchanged. Its abort waits
-up to 15 seconds for its tracked parts, ignores timeout, and Drop can spawn an abort.
-An outer wrapper alone cannot qualify that nested lifetime. Raw/custom/local stores
+RuntimeAwareMultipartUpload's Drop policy is fixed ata2cee8f00: once complete is
+first polled, Drop cannot start a competing abort. Explicit abort still waits up to
+15 seconds for its tracked parts and ignores timeout; open abandoned uploads still
+have a Drop backstop. [Nested-wrapper evidence](evidence/uncertain-runtime-drop/README.md)
+qualifies this specific defect, not the full nested lifetime. Raw/custom/local stores
 and nested runtime wrappers need explicit held-effect qualification. No checkpoint
 writer is routed into this new API, no public success/Deleted/RPC acknowledgement is
 changed, and the incremental/sink execution guard remains.
