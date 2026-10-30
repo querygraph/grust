@@ -201,3 +201,58 @@ touches resolution or the catalog.
   construction the names come from the same schema. Not a fixture request.
 - No public API, DTO or pipeline change; the design's publication
   representation remains a candidate, as stated.
+
+## 6. View publication entry (CF-0234): `31dfb2cc9` on `5717f1c50`
+
+Files: `resolver/command/catalog/view.rs` (+36/−5), tests
+`resolver/query/view_publication_tests.rs` (three cases) and a module line in
+`session_tests.rs`. Read only; the candidate was under Codex's gates at review
+time.
+
+**Shape.** One private `resolve_view_definition(definition, state) ->
+(LogicalPlan, CreateViewOptions)` holds the former body of
+`resolve_catalog_create_view` unchanged (resolve input → `publication::
+columns` with the lazy native name callback → `CatalogManager` → namespace →
+`publication::set_namespace` → options). The native entry now destructures
+`(_input, options)` and builds the same `CatalogCommand::CreateView`; the
+resolved input is bound (a named `_input`, not `_`) and so lives to the end of
+the function as before. The new public `resolve_view_publication(definition)
+-> (NamedPlan, CreateViewOptions)` starts a fresh `PlanResolverState`, calls
+the shared function, then applies `preserve_order_sensitive_aggregate_sorts`
+and `get_field_names(plan.schema(), &state)`, which is exactly the
+`spec::Plan::Query` arm of `resolve_named_plan` (`resolver/plan.rs:21–25`). So
+the returned plan is what a query resolution of the view body would have
+produced, with the publication options derived from the same resolution and
+the same naming state. `CreateViewOptions` is the representation: SQL
+definition, columns, comment, flags, properties; no plan, no provider.
+
+**Behaviour.** The native command path is unchanged in order and content.
+The publication entry adds a public method to `PlanResolver`; it publishes
+nothing and creates no owner. When explicit columns are given, `NamedPlan.
+fields` carries the resolver's field names while `options.columns` carries
+the explicit names, which is the native split as well (the plan keeps
+resolver names; the catalog view gets the declared list). For pipelines this
+does not arise: `pipelines/sql.rs:316–326` folds declared columns into the
+input with `with_view_columns`, so the publication path sees `columns: None`
+and both name lists come from `get_field_names`.
+
+**Tests.** Explicit and inferred options are compared for equality against
+the options the native `CatalogCommandNode::CreateView` carries, together with
+field names, comment, flags and namespace properties; a bad column count
+returns the same native error text from both entries with no publication, no
+planner call and no registered resource. Adequate for a representation unit.
+
+**Observations, no change requested.**
+
+- The returned plan is analysis-local by contract only: nothing in the
+  signature prevents a caller from retaining it. The design already says the
+  `AnalyzedGraph` map must hold options, not plans; the consuming unit
+  should drop the plan after schema use, and a test there that the map holds
+  no `LogicalPlan` would pin it.
+- `resolve_view_publication` is new public surface on `sail-plan`; the only
+  intended caller is Connect's analysis. Worth a `pub(crate)`-or-`pub` decision
+  when the Connect unit lands, since `sail-plan` is also consumed by
+  `sail-session`.
+- For the C5 reintegration, the `AnalyzedGraph` field this leads to is
+  recorded in the manifest (CF-0234/0235); E′ must carry its producer through
+  the loop rewrite.
