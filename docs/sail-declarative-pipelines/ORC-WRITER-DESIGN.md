@@ -150,3 +150,7 @@ Recorded 2026-10-30T02:56:38.637466+00:00. [Sail `88a8ecfcb8`](evidence/orc-writ
 ## Generated writer options and immutable defaults
 
 Recorded 2026-10-30T03:07:43.744292+00:00. [Sail `168be3154b`](evidence/orc-write-options/README.md) adds generated raw option layers and immutable write defaults captured atomically with read configuration. All231 data-source/73 Connect tests, formatting and strict Clippy pass under an explicit Spark4.2.1 Python environment. Eleven direct SQLConf cases confirm untrimmed string validation and rejected-value nonmutation. Earlier compile/fallback failures and same-binary control remain retained. Semantic preflight, graph/flow override application, sink/codec and public writer activation remain open.
+
+## W2 ownership and accounting proposal
+
+Recorded 2026-10-30T03:18:06.059062+00:00. The [ownership proposal](ORC-WRITER-OWNERSHIP.md) covers both LocalJobRunner and distributed task monitors, fresh per-attempt scopes, graceful drain ownership, unknown upload outcomes and per-allocation accounting. Exact sources and a bounded124-state protocol model are retained. Actor shutdown and task cancellation currently do not prove upload cleanup; direct upload handles and driver acknowledgment need explicit implementation. W2a–W2d refine the next units. No production cleanup, memory-bound or public writer verdict follows from this proposal.
