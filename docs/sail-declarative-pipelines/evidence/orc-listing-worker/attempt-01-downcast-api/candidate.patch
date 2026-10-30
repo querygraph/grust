@@ -1,0 +1,445 @@
+diff --git a/crates/sail-data-source/src/listing/mod.rs b/crates/sail-data-source/src/listing/mod.rs
+index fb05def6e..efc3e1a8d 100644
+--- a/crates/sail-data-source/src/listing/mod.rs
++++ b/crates/sail-data-source/src/listing/mod.rs
+@@ -1,5 +1,6 @@
+ pub mod delete;
+ pub mod input_files;
++mod partition;
+ pub mod planner;
+ pub mod source;
+ pub mod table;
+diff --git a/crates/sail-data-source/src/listing/partition.rs b/crates/sail-data-source/src/listing/partition.rs
+new file mode 100644
+index 000000000..a712e6684
+--- /dev/null
++++ b/crates/sail-data-source/src/listing/partition.rs
+@@ -0,0 +1,42 @@
++use datafusion::arrow::datatypes::FieldRef;
++use datafusion::logical_expr::Expr;
++use datafusion_common::Result;
++use datafusion_common::tree_node::{Transformed, TreeNode};
++
++/// DataFusion's directory parser and pruning expressions must use the same
++/// physical keys. Logical names remain in the table and scan schemas.
++pub(super) fn rebind_partition_filters(
++    filters: &[Expr],
++    fields: &[FieldRef],
++    directory_names: &[String],
++) -> Result<Vec<Expr>> {
++    filters
++        .iter()
++        .map(|filter| {
++            filter
++                .clone()
++                .transform_up(|expr| {
++                    let Expr::Column(mut column) = expr else {
++                        return Ok(Transformed::no(expr));
++                    };
++                    let Some((_, name)) = fields
++                        .iter()
++                        .zip(directory_names)
++                        .find(|(field, _)| field.name() == &column.name)
++                    else {
++                        return Ok(Transformed::no(Expr::Column(column)));
++                    };
++                    if name == &column.name {
++                        return Ok(Transformed::no(Expr::Column(column)));
++                    }
++                    column.name = name.clone();
++                    Ok(Transformed::yes(Expr::Column(column)))
++                })
++                .map(|result| result.data)
++        })
++        .collect()
++}
++
++#[cfg(test)]
++#[path = "partition_tests.rs"]
++mod tests;
+diff --git a/crates/sail-data-source/src/listing/partition_tests.rs b/crates/sail-data-source/src/listing/partition_tests.rs
+new file mode 100644
+index 000000000..8ae5378d0
+--- /dev/null
++++ b/crates/sail-data-source/src/listing/partition_tests.rs
+@@ -0,0 +1,214 @@
++#![expect(clippy::unwrap_used)]
++
++use std::sync::Arc;
++
++use bytes::Bytes;
++use datafusion::arrow::array::{Int64Array, StringArray};
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::execution::context::{SessionConfig, SessionContext};
++use datafusion::logical_expr::physical_planning_context::PhysicalPlanningContext;
++use datafusion::logical_expr::{LogicalPlan, LogicalPlanBuilder, TableProviderFilterPushDown};
++use datafusion::physical_plan::collect;
++use datafusion::physical_plan::empty::EmptyExec;
++use datafusion::physical_planner::{DefaultPhysicalPlanner, ExtensionPlanner};
++use datafusion::prelude::{col, lit};
++use datafusion_common::{Constraints, Result, ScalarValue};
++use datafusion_datasource::file_scan_config::FileScanConfig;
++use datafusion_datasource::source::DataSourceExec;
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use sail_common_datafusion::datasource::{DataSource, SourceInfo};
++use url::Url;
++
++use super::*;
++use crate::formats::json::JsonDataSource;
++use crate::listing::planner::ListingPhysicalPlanner;
++use crate::listing::table::ListingTableSource;
++
++async fn fixture() -> Result<(SessionContext, Arc<InMemory>)> {
++    let context = SessionContext::new_with_config(
++        SessionConfig::new()
++            .with_collect_statistics(false)
++            .with_target_partitions(1),
++    );
++    let store = Arc::new(InMemory::new());
++    for (name, contents) in [
++        ("west", "{\"id\":11}\n{\"id\":12}\n"),
++        ("east", "{\"id\":21}\n"),
++    ] {
++        store
++            .put(
++                &Path::from(format!("data/part={name}/data.json")),
++                Bytes::from(contents).into(),
++            )
++            .await?;
++    }
++    context.register_object_store(
++        &Url::parse("memory://partition-bindings").unwrap(),
++        store.clone(),
++    );
++    Ok((context, store))
++}
++
++fn request(partition_name: &str) -> SourceInfo {
++    SourceInfo {
++        paths: vec!["memory://partition-bindings/data/".into()],
++        lakehouse_table: None,
++        schema: Some(Schema::new(vec![
++            Field::new("id", DataType::Int64, true),
++            Field::new(partition_name, DataType::Utf8, true),
++        ])),
++        constraints: Constraints::default(),
++        partition_by: vec![],
++        bucket_by: None,
++        sort_order: vec![],
++        options: vec![],
++        read_case_sensitive: false,
++    }
++}
++
++#[tokio::test]
++async fn logical_partition_aliases_preserve_rows_pruning_and_object_identity() -> Result<()> {
++    let (context, store) = fixture().await?;
++    let state = context.state();
++    let planner = DefaultPhysicalPlanner::with_extension_planners(vec![]);
++    for name in ["part", "PART"] {
++        let source = JsonDataSource::default()
++            .create_source(&state, request(name))
++            .await?;
++        let listing = source.downcast_ref::<ListingTableSource>().unwrap();
++        assert_eq!(listing.config().partition_directory_names, ["part"]);
++        assert_eq!(
++            listing.config().schema.table_partition_cols()[0].name(),
++            name
++        );
++        assert_eq!(listing.config().schema.file_schema().fields().len(), 1);
++        let schema = source.schema();
++        for (filters, expected) in [
++            (vec![], vec![(11, "west"), (12, "west"), (21, "east")]),
++            (
++                vec![col(name).eq(lit("west"))],
++                vec![(11, "west"), (12, "west")],
++            ),
++            // A non-equality predicate must also bind against the physical
++            // partition schema used by DataFusion's listing filter evaluator.
++            (vec![col(name).not_eq(lit("west"))], vec![(21, "east")]),
++            (vec![col(name).eq(lit("missing"))], vec![]),
++        ] {
++            assert_eq!(
++                source.supports_filters_pushdown(&filters.iter().collect::<Vec<_>>())?,
++                vec![TableProviderFilterPushDown::Exact; filters.len()]
++            );
++            let logical =
++                LogicalPlanBuilder::scan_with_filters("files", source.clone(), None, filters)?
++                    .build()?;
++            let LogicalPlan::TableScan(scan) = logical else {
++                unreachable!("scan builder produces TableScan")
++            };
++            let physical = ListingPhysicalPlanner
++                .plan_table_scan(&planner, &scan, &state, &PhysicalPlanningContext::default())
++                .await?
++                .unwrap();
++            assert_eq!(physical.schema(), schema);
++            if expected.is_empty() {
++                assert!(physical.as_any().is::<EmptyExec>());
++            } else {
++                let exec = physical.as_any().downcast_ref::<DataSourceExec>().unwrap();
++                let config = exec
++                    .data_source()
++                    .as_any()
++                    .downcast_ref::<FileScanConfig>()
++                    .unwrap();
++                let mut selected = vec![];
++                for file in config.file_groups.iter().flat_map(|group| group.iter()) {
++                    let original = store.head(&file.object_meta.location).await?;
++                    assert_eq!(file.object_meta, original);
++                    let partition = if file.object_meta.location.as_ref().contains("part=west/") {
++                        "west"
++                    } else {
++                        "east"
++                    };
++                    assert_eq!(
++                        file.partition_values,
++                        [ScalarValue::Utf8(Some(partition.into()))]
++                    );
++                    selected.push(partition);
++                }
++                selected.sort_unstable();
++                let mut expected_partitions = expected.iter().map(|(_, p)| *p).collect::<Vec<_>>();
++                expected_partitions.sort_unstable();
++                expected_partitions.dedup();
++                assert_eq!(selected, expected_partitions);
++            }
++            let batches = collect(physical, context.task_ctx()).await?;
++            let mut actual = vec![];
++            for batch in batches {
++                let ids = batch
++                    .column(0)
++                    .as_any()
++                    .downcast_ref::<Int64Array>()
++                    .unwrap();
++                let partitions = batch
++                    .column(1)
++                    .as_any()
++                    .downcast_ref::<StringArray>()
++                    .unwrap();
++                for i in 0..batch.num_rows() {
++                    actual.push((ids.value(i), partitions.value(i).to_owned()));
++                }
++            }
++            actual.sort_unstable();
++            assert_eq!(
++                actual,
++                expected
++                    .into_iter()
++                    .map(|(id, p)| (id, p.to_owned()))
++                    .collect::<Vec<_>>()
++            );
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn invalid_partition_binding_count_is_rejected_before_scan() -> Result<()> {
++    let (context, _) = fixture().await?;
++    let source = JsonDataSource::default()
++        .create_source(&context.state(), request("PART"))
++        .await?;
++    let mut config = source
++        .downcast_ref::<ListingTableSource>()
++        .unwrap()
++        .config()
++        .clone();
++    for names in [vec![], vec!["part".into(), "extra".into()]] {
++        config.partition_directory_names = names;
++        assert!(
++            ListingTableSource::try_new(config.clone())
++                .unwrap_err()
++                .to_string()
++                .contains("directory keys must match the number of partition fields")
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn filter_rebinding_uses_original_logical_names_once() -> Result<()> {
++    // Swapped names must not recursively rename the first replacement again.
++    let fields = vec![
++        Arc::new(Field::new("a", DataType::Utf8, true)),
++        Arc::new(Field::new("b", DataType::Utf8, true)),
++    ];
++    let filters = vec![col("a").eq(lit("x")).and(col("b").not_eq(lit("y")))];
++    assert_eq!(
++        rebind_partition_filters(&filters, &fields, &["b".into(), "a".into()])?,
++        vec![col("b").eq(lit("x")).and(col("a").not_eq(lit("y")))]
++    );
++    assert_eq!(
++        rebind_partition_filters(&filters, &fields, &["a".into(), "b".into()])?,
++        filters
++    );
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/listing/planner.rs b/crates/sail-data-source/src/listing/planner.rs
+index 5dba4b4df..1e2932ebf 100644
+--- a/crates/sail-data-source/src/listing/planner.rs
++++ b/crates/sail-data-source/src/listing/planner.rs
+@@ -35,6 +35,7 @@ use sail_common_datafusion::streaming::event::schema::is_flow_event_schema;
+ use sail_physical_plan::barrier::BarrierExec;
+ 
+ use crate::listing::delete::FileDeleteExec;
++use crate::listing::partition::rebind_partition_filters;
+ use crate::listing::source::{ListingScanInput, ListingSinkInput};
+ use crate::listing::table::ListingTableSource;
+ use crate::listing::utils::{
+@@ -358,9 +359,17 @@ async fn list_files_for_scan<'a>(
+         .schema
+         .table_partition_cols()
+         .iter()
+-        .map(|field| (field.name().clone(), field.data_type().clone()))
++        .zip(&source.config().partition_directory_names)
++        .map(|(field, name)| (name.clone(), field.data_type().clone()))
+         .collect();
+ 
++    let filters = rebind_partition_filters(
++        filters,
++        source.config().schema.table_partition_cols(),
++        &source.config().partition_directory_names,
++    )?;
++    let filters = filters.as_slice();
++
+     let store_ref = store.as_ref();
+     let partition_cols_ref = partition_cols.as_slice();
+     let path_glob_filter = source.config().path_glob_filter.as_ref();
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index 830310aeb..1c6d893e5 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -26,7 +26,8 @@ use url::Url;
+ 
+ use crate::listing::table::{ListingTableSource, ListingTableSourceConfig};
+ use crate::listing::utils::{
+-    infer_partitions, rewrite_unsupported_fields, select_listing_files, validate_partitions,
++    infer_partitions, rewrite_unsupported_fields, select_listing_files,
++    validate_partition_directory_names,
+ };
+ use crate::listing::write::{FileWriteNode, FileWriteOptions};
+ use crate::resolve_listing_urls;
+@@ -270,7 +271,7 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+             }
+             None => None,
+         };
+-        let (schema, partition_fields) = match prepared {
++        let (schema, partition_fields, partition_directory_names) = match prepared {
+             Some(PreparedExplicitSchema { schema, physical }) => {
+                 // When the partition columns are not specified, auto-discover
+                 // them from `key=value` segments in the listing paths.
+@@ -291,11 +292,11 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+                     partition_by
+                 };
+                 let (partition_fields, schema) =
+-                    get_partition_columns_and_file_schema(&schema, partition_by)?;
++                    get_partition_columns_and_file_schema(&schema, partition_by.clone())?;
+                 if let Some(physical) = physical {
+                     read_format.validate_explicit_schema(&schema, &physical)?;
+                 }
+-                (Arc::new(schema), partition_fields)
++                (Arc::new(schema), partition_fields, partition_by)
+             }
+             None => {
+                 let schema = read_format
+@@ -312,20 +313,22 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+                 // TODO: infer concrete partition types from observed values to match
+                 //   the `spark.sql.sources.partitionColumnTypeInference.enabled` option.
+                 let partition_fields = partition_by
+-                    .into_iter()
++                    .iter()
++                    .cloned()
+                     .map(|col| Arc::new(Field::new(col, DataType::Utf8, false)))
+                     .collect();
+-                (schema, partition_fields)
++                (schema, partition_fields, partition_by)
+             }
+         };
+ 
+-        validate_partitions(&inference_files, &partition_fields)?;
++        validate_partition_directory_names(&inference_files, &partition_directory_names)?;
+ 
+         let source = ListingTableSource::try_new(ListingTableSourceConfig {
+             table_paths: urls,
+             schema: TableSchema::builder(schema)
+                 .with_table_partition_cols(partition_fields)
+                 .build(),
++            partition_directory_names,
+             constraints,
+             file_sort_order: vec![sort_order],
+             collect_stat: ctx.config().collect_statistics(),
+diff --git a/crates/sail-data-source/src/listing/table.rs b/crates/sail-data-source/src/listing/table.rs
+index d6368d351..8d162f658 100644
+--- a/crates/sail-data-source/src/listing/table.rs
++++ b/crates/sail-data-source/src/listing/table.rs
+@@ -7,7 +7,7 @@ use datafusion::arrow::datatypes::SchemaRef;
+ use datafusion::logical_expr::expr::Sort;
+ use datafusion::logical_expr::{Expr, TableProviderFilterPushDown, TableSource, TableType};
+ use datafusion_common::parsers::CompressionTypeVariant;
+-use datafusion_common::{Constraints, Result};
++use datafusion_common::{Constraints, Result, plan_err};
+ use datafusion_datasource::{ListingTableUrl, TableSchema};
+ 
+ use crate::listing::source::ReadFormat;
+@@ -18,6 +18,10 @@ use crate::url::PathGlobFilter;
+ pub struct ListingTableSourceConfig {
+     pub table_paths: Vec<ListingTableUrl>,
+     pub schema: TableSchema,
++    /// Physical directory keys, aligned with the logical partition fields.
++    /// Listing resolves these before scan construction; workers receive values
++    /// in the corresponding field order, not these directory names.
++    pub partition_directory_names: Vec<String>,
+     pub constraints: Constraints,
+     pub file_sort_order: Vec<Vec<Sort>>,
+     pub collect_stat: bool,
+@@ -40,6 +44,11 @@ pub struct ListingTableSource {
+ 
+ impl ListingTableSource {
+     pub fn try_new(config: ListingTableSourceConfig) -> Result<Self> {
++        if config.partition_directory_names.len() != config.schema.table_partition_cols().len() {
++            return plan_err!(
++                "listing partition directory keys must match the number of partition fields"
++            );
++        }
+         Ok(Self { config })
+     }
+ 
+diff --git a/crates/sail-data-source/src/listing/utils.rs b/crates/sail-data-source/src/listing/utils.rs
+index f3fffeea6..fddb0a04f 100644
+--- a/crates/sail-data-source/src/listing/utils.rs
++++ b/crates/sail-data-source/src/listing/utils.rs
+@@ -214,7 +214,18 @@ pub fn validate_partitions(
+     files: &[ListingFileSample<'_>],
+     table_partition_fields: &[FieldRef],
+ ) -> Result<()> {
+-    if table_partition_fields.is_empty() {
++    let names = table_partition_fields
++        .iter()
++        .map(|field| field.name().clone())
++        .collect::<Vec<_>>();
++    validate_partition_directory_names(files, &names)
++}
++
++pub(super) fn validate_partition_directory_names(
++    files: &[ListingFileSample<'_>],
++    table_partition_names: &[String],
++) -> Result<()> {
++    if table_partition_names.is_empty() {
+         return Ok(());
+     }
+     let inferred = infer_partitions(files)?;
+@@ -230,11 +241,6 @@ pub fn validate_partitions(
+             );
+         }
+ 
+-        let table_partition_names = table_partition_fields
+-            .iter()
+-            .map(|f| f.name().clone())
+-            .collect::<Vec<_>>();
+-
+         if inferred.len() < table_partition_names.len() {
+             return plan_err!(
+                 "Inferred partitions to be {:?}, but got {:?}",

@@ -1367,3 +1367,11 @@ activate public ORC scans. Full SDP scope and public runtime counts are unchange
 (eight ignored), 210 no-default, 189 Sail data-source, formatting and strict Clippy.
 Negative/overflowing lengths fail before dependent reads/allocations; pending
 skip/dictionary/primitive/RLE work and public-runtime limits remain explicit.
+
+### ORC listing and worker codec (2026-10-30T00:41:53.386484+00:00)
+
+[Evidence](evidence/orc-listing-worker/README.md) qualifies shared partition binding
+`242134aae8` (192 data-source tests) and ORC codec `5efdf40db8`
+(173 execution tests), plus formatting/strict Clippy. Both binding failures and
+the independent selector correction are retained. Decoded-source execution is
+covered; full worker preparation/public registry/writer and full SDP remain open.

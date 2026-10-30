@@ -11274,3 +11274,12 @@ Native 9f23442e7f9e019c0ec3b0a2d6491929967d41e3 and Sail 947f5123b59f71fe8757811
 Clippy and exact source/package/license/hash checks. Frozen independent review
 retained. No failed code gates, public ORC registration or SDP runtime result.
 Documentation gates precede advance; skip and dictionary work remain separate.
+
+## 2026-10-30T00:41:53.386484+00:00 — DONE partition binding and ORC worker codec
+
+Sail 242134aae8c09b5fc879617622f9dd6827bb5af1 and 5efdf40db8d0918edef569ee65eb589d299987c1 pass exact detached gates:
+192 data-source/173 execution tests, formatting and strict Clippy. Two binding
+attempts retained, assertions preserved, explicit-selector regression corrected.
+Codec tests execute retained fixtures with worker-local pools and exact identity.
+Public registration and later task preparation remain separate. No full SDP claim;
+documentation gates precede advance.

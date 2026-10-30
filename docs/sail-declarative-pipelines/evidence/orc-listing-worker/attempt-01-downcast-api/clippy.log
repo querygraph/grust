@@ -1,0 +1,15 @@
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+error[E0599]: no method named `as_any` found for struct `std::sync::Arc<dyn datafusion::physical_plan::ExecutionPlan>` in the current scope
+   --> crates/sail-data-source/src/listing/partition_tests.rs:115:34
+    |
+115 |                 assert!(physical.as_any().is::<EmptyExec>());
+    |                                  ^^^^^^ method not found in `std::sync::Arc<dyn datafusion::physical_plan::ExecutionPlan>`
+
+error[E0599]: no method named `as_any` found for struct `std::sync::Arc<dyn datafusion::physical_plan::ExecutionPlan>` in the current scope
+   --> crates/sail-data-source/src/listing/partition_tests.rs:117:37
+    |
+117 |                 let exec = physical.as_any().downcast_ref::<DataSourceExec>().unwrap();
+    |                                     ^^^^^^ method not found in `std::sync::Arc<dyn datafusion::physical_plan::ExecutionPlan>`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-data-source` (lib test) due to 2 previous errors

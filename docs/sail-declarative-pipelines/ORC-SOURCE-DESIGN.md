@@ -534,3 +534,20 @@ data-source tests; formatting, strict Clippy and exact package checks pass.
 This resolves the retained materialized-length finding. Skips, dictionary setup,
 remaining primitive allocations and RLE delta arithmetic retain separate work.
 No total-memory or public ORC/SDP acceptance claim is added.
+
+## Bind directory names and transport the assembled source
+
+Recorded: 2026-10-30T00:41:53.386484+00:00. [Sail `242134aae8` and `5efdf40db8`](evidence/orc-listing-worker/README.md)
+pass 192 data-source and 173 execution tests respectively, formatting and strict
+Clippy. Listing now separates physical keys from logical partition fields and
+rebinds only pruning expressions. Explicit selector aliases retain the actual
+observed keys; file identity and output names survive. Existing schema-selection
+policy remains a separate correction, with the Spark partition reference retained.
+
+ORC node68 uses shared identity field67, carries configured resource limits and
+captured timezone/profile metadata, and binds the reader to the decoding worker's
+pool. Tests execute retained logical/temporal fixtures after actual encode/decode
+and exercise immutable identity, ranges, both pool directions and stream drop.
+A separate task-preparation unit must still qualify independently decoded groups
+and preserve checkpoint partitioning at that boundary. Public registration,
+semantic schema inference, writer and broader conversion parity remain open.

@@ -1,0 +1,61 @@
+{
+  "sail_commit": "c7ca23b29ea7f765528d00b4ee762703bd6445ed",
+  "base": "947f5123b59f71fe87578114855e2f065716ebde",
+  "packages": [
+    "sail-data-source"
+  ],
+  "started_at": "2026-10-30T00:35:29.773561+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-data-source",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-listing-partition-binding-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-data-source",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-listing-partition-binding-clippy.log",
+      "sha256": "ddd95f4373a2f3f22a986e81f95212810b7435558d41aea121cb5d945bbc7c1b"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-data-source",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 101,
+      "log": "/tmp/sail-sdp-listing-partition-binding-rust.log",
+      "sha256": "74e0f2a0fc6c30a83eb9a72c9eaac7fc16cdd29e9bc7d6737a7554cd118d8f30"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T00:36:01.656709+00:00"
+}
