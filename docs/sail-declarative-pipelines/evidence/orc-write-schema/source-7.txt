@@ -1,0 +1,28 @@
+79:   private[sql] def dataTypeJsonValue: JValue = {
+80:     if (collationMetadata.isEmpty) return dataType.jsonValue
+81: 
+82:     def removeCollations(dt: DataType): DataType = dt match {
+83:       // Only recurse into map and array types as any child struct type
+84:       // will have already been processed.
+85:       case ArrayType(et, nullable) =>
+86:         ArrayType(removeCollations(et), nullable)
+87:       case MapType(kt, vt, nullable) =>
+88:         MapType(removeCollations(kt), removeCollations(vt), nullable)
+89:       case st: StringType => StringHelper.removeCollation(st)
+90:       case _ => dt
+91:     }
+92: 
+93:     // As we want to be backwards compatible we should remove all collations information from the
+94:     // json and only keep that information in the metadata.
+95:     removeCollations(dataType).jsonValue
+96:   }
+97: 
+98:   private def metadataJson: JValue = {
+99:     val metadataJsonValue = metadata.jsonValue
+100:     metadataJsonValue match {
+101:       case JObject(fields) if collationMetadata.nonEmpty =>
+102:         val collationFields = collationMetadata.map(kv => kv._1 -> JString(kv._2)).toList
+103:         JObject(fields :+ (DataType.COLLATIONS_METADATA_KEY -> JObject(collationFields)))
+104: 
+105:       case _ => metadataJsonValue
+106:     }

@@ -1,0 +1,62 @@
+319:         s"${quoteIdentifier(f.name)}:${getOrcSchemaString(f.dataType)}"
+320:       }
+321:       s"struct<${fieldTypes.mkString(",")}>"
+322:     case a: ArrayType =>
+323:       s"array<${getOrcSchemaString(a.elementType)}>"
+324:     case m: MapType =>
+325:       s"map<${getOrcSchemaString(m.keyType)},${getOrcSchemaString(m.valueType)}>"
+326:     case _: DayTimeIntervalType | _: TimestampNTZType | _: TimeType => LongType.catalogString
+327:     case _: YearMonthIntervalType => IntegerType.catalogString
+328:     case _ => dt.catalogString
+329:   }
+330: 
+331:   def orcTypeDescription(dt: DataType): TypeDescription = {
+332:     def getInnerTypeDecription(dt: DataType): Option[TypeDescription] = {
+333:       dt match {
+334:         case y: YearMonthIntervalType =>
+335:           val typeDesc = new TypeDescription(TypeDescription.Category.INT)
+336:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, y.typeName)
+337:           Some(typeDesc)
+338:         case d: DayTimeIntervalType =>
+339:           val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+340:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, d.typeName)
+341:           Some(typeDesc)
+342:         case n: TimestampNTZType =>
+343:           val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+344:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, n.typeName)
+345:           Some(typeDesc)
+346:         case tm: TimeType =>
+347:           val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+348:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, tm.typeName)
+349:           Some(typeDesc)
+350:         case t: TimestampType =>
+351:           val typeDesc = new TypeDescription(TypeDescription.Category.TIMESTAMP)
+352:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, t.typeName)
+353:           Some(typeDesc)
+354:         case _: StringType =>
+355:           val typeDesc = new TypeDescription(TypeDescription.Category.STRING)
+356:           typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, StringType.typeName)
+357:           Some(typeDesc)
+358:         case _ => None
+359:       }
+360:     }
+361: 
+362:     dt match {
+363:       case s: StructType =>
+364:         val result = new TypeDescription(TypeDescription.Category.STRUCT)
+365:         s.fields.foreach { f =>
+366:           getInnerTypeDecription(f.dataType) match {
+367:             case Some(t) => result.addField(f.name, t)
+368:             case None => result.addField(f.name, orcTypeDescription(f.dataType))
+369:           }
+370:         }
+371:         result
+372:       case a: ArrayType =>
+373:         val result = new TypeDescription(TypeDescription.Category.LIST)
+374:         getInnerTypeDecription(a.elementType) match {
+375:           case Some(t) => result.addChild(t)
+376:           case None => result.addChild(orcTypeDescription(a.elementType))
+377:         }
+378:         result
+379:       case m: MapType =>
+380:         val result = new TypeDescription(TypeDescription.Category.MAP)

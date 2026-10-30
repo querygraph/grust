@@ -1531,3 +1531,7 @@ Recorded 2026-10-30T03:34:56.255104+00:00. [Sail `779cb136d9`](evidence/scoped-t
 ## Distributed task monitor resource drainage
 
 Recorded 2026-10-30T03:54:50.229850+00:00. [Sail `e02e4f712f`](evidence/task-monitor-resources/README.md) installs fresh per-attempt scopes and drains supervisors before distributed terminal reports, retaining cancellation after stream EOF. Eight new channel-controlled tests cover cleanup waiting, typed/unknown-commit cause precedence and poll/Drop panics. All183 execution and85 common-datafusion library tests, formatting and strict Clippy pass. This completes the monitor portion of W2b; local execution, CloseJob/driver acknowledgments, graceful shutdown, native accounting and public ORC writing remain open. No new original Spark suite or public SDP coverage is claimed.
+
+## Primitive writer semantic schema preflight
+
+Recorded 2026-10-30T04:09:02.782340+00:00. [Sail `71f24a87a2`](evidence/orc-write-schema/README.md) adds OrcWriteSchema with storage-type and semantic-metadata admission, preserving the original schema. Six new tests include orphaned/unknown logical metadata, later-field rejection and native nullable multi-batch round trips. All237 data-source library tests, formatting and strict Clippy pass. Public writing remains rejected; the future sink/worker must invoke the preflight before opening output. Temporal/nested/decimal parity, local ownership, native accounting, graph/flow write defaults and public activation remain open. No new Spark suite or public SDP coverage is claimed.

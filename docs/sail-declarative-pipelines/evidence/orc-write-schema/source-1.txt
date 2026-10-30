@@ -1,0 +1,109 @@
+302:         &self,
+303:         field: &spec::Field,
+304:         state: &mut PlanResolverState,
+305:     ) -> PlanResult<adt::Field> {
+306:         let spec::Field {
+307:             name,
+308:             data_type,
+309:             nullable,
+310:             metadata,
+311:         } = field;
+312:         let mut metadata: HashMap<String, String> = metadata.iter().cloned().collect();
+313:         if let spec::DataType::Time { precision } = data_type {
+314:             metadata.insert(
+315:                 spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
+316:                 spec::SparkTimeMetadata::try_new(*precision)?.to_json()?,
+317:             );
+318:         }
+319:         if let spec::DataType::Interval {
+320:             interval_unit,
+321:             start_field,
+322:             end_field,
+323:         } = data_type
+324:             && let Some(interval) =
+325:                 spec::SparkIntervalMetadata::try_new(*interval_unit, *start_field, *end_field)?
+326:         {
+327:             metadata.insert(
+328:                 spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
+329:                 interval.to_json()?,
+330:             );
+331:         }
+332:         let data_type = match data_type {
+333:             spec::DataType::UserDefined {
+334:                 jvm_class,
+335:                 python_class,
+336:                 serialized_python_class,
+337:                 sql_type,
+338:             } => {
+339:                 let udt = spec::SparkUdtMetadata {
+340:                     jvm_class: jvm_class.clone(),
+341:                     python_class: python_class.clone(),
+342:                     serialized_python_class: serialized_python_class.clone(),
+343:                 };
+344:                 metadata.insert(
+345:                     spec::SAIL_SPARK_UDT_METADATA_KEY.to_string(),
+346:                     serde_json::to_string(&udt).map_err(|e| {
+347:                         PlanError::internal(format!("failed to serialize UDT metadata: {e}"))
+348:                     })?,
+349:                 );
+350:                 sql_type
+351:             }
+352:             spec::DataType::Geometry { srid } => {
+353:                 validate_geometry_srid(*srid)?;
+354:                 // Add geoarrow extension type metadata for WKB-encoded geometries.
+355:                 // ARROW:extension:* keys follow the Apache Arrow extension type standard
+356:                 // and are automatically filtered from Spark client responses.
+357:                 // Edges default to planar in GeoArrow, so we omit them for Geometry.
+358:                 metadata.insert(
+359:                     EXTENSION_TYPE_NAME_KEY.to_string(),
+360:                     GeoArrowWkbType::NAME.to_string(),
+361:                 );
+362:                 let mut ext = json!({});
+363:                 if let Some(crs) = srid_to_crs(*srid)? {
+364:                     ext["crs"] = serde_json::Value::String(crs);
+365:                 }
+366:                 metadata.insert(EXTENSION_TYPE_METADATA_KEY.to_string(), ext.to_string());
+367:                 data_type
+368:             }
+369:             spec::DataType::Geography { srid, algorithm: _ } => {
+370:                 validate_geography_srid(*srid)?;
+371:                 // Add geoarrow extension type metadata for WKB-encoded geographies.
+372:                 // ARROW:extension:* keys follow the Apache Arrow extension type standard
+373:                 // and are automatically filtered from Spark client responses.
+374:                 metadata.insert(
+375:                     EXTENSION_TYPE_NAME_KEY.to_string(),
+376:                     GeoArrowWkbType::NAME.to_string(),
+377:                 );
+378:                 let mut ext = json!({"edges": "spherical"});
+379:                 if let Some(crs) = srid_to_crs(*srid)? {
+380:                     ext["crs"] = serde_json::Value::String(crs);
+381:                 }
+382:                 metadata.insert(EXTENSION_TYPE_METADATA_KEY.to_string(), ext.to_string());
+383:                 data_type
+384:             }
+385:             spec::DataType::Variant => {
+386:                 metadata.insert(
+387:                     EXTENSION_TYPE_NAME_KEY.to_string(),
+388:                     VariantType::NAME.to_string(),
+389:                 );
+390:                 data_type
+391:             }
+392:             x => x,
+393:         };
+394:         Ok(
+395:             adt::Field::new(name, self.resolve_data_type(data_type, state)?, *nullable)
+396:                 .with_metadata(metadata),
+397:         )
+398:     }
+399: 
+400:     pub(super) fn resolve_fields(
+401:         &self,
+402:         fields: &spec::Fields,
+403:         state: &mut PlanResolverState,
+404:     ) -> PlanResult<adt::Fields> {
+405:         let fields = fields
+406:             .into_iter()
+407:             .map(|f| self.resolve_field(f, state))
+408:             .collect::<PlanResult<Vec<_>>>()?;
+409:         Ok(adt::Fields::from(fields))
+410:     }

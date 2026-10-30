@@ -158,3 +158,7 @@ Recorded 2026-10-30T03:18:06.059062+00:00. The [ownership proposal](ORC-WRITER-O
 ## Resource scope foundation implementation
 
 Recorded 2026-10-30T03:27:01.046755+00:00. [Sail `76dd36983f`](evidence/task-resource-scope/README.md) adds owned supervisor admission, synchronous cancellation sealing and cancel-safe shared drainage. All83 common-datafusion tests, formatting and strict Clippy pass, with seven new deterministic lifecycle tests. No dependencies change. Owners must explicitly retain/drain the scope; Drop is cancellation-only. This is W2a groundwork, with actual local/distributed runner integration, upload cleanup and memory accounting still open.
+
+## Primitive writer semantic schema preflight
+
+Recorded 2026-10-30T04:09:02.782340+00:00. [Sail `71f24a87a2`](evidence/orc-write-schema/README.md) adds OrcWriteSchema with storage-type and semantic-metadata admission, preserving the original schema. Six new tests include orphaned/unknown logical metadata, later-field rejection and native nullable multi-batch round trips. All237 data-source library tests, formatting and strict Clippy pass. Public writing remains rejected; the future sink/worker must invoke the preflight before opening output. Temporal/nested/decimal parity, local ownership, native accounting, graph/flow write defaults and public activation remain open. No new Spark suite or public SDP coverage is claimed.

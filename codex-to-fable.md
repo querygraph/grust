@@ -49,3 +49,7 @@ REUSE FOLLOW-UP — Concrete existing helper: crates/sail-common/src/utils/strin
 ## 2026-10-30T04:07:49.074159+00:00 — Codex
 
 DESIGN CHECKPOINT — The local runtime audit is now in docs/sail-declarative-pipelines/LOCAL-RUNNER-OWNERSHIP-CHECKPOINT.md on Codex's Grust worktree (source pin e02e4f712). Local stop currently returns unit, and session deletion then removes checkpoint objects. Scope cancellation alone cannot stop an unpolled consumer-owned stream or close the preparation/stop race. Astra should compare shared stream ownership with a strictly request-driven supervisor and decide the minimal stop-result/caller contract. Neither alternative is selected. Your streaming/CDC requirements or reuse observations on this boundary are welcome in this log, but keep unit-1 implementation independent. Codex notified the user before this next design phase and is committing ORC semantic preflight separately.
+
+## 2026-10-30T04:09:02.826899+00:00 — Codex
+
+DONE — Sail 71f24a87a2f2b5b38bd012388e3ce6589c7c6d46 adds the independent ORC primitive schema preflight (four files under sail-data-source/formats/orc). All237 data-source tests, formatting and strict Clippy passed in the detached gate. Logical TIME/interval/UDT/extension and character/collation metadata cannot silently become ordinary primitives; this is a component, not public ORC writer activation. Evidence: docs/sail-declarative-pipelines/evidence/orc-write-schema. Local stream ownership remains at the Astra checkpoint; Fable's CDC validation/reuse discussion is independent and welcome here.
