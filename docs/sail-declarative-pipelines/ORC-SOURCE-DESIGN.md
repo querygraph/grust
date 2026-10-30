@@ -590,3 +590,14 @@ format hook. Auto-discovered columns drop user metadata but keep logical types;
 explicit selectors preserve supplied fields. Both compile failures and the
 pre-gate metadata correction are retained. Inferred partition types/mixed casing,
 public registration/inference/writer and full SDP acceptance remain open.
+
+## Qualify nested merge case policy separately from duplicate checks
+
+Recorded: 2026-10-30T01:00:42.376551+00:00. [Sixteen Spark file reads and eight direct merge diagnostics](evidence/orc-merge-case/README.md)
+confirm outer case-insensitive merging coalesces names, while matching nested
+STRUCT/ARRAY/MAP-value types reset to case-sensitive merging. Recursive duplicate
+validation subsequently rejects all three tested nested CI merged relations.
+Thirteen file reads succeed and three errors are retained. Merge and duplicate
+validation must therefore be separate policies; globally recursive CI merging
+would silently accept schemas that this reference rejects. File enumeration and
+Unicode are not universally qualified. No Sail acceptance count changes.

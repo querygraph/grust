@@ -1,0 +1,16 @@
+    relation match {
+      case hs: HadoopFsRelation =>
+        SchemaUtils.checkSchemaColumnNameDuplication(
+          hs.dataSchema,
+          equality)
+        SchemaUtils.checkSchemaColumnNameDuplication(
+          hs.partitionSchema,
+          equality)
+        DataSourceUtils.verifySchema(hs.fileFormat, hs.dataSchema, readOnly)
+      case _ =>
+        SchemaUtils.checkSchemaColumnNameDuplication(
+          relation.schema,
+          equality)
+    }
+
+    relation

@@ -11305,3 +11305,9 @@ Sail 429d54e3d3bf826a5985edb8aead3d46c8b34559 and 5563ea165917fbcc9d59144da3f131
 175 execution and 201 data-source tests, formatting and strict Clippy. Independent
 reviews and failed compile attempts retained; discovered user metadata behavior
 corrected before gating. Public acceptance remains separate; docs gated before advance.
+
+## 2026-10-30T01:00:42.376551+00:00 — DONE Spark ORC merge-case reference
+
+Retained 16 file cases (13 successes/3 schema errors), 8 direct diagnostics, 8 ORCs,
+exact source/license evidence and clean owned JVM 29949 exit. Separate merge and
+duplicate policies required; no public Sail count. Docs gates precede advance.

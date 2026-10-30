@@ -1,0 +1,72 @@
+            nullable = leftField.nullable || rightField.nullable)
+        }
+        StructType(newFields)
+      })
+
+  private[sql] def merge(
+      left: DataType,
+      right: DataType,
+      caseSensitive: Boolean = true): DataType =
+    mergeInternal(
+      left,
+      right,
+      (s1: StructType, s2: StructType) => {
+        val leftFields = s1.fields
+        val rightFields = s2.fields
+        val newFields = mutable.ArrayBuffer.empty[StructField]
+
+        def normalize(name: String): String = {
+          if (caseSensitive) name else name.toLowerCase(Locale.ROOT)
+        }
+
+        val rightMapped = fieldsMap(rightFields, caseSensitive)
+        leftFields.foreach { case leftField @ StructField(leftName, leftType, leftNullable, _) =>
+          rightMapped
+            .get(normalize(leftName))
+            .map { case rightField @ StructField(rightName, rightType, rightNullable, _) =>
+              try {
+                leftField.copy(
+                  dataType = merge(leftType, rightType),
+                  nullable = leftNullable || rightNullable)
+              } catch {
+                case NonFatal(e) =>
+                  throw DataTypeErrors.cannotMergeIncompatibleDataTypesError(leftType, rightType)
+              }
+            }
+            .orElse {
+              Some(leftField)
+            }
+            .foreach(newFields += _)
+        }
+
+        val leftMapped = fieldsMap(leftFields, caseSensitive)
+        rightFields
+          .filterNot(f => leftMapped.contains(normalize(f.name)))
+          .foreach { f =>
+            newFields += f
+          }
+
+        StructType(newFields.toArray)
+      })
+
+  private def mergeInternal(
+      left: DataType,
+      right: DataType,
+      mergeStruct: (StructType, StructType) => StructType): DataType =
+    (left, right) match {
+      case (
+            ArrayType(leftElementType, leftContainsNull),
+            ArrayType(rightElementType, rightContainsNull)) =>
+        ArrayType(
+          mergeInternal(leftElementType, rightElementType, mergeStruct),
+          leftContainsNull || rightContainsNull)
+
+      case (
+            MapType(leftKeyType, leftValueType, leftContainsNull),
+            MapType(rightKeyType, rightValueType, rightContainsNull)) =>
+        MapType(
+          mergeInternal(leftKeyType, rightKeyType, mergeStruct),
+          mergeInternal(leftValueType, rightValueType, mergeStruct),
+          leftContainsNull || rightContainsNull)
+
+      case (s1: StructType, s2: StructType) => mergeStruct(s1, s2)

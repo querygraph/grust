@@ -1398,3 +1398,10 @@ Formatting, strict Clippy and package checks pass. No public SDP runtime result.
 `5563ea1659` (201 data-source tests), plus formatting/strict Clippy.
 Retained compilation failures changed no assertions. Direct scan/codec tests are
 not a public ORC registration, cluster or complete SDP verdict.
+
+### ORC schema merging case reference (2026-10-30T01:00:42.376551+00:00)
+
+[Evidence](evidence/orc-merge-case/README.md) retains 13 successful reads, 3 schema
+errors and 8 direct JVM diagnostics against Spark 4.2.1. It confirms nested case
+reset followed by recursive duplicate validation, with owned JVM shutdown and
+source/license evidence. Sail semantic inference remains a subsequent unit.

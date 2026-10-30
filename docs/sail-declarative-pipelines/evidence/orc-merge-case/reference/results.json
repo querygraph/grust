@@ -1,0 +1,3515 @@
+{
+  "cases": [
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              222,
+              null
+            ]
+          },
+          {
+            "name": "Value",
+            "nullable": true,
+            "ordinal": 2,
+            "type": "int32",
+            "values": [
+              null,
+              111
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "Value": null,
+            "id": 22,
+            "value": 222
+          },
+          {
+            "Value": 111,
+            "id": 11,
+            "value": null
+          }
+        ],
+        "schema": "id: int32\nvalue: int32\nValue: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "root",
+      "name": "root_case_true_merge_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "Value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [3]: [id#1, value#2, Value#3]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root]\nReadSchema: struct<id:int,value:int,Value:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [3]: [id#1, value#2, Value#3]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "Value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              222,
+              null
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "value": 222
+          },
+          {
+            "id": 11,
+            "value": null
+          }
+        ],
+        "schema": "id: int32\nvalue: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "root",
+      "name": "root_case_true_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#7, value#8]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root]\nReadSchema: struct<id:int,value:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#7, value#8]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "s",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "struct<value: int32, Value: int32>",
+            "values": [
+              {
+                "Value": null,
+                "value": 222
+              },
+              {
+                "Value": 111,
+                "value": null
+              }
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "s": {
+              "Value": null,
+              "value": 222
+            }
+          },
+          {
+            "id": 11,
+            "s": {
+              "Value": 111,
+              "value": null
+            }
+          }
+        ],
+        "schema": "id: int32\ns: struct<value: int32, Value: int32>\n  child 0, value: int32\n  child 1, Value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "struct",
+      "name": "struct_case_true_merge_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "metadata": {},
+                  "name": "Value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#12, s#13]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct]\nReadSchema: struct<id:int,s:struct<value:int,Value:int>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#12, s#13]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "metadata": {},
+                  "name": "Value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "s",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "struct<value: int32>",
+            "values": [
+              {
+                "value": 222
+              },
+              {
+                "value": null
+              }
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "s": {
+              "value": 222
+            }
+          },
+          {
+            "id": 11,
+            "s": {
+              "value": null
+            }
+          }
+        ],
+        "schema": "id: int32\ns: struct<value: int32>\n  child 0, value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "struct",
+      "name": "struct_case_true_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#17, s#18]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct]\nReadSchema: struct<id:int,s:struct<value:int>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#17, s#18]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "items",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "list<element: struct<value: int32, Value: int32>>",
+            "values": [
+              [
+                {
+                  "Value": null,
+                  "value": 222
+                }
+              ],
+              [
+                {
+                  "Value": 111,
+                  "value": null
+                }
+              ]
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "items": [
+              {
+                "Value": null,
+                "value": 222
+              }
+            ]
+          },
+          {
+            "id": 11,
+            "items": [
+              {
+                "Value": 111,
+                "value": null
+              }
+            ]
+          }
+        ],
+        "schema": "id: int32\nitems: list<element: struct<value: int32, Value: int32>>\n  child 0, element: struct<value: int32, Value: int32>\n      child 0, value: int32\n      child 1, Value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "list",
+      "name": "list_case_true_merge_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#22, items#23]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list]\nReadSchema: struct<id:int,items:array<struct<value:int,Value:int>>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#22, items#23]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "items",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "list<element: struct<value: int32>>",
+            "values": [
+              [
+                {
+                  "value": 222
+                }
+              ],
+              [
+                {
+                  "value": null
+                }
+              ]
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "items": [
+              {
+                "value": 222
+              }
+            ]
+          },
+          {
+            "id": 11,
+            "items": [
+              {
+                "value": null
+              }
+            ]
+          }
+        ],
+        "schema": "id: int32\nitems: list<element: struct<value: int32>>\n  child 0, element: struct<value: int32>\n      child 0, value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "list",
+      "name": "list_case_true_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#27, items#28]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list]\nReadSchema: struct<id:int,items:array<struct<value:int>>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#27, items#28]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "lookup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "map<string, struct<value: int32, Value: int32>>",
+            "values": [
+              [
+                [
+                  "k",
+                  {
+                    "Value": null,
+                    "value": 222
+                  }
+                ]
+              ],
+              [
+                [
+                  "k",
+                  {
+                    "Value": 111,
+                    "value": null
+                  }
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "lookup": [
+              [
+                "k",
+                {
+                  "Value": null,
+                  "value": 222
+                }
+              ]
+            ]
+          },
+          {
+            "id": 11,
+            "lookup": [
+              [
+                "k",
+                {
+                  "Value": 111,
+                  "value": null
+                }
+              ]
+            ]
+          }
+        ],
+        "schema": "id: int32\nlookup: map<string, struct<value: int32, Value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<value: int32, Value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<value: int32, Value: int32>\n          child 0, value: int32\n          child 1, Value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "map_value",
+      "name": "map_value_case_true_merge_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#32, lookup#33]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value]\nReadSchema: struct<id:int,lookup:map<string,struct<value:int,Value:int>>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#32, lookup#33]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "lookup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "map<string, struct<value: int32>>",
+            "values": [
+              [
+                [
+                  "k",
+                  {
+                    "value": 222
+                  }
+                ]
+              ],
+              [
+                [
+                  "k",
+                  {
+                    "value": null
+                  }
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "lookup": [
+              [
+                "k",
+                {
+                  "value": 222
+                }
+              ]
+            ]
+          },
+          {
+            "id": 11,
+            "lookup": [
+              [
+                "k",
+                {
+                  "value": null
+                }
+              ]
+            ]
+          }
+        ],
+        "schema": "id: int32\nlookup: map<string, struct<value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<value: int32>\n          child 0, value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "map_value",
+      "name": "map_value_case_true_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#37, lookup#38]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value]\nReadSchema: struct<id:int,lookup:map<string,struct<value:int>>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#37, lookup#38]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              222,
+              111
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "value": 222
+          },
+          {
+            "id": 11,
+            "value": 111
+          }
+        ],
+        "schema": "id: int32\nvalue: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "root",
+      "name": "root_case_false_merge_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#42, value#43]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root]\nReadSchema: struct<id:int,value:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#42, value#43]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              222,
+              111
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "value": 222
+          },
+          {
+            "id": 11,
+            "value": 111
+          }
+        ],
+        "schema": "id: int32\nvalue: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "root",
+      "name": "root_case_false_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#47, value#48]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root]\nReadSchema: struct<id:int,value:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#47, value#48]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "error": {
+        "condition": "COLUMN_ALREADY_EXISTS",
+        "message": "[COLUMN_ALREADY_EXISTS] The column `value` already exists. Choose another name or rename the existing column. SQLSTATE: 42711\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.columnAlreadyExistsError(QueryCompilationErrors.scala:2956)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkColumnNameDuplication(SchemaUtils.scala:154)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:96)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2(SchemaUtils.scala:98)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2$adapted(SchemaUtils.scala:97)\n\tat scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1324)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:97)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:112)\n\tat org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:459)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.org$apache$spark$sql$catalyst$analysis$ResolveDataSource$$loadV1BatchSource(ResolveDataSource.scala:210)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.$anonfun$applyOrElse$2(ResolveDataSource.scala:62)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:62)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$3(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$1(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.allowInvokingTransformsInAnalyzer(AnalysisHelper.scala:416)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning(AnalysisHelper.scala:135)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning$(AnalysisHelper.scala:131)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUpWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp(AnalysisHelper.scala:112)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp$(AnalysisHelper.scala:111)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUp(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:44)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.super$execute(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeSameContext$1(Analyzer.scala:468)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.org$apache$spark$sql$catalyst$analysis$Analyzer$$executeSameContext(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$execute$1(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.AnalysisContext$.withNewAnalysisContext(Analyzer.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:273)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:167)\n\tat org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$1(Dataset.scala:114)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:112)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:109)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:100)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformReadRel(SparkConnectPlanner.scala:1706)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$transformRelation$1(SparkConnectPlanner.scala:151)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$usePlanCache$4(SessionHolder.scala:634)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.connect.service.SessionHolder.usePlanCache(SessionHolder.scala:633)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:146)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelation$1(SparkConnectAnalyzeHandler.scala:87)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelationPlan$1(SparkConnectAnalyzeHandler.scala:88)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.process(SparkConnectAnalyzeHandler.scala:97)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1(SparkConnectAnalyzeHandler.scala:54)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1$adapted(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.handle(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SparkConnectService.analyzePlan(SparkConnectService.scala:101)\n\tat org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1254)\n\tat org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)\n\tat org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)\n\tat org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+        "python_type": "AnalysisException",
+        "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sail-sdp-orc-schema-merge-case-reference/probe.py\", line 202, in main\n    result['read_schema'] = frame.schema.jsonValue()\n                            ^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 2035, in schema\n    _schema = self._schema\n              ^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 2024, in _schema\n    self._cached_schema = self._session.client.schema(query)\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1183, in schema\n    schema = self._analyze(method=\"schema\", plan=plan).schema\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1460, in _analyze\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.AnalysisException: [COLUMN_ALREADY_EXISTS] The column `value` already exists. Choose another name or rename the existing column. SQLSTATE: 42711\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.columnAlreadyExistsError(QueryCompilationErrors.scala:2956)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkColumnNameDuplication(SchemaUtils.scala:154)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:96)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2(SchemaUtils.scala:98)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2$adapted(SchemaUtils.scala:97)\n\tat scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1324)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:97)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:112)\n\tat org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:459)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.org$apache$spark$sql$catalyst$analysis$ResolveDataSource$$loadV1BatchSource(ResolveDataSource.scala:210)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.$anonfun$applyOrElse$2(ResolveDataSource.scala:62)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:62)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$3(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$1(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.allowInvokingTransformsInAnalyzer(AnalysisHelper.scala:416)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning(AnalysisHelper.scala:135)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning$(AnalysisHelper.scala:131)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUpWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp(AnalysisHelper.scala:112)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp$(AnalysisHelper.scala:111)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUp(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:44)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.super$execute(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeSameContext$1(Analyzer.scala:468)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.org$apache$spark$sql$catalyst$analysis$Analyzer$$executeSameContext(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$execute$1(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.AnalysisContext$.withNewAnalysisContext(Analyzer.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:273)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:167)\n\tat org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$1(Dataset.scala:114)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:112)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:109)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:100)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformReadRel(SparkConnectPlanner.scala:1706)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$transformRelation$1(SparkConnectPlanner.scala:151)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$usePlanCache$4(SessionHolder.scala:634)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.connect.service.SessionHolder.usePlanCache(SessionHolder.scala:633)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:146)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelation$1(SparkConnectAnalyzeHandler.scala:87)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelationPlan$1(SparkConnectAnalyzeHandler.scala:88)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.process(SparkConnectAnalyzeHandler.scala:97)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1(SparkConnectAnalyzeHandler.scala:54)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1$adapted(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.handle(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SparkConnectService.analyzePlan(SparkConnectService.scala:101)\n\tat org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1254)\n\tat org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)\n\tat org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)\n\tat org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)\n"
+      },
+      "kind": "struct",
+      "name": "struct_case_false_merge_true",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct",
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "read_schema",
+      "status": "error"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "s",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "struct<value: int32>",
+            "values": [
+              {
+                "value": 222
+              },
+              {
+                "value": 111
+              }
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "s": {
+              "value": 222
+            }
+          },
+          {
+            "id": 11,
+            "s": {
+              "value": 111
+            }
+          }
+        ],
+        "schema": "id: int32\ns: struct<value: int32>\n  child 0, value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "struct",
+      "name": "struct_case_false_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#53, s#54]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct]\nReadSchema: struct<id:int,s:struct<value:int>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#53, s#54]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "error": {
+        "condition": "COLUMN_ALREADY_EXISTS",
+        "message": "[COLUMN_ALREADY_EXISTS] The column `value` already exists. Choose another name or rename the existing column. SQLSTATE: 42711\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.columnAlreadyExistsError(QueryCompilationErrors.scala:2956)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkColumnNameDuplication(SchemaUtils.scala:154)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:96)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2(SchemaUtils.scala:98)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2$adapted(SchemaUtils.scala:97)\n\tat scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1324)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:97)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:112)\n\tat org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:459)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.org$apache$spark$sql$catalyst$analysis$ResolveDataSource$$loadV1BatchSource(ResolveDataSource.scala:210)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.$anonfun$applyOrElse$2(ResolveDataSource.scala:62)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:62)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$3(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$1(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.allowInvokingTransformsInAnalyzer(AnalysisHelper.scala:416)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning(AnalysisHelper.scala:135)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning$(AnalysisHelper.scala:131)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUpWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp(AnalysisHelper.scala:112)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp$(AnalysisHelper.scala:111)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUp(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:44)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.super$execute(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeSameContext$1(Analyzer.scala:468)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.org$apache$spark$sql$catalyst$analysis$Analyzer$$executeSameContext(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$execute$1(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.AnalysisContext$.withNewAnalysisContext(Analyzer.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:273)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:167)\n\tat org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$1(Dataset.scala:114)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:112)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:109)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:100)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformReadRel(SparkConnectPlanner.scala:1706)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$transformRelation$1(SparkConnectPlanner.scala:151)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$usePlanCache$4(SessionHolder.scala:634)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.connect.service.SessionHolder.usePlanCache(SessionHolder.scala:633)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:146)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelation$1(SparkConnectAnalyzeHandler.scala:87)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelationPlan$1(SparkConnectAnalyzeHandler.scala:88)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.process(SparkConnectAnalyzeHandler.scala:97)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1(SparkConnectAnalyzeHandler.scala:54)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1$adapted(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.handle(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SparkConnectService.analyzePlan(SparkConnectService.scala:101)\n\tat org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1254)\n\tat org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)\n\tat org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)\n\tat org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+        "python_type": "AnalysisException",
+        "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sail-sdp-orc-schema-merge-case-reference/probe.py\", line 202, in main\n    result['read_schema'] = frame.schema.jsonValue()\n                            ^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 2035, in schema\n    _schema = self._schema\n              ^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 2024, in _schema\n    self._cached_schema = self._session.client.schema(query)\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1183, in schema\n    schema = self._analyze(method=\"schema\", plan=plan).schema\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1460, in _analyze\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.AnalysisException: [COLUMN_ALREADY_EXISTS] The column `value` already exists. Choose another name or rename the existing column. SQLSTATE: 42711\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.columnAlreadyExistsError(QueryCompilationErrors.scala:2956)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkColumnNameDuplication(SchemaUtils.scala:154)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:96)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2(SchemaUtils.scala:98)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2$adapted(SchemaUtils.scala:97)\n\tat scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1324)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:97)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:112)\n\tat org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:459)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.org$apache$spark$sql$catalyst$analysis$ResolveDataSource$$loadV1BatchSource(ResolveDataSource.scala:210)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.$anonfun$applyOrElse$2(ResolveDataSource.scala:62)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:62)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$3(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$1(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.allowInvokingTransformsInAnalyzer(AnalysisHelper.scala:416)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning(AnalysisHelper.scala:135)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning$(AnalysisHelper.scala:131)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUpWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp(AnalysisHelper.scala:112)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp$(AnalysisHelper.scala:111)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUp(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:44)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.super$execute(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeSameContext$1(Analyzer.scala:468)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.org$apache$spark$sql$catalyst$analysis$Analyzer$$executeSameContext(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$execute$1(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.AnalysisContext$.withNewAnalysisContext(Analyzer.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:273)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:167)\n\tat org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$1(Dataset.scala:114)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:112)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:109)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:100)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformReadRel(SparkConnectPlanner.scala:1706)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$transformRelation$1(SparkConnectPlanner.scala:151)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$usePlanCache$4(SessionHolder.scala:634)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.connect.service.SessionHolder.usePlanCache(SessionHolder.scala:633)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:146)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelation$1(SparkConnectAnalyzeHandler.scala:87)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelationPlan$1(SparkConnectAnalyzeHandler.scala:88)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.process(SparkConnectAnalyzeHandler.scala:97)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1(SparkConnectAnalyzeHandler.scala:54)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1$adapted(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.handle(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SparkConnectService.analyzePlan(SparkConnectService.scala:101)\n\tat org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1254)\n\tat org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)\n\tat org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)\n\tat org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)\n"
+      },
+      "kind": "list",
+      "name": "list_case_false_merge_true",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list",
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "read_schema",
+      "status": "error"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "items",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "list<element: struct<value: int32>>",
+            "values": [
+              [
+                {
+                  "value": 222
+                }
+              ],
+              [
+                {
+                  "value": 111
+                }
+              ]
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "items": [
+              {
+                "value": 222
+              }
+            ]
+          },
+          {
+            "id": 11,
+            "items": [
+              {
+                "value": 111
+              }
+            ]
+          }
+        ],
+        "schema": "id: int32\nitems: list<element: struct<value: int32>>\n  child 0, element: struct<value: int32>\n      child 0, value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "list",
+      "name": "list_case_false_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#59, items#60]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list]\nReadSchema: struct<id:int,items:array<struct<value:int>>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#59, items#60]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "error": {
+        "condition": "COLUMN_ALREADY_EXISTS",
+        "message": "[COLUMN_ALREADY_EXISTS] The column `value` already exists. Choose another name or rename the existing column. SQLSTATE: 42711\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.columnAlreadyExistsError(QueryCompilationErrors.scala:2956)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkColumnNameDuplication(SchemaUtils.scala:154)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:96)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2(SchemaUtils.scala:98)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2$adapted(SchemaUtils.scala:97)\n\tat scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1324)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:97)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:112)\n\tat org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:459)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.org$apache$spark$sql$catalyst$analysis$ResolveDataSource$$loadV1BatchSource(ResolveDataSource.scala:210)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.$anonfun$applyOrElse$2(ResolveDataSource.scala:62)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:62)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$3(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$1(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.allowInvokingTransformsInAnalyzer(AnalysisHelper.scala:416)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning(AnalysisHelper.scala:135)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning$(AnalysisHelper.scala:131)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUpWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp(AnalysisHelper.scala:112)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp$(AnalysisHelper.scala:111)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUp(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:44)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.super$execute(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeSameContext$1(Analyzer.scala:468)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.org$apache$spark$sql$catalyst$analysis$Analyzer$$executeSameContext(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$execute$1(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.AnalysisContext$.withNewAnalysisContext(Analyzer.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:273)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:167)\n\tat org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$1(Dataset.scala:114)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:112)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:109)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:100)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformReadRel(SparkConnectPlanner.scala:1706)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$transformRelation$1(SparkConnectPlanner.scala:151)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$usePlanCache$4(SessionHolder.scala:634)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.connect.service.SessionHolder.usePlanCache(SessionHolder.scala:633)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:146)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelation$1(SparkConnectAnalyzeHandler.scala:87)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelationPlan$1(SparkConnectAnalyzeHandler.scala:88)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.process(SparkConnectAnalyzeHandler.scala:97)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1(SparkConnectAnalyzeHandler.scala:54)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1$adapted(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.handle(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SparkConnectService.analyzePlan(SparkConnectService.scala:101)\n\tat org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1254)\n\tat org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)\n\tat org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)\n\tat org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+        "python_type": "AnalysisException",
+        "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sail-sdp-orc-schema-merge-case-reference/probe.py\", line 202, in main\n    result['read_schema'] = frame.schema.jsonValue()\n                            ^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 2035, in schema\n    _schema = self._schema\n              ^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 2024, in _schema\n    self._cached_schema = self._session.client.schema(query)\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1183, in schema\n    schema = self._analyze(method=\"schema\", plan=plan).schema\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1460, in _analyze\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.AnalysisException: [COLUMN_ALREADY_EXISTS] The column `value` already exists. Choose another name or rename the existing column. SQLSTATE: 42711\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.columnAlreadyExistsError(QueryCompilationErrors.scala:2956)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkColumnNameDuplication(SchemaUtils.scala:154)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:96)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2(SchemaUtils.scala:98)\n\tat org.apache.spark.sql.util.SchemaUtils$.$anonfun$checkSchemaColumnNameDuplication$2$adapted(SchemaUtils.scala:97)\n\tat scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1324)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:97)\n\tat org.apache.spark.sql.util.SchemaUtils$.checkSchemaColumnNameDuplication(SchemaUtils.scala:112)\n\tat org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:459)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.org$apache$spark$sql$catalyst$analysis$ResolveDataSource$$loadV1BatchSource(ResolveDataSource.scala:210)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.$anonfun$applyOrElse$2(ResolveDataSource.scala:62)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:62)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource$$anonfun$apply$1.applyOrElse(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$3(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsUpWithPruning$1(AnalysisHelper.scala:139)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.allowInvokingTransformsInAnalyzer(AnalysisHelper.scala:416)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning(AnalysisHelper.scala:135)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUpWithPruning$(AnalysisHelper.scala:131)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUpWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp(AnalysisHelper.scala:112)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsUp$(AnalysisHelper.scala:111)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsUp(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:46)\n\tat org.apache.spark.sql.catalyst.analysis.ResolveDataSource.apply(ResolveDataSource.scala:44)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.super$execute(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeSameContext$1(Analyzer.scala:468)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.org$apache$spark$sql$catalyst$analysis$Analyzer$$executeSameContext(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$execute$1(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.AnalysisContext$.withNewAnalysisContext(Analyzer.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:273)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:167)\n\tat org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$1(Dataset.scala:114)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:112)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:109)\n\tat org.apache.spark.sql.classic.DataFrameReader.load(DataFrameReader.scala:100)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformReadRel(SparkConnectPlanner.scala:1706)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$transformRelation$1(SparkConnectPlanner.scala:151)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$usePlanCache$4(SessionHolder.scala:634)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.connect.service.SessionHolder.usePlanCache(SessionHolder.scala:633)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:146)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelation$1(SparkConnectAnalyzeHandler.scala:87)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.transformRelationPlan$1(SparkConnectAnalyzeHandler.scala:88)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.process(SparkConnectAnalyzeHandler.scala:97)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1(SparkConnectAnalyzeHandler.scala:54)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.$anonfun$handle$1$adapted(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.service.SparkConnectAnalyzeHandler.handle(SparkConnectAnalyzeHandler.scala:53)\n\tat org.apache.spark.sql.connect.service.SparkConnectService.analyzePlan(SparkConnectService.scala:101)\n\tat org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1254)\n\tat org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)\n\tat org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)\n\tat org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)\n\tat org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)\n\tat org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)\n\tat org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)\n"
+      },
+      "kind": "map_value",
+      "name": "map_value_case_false_merge_true",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value",
+      "reader_options": {
+        "mergeSchema": "true"
+      },
+      "stage": "read_schema",
+      "status": "error"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22,
+              11
+            ]
+          },
+          {
+            "name": "lookup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "map<string, struct<value: int32>>",
+            "values": [
+              [
+                [
+                  "k",
+                  {
+                    "value": 222
+                  }
+                ]
+              ],
+              [
+                [
+                  "k",
+                  {
+                    "value": 111
+                  }
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 22,
+            "lookup": [
+              [
+                "k",
+                {
+                  "value": 222
+                }
+              ]
+            ]
+          },
+          {
+            "id": 11,
+            "lookup": [
+              [
+                "k",
+                {
+                  "value": 111
+                }
+              ]
+            ]
+          }
+        ],
+        "schema": "id: int32\nlookup: map<string, struct<value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<value: int32>\n          child 0, value: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "kind": "map_value",
+      "name": "map_value_case_false_merge_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#65, lookup#66]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value]\nReadSchema: struct<id:int,lookup:map<string,struct<value:int>>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#65, lookup#66]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "reader_options": {
+        "mergeSchema": "false"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    }
+  ],
+  "config": {
+    "spark.sql.ansi.enabled": "true",
+    "spark.sql.caseSensitive": "true",
+    "spark.sql.files.ignoreCorruptFiles": "false",
+    "spark.sql.files.ignoreMissingFiles": "false",
+    "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+    "spark.sql.orc.enableVectorizedReader": "true",
+    "spark.sql.orc.filterPushdown": "true",
+    "spark.sql.orc.impl": "native",
+    "spark.sql.orc.mergeSchema": "false",
+    "spark.sql.session.timeZone": "UTC",
+    "spark.sql.shuffle.partitions": "1",
+    "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+    "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+    "spark.sql.timeType.enabled": "false",
+    "spark.sql.timestampType": "TIMESTAMP_LTZ"
+  },
+  "fixtures": {
+    "list/a_upper.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "Value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "items",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "list<item: struct<Value: int32>>",
+            "values": [
+              [
+                {
+                  "Value": 111
+                }
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 11,
+            "items": [
+              {
+                "Value": 111
+              }
+            ]
+          }
+        ],
+        "schema": "id: int32\nitems: list<item: struct<Value: int32>>\n  child 0, item: struct<Value: int32>\n      child 0, Value: int32"
+      },
+      "kind": "list",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list/a_upper.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "items",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "list<item: struct<Value: int32>>",
+            "values": [
+              [
+                {
+                  "Value": 111
+                }
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 11,
+            "items": [
+              {
+                "Value": 111
+              }
+            ]
+          }
+        ],
+        "schema": "id: int32\nitems: list<item: struct<Value: int32>>\n  child 0, item: struct<Value: int32>\n      child 0, Value: int32"
+      },
+      "physical_schema": "id: int32\nitems: list<item: struct<Value: int32>>\n  child 0, item: struct<Value: int32>\n      child 0, Value: int32",
+      "sha256": "6133cb21f84d24b7d7b9e401e0807bd4e16a627ef2d1c3c5dc3ef9a32bd3c44e",
+      "size": 428,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "list/b_lower.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "items",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "list<item: struct<value: int32>>",
+            "values": [
+              [
+                {
+                  "value": 222
+                }
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "items": [
+              {
+                "value": 222
+              }
+            ]
+          }
+        ],
+        "schema": "id: int32\nitems: list<item: struct<value: int32>>\n  child 0, item: struct<value: int32>\n      child 0, value: int32"
+      },
+      "kind": "list",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/list/b_lower.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "items",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "list<item: struct<value: int32>>",
+            "values": [
+              [
+                {
+                  "value": 222
+                }
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "items": [
+              {
+                "value": 222
+              }
+            ]
+          }
+        ],
+        "schema": "id: int32\nitems: list<item: struct<value: int32>>\n  child 0, item: struct<value: int32>\n      child 0, value: int32"
+      },
+      "physical_schema": "id: int32\nitems: list<item: struct<value: int32>>\n  child 0, item: struct<value: int32>\n      child 0, value: int32",
+      "sha256": "fd6e321299b6b63d7c3e921f1e17908477789cc79aa99aea7bb2cdb2aed17229",
+      "size": 429,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "map_value/a_upper.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "Value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "lookup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "map<string, struct<Value: int32>>",
+            "values": [
+              [
+                [
+                  "k",
+                  {
+                    "Value": 111
+                  }
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 11,
+            "lookup": [
+              [
+                "k",
+                {
+                  "Value": 111
+                }
+              ]
+            ]
+          }
+        ],
+        "schema": "id: int32\nlookup: map<string, struct<Value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<Value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<Value: int32>\n          child 0, Value: int32"
+      },
+      "kind": "map_value",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value/a_upper.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "lookup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "map<string, struct<Value: int32>>",
+            "values": [
+              [
+                [
+                  "k",
+                  {
+                    "Value": 111
+                  }
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 11,
+            "lookup": [
+              [
+                "k",
+                {
+                  "Value": 111
+                }
+              ]
+            ]
+          }
+        ],
+        "schema": "id: int32\nlookup: map<string, struct<Value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<Value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<Value: int32>\n          child 0, Value: int32"
+      },
+      "physical_schema": "id: int32\nlookup: map<string, struct<Value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<Value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<Value: int32>\n          child 0, Value: int32",
+      "sha256": "ae2eb2949fc80a2554aeb803e235e5762422ae1ce3b75a2764db81328c10e4f8",
+      "size": 530,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "map_value/b_lower.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "lookup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "map<string, struct<value: int32>>",
+            "values": [
+              [
+                [
+                  "k",
+                  {
+                    "value": 222
+                  }
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "lookup": [
+              [
+                "k",
+                {
+                  "value": 222
+                }
+              ]
+            ]
+          }
+        ],
+        "schema": "id: int32\nlookup: map<string, struct<value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<value: int32>\n          child 0, value: int32"
+      },
+      "kind": "map_value",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/map_value/b_lower.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "lookup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "map<string, struct<value: int32>>",
+            "values": [
+              [
+                [
+                  "k",
+                  {
+                    "value": 222
+                  }
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "lookup": [
+              [
+                "k",
+                {
+                  "value": 222
+                }
+              ]
+            ]
+          }
+        ],
+        "schema": "id: int32\nlookup: map<string, struct<value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<value: int32>\n          child 0, value: int32"
+      },
+      "physical_schema": "id: int32\nlookup: map<string, struct<value: int32>>\n  child 0, entries: struct<key: string not null, value: struct<value: int32>> not null\n      child 0, key: string not null\n      child 1, value: struct<value: int32>\n          child 0, value: int32",
+      "sha256": "e3fa47e8d2273098656960671ccd87ecd66a85a44194d45755942f806cc9bc64",
+      "size": 531,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "root/a_upper.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "Value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "Value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "Value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              111
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "Value": 111,
+            "id": 11
+          }
+        ],
+        "schema": "id: int32\nValue: int32"
+      },
+      "kind": "root",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root/a_upper.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "Value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              111
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "Value": 111,
+            "id": 11
+          }
+        ],
+        "schema": "id: int32\nValue: int32"
+      },
+      "physical_schema": "id: int32\nValue: int32",
+      "sha256": "7d85d55089a82985b685baa59f0a90732a4cf30d10eb4ceeb6b7c8d82fc625f3",
+      "size": 298,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "root/b_lower.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              222
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "value": 222
+          }
+        ],
+        "schema": "id: int32\nvalue: int32"
+      },
+      "kind": "root",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/root/b_lower.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              222
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "value": 222
+          }
+        ],
+        "schema": "id: int32\nvalue: int32"
+      },
+      "physical_schema": "id: int32\nvalue: int32",
+      "sha256": "722abbbc9db2ac063b43e108c8aea2ff6e2fa7fcfc8c4e733df1b1a46eb88b06",
+      "size": 299,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "struct/a_upper.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "Value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "s",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "struct<Value: int32>",
+            "values": [
+              {
+                "Value": 111
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 11,
+            "s": {
+              "Value": 111
+            }
+          }
+        ],
+        "schema": "id: int32\ns: struct<Value: int32>\n  child 0, Value: int32"
+      },
+      "kind": "struct",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct/a_upper.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "s",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "struct<Value: int32>",
+            "values": [
+              {
+                "Value": 111
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 11,
+            "s": {
+              "Value": 111
+            }
+          }
+        ],
+        "schema": "id: int32\ns: struct<Value: int32>\n  child 0, Value: int32"
+      },
+      "physical_schema": "id: int32\ns: struct<Value: int32>\n  child 0, Value: int32",
+      "sha256": "574032b64be63aac3a46e457e567e8b75146e275ab16c360b643e7b2563bae3c",
+      "size": 350,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "struct/b_lower.orc": {
+      "diagnostic_schema_json": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "field_spelling": "value",
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "s",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "struct<value: int32>",
+            "values": [
+              {
+                "value": 222
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "s": {
+              "value": 222
+            }
+          }
+        ],
+        "schema": "id: int32\ns: struct<value: int32>\n  child 0, value: int32"
+      },
+      "kind": "struct",
+      "path": "/private/tmp/sail-sdp-orc-schema-merge-case-reference/inputs/struct/b_lower.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          },
+          {
+            "name": "s",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "struct<value: int32>",
+            "values": [
+              {
+                "value": 222
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 22,
+            "s": {
+              "value": 222
+            }
+          }
+        ],
+        "schema": "id: int32\ns: struct<value: int32>\n  child 0, value: int32"
+      },
+      "physical_schema": "id: int32\ns: struct<value: int32>\n  child 0, value: int32",
+      "sha256": "cc3e6916397e616e405975ac15c43f6cce6ce7a4eba435cc655ba402a9c10c14",
+      "size": 351,
+      "stage": "physical_read",
+      "status": "success"
+    }
+  },
+  "java": {
+    "actual_pid": 29949,
+    "default_timezone_id": "UTC",
+    "format_locale": "en-US",
+    "gateway_pid": 29949,
+    "jvm_start_time_millis": 1793321306755,
+    "oldmapping_property": "false",
+    "runtime_version": "20.0.2+9-78",
+    "tzdb_versions": [
+      "2023c"
+    ],
+    "user_timezone_property": "UTC",
+    "vendor": "Oracle Corporation"
+  },
+  "java_tool_options": "-Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+  "merge_diagnostics": [
+    {
+      "case_sensitive_argument": true,
+      "kind": "root",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "Value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "Value",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    },
+    {
+      "case_sensitive_argument": true,
+      "kind": "struct",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Value",
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    },
+    {
+      "case_sensitive_argument": true,
+      "kind": "list",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    },
+    {
+      "case_sensitive_argument": true,
+      "kind": "map_value",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    },
+    {
+      "case_sensitive_argument": false,
+      "kind": "root",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "Value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "Value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    },
+    {
+      "case_sensitive_argument": false,
+      "kind": "struct",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Value",
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "s",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "value",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    },
+    {
+      "case_sensitive_argument": false,
+      "kind": "list",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "items",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    },
+    {
+      "case_sensitive_argument": false,
+      "kind": "map_value",
+      "left_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "merged_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Value",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "right_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "lookup",
+            "nullable": true,
+            "type": {
+              "keyType": "string",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "value",
+                    "nullable": true,
+                    "type": "integer"
+                  }
+                ],
+                "type": "struct"
+              }
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "scope": "Direct JVM StructType.merge on parsed schema JSON, not a file-read result",
+      "stage": "merge",
+      "status": "success"
+    }
+  ],
+  "owned_gateway_exit_code": 0,
+  "owned_process_observation": "29949 29917 Thu Oct 29 17:48:26 2026     /Library/Java/JavaVirtualMachines/jdk-20.jdk/Contents/Home/bin/java -cp /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/conf:/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/slf4j-api-2.0.17.jar:/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/* -Xmx512m -XX:+IgnoreUnrecognizedVMOptions --add-modules=jdk.incubator.vector --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -Dio.netty.allocator.type=pooled -Dio.netty.handler.ssl.defaultEndpointVerificationAlgorithm=NONE --sun-misc-unsafe-memory-access=allow --enable-native-access=ALL-UNNAMED -Dderby.connection.requireAuthentication=false org.apache.spark.deploy.SparkSubmit --conf spark.driver.memory=512m --conf spark.master=local[1] --conf spark.sql.session.timeZone=UTC --conf spark.sql.orc.impl=native --conf spark.sql.artifact.isolation.alwaysApplyClassloader=true --conf spark.sql.orc.enableNestedColumnVectorizedReader=true --conf spark.plugins=org.apache.spark.sql.connect.SparkConnectPlugin --conf spark.sql.artifact.isolation.enabled=true --conf spark.sql.shuffle.partitions=1 --conf spark.ui.enabled=false --conf spark.sql.warehouse.dir=file:///private/tmp/sail-sdp-orc-schema-merge-case-reference/warehouse --conf spark.sql.caseSensitive=true pyspark-shell\n",
+  "pyarrow_version": "26.0.0",
+  "python_pid": 29917,
+  "recorded_at_utc": "2026-10-30T00:48:25.431330+00:00",
+  "scope": "Sixteen ASCII-name native ORC file-read observations plus eight separately labelled JVM StructType.merge diagnostics. Plans are pre-execution.",
+  "script_sha256": "36b23d1b7a440390be970a60b8bc0e06073b18536d55c5408f815f6b3151b407",
+  "spark_context": {
+    "driver_memory": "512m",
+    "master": "local[1]"
+  },
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_version": "4.2.1",
+  "status": "completed"
+}

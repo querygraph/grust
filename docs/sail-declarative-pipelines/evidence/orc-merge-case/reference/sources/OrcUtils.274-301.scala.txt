@@ -1,0 +1,28 @@
+      } else {
+        if (isCaseSensitive) {
+          Some(requiredSchema.fieldNames.zipWithIndex.map { case (name, idx) =>
+            if (orcFieldNames.indexWhere(caseSensitiveResolution(_, name)) != -1) {
+              idx
+            } else {
+              -1
+            }
+          }, true)
+        } else {
+          // Do case-insensitive resolution only if in case-insensitive mode
+          val caseInsensitiveOrcFieldMap = orcFieldNames.groupBy(_.toLowerCase(Locale.ROOT))
+          Some(requiredSchema.fieldNames.zipWithIndex.map { case (requiredFieldName, idx) =>
+            caseInsensitiveOrcFieldMap
+              .get(requiredFieldName.toLowerCase(Locale.ROOT))
+              .map { matchedOrcFields =>
+                if (matchedOrcFields.size > 1) {
+                  // Need to fail if there is ambiguity, i.e. more than one field is matched.
+                  val matchedOrcFieldsString = matchedOrcFields.mkString("[", ", ", "]")
+                  throw QueryExecutionErrors.foundDuplicateFieldInCaseInsensitiveModeError(
+                    requiredFieldName, matchedOrcFieldsString)
+                } else {
+                  idx
+                }
+              }.getOrElse(-1)
+          }, true)
+        }
+      }
