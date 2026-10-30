@@ -1571,3 +1571,18 @@ adds a preparation guard, nonblocking completion inspection and explicit resourc
 drainage qualification. All 103 common-datafusion tests and 16 optimized tests
 under CPU load pass, with formatting and strict Clippy. The component is committed
 separately from runner admission, stop results and session deletion changes.
+
+## Local runner integration
+
+Recorded 2026-10-30T05:58:33.244769+00:00. [Sail `ec8e74d57d`](evidence/local-runner-ownership/README.md)
+owns preparation before factories, seals admission against stop, waits for stream
+disposal and registered supervisors, retires joined history and retains typed
+cleanup failures. Fallible stop now gates the existing checkpoint-cleanup helper.
+All 324 affected library tests, 12 optimized stress tests, 300 selected public
+cases and 67 upstream Python executions pass at the same commit; formatting and
+strict Clippy pass. The initial fixture failure and aborted build are retained.
+
+Session Deleted/RPC acknowledgement still occurs too early. Failed-deletion
+ownership, global shutdown, legacy task/effect joins and cluster acknowledgements
+remain separate required work. These results do not qualify full streaming/CDC,
+public ORC writing or the original Scala SDP suites.
