@@ -1,0 +1,79 @@
+26/10/30 04:28:26 WARN Utils: Your hostname, Capitola.local, resolves to a loopback address: 127.0.0.1; using 192.168.4.61 instead (on interface en0)
+26/10/30 04:28:26 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+CASE id INT || id STRING
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "INT" and "STRING". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="INT", right="STRING"}
+  CAUSE null
+CASE id INT || id BIGINT
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "INT" and "BIGINT". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="INT", right="BIGINT"}
+  CAUSE null
+CASE id BIGINT || id INT
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "BIGINT" and "INT". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="BIGINT", right="INT"}
+  CAUSE null
+CASE id INT || name STRING
+  OK id INT,name STRING
+CASE a STRUCT<x: INT> || a STRUCT<x: STRING>
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "STRUCT<x: INT>" and "STRUCT<x: STRING>". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="STRUCT<x: INT>", right="STRUCT<x: STRING>"}
+  CAUSE null
+CASE a STRUCT<x: INT> || a STRUCT<y: STRING>
+  OK a STRUCT<x: INT, y: STRING>
+CASE a ARRAY<INT> || a ARRAY<STRING>
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "ARRAY<INT>" and "ARRAY<STRING>". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="ARRAY<INT>", right="ARRAY<STRING>"}
+  CAUSE null
+CASE a MAP<STRING, INT> || a MAP<STRING, STRING>
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "MAP<STRING, INT>" and "MAP<STRING, STRING>". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="MAP<STRING, INT>", right="MAP<STRING, STRING>"}
+  CAUSE null
+CASE d DECIMAL(10,2) || d DECIMAL(12,2)
+  OK d DECIMAL(12,2)
+CASE d DECIMAL(10,2) || d DECIMAL(10,3)
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "DECIMAL(10,2)" and "DECIMAL(10,3)". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="DECIMAL(10,2)", right="DECIMAL(10,3)"}
+  CAUSE null
+CASE id INT NOT NULL || id INT
+  OK id INT
+CASE id INT || id INT NOT NULL
+  OK id INT
+CASE a FLOAT || a DOUBLE
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "FLOAT" and "DOUBLE". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="FLOAT", right="DOUBLE"}
+  CAUSE null
+CASE id INT || ID INT
+  OK id INT,ID INT
+CASE ts TIMESTAMP || ts DATE
+  CLASS org.apache.spark.SparkException
+  MESSAGE [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "TIMESTAMP" and "DATE". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825
+  CONDITION CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE
+  SQLSTATE 42825
+  PARAMS {left="TIMESTAMP", right="DATE"}
+  CAUSE null
+CASE a STRUCT<x: INT, y: STRING> || a STRUCT<x: INT>
+  OK a STRUCT<x: INT, y: STRING>

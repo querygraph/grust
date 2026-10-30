@@ -1,0 +1,29 @@
+CASE a STRUCT<x: INT NOT NULL> || a STRUCT<x: STRING>
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="STRUCT<x: INT NOT NULL>", right="STRUCT<x: STRING>"}
+CASE a STRUCT<`my col`: INT, `a.b`: INT> || a STRUCT<`my col`: STRING>
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="STRUCT<`my col`: INT, `a.b`: INT>", right="STRUCT<`my col`: STRING>"}
+CASE a STRUCT<x: INT NOT NULL, y: INT> || a STRUCT<x: INT NOT NULL, y: STRING>
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="STRUCT<x: INT NOT NULL, y: INT>", right="STRUCT<x: INT NOT NULL, y: STRING>"}
+CASE a INTERVAL DAY TO SECOND || a INTERVAL HOUR
+  OK a INTERVAL DAY TO SECOND
+CASE a INTERVAL DAY || a STRING
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="INTERVAL DAY", right="STRING"}
+CASE b BOOLEAN || b TINYINT
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="BOOLEAN", right="TINYINT"}
+CASE b BINARY || b STRING
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="BINARY", right="STRING"}
+CASE t TIME(3) || t TIME(6)
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="TIME(3)", right="TIME(6)"}
+CASE t TIME(3) || t STRING
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="TIME(3)", right="STRING"}
+CASE v VARIANT || v STRING
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="VARIANT", right="STRING"}
