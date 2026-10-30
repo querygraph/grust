@@ -178,3 +178,7 @@ commits remain useful prerequisites.
 ## Resource scope foundation implementation
 
 Recorded 2026-10-30T03:27:01.046755+00:00. [Sail `76dd36983f`](evidence/task-resource-scope/README.md) adds owned supervisor admission, synchronous cancellation sealing and cancel-safe shared drainage. All83 common-datafusion tests, formatting and strict Clippy pass, with seven new deterministic lifecycle tests. No dependencies change. Owners must explicitly retain/drain the scope; Drop is cancellation-only. This is W2a groundwork, with actual local/distributed runner integration, upload cleanup and memory accounting still open.
+
+## Scoped task context adapter
+
+Recorded 2026-10-30T03:34:56.255104+00:00. [Sail `779cb136d9`](evidence/scoped-task-context/README.md) preserves all function registries, runtime/pool, IDs and configuration while installing a fresh task-resource scope. All85 common-datafusion tests and formatting/strict Clippy pass; two new tests require nonempty registries and sibling/parent isolation. Actual task-monitor and runner integration remains the next execution unit.

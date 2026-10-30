@@ -1,0 +1,197 @@
+commit 779cb136d988c759a381ea1ace6c2e7649e3dbbc
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 20:30:10 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 20:30:10 2026 -0700
+
+    feat: derive resource-scoped task contexts without losing execution state
+
+diff --git a/crates/sail-common-datafusion/src/task_resources.rs b/crates/sail-common-datafusion/src/task_resources.rs
+index 4272dcbcc..14ad41151 100644
+--- a/crates/sail-common-datafusion/src/task_resources.rs
++++ b/crates/sail-common-datafusion/src/task_resources.rs
+@@ -179,3 +179,7 @@ impl Drop for TaskResourceScope {
+ #[cfg(test)]
+ #[path = "task_resources_tests.rs"]
+ mod tests;
++
++#[path = "task_resources_context.rs"]
++mod context;
++pub use context::ScopedTaskContext;
+diff --git a/crates/sail-common-datafusion/src/task_resources_context.rs b/crates/sail-common-datafusion/src/task_resources_context.rs
+new file mode 100644
+index 000000000..929264027
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/task_resources_context.rs
+@@ -0,0 +1,171 @@
++use std::sync::Arc;
++
++use datafusion::execution::TaskContext;
++use tokio::runtime::Handle;
++
++use super::TaskResourceScope;
++
++/// A fresh resource scope and a context preserving the parent's execution state.
++/// Creating this value does not install or drain it in a job/task runner.
++pub struct ScopedTaskContext {
++    pub context: Arc<TaskContext>,
++    pub resources: Arc<TaskResourceScope>,
++}
++
++impl ScopedTaskContext {
++    pub fn new(parent: &TaskContext, runtime: Handle) -> Self {
++        let resources = Arc::new(TaskResourceScope::new(runtime));
++        let config = parent
++            .session_config()
++            .clone()
++            .with_extension(resources.clone());
++        let context = Arc::new(TaskContext::new(
++            parent.task_id(),
++            parent.session_id(),
++            config,
++            parent.scalar_functions().clone(),
++            parent.higher_order_functions().clone(),
++            parent.aggregate_functions().clone(),
++            parent.window_functions().clone(),
++            parent.runtime_env(),
++        ));
++        Self { context, resources }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use std::collections::HashMap;
++
++    use arrow::datatypes::DataType;
++    use datafusion::logical_expr::{ColumnarValue, Volatility, create_udf};
++    use datafusion::prelude::{SessionConfig, SessionContext};
++    use datafusion_common::ScalarValue;
++
++    use super::*;
++    use crate::extension::{SessionExtension, SessionExtensionAccessor};
++
++    type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++    struct Sentinel;
++    impl SessionExtension for Sentinel {
++        fn name() -> &'static str {
++            "resource context sentinel"
++        }
++    }
++
++    fn parent() -> TaskContext {
++        let session = SessionContext::new();
++        session.register_udf(create_udf(
++            "resource_context_scalar",
++            vec![],
++            DataType::Int32,
++            Volatility::Immutable,
++            Arc::new(|_| Ok(ColumnarValue::Scalar(ScalarValue::Int32(Some(7))))),
++        ));
++        let base = session.task_ctx();
++        let config = SessionConfig::new()
++            .with_target_partitions(7)
++            .with_extension(Arc::new(Sentinel))
++            .with_extension(Arc::new(TaskResourceScope::new(Handle::current())));
++        TaskContext::new(
++            Some("attempt-context".into()),
++            "session-context".into(),
++            config,
++            base.scalar_functions().clone(),
++            datafusion::functions_nested::all_default_higher_order_functions()
++                .into_iter()
++                .map(|f| (f.name().to_string(), f))
++                .collect(),
++            datafusion::functions_aggregate::all_default_aggregate_functions()
++                .into_iter()
++                .map(|f| (f.name().to_string(), f))
++                .collect(),
++            datafusion::functions_window::all_default_window_functions()
++                .into_iter()
++                .map(|f| (f.name().to_string(), f))
++                .collect(),
++            base.runtime_env(),
++        )
++    }
++
++    fn same_registry<T>(parent: &HashMap<String, Arc<T>>, child: &HashMap<String, Arc<T>>) {
++        assert!(
++            !parent.is_empty(),
++            "registry fixture must exercise preservation"
++        );
++        assert_eq!(parent.len(), child.len());
++        for (name, function) in parent {
++            assert!(
++                child
++                    .get(name)
++                    .is_some_and(|value| Arc::ptr_eq(function, value))
++            );
++        }
++    }
++
++    #[tokio::test]
++    async fn preserves_all_registries_runtime_configuration_and_ids() -> TestResult {
++        let parent = parent();
++        let child = ScopedTaskContext::new(&parent, Handle::current());
++        let ctx = child.context.as_ref();
++        assert_eq!(ctx.task_id(), parent.task_id());
++        assert_eq!(ctx.session_id(), parent.session_id());
++        assert_eq!(
++            ctx.session_config().options().execution.target_partitions,
++            7
++        );
++        assert!(Arc::ptr_eq(&parent.runtime_env(), &ctx.runtime_env()));
++        assert!(Arc::ptr_eq(parent.memory_pool(), ctx.memory_pool()));
++        assert!(Arc::ptr_eq(
++            &parent.extension::<Sentinel>()?,
++            &ctx.extension::<Sentinel>()?
++        ));
++        same_registry(parent.scalar_functions(), ctx.scalar_functions());
++        same_registry(
++            parent.higher_order_functions(),
++            ctx.higher_order_functions(),
++        );
++        same_registry(parent.aggregate_functions(), ctx.aggregate_functions());
++        same_registry(parent.window_functions(), ctx.window_functions());
++        assert!(Arc::ptr_eq(
++            &ctx.extension::<TaskResourceScope>()?,
++            &child.resources
++        ));
++        assert!(!Arc::ptr_eq(
++            &parent.extension::<TaskResourceScope>()?,
++            &child.resources
++        ));
++        assert!(child.resources.drain().await?.is_clean());
++        Ok(())
++    }
++
++    #[tokio::test]
++    async fn cancellation_isolated_from_sibling_and_parent_contexts() -> TestResult {
++        let parent = parent();
++        let a = ScopedTaskContext::new(&parent, Handle::current());
++        let b = ScopedTaskContext::new(&parent, Handle::current());
++        a.resources.cancel()?;
++        assert!(
++            a.context
++                .extension::<TaskResourceScope>()?
++                .spawn(|_| async { Ok(()) })
++                .is_err()
++        );
++        b.context
++            .extension::<TaskResourceScope>()?
++            .spawn(|canceled| async move {
++                assert!(!*canceled.borrow());
++                Ok(())
++            })?;
++        let parent_scope = parent.extension::<TaskResourceScope>()?;
++        parent_scope.spawn(|canceled| async move {
++            assert!(!*canceled.borrow());
++            Ok(())
++        })?;
++        assert_eq!(a.resources.drain().await?.registered, 0);
++        assert_eq!(b.resources.drain().await?.registered, 1);
++        assert_eq!(parent_scope.drain().await?.registered, 1);
++        Ok(())
++    }
++}

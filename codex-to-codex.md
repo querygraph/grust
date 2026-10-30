@@ -11464,3 +11464,7 @@ Audited Sail `168be3154b74b514afb95f27f02754b21fc2d2ed`, DataFusion55.2.0 and ob
 ## 2026-10-30T03:27:01.046755+00:00 — DONE task resource scope foundation
 
 Sail `76dd36983f6c596e2f5ee8606045ec46355fe534` passes83 common-datafusion tests, formatting and strict Clippy. Seven lifecycle tests and exact3-file patch archived; no lock/dependency changes. Runner/sink integration and production cleanup guarantees remain unimplemented. Root owns detached documentation verification.
+
+## 2026-10-30T03:34:56.255104+00:00 — DONE scoped task context adapter
+
+Sail `779cb136d988c759a381ea1ace6c2e7649e3dbbc` passes85 common-datafusion tests and formatting/strict Clippy. Two-file adapter commit and exact receipts archived. No runner/sink activation. Root owns detached documentation gate.
