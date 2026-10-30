@@ -7,6 +7,11 @@ local ownership design. No local-runner implementation has been changed. The
 [source packet](evidence/local-runner-checkpoint/README.md) captures the relevant
 Sail and DataFusion sources; a separate read-only agent corroborated these paths.
 
+The subsequent [shared stream-owner decision](LOCAL-STREAM-OWNERSHIP-DESIGN.md)
+selects the prepared-stream component and explains the remaining runner/session
+integration. The alternatives below preserve this checkpoint's original questions;
+whole-runner and whole-session shutdown are still unqualified.
+
 ## Observed source boundaries
 
 LocalJobRunner checks an atomic stopped flag, traces a plan and calls

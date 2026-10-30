@@ -1,0 +1,62 @@
+    pub(super) fn handle_probe_idle_session(
+        &mut self,
+        ctx: &mut ActorContext<Self>,
+        session_id: String,
+        instant: Instant,
+    ) -> ActorAction {
+        let session = self.sessions.get_mut(&session_id);
+        if let Some(session) = session
+            && let ServerSessionState::Running { context, driver_id } = &mut session.state
+            && let Ok(tracker) = context.extension::<ActivityTracker>()
+            && tracker.active_at().is_ok_and(|x| x <= instant)
+        {
+            info!("removing idle session {session_id}");
+            Self::delete_session(ctx, session_id.clone(), context);
+            if let Some(driver_id) = *driver_id {
+                self.drivers.remove(driver_id);
+            }
+            session.state = ServerSessionState::Deleted;
+            let status = session.state.status().to_string();
+            self.event_reporter.report(SystemEvent::SessionUpdated {
+                session_id: session_id.clone(),
+                status,
+                updated_at: Utc::now(),
+            });
+        }
+        ActorAction::Continue
+    }
+
+    pub(super) fn handle_delete_session(
+        &mut self,
+        ctx: &mut ActorContext<Self>,
+        session_id: String,
+        result: oneshot::Sender<SessionResult<()>>,
+    ) -> ActorAction {
+        let session = self.sessions.get_mut(&session_id);
+        let output = if let Some(session) = session {
+            if let ServerSessionState::Running { context, driver_id } = &mut session.state {
+                info!("removing session {session_id}");
+                Self::delete_session(ctx, session_id.clone(), context);
+                if let Some(driver_id) = *driver_id {
+                    self.drivers.remove(driver_id);
+                }
+                session.state = ServerSessionState::Deleted;
+                let status = session.state.status().to_string();
+                self.event_reporter.report(SystemEvent::SessionUpdated {
+                    session_id: session_id.clone(),
+                    status,
+                    updated_at: Utc::now(),
+                });
+                Ok(())
+            } else {
+                Err(SessionError::invalid(format!(
+                    "session {session_id} is not running"
+                )))
+            }
+        } else {
+            Err(SessionError::invalid(format!(
+                "session not found: {session_id}"
+            )))
+        };
+        let _ = result.send(output);
+        ActorAction::Continue

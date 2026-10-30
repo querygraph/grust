@@ -1,0 +1,27 @@
+    pub async fn join_unwind_mut(&mut self) -> Result<R, JoinError> {
+        self.await.map_err(|e| {
+            // `JoinError` can be caused either by panic or cancellation. We have to handle panics:
+            if e.is_panic() {
+                std::panic::resume_unwind(e.into_panic());
+            } else {
+                log::warn!("SpawnedTask was polled during shutdown");
+                e
+            }
+        })
+    }
+}
+
+impl<R> Future for SpawnedTask<R> {
+    type Output = Result<R, JoinError>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        Pin::new(&mut self.inner).poll(cx)
+    }
+}
+
+impl<R> Drop for SpawnedTask<R> {
+    fn drop(&mut self) {
+        self.inner.abort();
+    }
+}
+

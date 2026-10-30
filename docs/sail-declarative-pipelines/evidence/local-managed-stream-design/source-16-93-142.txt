@@ -1,0 +1,50 @@
+    state: Arc<Mutex<ExplicitRepartitionState>>,
+    inner: Receiver<Result<RecordBatch>>,
+}
+
+impl Stream for RoundRobinReceiverStream {
+    type Item = Result<RecordBatch>;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        Pin::new(&mut self.inner).poll_recv(cx)
+    }
+}
+
+impl Drop for RoundRobinReceiverStream {
+    fn drop(&mut self) {
+        let Ok(mut state) = self.state.lock() else {
+            return;
+        };
+        state.active_streams = state.active_streams.saturating_sub(1);
+        let all_receivers_taken = state
+            .receivers
+            .as_ref()
+            .is_some_and(|receivers| receivers.iter().all(Option::is_none));
+        if state.active_streams == 0 && all_receivers_taken {
+            state.receivers.take();
+            state.tasks.take();
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+struct ExplicitRepartitionState {
+    receivers: Option<Vec<Option<Receiver<Result<RecordBatch>>>>>,
+    active_streams: usize,
+    /// Handles to spawned tasks, removed once every output receiver has been
+    /// taken and the active output stream count reaches zero.
+    tasks: Option<Vec<SpawnedTask<()>>>,
+}
+
+/// A physical plan node for explicit repartitioning in the query.
+/// This is a placeholder node that should be rewritten during physical optimization.
+#[derive(Debug)]
+pub struct ExplicitRepartitionExec {
+    input: Arc<dyn ExecutionPlan>,
+    properties: Arc<PlanProperties>,
+    state: Arc<Mutex<ExplicitRepartitionState>>,
+}
+
+impl ExplicitRepartitionExec {
+    pub fn new(input: Arc<dyn ExecutionPlan>, partitioning: Partitioning) -> Self {
+        let mut eq_properties = input.equivalence_properties().clone();

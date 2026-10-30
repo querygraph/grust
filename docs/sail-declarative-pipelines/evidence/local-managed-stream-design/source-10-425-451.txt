@@ -1,0 +1,27 @@
+            let action = self
+                .actor
+                .receive(&mut self.ctx, message)
+                .in_span(span)
+                .await;
+            match action {
+                ActorAction::Continue => {}
+                ActorAction::Stop => break,
+            }
+            self.ctx.reap();
+        }
+        // The receiver will be dropped at the end of this function call,
+        // and the other end of the channel will then know that the actor is no longer running.
+        // But here we explicitly close the receiver so that the other end knows sooner
+        // that the actor is no longer running, since the actor may take some time to stop.
+        Q::close(&mut self.receiver);
+        self.actor.stop(&mut self.ctx).await;
+        self.ctx.reap();
+        // The remaining tasks will be aborted when the `ActorContext` is dropped.
+        let n = self.ctx.tasks.len();
+        if n > 0 {
+            warn!("aborting {n} task(s) for {}", T::name());
+        }
+        let n = self.ctx.children.len();
+        if n > 0 {
+            warn!("aborting {n} child actor(s) for {}", T::name());
+        }

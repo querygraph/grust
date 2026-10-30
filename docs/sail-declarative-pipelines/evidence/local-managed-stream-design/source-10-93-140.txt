@@ -1,0 +1,48 @@
+    fn stop(self, _: &mut ActorContext<Self, Q>) -> impl Future<Output = ()> + Send {
+        std::future::ready(())
+    }
+}
+
+pub enum ActorAction {
+    Continue,
+    Stop,
+}
+
+pub struct ActorContext<T, Q = BoundedMailbox>
+where
+    T: Actor<Q>,
+    Q: Mailbox<MessageEnvelope<T::Message>>,
+{
+    handle: ActorHandle<T, Q>,
+    /// A set of tasks spawned by the actor when processing messages.
+    /// All these tasks will be aborted when the context is dropped.
+    tasks: JoinSet<()>,
+    /// Actors owned by this actor. All child actors will be aborted when the context is dropped.
+    children: ActorSystem,
+}
+
+impl<T, Q> ActorContext<T, Q>
+where
+    T: Actor<Q>,
+    Q: Mailbox<MessageEnvelope<T::Message>>,
+{
+    pub fn new(handle: &ActorHandle<T, Q>) -> Self {
+        Self {
+            handle: handle.clone(),
+            tasks: JoinSet::new(),
+            children: ActorSystem::new(),
+        }
+    }
+
+    pub fn handle(&self) -> &ActorHandle<T, Q> {
+        &self.handle
+    }
+
+    /// Spawn a task and save the handle in the context.
+    /// The task should handle errors internally.
+    pub fn spawn(&mut self, task: impl Future<Output = ()> + Send + 'static) -> AbortHandle {
+        let span = Span::enter_with_local_parent("ActorContext::spawn");
+        self.tasks.spawn(task.in_span(span))
+    }
+
+    /// Return the system that owns the children of this actor.

@@ -1,0 +1,4 @@
+impl CommonErrorCause {
+    pub fn is_retryable(&self) -> bool {
+        !matches!(self, Self::CommitStateUnknown(_))
+    }

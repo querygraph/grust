@@ -1,0 +1,20 @@
+        &mut self,
+        ctx: &mut ActorContext<Self>,
+        job_id: JobId,
+        stage: Option<usize>,
+    ) -> ActorAction {
+        if let Some(streams) = self.extensions.celeborn_streams.clone() {
+            let unregister = matches!(self.placement, TaskRunnerPlacement::Driver { .. });
+            ctx.spawn(async move {
+                if let Err(error) = streams.remove_streams(job_id, stage, unregister).await {
+                    warn!("failed to remove Celeborn shuffle data for job {job_id}: {error}");
+                }
+            });
+        }
+        ActorAction::Continue
+    }
+
+    pub(super) fn handle_shutdown(&mut self) -> ActorAction {
+        ActorAction::Stop
+    }
+}

@@ -1,0 +1,16 @@
+                context,
+            } => self.handle_clean_up_storage_streams(ctx, job_id, stage, context),
+            TaskRunnerMessage::CleanUpCelebornStreams { job_id, stage } => {
+                self.handle_clean_up_celeborn_streams(ctx, job_id, stage)
+            }
+            TaskRunnerMessage::CloseJob { job_id } => self.handle_close_job(job_id),
+            TaskRunnerMessage::Shutdown => self.handle_shutdown(),
+        }
+    }
+
+    async fn stop(self, _ctx: &mut ActorContext<Self>) {
+        if let Some(streams) = self.extensions.celeborn_streams {
+            streams.stop().await;
+        }
+    }
+}

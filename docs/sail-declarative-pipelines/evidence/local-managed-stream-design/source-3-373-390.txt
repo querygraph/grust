@@ -1,0 +1,18 @@
+    fn delete_session(ctx: &mut ActorContext<Self>, session_id: String, context: &SessionContext) {
+        let Ok(service) = context.extension::<JobService>() else {
+            warn!("job service not found for session {session_id}");
+            return;
+        };
+        let checkpoint_registry = context.extension::<RemoteCheckpointRegistry>().ok();
+        let runtime_env = context.runtime_env();
+        ctx.spawn(async move {
+            // Stop tasks before deleting the namespace so late attempts cannot recreate objects.
+            service.runner().stop().await;
+            if let Some(checkpoint_registry) = checkpoint_registry
+                && let Err(error) = checkpoint_registry
+                    .cleanup_session(runtime_env.as_ref())
+                    .await
+            {
+                warn!("failed to clean checkpoints for session {session_id}: {error}");
+            }
+        });
