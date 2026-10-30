@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T09:51:07.981564+00:00. Live coordination read through **CF-0049**.
+Snapshot written 2026-10-30T10:19:51.277027+00:00. Live coordination read through **CF-0054**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -26,10 +26,11 @@ independent JVM/Rust parity/counterexample evidence, and concrete design reviews
 No completion or blocked status is justified by current evidence.
 
 Fable maintains a separate [Fable-owned supplement](/Users/alexy/src/grust-sdp-fable/docs/sail-declarative-pipelines/FABLE-HANDOFF-FABLE.md),
-committed in Grust `524642ad`; recover it with git show if that peer worktree
+originally committed in Grust `524642ad`, with the vendor/consumer order corrected
+in `e0bc540a`; recover the corrected version with git show if that peer worktree
 is absent. It supplies Fable-side gate scripts/environment and post-CF0044 offers.
 Use actual Git ancestry for integration: original vendor d07a95c2c precedes
-consumer167d577c6 (their order is reversed in that supplement snapshot).
+consumer167d577c6.
 
 ## First actions after resuming
 
@@ -43,11 +44,11 @@ consumer167d577c6 (their order is reversed in that supplement snapshot).
    Then post a scoped ACK using the generated read-through reference.
 4. Inspect HEAD/status in every worktree you will touch; fetch the repositories.
    Preserve independently active checkouts, offered history and failed evidence.
-5. At this snapshot, prioritize CF-0042's offered corrections, CF-0043's prepared
-   input findings, and CF-0044's bounded-plan design response. Their exact content
-   is in the live log and the review packet linked below. CF-0045/0046 now offer
-   the prepared corrections and detached verdicts; they still need independent
-   review. CF-0048 points to the Fable-owned supplement.
+5. Current next work: integrate only the independently accepted JDK ROOT lowercase
+   utility as a small common-layer unit; no files have been imported yet. The
+   concrete recipe is below. Fable's CF-0054 source-contract proposal awaits an
+   explicit scoped response. Review C5/progress corrections separately. C0 remains
+   a user-notified Astra design checkpoint; do not select its authority implicitly.
 6. Continue useful independent work rather than waiting on intent or a file.
    Only call a wait verified when you poll an actual live process/session handle.
 
@@ -56,11 +57,11 @@ consumer167d577c6 (their order is reversed in that supplement snapshot).
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `590fc2f9d3cbd489d430d04af0cce0255a5b2da0` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `0f49affcd9ec30ce7e4d7d37bda77d7fa3775549` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested product candidate `34eb270d00` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `70b74065e51fd4efad977c36616a9ec571ff3c7c` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `590fc2f9d3` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `dc8b7eb31` |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `524642ad` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `71e4a94d910c7afa978eaf1cc98beccb5df92051` |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `a0e5644b8e8e3ab90feeaafe7ac39c2993186b7b` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -92,7 +93,7 @@ main update from a fetch or from a historical document header.
   publication or release has been authorized. No external messaging except the
   explicitly authorized coordination file.
 - Notify before a significant new design phase so the user can switch to Astra.
-  Owned-effect and bounded-plan checkpoints have been announced. Production
+  Owned-effect, bounded-plan and C0 representation/staging checkpoints have been announced. Production
   durability/fencing/recovery, C0 staging and B12 tie decisions remain open.
 - Product code/tests belong in Sail. Plans/reviews/evidence/handoffs belong in Grust.
   The closed `SDP-FABLE-DESIGN-REVIEW.md` is not an active scratch document.
@@ -216,7 +217,8 @@ consumer units during integration rather than blindly cherry-picking that defect
 | `6620ee940` unit5 | Prepared-input manifest, canonical row order, receipt/content digests. New blocking review CF-0043, below. |
 | `d38058973` | Opt-in external lowercase replay. Fable reports detached gate and both corpus replays; inspect exact evidence. |
 | `769914891` | Offered C5/global-phase + incarnation-bound progress corrections. Fable reports 124 Rust pipeline / 249 Python pipeline tests and a detached verdict in CF-0045. **Not yet independently reviewed by Codex.** Known schema-merge/missing-source precedence divergence remains disclosed. |
-| `dc8b7eb31` | Offered prepared-input fixes: IPC schema encoding, manifest consistency checks, strict case labels and C4-bound keys at every row count; detached verdict CF-0046. Independent correction/recovery review pending. |
+| `dc8b7eb31` | Prepared-input fixes: IPC schema encoding, manifest consistency checks, strict case labels and C4-bound keys at every row count; tested independently at the component boundary in the later source71e4a94d9. |
+| `71e4a94d9` | Expected authoritative InputIdentity binding; Fable detached fmt/Clippy/common/pipeline/maturin/249 Python verdict CF-0052. Independent prepared-component review passes the stated API checks; physical IPC representation boundary remains open. |
 
 Grust offers: kernel727baa3e; evidence5538854f/aba8ef64 (lowercase),31997f0f
 (CDC validation),275e666b (microbatch),834cae55 (streaming/prepared),8b0bd605
@@ -234,16 +236,25 @@ IDs/protocol foundation is16a0a7f4. Do not integrate that reader twice.
 - [C5/progress review](docs/sail-declarative-pipelines/evidence/fable-c5-progress-source-review/README.md): source-derived competing-error and across-run recreation schedules. Review769914891's actual fixes and rerun the counterexamples; do not equate an offered gate with integration.
 - [Prepared/unit4 review](docs/sail-declarative-pipelines/evidence/fable-prepared-input-review/README.md): current highest-priority new findings; full message bodies are CF-0043/0044.
 
-Prepared findings: observed SHA-256(Debug(schema)) differs for equal Arrow schemas
-with identical metadata; use canonical encoding (ArrowIPC metadata encoding already
-sorts keys). Source review shows verify does not recheck identity/receipt/outcome,
-row_count or completion_required on a recovered manifest; unknown case labels
-silently become insensitive. Key sorting uses exact user-spelled column names,
-ignoring the validated case-sensitive/insensitive binding and bypassing checks
-for fewer than two rows. Only the schema-digest expression has a new executed
-probe; the manifest/key schedules are source-derived, not a full component run.
-Further review should ensure replay verifies the expected authoritative intent,
-not merely internally consistent fields from an unrelated manifest.
+Earlier prepared findings are retained, with the corrected-source review in
+[evidence/fable-prepared-component-review](docs/sail-declarative-pipelines/evidence/fable-prepared-component-review/README.md),
+committed in Grust `70b74065e51fd4efad977c36616a9ec571ff3c7c`.
+Exact prepared/lookup/lowercase source71e4a94d9 passed 64 equal-schema/metadata
+reconstructions, 0/1/2-row case/literal-dot key binding, nine independent manifest
+mutations, wrong expected identity rejection, unknown-case rejection and serde
+round-trip. The probe supplied record-shaped intent/error adapters; it did not
+execute actual source, original-row validation, dedup or the pipeline runtime.
+
+**Open C0 representation decision:** equal Arrow59.2 batches with ids[1,2] and
+nullable payload[10,null] but hidden null-slot values111 versus222 produce different
+content digests; verify rejects the equal batch as ContentMismatch. This is a
+physical IPC fingerprint after row ordering, not representation-independent logical
+canonicalization. Fable accepts the finding in CF-0054 and drafta0e5644b §9.
+Choose/version either a supported canonical logical encoding with null/nested/
+dictionary/slice/offset proofs, or stored sealed-byte authority where reconstruction
+only cross-checks. The user has been notified this needs Astra. **No choice has been
+selected.** Do not patch only the Int64 example, weaken mismatch rejection or silently
+change B12 tie policy.
 
 Unit4 answers already sent: context/overlay must cover planning I/O and execution
 under one existing preparation/resource owner; lowering returns LogicalPlan and
@@ -257,9 +268,33 @@ sql_conf); seal is noncanceling, cancel also latches cancellation; public dry ru
 must not become a frontier-consuming run; async Iggy needs retained ownership.
 No unit4 shared-runtime edits are approved yet. C5 correction scope is approved.
 
-Fable's last accepted priority at CF-0040: progress binding, C5 correction, unit4
-design draft. It supplied769914891 and draft88e48c03, then received CF-0043/0044.
-Re-read for later ACKs/corrections before assigning overlapping edits.
+Latest peer state: Fable CF-0054 proposes a small lower-layer bounded-source
+contract extraction in drafta0e5644b §6. Connect/Plan/Execution/Session already depend
+on DataSource, so a DataSource adapter cannot import Connect's private trait without
+a cycle. Proposed destination: common-datafusion/src/streaming/bounded.rs; protocol-
+neutral Cursor/Incarnation/PartitionId/Partition/SourceDescriptor/Range/ScanError and
+BoundedSource only. Connect keeps intents/progress/deterministic tests and Spark
+error conversion; Iggy SDK stays in its later adapter. Existing streaming::source::
+StreamSource emits flow-event plans and has no bounded frontier/range contract;
+leave it intact.
+
+**Pending response, not approval:** Codex intends to authorize a move-only extraction
+and review async/error API changes separately. The current error model cannot
+represent transport/auth/provider uncertainty and describe is infallible. A network
+API needs typed provider errors with preserved causes and nonblocking calls. No
+actual scope approval has been appended yet; do not treat this handoff or a progress
+commentary as authorizing unit4/shared-runtime implementation.
+
+Next Codex code unit (planned, not started): take only root_lowercase.rs,
+root_lowercase_tables.rs and root_lowercase_oracle.json from immutable Sail71e4a94d9
+into sail-common/src/utils, adding a declaration to the existing mod.rs. Split tests
+into root_lowercase_tests.rs if useful for readability, preserving behavior and oracle
+path. Do not overwrite the existing mod.rs, import CDC callers or refactor unrelated
+string utilities. Preserve Fable provenance in the commit. No dependency/lock change
+is expected. Read optional_external_jvm_corpus's exact format before converting the
+68,588-case independent cases.json/java.stdout packet under fable-c2-corrected-review.
+Run that replay plus full common library/fmt/strict Clippy on an immutable detached
+candidate, then conditionally advance. This is not streaming/CDC activation.
 
 ## Runtime and ORC work Codex must continue
 
