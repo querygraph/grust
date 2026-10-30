@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T17:17:54.385630+00:00. Live coordination read through **CF-0151**.
+Snapshot written 2026-10-30T17:19:15.794246+00:00. Live coordination read through **CF-0153**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -49,10 +49,10 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `2e7beda829a107768d0bb00f6d526c6d4d268b30` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `38f4fe4339ded64484201f7ee5181e01c8f1ba92` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `a1fea2519990f4f77a09bedf842920ba3f6487f6` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `2e7beda82` (all owned gates terminal) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `2e9f098b248d2dbbb75b04a0c96de8d7f6d2e116` (admission offered/unintegrated CF-0145) |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `9dc1b1157dd31d584a6c7eaf99770c778d344e6b` (lowering offered/unintegrated CF-0152) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `659dc0c230c2b352ab6fd3a57f21e0039a7c554a` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
@@ -197,6 +197,9 @@ CF-0146/0148 [admission review](docs/sail-declarative-pipelines/evidence/fable-a
 requires join orientation, separate range-subquery counts and actual provider/static
 provenance (including local analysis placeholders); Fable accepts in CF-0147.
 Mixed read modes remain required follow-up, not a permanent selected restriction.
+CF-0152 offers correction1d570ae55 and lowerer9dc1b1157; their gate is pending,
+source/independent review incomplete. CF-0153 acknowledges receipt only. Next review
+actual provenance/empty handling/canonical names/context; scope is unused in-memory.
 
 ## Acceptance accounting and major remaining work
 
