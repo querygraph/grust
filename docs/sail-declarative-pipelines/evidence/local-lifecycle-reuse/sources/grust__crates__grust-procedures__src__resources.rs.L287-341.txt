@@ -1,0 +1,55 @@
+    /// Signal cancellation to all owners. Cancellation never resets.
+    ///
+    /// Cancelling an execution cancels every child created from it, and theirs
+    /// in turn, as a process shutting down stops everything it started; a
+    /// child created after this call starts cancelled. Cancelling a child
+    /// reaches neither its parent nor its siblings.
+    ///
+    /// # Errors
+    /// Refuses an execution constructed with [`Interruption::Disabled`]: nothing
+    /// in it would observe the signal, and accepting it would let the caller
+    /// believe the execution was stopping.
+    pub fn cancel(&self) -> Result<()> {
+        if !self.0.accounting.observes_interruption() {
+            return Err(ProcedureError::Unsupported(
+                "cancelling an execution constructed with interruption disabled".into(),
+            ));
+        }
+        self.signal_cancelled()
+    }
+
+    /// Cancel this execution and its descendants. Every descendant of an
+    /// execution that observes interruption observes it too, which
+    /// [`Self::child`] enforces, so none of them refuses the signal.
+    fn signal_cancelled(&self) -> Result<()> {
+        // Publish cancellation before collecting wakers and children, so a
+        // registration that races this call either observes the flag or is
+        // collected by it.
+        self.0.cancelled.store(true, Ordering::Release);
+        let mut state = self
+            .0
+            .state
+            .lock()
+            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
+        let waiters = std::mem::take(&mut state.waiters);
+        let children: Vec<ExecutionContext> = state
+            .children
+            .iter()
+            .filter_map(Weak::upgrade)
+            .map(ExecutionContext)
+            .collect();
+        // Release the lock before waking or cancelling anything, and before
+        // the upgraded children can drop: a child's drop takes this lock.
+        drop(state);
+        for waker in waiters.into_iter().flatten() {
+            waker.wake();
+        }
+        let mut outcome = Ok(());
+        for child in children {
+            // Every child is reached even if one's state is poisoned.
+            if let Err(error) = child.signal_cancelled() {
+                outcome = Err(error);
+            }
+        }
+        outcome
+    }

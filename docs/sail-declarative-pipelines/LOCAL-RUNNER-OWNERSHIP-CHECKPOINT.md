@@ -82,3 +82,15 @@ This checkpoint neither activates the ORC writer nor completes streaming/CDC
 shutdown design. Native writer accounting and durable streaming progress retain
 their separate design obligations. Independent ORC schema and CDC validation
 work can proceed without selecting either local ownership alternative.
+
+## Existing Grust and LakeCat reuse candidates
+
+Recorded 2026-10-30T04:40:43.113296+00:00. The [pinned source inventory](evidence/local-lifecycle-reuse/README.md)
+identifies Grust cancellation notification/child pruning, an owned unpolled queue
+handoff, demand-driven stream control and caller-independent worker patterns.
+None of the reviewed modules already supplies the full admission, stream ownership,
+shared cleanup and completed-job retirement contract above. Their dependency and
+semantic boundaries are recorded for Fable's design discussion. LakeCat's reviewed
+outbox projection/acknowledgment is a separate durable event-delivery concern.
+This bounded source audit ran no tests and selects neither local protocol nor a
+new shared crate. Existing Sail task-resource drainage remains the foundation.

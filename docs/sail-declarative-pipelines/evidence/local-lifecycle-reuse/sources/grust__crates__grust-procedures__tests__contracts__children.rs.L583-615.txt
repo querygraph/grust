@@ -1,0 +1,33 @@
+    // A child of a cancelled execution starts cancelled.
+    let late = parent.child(ChildLimits::default()).expect("child");
+    assert!(matches!(late.checkpoint(), Err(ProcedureError::Cancelled)));
+    let later = late.child(ChildLimits::default()).expect("grandchild");
+    assert!(matches!(later.checkpoint(), Err(ProcedureError::Cancelled)));
+}
+
+/// Children created on many threads while the parent is cancelled: whichever
+/// side of the cancellation a child was created on, it ends up cancelled.
+#[test]
+fn a_child_created_while_its_parent_is_cancelled_is_never_missed() {
+    for _ in 0..rounds(200) {
+        let parent = root(100);
+        let start = Barrier::new(9);
+        let created = std::sync::Mutex::new(Vec::new());
+        std::thread::scope(|scope| {
+            for _ in 0..8 {
+                scope.spawn(|| {
+                    start.wait();
+                    for _ in 0..20 {
+                        let child = parent.child(ChildLimits::default()).expect("child");
+                        created.lock().expect("created").push(child);
+                    }
+                });
+            }
+            start.wait();
+            parent.cancel().expect("cancel");
+        });
+        for child in created.into_inner().expect("created") {
+            assert!(matches!(child.checkpoint(), Err(ProcedureError::Cancelled)));
+        }
+    }
+}

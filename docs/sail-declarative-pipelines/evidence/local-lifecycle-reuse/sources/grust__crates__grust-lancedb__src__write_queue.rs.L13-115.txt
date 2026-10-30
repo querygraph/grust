@@ -1,0 +1,103 @@
+use futures::channel::oneshot;
+use grust_core::prelude::*;
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+};
+
+enum Turn<T> {
+    /// Another leader committed this caller's rows, with this outcome.
+    Done(std::result::Result<(), String>),
+    /// This caller leads the next commit; its own rows come back with it.
+    Lead { rows: Vec<T>, ownership: Lead<T> },
+}
+
+struct State<T> {
+    pending: VecDeque<(Vec<T>, oneshot::Sender<Turn<T>>)>,
+    leading: bool,
+}
+
+pub(super) struct WriteQueue<T> {
+    state: Arc<Mutex<State<T>>>,
+}
+
+impl<T> Default for WriteQueue<T> {
+    fn default() -> Self {
+        Self {
+            state: Arc::new(Mutex::new(State {
+                pending: VecDeque::new(),
+                leading: false,
+            })),
+        }
+    }
+}
+
+impl<T> WriteQueue<T> {
+    /// Queue `rows`, then either wait for a leader to commit them or lead:
+    /// commit everything queued so far with `apply`. `key` identifies a row:
+    /// when several queued rows share one, only the last queued is written,
+    /// as if the writes had been applied one after another.
+    pub(super) async fn submit<K, F, Fut>(&self, rows: Vec<T>, key: K, apply: F) -> Result<()>
+    where
+        K: Fn(&T) -> Result<String>,
+        F: FnOnce(Vec<T>) -> Fut,
+        Fut: std::future::Future<Output = Result<()>>,
+    {
+        // Decide under the lock; wait, if at all, after releasing it.
+        let turn = {
+            let mut state = self.lock();
+            if state.leading {
+                let (reply, turn) = oneshot::channel();
+                state.pending.push_back((rows, reply));
+                Err(turn)
+            } else {
+                state.leading = true;
+                Ok((
+                    rows,
+                    Lead {
+                        state: Some(Arc::clone(&self.state)),
+                    },
+                ))
+            }
+        };
+        let (own, lead) = match turn {
+            Ok(lead) => lead,
+            Err(turn) => match turn.await {
+                Ok(Turn::Done(result)) => return result.map_err(GrustError::Backend),
+                Ok(Turn::Lead { rows, ownership }) => (rows, ownership),
+                Err(oneshot::Canceled) => {
+                    return Err(GrustError::Backend(
+                        "LanceDB write abandoned: the caller committing it was cancelled, \
+                         so it may or may not be durable"
+                            .into(),
+                    ));
+                }
+            },
+        };
+        // This caller leads until `lead` is dropped, which hands the lead on.
+        let queued = std::mem::take(&mut self.lock().pending);
+        let mut rows = own;
+        let mut replies = Vec::with_capacity(queued.len());
+        for (batch, reply) in queued {
+            rows.extend(batch);
+            replies.push(reply);
+        }
+        let result = match last_per_key(rows, &key) {
+            Ok(rows) => apply(rows).await,
+            Err(err) => Err(err),
+        };
+        let shared = result.as_ref().map(|_| ()).map_err(ToString::to_string);
+        for reply in replies {
+            // A caller that stopped waiting has nobody to tell.
+            let _ = reply.send(Turn::Done(shared.clone()));
+        }
+        drop(lead);
+        result
+    }
+
+    fn lock(&self) -> std::sync::MutexGuard<'_, State<T>> {
+        self.state
+            .lock()
+            .expect("LanceDB write queue lock poisoned")
+    }
+}

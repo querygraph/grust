@@ -1,0 +1,9 @@
+#[tokio::test]
+async fn dropping_stream_releases_provider_without_cancelling_siblings() {
+    let execution = context(None);
+    let mut stream = control_stream(pending_input(&execution), execution.clone());
+    assert!(futures::poll!(stream.next()).is_pending());
+    drop(stream);
+    assert_eq!(execution.usage().unwrap().live_bytes, 0);
+    execution.checkpoint().unwrap();
+}

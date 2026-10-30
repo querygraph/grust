@@ -1,0 +1,8 @@
+#[derive(Debug, Default)]
+struct State {
+    waiters: Vec<Option<std::task::Waker>>,
+    /// Child executions that cancelling this one must reach. Registered and
+    /// collected under this lock, as waiters are, so a child created while
+    /// this execution is being cancelled is either collected or sees the flag.
+    children: Vec<Weak<Shared>>,
+}

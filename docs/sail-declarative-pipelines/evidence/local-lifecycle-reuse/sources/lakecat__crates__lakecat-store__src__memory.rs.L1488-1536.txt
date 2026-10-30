@@ -1,0 +1,49 @@
+    async fn pending_outbox_events(
+        &self,
+        sink: Option<&str>,
+        limit: usize,
+    ) -> LakeCatResult<Vec<OutboxEvent>> {
+        let state = self.state.read().await;
+        let mut events = state
+            .outbox_events
+            .iter()
+            .filter(|event| event.delivered_at.is_none())
+            .filter(|event| sink.is_none_or(|sink| event.sink == sink))
+            .cloned()
+            .collect::<Vec<_>>();
+        events.sort_by(|left, right| {
+            left.created_at
+                .cmp(&right.created_at)
+                .then_with(|| left.event_id.cmp(&right.event_id))
+        });
+        events.truncate(limit);
+        for event in &events {
+            event.validate_pending()?;
+        }
+        Ok(events)
+    }
+
+    async fn mark_outbox_delivered(&self, event_ids: &[String]) -> LakeCatResult<usize> {
+        if event_ids.is_empty() {
+            return Ok(0);
+        }
+        for event_id in event_ids {
+            validate_outbox_event_id_shape(event_id)?;
+        }
+        let event_ids = event_ids.iter().collect::<BTreeSet<_>>();
+        let mut state = self.state.write().await;
+        let delivered_at = Utc::now();
+        for event in &state.outbox_events {
+            if event.delivered_at.is_none() && event_ids.contains(&event.event_id) {
+                event.validate_pending()?;
+            }
+        }
+        let mut delivered = 0usize;
+        for event in &mut state.outbox_events {
+            if event.delivered_at.is_none() && event_ids.contains(&event.event_id) {
+                event.delivered_at = Some(delivered_at);
+                delivered += 1;
+            }
+        }
+        Ok(delivered)
+    }

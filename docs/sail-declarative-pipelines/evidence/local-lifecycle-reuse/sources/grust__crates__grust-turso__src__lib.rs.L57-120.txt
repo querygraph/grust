@@ -1,0 +1,64 @@
+/// One statement waiting for a group commit, and where to send its outcome.
+struct GroupJob {
+    sql: String,
+    reply: tokio::sync::oneshot::Sender<Result<()>>,
+}
+
+/// The MVCC group committer: a task that owns one connection and commits
+/// whatever statements are waiting as one transaction.
+struct GroupCommit {
+    jobs: tokio::sync::mpsc::UnboundedSender<GroupJob>,
+}
+
+/// Most statements one group commit carries; a larger backlog waits for the
+/// next commit.
+const GROUP_COMMIT_MAX_STATEMENTS: usize = 256;
+
+impl GroupCommit {
+    fn spawn(committer: TursoGraphStore) -> Self {
+        let (jobs, mut queue) = tokio::sync::mpsc::unbounded_channel::<GroupJob>();
+        tokio::spawn(async move {
+            while let Some(first) = queue.recv().await {
+                let mut batch = vec![first];
+                while batch.len() < GROUP_COMMIT_MAX_STATEMENTS {
+                    match queue.try_recv() {
+                        Ok(job) => batch.push(job),
+                        Err(_) => break,
+                    }
+                }
+                let statements: Vec<String> = batch.iter().map(|job| job.sql.clone()).collect();
+                if batch.len() > 1
+                    && committer
+                        .execute_transaction(&statements, true)
+                        .await
+                        .is_ok()
+                {
+                    for job in batch {
+                        let _ = job.reply.send(Ok(()));
+                    }
+                    continue;
+                }
+                // One statement, or a batch that failed as a whole: each job
+                // runs as its own transaction with the usual conflict retry,
+                // so only the failing statement's caller sees the error.
+                for job in batch {
+                    let outcome = committer
+                        .execute_transaction(std::slice::from_ref(&job.sql), true)
+                        .await;
+                    let _ = job.reply.send(outcome);
+                }
+            }
+        });
+        Self { jobs }
+    }
+
+    async fn submit(&self, sql: String) -> Result<()> {
+        let (reply, outcome) = tokio::sync::oneshot::channel();
+        self.jobs
+            .send(GroupJob { sql, reply })
+            .map_err(|_| GrustError::Backend("Turso group committer has stopped".to_string()))?;
+        outcome
+            .await
+            .map_err(|_| GrustError::Backend("Turso group committer dropped a write".to_string()))?
+    }
+}

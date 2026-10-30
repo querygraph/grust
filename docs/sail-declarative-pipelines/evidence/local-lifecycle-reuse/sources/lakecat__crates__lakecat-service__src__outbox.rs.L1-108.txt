@@ -1,0 +1,108 @@
+use std::collections::BTreeSet;
+
+use axum::Json;
+use axum::extract::State;
+use axum::http::HeaderMap;
+use lakecat_api::LineageDrainResponse;
+use lakecat_core::{
+    LakeCatError, Namespace, Principal, PrincipalKind, TableIdent, WarehouseName,
+    content_hash_bytes,
+};
+use lakecat_graph::{GraphAction, GraphEvent};
+use lakecat_lineage::{LineageEvent, LineageEventType, LineageReceipt};
+use lakecat_store::OutboxEvent;
+use serde_json::{Value, json};
+
+use crate::*;
+
+#[derive(Debug, Default)]
+pub(crate) struct OutboxProjectionReceipt {
+    pub(crate) graph_events: usize,
+    pub(crate) lineage_events: usize,
+    pub(crate) lineage_event_hashes: Vec<String>,
+    pub(crate) open_lineage_hashes: Vec<String>,
+}
+
+impl OutboxProjectionReceipt {
+    fn record_lineage(&mut self, receipt: LineageReceipt) {
+        self.lineage_events += 1;
+        self.lineage_event_hashes.push(receipt.event_hash);
+        self.open_lineage_hashes.push(receipt.open_lineage_hash);
+    }
+}
+
+fn replay_lineage_event(
+    outbox: &OutboxEvent,
+    event_type: LineageEventType,
+    principal: Principal,
+    table: Option<TableIdent>,
+    payload: Value,
+) -> LineageEvent {
+    let mut event = LineageEvent::new(event_type, principal, table, payload);
+    event.emitted_at = outbox.created_at;
+    event
+}
+
+pub async fn drain_outbox_once(
+    state: &LakeCatState,
+    limit: usize,
+) -> Result<LineageDrainResponse, LakeCatError> {
+    let mut events = state
+        .store
+        .pending_outbox_events(Some("lakecat.lineage-and-graph"), limit)
+        .await?;
+    events.sort_by(|left, right| {
+        left.created_at
+            .cmp(&right.created_at)
+            .then_with(|| left.event_id.cmp(&right.event_id))
+    });
+    let mut seen_event_ids = BTreeSet::new();
+    for event in &events {
+        if !seen_event_ids.insert(event.event_id.as_str()) {
+            return Err(LakeCatError::Conflict(format!(
+                "outbox pending batch contained duplicate event id hash {}",
+                content_hash_bytes(event.event_id.as_bytes())
+            )));
+        }
+    }
+    let mut delivered = Vec::with_capacity(events.len());
+    let mut event_types = Vec::with_capacity(events.len());
+    let mut summaries = Vec::with_capacity(events.len());
+    let mut graph_events = 0usize;
+    let mut lineage_events = 0usize;
+    for event in events {
+        validate_outbox_event_evidence(&event)?;
+        let receipt = project_outbox_event(state, &event).await?;
+        validate_projection_receipt_evidence(&event, &receipt)?;
+        graph_events += receipt.graph_events;
+        lineage_events += receipt.lineage_events;
+        summaries.push(lineage_drain_event_summary(&event, &receipt)?);
+        event_types.push(event.event_type.clone());
+        delivered.push(event.event_id.clone());
+    }
+    // Acknowledgement is all-or-retry: if any projection fails above, no pending
+    // event is marked delivered and the outbox remains the recovery source.
+    let projected = delivered.len();
+    let delivered = state.store.mark_outbox_delivered(&delivered).await?;
+    if delivered != projected {
+        return Err(LakeCatError::Conflict(format!(
+            "outbox drain acknowledgement mismatch: projected {projected} event(s) but marked {delivered} delivered"
+        )));
+    }
+    let response = LineageDrainResponse {
+        delivered,
+        event_types,
+        graph_events,
+        lineage_events,
+        principal_subject: None,
+        principal_kind: None,
+        authorization_receipt_hash: None,
+        authorization_receipt_action: None,
+        request_identity_state: None,
+        request_identity_source: None,
+        typedid_envelope_hash: None,
+        typedid_proof_hash: None,
+        events: summaries,
+    };
+    validate_lineage_drain_response_manifest(&response)?;
+    Ok(response)

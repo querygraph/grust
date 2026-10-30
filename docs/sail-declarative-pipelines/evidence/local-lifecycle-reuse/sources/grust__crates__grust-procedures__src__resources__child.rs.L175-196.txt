@@ -1,0 +1,22 @@
+impl Drop for Shared {
+    /// A child returns to its parent what it still holds when its last handle
+    /// drops. Every reservation and account holds a handle, so by now they
+    /// have all released theirs, and what remains is the child's cumulative
+    /// charges, which lasted as long as the child did.
+    fn drop(&mut self) {
+        let Some(parent) = self.parent.take() else {
+            return;
+        };
+        parent.release_memory(*self.live_bytes.get_mut());
+        if parent.0.accounting.observes_interruption() {
+            // This child's own entry no longer upgrades; drop it, and any other
+            // child's that has gone the same way.
+            let mut state = parent
+                .0
+                .state
+                .lock()
+                .unwrap_or_else(|poison| poison.into_inner());
+            state.children.retain(|child| child.strong_count() > 0);
+        }
+    }
+}
