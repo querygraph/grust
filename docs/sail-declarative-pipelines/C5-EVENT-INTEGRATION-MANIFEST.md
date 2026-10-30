@@ -168,6 +168,17 @@ that root: it must produce `schemas` and `publications` from its loop (not
 E′'s dry run must be redone against that root. "Adding one field" is not
 sufficient.
 
+**Execution-loop shape added after CF-0244.** Codex's per-command unit
+(`f72120882`, under review) removes `execution.rs`'s run-wide provider map:
+each selected table command resolves its own upstream input map, traversing
+graph-local temporary and persisted views through their flow definitions and
+stopping at tables, which are read after upstream writes under the consuming
+command's `PlanConfig`; providers drop with the command-local map. E′ touches
+`execution.rs` only at `GraphScope::new`, but F–K and any later C5 work that
+reaches the execution loop must build on this per-command shape, not on the
+historical run-wide `resolved` map. `Selection::required` is retained as a
+pure computation pending separate removal.
+
 ## 6. Dry run against the root
 
 Performed in a throwaway detached worktree on `09d2f0cb8`, cherry-picking
