@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T12:28:31.799133+00:00. Live coordination read through **CF-0102**.
+Snapshot written 2026-10-30T12:40:31.060640+00:00. Live coordination read through **CF-0104**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -57,8 +57,8 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `070caa80b6695942318dbc24c90dae6e6bc0dfd7` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `4405f6e99555a12aae16321521231e8b4e488532` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `070caa80b` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `6b3e136bc95d11c9302c0dce3dabb603441a3975` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | failed context candidate `4f7759427459d7c1bc7237decd540efd6f644886` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `7962984bee362157e0a3b4ca5df8fe047b02d829` (offered, detached gate CF-0102) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `aa97bc2d291ae08097f98305e3417f184beea2fe` |
@@ -175,6 +175,34 @@ verdict is not widened to that later tree. Earlier typed-error34eb270d00's15 phy
 library tests and lost-nonretryable-cause control remain archived in their own packet.
 No root-owned build/test/server handle is pending at this snapshot; all load workers
 were joined. Reinspect live handles if a successor arrives during a later gate.
+
+## In progress: isolated task-context registry seam (CF-0104)
+
+Coordinator source remains **070caa80b**, with three uncommitted files under
+`crates/sail-common-datafusion/src/`: modified `task_resources_context.rs`, new
+`task_resources_context_tests.rs` and `task_resources_registry_context_tests.rs`.
+The helper `ScopedTaskContext.with_object_store_registry` preserves the existing
+resource owner, config/extensions, IDs, four function maps and underlying runtime
+resources via `RuntimeEnvBuilder::from_runtime_env`. It rejects inconsistent
+context/owner pairs; `new()` still creates a fresh scope. No storage routing,
+writer activation, dependency, session or resolver change has been made.
+
+Tests intend to verify cache entries/Arc sharing, actual parent/sibling store
+isolation and invalid owners. **They have not passed.** Candidate
+`a6fffca5c33fd04c767607221d697ed309e07b94` failed fmt/module lookup because a nested
+inline test module resolved a nonexistent src/tests path. Extracting the existing
+tests into a sibling file fixed module resolution. The next detached candidate
+`4f7759427459d7c1bc7237decd540efd6f644886` passes fmt but fails Clippy compilation:
+E0277 at registry test line155, `.object_store(&url)` requires `AsRef<Url>`.
+Preserved [receipts and raw logs](docs/sail-declarative-pipelines/evidence/registry-context-in-progress/README.md)
+cover both failures. No library/optimized/public tests ran for this helper.
+
+Next: fix the fixture using the actual DataFusion URL API; preserve failures;
+prepare a fresh candidate, run library/fmt/Clippy and optimized CPU-load gates,
+then qualify/advance conditionally. Check original extracted tests stay equivalent.
+Only afterward archive success, update designs/log/handoff and continue operation
+routing/planning-owner propagation. Both gate processes are terminal; no root-owned
+build/test/server/load process was observed during this snapshot.
 
 ## Acceptance accounting and major remaining work
 

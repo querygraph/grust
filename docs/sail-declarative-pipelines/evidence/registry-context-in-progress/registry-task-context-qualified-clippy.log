@@ -1,0 +1,26 @@
+   Compiling sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+    Checking sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+error[E0277]: the trait bound `url::Url: std::convert::AsRef<url::Url>` is not satisfied
+    --> crates/sail-common-datafusion/src/task_resources_registry_context_tests.rs:155:32
+     |
+ 155 |                 .object_store(&url)?
+     |                  ------------  ^^^ the trait `std::convert::AsRef<url::Url>` is not implemented for `url::Url`
+     |                  |
+     |                  required by a bound introduced by this call
+     |
+help: the trait `AsRef<url::Url>` is not implemented for `url::Url`
+      but trait `AsRef<str>` is implemented for it
+    --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/url-2.5.8/src/lib.rs:2867:1
+     |
+2867 | impl AsRef<str> for Url {
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for that trait implementation, expected `str`, found `url::Url`
+     = note: required for `&url::Url` to implement `std::convert::AsRef<url::Url>`
+note: required by a bound in `datafusion::execution::runtime_env::RuntimeEnv::object_store`
+    --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-execution-55.2.0/src/runtime_env.rs:223:42
+     |
+ 223 |     pub fn object_store(&self, url: impl AsRef<Url>) -> Result<Arc<dyn ObjectStore>> {
+     |                                          ^^^^^^^^^^ required by this bound in `RuntimeEnv::object_store`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `sail-common-datafusion` (lib test) due to 1 previous error
