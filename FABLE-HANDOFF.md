@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T16:38:04.335292+00:00. Live coordination read through **CF-0136**.
+Snapshot written 2026-10-30T16:51:51.068075+00:00. Live coordination read through **CF-0141**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -48,12 +48,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `a0a369baada5b3b78d66c11c6694191da72d6fe8` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `8eb1517a212d0488db854f88fa5f99b4de541168` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `1c1c4abcd` (design-only probe; two tests passed) |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `b90c4fbbef8ed16dc59f2348898852e78e71d798` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `73f50105714b801f4859315dd807661984b752ce` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `b90c4fbbe` (ScopedSession gates terminal/passed) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `37c4d9c4a52718ec3bfa7af99cb033ea67779b8f` (event follow-up offered/unintegrated CF-0121) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `e349107a3190a0acc890ea4baf73446d313c3c46` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `ebf631edd3b41b288a2c4d899a7a82dd658582e1` (binding offered/unintegrated CF-0139) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `cc4dcb08d183ec6aea660d5b71d63d80acd166fd` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -163,39 +163,41 @@ Latest fresh public CLI gate is **a0a369baada5b3b78d66c11c6694191da72d6fe8**:
 owned server stopped (exit0/no listeners). Session5964 is terminal. Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Active local preparation implementation (CF-0134)
+## Current implementation and immediate next work (CF-0141)
 
-Coordinator HEAD **a0a369baada5b3b78d66c11c6694191da72d6fe8** is committed/clean.
-Parent18bfee751 adds ScopedTaskContext.from_resources;125 library/125 optimized
-common tests pass. [Helper packet](docs/sail-declarative-pipelines/evidence/task-context-existing-owner/README.md).
-The final local unit passes fmt/strict Clippy,125 common-datafusion+221 execution
-+29 session libraries,16 optimized local tests under ten joined load workers,
-and300 public+67 upstream tests. Admission-bypass761c11853 fails unchanged registry
-assertion0 versus1. [Full packet](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md)
-retains initialc3cc4df2f positive, final gates, negative control and exact source.
-The first qualifier had a suffix-newline expectation error; no product/test changed.
+Coordinator HEAD **b90c4fbbef8ed16dc59f2348898852e78e71d798** is committed/clean.
+[Existing-owner helper](docs/sail-declarative-pipelines/evidence/task-context-existing-owner/README.md)
+18bfee751 passes125 library/optimized tests. [Local bound preparation](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md)
+a0a369baa passes375 libraries,16 optimized local and300 public+67 upstream tests;
+unchanged admission-bypass fails. It borrows its minting runner and publishes to
+stop before planning; execute consumes the object and reuses the exact owner.
+Legacy local execute delegates with late authoritative context capture. Other
+runners keep legacy execute/default unsupported preparation; callers are unmigrated.
 
-The move-only object borrows its minting runner. Admission reaches the existing
-stop-visible map before planning. It stores an authoritative SessionContext clone
-sharing state; TaskContext capture occurs at execute and reuses the exact scope.
-This preserves late capture, not a frozen operation overlay. Existing local execute
-delegates. Other runners keep legacy execute/default unsupported preparation.
-No planning callers or registry/byte/outcome policy are activated. The trait's
-resources/control and consuming finish/cancel keep typed planning results separate.
-CF-0134 posts DONE to Fable; it does not approve independent shared-runtime edits.
+[ScopedSession packet](docs/sail-declarative-pipelines/evidence/scoped-session/README.md)
+b90c4fbbe passes129 library/129 optimized tests, fmt/strict Clippy. The component
+owns captured state without rebuilding, attaches exact scope and exposes an isolated
+registry to Session providers/planners/derived tasks. Final controls679da6a20 and
+ec54a6f2d fail actual wrong-store bytes and native prepared/UDF regressions.
+Compile/lint failures and earlier pointer-only control are retained. No production
+registry is installed; native authority remains on SessionContext. optimize/expression
+creation delegate to preserved state; arbitrary custom-runtime callbacks/downcasts
+remain audit obligations. Latest public CLI is a0, not b90. All root gates terminal.
 
 [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) remains active
-for Astra. Next: explicit operation-state/capture authority and typed primary+
-cleanup transport, then actual planning-caller and cluster migration. Resolver
-helper queries/provider factories must participate; final-only TaskContext routing
-misses planning I/O. Archive updates to design/REVIEW and handoff are in this unit.
-Session44455 design-only probe is terminal: prepared statements disappear after
-builder reconstruction; custom UDF can retain temporary config after restoration.
-[Probe packet](docs/sail-declarative-pipelines/evidence/planning-state-registry-probe/README.md)
-pins1c1c4abcd; product staysa0. CF-0135/0136 approves Fable pure unit4 components
-on its existing branch, with name/source/visitor/pre-resolution corrections. No
-shared runtime, source-async or sealed-authority edits approved by that scope.
-Context overlay, routing, memory/outcome/recovery and original acceptance remain open.
+for Astra. Next: pass the explicit Session view through resolver factories/helper
+queries, preserve authoritative command dispatch and capture timing, transfer the
+same context into bound execution, and implement cluster preparation before generic
+caller migration. Typed primary/cleanup transport, byte/outcome/recovery remain open.
+[Registry probe](docs/sail-declarative-pipelines/evidence/planning-state-registry-probe/README.md)
+1c1c4abcd disproves general builder preservation; never revive that recipe casually.
+
+Fable component1 ebf631edd is offered/unintegrated. CF-0140 [source review](docs/sail-declarative-pipelines/evidence/fable-binding-source-review/README.md)
+finds ignored expression subqueries before resolution and asks for CTE shadowing
+and duplicate binding fixes; no independent runtime verdict yet. Pure unit4 scope
+is approved on its existing branch. Mixed read modes are an incomplete first-unit
+restriction with a required follow-up; full Spark behavior is still the target.
+No shared runtime/source async/sealed-authority change approved by that scope.
 
 ## Acceptance accounting and major remaining work
 

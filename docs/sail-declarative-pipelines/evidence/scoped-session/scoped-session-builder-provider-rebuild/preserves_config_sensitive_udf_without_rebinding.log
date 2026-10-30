@@ -1,0 +1,23 @@
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-common-datafusion` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 0.31s
+     Running unittests src/lib.rs (target/debug/deps/sail_common_datafusion-20ecac8d8c7980a2)
+
+running 1 test
+
+thread 'session::scoped::tests::preserves_config_sensitive_udf_without_rebinding' (89216275) panicked at crates/sail-common-datafusion/src/session/scoped/tests.rs:64:5:
+assertion failed: Arc::ptr_eq(&original, &scoped.scalar_functions()["scoped_config_probe"])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test session::scoped::tests::preserves_config_sensitive_udf_without_rebinding ... FAILED
+
+failures:
+
+failures:
+    session::scoped::tests::preserves_config_sensitive_udf_without_rebinding
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 128 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p sail-common-datafusion --lib`

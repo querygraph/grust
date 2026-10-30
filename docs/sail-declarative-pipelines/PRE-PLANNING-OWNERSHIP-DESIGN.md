@@ -314,3 +314,33 @@ subquery/join traversal and pre-resolution rejection of unbound/provider helper
 paths. Synthetic qualified names are spellable, not an authority token. Lowered
 plan alone does not establish absence of resolver I/O. No sealed-content/C0 or
 async-source contract change is approved by that component scope.
+
+
+## Captured Session view without builder reconstruction
+
+Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` adds ScopedSession under the
+existing common-datafusion session module. It owns a caller-captured SessionState,
+attaches the admitted scope and implements DataFusion's existing Session interface.
+No new SessionContext or state builder is involved. A supplied registry overlay
+reaches the custom query planner, provider and derived TaskContext; the parent
+runtime remains unchanged. Commands stay on authoritative SessionContext.
+[Evidence](evidence/scoped-session/README.md):129 library/129 optimized tests,
+fmt/strict Clippy, unchanged prepared/UDF and actual wrong-store controls.
+
+This component selects the Session view for provider/physical-planner boundaries;
+it does not select a new global SessionContext or activate resolver routing.
+optimize/create_physical_expr delegate to the preserved state. Custom callbacks
+that reach its original runtime require audit, as do providers requiring a
+SessionState downcast. as_any exposes the wrapper truthfully. No native-command
+dispatch is added. The caller's capture after authority mutation, resolver helper
+queries, functions/table functions, factory propagation and transfer to the
+runner's execution context remain separate integration units. Latest public CLI
+verdict remainsa0a369baa; this unused component does not inherit a public verdict.
+
+CF-0139's first Fable binding offer is source-reviewed in CF-0140:
+[packet](evidence/fable-binding-source-review/README.md). Its pre-walk ignores
+expression subqueries, so unbound reads/helper plans can reach resolution before
+post-resolution admission. The review also requests resolver-aligned CTE shadowing
+and duplicate binding rejection. No independent runtime verdict or integration is
+claimed. CF-0138 allows the first unit's mixed-mode rejection only as a tracked gap;
+the original Spark behavior remains required follow-up, not a permanent restriction.

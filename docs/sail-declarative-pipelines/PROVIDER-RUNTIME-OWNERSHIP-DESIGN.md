@@ -198,3 +198,8 @@ Sail `bebabdb9e7ef7d072ea39f9ec9ac536af86a3f50` adapts ObjectStore to the existi
 ## 2026-10-30T16:32:35.536477+00:00 — existing owner and local bound preparation
 
 Sail `18bfee751f61c06a1597ead382de72f11ceae4dd` attaches an existing exact scope ([helper evidence](evidence/task-context-existing-owner/README.md));125 library/125 optimized tests pass. Sail `a0a369baada5b3b78d66c11c6694191da72d6fe8` adds common JobPreparation and the local runner-bound implementation, preserving authoritative shared state with late execution capture.375 library/16 optimized tests, fmt/strict Clippy and rebuilt CLI300 public+67 upstream pass; unchanged admission-bypass control fails. [Evidence](evidence/local-bound-preparation/README.md). No planning callers are migrated; cluster preparation, context overlay/routing, outcome/byte/recovery policy and full original SDP acceptance remain open.
+
+
+## 2026-10-30T16:51:51.068075+00:00 — captured Session view and binding review
+
+Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState through DataFusion Session, attaches the exact scope and optionally overlays the provider/planner/task registry.129 library/129 optimized tests and fmt/strict Clippy pass; unchanged builder and actual wrong-store controls fail. [Evidence](evidence/scoped-session/README.md) retains compile/lint failures, earlier positives and the earlier pointer-only control. No resolver/runner/context routing activation; latest public verdict remainsa0. [Fable binding review](evidence/fable-binding-source-review/README.md), CF-0140, identifies ignored expression subqueries and requests CTE/binding identity fixes. Full original SDP acceptance, cluster/session joins and effect policy remain open.

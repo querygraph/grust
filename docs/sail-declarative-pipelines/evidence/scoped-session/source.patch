@@ -1,0 +1,471 @@
+diff --git a/crates/sail-common-datafusion/src/session/mod.rs b/crates/sail-common-datafusion/src/session/mod.rs
+index 2bde515e5..a867bf1c1 100644
+--- a/crates/sail-common-datafusion/src/session/mod.rs
++++ b/crates/sail-common-datafusion/src/session/mod.rs
+@@ -2,3 +2,4 @@ pub mod activity;
+ pub mod job;
+ pub mod plan;
+ pub mod repartition;
++pub mod scoped;
+diff --git a/crates/sail-common-datafusion/src/session/scoped.rs b/crates/sail-common-datafusion/src/session/scoped.rs
+new file mode 100644
+index 000000000..4b33b9a54
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/session/scoped.rs
+@@ -0,0 +1,133 @@
++//! A query snapshot for provider/physical-planner calls through `Session`.
++//!
++//! Session commands still belong to the authoritative SessionContext. Callers
++//! choose the snapshot boundary after those commands and retain the admitted
++//! resource owner through planning, execution and cleanup.
++
++use std::any::Any;
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use datafusion::catalog::{CatalogProviderList, Session};
++use datafusion::execution::object_store::ObjectStoreRegistry;
++use datafusion::execution::runtime_env::{RuntimeEnv, RuntimeEnvBuilder};
++use datafusion::execution::{SessionState, TaskContext};
++use datafusion::physical_optimizer::PhysicalOptimizerRule;
++use datafusion::physical_plan::operator_statistics::StatisticsRegistry;
++use datafusion::physical_plan::{ExecutionPlan, PhysicalExpr};
++use datafusion::prelude::SessionConfig;
++use datafusion_common::config::TableOptions;
++use datafusion_common::{DFSchema, Result};
++use datafusion_expr::execution_props::ExecutionProps;
++use datafusion_expr::registry::ExtensionTypeRegistryRef;
++use datafusion_expr::{AggregateUDF, Expr, HigherOrderUDF, LogicalPlan, ScalarUDF, WindowUDF};
++
++use crate::task_resources::TaskResourceScope;
++
++/// Preserve the captured SessionState without rebuilding its registries. The
++/// optional registry overlay is visible to Session consumers and derived tasks.
++/// This does not create admission, run session commands, or install routing in
++/// the parent. Providers requiring a SessionState downcast need a separate seam.
++pub struct ScopedSession {
++    state: SessionState,
++    runtime: Arc<RuntimeEnv>,
++    resources: Arc<TaskResourceScope>,
++}
++
++impl ScopedSession {
++    pub fn new(mut state: SessionState, resources: Arc<TaskResourceScope>) -> Self {
++        state.config_mut().set_extension(resources.clone());
++        let runtime = state.runtime_env().clone();
++        Self {
++            state,
++            runtime,
++            resources,
++        }
++    }
++
++    pub fn resources(&self) -> &Arc<TaskResourceScope> {
++        &self.resources
++    }
++
++    /// Supply an already-qualified registry; this helper does not define its
++    /// provider ownership, admission bounds or effect-outcome policy.
++    pub fn with_object_store_registry(
++        mut self,
++        registry: Arc<dyn ObjectStoreRegistry>,
++    ) -> Result<Self> {
++        self.runtime = RuntimeEnvBuilder::from_runtime_env(&self.runtime)
++            .with_object_store_registry(registry)
++            .build_arc()?;
++        Ok(self)
++    }
++}
++
++#[tonic::async_trait]
++impl Session for ScopedSession {
++    fn session_id(&self) -> &str {
++        self.state.session_id()
++    }
++    fn config(&self) -> &SessionConfig {
++        self.state.config()
++    }
++    fn catalog_list(&self) -> Arc<dyn CatalogProviderList> {
++        // Required DataFusion Session interface; Sail name resolution continues
++        // to use CatalogManager rather than this native catalog list.
++        Session::catalog_list(&self.state)
++    }
++    fn query_planner(&self) -> Arc<dyn datafusion::execution::context::QueryPlanner + Send + Sync> {
++        self.state.query_planner().clone()
++    }
++    fn optimize(&self, plan: &LogicalPlan) -> Result<LogicalPlan> {
++        self.state.optimize(plan)
++    }
++    fn physical_optimizers(&self) -> &[Arc<dyn PhysicalOptimizerRule + Send + Sync>] {
++        self.state.physical_optimizers()
++    }
++    fn statistics_registry(&self) -> Option<&StatisticsRegistry> {
++        self.state.statistics_registry()
++    }
++    async fn create_physical_plan(&self, plan: &LogicalPlan) -> Result<Arc<dyn ExecutionPlan>> {
++        let plan = self.optimize(plan)?;
++        self.query_planner().create_physical_plan(&plan, self).await
++    }
++    fn create_physical_expr(&self, expr: Expr, schema: &DFSchema) -> Result<Arc<dyn PhysicalExpr>> {
++        self.state.create_physical_expr(expr, schema)
++    }
++    fn scalar_functions(&self) -> &HashMap<String, Arc<ScalarUDF>> {
++        self.state.scalar_functions()
++    }
++    fn higher_order_functions(&self) -> &HashMap<String, Arc<HigherOrderUDF>> {
++        self.state.higher_order_functions()
++    }
++    fn aggregate_functions(&self) -> &HashMap<String, Arc<AggregateUDF>> {
++        self.state.aggregate_functions()
++    }
++    fn window_functions(&self) -> &HashMap<String, Arc<WindowUDF>> {
++        self.state.window_functions()
++    }
++    fn extension_type_registry(&self) -> &ExtensionTypeRegistryRef {
++        Session::extension_type_registry(&self.state)
++    }
++    fn runtime_env(&self) -> &Arc<RuntimeEnv> {
++        &self.runtime
++    }
++    fn execution_props(&self) -> &ExecutionProps {
++        self.state.execution_props()
++    }
++    fn as_any(&self) -> &dyn Any {
++        self
++    }
++    fn table_options(&self) -> &TableOptions {
++        self.state.table_options()
++    }
++    fn table_options_mut(&mut self) -> &mut TableOptions {
++        self.state.table_options_mut()
++    }
++    fn task_ctx(&self) -> Arc<TaskContext> {
++        Arc::new(TaskContext::from(self as &dyn Session))
++    }
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-common-datafusion/src/session/scoped/tests.rs b/crates/sail-common-datafusion/src/session/scoped/tests.rs
+new file mode 100644
+index 000000000..7dfa16c76
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/session/scoped/tests.rs
+@@ -0,0 +1,317 @@
++use arrow::array::{BooleanArray, RecordBatch};
++use arrow::datatypes::{DataType, Field, Schema, SchemaRef};
++use datafusion::datasource::{MemTable, TableProvider, provider_as_source};
++use datafusion::execution::SessionStateBuilder;
++use datafusion::execution::context::QueryPlanner;
++use datafusion::execution::object_store::{DefaultObjectStoreRegistry, ObjectStoreUrl};
++// Exercise the existing native prepared-statement path without enabling SQL parsing.
++#[expect(clippy::disallowed_types)]
++use datafusion::logical_expr::Statement;
++use datafusion::logical_expr::{
++    ColumnarValue, Execute, LogicalPlanBuilder, Prepare, ScalarFunctionArgs, ScalarUDFImpl,
++    Signature, TableType, Volatility, lit,
++};
++use datafusion::physical_plan::collect;
++use datafusion::physical_planner::{DefaultPhysicalPlanner, PhysicalPlanner};
++use datafusion::prelude::SessionContext;
++use datafusion_common::ScalarValue;
++use datafusion_common::config::ConfigOptions;
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use tokio::runtime::Handle;
++
++use super::*;
++use crate::extension::SessionExtensionAccessor;
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++#[derive(Debug, PartialEq, Eq, Hash)]
++struct ConfigUdf(Signature, bool);
++impl ConfigUdf {
++    fn new(flag: bool) -> Self {
++        Self(Signature::exact(vec![], Volatility::Immutable), flag)
++    }
++}
++impl ScalarUDFImpl for ConfigUdf {
++    fn name(&self) -> &str {
++        "scoped_config_probe"
++    }
++    fn signature(&self) -> &Signature {
++        &self.0
++    }
++    fn return_type(&self, _: &[DataType]) -> Result<DataType> {
++        Ok(DataType::Boolean)
++    }
++    fn invoke_with_args(&self, _: ScalarFunctionArgs) -> Result<ColumnarValue> {
++        Ok(ColumnarValue::Scalar(ScalarValue::Boolean(Some(self.1))))
++    }
++    fn with_updated_config(&self, config: &ConfigOptions) -> Option<ScalarUDF> {
++        Some(ScalarUDF::from(Self::new(
++            config.catalog.create_default_catalog_and_schema,
++        )))
++    }
++}
++
++#[tokio::test]
++async fn preserves_config_sensitive_udf_without_rebinding() -> TestResult {
++    let parent = SessionContext::new();
++    parent.register_udf(ScalarUDF::from(ConfigUdf::new(true)));
++    let before = parent.state();
++    let original = before.scalar_functions()["scoped_config_probe"].clone();
++    let resources = Arc::new(TaskResourceScope::new(Handle::current()));
++    let scoped = ScopedSession::new(before.clone(), resources.clone());
++    assert!(Arc::ptr_eq(
++        &original,
++        &scoped.scalar_functions()["scoped_config_probe"]
++    ));
++    assert!(scoped.config().create_default_catalog_and_schema());
++    assert_eq!(scoped.session_id(), parent.session_id());
++    assert!(Arc::ptr_eq(
++        &scoped.catalog_list(),
++        &Session::catalog_list(&before)
++    ));
++    assert_eq!(
++        scoped.execution_props().query_execution_start_time,
++        before.execution_props().query_execution_start_time
++    );
++    let logical = LogicalPlanBuilder::empty(true)
++        .project(vec![original.call(vec![])])?
++        .build()?;
++    let batches = collect(
++        scoped.create_physical_plan(&logical).await?,
++        scoped.task_ctx(),
++    )
++    .await?;
++    assert_eq!(
++        ScalarValue::try_from_array(batches[0].column(0).as_ref(), 0)?,
++        ScalarValue::Boolean(Some(true))
++    );
++    assert!(parent.extension::<TaskResourceScope>().is_err());
++    assert!(Arc::ptr_eq(
++        &scoped.task_ctx().extension::<TaskResourceScope>()?,
++        &resources
++    ));
++    assert!(scoped.as_any().downcast_ref::<ScopedSession>().is_some());
++    assert!(scoped.as_any().downcast_ref::<SessionState>().is_none());
++    resources.drain().await?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn preserves_native_prepared_plan_registry() -> TestResult {
++    let parent = SessionContext::new();
++    parent
++        .execute_logical_plan(LogicalPlan::Statement(Statement::Prepare(Prepare {
++            name: "scoped_prepared".into(),
++            fields: vec![],
++            input: Arc::new(
++                LogicalPlanBuilder::empty(true)
++                    .project(vec![lit(7i32)])?
++                    .build()?,
++            ),
++        })))
++        .await?;
++    let resources = Arc::new(TaskResourceScope::new(Handle::current()));
++    let scoped = ScopedSession::new(parent.state(), resources.clone());
++    // Test-only native command dispatch proves the private captured state kept
++    // the prepared registry. Production commands retain the authoritative ctx.
++    let captured = SessionContext::new_with_state(scoped.state.clone());
++    for ctx in [&parent, &captured] {
++        let batches = ctx
++            .execute_logical_plan(LogicalPlan::Statement(Statement::Execute(Execute {
++                name: "scoped_prepared".into(),
++                parameters: vec![],
++            })))
++            .await?
++            .collect()
++            .await?;
++        assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 1);
++    }
++    resources.drain().await?;
++    Ok(())
++}
++
++fn same_registry<T>(before: &HashMap<String, Arc<T>>, after: &HashMap<String, Arc<T>>) {
++    assert!(!before.is_empty());
++    assert_eq!(before.len(), after.len());
++    for (name, value) in before {
++        assert!(Arc::ptr_eq(value, &after[name]));
++    }
++}
++
++#[tokio::test]
++async fn preserves_all_function_maps_and_parent_snapshot_boundary() -> TestResult {
++    let parent = SessionContext::new_with_state(
++        SessionStateBuilder::new()
++            .with_default_features()
++            .with_higher_order_functions(
++                datafusion::functions_nested::all_default_higher_order_functions(),
++            )
++            .build(),
++    );
++    let snapshot = parent.state();
++    let resources = Arc::new(TaskResourceScope::new(Handle::current()));
++    let scoped = ScopedSession::new(snapshot.clone(), resources.clone());
++    same_registry(snapshot.scalar_functions(), scoped.scalar_functions());
++    same_registry(
++        snapshot.higher_order_functions(),
++        scoped.higher_order_functions(),
++    );
++    same_registry(snapshot.aggregate_functions(), scoped.aggregate_functions());
++    same_registry(snapshot.window_functions(), scoped.window_functions());
++    assert!(Arc::ptr_eq(
++        &snapshot.query_planner().clone(),
++        &scoped.query_planner()
++    ));
++    assert_eq!(
++        snapshot.physical_optimizers().len(),
++        scoped.physical_optimizers().len()
++    );
++    for (before, after) in snapshot
++        .physical_optimizers()
++        .iter()
++        .zip(scoped.physical_optimizers())
++    {
++        assert!(Arc::ptr_eq(before, after));
++    }
++    assert!(Arc::ptr_eq(
++        Session::extension_type_registry(&snapshot),
++        scoped.extension_type_registry()
++    ));
++    parent
++        .state_ref()
++        .write()
++        .config_mut()
++        .options_mut()
++        .execution
++        .target_partitions = 17;
++    assert_ne!(scoped.config().target_partitions(), 17);
++    assert_eq!(parent.state().config().target_partitions(), 17);
++    resources.drain().await?;
++    Ok(())
++}
++
++#[derive(Debug)]
++struct CheckingPlanner;
++#[tonic::async_trait]
++impl QueryPlanner for CheckingPlanner {
++    async fn create_physical_plan(
++        &self,
++        plan: &LogicalPlan,
++        session: &dyn Session,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        assert!(session.as_any().is::<ScopedSession>());
++        DefaultPhysicalPlanner::default()
++            .create_physical_plan(plan, session)
++            .await
++    }
++}
++
++#[derive(Debug)]
++struct CheckingTable {
++    schema: SchemaRef,
++    resources: Arc<TaskResourceScope>,
++}
++#[tonic::async_trait]
++impl TableProvider for CheckingTable {
++    fn schema(&self) -> SchemaRef {
++        self.schema.clone()
++    }
++    fn table_type(&self) -> TableType {
++        TableType::Base
++    }
++    async fn scan(
++        &self,
++        session: &dyn Session,
++        projection: Option<&Vec<usize>>,
++        filters: &[Expr],
++        limit: Option<usize>,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        let resources = session.extension::<TaskResourceScope>()?;
++        assert!(Arc::ptr_eq(&resources, &self.resources));
++        let task = session.task_ctx();
++        assert!(Arc::ptr_eq(
++            &task.extension::<TaskResourceScope>()?,
++            &resources
++        ));
++        assert!(Arc::ptr_eq(&task.runtime_env(), session.runtime_env()));
++        let store = session
++            .runtime_env()
++            .object_store(ObjectStoreUrl::parse("memory://scoped")?)?;
++        let response = resources
++            .run(move |_| async move { Ok(store.get(&Path::from("input")).await?.bytes().await?) })
++            .await?;
++        assert_eq!(response.as_ref(), b"child");
++        let batch = RecordBatch::try_new(
++            self.schema.clone(),
++            vec![Arc::new(BooleanArray::from(vec![true]))],
++        )?;
++        MemTable::try_new(self.schema.clone(), vec![vec![batch]])?
++            .scan(session, projection, filters, limit)
++            .await
++    }
++}
++
++#[tokio::test]
++async fn real_provider_and_custom_planner_receive_overlay_and_exact_owner() -> TestResult {
++    let parent = SessionContext::new_with_state(
++        SessionStateBuilder::new()
++            .with_default_features()
++            .with_query_planner(Arc::new(CheckingPlanner))
++            .build(),
++    );
++    let url = ObjectStoreUrl::parse("memory://scoped")?;
++    let original = Arc::new(InMemory::new());
++    original.put(&Path::from("input"), "parent".into()).await?;
++    parent
++        .runtime_env()
++        .register_object_store(url.as_ref(), original.clone());
++    let child = Arc::new(InMemory::new());
++    child.put(&Path::from("input"), "child".into()).await?;
++    let registry = Arc::new(DefaultObjectStoreRegistry::new());
++    registry.register_store(url.as_ref(), child);
++    let resources = Arc::new(TaskResourceScope::new(Handle::current()));
++    let scoped = ScopedSession::new(parent.state(), resources.clone())
++        .with_object_store_registry(registry.clone())?;
++    let table = CheckingTable {
++        schema: Arc::new(Schema::new(vec![Field::new(
++            "ok",
++            DataType::Boolean,
++            false,
++        )])),
++        resources: resources.clone(),
++    };
++    let logical =
++        LogicalPlanBuilder::scan("checking", provider_as_source(Arc::new(table)), None)?.build()?;
++    let batches = collect(
++        scoped.create_physical_plan(&logical).await?,
++        scoped.task_ctx(),
++    )
++    .await?;
++    assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 1);
++    assert!(Arc::ptr_eq(
++        &scoped.runtime_env().object_store_registry,
++        &(registry as Arc<dyn ObjectStoreRegistry>)
++    ));
++    assert!(Arc::ptr_eq(
++        &scoped.runtime_env().memory_pool,
++        &parent.runtime_env().memory_pool
++    ));
++    assert!(Arc::ptr_eq(
++        &scoped.runtime_env().disk_manager,
++        &parent.runtime_env().disk_manager
++    ));
++    assert_eq!(
++        original
++            .get(&Path::from("input"))
++            .await?
++            .bytes()
++            .await?
++            .as_ref(),
++        b"parent"
++    );
++    assert!(parent.extension::<TaskResourceScope>().is_err());
++    assert_eq!(resources.drain().await?.registered, 1);
++    Ok(())
++}
