@@ -1547,3 +1547,19 @@ Read, analyzer and write-time settings require separate phase-specific evidence;
 blanket graph/flow ORC override propagation is not an approved implementation unit.
 Sail remains at `71f24a87a2` with no new coverage claim. Write-time configuration
 and public ORC writing remain open.
+
+## Resource-scope sealing and cancellation notification
+
+Recorded 2026-10-30T05:08:27.823650+00:00. [Sail `5fc71b3792`](evidence/scope-notification/README.md)
+passes 87 library tests, formatting and strict Clippy; 9 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.
+
+## Prepared-stream ownership and registered cleanup
+
+Recorded 2026-10-30T05:08:27.857230+00:00. [Sail `f3d32b8959`](evidence/managed-stream/README.md)
+passes 99 library tests, formatting and strict Clippy; 12 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.

@@ -64,9 +64,11 @@ it owns and publishes an explicit interrupted-cleanup error. It cannot report
 clean completion without drainage. This distinguishes runtime loss from merely
 dropping one completion waiter, which leaves cleanup running.
 
-The immutable report separates the query result from cleanup errors. A failed or
-cancelled query whose cleanup succeeds differs from a failed destructor or an
-unresolved resource supervisor. DataFusion Shared/Collection errors and source
+`cancel()` initiates cancellation and sealing; callers await `completion()` for
+the terminal report. Its `result()` combines primary and cleanup failures, while
+`cleanup_result()` reports cleanup-only failures. A failed or cancelled query
+whose cleanup succeeds differs from a failed destructor or an unresolved resource
+supervisor. DataFusion Shared/Collection errors and source
 wrappers retain the original typed causes; unknown-commit errors remain visible
 to the existing nonretryable classifier. Interrupted generic cleanup is not
 mislabelled as a proven mutation or a successful stop. Future runner integration
@@ -112,3 +114,19 @@ Iggy acknowledgement or CDC recovery guarantee follows from these components.
 The full Spark4.2.1 SDP suites remain the acceptance target. These lifecycle units
 are prerequisites for safe ORC/streaming effects, not substitutes for the original
 pipeline assertions, public ORC writer qualification or streaming/CDC execution.
+
+## Resource-scope sealing and cancellation notification
+
+Recorded 2026-10-30T05:08:27.823650+00:00. [Sail `5fc71b3792`](evidence/scope-notification/README.md)
+passes 87 library tests, formatting and strict Clippy; 9 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.
+
+## Prepared-stream ownership and registered cleanup
+
+Recorded 2026-10-30T05:08:27.857230+00:00. [Sail `f3d32b8959`](evidence/managed-stream/README.md)
+passes 99 library tests, formatting and strict Clippy; 12 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.
