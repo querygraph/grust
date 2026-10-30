@@ -97,17 +97,17 @@ separate unit under Codex's physical protobuf ownership.
 Each microbatch runs under a context derived from the session context, not a
 fresh one, so that nothing the session configured is lost:
 
-| Must be preserved | How |
-| --- | --- |
-| function registry, type planner, UDFs | derive from `SessionContext::state()` (same `SessionState` clone the batch flows use); never `SessionContext::new()` |
+| Must be preserved                          | How                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| function registry, type planner, UDFs      | Revised after CF-0125: borrow the **authoritative** `SessionContext` and build `PlanResolver::new(ctx, ..)` on it, as `analysis.rs` does; no `SessionState` clone and no new `SessionContext` (Codex's probe shows a clone copies config/UDF maps and a bootstrap-restore can replace the shared default catalog; `new_with_state` also resets the creation timestamp)                                                                                                                                                                                                                                                                           |
 | `PlanConfig` and flow `sql_conf` overrides | `SparkSession::plan_config_with_overrides(flow.sql_conf)` exactly as `analysis.rs:101` does. Revised: the unit-5 `EvaluationContext` today records only case, keys, sequencing text, delete condition and column selection; unit 4 extends the sealed identity with an **evaluation snapshot** (the resolved `PlanConfig` fields that change expression semantics: case sensitivity, ANSI mode, session time zone, the flow `sql_conf` overrides verbatim) and a **source-binding identity** (the intent id and, per bound source, its descriptor digest and the range list). Nothing is claimed to be in the seal until that struct carries it. |
-| catalog manager and extensions | the session's extensions are reachable through the derived state; no new catalog path |
-| resource scope | Revised: the runner's existing preparation owner and its one existing `TaskResourceScope` cover preparation, lowering and execution of the attempt; lowering never creates a scope of its own. `TaskResourceScope::seal` only closes admission; `cancel` seals **and** latches cancellation. Cancelling an attempt means `cancel`, and the next attempt is a new owned attempt under the runner, not a scope minted in lowering |
-| object-store routing for checkpoint writes | Codex's owned-effect adapter (`checkpoint-effect-adapter-design`); the batch context must carry whatever runtime-env overlay that design selects, which is why the context is derived by a single constructor owned with the execution code, not assembled in the streaming module |
+| catalog manager and extensions             | the session's extensions are reachable through the derived state; no new catalog path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| resource scope                             | Revised: the runner's existing preparation owner and its one existing `TaskResourceScope` cover preparation, lowering and execution of the attempt; lowering never creates a scope of its own. `TaskResourceScope::seal` only closes admission; `cancel` seals **and** latches cancellation. Cancelling an attempt means `cancel`, and the next attempt is a new owned attempt under the runner, not a scope minted in lowering                                                                                                                                                                                                                  |
+| object-store routing for checkpoint writes | Codex's owned-effect adapter (`checkpoint-effect-adapter-design`); the batch context must carry whatever runtime-env overlay that design selects, which is why the context is derived by a single constructor owned with the execution code, not assembled in the streaming module                                                                                                                                                                                                                                                                                                                                                               |
 
-Concretely: one operation-owned `BatchContext { state: SessionState, config:
-Arc<PlanConfig>, scope: &TaskResourceScope, intent: BatchIntent, identity:
-InputIdentity }` built by one function in the execution module (Codex's side
+Concretely: one operation-owned `BatchContext { ctx: &SessionContext, config:
+Arc<PlanConfig>, scope: &TaskResourceScope /* the lease's */, intent: BatchIntent,
+identity: InputIdentity }` built by one function in the execution module (Codex's side
 of the seam) and used for preparation, lowering **and** execution of the
 attempt, because provider and schema actions may already perform I/O during
 planning; its runtime overlay (the owned-effect adapter's object-store
@@ -121,16 +121,16 @@ semantics on a bounded range equal Spark's AvailableNow semantics without
 cross-batch state are admitted. The classification is a visitor over the
 bound `LogicalPlan` and returns **evidence**, not just a verdict:
 
-| Operator | Decision | Reason |
-| --- | --- | --- |
-| Projection, Filter, Limit-less Union, deterministic scalar expressions and UDFs declared deterministic | admit | row-local, replayable |
-| Join of a recorded range with a **static side** (a local batch output materialised before this batch, or a catalog table read at a pinned version) | admit, with the static side's identity in the evidence | the static side does not change within the batch; the stream side is one range |
-| Join of two recorded ranges (stream-stream) | **reject**, listed | Revised: a key on the left in batch 1 and its match on the right in batch 2 needs cross-batch state; joining only the two current ranges misses it. The design review's "one batch over two ranges" describes range capture, not join semantics. Admitted only when the stateful contract exists, with reference tests |
-| Projection or Filter containing a volatile or nondeterministic expression or UDF (`rand`, `uuid`, `current_timestamp`, a UDF not declared deterministic) | admit the plan, but mark the batch **non-replayable in content**: the unit-5 identity records the volatility and validation/dedup run once over one materialised evaluation, never re-evaluated under the same receipt | Revised: no broad scalar-UDF admission; evaluation must not differ between validation and dedup |
-| Aggregate without watermark, Window, Sort, Limit, Distinct, stream-stream join with state across batches | reject, listed | AvailableNow aggregates and stream-stream joins need durable cross-batch state (handoff item 4); batch support of the operator does not establish streaming semantics |
-| Repartition | admit, noted | no semantics; the private branch's removal is not ported |
-| Auto CDC flow | admit the source read only; the CDC steps run on the executed rows through units 2 and 5, not as plan operators | validation must see original rows |
-| Any `TableScan` not bound through `BoundedScope` (catalog table) | reject | would read outside the intent |
+| Operator                                                                                                                                                 | Decision                                                                                                                                                                                                               | Reason                                                                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Projection, Filter, Limit-less Union, deterministic scalar expressions and UDFs declared deterministic                                                   | admit                                                                                                                                                                                                                  | row-local, replayable                                                                                                                                                                                                                                                                                                  |
+| Join of a recorded range with a **static side** (a local batch output materialised before this batch, or a catalog table read at a pinned version)       | admit, with the static side's identity in the evidence                                                                                                                                                                 | the static side does not change within the batch; the stream side is one range                                                                                                                                                                                                                                         |
+| Join of two recorded ranges (stream-stream)                                                                                                              | **reject**, listed                                                                                                                                                                                                     | Revised: a key on the left in batch 1 and its match on the right in batch 2 needs cross-batch state; joining only the two current ranges misses it. The design review's "one batch over two ranges" describes range capture, not join semantics. Admitted only when the stateful contract exists, with reference tests |
+| Projection or Filter containing a volatile or nondeterministic expression or UDF (`rand`, `uuid`, `current_timestamp`, a UDF not declared deterministic) | admit the plan, but mark the batch **non-replayable in content**: the unit-5 identity records the volatility and validation/dedup run once over one materialised evaluation, never re-evaluated under the same receipt | Revised: no broad scalar-UDF admission; evaluation must not differ between validation and dedup                                                                                                                                                                                                                        |
+| Aggregate without watermark, Window, Sort, Limit, Distinct, stream-stream join with state across batches                                                 | reject, listed                                                                                                                                                                                                         | AvailableNow aggregates and stream-stream joins need durable cross-batch state (handoff item 4); batch support of the operator does not establish streaming semantics                                                                                                                                                  |
+| Repartition                                                                                                                                              | admit, noted                                                                                                                                                                                                           | no semantics; the private branch's removal is not ported                                                                                                                                                                                                                                                               |
+| Auto CDC flow                                                                                                                                            | admit the source read only; the CDC steps run on the executed rows through units 2 and 5, not as plan operators                                                                                                        | validation must see original rows                                                                                                                                                                                                                                                                                      |
+| Any `TableScan` not bound through `BoundedScope` (catalog table)                                                                                         | reject                                                                                                                                                                                                                 | would read outside the intent                                                                                                                                                                                                                                                                                          |
 
 `AdmissionEvidence { admitted: bool, operators: Vec<(name, decision, reason)>,
 sources_read: Vec<SourceRef>, unbound_streaming_names: Vec<Name> }` is
@@ -146,7 +146,7 @@ lower(ctx: &BatchContext, graph: &GraphDefinition, flow: &Flow)
 ```
 
 - resolves `flow.query` with `PlanResolver::new(&ctx.state_context,
-  ctx.config).with_relation_scope(&BoundedScope{..})`;
+ctx.config).with_relation_scope(&BoundedScope{..})`;
 - runs admission on the resolved plan;
 - returns the bounded logical plan and evidence. It has **no target effect**:
   no `WriteTo`, no `MERGE`, no checkpoint write, no acknowledgement. The unit-5
@@ -192,11 +192,11 @@ calls. Two rules:
    already has `serde`, `async-trait`, `datafusion` and the existing
    `streaming/{source.rs, event}` module:
 
-   | Moves to `sail-common-datafusion/src/streaming/bounded.rs` | Stays in `sail-spark-connect::pipelines::streaming` |
-   | --- | --- |
+   | Moves to `sail-common-datafusion/src/streaming/bounded.rs`                                                   | Stays in `sail-spark-connect::pipelines::streaming`                                      |
+   | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
    | `Cursor`, `Incarnation`, `PartitionId`, `Partition`, `SourceDescriptor`, `Range` (serde types, no behaviour) | `RunFrontier`, `Progress`, `BatchIntent`, `next_intent`, `PlanError` (the control model) |
-   | `ScanError` as a plain enum with `Display`; **no** Spark error conversion | `impl From<ScanError> for SparkError`, `impl From<PlanError> for SparkError` |
-   | `#[async_trait] trait BoundedSource { schema; describe; earliest; frontier; plan_end (sync, pure); scan }` | `DeterministicSource` (test adapter) and the tests |
+   | `ScanError` as a plain enum with `Display`; **no** Spark error conversion                                    | `impl From<ScanError> for SparkError`, `impl From<PlanError> for SparkError`             |
+   | `#[async_trait] trait BoundedSource { schema; describe; earliest; frontier; plan_end (sync, pure); scan }`   | `DeterministicSource` (test adapter) and the tests                                       |
 
    Dependency edges after the move: `sail-common-datafusion` gains nothing;
    `sail-spark-connect` already depends on it; the Iggy adapter in
@@ -255,7 +255,6 @@ Original questions, kept for the record:
    `physical.proto` now or after the local path is qualified? The draft
    assumes after.
 
-
 ## 9. Prepared content authority: a C0 decision, not a patch
 
 Codex's component probe (CF-0053) constructs two Arrow batches that compare
@@ -273,10 +272,10 @@ dictionaries, sliced arrays and validity-masked values all carry physical
 bytes that a logical comparison ignores. The C0 design must choose and version
 one authority, with the other explicitly rejected:
 
-| Option | Obligations |
-| --- | --- |
-| A. Canonical logical encoding | define a versioned encoding that writes only logical values (null cells as a null marker and nothing else; nested, list, dictionary-decoded and sliced arrays re-encoded densely); prove it with null/nested/dictionary/slice/offset tests on every supported type; reject types the encoding does not cover; the digest is then reconstruction-stable |
-| B. Stored sealed-byte authority | the sealed rows themselves are staged durably (the design review's "publish an immutable reconciled-batch manifest") and recovery reads those bytes; `verify` compares the staged bytes' digest, never a reconstruction; reconstruction is permitted only as a cross-check that may fail closed but never certifies |
+| Option                          | Obligations                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A. Canonical logical encoding   | define a versioned encoding that writes only logical values (null cells as a null marker and nothing else; nested, list, dictionary-decoded and sliced arrays re-encoded densely); prove it with null/nested/dictionary/slice/offset tests on every supported type; reject types the encoding does not cover; the digest is then reconstruction-stable |
+| B. Stored sealed-byte authority | the sealed rows themselves are staged durably (the design review's "publish an immutable reconciled-batch manifest") and recovery reads those bytes; `verify` compares the staged bytes' digest, never a reconstruction; reconstruction is permitted only as a cross-check that may fail closed but never certifies                                    |
 
 Until that choice is recorded by Astra, the component keeps its present
 fail-closed semantics, `B12` stays open, and no caller may treat a passing
@@ -284,6 +283,11 @@ fail-closed semantics, `B12` stays open, and no caller may treat a passing
 this checkpoint to the user.
 
 ## 10. Revision log
+
+- Revision after CF-0125 (pre-planning lease design): `BatchContext` borrows
+  the authoritative `SessionContext` instead of a `SessionState` clone; the
+  scope it carries is the runner lease's; three finite owners per run named
+  (graph analysis, run-level frontier/progress, one lease per batch attempt).
 
 - After CF-0044: read mode bound before resolution through a reserved
   qualified name (§2); absent binding versus recorded empty intent (§2);
