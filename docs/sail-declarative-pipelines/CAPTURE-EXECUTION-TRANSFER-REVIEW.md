@@ -417,3 +417,76 @@ while the registered I/O is held, and gone after drain. Good.
   cancelled.
 
 Nothing else found. No code, no scope change; A–D/E′/Status untouched.
+
+## 8. Typed resolver analyzer candidate (CF-0218): `17b8ac254` on `a74c3f429`
+
+Pins: `resolver/session.rs` (`QuerySession::{Generic, Scoped}`,
+`provider_session`, `analyze_native`, `collect_query`), `resolver/mod.rs`
+(`with_query_session`, `with_scoped_query_session`), `resolver/query/read.rs:
+359–367` (child resolver), `resolver/command/{delta.rs, procedure.rs}`
+(delegation), tests `session_analyzer_tests.rs`,
+`query/generated_analyzer_session_tests.rs`,
+`query/procedure_factory_session_tests.rs`, `query/session_tests.rs`. Read
+only; Codex integrated the candidate (CF-0220) before this section was posted.
+
+**Mode propagation.** `QuerySession<'a>` is `Copy`; the persistent-view path
+now does `resolver.query_session = self.query_session` on the child
+(`read.rs:362–365`), so `Scoped` survives into view bodies where the previous
+code re-entered through `with_query_session` and would have demoted it to
+`Generic`. Correct. No fixture resolves a persistent view under `Scoped` and
+asserts the captured analyzer inside the view body; the four helper families
+and the two command fixtures all run on the top-level resolver.
+
+**Native analysis sites.** At the candidate the only `analyzer()
+.execute_and_check` calls in `sail-plan` are inside `analyze_native`; the two
+former direct calls (Delta replacement generated columns, procedure
+predicate) delegate to it. Authority reads that remain in the resolver are the
+documented legacy branches: `provider_session` with no session, `analyze_native`
+with `None`/`Generic`, and `collect_query` with no session. Outside the
+resolver, `explain.rs:287` and `lib.rs:31–60` read authority for explain and
+final execution, which this unit does not claim. Every helper execution during
+resolution (`limit.rs:91` tail count, `pivoting.rs:227` value inference,
+`stat.rs:384`, `time_travel.rs:233`) goes through `collect_query`, so under
+`Scoped` it plans with the captured state's optimizer and planner and runs on
+`session.task_ctx()`. No `downcast_ref::<SessionState>` exists in non-test
+code of `sail-plan`, `sail-data-source`, `sail-delta-lake`, `sail-iceberg` or
+`sail-common-datafusion`: the forbidden path is absent. `pivoting.rs:58`
+`scope.state()` is `PlanResolverState`, not session state.
+
+**Findings.**
+
+- **8.1 Generic mode is a documented split, and callers should skip it.**
+  Under `with_query_session`, provider callbacks and helper queries use the
+  supplied snapshot while native analysis uses authority (`analyze_native`'s
+  `_` arm), so one resolution can see two configs; the fixture pins this and
+  the Rustdoc says so. For the Connect resolvers that will migrate
+  (`pipelines/analysis.rs:125`, `execution.rs:76,157`, `schema.rs:54`,
+  `pipelines/mod.rs:208`, `streaming/lower.rs:171`, `service/
+plan_analyzer.rs:40,125,147`, `service/config_manager.rs:143`; none sets any
+  query session today), the migration should go straight to
+  `with_scoped_query_session` so no caller inherits the split. Agrees with
+  Codex's "source-specific ownership boundaries, not blanket setter
+  activation".
+- **8.2 Catalog-expression constant folding uses the wall clock, not either
+  session.** `constant.rs:39–42` builds `SimplifyContextBuilder::default()
+.with_current_time()`, so a `now()` inside a catalog string expression
+  evaluates at fold time regardless of `Generic`/`Scoped` and regardless of the
+  snapshot's `query_execution_start_time`. Pre-existing, not introduced here,
+  and consistent with its `require_foldable` purpose; recorded because it is
+  the one resolution-time clock that the captured snapshot does not govern.
+- **8.3 Test gap: child-resolver propagation.** One fixture that resolves a
+  persistent view under `Scoped` with a counting analyzer rule would pin
+  `read.rs:362–365` the way `last_session_setter_selects_native_analysis_mode`
+  pins the setters. Low risk given the `Copy` assignment.
+- **8.4 Helper executions under `Scoped` are owned but not refused.** A tail,
+  pivot-without-values, `Stat*` or time-travel read under a scoped resolver
+  runs a query on the captured snapshot during resolution. That is correct for
+  the general resolver; for the bounded pipeline lowerer those constructs are
+  refused before resolution by the binding walk (CF-0136/0142), so the two
+  paths stay consistent: owned where allowed, refused where the pipeline
+  contract forbids resolution-time work.
+
+Nothing else found. The last-setter rule is tested in both orders, the
+typed cause survives `source()`/downcast, the optimizer barrier records zero
+calls, and the authority-fallback control (CF-0220) fails exactly the five
+captured cases. No code, no scope change; A–D/E′/Status untouched.
