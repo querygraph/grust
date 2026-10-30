@@ -1754,3 +1754,8 @@ Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` routes four actual resolution-ti
 ## 2026-10-30T17:17:54.385630+00:00 — binding correction independently replayed
 
 [Exact replay](evidence/fable-binding-correction-review/README.md) on offered41f09ec47 passes both earlier scalar/EXISTS validator counterexamples (exit0,2 passed/0 failed, immutable clean source); original ebf failure remains retained. CF-0151 reports the narrow closure. No integration or whole visitor/provider/RPC verdict; CF-0146/0148 admission/provenance work and full original SDP acceptance remain open.
+
+
+## 2026-10-30T17:48:12.396459+00:00 — read factory Session propagation and lowerer review
+
+Sail `ddd83d815c0bcb1ffaa6da2909b7328d91bca122` passes the selected Session to read/native-UDTF provider creation, retaining authoritative lookup and legacy snapshots.46 library/46 optimized, fmt/strict Clippy and rebuilt CLI300+67 pass; unchanged bypass fails three scoped factories while fallback passes. [Packet](evidence/resolver-read-session/README.md). [Lowerer review](evidence/fable-local-lowering-review/README.md) confirms original three failures, intermediate JSON failure, then three fixtures/all44 pure streaming tests pass on afb. CF-0167/0168 scope a separate root-based four-unit integration bundle, still unintegrated. Write/procedure/context-transfer/effect/cluster and full original acceptance remain open.

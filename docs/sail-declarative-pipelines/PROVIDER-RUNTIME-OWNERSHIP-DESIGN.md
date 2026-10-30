@@ -208,3 +208,8 @@ Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState 
 ## 2026-10-30T17:16:01.021618+00:00 — resolver helper Session propagation
 
 Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` routes four actual resolution-time queries through an optional borrowed Session and propagates it in nested view resolution; default authoritative collection stays intact.42 library/42 optimized, fmt/strict Clippy and fresh CLI300 public+67 upstream pass; unchanged bypass fails all four helper tests while fallback passes. [Evidence](evidence/resolver-query-session/README.md) retains initial missing-import failure, the qualifier extension-name correction and all source/log/binary receipts. No provider-factory/public-caller/final-execution migration or full original SDP verdict.
+
+
+## 2026-10-30T17:48:12.396459+00:00 — read factory Session propagation and lowerer review
+
+Sail `ddd83d815c0bcb1ffaa6da2909b7328d91bca122` passes the selected Session to read/native-UDTF provider creation, retaining authoritative lookup and legacy snapshots.46 library/46 optimized, fmt/strict Clippy and rebuilt CLI300+67 pass; unchanged bypass fails three scoped factories while fallback passes. [Packet](evidence/resolver-read-session/README.md). [Lowerer review](evidence/fable-local-lowering-review/README.md) confirms original three failures, intermediate JSON failure, then three fixtures/all44 pure streaming tests pass on afb. CF-0167/0168 scope a separate root-based four-unit integration bundle, still unintegrated. Write/procedure/context-transfer/effect/cluster and full original acceptance remain open.

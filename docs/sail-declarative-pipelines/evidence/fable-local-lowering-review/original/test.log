@@ -1,0 +1,60 @@
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+   Compiling sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+   Compiling sail-object-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-object-store)
+   Compiling sail-celeborn v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-celeborn)
+   Compiling sail-catalog v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog)
+   Compiling sail-cache v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-cache)
+   Compiling sail-system-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-system-store)
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-telemetry v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-telemetry)
+   Compiling sail-catalog-system v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-system)
+   Compiling sail-catalog-unity v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-unity)
+   Compiling sail-catalog-memory v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-memory)
+   Compiling sail-catalog-glue v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-glue)
+   Compiling sail-catalog-hms v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-hms)
+   Compiling sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+   Compiling sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+   Compiling sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+   Compiling sail-physical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-optimizer)
+   Compiling sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+   Compiling sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+   Compiling sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+   Compiling sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+   Compiling sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 1m 50s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-f5f12a0d84ea6c20)
+
+running 3 tests
+Error: NotAdmitted(AdmissionEvidence { admitted: false, operators: [OperatorEvidence { operator: "TableScan", decision: Reject, reason: "scan outside the binding set or with a provider that is not the bound one" }, OperatorEvidence { operator: "Projection", decision: Admit, reason: "static sides only" }, OperatorEvidence { operator: "SubqueryAlias", decision: Admit, reason: "static sides only" }, OperatorEvidence { operator: "Projection", decision: Admit, reason: "static sides only" }], sources_read: {}, static_read: {}, unbound_scans: ["c.d.events"], provenance_verified: false, replayable: true })
+Error: NotAdmitted(AdmissionEvidence { admitted: false, operators: [OperatorEvidence { operator: "EmptyRelation", decision: Reject, reason: "schema-only analysis placeholder cannot stand in for rows" }, OperatorEvidence { operator: "Projection", decision: Admit, reason: "static sides only" }, OperatorEvidence { operator: "SubqueryAlias"test pipelines::streaming::lower::tests::codex_lower_local_stream_ignores_materialised_graph_relation ... FAILED
+, decision: Admit, reason: "static sides only" }, OperatorEvidence { operator: "Projection", decision: Admit, reason: "static sides only" }], sources_read: {}, static_read: {}, unbound_scans: [], provenance_verified: false, replayable: true })
+test pipelines::streaming::lower::tests::codex_lower_local_stream_ignores_analysis_placeholder ... FAILED
+
+thread 'pipelines::streaming::lower::tests::codex_lower_snapshot_distinguishes_declared_local_versions' (89389209) panicked at crates/sail-spark-connect/src/pipelines/streaming/lower_tests.rs:491:5:
+assertion `left != right` failed: different declared local versions have the same lowering snapshot
+  left: Object {"case_sensitive": Bool(false), "ansi_mode": Bool(true), "session_timezone": String("UTC"), "sql_conf": Object {}, "bindings": Array [Object {"name": Array [String("c"), String("d"), String("clicks")], "descriptor_digest": String("8fdad5e2353d1e92df40aaa1f0d6af4e155524e35813a5fce4db9593db3efbb0"), "ranges": Array [Object {"partition": String("p0"), "incarnation": String("inc:1"), "start": String("pos:0"), "end": String("pos:3")}, Object {"partition": String("p1"), "incarnation": String("inc:1"), "start": String("pos:0"), "end": String("pos:2")}]}]}
+ right: Object {"case_sensitive": Bool(false), "ansi_mode": Bool(true), "session_timezone": String("UTC"), "sql_conf": Object {}, "bindings": Array [Object {"name": Array [String("c"), String("d"), String("clicks")], "descriptor_digest": String("8fdad5e2353d1e92df40aaa1f0d6af4e155524e35813a5fce4db9593db3efbb0"), "ranges": Array [Object {"partition": String("p0"), "incarnation": String("inc:1"), "start": String("pos:0"), "end": String("pos:3")}, Object {"partition": String("p1"), "incarnation": String("inc:1"), "start": String("pos:0"), "end": String("pos:2")}]}]}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test pipelines::streaming::lower::tests::codex_lower_snapshot_distinguishes_declared_local_versions ... FAILED
+
+failures:
+
+failures:
+    pipelines::streaming::lower::tests::codex_lower_local_stream_ignores_analysis_placeholder
+    pipelines::streaming::lower::tests::codex_lower_local_stream_ignores_materialised_graph_relation
+    pipelines::streaming::lower::tests::codex_lower_snapshot_distinguishes_declared_local_versions
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 219 filtered out; finished in 0.11s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

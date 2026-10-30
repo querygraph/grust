@@ -367,3 +367,34 @@ context. Final physical execution must receive the same selected context rather
 than silently recapturing authority. Provider factory propagation, native command
 separation, capture/transfer API, typed primary+cleanup and cluster preparation
 remain the next integration units. Keep the full original Spark SDP objective.
+
+
+## Read provider factories receive the selected Session
+
+Sail `ddd83d815c0bcb1ffaa6da2909b7328d91bca122` extends the selected view to
+read-source factories (direct/format-path and catalog-table branches), lake-relation
+creation and native table-function provider creation. Registry/function lookup
+remains authoritative. A private carrier borrows the selected view or boxes the
+legacy ctx.state snapshot at the previous call phase; the selected branch does
+not clone/rebuild state. [Evidence](evidence/resolver-read-session/README.md):46
+library/46 optimized tests, fmt/strict Clippy, unchanged three-factory bypass and
+rebuilt CLI300 selected+67 upstream pass. Direct/format-path callbacks perform
+scope-owned GETs before physical planning; a native UDTF registered after capture
+is found on authority but receives the selected view in its provider callback.
+Catalog-table/lake-relation opt-in paths have source/type checks, not separate new
+provider-qualified fixtures. Native config-state mutation, not SQL/RPC SET, is used.
+
+Write/procedure/row-level factories and earlier catalog/metadata I/O remain open.
+Public callers/final execution have not migrated, and no owned registry is installed
+by default. Context capture/execution transfer, typed primary+cleanup, cluster,
+provider bounds/outcomes/recovery and full original Spark SDP acceptance still need
+implementation/qualification. Next implementation unit: write/procedure propagation.
+
+The [independent lowerer review sequence](evidence/fable-local-lowering-review/README.md)
+retains original9dc failures, a19's two range fixes plus JSON failure and afb's
+three passing fixtures/all44 pure streaming tests. CF-0167/0168 authorize a separate
+four-unit integration-preparation bundle on rootddd, preserving original offers:
+neutral bounded contract/errors; pure control/source model; binding/admission with
+minimal GraphScope constructor; pure lowering with its sha2 consumer edge. No
+execution guard removal, async/Iggy/C5/event/CDC stack or shared runtime changes.
+This is component preparation, not production streaming/effect approval.

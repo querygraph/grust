@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T17:19:15.794246+00:00. Live coordination read through **CF-0153**.
+Snapshot written 2026-10-30T17:48:12.396459+00:00. Live coordination read through **CF-0168**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -48,12 +48,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `2e7beda829a107768d0bb00f6d526c6d4d268b30` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `a1fea2519990f4f77a09bedf842920ba3f6487f6` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `2e7beda82` (all owned gates terminal) |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `ddd83d815c0bcb1ffaa6da2909b7328d91bca122` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `6386c2f8ff0b4547d2783e2acb5863924e061269` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `ddd83d815` (all owned gates terminal) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `9dc1b1157dd31d584a6c7eaf99770c778d344e6b` (lowering offered/unintegrated CF-0152) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `659dc0c230c2b352ab6fd3a57f21e0039a7c554a` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `768e211237a644297b3d9180e4ad96d11d76c44f` (corrected lowering+fixtures offered/unintegrated CF-0166) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `4b6ff44b791c4ec1f0d2d611b23205b85671c156` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -158,48 +158,48 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest fresh public CLI gate is **2e7beda829a107768d0bb00f6d526c6d4d268b30**:
+Latest fresh public CLI gate is **ddd83d815c0bcb1ffaa6da2909b7328d91bca122**:
 300 selected public +67 upstream Python executions pass, rebuilt CLI pinned and
-owned server stopped (exit0/no listeners). Session32905 is terminal. Earlier public
+owned server stopped (exit0/no listeners). Session26694 is terminal. Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0150)
+## Current implementation and immediate next work (CF-0168)
 
-Coordinator HEAD **2e7beda829a107768d0bb00f6d526c6d4d268b30** is committed/clean.
-Earlier a0 local preparation passes375 libraries/16 optimized/300+67 public;
-b90 ScopedSession passes129 library/optimized and unchanged provider/builder
-controls. [Local packet](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md),
-[Session packet](docs/sail-declarative-pipelines/evidence/scoped-session/README.md).
+Coordinator HEAD **ddd83d815c0bcb1ffaa6da2909b7328d91bca122** is committed/clean.
+[Local preparation](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md)
+a0 passes375 libraries/16 optimized/300+67 public; [ScopedSession](docs/sail-declarative-pipelines/evidence/scoped-session/README.md)
+b90 passes129 library/optimized and unchanged provider/builder controls;
+[helper routing](docs/sail-declarative-pipelines/evidence/resolver-query-session/README.md)
+2e7 passes42 library/optimized and300+67 public. Public verdict nowddd, not those pins.
 
-[Resolver helper packet](docs/sail-declarative-pipelines/evidence/resolver-query-session/README.md)
-2e7beda82 passes fmt/strict Clippy,42 plan libraries/42 optimized tests, rebuilt
-CLI300 public+67 upstream tests; owned server stopped. Optional borrowed query
-Session reaches pivot inference, time-travel scalar, tail count and crosstab;
-nested stored-view resolver propagates it. Default collection stays on authoritative
-ctx. Unchanged bypassa63d6fb35 fails four helpers/missing scope; fallback passes.
-Initial420190263 import failure and qualifier extension-name error are retained.
-Actual helpers are tested; nested view inheritance has source/regression coverage,
-not a new isolated fixture. Direct config mutation is tested, not SQL/RPC SET.
-CF-0150 posts DONE; no public callers/factories/final execution are migrated yet.
+[Read factory packet](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md)
+ddd passes fmt/strict Clippy,46 plan libraries/46 optimized and fresh300+67 public;
+owned server stopped. Optional Session reaches read-source/lake-relation/native-UDTF
+factories; lookup remains authoritative. Direct/format callbacks perform scope-owned
+GETs before physical planning; native UDTF lookup registered after capture still
+gets the selected view in its provider callback. Unchanged9990b5561 bypass fails
+three scoped factory tests; legacy passes. Catalog/lake opt-in paths have source/type
+coverage, not separate new provider fixtures. No public callers/effects are activated.
+Next root unit: write/procedure/row-level Session propagation; earlier catalog I/O,
+capture/execution transfer, typed cleanup/primary, cluster and byte/outcome/recovery
+remain open. [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) stays active for Astra.
 
-[Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) remains active
-for Astra. Next: provider factory propagation, authoritative command/capture and
-execution transfer, typed primary/cleanup transport, cluster preparation before
-generic caller migration. Routing/byte/outcome/recovery/full acceptance stay open.
+[Independent lowerer sequence](docs/sail-declarative-pipelines/evidence/fable-local-lowering-review/README.md):
+original9dc/15e39b125 fails all three local-range/snapshot fixtures; a19/84ceae417
+passes two range cases but fails nonempty identity JSON; afb/4723302f9 passes all
+three and all44 pure streaming tests. Root gates/reviews are terminal, gate restored
+toddd; no owned process pending. Fable768e21123 includes the same fixtures and its
+own gate. These are component results, not backend pin/effect/Iggy qualification.
 
-Own session94290 is terminal: [independent correction replay](docs/sail-declarative-pipelines/evidence/fable-binding-correction-review/README.md)
-on41f09ec47 passes both original scalar/EXISTS fixtures (2 passed/0 failed);
-CF-0151 reports the narrow closure. Gate restored to2e7. No owned process pending.
-This is validator coverage only, not full CTE/alias/provider/RPC proof or integration.
-Fable correction/admission2e9f098b2 remain offered/unintegrated; CF-0149 reports gates.
-Original two validator gaps are [confirmed](docs/sail-declarative-pipelines/evidence/fable-binding-expression-review/README.md).
-CF-0146/0148 [admission review](docs/sail-declarative-pipelines/evidence/fable-admission-source-review/README.md)
-requires join orientation, separate range-subquery counts and actual provider/static
-provenance (including local analysis placeholders); Fable accepts in CF-0147.
-Mixed read modes remain required follow-up, not a permanent selected restriction.
-CF-0152 offers correction1d570ae55 and lowerer9dc1b1157; their gate is pending,
-source/independent review incomplete. CF-0153 acknowledges receipt only. Next review
-actual provenance/empty handling/canonical names/context; scope is unused in-memory.
+CF-0167/0168: Fable prepares a separate integration bundle in
+/Users/alexy/src/sail-sdp-fable-components, branch work/sdp-pure-components-integration,
+base rootddd, own target /Users/alexy/src/sail-sdp-fable-components-target. Four
+independently gated units: neutral bounded DTO/sync/error contract; pure control/
+source model; binding/admission plus minimal GraphScope::new; pure lowerer/snapshot
+with sha2 dependency edge in its consumer commit. Original offers stay untouched;
+root integration still pending. No C5/event/CDC rebase, guard removal, async/Iggy,
+JobService/codec/catalog/Delta/runtime edits. Mixed modes/multi-leaf local views
+remain required follow-up. Full original Spark4.2.1 SDP acceptance remains the goal.
 
 ## Acceptance accounting and major remaining work
 
