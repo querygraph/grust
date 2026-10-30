@@ -1,0 +1,136 @@
+     Locking 125 packages to latest Rust 1.98.1 compatible versions
+      Adding arrow v59.2.0 (available: v59.3.2)
+      Adding icu_collections v2.3.0 (available: v2.4.0)
+      Adding icu_properties v2.3.0 (available: v2.4.0)
+      Adding icu_properties_data v2.3.0 (available: v2.4.0)
+      Adding sha2 v0.11.0 (available: v0.11.1)
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling libm v0.2.16
+   Compiling autocfg v1.5.1
+   Compiling cfg-if v1.0.5
+   Compiling zerocopy v0.8.63
+   Compiling libc v0.2.191
+   Compiling getrandom v0.3.4
+   Compiling version_check v0.9.5
+   Compiling core-foundation-sys v0.8.7
+   Compiling bytes v1.12.1
+   Compiling ahash v0.8.12
+   Compiling iana-time-zone v0.1.65
+   Compiling once_cell v1.21.4
+   Compiling num-traits v0.2.19
+   Compiling arrow-schema v59.3.2
+   Compiling stable_deref_trait v1.2.1
+   Compiling hashbrown v0.17.1
+   Compiling lexical-util v1.0.7
+   Compiling writeable v0.6.4
+   Compiling semver v1.0.28
+   Compiling memchr v2.8.3
+   Compiling rustc_version v0.4.1
+   Compiling typenum v1.20.1
+   Compiling lexical-parse-integer v1.0.6
+   Compiling flatbuffers v25.12.19
+   Compiling lexical-write-integer v1.0.6
+   Compiling litemap v0.8.3
+   Compiling syn v3.0.9
+   Compiling syn v2.0.119
+   Compiling aho-corasick v1.1.5
+   Compiling regex-syntax v0.8.11
+   Compiling utf_types v1.0.0
+   Compiling serde_core v1.0.229
+   Compiling hybrid-array v0.4.15
+   Compiling icu_properties_data v2.3.0
+   Compiling utf8_iter v1.1.0
+   Compiling lexical-write-float v1.0.6
+   Compiling lexical-parse-float v1.0.6
+   Compiling zmij v1.0.23
+   Compiling bitflags v2.13.2
+   Compiling icu_casemap_data v2.3.0
+   Compiling lexical-core v1.0.6
+   Compiling num-integer v0.1.47
+   Compiling chrono v0.4.45
+   Compiling num-complex v0.4.6
+   Compiling num-bigint v0.5.1
+   Compiling regex-automata v0.4.18
+   Compiling synstructure v0.14.0
+   Compiling atoi v2.0.0
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling ryu v1.0.23
+   Compiling base64 v0.23.1
+   Compiling const-oid v0.10.2
+   Compiling digest v0.11.3
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerovec-derive v0.11.7
+   Compiling displaydoc v0.2.7
+   Compiling serde_derive v1.0.229
+   Compiling zerocopy-derive v0.8.63
+   Compiling cpufeatures v0.3.1
+   Compiling itoa v1.0.18
+   Compiling zerofrom v0.1.8
+   Compiling sha2 v0.11.0
+   Compiling regex v1.13.1
+   Compiling yoke v0.8.4
+   Compiling zerovec v0.11.9
+   Compiling zerotrie v0.2.5
+   Compiling tinystr v0.8.5
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.3.0
+   Compiling icu_locale_core v2.4.0
+   Compiling icu_provider v2.4.0
+   Compiling icu_properties v2.3.0
+   Compiling half v2.7.1
+   Compiling arrow-buffer v59.3.2
+   Compiling icu_casemap v2.3.0
+   Compiling arrow-data v59.3.2
+   Compiling arrow-array v59.3.2
+   Compiling arrow-select v59.3.2
+   Compiling arrow-row v59.3.2
+   Compiling arrow-arith v59.3.2
+   Compiling arrow-ord v59.3.2
+   Compiling arrow-string v59.3.2
+   Compiling arrow-ipc v59.3.2
+   Compiling arrow-cast v59.3.2
+   Compiling arrow v59.2.0
+   Compiling prepared-component-probe v0.0.0 (/tmp/sail-sdp-prepared-component-probe)
+warning: unused import: `Array`
+  --> src/main.rs:22:32
+   |
+22 | use arrow::{array::{Int64Array,Array},buffer::{ScalarBuffer,NullBuffer},datatypes::{DataType,Field,Schema,SchemaRef},record_batch::R...
+   |                                ^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `0` is never read
+  --> src/main.rs:10:69
+   |
+10 |  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(String)}
+   |                                                             ------- ^^^^^^
+   |                                                             |
+   |                                                             field in this variant
+   |
+   = note: `SparkError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+10 -  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(String)}
+10 +  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(())}
+   |
+
+warning: variant `Structured` is never constructed
+  --> src/main.rs:10:38
+   |
+10 |  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(String)}
+   |                           ---------- ^^^^^^^^^^
+   |                           |
+   |                           variant in this enum
+   |
+   = note: `SparkError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: `prepared-component-probe` (bin "prepared-component-probe") generated 3 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.88s
+     Running `/tmp/sail-sdp-prepared-component-probe/target/debug/prepared-component-probe`

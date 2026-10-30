@@ -1,0 +1,38 @@
+   Compiling prepared-component-probe v0.0.0 (/tmp/sail-sdp-prepared-component-probe)
+warning: unused import: `Array`
+  --> src/main.rs:23:32
+   |
+23 | use arrow::{array::{Int64Array,Array},buffer::{ScalarBuffer,NullBuffer},datatypes::{DataType,Field,Schema,SchemaRef},record_batch::R...
+   |                                ^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `0` is never read
+  --> src/main.rs:10:69
+   |
+10 |  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(String)}
+   |                                                             ------- ^^^^^^
+   |                                                             |
+   |                                                             field in this variant
+   |
+   = note: `SparkError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+10 -  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(String)}
+10 +  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(())}
+   |
+
+warning: variant `Structured` is never constructed
+  --> src/main.rs:10:38
+   |
+10 |  #[derive(Debug)]pub enum SparkError{Structured(Structured),Invalid(String)}
+   |                           ---------- ^^^^^^^^^^
+   |                           |
+   |                           variant in this enum
+   |
+   = note: `SparkError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: `prepared-component-probe` (bin "prepared-component-probe") generated 3 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.75s
+     Running `/tmp/sail-sdp-prepared-component-probe/target/debug/prepared-component-probe`
