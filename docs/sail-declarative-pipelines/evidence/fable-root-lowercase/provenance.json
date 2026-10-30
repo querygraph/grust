@@ -1,0 +1,42 @@
+{
+  "recorded": "2026-10-30T07:21:46.430951+00:00",
+  "host": "Capitola.local",
+  "os": "Darwin-25.2.0-arm64-arm-64bit-Mach-O",
+  "jdk_home": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+  "javac_version": "javac 17.0.8",
+  "java_version": [
+    "java version \"17.0.8\" 2023-07-18 LTS",
+    "Java(TM) SE Runtime Environment (build 17.0.8+9-LTS-211)",
+    "Java HotSpot(TM) 64-Bit Server VM (build 17.0.8+9-LTS-211, mixed mode, sharing)"
+  ],
+  "commands": [
+    "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/javac RootLowercaseProbe.java",
+    "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java -cp . RootLowercaseProbe @designed-all2.txt > probe.json",
+    "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java -cp . RootLowercaseProbe @connectors.txt > probe-connectors.json",
+    "python3 generate_tables.py probe.json tables.rs oracle.json"
+  ],
+  "files_sha256": {
+    "jdk/RootLowercaseProbe.java": "09bc3e74def68e8840c019dff9b9d50cd38fee41042407c064f5ad0b8aa220a9",
+    "jdk/connectors.txt": "bddcb2c6b395ee2e73b0b96791e96aff4698225feef7155b2a283e2ce2cf3896",
+    "jdk/designed-all2.txt": "2146f9073996b0358013b82a2125bc0c6c97e029ab045802723a27dc33968ad0",
+    "jdk/generate_tables.py": "1fc7a012857aae05c2480b1f60d877c0646b890a987b5c23593b995e36a423d4",
+    "jdk/oracle.json": "0b3929b09f88deb1ed5d187217bbff7abc997a840d7eb05f6042776d8a921f2c",
+    "jdk/probe-connectors.json": "7d636b1273fc328f4414a333d96b2a0199b221f5fff041b852d9593225e2743b",
+    "jdk/probe.json": "326011f232066e6be58f33baacdf3250866ae914572946db984ed2242c92da27"
+  },
+  "sail_consumer": {
+    "commit": "f4537586b",
+    "tables": "/Users/alexy/src/sail-sdp-fable/crates/sail-common/src/utils/root_lowercase_tables.rs",
+    "tables_sha256": "46bfab0d36e96943ef27d6a29000d708471c84a7732707156783f38747098bfd",
+    "oracle": "/Users/alexy/src/sail-sdp-fable/crates/sail-common/src/utils/root_lowercase_oracle.json",
+    "oracle_sha256": "0b3929b09f88deb1ed5d187217bbff7abc997a840d7eb05f6042776d8a921f2c",
+    "oracle_matches_jdk_oracle_json": true
+  },
+  "probe_summary": {
+    "java_runtime_version": "17.0.8+9-LTS-211",
+    "java_vendor": "Oracle Corporation",
+    "scalar_fnv1a64": "96999cee517b26e5"
+  },
+  "designed_strings": 201,
+  "simple_mapping_entries": 1393
+}
