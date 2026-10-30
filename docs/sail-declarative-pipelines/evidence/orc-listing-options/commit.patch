@@ -1,0 +1,653 @@
+commit 26b9461b93092ab99f1d5718fa82c73327970a27
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 18:23:22 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 18:23:22 2026 -0700
+
+    feat: resolve ORC listing options from captured session defaults
+
+diff --git a/crates/sail-data-source/build.rs b/crates/sail-data-source/build.rs
+index 4c6770339..d6aa665b2 100644
+--- a/crates/sail-data-source/build.rs
++++ b/crates/sail-data-source/build.rs
+@@ -7,6 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
+     build_data_source_options("Json", "json")?;
+     build_data_source_options("Parquet", "parquet")?;
+     build_data_source_options("Orc", "orc")?;
++    build_data_source_options("OrcListing", "orc_listing")?;
+     build_data_source_options("Text", "text")?;
+     build_data_source_options("Socket", "socket")?;
+     build_data_source_options("Rate", "rate")?;
+diff --git a/crates/sail-data-source/data/options/orc_listing.yaml b/crates/sail-data-source/data/options/orc_listing.yaml
+new file mode 100644
+index 000000000..a3ca317fe
+--- /dev/null
++++ b/crates/sail-data-source/data/options/orc_listing.yaml
+@@ -0,0 +1,46 @@
++# Planning-only listing options. Physical reader resource options remain in orc.yaml.
++
++- key: merge_schema
++  description: |
++    Whether schema inference merges all eligible ORC file schemas.
++    Session defaults apply before table properties and operation options.
++  default:
++    value: "false"
++    parser: crate::options::parsers::parse_spark_bool
++  supported: true
++  rust_type: bool
++  scopes:
++    - read
++  origins:
++    - type: option
++      keys:
++        - merge_schema
++        - mergeSchema
++      parser: crate::options::parsers::parse_spark_bool
++    - type: table_property
++      keys:
++        - option.merge_schema
++        - option.mergeSchema
++      parser: crate::options::parsers::parse_spark_bool
++
++- key: path_glob_filter
++  description: |
++    A glob pattern to only include files with file names matching the pattern.
++  default:
++    value: ""
++    parser: crate::options::parsers::parse_optional_string
++  supported: true
++  rust_type: "Option<String>"
++  scopes:
++    - read
++  origins:
++    - type: option
++      keys:
++        - path_glob_filter
++        - pathGlobFilter
++      parser: crate::options::parsers::parse_optional_string
++    - type: table_property
++      keys:
++        - option.path_glob_filter
++        - option.pathGlobFilter
++      parser: crate::options::parsers::parse_optional_string
+diff --git a/crates/sail-data-source/src/formats/orc/listing_options.rs b/crates/sail-data-source/src/formats/orc/listing_options.rs
+new file mode 100644
+index 000000000..5a6e924a4
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/listing_options.rs
+@@ -0,0 +1,126 @@
++use datafusion::catalog::Session;
++use sail_common_datafusion::datasource::OptionLayer;
++use sail_common_datafusion::extension::SessionExtension;
++
++use crate::error::DataSourceResult;
++use crate::options::r#gen::{OrcListingReadOptions, OrcListingReadPartialOptions};
++use crate::options::{BuildPartialOptions, PartialOptions, ResolveOptions};
++
++/// Immutable defaults captured by a session configuration snapshot.
++///
++/// Frontends replace the extension when their configuration changes. Already
++/// resolved listing options and earlier session snapshots retain their values.
++/// These planning defaults are separate from the physical reader descriptor.
++#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
++pub struct OrcListingSessionDefaults {
++    pub merge_schema: bool,
++}
++
++impl SessionExtension for OrcListingSessionDefaults {
++    fn name() -> &'static str {
++        "ORC listing defaults"
++    }
++}
++
++impl ResolveOptions for OrcListingReadOptions {
++    fn resolve(ctx: &dyn Session, options: Vec<OptionLayer>) -> DataSourceResult<Self> {
++        let mut partial = OrcListingReadPartialOptions::initialize();
++        if let Some(defaults) = ctx.config().get_extension::<OrcListingSessionDefaults>() {
++            partial.merge_schema = Some(defaults.merge_schema);
++        }
++        for layer in options {
++            partial.merge(layer.build_partial_options()?);
++        }
++        partial.finalize()
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use std::sync::Arc;
++
++    use datafusion::prelude::{SessionConfig, SessionContext};
++
++    use super::*;
++    use crate::error::DataSourceError;
++    use crate::options::option_list;
++
++    #[test]
++    fn ordinary_sessions_default_to_no_merge_or_glob() -> DataSourceResult<()> {
++        let ctx = SessionContext::new();
++        let options = OrcListingReadOptions::resolve(&ctx.state(), vec![])?;
++        assert!(!options.merge_schema);
++        assert_eq!(options.path_glob_filter, None);
++        Ok(())
++    }
++
++    #[test]
++    fn session_defaults_then_layers_preserve_explicit_false_and_empty_glob() -> DataSourceResult<()>
++    {
++        let config = SessionConfig::new()
++            .with_extension(Arc::new(OrcListingSessionDefaults { merge_schema: true }));
++        let ctx = SessionContext::new_with_config(config);
++        assert!(OrcListingReadOptions::resolve(&ctx.state(), vec![])?.merge_schema);
++
++        let table = || OptionLayer::TablePropertyList {
++            items: vec![
++                ("option.mergeSchema".into(), "false".into()),
++                ("option.path_glob_filter".into(), "table-*.orc".into()),
++            ],
++        };
++        let options = OrcListingReadOptions::resolve(&ctx.state(), vec![table()])?;
++        assert!(!options.merge_schema);
++        assert_eq!(options.path_glob_filter.as_deref(), Some("table-*.orc"));
++
++        let options = OrcListingReadOptions::resolve(
++            &ctx.state(),
++            vec![
++                table(),
++                option_list(&[
++                    ("MERGE_SCHEMA", "TrUe"),
++                    ("pathGlobFilter", "operation-*.orc"),
++                ]),
++                option_list(&[("mergeSchema", "false"), ("path_glob_filter", "")]),
++            ],
++        )?;
++        assert!(!options.merge_schema);
++        assert_eq!(options.path_glob_filter, None);
++        Ok(())
++    }
++
++    #[test]
++    fn invalid_merge_values_report_the_option_and_original_value() {
++        let ctx = SessionContext::new();
++        for value in [
++            "",
++            "yes",
++            "1",
++            "0",
++            " true ",
++            "\0true\0",
++            "\u{a0}true\u{a0}",
++        ] {
++            let result = OrcListingReadOptions::resolve(
++                &ctx.state(),
++                vec![option_list(&[("mergeSchema", value)])],
++            );
++            assert!(matches!(result,
++                Err(DataSourceError::InvalidOption { key, value: invalid, .. })
++                    if key == "mergeSchema" && invalid == value
++            ));
++        }
++    }
++
++    #[test]
++    fn strict_merge_booleans_follow_scala_case_matching() -> DataSourceResult<()> {
++        let ctx = SessionContext::new();
++        for (value, expected) in [("TrUe", true), ("FALSE", false), ("FALſE", false)] {
++            let options = OrcListingReadOptions::resolve(
++                &ctx.state(),
++                vec![option_list(&[("mergeSchema", value)])],
++            )?;
++            assert_eq!(options.merge_schema, expected);
++        }
++        Ok(())
++    }
++}
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index f9f81c11d..ff656096c 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -1,3 +1,4 @@
++mod listing_options;
+ mod metadata;
+ mod options;
+ mod reader;
+@@ -6,6 +7,7 @@ mod schema;
+ mod source;
+ mod timezone;
+ 
++pub use listing_options::OrcListingSessionDefaults;
+ pub use metadata::OrcSchemaBridge;
+ pub use options::OrcReadResourceLimits;
+ pub use reader::OrcObjectReader;
+diff --git a/crates/sail-data-source/src/options/mod.rs b/crates/sail-data-source/src/options/mod.rs
+index 690eb6cdf..4dc5f1b4a 100644
+--- a/crates/sail-data-source/src/options/mod.rs
++++ b/crates/sail-data-source/src/options/mod.rs
+@@ -11,6 +11,7 @@ pub mod r#gen {
+     include!(concat!(env!("OUT_DIR"), "/options/console.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/parquet.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/orc.rs"));
++    include!(concat!(env!("OUT_DIR"), "/options/orc_listing.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/csv.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/json.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/text.rs"));
+diff --git a/crates/sail-data-source/src/options/parsers.rs b/crates/sail-data-source/src/options/parsers.rs
+index 01e7f5477..26bcd3552 100644
+--- a/crates/sail-data-source/src/options/parsers.rs
++++ b/crates/sail-data-source/src/options/parsers.rs
+@@ -26,6 +26,23 @@ pub fn parse_bool(key: &str, value: &str) -> DataSourceResult<bool> {
+     }
+ }
+ 
++/// Parse Spark's strict boolean data-source option syntax without trimming.
++pub fn parse_spark_bool(key: &str, value: &str) -> DataSourceResult<bool> {
++    if value.eq_ignore_ascii_case("true") {
++        Ok(true)
++    } else if value.eq_ignore_ascii_case("false") || value.eq_ignore_ascii_case("falſe") {
++        // Scala StringOps.toBoolean uses Java equalsIgnoreCase. For these
++        // fixed boolean words, Java also folds the long s (U+017F) to S.
++        Ok(false)
++    } else {
++        Err(DataSourceError::InvalidOption {
++            key: key.to_string(),
++            value: value.to_string(),
++            cause: None,
++        })
++    }
++}
++
+ pub fn parse_u16(key: &str, value: &str) -> DataSourceResult<u16> {
+     value
+         .parse::<u16>()
+diff --git a/crates/sail-spark-connect/src/config.rs b/crates/sail-spark-connect/src/config.rs
+index 598a41f38..1b23b7547 100644
+--- a/crates/sail-spark-connect/src/config.rs
++++ b/crates/sail-spark-connect/src/config.rs
+@@ -12,6 +12,8 @@ use crate::spark::config::{
+ };
+ use crate::spark::connect;
+ 
++mod orc;
++
+ #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd)]
+ pub struct ConfigKeyValue {
+     pub key: String,
+@@ -147,6 +149,9 @@ impl SparkRuntimeConfig {
+         // TODO: Investigate how spark.wap.branch and spark.wap.id should reach
+         // Iceberg write planning for validation at the format boundary.
+         self.validate_removed_key(key.as_str(), value.as_str())?;
++        if key == SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA {
++            orc::parse_merge_schema(&value)?;
++        }
+         // Spark limits this setting to Int32; Sail accepts positive Int64 counts,
+         // matching its partitioning hints. Plan conversion checks the usize limit.
+         if key == SparkConfigKey::SPARK_SQL_SHUFFLE_PARTITIONS {
+diff --git a/crates/sail-spark-connect/src/config/orc.rs b/crates/sail-spark-connect/src/config/orc.rs
+new file mode 100644
+index 000000000..2584e9d9b
+--- /dev/null
++++ b/crates/sail-spark-connect/src/config/orc.rs
+@@ -0,0 +1,32 @@
++use sail_data_source::formats::orc::OrcListingSessionDefaults;
++use sail_data_source::options::parsers::parse_spark_bool;
++
++use super::SparkRuntimeConfig;
++use crate::error::{SparkError, SparkResult};
++use crate::spark::config::SparkConfigKey;
++
++pub(super) fn parse_merge_schema(value: &str) -> SparkResult<bool> {
++    // SQLConf applies Java String.trim (only characters <= U+0020) before
++    // Scala's strict boolean parser. Operation options do not trim.
++    parse_spark_bool(
++        SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA,
++        value.trim_matches(|character| character <= '\u{20}'),
++    )
++    .map_err(|_| {
++        SparkError::invalid(format!(
++            "{} must be a boolean: {value}",
++            SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA
++        ))
++    })
++}
++
++impl SparkRuntimeConfig {
++    pub(crate) fn orc_listing_defaults(&self) -> SparkResult<OrcListingSessionDefaults> {
++        let merge_schema = self
++            .get_option(SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA)
++            .map(parse_merge_schema)
++            .transpose()?
++            .unwrap_or_default();
++        Ok(OrcListingSessionDefaults { merge_schema })
++    }
++}
+diff --git a/crates/sail-spark-connect/src/service/config_manager.rs b/crates/sail-spark-connect/src/service/config_manager.rs
+index e7cc57077..400844015 100644
+--- a/crates/sail-spark-connect/src/service/config_manager.rs
++++ b/crates/sail-spark-connect/src/service/config_manager.rs
+@@ -189,7 +189,14 @@ pub(crate) fn handle_config_set(
+         let key = SparkConfigKey::SPARK_SQL_SESSION_TIME_ZONE.to_string();
+         kv.iter().any(|pair| pair.key == key)
+     };
+-    spark.set_config(kv)?;
++    let sets_orc_merge_schema = kv
++        .iter()
++        .any(|pair| pair.key == SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA);
++    if sets_orc_merge_schema {
++        update_orc_listing_defaults(ctx, &spark, || spark.set_config(kv))?;
++    } else {
++        spark.set_config(kv)?;
++    }
+     if sets_session_timezone {
+         // Mirror `spark.sql.session.timeZone` onto the DataFusion session configuration. Parquet
+         // listing-table schema inference reads `execution.time_zone` to reconcile mixed-timezone
+@@ -271,7 +278,14 @@ pub(crate) fn handle_config_unset(
+         let key = SparkConfigKey::SPARK_SQL_SESSION_TIME_ZONE.to_string();
+         keys.iter().any(|k| k == &key)
+     };
+-    spark.unset_config(keys)?;
++    let unsets_orc_merge_schema = keys
++        .iter()
++        .any(|key| key == SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA);
++    if unsets_orc_merge_schema {
++        update_orc_listing_defaults(ctx, &spark, || spark.unset_config(keys))?;
++    } else {
++        spark.unset_config(keys)?;
++    }
+     if unsets_session_timezone {
+         // Unsetting `spark.sql.session.timeZone` reverts it toward the default, so re-sync
+         // `execution.time_zone` to the now-effective session zone instead of leaving the last
+@@ -292,6 +306,26 @@ pub(crate) fn handle_config_unset(
+     })
+ }
+ 
++fn update_orc_listing_defaults(
++    ctx: &SessionContext,
++    spark: &SparkSession,
++    update: impl FnOnce() -> SparkResult<()>,
++) -> SparkResult<()> {
++    // Serialize the mutation and immutable snapshot replacement. Spark config
++    // methods acquire only their private session mutex, never this state lock.
++    let state_ref = ctx.state_ref();
++    let mut state = state_ref.write();
++    let result = update();
++    let defaults = spark.orc_listing_defaults();
++    if let Ok(defaults) = &defaults {
++        state.config_mut().set_extension(Arc::new(*defaults));
++    }
++    // A multi-key request may have changed ORC before a later entry failed.
++    // Refresh the snapshot in that case and preserve the original error.
++    result?;
++    defaults.map(|_| ())
++}
++
+ pub(crate) fn handle_config_is_modifiable(
+     ctx: &SessionContext,
+     keys: Vec<String>,
+diff --git a/crates/sail-spark-connect/src/session.rs b/crates/sail-spark-connect/src/session.rs
+index ba773d953..3187417aa 100644
+--- a/crates/sail-spark-connect/src/session.rs
++++ b/crates/sail-spark-connect/src/session.rs
+@@ -7,6 +7,7 @@ use datafusion::execution::SendableRecordBatchStream;
+ use datafusion::logical_expr::StringifiedPlan;
+ use sail_common::utils::datetime::get_system_timezone;
+ use sail_common_datafusion::extension::SessionExtension;
++use sail_data_source::formats::orc::OrcListingSessionDefaults;
+ use sail_plan::config::PlanConfig;
+ 
+ use crate::config::{ConfigKeyValue, SparkRuntimeConfig};
+@@ -88,6 +89,10 @@ impl SparkSession {
+         Ok(Arc::new(config))
+     }
+ 
++    pub(crate) fn orc_listing_defaults(&self) -> SparkResult<OrcListingSessionDefaults> {
++        self.state.lock()?.config.orc_listing_defaults()
++    }
++
+     pub(crate) fn plan_config_with_overrides(
+         &self,
+         overrides: impl IntoIterator<Item = (String, String)>,
+diff --git a/crates/sail-spark-connect/src/session_manager.rs b/crates/sail-spark-connect/src/session_manager.rs
+index c553246eb..9af3dc8e7 100644
+--- a/crates/sail-spark-connect/src/session_manager.rs
++++ b/crates/sail-spark-connect/src/session_manager.rs
+@@ -58,22 +58,7 @@ impl ServerSessionMutator for SparkSessionMutator {
+             },
+         )
+         .map_err(|e| internal_datafusion_err!("{e}"))?;
+-        // Seed the DataFusion `execution.time_zone` from the resolved Spark session timezone at
+-        // session creation. `SparkSession::try_new` sets `spark.sql.session.timeZone` to the
+-        // system timezone, but nothing otherwise copies it into `SessionConfig`; without this
+-        // seed a session that never calls `conf.set` leaves `execution.time_zone = None`, so
+-        // Parquet schema inference treats a non-UTC server as UTC. `handle_config_set` and
+-        // `handle_config_unset` keep the two in sync thereafter.
+-        let session_timezone = spark
+-            .plan_config()
+-            .map_err(|e| internal_datafusion_err!("{e}"))?
+-            .session_timezone
+-            .to_string();
+-        let mut config = config;
+-        config.options_mut().execution.time_zone = Some(session_timezone);
+-        Ok(config
+-            .with_extension(Arc::new(plan_service))
+-            .with_extension(Arc::new(spark)))
++        spark_session_config(config.with_extension(Arc::new(plan_service)), spark)
+     }
+ 
+     fn mutate_state(
+@@ -93,6 +78,25 @@ impl ServerSessionMutator for SparkSessionMutator {
+     }
+ }
+ 
++fn spark_session_config(mut config: SessionConfig, spark: SparkSession) -> Result<SessionConfig> {
++    // Seed DataFusion from the resolved Spark settings at session creation.
++    // Config set/unset handlers keep these defaults in sync thereafter.
++    // The SQL display timezone is not the numeric ORC reader timezone.
++    config.options_mut().execution.time_zone = Some(
++        spark
++            .plan_config()
++            .map_err(|e| internal_datafusion_err!("{e}"))?
++            .session_timezone
++            .to_string(),
++    );
++    let orc_defaults = spark
++        .orc_listing_defaults()
++        .map_err(|e| internal_datafusion_err!("{e}"))?;
++    Ok(config
++        .with_extension(Arc::new(orc_defaults))
++        .with_extension(Arc::new(spark)))
++}
++
+ /// The session factory used by the Spark Connect server by default.
+ pub fn create_spark_session_factory(
+     config: Arc<AppConfig>,
+@@ -128,3 +132,7 @@ pub async fn create_spark_session_manager_with_factory(
+     )
+     .await?)
+ }
++
++#[cfg(test)]
++#[path = "session_manager/orc_options_tests.rs"]
++mod orc_options_tests;
+diff --git a/crates/sail-spark-connect/src/session_manager/orc_options_tests.rs b/crates/sail-spark-connect/src/session_manager/orc_options_tests.rs
+new file mode 100644
+index 000000000..8c0aa82cc
+--- /dev/null
++++ b/crates/sail-spark-connect/src/session_manager/orc_options_tests.rs
+@@ -0,0 +1,177 @@
++use datafusion::execution::SessionState;
++use datafusion::prelude::SessionContext;
++use sail_common_datafusion::datasource::OptionLayer;
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_data_source::formats::orc::OrcListingSessionDefaults;
++use sail_data_source::options::ResolveOptions;
++use sail_data_source::options::r#gen::OrcListingReadOptions;
++
++use super::*;
++use crate::config::ConfigKeyValue;
++use crate::service::{handle_config_set, handle_config_unset};
++use crate::spark::config::SparkConfigKey;
++use crate::spark::connect::KeyValue;
++
++type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
++
++const MERGE: &str = SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA;
++const SHUFFLE: &str = SparkConfigKey::SPARK_SQL_SHUFFLE_PARTITIONS;
++
++fn spark_session() -> SparkResult<SparkSession> {
++    pyo3::Python::initialize();
++    SparkSession::try_new(
++        "orc-options-test".into(),
++        "test-user".into(),
++        SparkSessionOptions {
++            execution_heartbeat_interval: Duration::from_secs(1),
++        },
++    )
++}
++
++fn context() -> TestResult<SessionContext> {
++    Ok(SessionContext::new_with_config(spark_session_config(
++        SessionConfig::new(),
++        spark_session()?,
++    )?))
++}
++
++fn pair(key: &str, value: &str) -> KeyValue {
++    KeyValue {
++        key: key.into(),
++        value: Some(value.into()),
++    }
++}
++
++fn resolved(state: &SessionState) -> TestResult<OrcListingReadOptions> {
++    Ok(OrcListingReadOptions::resolve(state, vec![])?)
++}
++
++fn assert_effective(ctx: &SessionContext, expected: bool) -> TestResult {
++    assert_eq!(
++        ctx.extension::<SparkSession>()?
++            .orc_listing_defaults()?
++            .merge_schema,
++        expected
++    );
++    assert_eq!(
++        ctx.extension::<OrcListingSessionDefaults>()?.merge_schema,
++        expected
++    );
++    assert_eq!(resolved(&ctx.state())?.merge_schema, expected);
++    Ok(())
++}
++
++#[test]
++fn creation_reads_effective_spark_defaults() -> TestResult {
++    let ctx = context()?;
++    assert_effective(&ctx, false)?;
++
++    let spark = spark_session()?;
++    spark.set_config(vec![ConfigKeyValue {
++        key: MERGE.into(),
++        value: Some(" TrUe \t".into()),
++    }])?;
++    let ctx = SessionContext::new_with_config(spark_session_config(SessionConfig::new(), spark)?);
++    assert_effective(&ctx, true)?;
++    Ok(())
++}
++
++#[test]
++fn set_unset_and_operation_override_preserve_prior_read_snapshots() -> TestResult {
++    let ctx = context()?;
++    let initial_state = ctx.state();
++    let initial_defaults = ctx.extension::<OrcListingSessionDefaults>()?;
++    let initial_options = resolved(&initial_state)?;
++
++    handle_config_set(&ctx, vec![pair(MERGE, " \tTrUe\n")])?;
++    assert_effective(&ctx, true)?;
++    let enabled_state = ctx.state();
++    let enabled_defaults = ctx.extension::<OrcListingSessionDefaults>()?;
++    let enabled_options = resolved(&enabled_state)?;
++    assert!(!Arc::ptr_eq(&initial_defaults, &enabled_defaults));
++
++    let operation = OrcListingReadOptions::resolve(
++        &enabled_state,
++        vec![OptionLayer::OptionList {
++            items: vec![("mergeSchema".into(), "false".into())],
++        }],
++    )?;
++    assert!(!operation.merge_schema);
++    assert_effective(&ctx, true)?;
++
++    handle_config_unset(&ctx, vec![MERGE.into()])?;
++    assert_effective(&ctx, false)?;
++    assert!(!initial_defaults.merge_schema);
++    assert!(!initial_options.merge_schema);
++    assert!(!resolved(&initial_state)?.merge_schema);
++    assert!(enabled_defaults.merge_schema);
++    assert!(enabled_options.merge_schema);
++    assert!(resolved(&enabled_state)?.merge_schema);
++    Ok(())
++}
++
++#[test]
++fn invalid_sql_booleans_fail_before_changing_the_effective_default() -> TestResult {
++    let ctx = context()?;
++    handle_config_set(&ctx, vec![pair(MERGE, "true")])?;
++    for value in [
++        "",
++        "yes",
++        "1",
++        "0",
++        "true false",
++        "\u{a0}true\u{a0}",
++        "\u{2003}true\u{2003}",
++    ] {
++        let error = handle_config_set(&ctx, vec![pair(MERGE, value)]).err();
++        assert!(error.is_some());
++        let message = error.map(|error| error.to_string()).unwrap_or_default();
++        assert!(message.contains(MERGE));
++        assert!(message.contains("must be a boolean"));
++        assert_effective(&ctx, true)?;
++    }
++    Ok(())
++}
++
++#[test]
++fn sql_boolean_trimming_uses_java_control_characters_and_case_rules() -> TestResult {
++    let ctx = context()?;
++    for (value, expected) in [("\0\u{1f}TrUe\u{1f}\0", true), (" FALſE ", false)] {
++        handle_config_set(&ctx, vec![pair(MERGE, value)])?;
++        assert_effective(&ctx, expected)?;
++    }
++    Ok(())
++}
++
++#[test]
++fn partial_batches_refresh_defaults_and_preserve_the_original_error() -> TestResult {
++    for orc_first in [true, false] {
++        let ctx = context()?;
++        let before = ctx.state();
++        let mut values = vec![pair(MERGE, "true"), pair(SHUFFLE, "0")];
++        if !orc_first {
++            values.reverse();
++        }
++        let error = handle_config_set(&ctx, values).err();
++        assert!(error.is_some());
++        let message = error.map(|error| error.to_string()).unwrap_or_default();
++        assert!(message.contains("spark.sql.shuffle.partitions must be positive"));
++        assert_effective(&ctx, orc_first)?;
++        assert!(!resolved(&before)?.merge_schema);
++    }
++    Ok(())
++}
++
++#[test]
++fn later_invalid_merge_value_keeps_the_earlier_partial_update() -> TestResult {
++    let ctx = context()?;
++    let error = handle_config_set(&ctx, vec![pair(MERGE, "true"), pair(MERGE, "invalid")]).err();
++    assert!(error.is_some());
++    let message = error.map(|error| error.to_string()).unwrap_or_default();
++    assert!(message.contains(MERGE));
++    assert!(message.contains("invalid"));
++    assert_effective(&ctx, true)?;
++    handle_config_unset(&ctx, vec![MERGE.into()])?;
++    assert_effective(&ctx, false)?;
++    Ok(())
++}

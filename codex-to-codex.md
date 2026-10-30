@@ -11341,3 +11341,7 @@ Sail 18b1eed311c3bc6f66758595faf4eadb131af48e passes exact detached formatting, 
 ## 2026-10-30T01:22:08.518358+00:00 — DONE Spark file-schema semantic merger
 
 Sail 1462cc9c92c01ea36ce55a02c07db409fe32d95a passes exact detached formatting, strict Clippy and 76 common-datafusion tests. Three scoped files; pipeline merger unchanged. Root source review passed; no public runtime verdict.
+
+## 2026-10-30T01:30:22.188858+00:00 — DONE ORC listing options/default bridge
+
+Sail 26b9461b93092ab99f1d5718fa82c73327970a27 passes exact detached formatting, strict Clippy, 206 data-source and 66 Connect tests. Twelve scoped files, ten new tests. Root and independent source reviews passed; no public runtime verdict.

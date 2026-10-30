@@ -1,0 +1,46 @@
+# Planning-only listing options. Physical reader resource options remain in orc.yaml.
+
+- key: merge_schema
+  description: |
+    Whether schema inference merges all eligible ORC file schemas.
+    Session defaults apply before table properties and operation options.
+  default:
+    value: "false"
+    parser: crate::options::parsers::parse_spark_bool
+  supported: true
+  rust_type: bool
+  scopes:
+    - read
+  origins:
+    - type: option
+      keys:
+        - merge_schema
+        - mergeSchema
+      parser: crate::options::parsers::parse_spark_bool
+    - type: table_property
+      keys:
+        - option.merge_schema
+        - option.mergeSchema
+      parser: crate::options::parsers::parse_spark_bool
+
+- key: path_glob_filter
+  description: |
+    A glob pattern to only include files with file names matching the pattern.
+  default:
+    value: ""
+    parser: crate::options::parsers::parse_optional_string
+  supported: true
+  rust_type: "Option<String>"
+  scopes:
+    - read
+  origins:
+    - type: option
+      keys:
+        - path_glob_filter
+        - pathGlobFilter
+      parser: crate::options::parsers::parse_optional_string
+    - type: table_property
+      keys:
+        - option.path_glob_filter
+        - option.pathGlobFilter
+      parser: crate::options::parsers::parse_optional_string

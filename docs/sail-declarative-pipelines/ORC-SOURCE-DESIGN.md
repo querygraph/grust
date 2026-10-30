@@ -613,3 +613,7 @@ Recorded: 2026-10-30T01:12:57.301049+00:00. [Sail `18b1eed311`](evidence/listing
 ## Shared semantic schema merge
 
 Recorded: 2026-10-30T01:22:08.518358+00:00. [Sail `1462cc9c92`](evidence/orc-semantic-merge/README.md) adds the focused Arrow merger below Connect/data-source, preserving TIME/interval semantics and qualified root/nested case behavior. Existing pipeline normalization stays unchanged. Formatting, strict Clippy and 76 common-datafusion tests pass, including ten new cases. Final duplicate validation remains independent. Public format integration and full SDP acceptance remain open.
+
+## ORC listing options and session defaults
+
+Recorded: 2026-10-30T01:30:22.188858+00:00. [Sail `26b9461b93`](evidence/orc-listing-options/README.md) adds generated planning options and immutable session defaults, preserving table/read precedence and strict Spark boolean syntax. Formatting, strict Clippy, 206 data-source and 66 Connect tests pass. Partial config failures refresh the mirror without replacing the original error. Resource wire fields are unchanged; mode guarding and public read integration remain separate.
