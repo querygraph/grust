@@ -1527,3 +1527,7 @@ Recorded 2026-10-30T03:27:01.046755+00:00. [Sail `76dd36983f`](evidence/task-res
 ## Scoped task context adapter
 
 Recorded 2026-10-30T03:34:56.255104+00:00. [Sail `779cb136d9`](evidence/scoped-task-context/README.md) preserves all function registries, runtime/pool, IDs and configuration while installing a fresh task-resource scope. All85 common-datafusion tests and formatting/strict Clippy pass; two new tests require nonempty registries and sibling/parent isolation. Actual task-monitor and runner integration remains the next execution unit.
+
+## Distributed task monitor resource drainage
+
+Recorded 2026-10-30T03:54:50.229850+00:00. [Sail `e02e4f712f`](evidence/task-monitor-resources/README.md) installs fresh per-attempt scopes and drains supervisors before distributed terminal reports, retaining cancellation after stream EOF. Eight new channel-controlled tests cover cleanup waiting, typed/unknown-commit cause precedence and poll/Drop panics. All183 execution and85 common-datafusion library tests, formatting and strict Clippy pass. This completes the monitor portion of W2b; local execution, CloseJob/driver acknowledgments, graceful shutdown, native accounting and public ORC writing remain open. No new original Spark suite or public SDP coverage is claimed.
