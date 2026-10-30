@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T11:04:47.041111+00:00. Live coordination read through **CF-0074**.
+Snapshot written 2026-10-30T11:36:36.310168+00:00. Live coordination read through **CF-0085**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -56,12 +56,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `beebb83d0df5aff947bd1e20e0a69626c98c14bc` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `0f0fb49ba372b91ba240e97991eef4e87f41115c` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `beebb83d0` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `9d83baa8ba77b947dcadbb8b2921309a667c8f97` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `987bd84902e0fdd208707b77a06b2c5cbafa29de` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `9d83baa8b` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `105967e17c0bd467816ed515522c12ecc5087f78` (offered, detached gate CF-0073) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `12fdbf1da1c21a1c62a773f9ee40d027d494e63c` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `798cd35c9fdb47ec3800367aa9e1d6d19231d779` (offered, detached gate CF-0078) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `17e84c923a5f6e2e8aac12aae5c55282fcbbf809` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -78,7 +78,7 @@ Sail and Grust are different object databases; do not run their `git show` in
 the other repository. Resolve short hashes to full hashes before gating.
 
 Local Sail `main` was explicitly fast-forwarded via `git fetch origin main:main`
-from0ba425c03 to `d803e13f01c626a0bb6869871a92e7d14e148e2f`, then equality with
+from0ba425c03 through d803e13f0 to `ac4690078021cf2a5402dc5c7b38a886f1916c73`, then equality with
 origin/main was verified. No worktree had main checked out. The SDP branch has
 not incorporated that upstream delta; any new merge/rebase needs its own exact
 combined gate. Main synchronization is not evidence that the SDP tree was rebased.
@@ -163,6 +163,7 @@ Recent implementation units relevant to the current work:
 | `590fc2f9d3` | TaskResourceScope.run shares typed completed results with retained supervisor ownership; owned_put.put joins a PUT through lost callers. 107 library + 4 optimized CPU-load tests pass; no dependency change or production routing activation. [Packet](docs/sail-declarative-pipelines/evidence/owned-put/README.md) |
 | `4cb9aec14` | Whole multipart supervisor in sail-object-store, no new dependency or routing. 33 library + 16 optimized CPU-load tests pass; notification control fails unchanged regression. [Packet](docs/sail-declarative-pipelines/evidence/owned-multipart/README.md) |
 | `beebb83d0` | Execution adapter registers the lifetime with existing TaskResourceScope, retaining typed completion uncertainty. 197 library +5 optimized tests pass; removing the marker fails unchanged classification regression. [Packet](docs/sail-declarative-pipelines/evidence/execution-owned-multipart/README.md) |
+| `9d83baa8b` | Explicit mutation-supervisor interruption retains typed JoinError + nonretryable uncertainty for owned PUT/multipart. 111 common +198 execution library tests and111+6 optimized tests pass; unchanged publication/runtime-loss control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/owned-mutation-runtime-loss/README.md) |
 
 Latest public runtime gate at `34eb270d00`: 15 physical-plan library tests, formatting,
 strict all-target/all-feature Clippy, a fresh exact-commit CLI, 300 selected public
@@ -224,6 +225,7 @@ consumer units during integration rather than blindly cherry-picking that defect
 | `71e4a94d9` | Expected authoritative InputIdentity binding; Fable detached fmt/Clippy/common/pipeline/maturin/249 Python verdict CF-0052. Independent prepared-component review passes the stated API checks; physical IPC representation boundary remains open. |
 | `33a883091` | Approved move-only lower bounded-source contract extraction; detached common/common-datafusion/Connect and249 Python gate CF-0062. Offered, not integrated. |
 | `bc23c8db6` / `105967e17` | Typed per-flow report and callback carrier, unwired, detached gates CF-0070/0073. Source review CF-0071 requires retaining maps in the raised error, not dropping them when constructing its message. Not integrated. |
+| `798cd35c9` | Retained report variant + actual AnalysisException Status mapping, detached gate CF-0078. Fixes source-level map loss; unwired/unintegrated. |
 
 Grust offers: kernel727baa3e; evidence5538854f/aba8ef64 (lowercase),31997f0f
 (CDC validation),275e666b (microbatch),834cae55 (streaming/prepared),8b0bd605
@@ -311,18 +313,25 @@ outer UnresolvedPipelineException and complete nested cause maps. Draft7548f336
 moves toward that model but still guesses reader attribution/final inference timing;
 all readers must receive actual demand-time inference causes; unobserved inference
 must follow the exact reference validation/final phase, not synthetic flow failures. Cycle detection covers the failed
-subgraph, including disconnected failures. Fable offered the model/callback carrier. CF-0074 approves a separate retained
-SparkError::UnresolvedPipeline variant and AnalysisException mapping/tests; the
-loop/schema rewrite and event activation remain unapproved. The existing into_error
-consumes/drops maps, so raised-error retention must be fixed before integration.
-CF-0074 corrects an earlier Codex generalization: validateUserSpecifiedSchemas calls
-inference for tables selected by same-named flow identifiers even without a declared
-schema, before final inferredSchema. Declared-schema VirtualTableInput.load bypasses
-producer schema inference, so failed producers must not cause guessed downstream
-failures by coarse output-unavailability. Require reference cases for these shapes. Next integration work remains
-definition/validation/dedup and lower source-contract review, preserving execution
-guards and C0. The announced multipart design phase produced the component below;
-future provider/routing/session design checkpoints still need their own notice.
+subgraph, including disconnected failures. Fable offered the model/callback carrier
+and fixed raised-error retention at798cd35c9; the loop is still unwired.
+CF-0082 approves revision3's analysis.rs/schema.rs loop scope after corrected source
+review: DataflowGraphTransformer gates table installation on all producer flows
+resolving. CF-0074's inference from VirtualTableInput alone omitted that gate;
+failed producers do block declared-schema readers. Preserve classification from
+requestedInputs, successful flows separately from failed destinations, same-named-
+flow validation phase, per-reader demand inference and final raw inference phase.
+Raw phase9 requires SparkException/CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE/42825 with
+left/right SQL-type parameters. Fable's39-case JVM oracle says nested failures report
+the outer/root field pair; it is preparing a separate typed-merge-error prerequisite
+before the loop. No merge/coercion changes, PlanResolver/session/events or guard removal.
+Async source error-only scope is also approved after semantic corrections: boxed
+causes, deterministic refusal shape unchanged, no Clone/Eq promise for opaque errors.
+Async conversion awaits ownership review; PositionStore is deferred. Read timeouts
+may have executed; retry eligibility needs stateless captured binding and disabled
+position commits. Dropping SDK futures proves neither joined workers nor clean drain.
+Read-back is an observation, not SDP durability; C0 remains unselected. Next coordinator
+integration still includes definition/validation/dedup and lower source contracts.
 
 ## Runtime and ORC work Codex must continue
 
@@ -366,12 +375,20 @@ Complete causes alongside CommitStateUnknownError in a DataFusion Collection.
 197 execution library tests/fmt/strict Clippy and5 optimized adapter tests under ten
 joined load workers pass. Shared-store sibling isolation and actual scope cancellation/
 drainage are tested. Removing only the marker fails the unchanged classification test.
-No dependency or checkpoint/session change. Runtime-loss/JoinError uncertainty is a
-separate unqualified path, not covered by the returned-Complete-error marker test.
-Next units: provider/runtime-wrapper qualification, isolated context/registry routing,
-checkpoint integration, then truthful session deletion/manager shutdown and distributed
-qualification. The user has now been notified that provider/runtime-wrapper design
-is the next Astra checkpoint; that new phase has not begun in this snapshot. Keep scope/source/candidate gates granular. Never authorize prefix
+No dependency or checkpoint/session change. Runtime-loss classification is now fixed
+at9d83baa8b: spawn_mutation/run_mutation retain the real JoinError and nonretryable
+uncertainty. Generic resources, cooperative settlement and normally returned errors
+are unchanged. Actual PUT and multipart publication-before-runtime-loss regressions
+pass; the unchanged multipart control fails on old production. 111+198 library and
+111+6 optimized CPU-load tests pass, ten workers joined per run. This covers the
+supervisor-runtime boundary, not every nested I/O/provider-returned-error path.
+The announced provider/runtime phase is underway: [new checkpoint](docs/sail-declarative-pipelines/PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md)
+compares immutable typed descriptors with a retained-creation context marker for
+known wrappers. Neither hook is selected/implemented. Next proof: actual nested
+RuntimeAware wrappers under the whole supervisor, including publish-then-error
+and implicit Drop abort. Fable is reviewing alternatives (CF-0084/0085) without code
+scope overlap. Then isolated registry/context routing, actual checkpoint integration,
+truthful session/manager shutdown and distributed qualification. Keep gates granular. Never authorize prefix
 deletion on an unconfirmed stop or timeout, and do not treat cancellation as join.
 
 Session architecture keeps policy in sail-session: retained cleanup ownership,

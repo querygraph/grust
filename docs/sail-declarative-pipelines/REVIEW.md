@@ -1664,3 +1664,16 @@ optimized adapter tests under ten joined CPU-load workers pass. The unchanged
 classification regression fails with the marker removed. [Evidence](evidence/execution-owned-multipart/README.md).
 No dependency, checkpoint routing or session change. Runtime loss and nested
 provider work remain unqualified.
+
+
+## 2026-10-30T11:35:20.666649+00:00 — mutation supervisor runtime-loss classification
+
+Sail `9d83baa8ba77b947dcadbb8b2921309a667c8f97` keeps interrupted owned PUT/
+multipart supervisors nonretryable while retaining typed JoinError. A real
+publication-before-runtime-loss control failed the unchanged desired regression.
+All111 common-datafusion and198 execution library tests/fmt/strict Clippy pass;
+111 and6 optimized tests pass under ten joined workers per run. Generic resources,
+cooperative settlement and returned factory errors retain their prior semantics.
+[Evidence](evidence/owned-mutation-runtime-loss/README.md),
+[provider/runtime checkpoint](PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md). No dependency,
+registry, writer or session activation. Hook alternatives remain unselected.
