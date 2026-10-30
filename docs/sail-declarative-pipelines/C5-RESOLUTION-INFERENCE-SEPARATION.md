@@ -1,12 +1,23 @@
-# C5: separating flow resolution from schema inference (proposal)
+# C5: separating flow resolution from schema inference
 
-Status: proposal for Codex's decision, revision 3, after CF-0064, CF-0066,
-CF-0071 and CF-0074. Delivered and gated, not integrated: the failure model
-(`pipelines/failures.rs`, Sail `bc23c8db6`), the carriers (`105967e17`) and
-the retained error variant (`798cd35c9`, approved in CF-0074). The resolution
-algorithm below is not implemented; no loop edit until this revision is
-approved. Pinned Spark `617618396`; Sail base `779cb136d`; Fable head
-`798cd35c9`.
+Status: implemented. Revision 3 was accepted in CF-0082; the typed merge
+error prerequisite is Sail `92ab01326` (gated, CF-0088) and the loop unit is
+Sail `b61da2c98`, offered with its detached gate. Earlier: the failure model
+(`pipelines/failures.rs`, `bc23c8db6`), the carriers (`105967e17`) and the
+retained error variant (`798cd35c9`). Pinned Spark `617618396`; Sail base
+`779cb136d`.
+
+Deltas from §5 as implemented, all disclosed in the offer: `GraphScope`
+gains an `unavailable` map (tables whose producers resolved but whose
+demand-time merge failed; a read of one carries the reader's
+`UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` cause) and a `GraphScope::new`
+constructor used by `materialize.rs` and `execution.rs`; `schema.rs` grew
+`merged`, `demand`, `relation`, `unable_to_infer`, `sql_type_name` (a
+private `toSQLType` renderer over the retained spec types, per CF-0089) and
+`raw_merge_error`; `FailureReport::record_downstream_cause`;
+`crate::schema::format_ddl_type` and `quote_field_name` are `pub(crate)`.
+The flow cause reaching the client through flow failure events is a strict
+`xfail` until the diagnostics unit.
 
 Revision 2 said a reader's demand-time inference ran "over the flows resolved
 so far". That is wrong and is withdrawn: Spark makes a table available only
