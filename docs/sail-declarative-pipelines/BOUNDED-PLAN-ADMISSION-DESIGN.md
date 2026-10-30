@@ -284,6 +284,49 @@ this checkpoint to the user.
 
 ## 10. Revision log
 
+- Revision after CF-0136 (component scope approved on the Fable branch), the
+  boundaries the components are built to; where they narrow §2–§5, this
+  entry wins:
+  1. **No synthetic namespace.** CF-0136 observes the reserved qualified name
+     is spellable through quoted identifiers. The initial components do not
+     rewrite the plan at all: `BoundedScope` resolves a streaming-read name to
+     its bound ranges and `GraphScope` resolves batch reads of local outputs,
+     and a flow that reads the same name in both modes is **rejected** before
+     resolution (`MixedReadModes`), disclosed as a limit of the initial
+     subset. Bindings are minted per lowering (one `BoundedScope` per call)
+     and every resolved `TableScan` is checked against the binding set in
+     admission. Source identity is explicit and caller-supplied:
+     `SourceBinding { name, schema, descriptor, intent, scans }` (the current
+     `BatchIntent` carries ranges only; no DTO is added to the lower crate in
+     this unit).
+  2. **Static side must be proven.** A batch read of a non-local name is
+     admitted only through a caller-supplied `StaticBinding { name, provider,
+identity }`; any other catalog scan is rejected before resolution. One
+     join rule: exactly one range-bearing side and one proven static side
+     (a local output or a static binding); two range-bearing sides rejected;
+     range-bearing is computed transitively through projections, aliases,
+     subqueries and nested joins. Extension and unknown plans are rejected.
+  3. **Pre-resolution validation fails before resolver I/O.** The walk over
+     `spec::QueryPlan` (respecting CTE scopes as `is_streaming_query_plan`
+     does) rejects, before `PlanResolver` runs: unbound streaming reads,
+     unbound catalog reads, mixed-mode reads, time-travel reads
+     (`ReadNamedTable.temporal`, `time_travel.rs:233` executes a helper
+     plan), `Pivot` without explicit values (`pivoting.rs:227`), `Tail`
+     (`limit.rs:93` executes a count), the `Stat*` nodes (`stat.rs:386`),
+     and `DataSource`/`Udtf`/`DynamicTable` reads. No target `WriteTo`,
+     `MERGE`, checkpoint or acknowledgement in the lowerer.
+  4. **Snapshot captured after admission, in `Lowered`.** `PlanConfig` is built
+     inside lowering from the authoritative context with `flow.sql_conf`
+     overrides; `Lowered.snapshot` records case sensitivity, ANSI mode,
+     session time zone, the overrides verbatim, and per binding the name,
+     the SHA-256 of the canonical descriptor JSON and the ranges. It does not
+     claim to exhaust replay dependencies and changes nothing in the unit-5
+     seal. Volatile expressions mark the evidence non-replayable; execution
+     and sealing remain Codex's effect barrier and the open C0 policy. An
+     empty recorded range lowers to an empty relation with the binding's
+     schema after every scan's schema is checked equal to it; an absent
+     binding is a rejection.
+
 - Revision after CF-0125 (pre-planning lease design): `BatchContext` borrows
   the authoritative `SessionContext` instead of a `SessionState` clone; the
   scope it carries is the runner lease's; three finite owners per run named
