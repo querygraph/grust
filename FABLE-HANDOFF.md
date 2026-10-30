@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T14:48:07.616920+00:00. Live coordination read through **CF-0112**.
+Snapshot written 2026-10-30T15:17:32.337574+00:00. Live coordination read through **CF-0122**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -20,10 +20,6 @@ modules remain unintegrated**. Public ORC writing, complete session/cluster
 cleanup, durable streaming/CDC effects and full original Scala-suite acceptance
 remain incomplete. Existing execution still rejects incremental/sink pipelines
 before writes. Keep that guard until the effect path is qualified.
-
-The previous goal turns made progress: implementation fixes, exact source controls,
-independent JVM/Rust parity/counterexample evidence, and concrete design reviews.
-No completion or blocked status is justified by current evidence.
 
 Fable maintains a separate [Fable-owned supplement](/Users/alexy/src/grust-sdp-fable/docs/sail-declarative-pipelines/FABLE-HANDOFF-FABLE.md),
 originally committed in Grust `524642ad`, with the vendor/consumer order corrected
@@ -56,12 +52,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `1ed1f27ce19a9c8cfbafcb017458e4af2dc0838f` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed writer candidate `47c473e6b` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `bebabdb9e7ef7d072ea39f9ec9ac536af86a3f50` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `f91aed60d2db405874e16cdbea9fd1b60acb67a7` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed facade candidate `bebabdb9e` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `2456618dd59db73d37cdebfca4d8784d17024f87` (renderer offered/unwired CF-0109) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `0b434f5d54b58d40b211335985a248ebe79ebed5` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `37c4d9c4a52718ec3bfa7af99cb033ea67779b8f` (event follow-up offered/unintegrated CF-0121) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `6565443ae25a7981bb819e1c1d4d7f4d74943ac9` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -170,35 +166,34 @@ Recent implementation units relevant to the current work:
 Latest fresh public CLI gate is exactly **47c473e6b**:300 selected public and
 67 upstream Python executions pass with rebuilt CLI/source/binary receipts and
 owned server stopped. The previous a2cee8f00 public verdict remains archived.
-No root-owned build/test/server/load handle remains pending; all workers joined.
+Earlier gates are terminal; see the active unit below before touching gate processes.
 
-## Latest completed units and immediate next work
+## Latest unit and next design checkpoint
 
-Registry context9579a7e8d is committed and
-[qualified](docs/sail-declarative-pipelines/evidence/registry-task-context/README.md):
-supplied registry isolation, existing exact owner/config/functions/runtime resources,
-115 library +115 optimized tests. No routing activation. Its earlier failures
-remain in the linked in-progress packet; no work is still pending on those candidates.
+Coordinator source **bebabdb9e** is committed and clean: operation-local
+OwnedObjectStore in execution, existing owner and immutable provider, retained
+PUT/copy/rename/singleton delete, retained multipart facade, direct reads. Ordinary
+condition variants remain usable with typed causes; uncertain completion keeps
+its marker. No dependency, registry, planning/runner/session activation.
+[Evidence](docs/sail-declarative-pipelines/evidence/owned-store-facade/README.md):
+fmt/strict Clippy,214 execution library and12 optimized CPU-load tests pass.
+Actual sequential/parallel checkpoint caller loss waits for held completion;
+siblings remain usable. Local and actual dynamic-runtime providers pass.
+All owned load/build/server handles are terminal. Public verdict remains47c473e6b.
 
-Writer classification47c473e6b is committed, source clean. Four-file unit:
-common-datafusion/src/error.rs +error/tests.rs; execution/src/lib.rs +new
-checkpoint_writer_error_tests.rs. Nested nonretryable causes survive storage,
-Parquet/I/O and direct Arrow I/O wrappers, preserving ordinary categories/messages.
-No new marker for ordinary provider failures, no dependency/routing/session change.
-[Packet](docs/sail-declarative-pipelines/evidence/checkpoint-writer-errors/README.md):
-fmt/strict Clippy,117 common +202 execution library,117+4 optimized CPU-load,
-300 public +67 upstream pass. Source/log/binary pins and server cleanup checked
-before conditional advancement. Same four writer test blobs fail on unchanged
-production1c86bdc40 after actual publication. Initialc0d484a99 failed an assumed
-ordinary Arrow category; unchanged-production8bf79af86 measured the actual baseline
-before the fixture was corrected. All failures/probe logs remain retained.
+Unchanged tests fail both ownership bypass controls and the condition-projection
+control. Development compile/fixture failures and the AtCapacity probe are archived.
+Synchronous writer bursts can exceed nominal concurrency; the eight-part/256-byte
+two-row fixture is not a production policy. Refusal independently joins abort and
+publishes nothing. Known conditional conflicts still produce failed scope reports.
+The common multipart fixture source is unchanged; its test-only module/import moved.
 
-Next: isolated operation registry/routing and admission before planning. The
-[writer trace](docs/sail-declarative-pipelines/evidence/checkpoint-writer-errors/routing-followup.md)
-identifies plan preparation before LocalJobRunner's fresh scope/admission in
-Connect, streaming start and pipeline run_command. ParquetSink re-resolves its
-store. Keep owner propagation, actual writer children/provider joins and session/
-cluster teardown reviewable; classification alone does not establish the barrier.
+**Next design phase flagged to the user for Astra:** before production routing,
+resolve pre-planning admission/owner transfer, burst/byte bounds and handled
+conditional-effect/drain outcomes. No new choice is selected. Registry installation,
+actual writer children/provider runtime-loss joins, recovery identity and session/
+cluster teardown remain open. Do not infer full acceptance from these components.
+Prior context9579a7e8d and classifier47c473e6b are separately qualified.
 
 ## Acceptance accounting and major remaining work
 
@@ -261,11 +256,11 @@ are in the shared Grust repository and files in the Fable docs worktree.
 The coordination reader2103fb56 was integrated and fixed as Codexb7290eb1;
 IDs/protocol foundation is16a0a7f4. Do not integrate that reader twice.
 
-Peer renderer2456618dd remains unwired/unintegrated; CF-0111 reports detached
-133 Rust +277 Python/1 xfail, fmt/Clippy/maturin gates. CF-0112 approves only
-post-select emission, preserving analysis cancellation, after renderer corrections.
-Review borrowed Status-message parity and available cause chains; test held-analysis
-cancellation and emitted ordering. Message-only events do not qualify origin/WARN assertions.
+Peer event follow-up37c4d9c4a remains unintegrated, latest gate pending CF-0121.
+Earlier3ef4e238a detached gate passes; FIFO13e0d4f96's race/pytest exit1 remains
+retained. HTTP entry fixes scheduling; latest source adds full setup cleanup,
+joined-state assertions and Shared(Context) lines. Shared Status classification
+needs a separate probe; message-only events do not qualify origin/WARN assertions.
 
 ## Independent reviews and open requests
 

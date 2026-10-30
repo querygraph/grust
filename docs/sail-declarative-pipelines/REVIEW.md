@@ -1699,3 +1699,8 @@ Sail `9579a7e8db8e4f6d08713690a88ecf30702886b5` preserves the existing resource 
 ## 2026-10-30T14:45:09.978142+00:00 — checkpoint writer error policy
 
 Sail `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` retains nested nonretryable causes through storage/Parquet/I/O classification, preserving ordinary categories. Four unchanged actual-publication writer controls fail before the fix and pass after. Exact fmt/strict Clippy,117 common +202 execution library,117+4 optimized CPU-load,300 public +67 upstream tests pass. [Evidence](evidence/checkpoint-writer-errors/README.md) retains the initially wrong ordinary fixture and unchanged-production baseline probe. No registry/session/writer-routing activation; pre-planning ownership and full original SDP acceptance remain incomplete.
+
+
+## 2026-10-30T15:16:11.162904+00:00 — operation-local store facade
+
+Sail `bebabdb9e7ef7d072ea39f9ec9ac536af86a3f50` retains mutation futures and multipart lifetime through an existing scope while preserving ordinary provider conditions.214 library and12 optimized CPU-load tests pass with fmt/strict Clippy. Actual checkpoint sequential/parallel ownership and real conditional-operation controls fail unchanged tests when the corresponding adapter is bypassed. [Evidence](evidence/owned-store-facade/README.md) retains all compile/fixture/capacity failures and superseded gates. No production registry/routing/session activation; next user-notified design checkpoint covers pre-planning ownership, bursts/byte bounds and handled conflict outcomes. Public verdict remains47c473e6b; full original SDP acceptance remains incomplete.

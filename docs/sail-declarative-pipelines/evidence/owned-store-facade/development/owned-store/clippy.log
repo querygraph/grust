@@ -1,0 +1,33 @@
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+error[E0603]: struct `Gate` is private
+  --> crates/sail-execution/src/owned_store_tests.rs:18:23
+   |
+18 | use provider::upload::Gate;
+   |                       ^^^^ private struct
+   |
+note: the struct `Gate` is defined here
+  --> crates/sail-execution/src/owned_multipart_test_upload.rs:24:1
+   |
+24 | pub(super) struct Gate {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+error: file is loaded as a module multiple times: `crates/sail-execution/src/owned_multipart_test_upload.rs`
+  --> crates/sail-execution/src/owned_multipart_tests.rs:16:1
+   |
+16 | / #[path = "owned_multipart_test_upload.rs"]
+17 | | mod fixture;
+   | |____________^ first loaded here
+   |
+  ::: crates/sail-execution/src/owned_store_test_provider.rs:13:1
+   |
+13 | / #[path = "owned_multipart_test_upload.rs"]
+14 | | pub(super) mod upload;
+   | |______________________^ loaded again here
+   |
+   = help: replace all but one `mod` item with `use` items
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#duplicate_mod
+   = note: `-D clippy::duplicate-mod` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::duplicate_mod)]`
+
+For more information about this error, try `rustc --explain E0603`.
+error: could not compile `sail-execution` (lib test) due to 2 previous errors
