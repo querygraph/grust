@@ -2,10 +2,10 @@
 
 Status: active design checkpoint, announced to the user for Astra. Source base
 Sail `bebabdb9e7ef7d072ea39f9ec9ac536af86a3f50`, DataFusion55.2.0 and
-object_store0.13.2. The finite-job lease lifecycle and caller-owned cancellation
-observation are selected directions below; the exact runner API, complete planning
-context overlay, handled-effect policy and writer memory mechanism are not yet
-selected or activated. This is not a full session/cluster/SDP verdict.
+object_store0.13.2. The finite-job lease lifecycle, caller-owned cancellation and
+local bound preparation API are implemented below. Planning callers, cluster
+preparation, complete context overlay, handled-effect policy and writer memory
+mechanism remain open. This is not a full session/cluster/SDP verdict.
 
 Continues [provider/runtime ownership](PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md),
 [stream preparation](LOCAL-STREAM-OWNERSHIP-DESIGN.md), and the
@@ -13,9 +13,10 @@ Continues [provider/runtime ownership](PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md),
 
 ## Observations that constrain the hook
 
-JobRunner.execute accepts an already-created physical plan. LocalJobRunner creates
-ScopedTaskContext, StreamPreparation and its job admission entry only after that
-call begins. Earlier resolver, DataFrame and physical-planner work is outside that
+JobRunner.execute accepts an already-created physical plan. On this historical base, LocalJobRunner creates
+ScopedTaskContext, StreamPreparation and admission only after that call begins.
+The later bound API below permits earlier admission; existing planning callers
+still use the legacy entry and remain outside that coverage. Earlier resolver, DataFrame and physical-planner work is outside that
 admission. Worker task preparation is different: its fresh task scope already
 precedes decoded-plan preparation and TaskMonitor execution. Do not transfer the
 local observation into an unsupported whole-cluster claim.
@@ -135,7 +136,7 @@ batch-forwarding task is introduced merely to make lifetimes 'static.
 
 Selected API shape: the preparation object is itself the bound executor. The
 caller never passes it back to an arbitrary runner. Its private implementation
-retains the runner core and admitted job identity; consuming the object prevents
+borrows the minting runner and retains the admitted job identity; consuming the object prevents
 duplicate execution, and there is no cross-runner argument to accidentally accept.
 The common object-safe surface under review is:
 
@@ -151,16 +152,21 @@ trait JobPreparation: Send + Sync {
         plan: Arc<dyn ExecutionPlan>,
     ) -> Result<SendableRecordBatchStream>;
 }
-// JobRunner::begin_preparation(&SessionContext) -> Result<Box<dyn JobPreparation>>
+// fn begin_preparation(&self, ctx: &SessionContext)
+//     -> Result<Box<dyn JobPreparation + '_>>
 ```
 
-This is the selected ownership shape, not an implemented runner trait or a final
-execution-context signature. begin must publish admission before planning and
-bind the authoritative context by identity, but must not blindly freeze execution
-configuration before handle_sql_config can mutate it. The capture/freeze point
-and private operation state still need an explicit API. Merely refreshing from the
-parent at execute would retain today's late capture but would not establish
-frozen per-query semantics against concurrent SET. Resolve that before activation.
+Implemented in Sail `a0a369baada5b3b78d66c11c6694191da72d6fe8` after helper
+`18bfee751f61c06a1597ead382de72f11ceae4dd`: the trait is object-safe and its object
+lifetime borrows the minting runner. No Arc-core refactor is needed. begin publishes
+admission before returning, stores an authoritative SessionContext clone sharing
+state and does not freeze config. execute captures TaskContext late and attaches
+the exact admitted owner. Legacy local execute delegates through this object.
+Cluster/other runners keep legacy execute and default to unsupported preparation;
+no generic planning caller has migrated. [Evidence](evidence/local-bound-preparation/README.md)
+qualifies the local lifecycle, late config-state mutation and legacy regressions.
+The operation capture/freeze boundary and private state still need an explicit API;
+late capture alone does not establish per-query isolation against concurrent SET.
 
 The typed primary result stays with the caller; finish/cancel take no error input.
 The returned control supplies cleanup observation, while cancel's control outcome
@@ -183,8 +189,9 @@ Primary planning errors and cleanup outcomes must remain distinct typed values.
 The lease must not return the first display string, lose a structured Spark error,
 or convert a cleanly joined ordinary analysis failure into an unresolved effect.
 An abandoned preparation still differs from an owner that confirmed backend cleanup.
-Exact failure/handoff API and coordinator binding are the next implementation design
-unit; the observation seam can land independently without claiming those APIs exist.
+The local bound object and no-stream exits now exist. Typed primary/cleanup
+transport, general context propagation and cluster ownership remain next work;
+the component gates do not qualify those absent caller paths.
 
 ## Session authority and snapshot rules still needing an exact API
 

@@ -1719,3 +1719,8 @@ Test-only Sail `d8e5213c6461a64874d59ef565c07eb943b8d3fb` qualifies CF-0127's co
 ## 2026-10-30T16:07:36.969625+00:00 — no-stream preparation exits and bound-executor API
 
 Sail `f9adaaf41653a38b8dfb0f32684428ea0b0ef8de` adds finish/cancel exits without consuming the caller result.124 library/124 optimized tests plus fmt/strict Clippy pass; monotonic-cancellation control fails unchanged assertion. [Evidence](evidence/preparation-no-stream/README.md). [Design](PRE-PLANNING-OWNERSHIP-DESIGN.md) selects a move-only preparation executor bound to its runner, avoiding cross-runner ticket handoff; CF-0131 confirms compatibility with unit4 lowering. Exact context capture after authoritative config mutation and simultaneous-error transport remain open; no runner/registry/protocol activation.
+
+
+## 2026-10-30T16:32:35.536477+00:00 — existing owner and local bound preparation
+
+Sail `18bfee751f61c06a1597ead382de72f11ceae4dd` attaches an existing exact scope ([helper evidence](evidence/task-context-existing-owner/README.md));125 library/125 optimized tests pass. Sail `a0a369baada5b3b78d66c11c6694191da72d6fe8` adds common JobPreparation and the local runner-bound implementation, preserving authoritative shared state with late execution capture.375 library/16 optimized tests, fmt/strict Clippy and rebuilt CLI300 public+67 upstream pass; unchanged admission-bypass control fails. [Evidence](evidence/local-bound-preparation/README.md). No planning callers are migrated; cluster preparation, context overlay/routing, outcome/byte/recovery policy and full original SDP acceptance remain open.

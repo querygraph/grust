@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T16:29:27.581357+00:00. Live coordination read through **CF-0133**.
+Snapshot written 2026-10-30T16:32:35.536477+00:00. Live coordination read through **CF-0134**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -48,9 +48,9 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `18bfee751f61c06a1597ead382de72f11ceae4dd` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `a0a369baada5b3b78d66c11c6694191da72d6fe8` |
 | Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `817ae5a68dc665fb5abd8bc2a9a8680ffca00208` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `a0a369baa` (gate running) |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `a0a369baa` (all gates terminal/passed) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `37c4d9c4a52718ec3bfa7af99cb033ea67779b8f` (event follow-up offered/unintegrated CF-0121) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `e349107a3190a0acc890ea4baf73446d313c3c46` |
@@ -158,49 +158,39 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest fresh public CLI gate is exactly **47c473e6b**:300 selected public and
-67 upstream Python executions pass with rebuilt CLI/source/binary receipts and
-owned server stopped. The previous a2cee8f00 public verdict remains archived.
-Earlier gates are terminal; see the active unit below before touching gate processes.
+Latest fresh public CLI gate is **a0a369baada5b3b78d66c11c6694191da72d6fe8**:
+300 selected public +67 upstream Python executions pass, rebuilt CLI pinned and
+owned server stopped (exit0/no listeners). Session5964 is terminal. Earlier public
+verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Active local preparation implementation (CF-0133)
+## Active local preparation implementation (CF-0134)
 
-Coordinator HEAD **18bfee751** is committed: ScopedTaskContext.from_resources
-attaches the already-admitted exact owner; new() still creates a fresh scope.
-125 common library/125 optimized tests pass. New runner API/implementation remains
-dirty: common session/job.rs, context doc, execution job_runner.rs/local.rs and
-local/preparation.rs, tests.rs, preparation_tests.rs. Candidate
-`a0a369baada5b3b78d66c11c6694191da72d6fe8`, label local-bound-preparation-qualified,
-passes fmt/strict Clippy,125 common-datafusion+221 execution+29 session library
-and16 optimized local tests under ten CPU-load workers, all joined. Admission-
-bypass control761c11853 fails unchanged registry assertion (exit101,0 versus1).
-Session5964 now runs the fresh public CLI build/gate on that detached candidate.
-Do not move its gate or launch a competing server50094 until terminal.
-Earlierc3cc4df2f passes125+220+29; final adds unpolled-execute cancellation coverage.
+Coordinator HEAD **a0a369baada5b3b78d66c11c6694191da72d6fe8** is committed/clean.
+Parent18bfee751 adds ScopedTaskContext.from_resources;125 library/125 optimized
+common tests pass. [Helper packet](docs/sail-declarative-pipelines/evidence/task-context-existing-owner/README.md).
+The final local unit passes fmt/strict Clippy,125 common-datafusion+221 execution
++29 session libraries,16 optimized local tests under ten joined load workers,
+and300 public+67 upstream tests. Admission-bypass761c11853 fails unchanged registry
+assertion0 versus1. [Full packet](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md)
+retains initialc3cc4df2f positive, final gates, negative control and exact source.
+The first qualifier had a suffix-newline expectation error; no product/test changed.
 
-The move-only object borrows its minting runner, so no Arc-core refactor or cross-
-runner argument exists. Admission is in the existing stop-visible map before
-planning. It clones authoritative SessionContext by sharing state, capturing the
-TaskContext only at execution and reusing the exact scope. This preserves legacy
-late capture; it does not establish a frozen operation-state overlay. Existing
-local execute delegates through the object. Cluster execute stays intact; the new
-optional preparation capability is unimplemented there. No planning caller or
-registry/byte/outcome policy is activated. Next: inspect session5964 and the receipt/logs under
-/tmp/sail-sdp-local-bound-preparation-public before qualifying or advancing.
+The move-only object borrows its minting runner. Admission reaches the existing
+stop-visible map before planning. It stores an authoritative SessionContext clone
+sharing state; TaskContext capture occurs at execute and reuses the exact scope.
+This preserves late capture, not a frozen operation overlay. Existing local execute
+delegates. Other runners keep legacy execute/default unsupported preparation.
+No planning callers or registry/byte/outcome policy are activated. The trait's
+resources/control and consuming finish/cancel keep typed planning results separate.
+CF-0134 posts DONE to Fable; it does not approve independent shared-runtime edits.
 
-[Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) remains
-active for Astra; typed cleanup/primary errors stay separate. Prior no-stream
-[finish/cancel](docs/sail-declarative-pipelines/evidence/preparation-no-stream/README.md),
-[registered-I/O](docs/sail-declarative-pipelines/evidence/planning-cancellation-observer/README.md)
-and [context probe](docs/sail-declarative-pipelines/evidence/planning-context-design-probe/README.md)
-retain exact controls and failures. Public CLI verdict remains47c473e6b.
-Receipts: /tmp/sail-sdp-local-bound-preparation-qualified-{gate.json,rust.log};
-/tmp/sail-sdp-local-preparation-admission-control-receipt.json; optimized receipt
-/tmp/sail-sdp-local-bound-preparation-qualified-sail-execution-release/receipt.json.
-After exact qualification, conditionally advance the candidate, archive both the
-18bfee helper and local unit evidence in Grust, update design/REVIEW and post DONE.
-Context capture, caller/cluster migration, routing, memory/outcome/recovery and
-original SDP acceptance remain incomplete.
+[Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) remains active
+for Astra. Next: explicit operation-state/capture authority and typed primary+
+cleanup transport, then actual planning-caller and cluster migration. Resolver
+helper queries/provider factories must participate; final-only TaskContext routing
+misses planning I/O. Archive updates to design/REVIEW and handoff are in this unit.
+No active coordinator gate remains after session5964; recheck live state on resume.
+Context overlay, routing, memory/outcome/recovery and original acceptance remain open.
 
 ## Acceptance accounting and major remaining work
 

@@ -1,0 +1,49 @@
+diff --git a/crates/sail-common-datafusion/src/task_resources_context.rs b/crates/sail-common-datafusion/src/task_resources_context.rs
+index 56bde7bbc..b0c520354 100644
+--- a/crates/sail-common-datafusion/src/task_resources_context.rs
++++ b/crates/sail-common-datafusion/src/task_resources_context.rs
+@@ -19,7 +19,13 @@ pub struct ScopedTaskContext {
+ 
+ impl ScopedTaskContext {
+     pub fn new(parent: &TaskContext, runtime: Handle) -> Self {
+-        let resources = Arc::new(TaskResourceScope::new(runtime));
++        Self::from_resources(parent, Arc::new(TaskResourceScope::new(runtime)))
++    }
++
++    /// Preserve the parent's execution state while attaching this exact existing
++    /// owner. This does not admit a job, create another scope, or qualify cleanup;
++    /// the runner must already own admission and the scope's lifecycle.
++    pub fn from_resources(parent: &TaskContext, resources: Arc<TaskResourceScope>) -> Self {
+         let config = parent
+             .session_config()
+             .clone()
+diff --git a/crates/sail-common-datafusion/src/task_resources_context_tests.rs b/crates/sail-common-datafusion/src/task_resources_context_tests.rs
+index 6fffa6f04..382f62284 100644
+--- a/crates/sail-common-datafusion/src/task_resources_context_tests.rs
++++ b/crates/sail-common-datafusion/src/task_resources_context_tests.rs
+@@ -133,3 +133,25 @@ async fn cancellation_isolated_from_sibling_and_parent_contexts() -> TestResult
+ }
+ #[path = "task_resources_registry_context_tests.rs"]
+ mod registry;
++
++#[tokio::test]
++async fn externally_admitted_owner_is_reused_without_affecting_parent() -> TestResult {
++    let parent = parent();
++    let original = parent.extension::<TaskResourceScope>()?;
++    let resources = Arc::new(TaskResourceScope::new(Handle::current()));
++    let child = ScopedTaskContext::from_resources(&parent, resources.clone());
++    assert!(Arc::ptr_eq(&resources, &child.resources));
++    assert!(Arc::ptr_eq(
++        &resources,
++        &child.context.extension::<TaskResourceScope>()?
++    ));
++    resources.cancel()?;
++    assert!(child.resources.spawn(|_| async { Ok(()) }).is_err());
++    original.spawn(|canceled| async move {
++        assert!(!*canceled.borrow());
++        Ok(())
++    })?;
++    assert_eq!(original.drain().await?.registered, 1);
++    assert_eq!(resources.drain().await?.registered, 0);
++    Ok(())
++}
