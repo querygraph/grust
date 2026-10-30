@@ -1,0 +1,121 @@
+{
+  "recorded_at": "2026-10-30T05:13:41.809460+00:00",
+  "author": "Fable",
+  "unit": "STREAMING-CDC-PARALLEL-HANDOFF.md first reviewable commit 1: CDC argument and definition validation",
+  "pins": {
+    "spark": "617618396087429b5627a86ce933bb0f5d6645cb",
+    "sail_base": "779cb136d988c759a381ea1ace6c2e7649e3dbbc",
+    "grust_docs_base": "502cd4f2fedd4c5ab2fd4e5eae3078ce150fa230",
+    "iggy": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+    "lakecat": "27e18f390c450c187a34b1c3bb2037c26d107699",
+    "pyspark_client": "4.2.1"
+  },
+  "commits": [
+    {
+      "repository": "querygraph/grust",
+      "branch": "work/sdp-streaming-cdc-fable",
+      "commit": "1493d8a36ea87b064f382ee3465b82a322dee842",
+      "content": "crates/grust-columns kernel, workspace member, CHANGELOG entry"
+    },
+    {
+      "repository": "sail (Fable worktree)",
+      "branch": "work/sdp-streaming-cdc-fable",
+      "commit": "d07a95c2cb0c749a741a0a1b6fc21bfbfe287347",
+      "content": "vendor/grust-columns with SOURCE.json, workspace member, Cargo.lock"
+    },
+    {
+      "repository": "sail (Fable worktree)",
+      "branch": "work/sdp-streaming-cdc-fable",
+      "commit": "167d577c6567a68d1f94ae039c5793679252102b",
+      "content": "pipelines/autocdc module, DefineFlow arm, graph validations, Rust and Connect tests"
+    }
+  ],
+  "platform": "macOS arm64 (Fable worktree, private target directory, not a detached gate)",
+  "checks": [
+    {
+      "command": "grust-columns standalone copy: cargo +1.98.1 clippy --all-targets -- -D warnings; cargo +1.98.1 test; cargo +1.85.0 check",
+      "outcome": "passed",
+      "tests": 16,
+      "log": "logs/grust-columns-gate.log"
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/verify_vendor.py",
+      "outcome": "passed",
+      "note": "grust-columns verified from 1493d8a36ea87b064f382ee3465b82a322dee842"
+    },
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect",
+      "outcome": "passed"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --locked -- -D warnings",
+      "outcome": "passed",
+      "log": "logs/sail-clippy.log"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked -- pipelines::autocdc",
+      "outcome": "passed",
+      "tests": 55,
+      "log": "logs/sail-autocdc-tests.log"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "failed",
+      "passed": 125,
+      "failed": 2,
+      "log": "logs/sail-spark-connect-lib-tests.log",
+      "note": "The two session_manager::orc_options_tests failures (expected Zstd, observed Snappy after unset) reproduce on the untouched base with this unit's changes stashed; see logs/orc-options-control-on-base.log. They are outside this unit and unexplained here."
+    },
+    {
+      "command": "control: git stash of this unit, cargo +1.98.1 test -p sail-spark-connect --lib -- session_manager::orc_options_tests",
+      "outcome": "failed",
+      "passed": 7,
+      "failed": 2,
+      "log": "logs/orc-options-control-on-base.log"
+    },
+    {
+      "command": "maturin develop --uv (sail-python, debug) into .venvs/fable-spark-4.2.1 with pyspark[connect]==4.2.1",
+      "outcome": "passed",
+      "log": "logs/maturin-develop-head.log"
+    },
+    {
+      "command": "pytest python/pysail/tests/spark/pipelines/test_autocdc_definition.py (in-process PySail server)",
+      "outcome": "passed",
+      "tests": 16,
+      "log": "logs/pytest-autocdc.log"
+    },
+    {
+      "command": "pytest python/pysail/tests/spark/pipelines (in-process PySail server)",
+      "outcome": "passed",
+      "tests": 225,
+      "log": "logs/pytest-pipelines.log",
+      "junit": "logs/pytest-pipelines.xml"
+    },
+    {
+      "command": "scripts/spark-pipelines-tests/run.py --spark-source pinned Spark checkout --remote sc://localhost:<port> (in-process PySail server)",
+      "outcome": "passed",
+      "tests": 67,
+      "report": "spark-python.json",
+      "log": "logs/spark-python.log"
+    },
+    {
+      "command": "uvx ruff@0.17.3 check/format --check python/pysail/tests/spark/pipelines/test_autocdc_definition.py",
+      "outcome": "passed"
+    }
+  ],
+  "assertion_crosswalk": {
+    "file": "assertions.json",
+    "counts": {
+      "ported": 44,
+      "partial": 13,
+      "not-ported": 6
+    },
+    "note": "Statuses map original Spark call sites to Sail tests; they do not change the canonical 462-registration inventory, which Codex maintains."
+  },
+  "limits": [
+    "No detached gate: checks ran in the Fable worktree with its own target directory on an immutable committed tree, not in a separate checkout.",
+    "No streaming, Iggy, durable store, reconciliation or MERGE runtime; execution of any streaming-table pipeline is still rejected before a write.",
+    "Resolution-time validators are tested over field names only and are not wired into analysis.",
+    "The original Scala suites did not execute against Sail; the Rust ports and Connect-level Python cases are the executed evidence."
+  ]
+}
