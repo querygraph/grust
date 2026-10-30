@@ -1,0 +1,108 @@
+95:     pub dependencies: BTreeMap<Name, BTreeSet<Name>>,
+96:     pub relations: BTreeMap<Name, LogicalPlan>,
+97: }
+98: 
+99: pub(super) async fn analyze(
+100:     ctx: &SessionContext,
+101:     graph: &GraphDefinition,
+102: ) -> SparkResult<AnalyzedGraph> {
+103:     graph.validate()?;
+104:     let spark = ctx.extension::<SparkSession>()?;
+105:     let mut resolved = BTreeMap::new();
+106:     let mut order = vec![];
+107:     let mut dependencies = BTreeMap::new();
+108:     while order.len() < graph.outputs.len() {
+109:         let before = order.len();
+110:         for output in &graph.outputs {
+111:             if resolved.contains_key(&output.name) {
+112:                 continue;
+113:             }
+114:             let mut inputs = BTreeSet::new();
+115:             let mut plans = vec![];
+116:             let mut pending = false;
+117:             for flow in graph.flows.iter().filter(|x| x.target == output.name) {
+118:                 let scope = GraphScope {
+119:                     graph,
+120:                     resolved: &resolved,
+121:                     reads: Mutex::default(),
+122:                     flow,
+123:                 };
+124:                 let config = spark.plan_config_with_overrides(flow.sql_conf.clone())?;
+125:                 let resolver = PlanResolver::new(ctx, config).with_relation_scope(&scope);
+126:                 let result = resolver
+127:                     .resolve_named_plan(spec::Plan::Query(flow.query.clone()))
+128:                     .await;
+129:                 inputs.extend(scope.reads.into_inner()?);
+130:                 match result {
+131:                     Ok(plan) => {
+132:                         let plan = if let Some(fields) = plan.fields {
+133:                             rename_logical_plan(plan.plan, &fields)?
+134:                         } else {
+135:                             plan.plan
+136:                         };
+137:                         plans.push(plan);
+138:                     }
+139:                     Err(PlanError::UnresolvedRelation(_)) => {
+140:                         pending = true;
+141:                         break;
+142:                     }
+143:                     Err(error) => return Err(error.into()),
+144:                 }
+145:             }
+146:             dependencies.insert(output.name.clone(), inputs);
+147:             if pending {
+148:                 continue;
+149:             }
+150:             if output.view.is_some()
+151:                 && let Some(temporary) = graph.outputs.iter().find(|candidate| {
+152:                     candidate.kind == OutputType::TemporaryView
+153:                         && dependencies[&output.name].contains(&candidate.name)
+154:                 })
+155:             {
+156:                 return Err(Box::new(StructuredSparkError {
+157:                     class: "org.apache.spark.sql.AnalysisException".into(),
+158:                     condition: "INVALID_TEMP_OBJ_REFERENCE".into(),
+159:                     sql_state: "42K0F".into(),
+160:                     message: format!(
+161:                         "view {} references temporary view {}",
+162:                         quoted(&output.name),
+163:                         quoted(&temporary.name)
+164:                     ),
+165:                     parameters: HashMap::from([
+166:                         ("obj".into(), "view".into()),
+167:                         ("objName".into(), quoted(&output.name)),
+168:                         ("tempObj".into(), "temporary view".into()),
+169:                         ("tempObjName".into(), quoted(&temporary.name)),
+170:                     ]),
+171:                 })
+172:                 .into());
+173:             }
+174:             let plan = if output.kind == OutputType::TemporaryView {
+175:                 if plans.len() != 1 {
+176:                     return Err(analysis("MULTIPLE_QUERIES_FOR_VIEW", quoted(&output.name)));
+177:                 }
+178:                 plans.remove(0)
+179:             } else {
+180:                 let schema = super::schema::infer(ctx, output, &plans)?;
+181:                 LogicalPlan::EmptyRelation(EmptyRelation {
+182:                     produce_one_row: false,
+183:                     schema: Arc::new(DFSchema::try_from(schema)?),
+184:                 })
+185:             };
+186:             resolved.insert(output.name.clone(), plan);
+187:             order.push(output.name.clone());
+188:         }
+189:         if before == order.len() {
+190:             // Even partial resolution records the blocked dependency for every
+191:             // pending output. Grust returns the closed cycle, without naming
+192:             // unrelated consumers as members of it.
+193:             super::topology::order(&dependencies)?;
+194:             let pending = graph
+195:                 .outputs
+196:                 .iter()
+197:                 .filter(|x| !resolved.contains_key(&x.name))
+198:                 .map(|x| quoted(&x.name))
+199:                 .collect::<Vec<_>>()
+200:                 .join(", ");
+201:             return Err(analysis("PIPELINE_CIRCULAR_DEPENDENCY", pending));
+202:         }

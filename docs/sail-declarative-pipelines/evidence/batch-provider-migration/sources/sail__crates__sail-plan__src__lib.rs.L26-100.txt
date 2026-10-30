@@ -1,0 +1,58 @@
+26: pub mod resolver;
+27: mod streaming;
+28: 
+29: /// Executes a logical plan.
+30: /// Catalog commands and barrier nodes are handled by the physical planner.
+31: pub async fn execute_logical_plan(ctx: &SessionContext, plan: LogicalPlan) -> Result<DataFrame> {
+32:     let df = ctx.execute_logical_plan(plan).await?;
+33:     Ok(df)
+34: }
+35: 
+36: pub async fn resolve_and_execute_plan(
+37:     ctx: &SessionContext,
+38:     config: Arc<PlanConfig>,
+39:     plan: spec::Plan,
+40: ) -> PlanResult<(Arc<dyn ExecutionPlan>, Vec<StringifiedPlan>)> {
+41:     resolve_and_execute_plan_with_scope(ctx, config, plan, None).await
+42: }
+43: 
+44: /// Resolve with an optional caller-local namespace, then use the same optimizer,
+45: /// streaming rewrite, physical planner, and field-renaming path as other queries.
+46: pub async fn resolve_and_execute_plan_with_scope(
+47:     ctx: &SessionContext,
+48:     config: Arc<PlanConfig>,
+49:     plan: spec::Plan,
+50:     scope: Option<&dyn RelationScope>,
+51: ) -> PlanResult<(Arc<dyn ExecutionPlan>, Vec<StringifiedPlan>)> {
+52:     let mut info = vec![];
+53:     let resolver = PlanResolver::new(ctx, config);
+54:     let resolver = match scope {
+55:         Some(scope) => resolver.with_relation_scope(scope),
+56:         None => resolver,
+57:     };
+58:     let NamedPlan { plan, fields } = resolver.resolve_named_plan(plan).await?;
+59:     info.push(plan.to_stringified(PlanType::InitialLogicalPlan));
+60:     let df = execute_logical_plan(ctx, plan).await?;
+61:     let (session_state, plan) = df.into_parts();
+62:     let plan = session_state.optimize(&plan)?;
+63:     let plan = if is_streaming_plan(&plan)? {
+64:         rewrite_streaming_plan(plan)?
+65:     } else {
+66:         plan
+67:     };
+68:     info.push(plan.to_stringified(PlanType::FinalLogicalPlan));
+69:     let plan = session_state
+70:         .query_planner()
+71:         .create_physical_plan(&plan, &session_state)
+72:         .await?;
+73:     let plan = if let Some(fields) = fields {
+74:         rename_physical_plan(plan, &fields)?
+75:     } else {
+76:         plan
+77:     };
+78:     info.push(StringifiedPlan::new(
+79:         PlanType::FinalPhysicalPlan,
+80:         displayable(plan.as_ref()).indent(true).to_string(),
+81:     ));
+82:     Ok((plan, info))
+83: }

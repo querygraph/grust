@@ -1,0 +1,24 @@
+98:         OrcReadSessionModes,
+99:         OrcWriteSessionDefaults,
+100:     )> {
+101:         let state = self.state.lock()?;
+102:         Ok((
+103:             state.config.orc_listing_defaults()?,
+104:             state.config.orc_read_modes(),
+105:             state.config.orc_write_defaults()?,
+106:         ))
+107:     }
+108: 
+109:     pub(crate) fn plan_config_with_overrides(
+110:         &self,
+111:         overrides: impl IntoIterator<Item = (String, String)>,
+112:     ) -> SparkResult<Arc<PlanConfig>> {
+113:         let mut runtime = self.state.lock()?.config.clone();
+114:         for (key, value) in overrides {
+115:             runtime.set(key, value)?;
+116:         }
+117:         let mut config = PlanConfig::try_from(&runtime)?;
+118:         config.session_user_id = self.user_id().to_string();
+119:         Ok(Arc::new(config))
+120:     }
+121: 

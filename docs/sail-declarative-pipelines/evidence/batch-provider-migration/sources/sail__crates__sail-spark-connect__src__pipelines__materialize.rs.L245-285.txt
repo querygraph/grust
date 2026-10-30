@@ -1,0 +1,41 @@
+245: /// Publish every persisted view from its analyzed definition, regardless of
+246: /// table refresh selection. An excluded upstream table need not exist yet.
+247: pub(super) async fn views(
+248:     ctx: &SessionContext,
+249:     graph: &GraphDefinition,
+250:     analyzed: &AnalyzedGraph,
+251: ) -> SparkResult<()> {
+252:     let spark = ctx.extension::<SparkSession>()?;
+253:     for name in &analyzed.order {
+254:         let output = graph
+255:             .outputs
+256:             .iter()
+257:             .find(|output| &output.name == name)
+258:             .ok_or_else(|| SparkError::internal("analyzed output missing"))?;
+259:         let Some(mut definition) = output.view.clone() else {
+260:             continue;
+261:         };
+262:         let flow = graph
+263:             .flows
+264:             .iter()
+265:             .find(|flow| &flow.target == name)
+266:             .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", quoted(name)))?;
+267:         let scope = GraphScope {
+268:             graph,
+269:             resolved: &analyzed.relations,
+270:             reads: Mutex::default(),
+271:             flow,
+272:         };
+273:         definition.replace = true;
+274:         definition.if_not_exists = false;
+275:         run_command(
+276:             ctx,
+277:             spark.plan_config_with_overrides(flow.sql_conf.clone())?,
+278:             spec::CommandNode::CreateView {
+279:                 view: name.clone().into(),
+280:                 definition,
+281:             },
+282:             Some(&scope),
+283:         )
+284:         .await?;
+285:     }

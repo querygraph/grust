@@ -1,0 +1,47 @@
+90:                 ));
+91:             }
+92:             let mut plan = cte.plan.as_ref().clone();
+93:             if let Some(names) = cte.renew_reference(state)? {
+94:                 plan = rename_logical_plan_reusing_projection(plan, &names)?;
+95:                 state.register_missing_input_boundary(&plan);
+96:             }
+97:             return if let Some(table_sample) = sample {
+98:                 self.apply_table_sample(plan, table_sample, state).await
+99:             } else {
+100:                 Ok(plan)
+101:             };
+102:         }
+103: 
+104:         let reference: Vec<String> = name.clone().into();
+105:         if let Some(scope) = self.relation_scope
+106:             && let Some(plan) = scope.resolve(&reference)?
+107:         {
+108:             if temporal.is_some() {
+109:                 return Err(PlanError::unsupported("time travel on a scoped relation"));
+110:             }
+111:             let names = state.register_fields(plan.schema().inner().fields());
+112:             let plan = rename_logical_plan(plan, &names)?;
+113:             let plan = LogicalPlan::SubqueryAlias(SubqueryAlias::try_new(
+114:                 Arc::new(plan),
+115:                 table_reference?,
+116:             )?);
+117:             state.register_missing_input_boundary(&plan);
+118:             return if let Some(table_sample) = sample {
+119:                 self.apply_table_sample(plan, table_sample, state).await
+120:             } else {
+121:                 Ok(plan)
+122:             };
+123:         }
+124:         let reference = match self.relation_scope {
+125:             Some(scope) => scope.qualify(&reference)?,
+126:             None => reference,
+127:         };
+128:         let manager = self.ctx.extension::<CatalogManager>()?;
+129:         let data_source_registry = self.ctx.extension::<DataSourceRegistry>()?;
+130:         let (status, catalog_reference, lake_relation) =
+131:             match manager.get_table_or_view(&reference).await {
+132:                 Ok(status) => (status, reference.clone(), None),
+133:                 Err(error @ CatalogError::NotFound(_, _))
+134:                 | Err(error @ CatalogError::NotSupported(_)) => {
+135:                     let Some((candidate_name, base_reference)) = reference.split_last() else {
+136:                         return Err(error.into());

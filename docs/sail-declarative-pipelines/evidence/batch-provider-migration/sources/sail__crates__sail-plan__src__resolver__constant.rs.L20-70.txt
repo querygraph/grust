@@ -1,0 +1,51 @@
+20:     /// Resolve SQL's catalog-name expression without selecting a catalog or
+21:     /// executing a query. Direct Catalog API names do not need this SQL parsing.
+22:     pub async fn resolve_catalog_name(&self, expression: spec::Expr) -> PlanResult<String> {
+23:         let expression = match expression {
+24:             spec::Expr::UnresolvedAttribute { name, .. } => {
+25:                 spec::Expr::Literal(spec::Literal::Utf8 {
+26:                     value: Some(quote_names_if_needed(name.parts())),
+27:                 })
+28:             }
+29:             spec::Expr::IdentifierClause { expr } => *expr,
+30:             expression => expression,
+31:         };
+32:         let schema = Arc::new(DFSchema::empty());
+33:         let mut state = PlanResolverState::new();
+34:         state.config_mut().require_foldable = true;
+35:         let resolved = self
+36:             .resolve_expression(expression, &schema, &mut state)
+37:             .await
+38:             .map_err(|error| PlanError::analysis(error.to_string()))?;
+39:         let context = SimplifyContextBuilder::default()
+40:             .with_schema(schema.clone())
+41:             .with_current_time()
+42:             .build();
+43:         let simplifier = ExprSimplifier::new(context);
+44:         let resolved = simplifier
+45:             .coerce(resolved, &schema)
+46:             .map_err(|error| PlanError::analysis(error.to_string()))?;
+47:         // Type validation precedes evaluation: an integer division by zero is
+48:         // a wrong-type error here, while its CAST AS STRING may fail execution.
+49:         if !matches!(
+50:             resolved.get_type(schema.as_ref())?,
+51:             DataType::Utf8 | DataType::LargeUtf8 | DataType::Utf8View
+52:         ) {
+53:             return Err(PlanError::analysis(
+54:                 "[NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type",
+55:             ));
+56:         }
+57:         let resolved = simplifier.simplify(resolved)?;
+58:         let scalar = LiteralEvaluator::new().evaluate(&resolved)?;
+59:         if scalar.is_null() {
+60:             return Err(PlanError::analysis(
+61:                 "[NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+62:             ));
+63:         }
+64:         let text = LiteralValue(&scalar).try_to_string()?;
+65:         let name = from_ast_object_name(
+66:             parse_object_name(text).map_err(|error| PlanError::analysis(error.to_string()))?,
+67:         )?;
+68:         match Vec::<String>::from(name).as_slice() {
+69:             [name] => Ok(name.clone()),
+70:             _ => Err(PlanError::analysis(

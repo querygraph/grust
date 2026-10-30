@@ -1,0 +1,35 @@
+35: impl ScalarUDFImpl for TimestampNow {
+36:     fn name(&self) -> &str {
+37:         "timestamp_now"
+38:     }
+39: 
+40:     fn signature(&self) -> &Signature {
+41:         &self.signature
+42:     }
+43: 
+44:     fn return_type(&self, _arg_types: &[DataType]) -> Result<DataType> {
+45:         Ok(DataType::Timestamp(
+46:             *self.time_unit(),
+47:             Some(self.session_timezone().into()),
+48:         ))
+49:     }
+50: 
+51:     fn invoke_with_args(&self, _args: ScalarFunctionArgs) -> Result<ColumnarValue> {
+52:         internal_err!("invoke should not be called on a simplified timestamp_now() function")
+53:     }
+54: 
+55:     fn simplify(&self, _args: Vec<Expr>, info: &SimplifyContext) -> Result<ExprSimplifyResult> {
+56:         let now = info.query_execution_start_time().unwrap_or_default();
+57:         let now = match self.time_unit() {
+58:             TimeUnit::Second => Some(now.timestamp()),
+59:             TimeUnit::Millisecond => Some(now.timestamp_millis()),
+60:             TimeUnit::Microsecond => Some(now.timestamp_micros()),
+61:             TimeUnit::Nanosecond => now.timestamp_nanos_opt(),
+62:         };
+63:         let expr = Expr::Cast(datafusion_expr::Cast::new(
+64:             Box::new(Expr::Literal(ScalarValue::Int64(now), None)),
+65:             DataType::Timestamp(*self.time_unit(), Some(self.session_timezone().into())),
+66:         ));
+67:         Ok(ExprSimplifyResult::Simplified(expr))
+68:     }
+69: }

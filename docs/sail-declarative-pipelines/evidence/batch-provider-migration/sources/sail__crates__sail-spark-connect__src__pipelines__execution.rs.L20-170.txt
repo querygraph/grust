@@ -1,0 +1,146 @@
+20: use crate::spark::connect::{OutputType, pipeline_command as pc};
+21: 
+22: pub(super) async fn execute(
+23:     ctx: &SessionContext,
+24:     graph: &GraphDefinition,
+25:     analyzed: AnalyzedGraph,
+26:     selection: Selection,
+27: ) -> SparkResult<()> {
+28:     // Reject unsupported modes before the first write, rather than partially
+29:     // publishing a batch graph that contains an incremental or sink output.
+30:     if graph
+31:         .outputs
+32:         .iter()
+33:         .any(|x| matches!(x.kind, OutputType::Table | OutputType::Sink))
+34:     {
+35:         return Err(SparkError::unsupported("incremental pipeline execution"));
+36:     }
+37:     let spark = ctx.extension::<SparkSession>()?;
+38:     super::materialize::tables(ctx, graph, &analyzed, &selection).await?;
+39:     super::materialize::views(ctx, graph, &analyzed).await?;
+40:     let mut resolved = BTreeMap::new();
+41:     for name in analyzed.order {
+42:         let output = graph
+43:             .outputs
+44:             .iter()
+45:             .find(|x| x.name == name)
+46:             .ok_or_else(|| SparkError::internal("analyzed output missing"))?;
+47:         if output.view.is_some()
+48:             || !selection.required.contains(&name)
+49:             || (output.kind != OutputType::TemporaryView && !selection.runs(&name))
+50:         {
+51:             continue;
+52:         }
+53:         // Read catalog inputs only when a query consumes them, after selected
+54:         // upstream tables have been written. A view-only refresh does no reads.
+55:         for input in analyzed.dependencies.get(&name).into_iter().flatten() {
+56:             if graph.outputs.iter().any(|output| {
+57:                 &output.name == input
+58:                     && output.kind != OutputType::TemporaryView
+59:                     && (output.view.is_some() || !resolved.contains_key(input))
+60:             }) {
+61:                 resolved.insert(input.clone(), read_output(ctx, input.clone()).await?);
+62:             }
+63:         }
+64:         let flow = graph
+65:             .flows
+66:             .iter()
+67:             .find(|x| x.target == name)
+68:             .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", name.join(".")))?;
+69:         let config = spark.plan_config_with_overrides(flow.sql_conf.clone())?;
+70:         let scope = GraphScope {
+71:             graph,
+72:             resolved: &resolved,
+73:             reads: Mutex::default(),
+74:             flow,
+75:         };
+76:         let resolver = PlanResolver::new(ctx, config.clone()).with_relation_scope(&scope);
+77:         if output.kind == OutputType::TemporaryView {
+78:             let plan = resolver
+79:                 .resolve_named_plan(spec::Plan::Query(flow.query.clone()))
+80:                 .await?;
+81:             let plan = match plan.fields {
+82:                 Some(fields) => rename_logical_plan(plan.plan, &fields)?,
+83:                 None => plan.plan,
+84:             };
+85:             resolved.insert(name, plan);
+86:             continue;
+87:         }
+88:         run_command(ctx, config, table_write_command(output, flow), Some(&scope)).await?;
+89:         // Downstream flows scan the newly committed table. They must not inline
+90:         // and recompute the producer's definition, especially for nondeterminism.
+91:         resolved.insert(name.clone(), read_output(ctx, name).await?);
+92:     }
+93:     Ok(())
+94: }
+95: 
+96: pub(super) async fn run_command(
+97:     ctx: &SessionContext,
+98:     config: Arc<PlanConfig>,
+99:     command: spec::CommandNode,
+100:     scope: Option<&dyn RelationScope>,
+101: ) -> SparkResult<()> {
+102:     let (physical, _) = resolve_and_execute_plan_with_scope(
+103:         ctx,
+104:         config,
+105:         spec::Plan::Command(spec::CommandPlan::new(command)),
+106:         scope,
+107:     )
+108:     .await?;
+109:     let service = ctx.extension::<JobService>()?;
+110:     let mut stream = service.runner().execute(ctx, physical).await?;
+111:     while stream.try_next().await?.is_some() {}
+112:     Ok(())
+113: }
+114: 
+115: fn table_write_command(output: &Output, flow: &Flow) -> spec::CommandNode {
+116:     let details = match &output.definition.details {
+117:         Some(pc::define_output::Details::TableDetails(details)) => details.clone(),
+118:         _ => pc::define_output::TableDetails::default(),
+119:     };
+120:     spec::CommandNode::WriteTo(spec::WriteTo {
+121:         input: Box::new(flow.query.clone()),
+122:         provider: details.format,
+123:         table: output.name.clone().into(),
+124:         mode: spec::WriteToMode::Append,
+125:         partitioning_columns: details
+126:             .partition_cols
+127:             .into_iter()
+128:             .map(|name| spec::Expr::UnresolvedAttribute {
+129:                 name: spec::ObjectName::bare(name),
+130:                 plan_id: None,
+131:                 is_metadata_column: false,
+132:             })
+133:             .collect(),
+134:         clustering_columns: details
+135:             .clustering_columns
+136:             .into_iter()
+137:             .map(Into::into)
+138:             .collect(),
+139:         options: vec![],
+140:         table_properties: vec![],
+141:     })
+142: }
+143: 
+144: async fn read_output(
+145:     ctx: &SessionContext,
+146:     name: super::graph::Name,
+147: ) -> SparkResult<datafusion::logical_expr::LogicalPlan> {
+148:     let read = spec::QueryPlan::new(spec::QueryNode::Read {
+149:         read_type: spec::ReadType::NamedTable(Box::new(spec::ReadNamedTable {
+150:             name: name.clone().into(),
+151:             temporal: None,
+152:             sample: None,
+153:             options: vec![],
+154:         })),
+155:         is_streaming: false,
+156:     });
+157:     let plan = PlanResolver::new(ctx, ctx.extension::<SparkSession>()?.plan_config()?)
+158:         .resolve_named_plan(spec::Plan::Query(read))
+159:         .await?;
+160:     let plan = match plan.fields {
+161:         Some(fields) => rename_logical_plan(plan.plan, &fields)?,
+162:         None => plan.plan,
+163:     };
+164:     Ok(plan)
+165: }

@@ -1,0 +1,198 @@
+# Batch provider ownership and caller migration
+
+Status: active Astra design checkpoint, announced before source work. Source
+Sail `17b8ac254139e9213327dfcc7fc8badb4fdd27b2`, Spark4.2.1, DataFusion55.2.0.
+This continues [capture transfer](CAPTURE-EXECUTION-TRANSFER-DESIGN.md) and
+[pre-planning ownership](PRE-PLANNING-OWNERSHIP-DESIGN.md). It selects no public
+activation, new catalog contract, Delta change, cluster transport or CDC effects.
+
+## What the batch source actually retains
+
+| Phase | Current behavior | Ownership implication |
+| --- | --- | --- |
+| Graph analysis | Resolves flow specs in dependency order; full plans for pipeline temporary views, EmptyRelation/schema for every other output | Analysis-local providers can remain in temporary-view artifacts; table/persisted-view artifacts contain schemas |
+| Table materialization | Consumes analyzed schemas; checks catalog, truncates/creates/alters selected tables before batch flow writes | Catalog calls precede individual run_command admission today; preserve phase order and failure effects |
+| Persisted-view publication | Re-resolves the definition against analyzed.relations, extracts columns, emits CatalogCommand::CreateView with SQL and metadata | No resolved input/provider is stored in CreateViewOptions; schema resolution may itself run helper queries |
+| Batch execution | Starts a fresh resolved map; resolves temporary-view definitions, lazily reads catalog outputs and caches plans | This cache is distinct from analyzed.relations and can retain providers across commands |
+| run_command | Resolves/executes DataFrame authority dispatch, optimizes/rewrites/plans, then calls runner.execute | Admission is currently too late for resolver/provider/physical-planning work |
+
+These distinctions correct an overbroad inference in the earlier Fable review:
+we have not observed an analysis-time Delta provider being physically scanned by
+batch execution merely because analyzed.relations is passed to materialize.views.
+Only temporary views keep full analysis plans; persisted views are schema
+placeholders, and analysis rejects persisted views referring to pipeline temporary
+views. The CreateView resolver stores original SQL, columns, comments, replace/
+if-not-exists and namespace properties, discarding its resolved query input.
+Execution creates its own map. Do not label metadata derivation as a table scan.
+
+The general Delta hazard remains: a DeltaTableSource retains its creating Session's
+log store, later log/CDF/commit paths use it, and data scans acquire a planning
+Session store. Current plain store Arcs are not revoked by closing a scope. The
+execution map's cached temporary views and read_output plans therefore cannot be
+carried unchanged between future fresh command owners. An owner-aware router
+would make that lineage split visible; fresh admission alone would not fix it.
+
+Normal graph analysis calls PlanResolver::resolve_named_plan without the final
+DataFrame optimizer. Do not infer that every current_timestamp is folded into an
+analysis-time literal on this path. TimestampNow folds when simplification supplies
+query_execution_start_time; resolution-time helper queries can optimize their
+own plans. Catalog-string folding separately uses with_current_time, independent
+of the captured Session clock (Fable CF-0221). Arbitrary custom rules/providers can
+also introduce their own dependencies; a normal-path probe cannot qualify them.
+
+## Spark reference observations
+
+Pinned Spark source617618396087429b5627a86ce933bb0f5d6645cb supports a
+consumer-local reanalysis boundary. BatchTableWrite.executeInternal calls
+graph.reanalyzeFlow(flow).df before its append write (FlowExecution.scala256–294).
+DataflowGraph.reanalyzeFlow149–168 collects the upstream closure while stopping
+at materialization points, creates a new subgraph and resolves the requested flow.
+This is stronger evidence than assuming Sail's current run-wide plan cache is a
+required Spark invariant. Runtime result/error comparisons are still required.
+
+DatasetManager.materializeView205–234 builds CreateViewCommand from the already
+analyzed flow.df.logicalPlan, original SQL/properties/comments, isAnalyzed=true,
+and the flow's catalog/database context. That supports deriving publication
+metadata during analysis rather than re-running a schema-dependent definition
+after its provider owner has closed. Do not infer that every Catalyst validation
+can be replaced by a schema copy; reproduce native Sail/Spark field and error rules.
+
+FlowAnalysisContext carries a private per-flow SQLConf; FlowAnalysis.readGraphInput
+also fuses a referenced Flow's sqlConf into the consuming context. Preserve the
+ordering/precedence of that fusion when resolving a command's temporary-view
+closure. Sail currently derives PlanConfig from each flow's sql_conf; this is
+separate from DataFusion SessionConfig captured by the preparation. Map actual
+phase consumers before claiming complete per-flow configuration isolation. The
+new APIs alone do not atomically capture both authority stores or merge all native
+configuration options. No shared-session mutation is selected to fill that gap.
+
+## Characterization evidence
+
+[Test-only Sail954e025c5](evidence/batch-analysis-artifacts/README.md) resolves
+actual registered graph SQL with a mock provider lease and zero scan callbacks.
+Temporary analysis plans retain the provider until artifact drop; materialized
+and persisted outputs release it and export schema-only plans. Normal temporary
+current_timestamp remains an unresolved ScalarFunction. Exact fmt/strict Clippy/
+139 Connect libraries pass under explicit PySpark4.2.1 environment. Same-source/
+same-binary environment control retains the initial137pass/2ORCfail and corrected
+139pass. An unchanged-test all-plan-export control gives1pass/3fail.
+
+[Source packet](evidence/batch-provider-migration/README.md) pins Sail/Spark excerpts
+and the revised Fable77ac6eda review retracting the earlier batch inference and
+withdrawing the unreachable child-native-analyzer fixture request. These checks
+qualify artifact shape and the source trace, not real backend lifetime/effects.
+
+## Required boundaries
+
+1. Keep finite analysis, bounded-history run control, and fresh finite command/
+   attempt owners distinct. No drained scope is reopened, no long-run scope
+   accumulates every finished I/O record, and no analysis plan becomes a substitute
+   for a later owner's provider bindings.
+2. Admit before provider/resolver/physical-planning work. Run borrowed planning on
+   the caller, select against latched cancellation, drop planning before releasing
+   its guard, and await independent cleanup when a response can still be delivered.
+3. Use with_scoped_query_session for newly captured callers. Generic mode deliberately
+   keeps native analysis on authority and is not the migration target. Catalog
+   manager access and session commands retain authority until their own owned-call
+   seam is implemented. Do not swap shared runtime or copy operation state back.
+4. Preserve analysis/selection, materialize-tables, publish-views, then batch-flow
+   order. Preserve upstream-table reads after committed writes, excluded-table
+   view publication, original SQL, namespace, columns/comments and error timing.
+5. Preserve full schema semantics and dependency edges. A table reference means the
+   committed output, not producer recomputation. A temporary view is an expression
+   definition; reevaluate it in the consuming command owner as required by its
+   semantics, with unchanged flow-specific configuration and qualified namespace.
+6. Keep typed primary and cleanup outcomes independently available. Cancellation
+   or drained resources do not establish target rollback/commit confirmation.
+7. Cluster capture remains unsupported. Driver Session/registry Arcs are not worker
+   transport. No local-only route may silently promise whole-cluster ownership.
+
+## Direction for review: definitions across owners, plans within owners
+
+An analysis working set may contain full plans while its finite owner is active:
+resolving later definitions can require actual temporary-view expressions, including
+resolution-time helper execution. Replacing that working set with EmptyRelation
+schemas before analysis finishes can change dynamic schema inference. Keep it
+local to analysis and dispose it before ending that owner.
+
+The exported analysis result should carry dependency/order/schema/publication
+metadata, not executable providers or folded expressions from analysis. Capture
+owned schema/field metadata explicitly; an Arrow schema alone is not replay identity
+or proof that backend metadata is pinned. Do not serialize providers into the
+controller or retain an analysis scope indefinitely to keep them valid.
+
+For persisted-view publication, do not blindly replace its input bindings with
+schema-only plans and re-run the entire resolver: dynamic schema helpers can
+execute during resolution. Prefer deriving the exact publication options while
+analysis owns its input, then carrying only the same CatalogCommand::CreateView
+metadata to its publication command. Reuse the native resolver's column/name/
+comment/namespace rules through a focused helper rather than a second implementation.
+Check refresh-time config/schema behavior against Spark before selecting this API.
+This publication representation is still a candidate, not a committed change.
+
+For an execution command, build a fresh relation scope from immutable graph/flow
+specs and committed-output names. Resolve required temporary views in topological
+order under that command's captured Session, preserving each definition's own
+SQL config and namespace. Resolve committed table/view reads only after upstream
+writes, under that same owner. Cache plans only within this command; discard them
+before its owner finishes. The run controller keeps definitions/committed identities
+and bounded progress rather than a map of provider plans.
+
+Do not inline upstream table producer queries to avoid reading a table: that changes
+nondeterministic results and recomputes already committed effects. Do not treat
+persisted views and temporary views as interchangeable. Existing CTE precedence,
+shadowing, qualified names and schema/field renaming must remain unchanged.
+
+Re-resolution can incur repeated metadata work and can observe changing external
+metadata. Avoid introducing a new cross-command snapshot guarantee by accident.
+Where Spark or a later streaming replay contract requires pinned identity, keep
+explicit version/identity descriptors and rebind under the new owner with that
+identity. Delta re-resolution alone does not establish durable replay or atomic CDC.
+
+## Physical preparation and command authority
+
+The legacy Sail helper intentionally invokes SessionContext::execute_logical_plan
+before optimization and streaming rewrite. DataFusion dispatch there can execute
+native DDL, SET/RESET, prepared statements and other authority operations eagerly.
+A captured helper cannot replace it with Session::create_physical_plan for every
+logical plan and claim identical behavior.
+
+Trace the actual SDP command set (CreateTable/AlterTable/Truncate/WriteTo/CreateView)
+to Sail catalog/barrier/row-level nodes. Share optimizer, streaming rewrite, field
+renaming and diagnostics where possible, while retaining explicit authority
+handling for logical statements that require it. Unsupported branches must report
+unsupported rather than silently run a different captured/legacy path. Admission
+must precede eager effects; any required authority mutation precedes the snapshot
+that is promised for subsequent query planning.
+
+A first caller can use capture(None) to validate config/owner transfer, but that
+alone does not supervise plain object stores, catalog SDK calls or custom callbacks.
+Do not call such an intermediate state complete provider ownership. A supplied
+registry must be complete or explicitly composed with parent resolution, because
+capture replaces it wholesale. Provider-bound stores and catalog calls need their
+own admitted operations and error/settlement policy before the guarantee expands.
+
+## Incremental review units and evidence
+
+1. Characterize analysis artifact/provider retention and unresolved clocks; archive
+   source traces distinguishing analysis, publication and execution caches.
+2. Resolve the publication DTO/helper shape against Spark's view schema/config
+   behavior. Refactor schema/publication artifacts without owner or execution changes;
+   prove actual provider release and unchanged dependency/schema/error behavior.
+3. Replace execution's cross-command provider cache with definition/name descriptors
+   and per-command resolution. Compare nondeterministic temporary versus table
+   behavior, forward references, repeated reads, namespace/config, excluded inputs,
+   persisted views and metadata failure timing before ownership activation.
+4. Add captured physical preparation preserving Sail's optimizer/rewrite/rename/
+   authority behavior, and qualify each actual SDP command shape. Keep legacy tests.
+5. Wire one admitted local command path through resolver/planner/execution and
+   primary+cleanup observation. Test held planning/provider I/O, stop/RPC loss,
+   unpolled futures/streams, cleanup error/unknown effects and fresh next owners.
+6. Qualify catalog/store/provider routing and cluster capability separately, then
+   activate other callers. Gate each combined source parent; rebuild public CLI
+   selections and run original Spark fixtures appropriate to the change.
+
+The above does not replace remaining ORC writer, Python analysis, durable streaming/
+Iggy/CDC, catalog coverage or full Spark4.2.1 SDP acceptance. Local unit tests and
+source traces are evidence for their stated scope only. No implementation of this
+migration is implied by this design document.
