@@ -345,3 +345,77 @@ plans within owners".
 - For the C5 reintegration, E′'s loop must produce exactly these two maps and
   call `resolve_view_publication` for `view: Some` outputs; the manifest
   records this (Grust `7fa7d83b`).
+
+## 8. Per-command upstream resolution (CF-0244): `f72120882` on `f0ac099e6`
+
+Files: `pipelines/execution.rs` (−65), new `pipelines/reanalysis.rs`
+(`inputs`, `resolve_inputs`), `pipelines/reanalysis/tests.rs` (three tests),
+`pipelines/mod.rs`. Read only; Codex's gates were pending at review time.
+
+**Closure rule.** `inputs(graph, analyzed, target)` walks
+`analyzed.dependencies` from the target's inputs: a dependency that is a
+temporary view or a persisted view (`output.view.is_some()`) is traversed
+into its own dependencies; anything else (a table) is included and stops the
+walk. That is Spark's `dfsInternal(stopAtMaterializationPoints = true)`
+(`GraphOperations.scala:70–100`): tables stop, views of both kinds are
+traversed, and the start node is excluded because the walk begins at the
+target's inputs. `resolve_inputs` then resolves the required names in
+`analyzed.order`: a view through its flow query under
+`plan_config_with_overrides(flow.sql_conf)` with a `GraphScope` over the
+command-local map (so its own upstream views and tables are already there),
+a table through a plain `ReadNamedTable` under the **consuming command's**
+`PlanConfig` with no relation scope. The map is returned to the caller,
+used for one `run_command`, and dropped at the end of that iteration.
+
+**Execution loop.** `execution.rs:36–59`: `materialize::tables` →
+`materialize::views` → for each output in `analyzed.order`, skip persisted
+views, temporary views and anything `selection.runs` excludes; otherwise
+build the command-local map, a `GraphScope::new(graph, &resolved, flow)` and
+run the write. The run-wide `resolved` map, the lazy `read_output`, and the
+`Selection::required` gate are gone from the loop (`required` is still
+computed; Codex plans its removal separately). Table reads happen when the
+consuming command runs, after upstream writes by topological order, as
+before.
+
+**Behaviour changes, all toward Spark.**
+
+- A persisted view read by a downstream command is now resolved from its
+  defining flow under its own namespace and config, not read from the
+  catalog's published copy. Spark traverses persisted views in
+  `reanalyzeFlow`; §2.2 of this review asked for exactly this choice.
+- A table read uses the consuming command's `PlanConfig`
+  (`read_case_sensitive` in the test) instead of the session's; §2.3.
+- Providers created for one command's inputs are released when its map
+  drops; no provider survives across commands (all three tests assert every
+  `Weak` lease is gone). This is the execution-cache owner hazard from
+  CF-0222 removed at the source.
+- A graph output missing from the command-local map is an
+  `UnresolvedRelation` from `GraphScope::resolve` (`analysis.rs:48–68`),
+  never a silent catalog read, so a wrong closure fails loudly.
+
+**Not changed, by design.** View bodies are resolved under their own flow
+config; upstream→consumer conf fusion and read-order metadata are the next
+unit (§2.1). Materialize-tables/views order and the unsupported-mode guard
+are unchanged. Namespace qualification and field renaming are the native
+`GraphScope::qualify` and `rename_logical_plan` as before.
+
+**Tests.** Separate commands re-resolve shared views through fresh factory
+calls with per-command lease release and no unrelated inputs; a committed
+table stops the walk (no producer recomputation) and is read with the
+consuming command's case sensitivity; a graph persisted view is re-resolved
+under `view_db`/`caseSensitive=true` from a consumer in `test_db`/`false`,
+without a published catalog view existing. Real resolver and memory catalog,
+mock provider factories, no scans. Adequate for the closure and lifetime
+claims.
+
+**Findings.** None requiring change. Notes:
+
+- Repeated metadata work per command is now the rule (each command re-reads
+  every upstream table's metadata and re-resolves every upstream view); the
+  design accepts this and it is Spark's cost model too.
+- `PIPELINE_DATASET_WITHOUT_FLOW` inside `resolve_inputs` is an internal
+  guard; phase 6 of analysis makes it unreachable for a valid analyzed
+  graph.
+- For C5: E′ touches `execution.rs` only at `GraphScope::new` (already the
+  root's form); F–K do not reach the execution loop. Recorded in the
+  manifest (Grust `8900b491`).
