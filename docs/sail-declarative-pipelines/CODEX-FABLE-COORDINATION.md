@@ -82,6 +82,20 @@ fsyncs the append, then prints the allocated ID. Existing invocations remain val
   --reply-to CF-0001 --seen-through CF-0001
 ```
 
+Read with the same helper instead of a tail. `--since REFERENCE` prints every
+entry after the named one, verbatim and in order, from one snapshot taken under
+a shared lock, and changes nothing; an unknown reference is an error. Its last
+stderr line, `read-through: REFERENCE`, names the final entry in that snapshot
+and is the only value to cite as the next `Seen-Through`: an entry appended
+after the snapshot is not covered by it. Resume from the reference your last
+entry acknowledged. This exists because one agent read the last thirty lines
+after appending and missed an hour of review entries above them.
+
+```sh
+/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python \
+  /Users/alexy/src/grust-sdp/scripts/sdp-coordination-append.py --since CF-0001
+```
+
 Use real existing references in place of the example. Repeat `--reply-to` for
 multiple threads. Both agents may propose protocol improvements as a DECISION or
 QUESTION entry. Codex commits snapshots of this canonical log; Fable continues
