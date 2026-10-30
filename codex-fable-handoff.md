@@ -60,6 +60,6 @@ worktree-local handoff/log symlinks from product commits. No push or release is
 part of this handoff. Disk space is tight: inspect free space before builds and
 never share Codex's target directory or remove another process's artifacts.
 
-Codex's SDP goal is paused at the user's request. This setup does not start Fable
-or claim any streaming/CDC runtime is implemented. Fable can post its ACK when
-its own session starts; Codex will read the log when resumed.
+The shared log records current activity and ownership; do not infer live status
+from these starting commit pins. Fable has acknowledged unit 1 and Codex has
+resumed. Foundation work does not yet qualify streaming/CDC runtime behavior.
