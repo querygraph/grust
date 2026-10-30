@@ -145,16 +145,16 @@ owner and effective configuration, rather than the session-only plan_config used
 by read_output today. Cache plans within this command, then discard them. Keep
 definitions/committed identities and bounded progress in run control.
 
-Configuration target: start with the consumer's flow settings; reading an upstream
-Flow fuses that flow's settings by overwrite, in input-read order, matching Spark's
-readGraphInput/setConfString. This is a parity change from Sail's current separate
-view-body and consumer settings, not a property to claim already preserved. Fixture
-both caseSensitive combinations and conflicting settings on multiple/repeated
-view reads. BTreeSet dependency edges do not preserve read order: capture an ordered
-trace as well as the deduplicated dependency graph before selecting an algorithm.
-Do not infer that a topological traversal or merging sorted names gives the same
-precedence. Resolve exact producer/consumer analysis phases against those fixtures;
-no configuration fusion implementation is selected in this refactor.
+Configuration target is phase-specific. The [reference design](FLOW-CONFIGURATION-DESIGN.md)
+and [thirteen-case packet](evidence/flow-config-fusion-reference/README.md) supersede
+an incomplete overwrite-only reading of readGraphInput: ordered input substitution
+first changes the private analysis conf; only after semantic success does
+FlowResolver reject distinct values, merge compatible maps, and possibly resolve
+again. Resolved flow settings include accepted upstream unions; tables stop fusion.
+A dependency set suffices for union membership but cannot reproduce first-pass
+errors. Native binding must precede semantic expression resolution: immediate
+config mutation during recursive lowering fails the nested-projection fixture.
+No shared-session mutation or config-fusion activation is selected yet.
 
 Do not inline upstream table producer queries to avoid reading a table: that changes
 nondeterministic results and recomputes already committed effects. Do not treat
@@ -197,8 +197,9 @@ own admitted operations and error/settlement policy before the guarantee expands
 
 Fable7b240a4e confirms the source trace and identifies the previously ambiguous
 view/config rules. The target is Spark parity: table-only stopping points,
-graph-local persisted-view reanalysis, upstream flow settings overwriting the
-consumer in input-read order, and table reads under command configuration. The
+graph-local persisted-view reanalysis and table reads under command configuration.
+The earlier overwrite-only config description is superseded by the phase-specific
+reference design above: CF-0251/0253 establish post-success conflict/union processing. The
 current helper extraction preserves Sail behavior; those semantic changes need
 separate observable fixtures and commits. Normal per-command clock folding already
 matches this direction; avoid exporting folded plans rather than inventing an

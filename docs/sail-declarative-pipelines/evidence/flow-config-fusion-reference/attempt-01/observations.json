@@ -1,0 +1,217 @@
+{
+  "started_at": "2026-10-30T22:27:13.426955+00:00",
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "c9cb835c00fc800348793ab298c69b1573fbc8000c7f872ab9955ed3a8e61fdf",
+  "scope": "Public Connect graph observations; source pin and installed runtime are recorded separately; no Scala suite verdict",
+  "cases": [
+    {
+      "name": "upstream_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive",
+      "consumer_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "level",
+      "run_exception_type": "AttributeError",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "upstream_false_over_consumer_true",
+      "definitions": [
+        [
+          "a_insensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM a_insensitive",
+      "consumer_conf": {
+        "spark.sql.caseSensitive": "true"
+      },
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.fusion_upstream_false_over_consumer_true.result': 'spark.sql.caseSensitive' is defined by both 'a_insensitive' and 'spark_catalog.fusion_upstream_false_over_consumer_true.result' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:69)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "left_true_right_false",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive CROSS JOIN a_insensitive",
+      "consumer_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.fusion_left_true_right_false.result': 'spark.sql.caseSensitive' is defined by both 'a_insensitive' and 'z_sensitive' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:69)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "left_false_right_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM a_insensitive CROSS JOIN z_sensitive",
+      "consumer_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "level",
+      "run_exception_type": "AttributeError",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "repeated_last_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT z1.Foo FROM z_sensitive z1 CROSS JOIN a_insensitive CROSS JOIN z_sensitive z2",
+      "consumer_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "level",
+      "run_exception_type": "AttributeError",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "transitive_raw_conf",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "middle",
+          "SELECT foo FROM z_sensitive",
+          {},
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM middle",
+      "consumer_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "level",
+      "run_exception_type": "AttributeError",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "table_boundary",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          true
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive",
+      "consumer_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "level",
+      "run_exception_type": "AttributeError",
+      "result_exists": true,
+      "rows": [],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "external_read_after_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT ext.Foo FROM z_sensitive CROSS JOIN external_input ext",
+      "consumer_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "level",
+      "run_exception_type": "AttributeError",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "runtime_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "outcome": "observed",
+  "completed_at": "2026-10-30T22:27:23.372323+00:00"
+}

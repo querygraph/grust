@@ -1,0 +1,77 @@
+{
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "files": [
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowAnalysis.scala",
+      "sha256": "ddbab6c50f3bf2ee20e8fd13fb0ada7fce25bfe6d76b2ad4bd88afc7aae4667a",
+      "lines": [
+        38,
+        75
+      ],
+      "excerpt": "     *\n     * @param plan The user-supplied LogicalPlan defining a flow.\n     * @return A FlowFunction that attempts to analyze the provided LogicalPlan.\n     */\n  def createFlowFunctionFromLogicalPlan(plan: LogicalPlan): FlowFunction = {\n    (allInputs: Set[TableIdentifier],\n      availableInputs: Seq[Input],\n      confs: Map[String, String],\n      queryContext: QueryContext,\n      queryOrigin: QueryOrigin) => {\n      // Flows are resolved in parallel on a shared session, so applying per-flow confs by mutating\n      // that session's conf would race across flows. Instead, give each flow a private SQLConf\n      // (a clone of the session's conf plus this flow's overrides) and install it for the analyzing\n      // thread via SQLConf.withExistingConf. Analysis still runs on the shared session, so its\n      // catalog and the resolved DataFrames are unaffected; only the confs the analyzer reads are\n      // isolated per flow.\n      val spark = SparkSession.active\n      val ctx = FlowAnalysisContext(\n        allInputs = allInputs,\n        availableInputs = availableInputs,\n        queryContext = queryContext,\n        spark = spark,\n        flowConf = spark.sessionState.conf.clone()\n      )\n      val df = SQLConf.withExistingConf(ctx.flowConf) {\n        confs.foreach { case (k, v) => ctx.setConf(k, v) }\n        Try(FlowAnalysis.analyze(ctx, plan))\n      }\n      FlowFunctionResult(\n        requestedInputs = ctx.requestedInputs.toSet,\n        batchInputs = ctx.batchInputs.toSet,\n        streamingInputs = ctx.streamingInputs.toSet,\n        usedExternalInputs = ctx.externalInputs.toSet,\n        dataFrame = df,\n        sqlConf = confs\n      )\n    }\n  }"
+    },
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowAnalysis.scala",
+      "sha256": "ddbab6c50f3bf2ee20e8fd13fb0ada7fce25bfe6d76b2ad4bd88afc7aae4667a",
+      "lines": [
+        216,
+        282
+      ],
+      "excerpt": "  final private def readGraphInput(\n      ctx: FlowAnalysisContext,\n      inputIdentifier: InternalDatasetIdentifier,\n      isStreamingRead: Boolean\n  ): DataFrame = {\n    val datasetIdentifier = inputIdentifier.identifier\n\n    ctx.requestedInputs += datasetIdentifier\n\n    val input = if (!ctx.allInputs.contains(datasetIdentifier)) {\n      // Dataset not defined in the dataflow graph\n      throw GraphErrors.pipelineLocalDatasetNotDefinedError(datasetIdentifier.unquotedString)\n    } else if (!ctx.availableInput.contains(datasetIdentifier)) {\n      // Dataset defined in the dataflow graph but not yet resolved\n      throw UnresolvedDatasetException(datasetIdentifier)\n    } else {\n      // Dataset is resolved, so we can read from it\n      ctx.availableInput(datasetIdentifier)\n    }\n\n    val inputDF = input.load(asStreaming = isStreamingRead)\n\n    // Validate that the loaded DataFrame's streaming-ness matches the requested read mode. Tables\n    // pass through trivially as their [[VirtualTableInput.load]] honors `asStreaming` by\n    // construction. The check only ever fires for flows.\n    val incompatibleViewReadCheck =\n      ctx.flowConf.getConfString(\"pipelines.incompatibleViewCheck.enabled\", \"true\").toBoolean\n\n    if (incompatibleViewReadCheck && isStreamingRead && !inputDF.isStreaming) {\n      throw new AnalysisException(\n        \"INCOMPATIBLE_BATCH_VIEW_READ\",\n        Map(\"datasetIdentifier\" -> datasetIdentifier.toString)\n      )\n    }\n    if (incompatibleViewReadCheck && !isStreamingRead && inputDF.isStreaming) {\n      throw new AnalysisException(\n        \"INCOMPATIBLE_STREAMING_VIEW_READ\",\n        Map(\"datasetIdentifier\" -> datasetIdentifier.toString)\n      )\n    }\n\n    input match {\n      // If the referenced input is a [[Flow]], because the query plans will be fused\n      // together, we also need to fuse their confs.\n      case f: Flow => f.sqlConf.foreach { case (k, v) => ctx.setConf(k, v) }\n      case _ =>\n    }\n\n    // Wrap the DF in an alias so that columns in the DF can be referenced with\n    // the following in the query:\n    // - <catalog>.<schema>.<dataset>.<column>\n    // - <schema>.<dataset>.<column>\n    // - <dataset>.<column>\n    val aliasIdentifier = AliasIdentifier(\n      name = datasetIdentifier.table,\n      qualifier = Seq(datasetIdentifier.catalog, datasetIdentifier.database).flatten\n    )\n\n    if (isStreamingRead) {\n      ctx.streamingInputs += ResolvedInput(input, aliasIdentifier)\n    } else {\n      ctx.batchInputs += ResolvedInput(input, aliasIdentifier)\n    }\n    Dataset.ofRows(\n      ctx.spark,\n      SubqueryAlias(identifier = aliasIdentifier, child = inputDF.queryExecution.logical)\n    )"
+    },
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/CoreDataflowNodeProcessor.scala",
+      "sha256": "0b0a4805f7f26653fd1a93a95d49eeb4a5b661af69c99f53b9530e3781eaf4bc",
+      "lines": [
+        118,
+        200
+      ],
+      "excerpt": "  /** Attempts resolving a single flow using the map of resolved inputs. */\n  def attemptResolveFlow(\n      flowToResolve: UnresolvedFlow,\n      allInputs: Set[TableIdentifier],\n      availableResolvedInputs: Map[TableIdentifier, Input]): ResolvedFlow = {\n    val flowFunctionResult = flowToResolve.func.call(\n      allInputs = allInputs,\n      availableInputs = availableResolvedInputs.values.toList,\n      configuration = flowToResolve.sqlConf,\n      queryContext = flowToResolve.queryContext,\n      queryOrigin = flowToResolve.origin\n    )\n    flowFunctionResult match {\n        case f if f.dataFrame.isSuccess =>\n          // Merge confs from any upstream views into confs for this flow.\n          val allFConfs =\n            (flowToResolve +:\n            f.inputs.toSeq\n              .map(availableResolvedInputs(_))\n              .filter {\n                // Input is a flow implies that the upstream table is a View.\n                case _: Flow => true\n                // We stop in all other cases.\n                case _ => false\n              }).collect {\n              case g: Flow =>\n                g.sqlConf.toSeq.map { case (k, v) => FlowConf(k, v, g.identifier) }\n            }.flatten\n\n          allFConfs\n            .groupBy(_.key) // Key name -> Seq[FlowConf]\n            .filter(_._2.length > 1) // Entries where key was set more than once\n            .find(_._2.map(_.value).toSet.size > 1) // Entry where key was set with diff vals\n            .foreach {\n              case (key, confs) =>\n                val sortedByVal = confs.sortBy(_.value)\n                throw new AnalysisException(\n                  \"DUPLICATE_FLOW_SQL_CONF\",\n                  Map(\n                    \"key\" -> key,\n                    \"datasetName\" -> flowToResolve.displayName,\n                    \"flowName1\" -> sortedByVal.head.flowIdentifier.unquotedString,\n                    \"flowName2\" -> sortedByVal.last.flowIdentifier.unquotedString\n                  )\n                )\n            }\n\n          val newSqlConf = allFConfs.map(fc => fc.key -> fc.value).toMap\n          // if the new sql confs are different from the original sql confs the flow was resolved\n          // with, resolve again.\n          val maybeNewFuncResult = if (newSqlConf != flowToResolve.sqlConf) {\n            flowToResolve.func.call(\n              allInputs = allInputs,\n              availableInputs = availableResolvedInputs.values.toList,\n              configuration = newSqlConf,\n              queryContext = flowToResolve.queryContext,\n              queryOrigin = flowToResolve.origin\n            )\n          } else {\n            f\n          }\n          resolveFlow(flowToResolve, maybeNewFuncResult)\n\n        // If the flow failed due to an UnresolvedDatasetException, it means that one of the\n        // flow's inputs wasn't available. After other flows are resolved, these inputs\n        // may become available, so throw a retryable exception in this case.\n        case f =>\n          f.dataFrame.failed.toOption.collectFirst {\n            case e: UnresolvedDatasetException => e\n            case _ => None\n          } match {\n            case Some(e: UnresolvedDatasetException) =>\n              throw TransformNodeRetryableException(\n                e.identifier,\n                new ResolutionFailedFlow(flowToResolve, flowFunctionResult)\n              )\n            case _ =>\n              throw TransformNodeFailedException(\n                new ResolutionFailedFlow(flowToResolve, flowFunctionResult)\n              )\n          }\n      }\n  }"
+    },
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/Flow.scala",
+      "sha256": "50b98c1774c8ae31a79c54951810ae63f2bd99bcb8944deea084938002f0044e",
+      "lines": [
+        185,
+        197
+      ],
+      "excerpt": " */\ntrait ResolutionCompletedFlow extends Flow {\n  def flow: UnresolvedFlow\n  def funcResult: FlowFunctionResult\n\n  val identifier: TableIdentifier = flow.identifier\n  val destinationIdentifier: TableIdentifier = flow.destinationIdentifier\n  def func: FlowFunction = flow.func\n  def queryContext: QueryContext = flow.queryContext\n  def sqlConf: Map[String, String] = funcResult.sqlConf\n  def origin: QueryOrigin = flow.origin\n}\n"
+    },
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowExecution.scala",
+      "sha256": "2d12d8f7952651e87d86cce83e99c9fdd9d4dc7561a3acb9998a91f8db41339c",
+      "lines": [
+        260,
+        295
+      ],
+      "excerpt": "    val destination: Table,\n    val updateContext: PipelineUpdateContext,\n    val sqlConf: Map[String, String]\n) extends FlowExecution {\n\n  override final def isStreaming: Boolean = false\n  override def getOrigin: QueryOrigin = flow.origin\n\n  def executeInternal(): Future[Unit] = {\n    SparkSessionUtils.withSqlConf(spark, sqlConf.toList: _*) {\n      updateContext.flowProgressEventLogger.recordRunning(flow = flow)\n      val data = graph.reanalyzeFlow(flow).df\n      Future {\n        val dataFrameWriter = data.write\n        destination.format.foreach(dataFrameWriter.format)\n\n        // In \"append\" mode with saveAsTable, partition/cluster columns must be specified in query\n        // because the format and options of the existing table is used, and the table could\n        // have been created with partition columns.\n        destination.clusterCols.foreach { clusterCols =>\n          dataFrameWriter.clusterBy(clusterCols.head, clusterCols.tail: _*)\n        }\n        destination.partitionCols.foreach { partitionCols =>\n          dataFrameWriter.partitionBy(partitionCols: _*)\n        }\n\n        dataFrameWriter\n          .mode(\"append\")\n          .saveAsTable(destination.identifier.unquotedString)\n      }\n    }\n  }\n}\n\n/** A `StreamingFlowExecution` that writes a streaming `DataFrame` to a `Sink`. */\nclass SinkWrite("
+    },
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/DataflowGraph.scala",
+      "sha256": "0225426f5709fbce7f0742c9d20c106cf52672b01deb87afb2f902ede9c25fe4",
+      "lines": [
+        149,
+        169
+      ],
+      "excerpt": "  protected[graph] def reanalyzeFlow(srcFlow: Flow): ResolvedFlow = {\n    val upstreamDatasetIdentifiers = dfsInternal(\n      flowNodes(srcFlow.identifier).output,\n      downstream = false,\n      stopAtMaterializationPoints = true\n    )\n    val upstreamFlows =\n      resolvedFlows\n        .filter(f => upstreamDatasetIdentifiers.contains(f.destinationIdentifier))\n        .map(_.flow)\n    val upstreamViews = upstreamDatasetIdentifiers.flatMap(identifier => view.get(identifier)).toSeq\n\n    val subgraph = new DataflowGraph(\n      flows = upstreamFlows,\n      views = upstreamViews,\n      tables = table.get(srcFlow.destinationIdentifier).toSeq,\n      sinks = sink.get(srcFlow.destinationIdentifier).toSeq\n    )\n    subgraph.resolve().resolvedFlow(srcFlow.identifier)\n  }\n"
+    },
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/GraphRegistrationContext.scala",
+      "sha256": "774bb621b7c92463f660e8925425b962d089d97069229323a488e809f36c2a4c",
+      "lines": [
+        60,
+        64
+      ],
+      "excerpt": "\n  def registerFlow(flowDef: UnresolvedFlow): Unit = {\n    flows += flowDef.withSqlConf(defaultSqlConf ++ flowDef.sqlConf)\n  }\n"
+    },
+    {
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowPlanner.scala",
+      "sha256": "d3249af35b58ba39df4e9029f5b79de3bdc8764f16981d5561db45d76634e495",
+      "lines": [
+        35,
+        52
+      ],
+      "excerpt": "    updateContext: PipelineUpdateContext,\n    triggerFor: Flow => Trigger) {\n\n  /**\n   * Turns a [[Flow]] into an executable [[FlowExecution]].\n   */\n  def plan(flow: ResolvedFlow): FlowExecution = {\n    val output = graph.output(flow.destinationIdentifier)\n    flow match {\n      case cf: CompleteFlow =>\n        new BatchTableWrite(\n          graph = graph,\n          flow = flow,\n          identifier = cf.identifier,\n          sqlConf = cf.sqlConf,\n          destination = output.asInstanceOf[Table],\n          updateContext = updateContext\n        )"
+    }
+  ]
+}
