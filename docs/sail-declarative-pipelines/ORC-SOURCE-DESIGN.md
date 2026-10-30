@@ -567,3 +567,14 @@ incremental dictionary setup keeps actual Arrow limits and LENGTH-before-DATA
 error order while removing declaration-sized scratch. It is still a separate
 unqualified unit. RLE delta and remaining allocation follow-ups stay visible;
 there is no whole-heap or public SDP verdict.
+
+## Build dictionaries from proven LENGTH entries
+
+Recorded: 2026-10-30T00:55:48.760465+00:00. [Native `5937e8a8f1` and Sail `43fe0dc841`](evidence/orc-incremental-dictionary/README.md)
+replace declared-count scratch allocation with bounded LENGTH chunks and growing
+validated offsets. Actual Arrow offset/payload bounds remain, with original
+LENGTH/validation/DATA/PRESENT error order and zero-dictionary semantics. Exact
+gates pass 357 native tests (eight ignored), 236 no-default and 192 data-source,
+formatting, strict Clippy and exact package verification. Required dictionary
+storage is not claimed bounded by these scratch checks; remaining native and
+public-format work is unchanged.

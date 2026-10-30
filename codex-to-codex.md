@@ -11291,3 +11291,10 @@ Native e9690a1eaefa35963554f44d45b8a54fd0ab0196 and Sail 5cfe24e4f0bd46394efd9af
 strict Clippy and package verification. Two independent source reviews passed.
 Dictionary proposal retained as pending work, not a runtime result. Documentation
 gates precede advance; full SDP objective remains active.
+
+## 2026-10-30T00:55:48.760465+00:00 — DONE incremental ORC dictionary initialization
+
+Native 5937e8a8f1154aff333818dc365ffc6367c84d5f and Sail 43fe0dc841ec18b2a0e666f0bb05d01a95007852 pass exact detached gates:
+357 native tests (eight ignored), 236 no-default, 192 data-source, formatting,
+strict Clippy and source/package verification. Independent source review passed;
+no failed gates. Full SDP scope remains active; document gates precede advance.

@@ -1383,3 +1383,10 @@ and exact Sail vendor `5cfe24e4f0`: 349 native tests (eight ignored),
 228 no-default and 192 data-source, formatting/strict Clippy and package checks.
 Dictionary initialization and other pending reader work remain separate; no
 public CLI or full SDP acceptance count changes.
+
+### ORC incremental dictionary initialization (2026-10-30T00:55:48.760465+00:00)
+
+[Evidence](evidence/orc-incremental-dictionary/README.md) qualifies native
+`5937e8a8f1` and Sail `43fe0dc841` with eight new factory/decoder
+tests; full native 357 (eight ignored), no-default 236 and data-source 192 pass.
+Formatting, strict Clippy and package checks pass. No public SDP runtime result.

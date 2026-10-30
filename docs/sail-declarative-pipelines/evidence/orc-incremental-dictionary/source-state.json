@@ -1,0 +1,88 @@
+{
+  "base": "e9690a1eaefa35963554f44d45b8a54fd0ab0196",
+  "recorded_at_utc": "2026-10-30T00:47:48.344106+00:00",
+  "files": [
+    {
+      "path": "src/array_decoder/length.rs",
+      "sha256": "1b40b8aac1b051269efde813953cd672360e76744313d4ae403963b1b85301d0",
+      "size": 5019,
+      "lines": 151
+    },
+    {
+      "path": "src/array_decoder/string.rs",
+      "sha256": "d655b02dac286f061c7fd21e930438da7625f6ac534671329883eea866821a36",
+      "size": 16721,
+      "lines": 445
+    },
+    {
+      "path": "src/array_decoder/string/dictionary.rs",
+      "sha256": "7eb2fe2c3ffe43421ce4392800ffeba579717e836b6848dff86ed7b6a3495760",
+      "size": 17510,
+      "lines": 493
+    }
+  ],
+  "added_tests": [
+    {
+      "name": "huge_declared_count_with_tiny_length_stream_uses_bounded_scratch",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 255,
+      "target_pointer_width": "64"
+    },
+    {
+      "name": "malformed_dictionary_lengths_precede_payload_reads",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 294,
+      "target_pointer_width": "any"
+    },
+    {
+      "name": "all_length_decoding_precedes_negative_sum_and_offset_validation",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 305,
+      "target_pointer_width": "any"
+    },
+    {
+      "name": "dictionary_factory_initializes_before_row_present_or_indexes",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 344,
+      "target_pointer_width": "any"
+    },
+    {
+      "name": "absent_or_zero_dictionary_size_preserves_empty_and_all_null_behavior",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 372,
+      "target_pointer_width": "any"
+    },
+    {
+      "name": "dictionary_factory_preserves_empty_repeated_and_nullable_values_in_both_rle_versions",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 400,
+      "target_pointer_width": "any"
+    },
+    {
+      "name": "offsets_cross_chunks_and_dictionary_indexes_preserve_parent_nulls",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 437,
+      "target_pointer_width": "any"
+    },
+    {
+      "name": "dictionary_payload_truncation_utf8_and_io_errors_keep_their_categories",
+      "path": "src/array_decoder/string/dictionary.rs",
+      "line": 465,
+      "target_pointer_width": "any"
+    }
+  ],
+  "scope": "Incremental dictionary LENGTH initialization only; three files; no cargo, builds, gates or commits",
+  "validation": [
+    "Direct rustfmt 1.98.1 --edition2021",
+    "git diff --check"
+  ],
+  "independent_review": "Requested from metadata agent; pending at freeze",
+  "unchanged": [
+    "Direct string/binary materialization",
+    "Dictionary indexes/PRESENT/casting",
+    "Column dictionary_size API/default",
+    "Payload allocation policy",
+    "Skip paths",
+    "RLEv2 delta"
+  ]
+}

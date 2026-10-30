@@ -1,0 +1,616 @@
+commit 43fe0dc841ec18b2a0e666f0bb05d01a95007852
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 17:52:11 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 17:52:11 2026 -0700
+
+    build: vendor incremental ORC dictionary initialization
+
+diff --git a/vendor/orc-rust/.cargo_vcs_info.json b/vendor/orc-rust/.cargo_vcs_info.json
+index 2f65415d8..1dbd0efbc 100644
+--- a/vendor/orc-rust/.cargo_vcs_info.json
++++ b/vendor/orc-rust/.cargo_vcs_info.json
+@@ -1,6 +1,6 @@
+ {
+   "git": {
+-    "sha1": "e9690a1eaefa35963554f44d45b8a54fd0ab0196"
++    "sha1": "5937e8a8f1154aff333818dc365ffc6367c84d5f"
+   },
+   "path_in_vcs": ""
+ }
+\ No newline at end of file
+diff --git a/vendor/orc-rust/SOURCE.json b/vendor/orc-rust/SOURCE.json
+index 59c450a08..712aae55a 100644
+--- a/vendor/orc-rust/SOURCE.json
++++ b/vendor/orc-rust/SOURCE.json
+@@ -1,6 +1,6 @@
+ {
+   "repository": "https://github.com/datafusion-contrib/orc-rust",
+-  "commit": "e9690a1eaefa35963554f44d45b8a54fd0ab0196",
++  "commit": "5937e8a8f1154aff333818dc365ffc6367c84d5f",
+   "source_kind": "Locally patched upstream package; patch revisions have not been published to the upstream repository.",
+   "upstream_tag": "v0.9.0",
+   "upstream_commit": "d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307",
+@@ -64,11 +64,15 @@
+     {
+       "commit": "e9690a1eaefa35963554f44d45b8a54fd0ab0196",
+       "subject": "fix: validate ORC skip counts and exact byte consumption"
++    },
++    {
++      "commit": "5937e8a8f1154aff333818dc365ffc6367c84d5f",
++      "subject": "fix: build ORC dictionaries from bounded length chunks"
+     }
+   ],
+   "package": {
+     "command": "cargo +1.98.1 package --locked --no-verify",
+-    "sha256": "df909e3bde27b53f3ae06bae3fee5998b2e42ab2da35dbb03154b819f7c63bce",
++    "sha256": "f504451f9d2ae1315f67438a12da397e3a916cc6d1264844c3fc8dfc4d8ef718",
+     "excluded_files": [
+       "Cargo.lock"
+     ],
+@@ -78,19 +82,20 @@
+     "note": "Cargo-normalized manifest; upstream package omits integration fixtures and benchmarks. Source tests were run in the full detached source checkout."
+   },
+   "files_sha256": {
+-    ".cargo_vcs_info.json": "9fa99ca86b04862a15d7be0396fc95c317a298e6d8b325000770ad3181a267e2",
++    ".cargo_vcs_info.json": "a074112ad3e62445961ba5e5dfd7560dcf0847de372e3a876d5189ef9beea1c3",
+     "Cargo.toml": "0a69cbe6449e27e1be0f020c1f0e9393a135b99fa00a115e45a0e7e7b8726385",
+     "Cargo.toml.orig": "58ccc950aa988bb2c70c7850de74c1ac9ad182773452dc9a08a0b25cceeb7874",
+     "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+     "README.md": "88394b7c22866cbaf2b95bbf93659ae9ed2ccfa2bacb57f7b9cb328f26cd815f",
+     "src/array_decoder/decimal.rs": "dc5f37e42304a4ac84d521ab5c0c1823f55a49549f225d5c27995f0bcbcf540d",
+-    "src/array_decoder/length.rs": "f676f24ad202eaf8a15789b38e0558317538ad2725cd6cec0544300f0c3e4c9a",
++    "src/array_decoder/length.rs": "1b40b8aac1b051269efde813953cd672360e76744313d4ae403963b1b85301d0",
+     "src/array_decoder/length/tests.rs": "cb3a05d0bb4357b7fa5829b2706453ad1d8a56d1d061cfa3419288e07d7c7756",
+     "src/array_decoder/list.rs": "c46f8a4ee46e2ed872c635c8e3cab7e4f2ab2aef3c9e06c2aad89c185335acc2",
+     "src/array_decoder/map.rs": "dcd55994e3c63934d6a9110d96325a117b58948cd025dec140928fabb8334e5e",
+     "src/array_decoder/mod.rs": "9cfeb86f38957f8bf4d236c3b64b7e42b59ef24b224ce2f4332a8ca9e6f39de7",
+     "src/array_decoder/present_tests.rs": "d7f568735cc7a85a3993aef7be89becd13ce77e14f5e215b48414acac2063182",
+-    "src/array_decoder/string.rs": "f767627788f67d45e56927657c9b157d3b6afb8709eb33ffc12de655cc2a382f",
++    "src/array_decoder/string.rs": "d655b02dac286f061c7fd21e930438da7625f6ac534671329883eea866821a36",
++    "src/array_decoder/string/dictionary.rs": "7eb2fe2c3ffe43421ce4392800ffeba579717e836b6848dff86ed7b6a3495760",
+     "src/array_decoder/struct_decoder.rs": "521c29e4ef19fa36a1c301a6214b69c851496f535b2f0666205e6731b49a97a2",
+     "src/array_decoder/timestamp.rs": "97fa9d02382de00cb16b813fef94e9bc7b0cf92236d5e20ddd90a803be2a5496",
+     "src/array_decoder/union.rs": "461b9b9ab606f34b83e877fabe3eaae1c0ab9c1db15a4af8aa80b9724909f953",
+diff --git a/vendor/orc-rust/src/array_decoder/length.rs b/vendor/orc-rust/src/array_decoder/length.rs
+index cd011dcb0..3a75fd015 100644
+--- a/vendor/orc-rust/src/array_decoder/length.rs
++++ b/vendor/orc-rust/src/array_decoder/length.rs
+@@ -38,7 +38,7 @@ fn check_allocation_size<T>(count: usize) -> Result<()> {
+     Ok(())
+ }
+ 
+-fn check_offset_buffer_size<O>(count: usize) -> Result<()> {
++pub(super) fn check_offset_buffer_size<O>(count: usize) -> Result<()> {
+     let offsets = count.checked_add(1).context(OutOfSpecSnafu {
+         msg: "Array offset count overflows usize",
+     })?;
+diff --git a/vendor/orc-rust/src/array_decoder/string.rs b/vendor/orc-rust/src/array_decoder/string.rs
+index 3d655e6fc..876fba0e2 100644
+--- a/vendor/orc-rust/src/array_decoder/string.rs
++++ b/vendor/orc-rust/src/array_decoder/string.rs
+@@ -40,6 +40,8 @@ use super::length::{
+ };
+ use super::{ArrayBatchDecoder, Int64ArrayDecoder, PresentDecoder};
+ 
++mod dictionary;
++
+ // TODO: reduce duplication with string below
+ pub fn new_binary_decoder(column: &Column, stripe: &Stripe) -> Result<Box<dyn ArrayBatchDecoder>> {
+     let present = PresentDecoder::from_stripe(stripe, column);
+@@ -66,12 +68,12 @@ pub fn new_string_decoder(column: &Column, stripe: &Stripe) -> Result<Box<dyn Ar
+             )))
+         }
+         ColumnEncodingKind::Dictionary | ColumnEncodingKind::DictionaryV2 => {
+-            let bytes = Box::new(stripe.stream_map().get(column, Kind::DictionaryData));
++            let mut bytes = stripe.stream_map().get(column, Kind::DictionaryData);
++            let mut lengths = lengths;
+             // TODO: is this always guaranteed to be set for all dictionaries?
+             let dictionary_size = column.dictionary_size();
+-            // We assume here we have fetched all the dictionary strings (according to size above)
+-            let dictionary_strings = DirectStringArrayDecoder::new(bytes, lengths, None)
+-                .next_byte_batch(dictionary_size, None)?;
++            let dictionary_strings =
++                dictionary::read_dictionary(&mut bytes, lengths.as_mut(), dictionary_size)?;
+             let dictionary_strings = Arc::new(dictionary_strings);
+ 
+             let indexes = stripe.stream_map().get(column, Kind::Data);
+diff --git a/vendor/orc-rust/src/array_decoder/string/dictionary.rs b/vendor/orc-rust/src/array_decoder/string/dictionary.rs
+new file mode 100644
+index 000000000..fde0eebfa
+--- /dev/null
++++ b/vendor/orc-rust/src/array_decoder/string/dictionary.rs
+@@ -0,0 +1,493 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::io::{self, Read};
++
++use arrow::array::StringArray;
++use arrow::buffer::{Buffer, OffsetBuffer};
++use snafu::{ensure, ResultExt};
++
++use crate::array_decoder::length::check_offset_buffer_size;
++use crate::encoding::PrimitiveValueDecoder;
++use crate::error::{ArrowSnafu, IoSnafu, OffsetOverflowSnafu, OutOfSpecSnafu, Result};
++
++const LENGTH_BATCH_SIZE: usize = 1024;
++
++/// Build dictionary offsets only as the LENGTH stream proves entries exist.
++/// Dictionary entries have no PRESENT stream; row validity belongs to indexes.
++pub(super) fn read_dictionary(
++    bytes: &mut impl Read,
++    lengths: &mut (dyn PrimitiveValueDecoder<i64> + Send),
++    count: usize,
++) -> Result<StringArray> {
++    check_offset_buffer_size::<i32>(count)?;
++    let mut offsets = Vec::new();
++    offsets
++        .try_reserve(1)
++        .map_err(|error| io::Error::new(io::ErrorKind::OutOfMemory, error))
++        .context(IoSnafu)?;
++    offsets.push(0_i32);
++    let mut scratch = [0_i64; LENGTH_BATCH_SIZE];
++    let mut offset_chunk = [0_i32; LENGTH_BATCH_SIZE];
++    let mut remaining = count;
++    let mut total = 0_i64;
++    let mut validation_error = None;
++    while remaining > 0 {
++        let chunk_size = remaining.min(scratch.len());
++        lengths.decode(&mut scratch[..chunk_size])?;
++        // Preserve the former full-batch ordering: any LENGTH decoding error
++        // precedes length validation, which precedes DICTIONARY_DATA reads.
++        if validation_error.is_none() {
++            for (&length, offset) in scratch[..chunk_size]
++                .iter()
++                .zip(&mut offset_chunk[..chunk_size])
++            {
++                if length < 0 {
++                    validation_error = Some(
++                        OutOfSpecSnafu {
++                            msg: "Decoded array length is negative",
++                        }
++                        .build(),
++                    );
++                    break;
++                }
++                let Some(next) = total.checked_add(length) else {
++                    validation_error = Some(
++                        OutOfSpecSnafu {
++                            msg: "Decoded array lengths overflow i64",
++                        }
++                        .build(),
++                    );
++                    break;
++                };
++                total = next;
++                if let Ok(value) = i32::try_from(total) {
++                    *offset = value;
++                }
++            }
++            // No later nonnegative length can repair an offset overflow. Stop
++            // retaining offsets, but finish LENGTH decoding/validation first.
++            if validation_error.is_none() && total <= i64::from(i32::MAX) {
++                offsets
++                    .try_reserve(chunk_size)
++                    .map_err(|error| io::Error::new(io::ErrorKind::OutOfMemory, error))
++                    .context(IoSnafu)?;
++                offsets.extend_from_slice(&offset_chunk[..chunk_size]);
++            }
++        }
++        remaining -= chunk_size;
++    }
++    if let Some(error) = validation_error {
++        return Err(error);
++    }
++    ensure!(
++        total <= i64::from(i32::MAX),
++        OffsetOverflowSnafu {
++            total_length: total,
++            max_size: i32::MAX,
++            batch_size: count,
++        }
++    );
++    let total = usize::try_from(total).map_err(|_| {
++        OutOfSpecSnafu {
++            msg: "Decoded array length does not fit usize",
++        }
++        .build()
++    })?;
++
++    // Keep the materialized payload allocation/read/Arrow validation policy.
++    let mut data = Vec::new();
++    data.try_reserve_exact(total)
++        .map_err(|error| io::Error::new(io::ErrorKind::OutOfMemory, error))
++        .context(IoSnafu)?;
++    bytes
++        .take(total as u64)
++        .read_to_end(&mut data)
++        .context(IoSnafu)?;
++    StringArray::try_new(OffsetBuffer::new(offsets.into()), Buffer::from(data), None)
++        .context(ArrowSnafu)
++}
++
++#[cfg(test)]
++mod tests {
++    use std::io::Cursor;
++    use std::sync::Arc;
++
++    use arrow::array::Array;
++    use arrow::buffer::NullBuffer;
++    use arrow::error::ArrowError;
++    use arrow::record_batch::RecordBatch;
++    use bytes::Bytes;
++    use prost::Message;
++
++    use super::*;
++    use crate::array_decoder::length::tests::{
++        assert_error, malformed_cases, many_unsigned_literals, unsigned_literals, ExpectedError,
++    };
++    use crate::array_decoder::{ArrayBatchDecoder, Int64ArrayDecoder};
++    use crate::compression::{Compression, Decompressor};
++    use crate::encoding::integer::{get_unsigned_int_decoder, RleVersion};
++    use crate::error::OrcError;
++    use crate::{proto, ArrowReaderBuilder};
++
++    fn decoder(bytes: Vec<u8>) -> Box<dyn PrimitiveValueDecoder<i64> + Send> {
++        get_unsigned_int_decoder(Cursor::new(bytes), RleVersion::V1)
++    }
++
++    fn bad_varint() -> Vec<u8> {
++        let mut bytes = vec![0xff];
++        bytes.extend([0x80; 11]);
++        bytes
++    }
++
++    fn file(
++        size: Option<u32>,
++        rows: u64,
++        present: &[u8],
++        kind: proto::column_encoding::Kind,
++        lengths: &[u8],
++        dictionary: &[u8],
++        indexes: &[u8],
++    ) -> Bytes {
++        let mut file = b"ORC".to_vec();
++        let mut streams = vec![];
++        for (kind, bytes) in [
++            (proto::stream::Kind::Present, present),
++            (proto::stream::Kind::Length, lengths),
++            (proto::stream::Kind::DictionaryData, dictionary),
++            (proto::stream::Kind::Data, indexes),
++        ] {
++            streams.push(proto::Stream {
++                kind: Some(kind.into()),
++                column: Some(1),
++                length: Some(bytes.len() as u64),
++            });
++            file.extend_from_slice(bytes);
++        }
++        let data_length = file.len() as u64 - 3;
++        let stripe_footer = proto::StripeFooter {
++            streams,
++            columns: vec![
++                proto::ColumnEncoding::default(),
++                proto::ColumnEncoding {
++                    kind: Some(kind.into()),
++                    dictionary_size: size,
++                    ..Default::default()
++                },
++            ],
++            ..Default::default()
++        }
++        .encode_to_vec();
++        let footer = proto::Footer {
++            stripes: vec![proto::StripeInformation {
++                offset: Some(3),
++                index_length: Some(0),
++                data_length: Some(data_length),
++                footer_length: Some(stripe_footer.len() as u64),
++                number_of_rows: Some(rows),
++                ..Default::default()
++            }],
++            types: vec![
++                proto::Type {
++                    kind: Some(proto::r#type::Kind::Struct.into()),
++                    field_names: vec!["value".into()],
++                    subtypes: vec![1],
++                    ..Default::default()
++                },
++                proto::Type {
++                    kind: Some(proto::r#type::Kind::String.into()),
++                    ..Default::default()
++                },
++            ],
++            number_of_rows: Some(rows),
++            ..Default::default()
++        }
++        .encode_to_vec();
++        let postscript = proto::PostScript {
++            footer_length: Some(footer.len() as u64),
++            metadata_length: Some(0),
++            version: vec![0, 12],
++            ..Default::default()
++        }
++        .encode_to_vec();
++        file.extend(stripe_footer);
++        file.extend(footer);
++        file.extend_from_slice(&postscript);
++        file.push(u8::try_from(postscript.len()).unwrap());
++        file.into()
++    }
++
++    fn read(file: Bytes) -> std::result::Result<StringArray, ArrowError> {
++        let batches: Vec<RecordBatch> = ArrowReaderBuilder::try_new(file)
++            .unwrap()
++            .build()
++            .collect::<std::result::Result<_, _>>()?;
++        Ok(batches[0]
++            .column(0)
++            .as_any()
++            .downcast_ref::<StringArray>()
++            .unwrap()
++            .clone())
++    }
++
++    fn native(error: &ArrowError) -> &OrcError {
++        let ArrowError::ExternalError(error) = error else {
++            panic!("expected native error: {error}");
++        };
++        error.downcast_ref().unwrap()
++    }
++
++    #[cfg(target_pointer_width = "64")]
++    #[test]
++    fn huge_declared_count_with_tiny_length_stream_uses_bounded_scratch() {
++        struct Bounded(Box<dyn PrimitiveValueDecoder<i64> + Send>);
++        impl PrimitiveValueDecoder<i64> for Bounded {
++            fn decode(&mut self, out: &mut [i64]) -> Result<()> {
++                assert!(out.len() <= LENGTH_BATCH_SIZE);
++                self.0.decode(out)
++            }
++            fn skip(&mut self, _n: usize) -> Result<()> {
++                panic!("must decode lengths");
++            }
++        }
++        for lengths in [vec![], unsigned_literals(&[0])] {
++            for count in [i32::MAX as usize + 1, u32::MAX as usize] {
++                let mut payload = Cursor::new(b"unread");
++                let error =
++                    read_dictionary(&mut payload, &mut Bounded(decoder(lengths.clone())), count)
++                        .unwrap_err();
++                assert!(
++                    matches!(error, OrcError::OutOfSpec { msg, .. } if msg == "not enough values to decode")
++                );
++                assert_eq!(payload.position(), 0);
++            }
++            let error = read(file(
++                Some(u32::MAX),
++                1,
++                &[0xff],
++                proto::column_encoding::Kind::Dictionary,
++                &lengths,
++                b"unread",
++                &bad_varint(),
++            ))
++            .unwrap_err();
++            assert!(
++                matches!(native(&error), OrcError::OutOfSpec { msg, .. } if msg == "not enough values to decode")
++            );
++        }
++    }
++
++    #[test]
++    fn malformed_dictionary_lengths_precede_payload_reads() {
++        for case in malformed_cases() {
++            let mut payload = Cursor::new(b"unread");
++            let error =
++                read_dictionary(&mut payload, case.decoder().as_mut(), case.count).unwrap_err();
++            assert_error(error, case.expected);
++            assert_eq!(payload.position(), 0);
++        }
++    }
++
++    #[test]
++    fn all_length_decoding_precedes_negative_sum_and_offset_validation() {
++        for invalid in [
++            vec![u64::MAX],
++            vec![i32::MAX as u64 + 1],
++            vec![i64::MAX as u64, 1],
++        ] {
++            for cross_chunk in [false, true] {
++                let mut values = invalid.clone();
++                if cross_chunk {
++                    values.resize(LENGTH_BATCH_SIZE, 0);
++                }
++                let mut encoded = many_unsigned_literals(&values);
++                encoded.extend(bad_varint());
++                let mut payload = Cursor::new(b"unread");
++                let error =
++                    read_dictionary(&mut payload, decoder(encoded).as_mut(), values.len() + 1)
++                        .unwrap_err();
++                assert!(matches!(error, OrcError::VarintTooLarge { .. }));
++                assert_eq!(payload.position(), 0);
++            }
++        }
++        for (values, expected) in [
++            (vec![i32::MAX as u64 + 1, u64::MAX], ExpectedError::Negative),
++            (
++                vec![i64::MAX as u64, 1, u64::MAX],
++                ExpectedError::SumOverflow,
++            ),
++        ] {
++            let error = read_dictionary(
++                &mut Cursor::new(b"unread"),
++                decoder(unsigned_literals(&values)).as_mut(),
++                values.len(),
++            )
++            .unwrap_err();
++            assert_error(error, expected);
++        }
++    }
++
++    #[test]
++    fn dictionary_factory_initializes_before_row_present_or_indexes() {
++        for present in [&[0xff][..], &[0xff, 0][..]] {
++            let error = read(file(
++                Some(1),
++                1,
++                present,
++                proto::column_encoding::Kind::Dictionary,
++                &bad_varint(),
++                b"x",
++                &bad_varint(),
++            ))
++            .unwrap_err();
++            assert!(matches!(native(&error), OrcError::VarintTooLarge { .. }));
++            let error = read(file(
++                Some(1),
++                1,
++                present,
++                proto::column_encoding::Kind::Dictionary,
++                &unsigned_literals(&[1]),
++                &[0xff],
++                &bad_varint(),
++            ))
++            .unwrap_err();
++            assert!(matches!(native(&error), OrcError::Arrow { .. }));
++        }
++    }
++
++    #[test]
++    fn absent_or_zero_dictionary_size_preserves_empty_and_all_null_behavior() {
++        for count in [None, Some(0)] {
++            let output = read(file(
++                count,
++                3,
++                &[0xff, 0],
++                proto::column_encoding::Kind::Dictionary,
++                &bad_varint(),
++                &[0xff],
++                &bad_varint(),
++            ))
++            .unwrap();
++            assert_eq!(output, StringArray::from(vec![None::<&str>; 3]));
++            let error = read(file(
++                count,
++                1,
++                &[0xff, 0x80],
++                proto::column_encoding::Kind::Dictionary,
++                &bad_varint(),
++                &[0xff],
++                &unsigned_literals(&[0]),
++            ))
++            .unwrap_err();
++            assert!(matches!(native(&error), OrcError::Arrow { .. }));
++        }
++    }
++
++    #[test]
++    fn dictionary_factory_preserves_empty_repeated_and_nullable_values_in_both_rle_versions() {
++        let direct = |values: &[u64]| {
++            let mut bytes = vec![0x7e, (values.len() - 1) as u8];
++            for value in values {
++                bytes.extend(value.to_be_bytes());
++            }
++            bytes
++        };
++        for kind in [
++            proto::column_encoding::Kind::Dictionary,
++            proto::column_encoding::Kind::DictionaryV2,
++        ] {
++            let encode = |values: &[u64]| {
++                if kind == proto::column_encoding::Kind::Dictionary {
++                    unsigned_literals(values)
++                } else {
++                    direct(values)
++                }
++            };
++            let output = read(file(
++                Some(3),
++                5,
++                &[0xff, 0xb8],
++                kind,
++                &encode(&[0, 1, 2]),
++                b"abb",
++                &encode(&[1, 2, 1, 0]),
++            ))
++            .unwrap();
++            assert_eq!(
++                output,
++                StringArray::from(vec![Some("a"), None, Some("bb"), Some("a"), Some("")])
++            );
++        }
++    }
++
++    #[test]
++    fn offsets_cross_chunks_and_dictionary_indexes_preserve_parent_nulls() {
++        let mut lengths = vec![0; LENGTH_BATCH_SIZE];
++        lengths.push(1);
++        let dictionary = read_dictionary(
++            &mut Cursor::new(b"x"),
++            decoder(many_unsigned_literals(&lengths)).as_mut(),
++            lengths.len(),
++        )
++        .unwrap();
++        assert_eq!(dictionary.len(), LENGTH_BATCH_SIZE + 1);
++        assert_eq!(dictionary.value(0), "");
++        assert_eq!(dictionary.value(LENGTH_BATCH_SIZE), "x");
++        let indexes = Int64ArrayDecoder::new(
++            decoder(unsigned_literals(&[LENGTH_BATCH_SIZE as u64])),
++            None,
++        );
++        let mut decoder =
++            super::super::DictionaryStringArrayDecoder::new(indexes, Arc::new(dictionary)).unwrap();
++        let output = decoder
++            .next_batch(2, Some(&NullBuffer::from(vec![false, true])))
++            .unwrap();
++        assert_eq!(
++            output.as_any().downcast_ref::<StringArray>().unwrap(),
++            &StringArray::from(vec![None, Some("x")])
++        );
++    }
++
++    #[test]
++    fn dictionary_payload_truncation_utf8_and_io_errors_keep_their_categories() {
++        for (length, data) in [(2, b"a".as_slice()), (1, &[0xff])] {
++            let error = read_dictionary(
++                &mut Cursor::new(data),
++                decoder(unsigned_literals(&[length])).as_mut(),
++                1,
++            )
++            .unwrap_err();
++            assert!(matches!(error, OrcError::Arrow { .. }));
++        }
++        let mut payload = Decompressor::new(
++            Bytes::from_static(&[0xff]),
++            Compression::from_proto(proto::CompressionKind::Zlib, None),
++            vec![],
++        );
++        let error = read_dictionary(&mut payload, decoder(unsigned_literals(&[1])).as_mut(), 1)
++            .unwrap_err();
++        let OrcError::IoError { source, .. } = error else {
++            panic!("expected original I/O error");
++        };
++        assert_eq!(source.kind(), io::ErrorKind::InvalidData);
++        assert!(source
++            .get_ref()
++            .unwrap()
++            .downcast_ref::<OrcError>()
++            .is_some());
++    }
++}
