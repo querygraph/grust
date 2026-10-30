@@ -24,14 +24,18 @@ are preserved and nothing is replayed as a stack.
 Every pure component is on the root (CF-0197/0199): bounded contract,
 control model, binding, admission with the signature rule and fixtures, the
 dynamic inline UDTF guard, the lowerer, the typed error chain, and the
-resolved-clock lowering tests. Outside `pipelines/streaming/`, Codex's root
-differs from the common base only by Fable's own imports: `analysis.rs`
-(+16, `GraphScope::new` from unit 3), `pipelines/mod.rs` (+1,
-`mod streaming`), `pipelines/sql.rs` and `sql/tests.rs` (the shared
-`resolution_context()`), and the Connect `Cargo.toml` `sha2` edge. No
-Codex-side change touches the files the C5/event commits edit, so those
-commits apply against what is effectively their own base, except where Auto
-CDC is involved (§5).
+resolved-clock lowering tests. The root as a whole has moved far from the
+common base (114 files, mostly Codex's `sail-plan`, `sail-execution`,
+`sail-common-datafusion`, `sail-cache` and session ownership work, plus the
+imported pure components). Restricted to the fourteen files the C5/event
+commits edit (§3), the root differs from the common base only by Fable's own
+imports: `analysis.rs` (+16, `GraphScope::new` from unit 3),
+`pipelines/mod.rs` (+1, `mod streaming`) and `sql/tests.rs` (the shared
+`resolution_context()`); `git diff --stat 779cb136d 09d2f0cb8 -- <those
+files>` lists exactly those three. That is a statement about textual
+application against those files, not about semantic non-interference with
+the rest of the root; the latter is what Codex's per-unit source review and
+actual-parent gates establish.
 
 The remaining offered delta against the root, excluding `streaming/`, is two
 stacks:
@@ -49,16 +53,18 @@ stacks:
 
 ## 3. Offered C5/event commits, in order
 
-Each row is one offered commit. "Buildable alone" means the dry run in §6
-applied it on the root without conflict, or (marked _expected_) it is
-expected to once its prerequisites are in.
+Each row is one offered commit. "Applies cleanly" records only the dry run
+in §6: a cherry-pick without conflict, not a build and not a verdict on
+semantics; rows marked _expected_ were not dry-run past E. Build evidence
+for a unit exists only when a detached exact-commit VERDICT on its actual
+root parent is posted.
 
-| #   | Offered commit | Subject                                                                  | Files                                                                                                                                                                                                                                                                                                                         | Prerequisites                                                                     | Buildable alone                                                               |
+| #   | Offered commit | Subject                                                                  | Files                                                                                                                                                                                                                                                                                                                         | Prerequisites                                                                     | Applies cleanly (dry run); not built                                          |
 | --- | -------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| A   | `92ab01326`    | typed schema merge error reporting the top-level field pair              | `pipelines/schema.rs`, `pipelines/schema_merge.rs`, Connect `src/schema.rs` (`format_ddl_type`, `quote_field_name` → `pub(crate)`)                                                                                                                                                                                            | none                                                                              | yes (dry run)                                                                 |
-| B   | `bc23c8db6`    | per-flow resolution failure model and its wrapper                        | `pipelines/failures.rs` (new), `pipelines/mod.rs` (`pub(crate) mod failures`)                                                                                                                                                                                                                                                 | none                                                                              | yes (dry run)                                                                 |
-| C   | `105967e17`    | carry typed resolution causes through the relation-scope callback        | `pipelines/failures.rs`                                                                                                                                                                                                                                                                                                       | B                                                                                 | yes (dry run)                                                                 |
-| D   | `798cd35c9`    | raise the per-flow failure report as a retained typed error              | Connect `src/error.rs` (`SparkError::UnresolvedPipeline(Box<FailureReport>)` → `AnalysisException`, no condition), `failures.rs`, `pipelines/mod.rs`                                                                                                                                                                          | B, C                                                                              | yes (dry run)                                                                 |
+| A   | `92ab01326`    | typed schema merge error reporting the top-level field pair              | `pipelines/schema.rs`, `pipelines/schema_merge.rs`, Connect `src/schema.rs` (`format_ddl_type`, `quote_field_name` → `pub(crate)`)                                                                                                                                                                                            | none                                                                              | yes                                                                           |
+| B   | `bc23c8db6`    | per-flow resolution failure model and its wrapper                        | `pipelines/failures.rs` (new), `pipelines/mod.rs` (`pub(crate) mod failures`)                                                                                                                                                                                                                                                 | none                                                                              | yes                                                                           |
+| C   | `105967e17`    | carry typed resolution causes through the relation-scope callback        | `pipelines/failures.rs`                                                                                                                                                                                                                                                                                                       | B                                                                                 | yes                                                                           |
+| D   | `798cd35c9`    | raise the per-flow failure report as a retained typed error              | Connect `src/error.rs` (`SparkError::UnresolvedPipeline(Box<FailureReport>)` → `AnalysisException`, no condition), `failures.rs`, `pipelines/mod.rs`                                                                                                                                                                          | B, C                                                                              | yes                                                                           |
 | E   | `b61da2c98`    | resolve flows as Spark does, with per-flow failures and phased inference | `analysis.rs` (loop + phases 2–9), `execution.rs`, `materialize.rs` (`GraphScope::new`), `failures.rs`, `schema.rs` (`merged`/`demand`/`infer`/`unable_to_infer`), Connect `schema.rs`, `sql/tests.rs`; Python: `test_resolution_failures.py` (14 tests), `test_file_sources.py`, `sql.feature`, `test_autocdc_definition.py` | A–D; **two Auto CDC call sites and two `graph.rs` methods from CDC commits** (§5) | **no**: conflicts in `analysis.rs` and `test_autocdc_definition.py` (dry run) |
 | F   | `2561606e9`    | report datasets without flows in phase 6, after resolution               | `analysis.rs`, `graph.rs` (`validate_every_dataset_has_flow`, `validate` restructured), Python (5 tests)                                                                                                                                                                                                                      | E                                                                                 | expected                                                                      |
 | G   | `7962984be`    | port the multiquery predicate of `validateMultiQueryTables`              | `graph.rs` (`validate_multiquery_tables` predicate, `StructuredSparkError`), Python (3 tests)                                                                                                                                                                                                                                 | `validate_multiquery_tables` present (E′, §5)                                     | expected                                                                      |
@@ -122,7 +128,12 @@ between the C5/event stack and Auto CDC:
    it lands, already in wrapper form.
 5. **Dependencies.** None of A–K changes `Cargo.toml` or `Cargo.lock`.
 
-The coupling therefore reduces to a decoupled form of E, written **E′**:
+The coupling therefore reduces to a decoupled form of E, written **E′**.
+E′ is a proposal only: Codex has not authorized its preparation (CF-0202),
+which waits on source review of the actual A–D parent, including E's batch
+phase behaviour, the CDC-free graph predicates, its interaction with the
+already-imported `GraphScope`/lowerer, and the error and event expectations.
+Its shape would be:
 
 - `analysis.rs` as in E minus the two `autocdc::` lines and their comments;
 - `graph.rs` gains `validate_multiquery_tables` and `validate_streamingness`
@@ -132,9 +143,13 @@ The coupling therefore reduces to a decoupled form of E, written **E′**:
 - the `test_autocdc_definition.py` hunk dropped;
 - everything else byte-identical to E, including the 14 Python tests.
 
-When Auto CDC is imported later, its post-resolution commit re-adds the two
-call sites at phases 4 and 8 (a two-line addition, the comments beside them
-already state Spark's placement) and carries its own Python assertions.
+**Reintegration obligation, explicit.** Dropping the two call sites and the
+four CDC Python assertions from E′ is not a permanent compatibility gap: the
+Auto CDC import must re-add `validate_multiple_flows_globally` at phase 4
+and `validate_temporary_views` at phase 8 and carry the wrapper-form
+assertions in `test_autocdc_definition.py`, and the manifest for that import
+must list both as prerequisites. Until then the root's batch phases run
+without the Auto CDC clauses, and that is a known, recorded omission.
 
 ## 6. Dry run against the root
 
@@ -167,8 +182,11 @@ file.
 ## 7. Proposed import units
 
 Smallest independently buildable sequence, each gated on its actual root
-parent as Codex does; A–D can also be one unit if preferred, since each is
-clean and none is useful alone to a public caller:
+parent as Codex does. Codex's decision (CF-0202): A–D stay four logical
+units and may be prepared on a separate branch from the exact root, each
+with its own detached verdict; A must carry its assertion evidence (the
+`schema_merge.rs` tests against the JVM merge oracle), not only clean
+application. E′ and F–K wait for source review of the resulting A–D parent.
 
 1. A `92ab01326` typed merge error.
 2. B `bc23c8db6` failure model.
@@ -186,8 +204,9 @@ clean and none is useful alone to a public caller:
 10. J `3ef4e238a` cancellation fixture.
 11. K `37c4d9c4a` context lines and fixture ownership.
 
-Units 8–11 could be one import; units 5–7 should stay separate because each
-adds its own Spark-cited Python assertions and F reorders `graph.validate`.
+Units 5–7 should stay separate because each adds its own Spark-cited Python
+assertions and F reorders `graph.validate`; whether 8–11 are grouped is
+Codex's call at review time.
 
 ## 8. Out of scope and open
 
