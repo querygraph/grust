@@ -1,244 +1,283 @@
 # C5: separating flow resolution from schema inference (proposal)
 
-Status: proposal for Codex's decision, revised after CF-0064 and CF-0066; the
-failure model (`pipelines/failures.rs`) is offered as Sail `bc23c8db6`; the
-resolution algorithm below is not implemented.
-Pinned Spark `617618396`; Sail base `779cb136d`; Fable head `33a883091`.
-Revision 1 (first-direct-error identity, A/B attribution difference) is
-withdrawn; what replaces it is below.
+Status: proposal for Codex's decision, revision 3, after CF-0064, CF-0066,
+CF-0071 and CF-0074. Delivered and gated, not integrated: the failure model
+(`pipelines/failures.rs`, Sail `bc23c8db6`), the carriers (`105967e17`) and
+the retained error variant (`798cd35c9`, approved in CF-0074). The resolution
+algorithm below is not implemented; no loop edit until this revision is
+approved. Pinned Spark `617618396`; Sail base `779cb136d`; Fable head
+`798cd35c9`.
 
-## What Spark does, read from source
+Revision 2 said a reader's demand-time inference ran "over the flows resolved
+so far". That is wrong and is withdrawn: Spark makes a table available only
+once every flow writing to it has resolved, so the flow set a reader merges is
+always complete (§1). Revision 2 also treated every table nobody reads as a
+"final phase" case; CF-0074 is right that the user-schema validation phase
+infers earlier for tables that have a same-named flow (§3).
 
-- `DataflowGraph.validationFailure` runs `validateSuccessfulFlowAnalysis`
-  first and `inferredSchema` last (`DataflowGraph.scala:198–207`).
-- During analysis a flow reads an upstream dataset through
-  `FlowAnalysis.readGraphInput` → `ctx.availableInput(id).load(asStreaming)`
-  (`FlowAnalysis.scala:216–240`). For a table that input is a
-  `VirtualTableInput`, whose `load` returns an empty DataFrame with the
-  declared schema or, failing that, `SchemaInferenceUtils.inferSchemaFromFlows`
-  over the flows resolved **so far** (`elements.scala:165–201`). So Spark
-  also merges upstream flow schemas during analysis; the difference from
-  Sail is where a merge failure lands:
-  - with a downstream reader, the merge runs inside the reader's analysis
-    and the reader is a **direct** failure attributed to the reader;
-  - without a reader, the table's merge runs only in `inferredSchema`, last.
-- `validateSuccessfulFlowAnalysis` (`GraphValidations.scala:288–329`)
-  collects every failed flow, partitions them into direct failures and
-  failures caused by a failed upstream, detects cycles among the failed
-  subgraph, and throws one `UnresolvedPipelineException` naming both sets;
-  the per-flow causes are logged, not carried in the exception's class.
+## 1. Availability, read from source
 
-Sail today (`analysis.rs`): one loop resolves each output's flows and
-immediately calls `schema::infer` (merge of the flows' schemas plus the
-declared-schema check), returning the **first** error it meets, whether a
-resolution error or a merge error, in declaration order. That is the
-divergence fixtured in `test_schema_merge_inside_resolution_runs_in_declaration_order`.
+`DataflowGraph.resolve` runs `DataflowGraphTransformer.transformDownNodes`
+with `CoreDataflowNodeProcessor.processNode` (`DataflowGraph.scala:231–239`).
 
-## The contract the pinned suites assert
+- Flows are the work queue. A flow's transform is `attemptResolveFlow` over
+  `resolvedInputs`, the inputs available at that moment
+  (`CoreDataflowNodeProcessor.scala:48–56`).
+- A destination (table, view or sink) is transformed **only when every flow
+  writing to it is in `resolvedFlowsMap`**
+  (`DataflowGraphTransformer.scala:218–222`); the leader thread then calls
+  `processNode(table, flowsTo(table))`, which installs a `VirtualTableInput`
+  whose `availableFlows` are the resolved results of _all_ its flows
+  (`CoreDataflowNodeProcessor.scala:70–91`), and marks the destination
+  resolved (`:271–283`). A view is installed from its single flow (`:92–103`).
+- A flow whose read finds a dataset that is defined but not yet installed
+  throws `UnresolvedDatasetException` (`FlowAnalysis.scala:223–231`), which
+  `attemptResolveFlow` turns into `TransformNodeRetryableException(dataset,
+ResolutionFailedFlow)` (`CoreDataflowNodeProcessor.scala:181–194`); the
+  transformer parks that flow under the dataset and requeues it when the
+  dataset is installed (`DataflowGraphTransformer.scala:180–211, 271–283`).
+  Any other failure is `TransformNodeFailedException` and is final.
+- At the end, a destination with any unresolved flow was never installed, so
+  it is a failed table or sink (`:316–325`); its resolved flows are kept as
+  `ResolvedFlow`s in `failedFlows` (`:326–336`), the parked flows and the
+  failed queue join them as `ResolutionFailedFlow`s, and `getDataflowGraph`
+  returns all of them (`:345–357`).
+
+Consequence for CF-0074's condition. `VirtualTableInput.load` does use a
+declared schema verbatim without inspecting producer results
+(`elements.scala:182–189`), but that method runs only for an installed table,
+and a table with a failed producer is never installed. So in the reference a
+failed producer **does** make every reader of that table fail, with
+`UnresolvedDatasetException(table)`, whether or not the table declares a
+schema; this is not an inference of mine but the transformer's gate at
+`:218–222`. What the declared-schema arm changes is the schema an available
+table presents: the declaration, never merged with producer schemas at
+demand time. A producer whose schema disagrees with the declaration therefore
+fails no reader; the disagreement is caught in phase 2 of §3 if the table has
+a same-named flow, and otherwise not inside `validate` at all.
+
+## 2. Classification and cycles, read from source
+
+`validateSuccessfulFlowAnalysis` (`GraphValidations.scala:288–329`) collects
+`(flow, failure.head)` for every `ResolutionFailedFlow`. A failed flow is a
+**downstream** failure iff some _failed_ flow writes to any dataset in its
+`funcResult.requestedInputs`; otherwise it is **direct** (`:299–311`).
+`requestedInputs` is every dataset the flow function asked for before it
+threw (`FlowAnalysis.scala:223`). The rule is by requested inputs, not by
+exception type: a flow with its own analysis error that had already requested
+a table with a failed producer is downstream. Resolved flows whose destination
+failed are not `ResolutionFailedFlow`s and appear in neither map.
+
+Cycle detection runs over the failed subgraph only, `failed flow → failed
+flows writing to its requested inputs` (`:299–312`); a cycle raises
+`CircularDependencyException(downstreamDataset, upstreamDataset)` for the
+first back edge `detectCycle` meets (`:313–321, 339–355`;
+`PipelinesErrors.scala:190–199`), before the wrapper. Otherwise
+`UnresolvedPipelineException(graph, direct, downstream)` is raised
+(`PipelinesErrors.scala:164–185`).
+
+Parallelism (`parallelism = 10`) does not change the final sets: a parked flow
+is retried whenever its blocking dataset is installed, and the
+`ResolutionFailedFlow` kept is that of its last attempt.
+
+## 3. Inference phases, read from source
+
+`validationFailure` runs, in this order (`DataflowGraph.scala:198–207`):
+
+| #   | Phase                                | Inference performed                                                                                                                                                                                                                                                                                           |
+| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `validateSuccessfulFlowAnalysis`     | none; wrapper or cycle (§2)                                                                                                                                                                                                                                                                                   |
+| 2   | `validateUserSpecifiedSchemas`       | for each table `t` with a flow whose identifier equals `t`'s (`flows.flatMap(f => table.get(f.identifier))`, `GraphValidations.scala:255–257`): `inferSchemaFromFlows(all flows to t, t.specifiedSchema)` **before** `specifiedSchema.foreach`, then equality with the declaration if one exists (`:258–281`) |
+| 3   | `validateGraphIsTopologicallySorted` | none                                                                                                                                                                                                                                                                                                          |
+| 4   | `validateMultiQueryTables`           | none                                                                                                                                                                                                                                                                                                          |
+| 5   | `validatePersistedViewSources`       | none (`INVALID_TEMP_OBJ_REFERENCE`, `:358–380`)                                                                                                                                                                                                                                                               |
+| 6   | `validateEveryDatasetHasFlow`        | none                                                                                                                                                                                                                                                                                                          |
+| 7   | `validateTablesAreResettable`        | none                                                                                                                                                                                                                                                                                                          |
+| 8   | `validateFlowStreamingness`          | none                                                                                                                                                                                                                                                                                                          |
+| 9   | `inferredSchema`                     | for every destination with flows: `reduce(SchemaMergingUtils.mergeSchemas)` over the flows' schemas, raw (`DataflowGraph.scala:174–182`)                                                                                                                                                                      |
+
+Demand time (§1) is a tenth point, inside each reader's analysis:
+`VirtualTableInput.load` returns the declaration verbatim, else
+`inferSchemaFromFlows(availableFlows, None)` (`elements.scala:182–189`).
+
+Error shapes, which differ by phase:
+
+- `inferSchemaFromFlows` (`SchemaInferenceUtils.scala:43–78`): empty flow set
+  → the declaration or an empty `StructType`, never an error; a merge failure
+  → `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` with the merge exception as
+  cause; with a declaration, `mergeSchemas(declared, inferred)` failure →
+  `incompatibleUserSpecifiedAndInferredSchemasError` (`:80–100`).
+- Phase 2 adds the equality check with the same incompatible error and no
+  cause (`GraphValidations.scala:264–276`).
+- Phase 9 is the raw `StructType.merge`: `SparkException`
+  `CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE` (`DataTypeErrors.scala:153–158`) or the
+  decimal-scale variant, not an `AnalysisException` and not wrapped.
+
+Which tables reach which phase:
+
+- a table with a same-named flow (every `@dp.table`/`@dp.materialized_view`
+  with a query; `api.py:176, 280`): phase 2, whether or not it is read and
+  whether or not it declares a schema;
+- a table whose producers are only differently named flows (append flows to
+  a table defined without a query): phase 9 only, raw shape; a declared
+  schema on such a table is never compared with its producers inside
+  `validate`;
+- a read table: demand time first, in each reader; a merge failure there is
+  the reader's direct failure (`UNABLE_TO_INFER…` as the reader's cause) and
+  phase 2 is not reached because phase 1 raises the wrapper.
+
+Sail today (`analysis.rs:168–176`, `schema.rs:37–87`): `schema::infer` runs
+in the loop for every output as soon as its flows resolve, before other flows
+are attempted; the first error of any kind returns immediately. `schema::infer`
+itself is phase 2's body (producer merge → `UNABLE_TO_INFER`, declared merge
+→ `NOT_COMPATIBLE`, equality → `NOT_COMPATIBLE`); only its placement and its
+table set are wrong.
+
+## 4. The contract the pinned suites assert
 
 `ConnectInvalidPipelineSuite.scala` ("Missing source", "Correctly
 differentiate between upstream and downstream errors") and
-`ViewSuite.scala:133–147` intercept `UnresolvedPipelineException`
-(`PipelinesErrors.scala:164–185`) and assert:
+`ViewSuite.scala:133–147` intercept `UnresolvedPipelineException` and assert
+the wrapper message ("Flows with errors: b, e" / "Flows that failed due to
+upstream errors: c, f", unquoted, sorted), the exact key sets of both maps,
+`directFailures(b)` with condition `TABLE_OR_VIEW_NOT_FOUND`,
+`directFailures(e)` naming the missing column, and `downstreamFailures(c)` as
+`UnresolvedDatasetException` with "Failed to read dataset '<b>'. Dataset is
+defined in the pipeline but could not be resolved". Per flow, typed, never
+flattened. Delivered: `FailureReport` with both maps and the verbatim
+template, raised as `SparkError::UnresolvedPipeline` and served as
+`AnalysisException` with that message (`798cd35c9`).
 
-- the wrapper's message contains "Failed to resolve flows in the pipeline",
-  "Flows with errors: b, e" and "Flows that failed due to upstream errors:
-  c, f" (unquoted identifiers, sorted);
-- `directFailures.keySet` and `downstreamFailures.keySet` are exactly the
-  expected sets;
-- `directFailures(b)` is the typed nested cause with condition
-  `TABLE_OR_VIEW_NOT_FOUND`; `directFailures(e)` is an `AnalysisException`
-  whose message names the missing column;
-- `downstreamFailures(c)` is an `UnresolvedDatasetException` whose message is
-  "Failed to read dataset '<b>'. Dataset is defined in the pipeline but could
-  not be resolved".
+## 5. Resolution algorithm, revision 3
 
-So the model is per flow: every failed flow carries its own typed cause, the
-wrapper carries both maps, and nothing is flattened to a first error.
+Three structures, kept distinct as CF-0074 asks:
 
-## Per-flow failure model for Sail (offered as `bc23c8db6`)
+- `resolved_flows: BTreeMap<Name, LogicalPlan>` keyed by **flow** name: the
+  resolved flow plans, the only resolution result;
+- `available: BTreeMap<Name, LogicalPlan>` keyed by **output** name: the
+  input definition a reader binds to, created when and only when every flow
+  targeting the output is in `resolved_flows` (§1's gate): a temporary view's
+  single plan; for a table, an empty relation with the demand-time schema
+  (declaration verbatim, else `schema::merge` over its producers' plans). A
+  failed merge is not stored: the reader whose `GraphScope::resolve` computed
+  it gets `carry(UNABLE_TO_INFER…)` and records it as its direct cause; the
+  next reader computes it again and records its own;
+- `inferred: BTreeMap<Name, Schema>` keyed by output: phase outcomes (§3),
+  never consulted by readers.
 
-`pipelines/failures.rs`: `FailureReport { direct: BTreeMap<Name, SparkError>,
-downstream: BTreeMap<Name, SparkError> }`, `unresolved_dataset(dataset)`
-building `UnresolvedDatasetException`'s exact message, `message()` rendering
-Spark's template verbatim with both sorted unquoted lists, and
-`into_error()` producing `SparkError::AnalysisError`, which the existing path
-maps to class `org.apache.spark.sql.AnalysisException` with that message and
-no condition (demonstrated by converting to a tonic `Status` and reading the
-`ErrorInfo`). Unwired.
+Per flow, each pass attempts **every** flow not yet in `resolved_flows`
+(the current `break` on the first pending flow of an output is removed: a
+sibling flow with its own error must still be attempted and reported, as
+Spark attempts every flow). Outcomes:
 
-## Resolution algorithm, revised after CF-0066
+1. **resolved**: plan stored in `resolved_flows`; if its target's flows are
+   now all resolved, the target enters `available`.
+2. **blocked**: `PlanError::UnresolvedRelation(dataset)` from
+   `GraphScope::resolve` for a defined output not in `available`: the flow
+   stays pending with `(requested inputs so far, dataset)` recorded; it is
+   re-attempted when `dataset` enters `available` (every later pass attempts
+   it; the same sets result, §2).
+3. **failed**: any other error: `recover(error)` recorded as the flow's
+   cause together with its requested inputs; final.
 
-The loop keeps **resolved flow plans** separately from any table schema;
-a table's schema is never stored as a resolution result. Two inference
-points exist, both derived from the resolved flow plans:
+The loop ends when a pass resolves nothing new. If any flow is blocked or
+failed: classify each by §2's rule over its recorded requested inputs
+(downstream iff a blocked or failed flow writes to one of them; a blocked
+flow's cause is `unresolved_dataset(dataset)`); build the failed subgraph and
+run `detectCycle` with Spark's traversal, raising `PIPELINE_CIRCULAR_DEPENDENCY`
+with `CircularDependencyException`'s message for the first back edge;
+otherwise raise the wrapper. An undefined dataset is a direct failure of the
+reader (`pipelineLocalDatasetNotDefinedError`, Sail's existing
+`TABLE_OR_VIEW_NOT_FOUND`), as today.
 
-- **demand-time** (`VirtualTableInput.load` in Spark): when a flow's read of
-  a local table is resolved, `GraphScope::resolve` computes that table's
-  schema from the flows of that table resolved so far (declared schema if
-  present, else the merge); the reader binds to an empty relation with that
-  schema;
-- **final** (`inferredSchema` in Spark): after every flow has resolved and
-  after the other post-resolution validations, every table's schema is
-  inferred from all of its flows for materialisation.
+After a clean loop, phases 2–9 in Spark's order:
 
-Failure handling, per flow:
+- phase 2: `schema::infer(output, producer plans)` for each table output that
+  has a flow with `flow.name == output.name` (Sail's `Flow.name` is the
+  Spark flow identifier; `@dp.table` names the flow after the table), in
+  `graph.flows` order, stored in `inferred`;
+- phase 3: `topology::order` (already run);
+- phase 4: `validate_multiquery_tables` (with the Auto CDC multiflow clause
+  as in `769914891`);
+- phase 5: the `INVALID_TEMP_OBJ_REFERENCE` check moves out of the loop to
+  here, over the resolved reads;
+- phase 6: every dataset has a flow (registration already enforces it; no
+  change);
+- phases 7–8: resettability, streamingness, temporary-view Auto CDC, as in
+  `769914891`;
+- phase 9: for every output with flows, `schema::merge` over its producers'
+  schemas, raw; a failure is served as `SparkException`
+  `CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE` (Sail has the `SparkException`
+  throwable class, `error.rs:252, 303`); the result fills `inferred` for
+  outputs phase 2 did not cover.
 
-1. **Direct failure.** A flow whose own resolution fails (any `PlanError`
-   other than `UnresolvedRelation`) is recorded in `direct` with its typed
-   cause, and its output is marked failed. A demand-time merge failure is a
-   direct failure of **the reader whose resolution computed it**: if B and D
-   both read a table whose flows merge badly, each of B and D records its
-   own cause when its own resolution runs (CF-0066 point 1). The callback
-   that preserves this is narrow: `GraphScope::resolve(name)` returns
-   `PlanError::AnalysisError` built from the merge error for that reader,
-   through the same `From` path the loop already uses for any resolution
-   error; nothing is guessed after the fact.
-2. **Downstream failure.** A flow whose read hits a failed or still-pending
-   table stays pending. When a pass makes no progress, each pending flow is
-   recorded in `downstream` with `unresolved_dataset(<first failed or pending
-   input it requested>)`.
-3. **Cycle detection runs over the failed subgraph unconditionally**
-   (CF-0066 point 3): before the wrapper is raised, build the map from each
-   failed or pending flow to the failed or pending flows that write its
-   requested inputs (`GraphValidations.scala:299–312`) and run `detectCycle`
-   (`:339–355`); a cycle raises `PIPELINE_CIRCULAR_DEPENDENCY` with Spark's
-   `CircularDependencyException` message, whether or not another component
-   of the graph failed for a different reason.
-4. If either map is non-empty, raise the wrapper (`FailureReport::into_error`).
-5. **Tables nobody read** (CF-0066 point 2): a table whose flows all resolved
-   but which no flow read is not a failure during analysis. Its schema is
-   inferred in the final phase, after the post-resolution validations of
-   `769914891`, where a merge failure raises
-   `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` (or the declared-schema
-   incompatibility) as Spark's last phase does. No synthetic direct failure
-   of its flows is recorded.
+`AnalyzedGraph.relations` keeps its meaning for `materialize.rs` and
+`execution.rs` (empty relation per table, plan per temporary view): the
+declaration when declared, else the phase-9 schema. Materialisation is
+otherwise untouched.
 
-Order of phases after the loop: wrapper or cycle (step 3–4) → Auto CDC
-multiflow → MV multiflow → resettability → streamingness → temporary-view
-Auto CDC → final inference per table. Downstream binding is preserved
-because demand-time inference happens exactly where Spark does it, inside
-the reader's resolution.
+File scope: `analysis.rs` (loop, classification, phase order; about eighty
+lines changed), `schema.rs` (`infer` split into `merge` and the declared
+check; `merge` reused at demand time and in phase 9), `graph.rs` (no
+change expected), `failures.rs` (no change), tests. `schema_merge.rs`,
+`topology.rs`, `autocdc/*` and `materialize.rs` unchanged.
 
-Fixtures (both declaration orders where ordering matters):
+## 6. Fixtures (both declaration orders where ordering matters)
 
-- the two `ConnectInvalidPipelineSuite` cases, exact key sets and nested
-  conditions;
-- A incompatible, B and D both read A, C undefined: direct `{B, D, C}`, each
-  of B and D carrying its own merge cause;
-- A incompatible, nobody reads A, nothing else fails: analysis succeeds, the
-  final phase raises `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` for A, no
-  wrapper;
-- A incompatible, nobody reads A, C undefined: wrapper with direct `{C}`
-  only; A's inference failure is never reached;
-- disconnected cycle (`x` reads `y`, `y` reads `x`) plus an independent
-  undefined source `z`: `PIPELINE_CIRCULAR_DEPENDENCY` first;
-- disconnected cycle plus a downstream chain (`b` reads undefined, `c` reads
-  `b`): still the cycle first, then on removing the cycle the wrapper with
-  direct `{b}`, downstream `{c}`;
-- the post-resolution phases unchanged when nothing fails.
-
-## Transport boundary, compared from source
-
-Spark Connect serialises a throwable as an `ErrorInfo` with the class list
-and, with error enrichment, a `FetchErrorDetails` chain built from
-`getCause` (`ErrorUtils.scala:76–177`). `UnresolvedPipelineException` has
-no cause and no error class; its per-flow causes live in its two maps and in
-the per-flow failure events, not in the cause chain. A Python client
-therefore sees an `AnalysisException` whose message carries the two lists,
-and nothing else, in Spark too.
-
-Upstream Python assertion forcing an outer condition: **none**. The pinned
-`python/pyspark/pipelines/tests` contain no assertion on `Failed to resolve`,
-`TABLE_OR_VIEW_NOT_FOUND` or a condition of an unresolved pipeline (grep
-over the pinned tree); the only `getCondition` assertions there are the
-session-mutation tests. The Sail tests that assert the inner condition in the
-message string are Fable's own (`test_unresolved_source_is_reported_before_the_temporary_view_rule`
-and the two both-order fixtures) and will be rewritten to the wrapper
-message plus the two lists; the feature scenarios assert nothing about
-unresolved datasets.
-
-Connect exposure in Sail, two separately reviewable units:
-
-1. **Source model and wrapper** (this unit): the structure above; the
-   wrapper reaches the client as `AnalysisException` with Spark's message
-   through the existing `spark_status` path (`error.rs`), which is what
-   Spark's client sees as well. Sail's `fetch_error_details` is
-   unimplemented, so no chain is served either way today.
-2. **Per-flow diagnostics** (later, Codex's event path): Spark logs each
-   flow failure as a flow progress event before the wrapper; Sail's
-   pipeline event stream (`event(...)` in `pipelines/mod.rs`) is where the
-   per-flow causes would be emitted so a client can see which flow failed
-   with which condition, matching "look for flow failures that precede this
-   log". Not part of the resolution unit.
-
-## Retaining the typed report in the raised error (CF-0071, point 1)
-
-`FailureReport::into_error` presently returns `SparkError::AnalysisError(message)`
-and drops the maps. The report must stay reachable up to the Connect
-serialization boundary. Exact extension proposed for `sail-spark-connect/src/error.rs`,
-for approval before implementation:
-
-```rust
-// SparkError, one new variant; the report carries Debug and is Send + Sync
-// because SparkError is.
-#[error("{}", .0.message(None))]
-UnresolvedPipeline(Box<crate::pipelines::failures::FailureReport>),
-
-// impl From<SparkError> for Status, one new arm, next to AnalysisError:
-SparkError::UnresolvedPipeline(report) => {
-    SparkThrowable::AnalysisException(report.message(None)).into()
-}
-```
-
-No other site matches `SparkError` exhaustively (`ParseError` is matched only
-in `From<SparkError> for Status` and constructed once in `proto/data_type.rs`),
-so those are the only two arms. `FailureReport::into_error` then returns
-`SparkError::UnresolvedPipeline(Box::new(self))`; the tests assert the maps
-and nested causes **after** conversion by matching the variant, then the
-`Status` mapping as today. Analysis and event consumers read the report from
-the error; the transport omits the maps as Spark's does.
-
-## Callback feasibility, proven on the actual types (CF-0071, point 2)
-
-`GraphScope::resolve` returns `PlanResult<Option<LogicalPlan>>`. `PlanError`
-has no structured arm, but `PlanError::DataFusionError(DataFusionError::External(Box<dyn Error + Send + Sync>))`
-owns an error object, and `SparkError` is `std::error::Error + Send + Sync`.
-`failures::carry(SparkError) -> PlanError` and `failures::recover(PlanError)
--> SparkError` (Sail `105967e17`) round-trip the identical value, structured
-or string-conditioned, and leave every other `PlanError` on the existing
-`From<PlanError> for SparkError` mapping; a test proves it. Note that Sail's
-own `TABLE_OR_VIEW_NOT_FOUND` is a string-conditioned `AnalysisError` from
-`sail-catalog`, not a `StructuredSparkError`; "typed cause" in Sail means
-the `SparkError` value as produced, kept intact, never re-parsed from text.
-
-Concrete patch scope for the loop (next unit, on approval): in
-`analysis.rs`, (a) keep `resolved_flows: BTreeMap<Name, LogicalPlan>` beside
-the per-output map; (b) `GraphScope::resolve` computes a read table's
-demand-time schema from its resolved flows through `schema::merge` and
-returns `carry(error)` on failure; (c) the loop records `recover(error)` as
-the reader's direct failure, marks the output failed, and continues; (d) on
-no progress, classify pending flows as downstream failures, run the
-failed-subgraph cycle check, raise the wrapper; (e) final per-table
-inference after the post-resolution validations. `schema.rs` splits
-`merge` from the declared-schema check. About sixty lines plus tests.
-
-## Fixtures (both declaration orders where ordering matters)
-
-Reconciled with the revised algorithm; the earlier first-error and
-synthetic-own-flow expectations are withdrawn.
+Reference outcomes derived in §1–§3; each names the phase that raises.
 
 - `ConnectInvalidPipelineSuite` "Missing source" and "Correctly
-  differentiate": exact key sets, nested conditions, dataset messages.
-- A incompatible, B and D read A, C undefined: direct `{B, D, C}`, B and D
-  each carrying their own merge cause; downstream empty.
-- A incompatible, nobody reads A, nothing else fails: analysis succeeds; the
-  final phase raises `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` for A.
-- A incompatible, nobody reads A, C undefined: wrapper with direct `{C}`;
-  A's final inference is not reached.
-- disconnected cycle plus independent undefined source:
-  `PIPELINE_CIRCULAR_DEPENDENCY` first.
-- disconnected cycle plus a downstream chain: cycle first; without the
-  cycle, wrapper with direct `{b}`, downstream `{c}`.
-- post-resolution phases unchanged when nothing fails; the three Fable
-  Python tests move to the wrapper message.
+  differentiate": exact key sets, nested conditions, dataset messages (phase
+  1).
+- **Declared-schema table with a failing producer and a reader** (CF-0074):
+  `T` declares `(id INT)`, its only flow reads an undefined source, `R` reads
+  `T`: direct `{T's flow}`, downstream `{R}` with `unresolved_dataset(T)`;
+  the declaration does not make `T` available (§1).
+- **Multiple producers, one failing**: `T` has `f1` (resolves) and `f2`
+  (undefined source), `R` reads `T`: direct `{f2}`, downstream `{R}`; `f1` in
+  neither map.
+- **Two readers**: `A` has two producers whose schemas do not merge, `B` and
+  `D` read `A`, nothing else fails: direct `{B, D}`, each with its own
+  `UNABLE_TO_INFER…` cause; downstream empty.
+- **Two readers, declared schema**: as above but `A` declares a schema: `B`
+  and `D` resolve (declaration verbatim at demand time); phase 2 raises
+  `UNABLE_TO_INFER…` for `A` (same-named flow present).
+- **Sibling with its own error**: `T` has `f1` reading a blocked dataset and
+  `f2` reading an undefined source: direct `{f2}`, downstream `{f1}`; `f2`
+  is attempted although `f1` is blocked.
+- **Own error after a failed upstream**: `R` reads `T` (failed producer) and
+  also references a missing column, with `T` requested first: downstream
+  `{R}` (§2's rule is by requested inputs).
+- **Competing validation errors, both shapes** (CF-0074): (i) `A` with a
+  same-named flow plus an append flow whose schema does not merge, nobody
+  reads `A`, and a streamingness violation elsewhere: phase 2
+  `UNABLE_TO_INFER…` for `A` wins, before phase 8; (ii) `A` defined without
+  a query and fed by two append flows that do not merge, same streamingness
+  violation: phase 8 wins, and with the violation removed phase 9 raises the
+  raw `CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE`.
+- **Unread incompatible table plus undefined source**: wrapper with direct
+  `{C}` only; no inference phase is reached.
+- Disconnected cycle plus an independent undefined source:
+  `PIPELINE_CIRCULAR_DEPENDENCY` first; disconnected cycle plus a downstream
+  chain: cycle first, then without the cycle direct `{b}`, downstream `{c}`.
+- Post-resolution phases unchanged when nothing fails; the existing
+  `test_schema.py` cases (same-named flows) keep their conditions through
+  phase 2; `views.feature:120` keeps `INVALID_TEMP_OBJ_REFERENCE` through
+  phase 5; `test_execution.py:254` keeps `PIPELINE_CIRCULAR_DEPENDENCY`;
+  `test_autocdc_definition.py:420, 514` move from the inner condition to the
+  wrapper message with both lists.
+
+## 7. Transport boundary and callbacks (unchanged from revision 2)
+
+Spark Connect serialises `UnresolvedPipelineException` as an `ErrorInfo`
+with the class list; it has no cause and no condition, so a Python client
+sees an `AnalysisException` carrying the two lists and nothing else
+(`ErrorUtils.scala:76–177`). Sail serves the same through `error.rs`
+(`798cd35c9`); `fetch_error_details` is unimplemented on both paths today.
+Per-flow causes reach a client only through flow progress events, Codex's
+event path, in a later unit.
+
+`failures::carry` / `recover` (`105967e17`) round-trip a `SparkError`
+through `PlanError::DataFusionError(DataFusionError::External)` unchanged, so
+the demand-time merge failure in `GraphScope::resolve` reaches the loop as
+the typed value, never re-parsed from text.
