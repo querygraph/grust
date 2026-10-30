@@ -172,26 +172,73 @@ Connect exposure in Sail, two separately reviewable units:
    with which condition, matching "look for flow failures that precede this
    log". Not part of the resolution unit.
 
-## Fixtures (ports, both declaration orders where ordering matters)
+## Retaining the typed report in the raised error (CF-0071, point 1)
 
-- "Missing source": `b` reads `a` undefined → direct `{b: TABLE_OR_VIEW_NOT_FOUND}`,
-  message lists.
-- "Correctly differentiate": `a` ok, `b` reads nonexistent, `c` reads `b`,
-  `d` ok, `e` selects a missing column, `f` reads `e` → direct `{b, e}`,
-  downstream `{c, f}` with the dataset messages; both key sets exact.
-- merge failure with a reader: `A` incompatible flows, `B` reads `A`, `C`
-  undefined source → direct `{B: merge error, C: TABLE_OR_VIEW_NOT_FOUND}`,
-  both orders; without `B`: direct `{A's flow: UNABLE_TO_INFER_...}`.
-- cycle plus an undefined source: `x` reads `y`, `y` reads `x`, `z`
-  undefined → Spark: `z` is a direct failure and `x`, `y` pending with no
-  failed input → `detectCycle` fires first → `PIPELINE_CIRCULAR_DEPENDENCY`;
-  the fixture asserts that order.
-- the post-resolution phases unchanged when nothing fails; the existing
-  both-order fixtures move to the wrapper message.
+`FailureReport::into_error` presently returns `SparkError::AnalysisError(message)`
+and drops the maps. The report must stay reachable up to the Connect
+serialization boundary. Exact extension proposed for `sail-spark-connect/src/error.rs`,
+for approval before implementation:
 
-Scope: `analysis.rs` (resolved-plan map, demand-time schema callback in
-`GraphScope::resolve`, failure recording, failed-subgraph cycle check,
-wrapper, final inference phase), `schema.rs` (split merge from declared
-check so both inference points reuse it), tests, and the three Fable Python
-tests. `pipelines/failures.rs` is already offered. No `PlanResolver`,
-session or event-path change.
+```rust
+// SparkError, one new variant; the report carries Debug and is Send + Sync
+// because SparkError is.
+#[error("{}", .0.message(None))]
+UnresolvedPipeline(Box<crate::pipelines::failures::FailureReport>),
+
+// impl From<SparkError> for Status, one new arm, next to AnalysisError:
+SparkError::UnresolvedPipeline(report) => {
+    SparkThrowable::AnalysisException(report.message(None)).into()
+}
+```
+
+No other site matches `SparkError` exhaustively (`ParseError` is matched only
+in `From<SparkError> for Status` and constructed once in `proto/data_type.rs`),
+so those are the only two arms. `FailureReport::into_error` then returns
+`SparkError::UnresolvedPipeline(Box::new(self))`; the tests assert the maps
+and nested causes **after** conversion by matching the variant, then the
+`Status` mapping as today. Analysis and event consumers read the report from
+the error; the transport omits the maps as Spark's does.
+
+## Callback feasibility, proven on the actual types (CF-0071, point 2)
+
+`GraphScope::resolve` returns `PlanResult<Option<LogicalPlan>>`. `PlanError`
+has no structured arm, but `PlanError::DataFusionError(DataFusionError::External(Box<dyn Error + Send + Sync>))`
+owns an error object, and `SparkError` is `std::error::Error + Send + Sync`.
+`failures::carry(SparkError) -> PlanError` and `failures::recover(PlanError)
+-> SparkError` (Sail `105967e17`) round-trip the identical value, structured
+or string-conditioned, and leave every other `PlanError` on the existing
+`From<PlanError> for SparkError` mapping; a test proves it. Note that Sail's
+own `TABLE_OR_VIEW_NOT_FOUND` is a string-conditioned `AnalysisError` from
+`sail-catalog`, not a `StructuredSparkError`; "typed cause" in Sail means
+the `SparkError` value as produced, kept intact, never re-parsed from text.
+
+Concrete patch scope for the loop (next unit, on approval): in
+`analysis.rs`, (a) keep `resolved_flows: BTreeMap<Name, LogicalPlan>` beside
+the per-output map; (b) `GraphScope::resolve` computes a read table's
+demand-time schema from its resolved flows through `schema::merge` and
+returns `carry(error)` on failure; (c) the loop records `recover(error)` as
+the reader's direct failure, marks the output failed, and continues; (d) on
+no progress, classify pending flows as downstream failures, run the
+failed-subgraph cycle check, raise the wrapper; (e) final per-table
+inference after the post-resolution validations. `schema.rs` splits
+`merge` from the declared-schema check. About sixty lines plus tests.
+
+## Fixtures (both declaration orders where ordering matters)
+
+Reconciled with the revised algorithm; the earlier first-error and
+synthetic-own-flow expectations are withdrawn.
+
+- `ConnectInvalidPipelineSuite` "Missing source" and "Correctly
+  differentiate": exact key sets, nested conditions, dataset messages.
+- A incompatible, B and D read A, C undefined: direct `{B, D, C}`, B and D
+  each carrying their own merge cause; downstream empty.
+- A incompatible, nobody reads A, nothing else fails: analysis succeeds; the
+  final phase raises `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` for A.
+- A incompatible, nobody reads A, C undefined: wrapper with direct `{C}`;
+  A's final inference is not reached.
+- disconnected cycle plus independent undefined source:
+  `PIPELINE_CIRCULAR_DEPENDENCY` first.
+- disconnected cycle plus a downstream chain: cycle first; without the
+  cycle, wrapper with direct `{b}`, downstream `{c}`.
+- post-resolution phases unchanged when nothing fails; the three Fable
+  Python tests move to the wrapper message.
