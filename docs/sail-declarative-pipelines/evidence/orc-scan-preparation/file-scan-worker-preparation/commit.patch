@@ -1,0 +1,313 @@
+commit 429d54e3d3bf826a5985edb8aead3d46c8b34559
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 17:47:38 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 17:47:38 2026 -0700
+
+    fix: preserve file scan partitioning during worker preparation
+
+diff --git a/crates/sail-execution/src/task_runner/preparation.rs b/crates/sail-execution/src/task_runner/preparation.rs
+index 5c19fab4f..8d4f3b778 100644
+--- a/crates/sail-execution/src/task_runner/preparation.rs
++++ b/crates/sail-execution/src/task_runner/preparation.rs
+@@ -57,7 +57,7 @@ impl TaskPreparation {
+         context: Arc<TaskContext>,
+     ) -> ExecutionResult<SendableRecordBatchStream> {
+         let plan = proto_to_physical_plan(&context, &RemoteExecutionCodec, proto)?;
+-        let plan = self.rewrite_file_scans(plan)?;
++        let plan = Self::rewrite_file_scans(plan)?;
+         let plan = self.rewrite_shuffle(
+             key,
+             &definition.inputs,
+@@ -89,10 +89,7 @@ impl TaskPreparation {
+         Ok(plan.execute(key.partition, context)?)
+     }
+ 
+-    fn rewrite_file_scans(
+-        &self,
+-        plan: Arc<dyn ExecutionPlan>,
+-    ) -> ExecutionResult<Arc<dyn ExecutionPlan>> {
++    fn rewrite_file_scans(plan: Arc<dyn ExecutionPlan>) -> ExecutionResult<Arc<dyn ExecutionPlan>> {
+         let result = plan.transform(|node| {
+             if let Some(ds) = node.downcast_ref::<DataSourceExec>()
+                 && let Some(base_config) = ds.data_source().downcast_ref::<FileScanConfig>()
+@@ -112,9 +109,12 @@ impl TaskPreparation {
+                         Arc::new(SchemaEvolutionPhysicalExprAdapterFactory {});
+                     builder = builder.with_expr_adapter(Some(adapter_factory));
+                 }
+-                return Ok(Transformed::yes(
+-                    DataSourceExec::from_data_source(builder.build()) as Arc<dyn ExecutionPlan>,
+-                ));
++                // Decoded checkpoints can carry partitioning on the execution
++                // node separately from the file config. This rewrite changes
++                // neither the file groups nor the projected output columns.
++                let scan = DataSourceExec::new(Arc::new(builder.build()))
++                    .with_partitioning(ds.properties().output_partitioning().clone());
++                return Ok(Transformed::yes(Arc::new(scan) as Arc<dyn ExecutionPlan>));
+             }
+             Ok(Transformed::no(node))
+         });
+@@ -159,6 +159,10 @@ impl TaskPreparation {
+     }
+ }
+ 
++#[cfg(test)]
++#[path = "preparation/file_scan_tests.rs"]
++mod file_scan_tests;
++
+ /// Dropping the pending stream cancels preparation cooperatively. The blocking task owns
+ /// its inputs and result, so Tokio drops an abandoned result even after the monitor exits.
+ fn preparation_stream(
+diff --git a/crates/sail-execution/src/task_runner/preparation/file_scan_tests.rs b/crates/sail-execution/src/task_runner/preparation/file_scan_tests.rs
+new file mode 100644
+index 000000000..5ad929cac
+--- /dev/null
++++ b/crates/sail-execution/src/task_runner/preparation/file_scan_tests.rs
+@@ -0,0 +1,247 @@
++#![expect(clippy::unwrap_used)]
++
++use std::sync::Arc;
++
++use bytes::Bytes;
++use datafusion::arrow::array::{Int32Array, StringArray};
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::common::{Result, ScalarValue, internal_err};
++use datafusion::datasource::listing::PartitionedFile;
++use datafusion::datasource::physical_plan::{FileGroup, ParquetSource};
++use datafusion::datasource::source::DataSource;
++use datafusion::datasource::table_schema::TableSchema;
++use datafusion::execution::config::SessionConfig;
++use datafusion::execution::object_store::ObjectStoreUrl;
++use datafusion::physical_expr::expressions::Column;
++use datafusion::physical_plan::Partitioning;
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use sail_data_source::formats::orc::{OrcJavaTimeZoneConfig, OrcSource};
++use sail_data_source::options::r#gen::OrcReadOptions;
++use sail_physical_plan::remote_checkpoint::CheckpointDataSource;
++
++use super::*;
++use crate::proto::{decode_remote_physical_plan, encode_remote_physical_plan};
++
++const ORC: &[u8] = include_bytes!(concat!(
++    env!("CARGO_MANIFEST_DIR"),
++    "/../sail-data-source/tests/fixtures/orc/time_precisions.orc"
++));
++const STORE_URL: &str = "memory://orc-worker-preparation";
++
++fn config(plan: &Arc<dyn ExecutionPlan>) -> &FileScanConfig {
++    plan.downcast_ref::<DataSourceExec>()
++        .unwrap()
++        .data_source()
++        .downcast_ref::<FileScanConfig>()
++        .unwrap()
++}
++
++fn assert_groups(expected: &FileScanConfig, actual: &FileScanConfig) {
++    assert_eq!(actual.file_groups.len(), expected.file_groups.len());
++    for (expected, actual) in expected.file_groups.iter().zip(&actual.file_groups) {
++        assert_eq!(actual.len(), expected.len());
++        for (expected, actual) in expected.iter().zip(actual.iter()) {
++            assert_eq!(actual.object_meta, expected.object_meta);
++            assert_eq!(actual.range, expected.range);
++            assert_eq!(actual.partition_values, expected.partition_values);
++        }
++    }
++}
++
++#[test]
++fn preparation_preserves_decoded_checkpoint_partitioning_and_parquet_adapter() -> Result<()> {
++    let schema = Arc::new(Schema::new(vec![
++        Field::new("id", DataType::Int32, true),
++        Field::new("payload", DataType::Utf8, true),
++    ]));
++    let source = ParquetSource::new(TableSchema::from(schema));
++    let original = FileScanConfigBuilder::new(ObjectStoreUrl::local_filesystem(), Arc::new(source))
++        .with_file_groups(vec![
++            FileGroup::from(vec![PartitionedFile::new("first.parquet", 100)]),
++            FileGroup::from(vec![]),
++            FileGroup::from(vec![PartitionedFile::new("last.parquet", 200)]),
++        ])
++        .with_projection_indices(Some(vec![1, 0]))?
++        .build();
++    let checkpoint = CheckpointDataSource::new(
++        Arc::new(original),
++        Partitioning::Hash(vec![Arc::new(Column::new("id", 1))], 3),
++    );
++    let encoded = encode_remote_physical_plan(
++        &RemoteExecutionCodec,
++        DataSourceExec::from_data_source(checkpoint),
++    )?;
++    let decoded =
++        decode_remote_physical_plan(&TaskContext::default(), &RemoteExecutionCodec, &encoded)?;
++    assert!(matches!(
++        config(&decoded).output_partitioning(),
++        Partitioning::UnknownPartitioning(3)
++    ));
++    let adapter = config(&decoded).expr_adapter_factory.clone().unwrap();
++    let prepared = TaskPreparation::rewrite_file_scans(decoded.clone()).unwrap();
++    assert_eq!(prepared.schema(), decoded.schema());
++    assert_groups(config(&decoded), config(&prepared));
++    assert!(config(&prepared).preserve_order);
++    assert!(Arc::ptr_eq(
++        &adapter,
++        config(&prepared).expr_adapter_factory.as_ref().unwrap()
++    ));
++    let Partitioning::Hash(expressions, 3) = prepared.output_partitioning() else {
++        return internal_err!("preparation discarded the decoded checkpoint partitioning");
++    };
++    let column = expressions[0].downcast_ref::<Column>().unwrap();
++    assert_eq!(column.name(), "id");
++    assert_eq!(column.index(), 1);
++
++    // Reapplying preparation must retain an already supplied Parquet adapter.
++    let repeated = TaskPreparation::rewrite_file_scans(prepared).unwrap();
++    assert!(Arc::ptr_eq(
++        &adapter,
++        config(&repeated).expr_adapter_factory.as_ref().unwrap()
++    ));
++    assert!(matches!(
++        repeated.output_partitioning(),
++        Partitioning::Hash(_, 3)
++    ));
++    Ok(())
++}
++
++fn worker(store: Arc<InMemory>) -> Arc<TaskContext> {
++    let mut session_config = SessionConfig::new();
++    session_config
++        .options_mut()
++        .execution
++        .enable_file_stream_work_stealing = true;
++    let context = Arc::new(TaskContext::default().with_session_config(session_config));
++    context
++        .runtime_env()
++        .register_object_store(&url::Url::parse(STORE_URL).unwrap(), store);
++    context
++}
++
++async fn rows(
++    plan: &Arc<dyn ExecutionPlan>,
++    partition: usize,
++    context: Arc<TaskContext>,
++) -> Result<Vec<(String, i32)>> {
++    let batches = plan
++        .execute(partition, context)?
++        .try_collect::<Vec<_>>()
++        .await?;
++    let mut rows = vec![];
++    for batch in batches {
++        let files = batch
++            .column(0)
++            .as_any()
++            .downcast_ref::<StringArray>()
++            .unwrap();
++        let ids = batch
++            .column(1)
++            .as_any()
++            .downcast_ref::<Int32Array>()
++            .unwrap();
++        rows.extend(
++            files
++                .iter()
++                .zip(ids.iter())
++                .map(|(file, id)| (file.unwrap().to_string(), id.unwrap())),
++        );
++    }
++    Ok(rows)
++}
++
++fn expected_rows(files: &[&str]) -> Vec<(String, i32)> {
++    files
++        .iter()
++        .flat_map(|file| (0..4).map(move |id| (file.to_string(), id)))
++        .collect()
++}
++
++#[tokio::test]
++async fn separately_decoded_orc_tasks_read_only_their_file_groups() -> Result<()> {
++    let store = Arc::new(InMemory::new());
++    let mut files = vec![];
++    for name in ["first.orc", "second.orc", "third.orc"] {
++        let path = Path::from(name);
++        store.put(&path, Bytes::from_static(ORC).into()).await?;
++        let mut file = PartitionedFile::new_from_meta(store.head(&path).await?);
++        file.partition_values = vec![ScalarValue::Utf8(Some(name.to_string()))];
++        files.push(file);
++    }
++    let driver = worker(store.clone());
++    let schema = TableSchema::builder(Arc::new(Schema::new(vec![Field::new(
++        "id",
++        DataType::Int32,
++        true,
++    )])))
++    .with_table_partition_cols(vec![Arc::new(Field::new("file", DataType::Utf8, false))])
++    .build();
++    let source = OrcSource::try_new(
++        schema,
++        OrcReadOptions {
++            max_encoded_metadata_bytes: 64 * 1024 * 1024,
++            max_decoded_metadata_bytes: 64 * 1024 * 1024,
++            max_decoded_stripe_footer_bytes: 64 * 1024 * 1024,
++            max_schema_depth: 64,
++        },
++        OrcJavaTimeZoneConfig::for_reader_timezone("UTC".to_string())?,
++        "UTC".to_string(),
++        true,
++        driver.memory_pool().clone(),
++    )?;
++    let original = FileScanConfigBuilder::new(ObjectStoreUrl::parse(STORE_URL)?, Arc::new(source))
++        .with_file_groups(vec![
++            FileGroup::from(files[..1].to_vec()),
++            FileGroup::from(vec![]),
++            FileGroup::from(files[1..].to_vec()),
++        ])
++        .with_projection_indices(Some(vec![1, 0]))?
++        .with_batch_size(Some(2))
++        .build();
++    let encoded = encode_remote_physical_plan(
++        &RemoteExecutionCodec,
++        DataSourceExec::from_data_source(original.clone()),
++    )?;
++
++    // Without task preparation, a fresh process-local queue lets even the
++    // empty partition consume every file. Keep this regression control real.
++    let context = worker(store.clone());
++    let unprepared = decode_remote_physical_plan(&context, &RemoteExecutionCodec, &encoded)?;
++    assert!(!config(&unprepared).preserve_order);
++    let mut shared_rows = rows(&unprepared, 1, context).await?;
++    shared_rows.sort();
++    assert_eq!(
++        shared_rows,
++        expected_rows(&["first.orc", "second.orc", "third.orc"])
++    );
++
++    let expected = [
++        expected_rows(&["first.orc"]),
++        vec![],
++        expected_rows(&["second.orc", "third.orc"]),
++    ];
++    let mut combined = vec![];
++    for (partition, expected) in expected.into_iter().enumerate() {
++        // Each task decodes independently, as TaskPreparation::execute_plan
++        // does. Sharing one decoded plan would hide sibling-queue duplication.
++        let context = worker(store.clone());
++        let decoded = decode_remote_physical_plan(&context, &RemoteExecutionCodec, &encoded)?;
++        let prepared = TaskPreparation::rewrite_file_scans(decoded).unwrap();
++        assert!(config(&prepared).preserve_order);
++        assert_groups(&original, config(&prepared));
++        assert_eq!(prepared.output_partitioning().partition_count(), 3);
++        assert_eq!(prepared.schema().field(0).name(), "file");
++        assert_eq!(prepared.schema().field(1).name(), "id");
++        let actual = rows(&prepared, partition, context.clone()).await?;
++        assert_eq!(actual, expected);
++        assert_eq!(context.memory_pool().reserved(), 0);
++        combined.extend(actual);
++    }
++    assert_eq!(
++        combined,
++        expected_rows(&["first.orc", "second.orc", "third.orc"])
++    );
++    Ok(())
++}

@@ -1,0 +1,36 @@
+    Checking orc-rust v0.9.0 (/Users/alexy/src/sail-sdp-gate/vendor/orc-rust)
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+    Checking sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+    Checking sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+error[E0599]: no method named `output_partitioning` found for reference `&datafusion::datasource::memory::DataSourceExec` in the current scope
+   --> crates/sail-execution/src/task_runner/preparation.rs:116:43
+    |
+116 |                     .with_partitioning(ds.output_partitioning().clone());
+    |                                           ^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `with_partitioning` with a similar name, but with different arguments
+   --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-55.2.0/src/source.rs:665:5
+    |
+665 |     pub fn with_partitioning(mut self, partitioning: Partitioning) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: use of deprecated method `datafusion::datasource::physical_plan::FileScanConfigBuilder::with_projection`: Use with_projection_indices instead
+  --> crates/sail-execution/src/task_runner/preparation/file_scan_tests.rs:66:10
+   |
+66 |         .with_projection(Some(vec![1, 0]))
+   |          ^^^^^^^^^^^^^^^
+   |
+   = note: `-D deprecated` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(deprecated)]`
+
+error: use of deprecated method `datafusion::datasource::physical_plan::FileScanConfigBuilder::with_projection`: Use with_projection_indices instead
+   --> crates/sail-execution/src/task_runner/preparation/file_scan_tests.rs:200:10
+    |
+200 |         .with_projection(Some(vec![1, 0]))
+    |          ^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-execution` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `sail-execution` (lib test) due to 3 previous errors

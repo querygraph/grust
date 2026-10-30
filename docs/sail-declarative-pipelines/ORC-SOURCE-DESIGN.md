@@ -578,3 +578,15 @@ gates pass 357 native tests (eight ignored), 236 no-default and 192 data-source,
 formatting, strict Clippy and exact package verification. Required dictionary
 storage is not claimed bounded by these scratch checks; remaining native and
 public-format work is unchanged.
+
+## Preserve worker partitioning and shared partition-schema policy
+
+Recorded: 2026-10-30T00:58:14.011214+00:00. [Sail `429d54e3d3` and `5563ea1659`](evidence/orc-scan-preparation/README.md)
+pass 175 execution and 201 data-source tests, formatting and strict Clippy.
+Worker preparation retains decoded checkpoint partitioning and proves independently
+decoded ORC tasks read each assigned group once. Shared listing retains omitted
+partitions, honors case policy, and preserves explicit-empty semantics via the
+format hook. Auto-discovered columns drop user metadata but keep logical types;
+explicit selectors preserve supplied fields. Both compile failures and the
+pre-gate metadata correction are retained. Inferred partition types/mixed casing,
+public registration/inference/writer and full SDP acceptance remain open.

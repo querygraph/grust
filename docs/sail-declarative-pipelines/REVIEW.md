@@ -1390,3 +1390,11 @@ public CLI or full SDP acceptance count changes.
 `5937e8a8f1` and Sail `43fe0dc841` with eight new factory/decoder
 tests; full native 357 (eight ignored), no-default 236 and data-source 192 pass.
 Formatting, strict Clippy and package checks pass. No public SDP runtime result.
+
+### File scan preparation (2026-10-30T00:58:14.011214+00:00)
+
+[Evidence](evidence/orc-scan-preparation/README.md) qualifies worker preparation
+`429d54e3d3` (175 execution tests) and shared partition preparation
+`5563ea1659` (201 data-source tests), plus formatting/strict Clippy.
+Retained compilation failures changed no assertions. Direct scan/codec tests are
+not a public ORC registration, cluster or complete SDP verdict.

@@ -1,0 +1,629 @@
+diff --git a/crates/sail-data-source/src/listing/explicit_schema_tests.rs b/crates/sail-data-source/src/listing/explicit_schema_tests.rs
+index fde4a552d..5b9aaac29 100644
+--- a/crates/sail-data-source/src/listing/explicit_schema_tests.rs
++++ b/crates/sail-data-source/src/listing/explicit_schema_tests.rs
+@@ -435,3 +435,27 @@ async fn explicit_empty_override_is_distinct_from_absent_schema() -> Result<()>
+     }
+     Ok(())
+ }
++
++#[tokio::test]
++async fn explicit_empty_override_keeps_discovered_partitions_without_file_inference() -> Result<()>
++{
++    let (context, policy) = fixture(
++        Policy {
++            fail_inference: true,
++            ..Default::default()
++        },
++        true,
++    )
++    .await?;
++    let output =
++        source::<PreservingReadFormat>(&context, Some(Schema::empty()), false, vec![]).await?;
++    assert_eq!(
++        output.schema().as_ref(),
++        &Schema::new(vec![Field::new("p", DataType::Utf8, true)])
++    );
++    let calls = policy.calls.lock().unwrap();
++    assert_eq!(calls.prepared, [Schema::empty()]);
++    assert_eq!(calls.inference, 0);
++    assert!(calls.validated.is_empty());
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/listing/partition.rs b/crates/sail-data-source/src/listing/partition.rs
+index bb4455e2c..0c756fba2 100644
+--- a/crates/sail-data-source/src/listing/partition.rs
++++ b/crates/sail-data-source/src/listing/partition.rs
+@@ -1,7 +1,106 @@
+-use datafusion::arrow::datatypes::FieldRef;
++use std::sync::Arc;
++
++use arrow_schema::extension::{EXTENSION_TYPE_METADATA_KEY, EXTENSION_TYPE_NAME_KEY};
++use datafusion::arrow::datatypes::{DataType, Field, FieldRef, Schema};
+ use datafusion::logical_expr::Expr;
+ use datafusion_common::tree_node::{Transformed, TreeNode};
+ use datafusion_common::{Result, plan_err};
++use sail_common::spec;
++
++fn matches_name(left: &str, right: &str, case_sensitive: bool) -> bool {
++    if case_sensitive {
++        left == right
++    } else {
++        left.eq_ignore_ascii_case(right)
++    }
++}
++
++/// Current shared partition type inference remains STRING. Keep this limitation
++/// separate from choosing directory columns and binding their logical names.
++pub(super) fn inferred_partition_fields(names: &[String]) -> Vec<FieldRef> {
++    names
++        .iter()
++        .map(|name| Arc::new(Field::new(name, DataType::Utf8, true)))
++        .collect()
++}
++
++fn auto_partition_field(field: &Field) -> FieldRef {
++    // Spark creates a fresh nullable StructField and drops column metadata.
++    // These Arrow keys encode its DataType in Sail; child fields are already
++    // part of the DataType and must retain their own metadata/nullability.
++    let metadata = field
++        .metadata()
++        .iter()
++        .filter(|(key, _)| {
++            matches!(
++                key.as_str(),
++                spec::SAIL_SPARK_TIME_METADATA_KEY
++                    | spec::SAIL_SPARK_INTERVAL_METADATA_KEY
++                    | spec::SAIL_SPARK_UDT_METADATA_KEY
++                    | EXTENSION_TYPE_NAME_KEY
++                    | EXTENSION_TYPE_METADATA_KEY
++            )
++        })
++        .map(|(key, value)| (key.clone(), value.clone()))
++        .collect();
++    Arc::new(Field::new(field.name(), field.data_type().clone(), true).with_metadata(metadata))
++}
++
++/// Split a supplied schema using discovered partitions and the captured resolver.
++/// An explicit selector first uses a supplied field, then a discovered field.
++/// Auto-discovery retains every directory column, including omitted fields.
++pub(super) fn prepare_explicit_partitions(
++    schema: &Schema,
++    discovered: &[String],
++    selectors: &[String],
++    case_sensitive: bool,
++) -> Result<(Schema, Vec<FieldRef>)> {
++    let inferred = inferred_partition_fields(discovered);
++    let partitions = if selectors.is_empty() {
++        inferred
++            .into_iter()
++            .map(|inferred| {
++                schema
++                    .fields()
++                    .iter()
++                    .find(|field| matches_name(field.name(), inferred.name(), case_sensitive))
++                    .map(|field| auto_partition_field(field))
++                    .unwrap_or(inferred)
++            })
++            .collect::<Vec<_>>()
++    } else {
++        selectors
++            .iter()
++            .map(|name| {
++                schema
++                    .fields()
++                    .iter()
++                    .chain(inferred.iter())
++                    .find(|field| matches_name(field.name(), name, case_sensitive))
++                    .cloned()
++                    .ok_or_else(|| {
++                        datafusion_common::plan_datafusion_err!(
++                            "partition column {name} is absent from the supplied schema and discovered directories"
++                        )
++                    })
++            })
++            .collect::<Result<Vec<_>>>()?
++    };
++    let file_fields = schema
++        .fields()
++        .iter()
++        .filter(|field| {
++            !partitions
++                .iter()
++                .any(|partition| matches_name(field.name(), partition.name(), case_sensitive))
++        })
++        .cloned()
++        .collect::<Vec<_>>();
++    Ok((
++        Schema::new_with_metadata(file_fields, schema.metadata().clone()),
++        partitions,
++    ))
++}
+ 
+ /// Resolve the fields selected by existing schema preparation back to observed
+ /// directory keys. An explicit partition selector may use a different spelling
+@@ -68,3 +167,7 @@ pub(super) fn rebind_partition_filters(
+ #[cfg(test)]
+ #[path = "partition_tests.rs"]
+ mod tests;
++
++#[cfg(test)]
++#[path = "partition_preparation_tests.rs"]
++mod preparation_tests;
+diff --git a/crates/sail-data-source/src/listing/partition_preparation_tests.rs b/crates/sail-data-source/src/listing/partition_preparation_tests.rs
+new file mode 100644
+index 000000000..f4f210ebb
+--- /dev/null
++++ b/crates/sail-data-source/src/listing/partition_preparation_tests.rs
+@@ -0,0 +1,368 @@
++#![expect(clippy::unwrap_used)]
++
++use std::collections::HashMap;
++
++use bytes::Bytes;
++use datafusion::execution::context::{SessionConfig, SessionContext};
++use datafusion_common::Constraints;
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use sail_common_datafusion::datasource::{DataSource, SourceInfo};
++use url::Url;
++
++use super::*;
++use crate::formats::json::JsonDataSource;
++use crate::listing::table::ListingTableSource;
++
++fn names(names: &[&str]) -> Vec<String> {
++    names.iter().map(|name| (*name).into()).collect()
++}
++
++fn supplied_schema() -> Schema {
++    Schema::new_with_metadata(
++        vec![
++            Field::new("PART", DataType::Int32, false).with_metadata(HashMap::from([(
++                "partition-note".into(),
++                "retained".into(),
++            )])),
++            Field::new("second", DataType::Utf8, false)
++                .with_metadata(HashMap::from([("field-note".into(), "retained".into())])),
++            Field::new("first", DataType::Boolean, true),
++        ],
++        HashMap::from([("schema-note".into(), "retained".into())]),
++    )
++}
++
++#[test]
++fn automatic_partitions_keep_omitted_fields_and_obey_the_case_policy() -> Result<()> {
++    let supplied = supplied_schema();
++    let discovered = names(&["part", "missing"]);
++    for case_sensitive in [false, true] {
++        let (file, fields) =
++            prepare_explicit_partitions(&supplied, &discovered, &[], case_sensitive)?;
++        assert_eq!(file.metadata(), supplied.metadata());
++        let expected_file = if case_sensitive {
++            supplied.fields().to_vec()
++        } else {
++            supplied.fields()[1..].to_vec()
++        };
++        assert_eq!(file.fields(), &expected_file.into());
++        assert_eq!(
++            fields[1].as_ref(),
++            &Field::new("missing", DataType::Utf8, true)
++        );
++        if case_sensitive {
++            assert_eq!(
++                fields[0].as_ref(),
++                &Field::new("part", DataType::Utf8, true)
++            );
++        } else {
++            assert_eq!(
++                fields[0].as_ref(),
++                &Field::new("PART", DataType::Int32, true)
++            );
++        }
++        assert_eq!(partition_directory_names(&fields, &discovered)?, discovered);
++    }
++    Ok(())
++}
++
++#[test]
++fn automatic_partition_metadata_keeps_logical_types_and_nested_fields_only() -> Result<()> {
++    use datafusion::arrow::datatypes::{IntervalUnit, TimeUnit};
++    use sail_common::spec::IntervalFieldType::{Month, Year};
++
++    let time = Field::new("clock", DataType::Time64(TimeUnit::Nanosecond), false).with_metadata(
++        HashMap::from([(
++            spec::SAIL_SPARK_TIME_METADATA_KEY.into(),
++            spec::SparkTimeMetadata::try_new(3)
++                .unwrap()
++                .to_json()
++                .unwrap(),
++        )]),
++    );
++    let interval = Field::new("span", DataType::Interval(IntervalUnit::YearMonth), false)
++        .with_metadata(HashMap::from([(
++            spec::SAIL_SPARK_INTERVAL_METADATA_KEY.into(),
++            spec::SparkIntervalMetadata::try_new(
++                spec::IntervalUnit::YearMonth,
++                Some(Year),
++                Some(Month),
++            )
++            .unwrap()
++            .unwrap()
++            .to_json()
++            .unwrap(),
++        )]));
++    let udt = Field::new("custom", DataType::Binary, false).with_metadata(HashMap::from([(
++        spec::SAIL_SPARK_UDT_METADATA_KEY.into(),
++        serde_json::to_string(&spec::SparkUdtMetadata {
++            jvm_class: Some("example.CustomType".into()),
++            python_class: None,
++            serialized_python_class: None,
++        })
++        .unwrap(),
++    )]));
++    let geo = Field::new("geo", DataType::Binary, false).with_metadata(HashMap::from([
++        (EXTENSION_TYPE_NAME_KEY.into(), "geoarrow.wkb".into()),
++        (
++            EXTENSION_TYPE_METADATA_KEY.into(),
++            "{\"crs\":\"OGC:CRS84\",\"edges\":\"spherical\"}".into(),
++        ),
++    ]));
++    let nested = Field::new(
++        "nested",
++        DataType::Struct(
++            vec![
++                Field::new("child", DataType::Utf8, false)
++                    .with_metadata(HashMap::from([("child-note".into(), "retained".into())])),
++            ]
++            .into(),
++        ),
++        false,
++    );
++    let type_fields = vec![time, interval, udt, geo, nested];
++    let supplied = Schema::new(
++        type_fields
++            .iter()
++            .cloned()
++            .map(|field| {
++                let mut metadata = field.metadata().clone();
++                metadata.extend([
++                    ("arbitrary".into(), "discarded".into()),
++                    ("comment".into(), "discarded".into()),
++                    (
++                        spec::SPARK_METADATA_JSON_KEY.into(),
++                        "{\"comment\":\"discarded\"}".into(),
++                    ),
++                    ("sail.schema_evolution.default".into(), "discarded".into()),
++                ]);
++                field.with_metadata(metadata)
++            })
++            .collect::<Vec<_>>(),
++    );
++    let discovered = type_fields
++        .iter()
++        .map(|field| field.name().clone())
++        .collect::<Vec<_>>();
++    let (file, automatic) = prepare_explicit_partitions(&supplied, &discovered, &[], true)?;
++    assert!(file.fields().is_empty());
++    for (actual, expected) in automatic.iter().zip(&type_fields) {
++        assert_eq!(actual.as_ref(), &expected.clone().with_nullable(true));
++    }
++    let (_, explicit) = prepare_explicit_partitions(&supplied, &discovered, &discovered, true)?;
++    assert_eq!(explicit, supplied.fields().to_vec());
++    Ok(())
++}
++
++#[test]
++fn explicit_selectors_preserve_supplied_fields_and_fall_back_to_discovery() -> Result<()> {
++    let supplied = supplied_schema();
++    let discovered = names(&["part", "missing"]);
++    let (file, fields) =
++        prepare_explicit_partitions(&supplied, &discovered, &names(&["part", "missing"]), false)?;
++    assert_eq!(fields[0], supplied.fields()[0]);
++    assert!(!fields[0].is_nullable());
++    assert_eq!(
++        fields[1].as_ref(),
++        &Field::new("missing", DataType::Utf8, true)
++    );
++    assert_eq!(file.fields(), &supplied.fields()[1..].to_vec().into());
++    assert_eq!(file.metadata(), supplied.metadata());
++
++    let (_, fields) = prepare_explicit_partitions(&supplied, &discovered, &names(&["part"]), true)?;
++    // Under exact matching, lower-case part is discovered; supplied PART stays
++    // in the file schema instead of providing its type or nullability.
++    assert_eq!(
++        fields[0].as_ref(),
++        &Field::new("part", DataType::Utf8, true)
++    );
++    let (file, _) = prepare_explicit_partitions(&supplied, &discovered, &names(&["part"]), true)?;
++    assert_eq!(file, supplied);
++    let (_, fields) = prepare_explicit_partitions(&supplied, &discovered, &names(&["PART"]), true)?;
++    assert_eq!(fields[0], supplied.fields()[0]);
++    let error = prepare_explicit_partitions(&supplied, &discovered, &names(&["absent"]), false)
++        .unwrap_err();
++    assert!(
++        error
++            .to_string()
++            .contains("absent from the supplied schema and discovered directories")
++    );
++    Ok(())
++}
++
++#[test]
++fn explicit_selection_keeps_requested_subset_and_order() -> Result<()> {
++    let supplied = supplied_schema();
++    let (file, fields) = prepare_explicit_partitions(
++        &supplied,
++        &names(&["part", "missing"]),
++        &names(&["missing", "PART"]),
++        false,
++    )?;
++    assert_eq!(
++        fields
++            .iter()
++            .map(|field| field.name().as_str())
++            .collect::<Vec<_>>(),
++        ["missing", "PART"]
++    );
++    assert_eq!(file.fields(), &supplied.fields()[1..].to_vec().into());
++    let (file, fields) = prepare_explicit_partitions(
++        &supplied,
++        &names(&["part", "missing"]),
++        &names(&["PART"]),
++        false,
++    )?;
++    assert_eq!(fields.len(), 1);
++    assert_eq!(file.fields(), &supplied.fields()[1..].to_vec().into());
++    Ok(())
++}
++
++async fn fixture() -> Result<SessionContext> {
++    let mut config = SessionConfig::new().with_collect_statistics(false);
++    config
++        .options_mut()
++        .execution
++        .listing_table_ignore_subdirectory = false;
++    let context = SessionContext::new_with_config(config);
++    let store = Arc::new(InMemory::new());
++    store
++        .put(
++            &Path::from("data/outer=west/inner=one/part.json"),
++            Bytes::from_static(b"{\"id\":1}\n").into(),
++        )
++        .await?;
++    context.register_object_store(
++        &Url::parse("memory://partition-preparation").unwrap(),
++        store,
++    );
++    Ok(context)
++}
++
++fn request(schema: Option<Schema>, partition_by: &[&str]) -> SourceInfo {
++    SourceInfo {
++        paths: vec!["memory://partition-preparation/data/".into()],
++        lakehouse_table: None,
++        schema,
++        constraints: Constraints::default(),
++        partition_by: names(partition_by),
++        bucket_by: None,
++        sort_order: vec![],
++        options: vec![],
++        read_case_sensitive: true,
++    }
++}
++
++#[tokio::test]
++async fn source_retains_omitted_partitions_and_ignores_selectors_without_schema() -> Result<()> {
++    let context = fixture().await?;
++    let supplied = Schema::new(vec![Field::new("id", DataType::Int64, false)]);
++    for info in [
++        request(Some(supplied.clone()), &[]),
++        request(None, &["inner"]),
++    ] {
++        let source = JsonDataSource::default()
++            .create_source(&context.state(), info)
++            .await?;
++        let listing = source.downcast_ref::<ListingTableSource>().unwrap();
++        assert_eq!(
++            listing.config().partition_directory_names,
++            ["outer", "inner"]
++        );
++        assert_eq!(
++            listing.config().schema.table_partition_cols(),
++            &inferred_partition_fields(&names(&["outer", "inner"]))
++        );
++        assert_eq!(listing.config().schema.file_schema().fields().len(), 1);
++        assert_eq!(
++            source
++                .schema()
++                .fields()
++                .iter()
++                .map(|field| field.name().as_str())
++                .collect::<Vec<_>>(),
++            ["id", "outer", "inner"]
++        );
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn source_case_policy_keeps_file_aliases_distinct_from_discovered_partitions() -> Result<()> {
++    let context = fixture().await?;
++    for case_sensitive in [false, true] {
++        let supplied = Schema::new(vec![
++            Field::new("OUTER", DataType::Utf8, false),
++            Field::new("id", DataType::Int64, true),
++        ]);
++        let mut info = request(Some(supplied.clone()), &[]);
++        info.read_case_sensitive = case_sensitive;
++        let source = JsonDataSource::default()
++            .create_source(&context.state(), info)
++            .await?;
++        let listing = source.downcast_ref::<ListingTableSource>().unwrap();
++        assert_eq!(
++            listing.config().partition_directory_names,
++            ["outer", "inner"]
++        );
++        let expected_file = if case_sensitive {
++            supplied.fields().to_vec()
++        } else {
++            vec![supplied.fields()[1].clone()]
++        };
++        assert_eq!(
++            listing.config().schema.file_schema().fields(),
++            &expected_file.into()
++        );
++        let fields = listing.config().schema.table_partition_cols();
++        assert_eq!(
++            fields[0].name(),
++            if case_sensitive { "outer" } else { "OUTER" }
++        );
++        assert!(fields.iter().all(|field| field.is_nullable()));
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn explicit_inner_only_selection_retains_the_layout_prefix_guard() -> Result<()> {
++    let context = fixture().await?;
++    let supplied = Schema::new(vec![Field::new("id", DataType::Int64, false)]);
++    let source = JsonDataSource::default()
++        .create_source(
++            &context.state(),
++            request(Some(supplied.clone()), &["outer"]),
++        )
++        .await?;
++    assert_eq!(
++        source
++            .schema()
++            .fields()
++            .iter()
++            .map(|field| field.name().as_str())
++            .collect::<Vec<_>>(),
++        ["id", "outer"]
++    );
++    let error = JsonDataSource::default()
++        .create_source(&context.state(), request(Some(supplied), &["inner"]))
++        .await
++        .err()
++        .unwrap();
++    assert!(error.to_string().contains("Inferred partitions"));
++    assert!(error.to_string().contains("outer"));
++    Ok(())
++}
++
++#[test]
++fn an_explicit_empty_schema_retains_all_discovered_partition_fields() -> Result<()> {
++    let (file, fields) =
++        prepare_explicit_partitions(&Schema::empty(), &names(&["outer", "inner"]), &[], false)?;
++    assert!(file.fields().is_empty());
++    assert_eq!(
++        fields,
++        inferred_partition_fields(&names(&["outer", "inner"]))
++    );
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index 7992183c8..70d4a8787 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -3,7 +3,9 @@ use std::marker::PhantomData;
+ use std::sync::Arc;
+ 
+ use async_trait::async_trait;
+-use datafusion::arrow::datatypes::{DataType, Field, Schema, SchemaRef};
++#[cfg(test)]
++use datafusion::arrow::datatypes::{DataType, Field};
++use datafusion::arrow::datatypes::{Schema, SchemaRef};
+ use datafusion::catalog::Session;
+ use datafusion::datasource::physical_plan::FileSinkConfig;
+ use datafusion::execution::object_store::ObjectStoreUrl;
+@@ -20,11 +22,12 @@ use futures::TryStreamExt;
+ use object_store::{ObjectMeta, ObjectStore};
+ use sail_common_datafusion::datasource::{
+     DataSource, OptionLayer, SinkInfo, SinkMode, SourceInfo, find_path_in_options,
+-    get_partition_columns_and_file_schema,
+ };
+ use url::Url;
+ 
+-use crate::listing::partition::partition_directory_names;
++use crate::listing::partition::{
++    inferred_partition_fields, partition_directory_names, prepare_explicit_partitions,
++};
+ use crate::listing::table::{ListingTableSource, ListingTableSourceConfig};
+ use crate::listing::utils::{
+     infer_partitions, rewrite_unsupported_fields, select_listing_files,
+@@ -272,32 +275,19 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+             }
+             None => None,
+         };
+-        let (schema, partition_fields) = match prepared {
++        let (schema, partition_fields, discovered_partitions) = match prepared {
+             Some(PreparedExplicitSchema { schema, physical }) => {
+-                // When the partition columns are not specified, auto-discover
+-                // them from `key=value` segments in the listing paths.
+-                // Without this, columns that exist only in the directory tree
+-                // are treated as file columns, and the file reader fails
+-                // because the file itself does not contain them.
+-                let partition_by = if partition_by.is_empty() {
+-                    infer_partitions(&inference_files)?
+-                        .into_iter()
+-                        .filter(|name| {
+-                            schema
+-                                .fields()
+-                                .iter()
+-                                .any(|f| f.name().eq_ignore_ascii_case(name))
+-                        })
+-                        .collect::<Vec<_>>()
+-                } else {
+-                    partition_by
+-                };
+-                let (partition_fields, schema) =
+-                    get_partition_columns_and_file_schema(&schema, partition_by)?;
++                let discovered_partitions = infer_partitions(&inference_files)?;
++                let (schema, partition_fields) = prepare_explicit_partitions(
++                    &schema,
++                    &discovered_partitions,
++                    &partition_by,
++                    read_case_sensitive,
++                )?;
+                 if let Some(physical) = physical {
+                     read_format.validate_explicit_schema(&schema, &physical)?;
+                 }
+-                (Arc::new(schema), partition_fields)
++                (Arc::new(schema), partition_fields, discovered_partitions)
+             }
+             None => {
+                 let schema = read_format
+@@ -305,24 +295,16 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+                     .await?;
+                 let schema = rewrite_unsupported_fields(schema);
+ 
+-                let partition_by = if partition_by.is_empty() {
+-                    infer_partitions(&inference_files)?
+-                } else {
+-                    partition_by
+-                };
+-
+-                // TODO: infer concrete partition types from observed values to match
+-                //   the `spark.sql.sources.partitionColumnTypeInference.enabled` option.
+-                let partition_fields = partition_by
+-                    .into_iter()
+-                    .map(|col| Arc::new(Field::new(col, DataType::Utf8, false)))
+-                    .collect();
+-                (schema, partition_fields)
++                let discovered_partitions = infer_partitions(&inference_files)?;
++                // With no prepared supplied schema, Spark uses all discovered
++                // partitions even when explicit selectors were provided.
++                let partition_fields = inferred_partition_fields(&discovered_partitions);
++                (schema, partition_fields, discovered_partitions)
+             }
+         };
+ 
+         let partition_directory_names =
+-            partition_directory_names(&partition_fields, &infer_partitions(&inference_files)?)?;
++            partition_directory_names(&partition_fields, &discovered_partitions)?;
+         validate_partition_directory_names(&inference_files, &partition_directory_names)?;
+ 
+         let source = ListingTableSource::try_new(ListingTableSourceConfig {

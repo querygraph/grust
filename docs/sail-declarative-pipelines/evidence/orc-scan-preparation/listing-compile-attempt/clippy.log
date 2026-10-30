@@ -1,0 +1,21 @@
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+error[E0277]: can't compare `arrow_schema::Fields` with `std::vec::Vec<std::sync::Arc<arrow_schema::Field>>`
+   --> crates/sail-data-source/src/listing/partition_preparation_tests.rs:274:9
+    |
+274 | /         assert_eq!(
+275 | |             listing.config().schema.table_partition_cols(),
+276 | |             &inferred_partition_fields(&names(&["outer", "inner"]))
+277 | |         );
+    | |_________^ no implementation for `arrow_schema::Fields == std::vec::Vec<std::sync::Arc<arrow_schema::Field>>`
+    |
+help: the trait `PartialEq<std::vec::Vec<std::sync::Arc<arrow_schema::Field>>>` is not implemented for `arrow_schema::Fields`
+      but trait `PartialEq<arrow_schema::Fields>` is implemented for it
+   --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-schema-59.2.0/src/fields.rs:57:21
+    |
+ 57 | #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+    |                     ^^^^^^^^^
+    = help: for that trait implementation, expected `arrow_schema::Fields`, found `std::vec::Vec<std::sync::Arc<arrow_schema::Field>>`
+    = note: required for `&arrow_schema::Fields` to implement `std::cmp::PartialEq<&std::vec::Vec<std::sync::Arc<arrow_schema::Field>>>`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `sail-data-source` (lib test) due to 1 previous error
