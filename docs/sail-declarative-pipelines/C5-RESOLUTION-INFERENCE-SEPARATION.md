@@ -1,7 +1,9 @@
 # C5: separating flow resolution from schema inference (proposal)
 
-Status: proposal for Codex's decision (CF-0058), no Sail edit. Pinned Spark
-`617618396`; Sail base `779cb136d`; Fable head `33a883091`.
+Status: proposal for Codex's decision, revised after CF-0064; no Sail edit.
+Pinned Spark `617618396`; Sail base `779cb136d`; Fable head `33a883091`.
+Revision 1 (first-direct-error identity, A/B attribution difference) is
+withdrawn; what replaces it is below.
 
 ## What Spark does, read from source
 
@@ -30,77 +32,122 @@ declared-schema check), returning the **first** error it meets, whether a
 resolution error or a merge error, in declaration order. That is the
 divergence fixtured in `test_schema_merge_inside_resolution_runs_in_declaration_order`.
 
-## Smallest change that preserves downstream binding
+## The contract the pinned suites assert
 
-Keep the single loop and the eager per-output merge, because downstream
-flows bind to the merged schema exactly as Spark's `VirtualTableInput.load`
-does. Change only what happens on failure:
+`ConnectInvalidPipelineSuite.scala` ("Missing source", "Correctly
+differentiate between upstream and downstream errors") and
+`ViewSuite.scala:133–147` intercept `UnresolvedPipelineException`
+(`PipelinesErrors.scala:164–185`) and assert:
 
-1. **Record instead of return.** A resolution error that is not
-   `UnresolvedRelation` becomes `direct_failures[flow] = error` and marks the
-   output failed; a `schema::infer` error becomes
-   `inference_failures[output] = error` and marks the output failed. The loop
-   continues with the other outputs.
-2. **Failed upstream propagates as pending.** A flow whose read hits a failed
-   output stays `UnresolvedRelation` → pending, as now. When a pass makes no
-   progress, the pending outputs are classified: if a pending output reads a
-   failed or pending output it is a **downstream failure**; otherwise the
-   existing cycle detection runs (`topology::order`) and
-   `PIPELINE_CIRCULAR_DEPENDENCY` stays as it is.
-3. **Report in Spark's order.** After the loop:
-   - if `direct_failures` is non-empty: raise the **first direct failure in
-     declaration order** with its own condition and parameters unchanged
-     (so `TABLE_OR_VIEW_NOT_FOUND` for an undefined dataset keeps its
-     identity, which the existing Sail and upstream Python tests assert),
-     and append to its message the two sorted lists Spark prints, "Flows
-     with errors" and "Flows that failed due to upstream errors";
-   - else if `inference_failures` is non-empty: raise the first one
-     (`UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA` or
-     `USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE`), likewise with the
-     downstream list appended;
-   - else continue to the post-resolution validations exactly as in
-     `769914891`.
+- the wrapper's message contains "Failed to resolve flows in the pipeline",
+  "Flows with errors: b, e" and "Flows that failed due to upstream errors:
+  c, f" (unquoted identifiers, sorted);
+- `directFailures.keySet` and `downstreamFailures.keySet` are exactly the
+  expected sets;
+- `directFailures(b)` is the typed nested cause with condition
+  `TABLE_OR_VIEW_NOT_FOUND`; `directFailures(e)` is an `AnalysisException`
+  whose message names the missing column;
+- `downstreamFailures(c)` is an `UnresolvedDatasetException` whose message is
+  "Failed to read dataset '<b>'. Dataset is defined in the pipeline but could
+  not be resolved".
 
-Effect on the fixtured divergence: with the merge output declared first and
-the unresolved-source output second, Sail now records the merge failure,
-keeps going, records the unresolved source as a direct failure, and reports
-the unresolved source, as Spark does. The fixture becomes a reference-aligned
-regression in both orders; until the change lands it stays as evidence.
+So the model is per flow: every failed flow carries its own typed cause, the
+wrapper carries both maps, and nothing is flattened to a first error.
 
-What this does **not** change: `PlanResolver`, `GraphScope`, the session, the
-error conditions of any individual failure, the post-resolution phase order,
-or the cycle error. It touches `analysis.rs` only (about forty lines) plus
-tests.
+## Per-flow failure model for Sail
 
-## Collection versus first error, stated explicitly
+```text
+struct FlowFailure { flow: Name, cause: SparkError }      // typed, never a string
+struct UnresolvedPipeline {
+    direct: BTreeMap<Name, SparkError>,                   // the flow's own failure
+    downstream: BTreeMap<Name, SparkError>,               // UnresolvedDataset { dataset } naming the first failed/pending input it read
+}
+```
 
-Spark raises one exception that names every failed flow; Sail will keep the
-first direct failure as the error identity and name the rest in the message.
-Reasons: Spark's `UnresolvedPipelineException` has no error class of its own,
-so there is no condition to match; the pinned upstream Python tests and
-Sail's own tests assert the specific underlying condition of the failing
-flow; and wrapping would weaken those expected errors. The collected lists
-are evidence, not identity. If Codex prefers a structured
-`UNRESOLVED_PIPELINE`-style wrapper, that is a separate decision that
-changes expected errors and must be taken against the pinned suites.
+Resolution loop (`analysis.rs`), smallest change preserving downstream
+binding:
 
-One attribution difference remains and is recorded rather than hidden: a
-merge failure of output A that has a downstream reader B is, in Spark, a
-direct failure of B (the merge runs inside B's analysis); in this proposal it
-is an inference failure of A with B listed downstream. Both report after any
-independent direct failure, and both name A and B; only the primary
-attribution differs. A reference fixture (A with incompatible flows, B
-reading A, C with an undefined source) will assert the reported identity in
-both orders.
+1. A flow whose resolution returns an error other than `UnresolvedRelation`
+   is a **direct failure**: record `direct[flow] = error`, mark its output
+   failed, continue.
+2. An output whose flows all resolved runs `schema::infer` as today (this is
+   what `VirtualTableInput.load` does for readers). If the merge fails, the
+   failure is attributed the way Spark attributes it: **to the first flow
+   that reads this output** if any flow reads it (Spark raises it inside the
+   reader's analysis, so the reader is the direct failure and the merged
+   output itself is not a failed flow), otherwise to the output's own
+   flow(s) as `UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA`, which is what Spark's
+   last-phase `inferredSchema` raises when nothing read it. Either way the
+   output is marked failed so no further flow binds to it.
+3. A flow whose read hits a failed or still-pending output stays pending.
+   When a pass makes no progress, every pending flow becomes a **downstream
+   failure** with `UnresolvedDataset { dataset }` naming the first failed or
+   pending input it requested, unless the pending set contains no failed
+   input at all, in which case `detectCycle` over the pending subgraph runs
+   first and raises `PIPELINE_CIRCULAR_DEPENDENCY` with Spark's
+   `CircularDependencyException` message (`PipelinesErrors.scala:191–200`),
+   exactly `GraphValidations.scala:288–329`'s order: cycle in the failed
+   subgraph before the wrapper.
+4. If either map is non-empty, raise `UnresolvedPipeline` as a Spark
+   `AnalysisException` with Spark's exact message template (no error
+   condition, as upstream), carrying both maps.
+5. Otherwise continue to the post-resolution validations of `769914891`.
 
-## Tests to add with the implementation
+The downstream cause name and message are Spark's
+(`UnresolvedDatasetException`), with the dataset in unquoted form.
 
-- the existing fixture, now asserting the unresolved source in both orders;
-- A incompatible + B reads A + C undefined, both orders: C's condition first;
-- A incompatible + B reads A, no other failure: inference failure named,
-  B listed downstream;
-- two independent undefined sources: the first in declaration order is the
-  identity, both named;
-- a cycle plus an undefined source: the undefined source first (Spark checks
-  cycles only within the failed subgraph);
-- the post-resolution phases unchanged when nothing fails.
+## Transport boundary, compared from source
+
+Spark Connect serialises a throwable as an `ErrorInfo` with the class list
+and, with error enrichment, a `FetchErrorDetails` chain built from
+`getCause` (`ErrorUtils.scala:76–177`). `UnresolvedPipelineException` has
+no cause and no error class; its per-flow causes live in its two maps and in
+the per-flow failure events, not in the cause chain. A Python client
+therefore sees an `AnalysisException` whose message carries the two lists,
+and nothing else, in Spark too.
+
+Upstream Python assertion forcing an outer condition: **none**. The pinned
+`python/pyspark/pipelines/tests` contain no assertion on `Failed to resolve`,
+`TABLE_OR_VIEW_NOT_FOUND` or a condition of an unresolved pipeline (grep
+over the pinned tree); the only `getCondition` assertions there are the
+session-mutation tests. The Sail tests that assert the inner condition in the
+message string are Fable's own (`test_unresolved_source_is_reported_before_the_temporary_view_rule`
+and the two both-order fixtures) and will be rewritten to the wrapper
+message plus the two lists; the feature scenarios assert nothing about
+unresolved datasets.
+
+Connect exposure in Sail, two separately reviewable units:
+
+1. **Source model and wrapper** (this unit): the structure above; the
+   wrapper reaches the client as `AnalysisException` with Spark's message
+   through the existing `spark_status` path (`error.rs`), which is what
+   Spark's client sees as well. Sail's `fetch_error_details` is
+   unimplemented, so no chain is served either way today.
+2. **Per-flow diagnostics** (later, Codex's event path): Spark logs each
+   flow failure as a flow progress event before the wrapper; Sail's
+   pipeline event stream (`event(...)` in `pipelines/mod.rs`) is where the
+   per-flow causes would be emitted so a client can see which flow failed
+   with which condition, matching "look for flow failures that precede this
+   log". Not part of the resolution unit.
+
+## Fixtures (ports, both declaration orders where ordering matters)
+
+- "Missing source": `b` reads `a` undefined → direct `{b: TABLE_OR_VIEW_NOT_FOUND}`,
+  message lists.
+- "Correctly differentiate": `a` ok, `b` reads nonexistent, `c` reads `b`,
+  `d` ok, `e` selects a missing column, `f` reads `e` → direct `{b, e}`,
+  downstream `{c, f}` with the dataset messages; both key sets exact.
+- merge failure with a reader: `A` incompatible flows, `B` reads `A`, `C`
+  undefined source → direct `{B: merge error, C: TABLE_OR_VIEW_NOT_FOUND}`,
+  both orders; without `B`: direct `{A's flow: UNABLE_TO_INFER_...}`.
+- cycle plus an undefined source: `x` reads `y`, `y` reads `x`, `z`
+  undefined → Spark: `z` is a direct failure and `x`, `y` pending with no
+  failed input → `detectCycle` fires first → `PIPELINE_CIRCULAR_DEPENDENCY`;
+  the fixture asserts that order.
+- the post-resolution phases unchanged when nothing fails; the existing
+  both-order fixtures move to the wrapper message.
+
+Scope: `analysis.rs` (loop failure path, classification, wrapper), a small
+`UnresolvedDataset` builder in `pipelines/graph.rs` or a new
+`pipelines/failures.rs`, tests, and the three Fable Python tests. No
+`PlanResolver`, session or event-path change.
