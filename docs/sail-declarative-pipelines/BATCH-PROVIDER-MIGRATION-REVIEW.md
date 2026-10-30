@@ -694,3 +694,123 @@ keep-last filtering is its own policy and stays in the binder; a fusion
 binder must decide its CTE policy from Spark's `CTESubstitution` rules
 (resolver-based name matching, conflict assertion), which §10 lists as an
 open parity point.
+
+## 12. Native input binding: explicit node versus existing seams (CF-0268)
+
+Codex's draft `NATIVE-INPUT-BINDING-DESIGN.md` (coordinator Grust) read
+against Sail `75f63e823`: `resolver/query/read.rs:41–312`
+(`resolve_query_read_named_table`), `resolver/query/with_relations.rs:13–60`,
+`resolver/query/cte.rs:13–18` (`CteKind`), `resolver/scope.rs:12–26`
+(`RelationScope`), `resolver/state.rs`. Read only. The premise that external
+reads observe the read-point conf is under Codex's own refutation probe
+(CF-0271); the representation question below does not depend on its
+outcome, the _need_ for per-occurrence config does.
+
+### 12.1 What the resolver already has
+
+- **A prepare/install ladder in one function.** `resolve_query_read_named_table`
+  tries, in order: a path read (`:48–80`), a CTE (`state.get_cte`, `:83–101`),
+  the relation scope (`:104–121`), then the catalog/provider path
+  (`:124–305`). Every branch ends the same way: `register_fields` →
+  `rename_logical_plan` → `SubqueryAlias(table_reference)` →
+  `register_missing_input_boundary` → `apply_table_sample` if present. The
+  relation-scope branch and the stored temporary-view branch (`:292–303`,
+  "the stored plan's internal field IDs belong to another resolver state")
+  are exactly "install a plan prepared elsewhere into this resolver state",
+  which is the install half the design asks for. The provider path
+  (`:124–297`: `resolve_table_reference`, time-travel options,
+  `provider_session`, `create_relation`/`create_source`) is the prepare half.
+  Nothing needs inventing; the function needs splitting at that seam.
+- **A request-local, per-reference registry already exists for Connect.**
+  `resolve_query_with_relations` resolves each reference up front, registers
+  `SubqueryAlias` references in a CTE scope as `CteKind::ParameterView`
+  (name-keyed), and stores _every_ reference by `plan_id` through
+  `state.insert_subquery_reference`, rejecting duplicates. That is the shape
+  of a slot table: a typed reference in the plan, a state-held map keyed by
+  an identity, resolution-time lookup with a hard error on a miss. Codex
+  rightly rules out reusing `plan_id` itself (it is Connect attribute and
+  reference identity), but the mechanism is the template.
+- **`RelationScope` is name-keyed by design** (`resolve(&[String])`), so it
+  cannot distinguish two occurrences of one name; it stays right for graph
+  outputs.
+
+### 12.2 Explicit node versus alternatives
+
+- **Smallest robust seam: a bound read variant, not a new node.** Adding
+  `spec::ReadType::Bound { slot }` (an opaque request-local index) keeps the
+  `Read { read_type, is_streaming }` node and with it the existing handling
+  of `is_streaming`, `sample` and `temporal`: `visit_read` gains one arm,
+  the binder's `read()` classifies it as prepared, and
+  `resolve_query_read_named_table` gains a branch before the CTE lookup that
+  fetches the prepared plan from a resolver-held slot table and runs the
+  install tail. A `temporal` on a bound read is rejected the way the scoped
+  branch rejects it (`:107–109`), because time travel belongs to
+  preparation. This is narrower than a new `QueryNode` variant and reuses the
+  most code; it still needs the "narrow Sail design review" the draft calls
+  for, since `spec` is shared with Connect decoding.
+- **Slot table placement.** Hold it in sail-plan: a `BoundInputs` map owned
+  by the `BoundQuery` and lent to the resolver (through `PlanResolver`, like
+  `relation_scope`), keyed by slot, valued by the prepared `LogicalPlan` plus
+  its `TableReference` and read-point provenance. No DataFusion type enters
+  sail-common; an unknown or foreign-request slot is a `PlanError`, never a
+  catalog fallback, which the draft already requires.
+- **Alternatives assessed and set aside.** (a) A per-name queue inside a
+  `RelationScope` that hands out the k-th prepared occurrence on the k-th
+  resolution of that name: occurrence identity would rest on the resolver's
+  post-order matching the binder's pre-order, a permutation that holds only
+  while both traversals are untouched; fragile. (b) Structural path
+  identities (child-index paths from the root): stable without mutating the
+  plan, but the resolver has no notion of its own position, so every
+  resolution entry point would need a path cursor; invasive. (c) Registering
+  prepared occurrences as `CteKind::ParameterView` under generated names:
+  name-keyed and a synthetic name, both excluded. (d) `plan_id`,
+  `CachedRemoteRelation`, pointer identities, SQL re-parsing: excluded for
+  the reasons the draft gives; I found nothing that reopens them.
+
+### 12.3 Prepare/install factoring and modifier phases
+
+- Factor `resolve_query_read_named_table` into
+  `prepare_named_table_read(name, options, temporal) -> PreparedRead { plan,
+table_reference }` (the `:124–297` body, run by the binder under the
+  read-point `PlanConfig` and the caller's query Session) and
+  `install_prepared_read(prepared, sample, state)` (the common tail). The
+  existing scoped and temporary-view branches become callers of the install
+  half, which is a behaviour-preserving refactor testable against today's
+  outputs before any binding is added.
+- **Sampling is a semantic-pass modifier.** Every branch applies
+  `apply_table_sample` after install, under the containing resolver's
+  config, and the sampling expression may hold a subquery (§11); so a bound
+  occurrence carries `sample` on the `Read` node, not in the prepared plan.
+- **Time travel is a preparation modifier.** It selects the version read
+  (`resolve_time_travel_options`, `:64–70`, `:209–245`) and runs a helper
+  plan (`time_travel.rs:233`); it must be evaluated in the binder under the
+  read-point config and its result frozen into the prepared plan.
+- **Dynamic identifiers** (`ReadType::DynamicTable`) need the name
+  expression evaluated before the occurrence can be prepared; that is a
+  binder-phase evaluation under the read-point config, or a refusal, and
+  the design should say which. `Udtf` and `DataSource` reads keep their
+  own factories; helper nodes (`Tail`, `Stat*`, pivot inference) are not
+  reads and stay in the semantic pass.
+- **PlanConfig immutability fits the two passes**: one resolver per distinct
+  read-point config in the binder, one for the first semantic pass, one for
+  the re-call under the union.
+
+### 12.4 CTE policy and the binder
+
+The binder's CTE name policy (keep-last, case-exact `TableReference` and
+`Identifier` keys, `state.rs:100`, `cte.rs:100–110`) must run under the
+flow's initial conf, before any graph-input overwrite, as the draft says;
+Spark's `CTESubstitution` matches names with `conf.resolver` (case-insensitive
+unless `caseSensitive`) and asserts no conflicts. Until that parity point is
+settled (§10), the binder should at least key CTE lookups with the initial
+conf's case rule rather than Sail's exact match, or the fusion cases that
+turn on `caseSensitive` will bind CTE names differently from Spark.
+
+### 12.5 Summary for the checkpoint
+
+Prefer `ReadType::Bound { slot }` plus a resolver-lent slot table over a new
+query node; split `resolve_query_read_named_table` at the existing install
+tail first, as a behaviour-preserving refactor; keep sampling in the
+semantic pass and time travel in preparation; decide dynamic identifiers
+explicitly; and settle CTE name matching under the initial conf before
+declaring binding order Spark-equivalent. No code, no scope change.
