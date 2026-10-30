@@ -1,0 +1,27 @@
+   Compiling sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-physical-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 5.35s
+     Running unittests src/lib.rs (target/debug/deps/sail_physical_plan-81bd163e55d6787d)
+
+running 1 test
+test remote_checkpoint::cleanup_error_tests::simultaneous_checkpoint_and_cleanup_failures_preserve_nonretryable_cause ... FAILED
+
+failures:
+
+---- remote_checkpoint::cleanup_error_tests::simultaneous_checkpoint_and_cleanup_failures_preserve_nonretryable_cause stdout ----
+
+thread 'remote_checkpoint::cleanup_error_tests::simultaneous_checkpoint_and_cleanup_failures_preserve_nonretryable_cause' (87751417) panicked at crates/sail-physical-plan/src/remote_checkpoint_cleanup_tests.rs:66:5:
+assertion failed: matches!(cause, CommonErrorCause::CommitStateUnknown(_))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    remote_checkpoint::cleanup_error_tests::simultaneous_checkpoint_and_cleanup_failures_preserve_nonretryable_cause
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `-p sail-physical-plan --lib`

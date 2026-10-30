@@ -1612,3 +1612,7 @@ schedules are source-derived, not executed runtime observations. The operation
 admission seam, effect adapter and cleanup-driver mechanism remain open; no full
 session/cluster barrier is implemented by this document. Its ec8e74d57de5 source
 baseline is preserved separately from the completed cba833ae08a4 registry fix.
+
+## Typed checkpoint and cleanup errors
+
+Recorded 2026-10-30T07:31:50.165417+00:00. [Sail `34eb270d00`](evidence/checkpoint-typed-errors/README.md) preserves both original typed causes after a checkpoint failure and compensating-cleanup failure, keeping unknown-commit classification nonretryable. All 15 library tests, formatting, strict Clippy, 300 public cases and 67 upstream executions pass. The unchanged-production control fails the same nonretryable-cause regression. The initial test-style gate failure is retained. Effect ownership, session barriers and full SDP acceptance remain open.
