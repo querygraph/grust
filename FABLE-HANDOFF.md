@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T10:22:52.971406+00:00. Live coordination read through **CF-0056**.
+Snapshot written 2026-10-30T10:26:37.320382+00:00. Live coordination read through **CF-0058**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -15,7 +15,7 @@ Do not redefine success as the currently passing helper or public selection.
 
 Substantial batch/SQL/catalog/ORC-read work and execution-ownership foundations
 are committed in Codex's Sail branch. Streaming/CDC components are offered in a
-parallel Fable branch; **the common ROOT lowercase helper is integrated, while offered streaming/CDC
+parallel Fable branch; **the common ROOT lowercase helper and Grust column kernel are integrated; streaming/CDC
 modules remain unintegrated**. Public ORC writing, complete session/cluster
 cleanup, durable streaming/CDC effects and full original Scala-suite acceptance
 remain incomplete. Existing execution still rejects incremental/sink pipelines
@@ -56,9 +56,9 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `cae618d7ff4661cb126333ad109f275b32bcad4b` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e299c15557960e83d1bca4bce1877b481ffd851d` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `cae618d7f` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `02d39b5fead46b694725c97de1b2341793100ca2` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `bdcedc333a3c52672b170b3b0819715969487ff6` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `02d39b5fe` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `71e4a94d910c7afa978eaf1cc98beccb5df92051` |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `a0e5644b8e8e3ab90feeaafe7ac39c2993186b7b` |
@@ -292,9 +292,19 @@ offer; malformed/missing explicitly supplied corpora now fail. All24 common libr
 tests, fmt, strict Clippy and a separate68,588-case replay pass; negative controls
 exit101 as expected. [Evidence](docs/sail-declarative-pipelines/evidence/root-lowercase-integration/README.md).
 No dependency/lock change or CDC caller. The full offered stack is still unintegrated.
-Next integration work: independently review C5/progress and assemble independently
-buildable vendor/definition/validation/dedup units, without removing execution guards
-or selecting C0. Continue whole multipart ownership work in the coordinator lane.
+The minimal Grust column kernel is now integrated in Sail
+`02d39b5fead46b694725c97de1b2341793100ca2`: exact four-file Grust727baa3e match,
+all16 library tests/fmt/strict Clippy pass, and only its own lock stanza is new.
+No Connect dependency yet; consumer manifest/lock edge must land together.
+[Evidence](docs/sail-declarative-pipelines/evidence/grust-columns-integration/README.md).
+CF-0058 records C5 source review: previous global streamingness/CDC checks move after
+resolution, but in-loop schema-merge versus unrelated missing-source ordering remains
+a parity gap. Fable is asked for a minimal phase-separation proposal and explicit
+unresolved-error collection semantics; source review is not a new runtime verdict.
+Next integration work: definition/validation/dedup units, with C5/progress qualified
+separately, without removing execution guards or selecting C0. The next coordinator
+runtime design phase is whole multipart ownership; notify the user before beginning
+so they can switch to Astra. That phase has not begun in this snapshot.
 
 ## Runtime and ORC work Codex must continue
 

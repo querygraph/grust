@@ -1629,3 +1629,12 @@ Fable common helper. All24 common library tests, fmt/strict Clippy and68,588 JVM
 corpus cases pass; missing/malformed explicit corpus controls fail as expected.
 [Exact component evidence](evidence/root-lowercase-integration/README.md). No CDC
 caller, streaming activation or dependency change; original-suite acceptance remains open.
+
+
+## 2026-10-30T10:26:37.320656+00:00 — minimal column kernel integration
+
+Sail `02d39b5fead46b694725c97de1b2341793100ca2` imports exact Grust727baa3e
+column-selection primitives with all16 tests/fmt/strict Clippy passing. Only the
+workspace member and its own lock package are added; no Connect consumer yet.
+[Evidence](evidence/grust-columns-integration/README.md). C5 schema-inference
+precedence remains open and has been sent to Fable for a focused proposal.
