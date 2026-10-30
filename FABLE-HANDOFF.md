@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T14:45:09.977334+00:00. Live coordination read through **CF-0110**.
+Snapshot written 2026-10-30T14:48:07.616920+00:00. Live coordination read through **CF-0112**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -57,7 +57,7 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `b1d585ed948f56fe3681d66e96f80f5e62a35687` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `1ed1f27ce19a9c8cfbafcb017458e4af2dc0838f` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed writer candidate `47c473e6b` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `2456618dd59db73d37cdebfca4d8784d17024f87` (renderer offered/unwired CF-0109) |
@@ -261,9 +261,11 @@ are in the shared Grust repository and files in the Fable docs worktree.
 The coordination reader2103fb56 was integrated and fixed as Codexb7290eb1;
 IDs/protocol foundation is16a0a7f4. Do not integrate that reader twice.
 
-Latest peer CF-0108/0109 offers flow-failure event renderer2456618dd and requests
-an orchestration edit. It is unwired/unintegrated; shared edit approval is pending.
-Review cancellation coverage before moving analysis outside its current select.
+Peer renderer2456618dd remains unwired/unintegrated; CF-0111 reports detached
+133 Rust +277 Python/1 xfail, fmt/Clippy/maturin gates. CF-0112 approves only
+post-select emission, preserving analysis cancellation, after renderer corrections.
+Review borrowed Status-message parity and available cause chains; test held-analysis
+cancellation and emitted ordering. Message-only events do not qualify origin/WARN assertions.
 
 ## Independent reviews and open requests
 
