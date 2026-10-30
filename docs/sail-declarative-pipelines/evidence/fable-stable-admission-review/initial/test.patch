@@ -1,0 +1,42 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/admission.rs b/crates/sail-spark-connect/src/pipelines/streaming/admission.rs
+index 74213fccb..87e69b903 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/admission.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/admission.rs
+@@ -794,6 +794,37 @@ mod tests {
+         Ok(())
+     }
+ 
++    #[test]
++    fn stable_clock_functions_are_not_content_replayable() -> TestResult {
++        let f = Fixture::new()?;
++        for clock in [
++            datafusion::functions::datetime::expr_fn::now(),
++            datafusion::functions::datetime::expr_fn::current_date(),
++        ] {
++            let Expr::ScalarFunction(function) = &clock else {
++                panic!("clock fixture must remain a scalar function");
++            };
++            assert_eq!(function.func.signature().volatility, Volatility::Stable);
++            let plan = f.scan(&["c", "d", "clicks"])?
++                .project(vec![col("id"), clock.alias("clock")])?.build()?;
++            let evidence = f.admit(&plan);
++            assert!(evidence.admitted, "{evidence:?}");
++            assert!(!evidence.replayable, "stable clock can change on replay: {evidence:?}");
++        }
++        Ok(())
++    }
++
++    #[test]
++    fn immutable_projection_remains_content_replayable() -> TestResult {
++        let f = Fixture::new()?;
++        let plan = f.scan(&["c", "d", "clicks"])?
++            .project(vec![(col("id") + lit(1_i64)).alias("next")])?.build()?;
++        let evidence = f.admit(&plan);
++        assert!(evidence.admitted, "{evidence:?}");
++        assert!(evidence.replayable, "{evidence:?}");
++        Ok(())
++    }
++
+     #[test]
+     fn a_volatile_expression_is_admitted_but_not_replayable() -> TestResult {
+         let f = Fixture::new()?;

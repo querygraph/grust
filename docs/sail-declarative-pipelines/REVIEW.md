@@ -1759,3 +1759,20 @@ Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` routes four actual resolution-ti
 ## 2026-10-30T17:48:12.396459+00:00 — read factory Session propagation and lowerer review
 
 Sail `ddd83d815c0bcb1ffaa6da2909b7328d91bca122` passes the selected Session to read/native-UDTF provider creation, retaining authoritative lookup and legacy snapshots.46 library/46 optimized, fmt/strict Clippy and rebuilt CLI300+67 pass; unchanged bypass fails three scoped factories while fallback passes. [Packet](evidence/resolver-read-session/README.md). [Lowerer review](evidence/fable-local-lowering-review/README.md) confirms original three failures, intermediate JSON failure, then three fixtures/all44 pure streaming tests pass on afb. CF-0167/0168 scope a separate root-based four-unit integration bundle, still unintegrated. Write/procedure/context-transfer/effect/cluster and full original acceptance remain open.
+
+
+## 2026-10-30 — writer Session and first two streaming units integrated; stable clock review
+
+[Writer/schema Session propagation](evidence/resolver-writer-session/README.md),
+7723dc4de, passed49 library/49 optimized and300+67 public regressions; separate
+unchanged writer/schema bypasses fail. [Neutral bounded contract](evidence/bounded-contract-root-integration/README.md)
+f7 passed134+49 libraries; [pure control model](evidence/bounded-control-root-integration/README.md)
+853 passed134+83 libraries, each exact fmt/strict Clippy and byte-identical offered
+blobs. [Rustdoc correction](evidence/resolver-session-coverage-doc/README.md) b30 has
+identical non-doc code. Public pin remains772. No durable streaming/CDC activation.
+
+[Stable-clock admission review](evidence/fable-stable-admission-review/README.md)
+confirms d77 marks now/current_date replayable: independent test-only ca2038b94
+9pass/2fail; immutable control passes, initial loop failure retained. CF-0181 review
+and CF-0182 ACK require correction before remaining component imports. Full
+original Spark4.2.1 acceptance remains unproven; inventory counts unchanged.
