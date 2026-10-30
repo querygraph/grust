@@ -1,0 +1,67 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 22.86s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 7 tests
+test resolver::session::analyzer_tests::generic_session_and_absent_session_keep_authoritative_native_analysis ... ok
+test resolver::query::session_tests::generated_analyzer::generated_column_validation_keeps_generic_session_native_authority ... ok
+test resolver::session::analyzer_tests::last_session_setter_selects_native_analysis_mode ... FAILED
+test resolver::session::analyzer_tests::typed_native_analyzer_retains_typed_failure ... FAILED
+test resolver::session::analyzer_tests::typed_native_analyzer_is_captured_and_optimizer_free ... FAILED
+test resolver::query::session_tests::generated_analyzer::generated_column_validation_uses_typed_captured_analyzer ... FAILED
+test resolver::query::session_tests::procedures::predicate_procedure_uses_typed_captured_native_analyzer ... FAILED
+
+failures:
+
+---- resolver::session::analyzer_tests::last_session_setter_selects_native_analysis_mode stdout ----
+
+thread 'resolver::session::analyzer_tests::last_session_setter_selects_native_analysis_mode' (90115603) panicked at crates/sail-plan/src/resolver/session_analyzer_tests.rs:135:5:
+assertion `left == right` failed
+  left: 0
+ right: 1
+
+---- resolver::session::analyzer_tests::typed_native_analyzer_retains_typed_failure stdout ----
+
+thread 'resolver::session::analyzer_tests::typed_native_analyzer_retains_typed_failure' (90115605) panicked at crates/sail-plan/src/resolver/session_analyzer_tests.rs:135:5:
+assertion `left == right` failed
+  left: 0
+ right: 1
+
+---- resolver::session::analyzer_tests::typed_native_analyzer_is_captured_and_optimizer_free stdout ----
+
+thread 'resolver::session::analyzer_tests::typed_native_analyzer_is_captured_and_optimizer_free' (90115604) panicked at crates/sail-plan/src/resolver/session_analyzer_tests.rs:135:5:
+assertion `left == right` failed
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- resolver::query::session_tests::generated_analyzer::generated_column_validation_uses_typed_captured_analyzer stdout ----
+
+thread 'resolver::query::session_tests::generated_analyzer::generated_column_validation_uses_typed_captured_analyzer' (90115600) panicked at crates/sail-plan/src/resolver/query/generated_analyzer_session_tests.rs:19:9:
+assertion `left == right` failed
+  left: 9
+ right: 7
+
+---- resolver::query::session_tests::procedures::predicate_procedure_uses_typed_captured_native_analyzer stdout ----
+
+thread 'resolver::query::session_tests::procedures::predicate_procedure_uses_typed_captured_native_analyzer' (90115601) panicked at crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs:203:9:
+assertion `left == right` failed
+  left: 9
+ right: 7
+
+
+failures:
+    resolver::query::session_tests::generated_analyzer::generated_column_validation_uses_typed_captured_analyzer
+    resolver::query::session_tests::procedures::predicate_procedure_uses_typed_captured_native_analyzer
+    resolver::session::analyzer_tests::last_session_setter_selects_native_analysis_mode
+    resolver::session::analyzer_tests::typed_native_analyzer_is_captured_and_optimizer_free
+    resolver::session::analyzer_tests::typed_native_analyzer_retains_typed_failure
+
+test result: FAILED. 2 passed; 5 failed; 0 ignored; 0 measured; 71 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

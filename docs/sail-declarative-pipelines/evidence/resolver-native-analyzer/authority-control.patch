@@ -1,0 +1,35 @@
+commit 26a1c234316c174c9110779627d760421872ccc3
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 14:03:28 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 14:03:28 2026 -0700
+
+    Negative control: native typed analysis falls back to authority
+
+diff --git a/crates/sail-plan/src/resolver/session.rs b/crates/sail-plan/src/resolver/session.rs
+index f7966b9bb..156bed54c 100644
+--- a/crates/sail-plan/src/resolver/session.rs
++++ b/crates/sail-plan/src/resolver/session.rs
+@@ -52,7 +52,14 @@ impl PlanResolver<'_> {
+     /// promised captured mode or running logical optimization instead.
+     pub(super) fn analyze_native(&self, plan: LogicalPlan) -> PlanResult<LogicalPlan> {
+         match self.query_session {
+-            Some(QuerySession::Scoped(session)) => Ok(session.analyze(plan)?),
++            Some(QuerySession::Scoped(_session)) => {
++                let state = self.ctx.state();
++                Ok(state.analyzer().execute_and_check(
++                    plan,
++                    state.config_options().as_ref(),
++                    |_, _| {},
++                )?)
++            }
+             _ => {
+                 let state = self.ctx.state();
+                 Ok(state.analyzer().execute_and_check(
+@@ -81,4 +88,4 @@ impl PlanResolver<'_> {
+ 
+ #[cfg(test)]
+ #[path = "session_analyzer_tests.rs"]
+-mod analyzer_tests;
++mod analyzer_tests;
+\ No newline at end of file

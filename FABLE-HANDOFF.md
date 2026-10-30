@@ -1,15 +1,13 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T20:57:15.723296+00:00. Live coordination read through **CF-0216**.
+Snapshot written 2026-10-30T21:05:11.574471+00:00. Live coordination read through **CF-0220**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
 ## Goal and current truth
 
-The user goal remains: **design and build Sail Declarative Pipelines, targeting
-Spark 4.2.1, and pass all Spark SDP tests**. Keep that full objective active.
-Batch comes first, then streaming/Iggy and CDC, in human-reviewable increments.
-Do not redefine success as the currently passing helper or public selection.
+The user goal remains: **design and build Sail Declarative Pipelines, targeting Spark 4.2.1, and pass all Spark SDP tests**. Keep that full objective active.
+Batch comes first, then streaming/Iggy and CDC, in human-reviewable increments. Do not redefine success as the currently passing helper or public selection.
 
 Substantial batch/SQL/catalog/ORC-read work and ownership foundations are committed.
 The ROOT lowercase helper, Grust column kernel and pure bounded source/control,
@@ -45,8 +43,8 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `a74c3f429b092fd5cde6f65d36371760471a07f6` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `711d78e2ce3be3d1c38f1717c2872cdd568da331` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `17b8ac254139e9213327dfcc7fc8badb4fdd27b2` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `dbbfffe4e567547b3a6b7c9d0867834475f7e4b2` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
@@ -94,8 +92,7 @@ combined gate. Main synchronization is not evidence that the SDP tree was rebase
 ## Canonical communication protocol
 
 Read [CODEX-FABLE-COORDINATION.md](docs/sail-declarative-pipelines/CODEX-FABLE-COORDINATION.md).
-The only live channel is `/Users/alexy/src/grust-sdp/codex-to-fable.md`.
-The persistent lock is `/Users/alexy/src/grust-sdp/codex-to-fable.lock`.
+The only live channel is `/Users/alexy/src/grust-sdp/codex-to-fable.md`. The persistent lock is `/Users/alexy/src/grust-sdp/codex-to-fable.lock`.
 Never unlink/replace it; observed inode was 353239041. The Sail Fable worktree
 links to the canonical log; the tracked Grust Fable copy is historical.
 
@@ -160,9 +157,9 @@ Latest fresh public CLI gate is **09d2f0cb89cbb92f186f5096ba04ade7a665282c**:
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0216)
+## Current implementation and immediate next work (CF-0220)
 
-Coordinator HEAD **a74c3f429b092fd5cde6f65d36371760471a07f6** is committed/clean.
+Coordinator HEAD **17b8ac254139e9213327dfcc7fc8badb4fdd27b2** is committed/clean.
 Recheck live handles; exact gates and controls linked below. [Latest public gate](docs/sail-declarative-pipelines/evidence/bounded-resolved-clocks/README.md)
 remains09d2f0cb8:324 combined libraries/strict Clippy/fmt, fresh300 public+67 upstream
 Python, Spark4.2.1, owned server exit0/no listeners. New callback units below have
@@ -229,15 +226,18 @@ expect_err test-Clippy failure preserved. cc27/361 unintegrated attempts retaine
 7505e2ced captures once, uses saved task context, shares unchanged legacy/error/
 cleanup paths.136+228 libraries and optimized6+9 cases (including two unrelated
 codec cases); all load workers joined. Registry survives stream disposal through
-held task-owned I/O, then releases after drain. Full Session retention unnecessary
-for these owned paths; arbitrary providers and Delta rebinding still unqualified.
+held task-owned I/O, then releases after drain. Full Session retention unnecessary for these owned paths; arbitrary providers and Delta rebinding still unqualified.
 [Boundary](docs/sail-declarative-pipelines/evidence/capture-execution-boundary/README.md)
-e42e1be96 preserves legacy planner7/child→execution9/parent; new captured test7/child
-at both phases. [Analyzer](docs/sail-declarative-pipelines/evidence/scoped-native-analyzer/README.md)
-ece5b6aed is optimizer-free; unchanged optimizer substitution1pass/1fail retained.
+e42e1be96 pins legacy7/child→9/parent. [Analyzer](docs/sail-declarative-pipelines/evidence/scoped-native-analyzer/README.md)
+ece5b6aed is optimizer-free; unchanged optimizer control1pass/1fail retained.
 CF-0214 review consumed; a74c3f429 clarifies recapture cancel/registry replacement.
-Next: panic fixture, typed analyzer, provider/cluster/caller qualification. Earlier
-catalog/Python I/O, shutdown, SDK/ORC/CDC, C0 and full Spark acceptance remain open.
+[Typed resolver](docs/sail-declarative-pipelines/evidence/resolver-native-analyzer/README.md)
+17b8ac254 adds with_scoped_query_session; Generic/Scoped mode and last setter wins,
+child-view propagation, generated-column/procedure native analyzer routing.
+136+78 libraries/strict Clippy/fmt; unchanged authority control2pass/5fail. Seven new tests include actual command validation; no mutation or public migration.
+CF-0219 Fable review ACK consumed, findings pending. Next: resolve review, capture
+panic fixture and provider/cluster/caller qualification. Earlier catalog/Python I/O,
+shutdown, SDK/ORC/CDC, C0 and full original Spark acceptance remain open.
 
 ## Acceptance accounting and major remaining work
 
@@ -492,5 +492,4 @@ never discard its entry. Preserve initial compile failures, canceled invalidated
 builds and unchanged-source controls. No new broad tests are needed merely to
 check a Markdown edit; the relevant document/source checks suffice.
 
-Keep this handoff current; successors post role/read-through/file scope.
-Completion requires evidence for the full original goal.
+Keep this handoff current; successors post role/read-through/file scope. Completion requires evidence for the full original goal.

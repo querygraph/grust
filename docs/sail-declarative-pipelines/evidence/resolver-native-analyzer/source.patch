@@ -1,0 +1,585 @@
+commit 17b8ac254139e9213327dfcc7fc8badb4fdd27b2
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 14:01:43 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 14:01:43 2026 -0700
+
+    Route native command analysis through an explicit captured Session opt-in
+
+diff --git a/crates/sail-plan/src/resolver/command/delta.rs b/crates/sail-plan/src/resolver/command/delta.rs
+index 80331a1c5..c01c36a22 100644
+--- a/crates/sail-plan/src/resolver/command/delta.rs
++++ b/crates/sail-plan/src/resolver/command/delta.rs
+@@ -96,12 +96,7 @@ impl PlanResolver<'_> {
+         }))
+         .project(expressions)?
+         .build()?;
+-        let session = self.ctx.state();
+-        let analyzed = session.analyzer().execute_and_check(
+-            projection,
+-            session.config_options().as_ref(),
+-            |_, _| {},
+-        )?;
++        let analyzed = self.analyze_native(projection)?;
+         for ((field, _), actual) in generated.iter().zip(analyzed.schema().fields()) {
+             if !same_generated_column_type(field.data_type(), actual.data_type()) {
+                 return Err(PlanError::invalid(format!(
+diff --git a/crates/sail-plan/src/resolver/command/procedure.rs b/crates/sail-plan/src/resolver/command/procedure.rs
+index 56e675fce..948c26275 100644
+--- a/crates/sail-plan/src/resolver/command/procedure.rs
++++ b/crates/sail-plan/src/resolver/command/procedure.rs
+@@ -370,12 +370,7 @@ impl PlanResolver<'_> {
+                 ))
+                 .filter(expr)?
+                 .build()?;
+-                let session = self.ctx.state();
+-                let analyzed = session.analyzer().execute_and_check(
+-                    plan,
+-                    session.config_options().as_ref(),
+-                    |_, _| {},
+-                )?;
++                let analyzed = self.analyze_native(plan)?;
+                 let LogicalPlan::Filter(filter) = analyzed else {
+                     return Err(PlanError::invalid("Invalid procedure predicate"));
+                 };
+diff --git a/crates/sail-plan/src/resolver/mod.rs b/crates/sail-plan/src/resolver/mod.rs
+index 8e7c1047c..e9699992d 100644
+--- a/crates/sail-plan/src/resolver/mod.rs
++++ b/crates/sail-plan/src/resolver/mod.rs
+@@ -2,6 +2,7 @@ use std::sync::Arc;
+ 
+ use datafusion::catalog::Session;
+ use datafusion::prelude::SessionContext;
++use sail_common_datafusion::session::scoped::ScopedSession;
+ 
+ use crate::config::PlanConfig;
+ 
+@@ -28,7 +29,7 @@ pub struct PlanResolver<'a> {
+     ctx: &'a SessionContext,
+     config: Arc<PlanConfig>,
+     relation_scope: Option<&'a dyn scope::RelationScope>,
+-    query_session: Option<&'a dyn Session>,
++    query_session: Option<session::QuerySession<'a>>,
+ }
+ 
+ impl<'a> PlanResolver<'a> {
+@@ -53,7 +54,16 @@ impl<'a> PlanResolver<'a> {
+     /// authoritative session commands and catalog name resolution still use ctx.
+     /// Native command analysis and final execution require their own propagation.
+     pub fn with_query_session(mut self, session: &'a dyn Session) -> Self {
+-        self.query_session = Some(session);
++        self.query_session = Some(session::QuerySession::Generic(session));
++        self
++    }
++
++    /// Also use the captured native analyzer for command validation. The caller
++    /// retains admission/cleanup, chooses the capture boundary, and must keep
++    /// providers valid for this owner. This does not migrate catalog authority,
++    /// session commands, or final execution. The last Session setter wins.
++    pub fn with_scoped_query_session(mut self, session: &'a ScopedSession) -> Self {
++        self.query_session = Some(session::QuerySession::Scoped(session));
+         self
+     }
+ }
+diff --git a/crates/sail-plan/src/resolver/query/generated_analyzer_session_tests.rs b/crates/sail-plan/src/resolver/query/generated_analyzer_session_tests.rs
+new file mode 100644
+index 000000000..7a8495c6a
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/generated_analyzer_session_tests.rs
+@@ -0,0 +1,104 @@
++use sail_catalog::provider::{CreateTableColumnOptions, CreateTableMode, CreateTableOptions};
++
++use super::*;
++
++#[derive(Debug)]
++struct GeneratedAnalyzer {
++    expected: usize,
++    calls: Arc<AtomicUsize>,
++}
++impl datafusion::optimizer::AnalyzerRule for GeneratedAnalyzer {
++    fn name(&self) -> &str {
++        "generated_column_native_analyzer_probe"
++    }
++    fn analyze(
++        &self,
++        plan: LogicalPlan,
++        config: &datafusion_common::config::ConfigOptions,
++    ) -> Result<LogicalPlan> {
++        assert_eq!(config.execution.target_partitions, self.expected);
++        assert!(matches!(plan, LogicalPlan::Projection(_)));
++        self.calls.fetch_add(1, Ordering::SeqCst);
++        Ok(plan)
++    }
++}
++async fn generated(scoped: bool) -> TestResult {
++    let analyzed = Arc::new(AtomicUsize::new(0));
++    let fixture = Fixture::with_analyzer(Some(Arc::new(GeneratedAnalyzer {
++        expected: if scoped { 7 } else { 9 },
++        calls: analyzed.clone(),
++    })))
++    .await?;
++    let manager = fixture.ctx.extension::<CatalogManager>()?;
++    manager
++        .create_table(
++            &["target"],
++            CreateTableOptions {
++                columns: vec![
++                    CreateTableColumnOptions {
++                        name: "a".into(),
++                        data_type: DataType::Int64,
++                        nullable: true,
++                        comment: None,
++                        default: None,
++                        generated_always_as: None,
++                        identity: None,
++                    },
++                    CreateTableColumnOptions {
++                        name: "g".into(),
++                        data_type: DataType::Int64,
++                        nullable: true,
++                        comment: None,
++                        default: None,
++                        generated_always_as: Some("a".into()),
++                        identity: None,
++                    },
++                ],
++                comment: None,
++                constraints: vec![],
++                location: None,
++                format: "delta".into(),
++                partition_by: vec![],
++                sort_by: vec![],
++                bucket_by: None,
++                mode: CreateTableMode::Create,
++                properties: vec![],
++                is_external: false,
++                is_write_precondition: false,
++            },
++        )
++        .await?;
++    let resolver = fixture.resolver();
++    let resolver = if scoped {
++        resolver.with_scoped_query_session(&fixture.session)
++    } else {
++        resolver
++    };
++    let statement = sail_sql_analyzer::parser::parse_one_statement(
++        "ALTER TABLE target REPLACE COLUMNS (a BIGINT, g BIGINT)",
++    )?;
++    let plan = sail_sql_analyzer::statement::from_ast_statement(statement)?;
++    let _resolved = resolver.resolve_named_plan(plan).await?;
++    assert_eq!(analyzed.load(Ordering::SeqCst), 1);
++    assert_eq!(
++        fixture.calls.load(Ordering::SeqCst),
++        0,
++        "no physical planning"
++    );
++    assert_eq!(
++        fixture.resources.drain().await?.registered,
++        0,
++        "no external metadata needed"
++    );
++    assert_eq!(fixture.ctx.state().config().target_partitions(), 9);
++    assert!(fixture.ctx.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
++#[tokio::test]
++async fn generated_column_validation_uses_typed_captured_analyzer() -> TestResult {
++    generated(true).await
++}
++#[tokio::test]
++async fn generated_column_validation_keeps_generic_session_native_authority() -> TestResult {
++    generated(false).await
++}
+diff --git a/crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs b/crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs
+index 7b9d32283..daf2ec6b0 100644
+--- a/crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/procedure_factory_session_tests.rs
+@@ -188,3 +188,63 @@ async fn predicate_procedure_uses_selected_session() -> TestResult {
+ async fn predicate_procedure_keeps_legacy_authority() -> TestResult {
+     procedure(false, true).await
+ }
++
++#[derive(Debug)]
++struct CapturedPredicateAnalyzer(Arc<AtomicUsize>);
++impl datafusion::optimizer::AnalyzerRule for CapturedPredicateAnalyzer {
++    fn name(&self) -> &str {
++        "captured_procedure_predicate_probe"
++    }
++    fn analyze(
++        &self,
++        plan: LogicalPlan,
++        config: &datafusion_common::config::ConfigOptions,
++    ) -> Result<LogicalPlan> {
++        assert_eq!(config.execution.target_partitions, 7);
++        assert!(matches!(plan, LogicalPlan::Filter(_)));
++        self.0.fetch_add(1, Ordering::SeqCst);
++        Ok(plan)
++    }
++}
++#[tokio::test]
++async fn predicate_procedure_uses_typed_captured_native_analyzer() -> TestResult {
++    let analyzed = Arc::new(AtomicUsize::new(0));
++    let fixture =
++        Fixture::with_analyzer(Some(Arc::new(CapturedPredicateAnalyzer(analyzed.clone())))).await?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let planned = Arc::new(AtomicUsize::new(0));
++    fixture
++        .ctx
++        .extension::<DataSourceRegistry>()?
++        .register_data_source(Arc::new(ProcedureSource {
++            metadata: CheckingLake::new(Some(fixture.resources.clone()), calls.clone()),
++            predicate: true,
++            planned: planned.clone(),
++        }))?;
++    let result = fixture
++        .resolver()
++        .with_scoped_query_session(&fixture.session)
++        .resolve_command_plan(
++            spec::CommandPlan::new(spec::CommandNode::CallProcedure {
++                procedure: vec!["system", "probe"].into(),
++                arguments: vec![text("delta.`/input`"), text("true")],
++                named_arguments: vec![],
++            }),
++            &mut PlanResolverState::new(),
++        )
++        .await;
++    let error = result.err().ok_or("procedure probe did not stop")?;
++    assert!(
++        error
++            .to_string()
++            .contains("procedure probe stops before implementation planning"),
++        "{error}"
++    );
++    assert_eq!(analyzed.load(Ordering::SeqCst), 1);
++    assert_eq!(planned.load(Ordering::SeqCst), 1);
++    assert_eq!(calls.load(Ordering::SeqCst), 2);
++    assert_eq!(fixture.resources.drain().await?.registered, 2);
++    assert_eq!(fixture.calls.load(Ordering::SeqCst), 0);
++    assert_eq!(fixture.ctx.state().config().target_partitions(), 9);
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/query/read.rs b/crates/sail-plan/src/resolver/query/read.rs
+index 69f8a47e7..98fc76cfc 100644
+--- a/crates/sail-plan/src/resolver/query/read.rs
++++ b/crates/sail-plan/src/resolver/query/read.rs
+@@ -359,12 +359,9 @@ impl PlanResolver<'_> {
+         let plan = match spec_plan {
+             spec::Plan::Query(query_plan) => match scope {
+                 Some(scope) => {
+-                    let resolver = PlanResolver::new(self.ctx, self.config.clone())
++                    let mut resolver = PlanResolver::new(self.ctx, self.config.clone())
+                         .with_relation_scope(&scope);
+-                    let resolver = match self.query_session {
+-                        Some(session) => resolver.with_query_session(session),
+-                        None => resolver,
+-                    };
++                    resolver.query_session = self.query_session;
+                     resolver.resolve_query_plan(query_plan, state).await?
+                 }
+                 None => self.resolve_query_plan(query_plan, state).await?,
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index 56e60a08e..91778f70f 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -11,6 +11,7 @@ use datafusion::execution::context::QueryPlanner;
+ use datafusion::execution::object_store::{
+     DefaultObjectStoreRegistry, ObjectStoreRegistry, ObjectStoreUrl,
+ };
++use datafusion::optimizer::AnalyzerRule;
+ use datafusion::physical_plan::ExecutionPlan;
+ use datafusion::physical_planner::{DefaultPhysicalPlanner, PhysicalPlanner};
+ use datafusion::prelude::{SessionConfig, SessionContext};
+@@ -126,6 +127,11 @@ struct Fixture {
+ }
+ impl Fixture {
+     async fn new() -> TestResultWith<Self> {
++        Self::with_analyzer(None).await
++    }
++    async fn with_analyzer(
++        rule: Option<Arc<dyn AnalyzerRule + Send + Sync>>,
++    ) -> TestResultWith<Self> {
+         let resources = Arc::new(TaskResourceScope::new(Handle::current()));
+         let calls = Arc::new(AtomicUsize::new(0));
+         let provider = MemoryCatalogProvider::new("catalog".into(), vec!["db"].try_into()?, None);
+@@ -147,16 +153,18 @@ impl Fixture {
+                 Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
+                 Box::new(SparkPlanFormatter),
+             )));
+-        let ctx = SessionContext::new_with_state(
+-            SessionStateBuilder::new()
+-                .with_config(config)
+-                .with_default_features()
+-                .with_query_planner(Arc::new(CheckingPlanner {
+-                    resources: resources.clone(),
+-                    calls: calls.clone(),
+-                }))
+-                .build(),
+-        );
++        let builder = SessionStateBuilder::new()
++            .with_config(config)
++            .with_default_features()
++            .with_query_planner(Arc::new(CheckingPlanner {
++                resources: resources.clone(),
++                calls: calls.clone(),
++            }));
++        let builder = match rule {
++            Some(rule) => builder.with_analyzer_rules(vec![rule]),
++            None => builder,
++        };
++        let ctx = SessionContext::new_with_state(builder.build());
+         let original = Arc::new(InMemory::new());
+         original.put(&Path::from("input"), "parent".into()).await?;
+         let url = ObjectStoreUrl::parse("memory://resolver")?;
+@@ -331,3 +339,6 @@ mod delta_metadata;
+ 
+ #[path = "procedure_factory_session_tests.rs"]
+ mod procedures;
++
++#[path = "generated_analyzer_session_tests.rs"]
++mod generated_analyzer;
+diff --git a/crates/sail-plan/src/resolver/session.rs b/crates/sail-plan/src/resolver/session.rs
+index c04d518e2..f7966b9bb 100644
+--- a/crates/sail-plan/src/resolver/session.rs
++++ b/crates/sail-plan/src/resolver/session.rs
+@@ -3,10 +3,26 @@ use datafusion::catalog::Session;
+ use datafusion::execution::SessionState;
+ use datafusion::physical_plan::collect;
+ use datafusion_expr::LogicalPlan;
++use sail_common_datafusion::session::scoped::ScopedSession;
+ 
+ use super::PlanResolver;
+ use crate::error::PlanResult;
+ 
++#[derive(Clone, Copy)]
++pub(super) enum QuerySession<'a> {
++    Generic(&'a dyn Session),
++    Scoped(&'a ScopedSession),
++}
++
++impl QuerySession<'_> {
++    fn as_session(&self) -> &dyn Session {
++        match self {
++            Self::Generic(session) => *session,
++            Self::Scoped(session) => *session,
++        }
++    }
++}
++
+ /// Keep a legacy snapshot alive across a factory call, or borrow the caller's
+ /// captured view. Only the legacy branch captures state, at the old call phase.
+ pub(super) enum ProviderSession<'a> {
+@@ -25,18 +41,36 @@ impl ProviderSession<'_> {
+ 
+ impl PlanResolver<'_> {
+     pub(super) fn provider_session(&self) -> ProviderSession<'_> {
+-        match self.query_session {
+-            Some(session) => ProviderSession::Captured(session),
++        match &self.query_session {
++            Some(session) => ProviderSession::Captured(session.as_session()),
+             None => ProviderSession::Legacy(Box::new(self.ctx.state())),
+         }
+     }
+ 
++    /// Native analyzer only. A generic Session has no analyzer interface, so
++    /// its legacy behavior remains explicit rather than falling back from a
++    /// promised captured mode or running logical optimization instead.
++    pub(super) fn analyze_native(&self, plan: LogicalPlan) -> PlanResult<LogicalPlan> {
++        match self.query_session {
++            Some(QuerySession::Scoped(session)) => Ok(session.analyze(plan)?),
++            _ => {
++                let state = self.ctx.state();
++                Ok(state.analyzer().execute_and_check(
++                    plan,
++                    state.config_options().as_ref(),
++                    |_, _| {},
++                )?)
++            }
++        }
++    }
++
+     /// Execute a query used by resolution, preserving the legacy path unless
+     /// the caller supplied its admitted query Session. This never dispatches
+     /// authoritative session commands through a private state snapshot.
+     pub(super) async fn collect_query(&self, plan: LogicalPlan) -> PlanResult<Vec<RecordBatch>> {
+-        match self.query_session {
++        match &self.query_session {
+             Some(session) => {
++                let session = session.as_session();
+                 let physical = session.create_physical_plan(&plan).await?;
+                 Ok(collect(physical, session.task_ctx()).await?)
+             }
+@@ -44,3 +78,7 @@ impl PlanResolver<'_> {
+         }
+     }
+ }
++
++#[cfg(test)]
++#[path = "session_analyzer_tests.rs"]
++mod analyzer_tests;
+diff --git a/crates/sail-plan/src/resolver/session_analyzer_tests.rs b/crates/sail-plan/src/resolver/session_analyzer_tests.rs
+new file mode 100644
+index 000000000..ad79002ad
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/session_analyzer_tests.rs
+@@ -0,0 +1,160 @@
++use std::sync::Arc;
++use std::sync::atomic::{AtomicUsize, Ordering};
++
++use datafusion::common::DataFusionError;
++use datafusion::common::config::ConfigOptions;
++use datafusion::common::tree_node::Transformed;
++use datafusion::execution::SessionStateBuilder;
++use datafusion::optimizer::{AnalyzerRule, OptimizerConfig, OptimizerRule};
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_common::Result;
++use datafusion_expr::{LogicalPlan, LogicalPlanBuilder, lit};
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_common_datafusion::task_resources::TaskResourceScope;
++use tokio::runtime::Handle;
++
++use super::*;
++use crate::config::PlanConfig;
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++#[derive(Debug)]
++struct AnalyzerFailure(u32);
++impl std::fmt::Display for AnalyzerFailure {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        write!(f, "native analyzer failure {}", self.0)
++    }
++}
++impl std::error::Error for AnalyzerFailure {}
++
++#[derive(Debug)]
++struct Probe {
++    expected: usize,
++    calls: Arc<AtomicUsize>,
++    failure: bool,
++}
++impl AnalyzerRule for Probe {
++    fn name(&self) -> &str {
++        "resolver_native_analyzer_probe"
++    }
++    fn analyze(&self, plan: LogicalPlan, config: &ConfigOptions) -> Result<LogicalPlan> {
++        assert_eq!(config.execution.target_partitions, self.expected);
++        self.calls.fetch_add(1, Ordering::SeqCst);
++        if self.failure {
++            Err(DataFusionError::External(Box::new(AnalyzerFailure(47))))
++        } else {
++            Ok(plan)
++        }
++    }
++}
++#[derive(Debug)]
++struct OptimizerBarrier(Arc<AtomicUsize>);
++impl OptimizerRule for OptimizerBarrier {
++    fn name(&self) -> &str {
++        "native_analysis_must_not_optimize"
++    }
++    fn rewrite(&self, _: LogicalPlan, _: &dyn OptimizerConfig) -> Result<Transformed<LogicalPlan>> {
++        self.0.fetch_add(1, Ordering::SeqCst);
++        datafusion_common::plan_err!("native analyzer ran optimization")
++    }
++}
++
++#[derive(Clone, Copy)]
++enum Mode {
++    Legacy,
++    Generic,
++    Scoped,
++    GenericThenScoped,
++    ScopedThenGeneric,
++}
++async fn check(mode: Mode, failure: bool) -> TestResult {
++    let scoped = matches!(mode, Mode::Scoped | Mode::GenericThenScoped);
++    let calls = Arc::new(AtomicUsize::new(0));
++    let optimized = Arc::new(AtomicUsize::new(0));
++    // A distinct post-capture authority rule catches both config and rule-set
++    // fallback; updating only config would leave the same analyzer Arc in both.
++    let captured_calls = Arc::new(AtomicUsize::new(0));
++    let ctx = SessionContext::new_with_state(
++        SessionStateBuilder::new()
++            .with_config(SessionConfig::new().with_target_partitions(7))
++            .with_analyzer_rules(vec![Arc::new(Probe {
++                expected: 7,
++                calls: captured_calls.clone(),
++                failure,
++            })])
++            .with_optimizer_rules(vec![Arc::new(OptimizerBarrier(optimized.clone()))])
++            .build(),
++    );
++    let resources = Arc::new(TaskResourceScope::new(Handle::current()));
++    let snapshot = ScopedSession::new(ctx.state(), resources.clone());
++    // Replace authority with a state built from itself, preserving its current
++    // registries. This fixture tests query routing, not session command mutation.
++    let state = SessionStateBuilder::new_from_existing(ctx.state())
++        .with_config(SessionConfig::new().with_target_partitions(9))
++        .with_analyzer_rules(vec![Arc::new(Probe {
++            expected: 9,
++            calls: calls.clone(),
++            failure,
++        })])
++        .build();
++    *ctx.state_ref().write() = state;
++    let resolver = PlanResolver::new(&ctx, Arc::new(PlanConfig::default()));
++    let resolver = match mode {
++        Mode::Legacy => resolver,
++        Mode::Generic => resolver.with_query_session(&snapshot),
++        Mode::Scoped => resolver.with_scoped_query_session(&snapshot),
++        Mode::GenericThenScoped => resolver
++            .with_query_session(&snapshot)
++            .with_scoped_query_session(&snapshot),
++        Mode::ScopedThenGeneric => resolver
++            .with_scoped_query_session(&snapshot)
++            .with_query_session(&snapshot),
++    };
++    let input = LogicalPlanBuilder::empty(false)
++        .filter(lit(true))?
++        .build()?;
++    let result = resolver.analyze_native(input.clone());
++    if failure {
++        let error = result
++            .err()
++            .ok_or("typed native analyzer failure disappeared")?;
++        let mut cause: Option<&(dyn std::error::Error + 'static)> = Some(&error);
++        let mut found = false;
++        while let Some(current) = cause {
++            if let Some(failure) = current.downcast_ref::<AnalyzerFailure>() {
++                assert_eq!(failure.0, 47);
++                found = true;
++                break;
++            }
++            cause = current.source();
++        }
++        assert!(found, "typed native analyzer cause lost: {error}");
++    } else {
++        assert_eq!(result?, input, "analysis must retain the constant Filter");
++    }
++    assert_eq!(captured_calls.load(Ordering::SeqCst), usize::from(scoped));
++    assert_eq!(calls.load(Ordering::SeqCst), usize::from(!scoped));
++    assert_eq!(optimized.load(Ordering::SeqCst), 0);
++    assert_eq!(ctx.state().config().target_partitions(), 9);
++    assert!(ctx.extension::<TaskResourceScope>().is_err());
++    assert_eq!(resources.drain().await?.registered, 0);
++    Ok(())
++}
++#[tokio::test]
++async fn typed_native_analyzer_is_captured_and_optimizer_free() -> TestResult {
++    check(Mode::Scoped, false).await
++}
++#[tokio::test]
++async fn typed_native_analyzer_retains_typed_failure() -> TestResult {
++    check(Mode::Scoped, true).await
++}
++#[tokio::test]
++async fn generic_session_and_absent_session_keep_authoritative_native_analysis() -> TestResult {
++    check(Mode::Generic, false).await?;
++    check(Mode::Legacy, false).await
++}
++#[tokio::test]
++async fn last_session_setter_selects_native_analysis_mode() -> TestResult {
++    check(Mode::ScopedThenGeneric, false).await?;
++    check(Mode::GenericThenScoped, false).await
++}

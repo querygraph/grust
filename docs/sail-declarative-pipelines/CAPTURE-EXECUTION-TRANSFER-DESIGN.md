@@ -51,12 +51,22 @@ remains recoverable by standard source/downcast. Exact fmt/strict Clippy and
 136 common-datafusion + 71 plan library tests pass. An unchanged-test optimizer
 substitution control fails the success case while the typed-failure case passes.
 
-Resolver adoption is a separate decision. Existing with_query_session accepts a
-generic DataFusion Session, whose interface has no analyzer-only method. Do not
-pretend ScopedSession is SessionState via as_any, substitute optimize, or silently
-fall back to authority for a newly promised captured-analyzer mode. A typed opt-in
-accessor/setter can expose this primitive while preserving the current generic
-method's documented partial behavior. Its exact public shape is not selected yet.
+Resolver opt-in is implemented at Sail17b8ac254. Existing with_query_session
+accepts generic DataFusion Session, whose interface has no analyzer-only method;
+it keeps authoritative native command analysis. New with_scoped_query_session
+accepts ScopedSession and selects its exact analyzer. A private Generic/Scoped
+enum prevents mixed provider/analyzer choices; the last setter wins, and child
+persistent-view resolvers preserve the entire mode. Do not pretend ScopedSession
+is SessionState via as_any, substitute optimize, or fall back from typed mode.
+
+Delta generated-column replacement validation and procedure-predicate native
+analysis use the shared helper. Seven tests cover captured config/rule identity,
+optimizer-free constant Filter, typed cause, generic/legacy behavior, setter order
+and actual generated-column/procedure paths. Exact fmt/strict Clippy/136+78
+libraries pass. Unchanged authority-fallback control yields2pass/5fail; generic
+cases pass and captured cases detect the regression. See the
+[resolver packet](evidence/resolver-native-analyzer/README.md). No new scheduling
+mechanism/stress claim or public caller/cluster/provider migration.
 
 ## Consuming execution transition
 
@@ -228,8 +238,8 @@ remain outside that guarantee.
    registry and function preservation, owner/lifetime refusal and unpolled/drop/
    stop/error paths. Use held tasks rather than timing races; optimized CPU stress
    for concurrency changes.
-4. Add a typed analyzer opt-in for the resolver; compare exact native rule/config/
-   error behavior and prove no optimizer or authority mutation.
+4. The typed analyzer opt-in and two command sites are implemented. Consume
+   Fable review and qualify each caller before selecting it in public execution.
 5. Qualify local/cluster capability and each caller individually before activating
    any public path. Earlier catalog/authority I/O, Python schema analysis, primary/
    cleanup transport, complete session shutdown and SDK/ORC/CDC work remain open.
