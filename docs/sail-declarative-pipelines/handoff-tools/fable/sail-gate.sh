@@ -20,13 +20,14 @@ for SHA in "$@"; do
   START=$(git -C "$GATE" rev-parse HEAD)
   cd "$GATE" || exit 2
   df -h "$TARGET" 2>/dev/null | tail -1 || df -h "$GATE" | tail -1
-  cargo +nightly fmt --check -p sail-common -p sail-spark-connect; FMT=$?
-  cargo clippy -p sail-common -p sail-spark-connect --all-targets --all-features -- -D warnings >/dev/null 2>&1; CLIPPY=$?
+  cargo +nightly fmt --check -p sail-common -p sail-common-datafusion -p sail-spark-connect; FMT=$?
+  cargo clippy -p sail-common -p sail-common-datafusion -p sail-spark-connect --all-targets --all-features -- -D warnings >/dev/null 2>&1; CLIPPY=$?
   cargo test -p sail-common --lib root_lowercase 2>&1 | grep "^test result"; COMMON=${pipestatus[1]}
+  cargo test -p sail-common-datafusion --lib 2>&1 | grep "^test result"; COMMONDF=${pipestatus[1]}
   cargo test -p sail-spark-connect --lib pipelines:: 2>&1 | grep "^test result"; RUST=${pipestatus[1]}
   VIRTUAL_ENV=$VENV "$VENV/bin/maturin" develop --uv >/dev/null 2>&1; MATURIN=$?
   "$VENV/bin/python" -m pytest python/pysail/tests/spark/pipelines -q -p no:cacheprovider 2>&1 | tail -1; PYTEST=${pipestatus[1]}
   END=$(git -C "$GATE" rev-parse HEAD)
   if [ "$START" != "$END" ]; then echo "HEAD moved during gate: no verdict"; continue; fi
-  echo "VERDICT commit=$END fmt=$FMT clippy=$CLIPPY rust_common=$COMMON rust_pipelines=$RUST maturin=$MATURIN pytest_pipelines=$PYTEST at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "VERDICT commit=$END fmt=$FMT clippy=$CLIPPY rust_common=$COMMON rust_common_datafusion=$COMMONDF rust_pipelines=$RUST maturin=$MATURIN pytest_pipelines=$PYTEST at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 done
