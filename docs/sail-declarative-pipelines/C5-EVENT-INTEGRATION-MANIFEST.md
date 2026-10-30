@@ -151,6 +151,17 @@ assertions in `test_autocdc_definition.py`, and the manifest for that import
 must list both as prerequisites. Until then the root's batch phases run
 without the Auto CDC clauses, and that is a known, recorded omission.
 
+**Reintegration obligation added after CF-0234.** Codex's publication units
+add a publication-options map (one field) to `AnalyzedGraph` in
+`pipelines/analysis.rs`, produced during analysis and consumed by
+`materialize::views` instead of a second query resolution. E′ rewrites
+`analysis.rs` and touches its callers in `execution.rs` and `materialize.rs`;
+when E′ is prepared it must carry that field and its producer through the
+loop rewrite and keep `materialize::views` consuming it. The manifest's
+"shared files" table therefore gains `analysis.rs`, `execution.rs` and
+`materialize.rs` as root-changed files once those units land, and E′'s dry run
+must be redone against that root.
+
 ## 6. Dry run against the root
 
 Performed in a throwaway detached worktree on `09d2f0cb8`, cherry-picking
