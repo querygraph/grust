@@ -244,6 +244,29 @@ materialized table are not published. Do not overstate changed error timing or
 infer all Catalyst/backend checks from metadata capture. Fable review and precision
 response are retained in the packet.
 
+## Implemented per-command input resolution
+
+[f72120882 plus cleanup163b2fb52](evidence/command-input-reanalysis/README.md)
+replace execution's run-wide provider map with an upstream map resolved for each
+selected table command. Both graph-local view kinds are traversed through their
+flow definitions; only tables stop the walk and are read under the consuming
+command's configuration after upstream writes. No eager post-write read caches an
+unused target provider. The obsolete run-wide Selection.required/with_dependencies
+calculation is removed; refresh/reset selection and validation remain unchanged.
+
+Three factory/Weak-lease tests pin fresh per-command view plans, table stopping
+with command read-case configuration, and persisted-view definition namespace
+without catalog publication. Mock leases release with each map; SDK tasks and
+factory/session caches are not qualified. Two controls independently give2pass/
+1fail for traversing behind a table and reading under session config. Both exact
+fmt/strict Clippy/146 libraries and a fresh combined300+67 CLI regression pass,
+Spark4.2.1, rebuilt binary pinned and owned server stopped.
+
+View bodies retain their current flow-specific config in this unit. Upstream→
+consumer configuration fusion and ordered read handling still need their own
+reference fixtures/design. No early planning admission, captured Session or owned
+store activation follows from removing the plan cache.
+
 ## Incremental review units and evidence
 
 1. Characterize analysis artifact/provider retention and unresolved clocks; archive
@@ -252,10 +275,10 @@ response are retained in the packet.
    metadata rules, prepare catalog commands through ordinary stages, export only
    schemas/publications and drop provider plans. Preserve the exact evidence above;
    further Catalyst/backend parity is not implied by these checked properties.
-3. Replace execution's cross-command provider cache with definition/name descriptors
-   and per-command resolution. Compare nondeterministic temporary versus table
-   behavior, forward references, repeated reads, namespace/config, excluded inputs,
-   persisted views and metadata failure timing before ownership activation.
+3. Per-command resolution/cache removal and selection cleanup are implemented at
+   f72120882/163b2fb52 as above. Next qualify full input-read-order configuration
+   fusion, nondeterministic temporary/table behavior and backend identity before
+   ownership activation; current immutable per-flow settings are not full parity.
 4. Add captured physical preparation preserving Sail's optimizer/rewrite/rename/
    authority behavior, and qualify each actual SDP command shape. Keep legacy tests.
 5. Wire one admitted local command path through resolver/planner/execution and
@@ -267,5 +290,6 @@ response are retained in the packet.
 
 The above does not replace remaining ORC writer, Python analysis, durable streaming/
 Iggy/CDC, catalog coverage or full Spark4.2.1 SDP acceptance. Local unit tests and
-source traces are evidence for their stated scope only. Only the explicit implementation units above are qualified. Remaining owner,
-closure, configuration and captured-physical-preparation migration is not activated.
+source traces are evidence for their stated scope only. Only explicit units above
+are qualified. Remaining ownership, configuration fusion and captured physical
+preparation are not activated.

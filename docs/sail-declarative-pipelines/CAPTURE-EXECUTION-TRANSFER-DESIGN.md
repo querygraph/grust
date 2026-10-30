@@ -156,16 +156,19 @@ analysis scope forever to avoid that question. Audit actual native paths and the
 three-owner lifecycle from the parent design: finite analysis, bounded-history
 controller, fresh attempt/command. A drained scope is never reopened/reused.
 
-The [batch migration trace](BATCH-PROVIDER-MIGRATION-DESIGN.md) distinguishes
-analysis artifacts from execution's separate plan cache: only temporary views
-retain full analysis plans; table and persisted-view outputs retain schemas.
+The [batch migration trace](BATCH-PROVIDER-MIGRATION-DESIGN.md) records the
+historical boundary at17b8ac254: only temporary views retained full analysis plans;
+table and persisted-view outputs retained schemas.
 Persisted-view publication extracts columns and stores SQL/metadata, while batch
 execution starts a fresh map. That historical trace must not be read as an
 analysis-time Delta provider scan from analyzed.relations. Since f0ac099e6,
 analysis exports only schemas and native publication options, no LogicalPlan;
-provider plans remain in its working set and drop before it returns. The actual execution
-cache still retains temporary/read_output plans across commands and needs fresh
-owner bindings before migration. Bounded lowering re-resolves over explicit
+provider plans remain in its working set and drop before it returns. The
+historical execution cache retained temporary/read_output plans across
+commands. Since f72120882 each selected table command resolves its own upstream
+map, traversing views and stopping at tables. That removes this cache reuse, but
+SDK/session/factory-cache lifetime and early planning admission remain unqualified.
+Bounded lowering re-resolves over explicit
 bindings. External static/local identity assertions and snapshot JSON remain
 incomplete backend-pin/replay evidence. C0 and durable source/effect rules stay open.
 

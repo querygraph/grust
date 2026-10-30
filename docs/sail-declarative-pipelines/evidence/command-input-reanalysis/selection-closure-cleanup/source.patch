@@ -1,0 +1,73 @@
+commit 163b2fb52f9ba2961cd0338046d4d2f4cf91f686
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 15:14:37 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 15:14:37 2026 -0700
+
+    Remove obsolete run-wide required-input selection state
+
+diff --git a/crates/sail-spark-connect/src/pipelines/mod.rs b/crates/sail-spark-connect/src/pipelines/mod.rs
+index 08e560d50..636411865 100644
+--- a/crates/sail-spark-connect/src/pipelines/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/mod.rs
+@@ -161,7 +161,6 @@ pub(crate) async fn handle_command(
+                 yield event("Starting pipeline analysis");
+                 let run = async {
+                     let analyzed = analysis::analyze(&ctx, &definition).await?;
+-                    let selection = selection.with_dependencies(&definition, &analyzed);
+                     if !command.dry.unwrap_or(false) {
+                         execution::execute(&ctx, &definition, analyzed, selection).await?;
+                     }
+diff --git a/crates/sail-spark-connect/src/pipelines/selection.rs b/crates/sail-spark-connect/src/pipelines/selection.rs
+index 861cea2a7..dc1222fd4 100644
+--- a/crates/sail-spark-connect/src/pipelines/selection.rs
++++ b/crates/sail-spark-connect/src/pipelines/selection.rs
+@@ -1,6 +1,5 @@
+ use std::collections::BTreeSet;
+ 
+-use super::analysis::AnalyzedGraph;
+ use super::graph::{GraphDefinition, Name, parse_name};
+ use crate::error::{SparkError, SparkResult};
+ use crate::spark::connect::OutputType;
+@@ -9,7 +8,6 @@ use crate::spark::connect::pipeline_command::StartRun;
+ pub(super) struct Selection {
+     pub refresh: BTreeSet<Name>,
+     pub reset: BTreeSet<Name>,
+-    pub required: BTreeSet<Name>,
+ }
+ 
+ impl Selection {
+@@ -55,32 +53,7 @@ impl Selection {
+                 overlap.join(".")
+             )));
+         }
+-        let required = refresh.union(&reset).cloned().collect();
+-        Ok(Self {
+-            refresh,
+-            reset,
+-            required,
+-        })
+-    }
+-
+-    pub fn with_dependencies(mut self, graph: &GraphDefinition, analyzed: &AnalyzedGraph) -> Self {
+-        // A selection names only datasets to run, not their upstream or
+-        // downstream tables. Temporary views are expanded to discover the
+-        // existing materialized outputs that selected flows need to scan.
+-        let mut pending: Vec<_> = self.required.iter().cloned().collect();
+-        while let Some(name) = pending.pop() {
+-            for input in analyzed.dependencies.get(&name).into_iter().flatten() {
+-                if self.required.insert(input.clone())
+-                    && graph
+-                        .outputs
+-                        .iter()
+-                        .any(|x| x.name == *input && x.kind == OutputType::TemporaryView)
+-                {
+-                    pending.push(input.clone());
+-                }
+-            }
+-        }
+-        self
++        Ok(Self { refresh, reset })
+     }
+ 
+     pub fn runs(&self, name: &Name) -> bool {

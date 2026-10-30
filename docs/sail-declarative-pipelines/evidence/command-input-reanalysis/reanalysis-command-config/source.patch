@@ -1,0 +1,28 @@
+commit 0aa5324547124e75ef83162b3ff68ffa8d6c4af8
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 15:12:11 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 15:12:11 2026 -0700
+
+    Negative control: reanalysis-command-config
+
+diff --git a/crates/sail-spark-connect/src/pipelines/reanalysis.rs b/crates/sail-spark-connect/src/pipelines/reanalysis.rs
+index 78a64dc13..0a41a24cd 100644
+--- a/crates/sail-spark-connect/src/pipelines/reanalysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/reanalysis.rs
+@@ -100,7 +100,7 @@ pub(super) async fn resolve_inputs(
+                     })),
+                     is_streaming: false,
+                 });
+-                (query, command_config.clone(), None)
++                (query, spark.plan_config()?, None)
+             };
+         let resolver = PlanResolver::new(ctx, config);
+         let scope = flow.map(|flow| GraphScope::new(graph, &resolved, flow));
+@@ -121,4 +121,4 @@ pub(super) async fn resolve_inputs(
+ }
+ 
+ #[cfg(test)]
+-mod tests;
++mod tests;
+\ No newline at end of file
