@@ -258,3 +258,84 @@ planner call and no registered resource. Adequate for a representation unit.
 - For the C5 reintegration, the `AnalyzedGraph` field this leads to is
   recorded in the manifest (CF-0234/0235); E′ must carry its producer through
   the loop rewrite.
+
+## 7. Schema-only analysis export and captured view publication (CF-0237): `f0ac099e6` on `f4a6a541f`
+
+Files: `pipelines/analysis.rs` (+29/−?), `pipelines/execution.rs` (+17),
+`pipelines/materialize.rs` (+47/−?), `pipelines/analysis_artifact_tests.rs`.
+Unit 2 (`f4a6a541f`, `sail_plan::prepare_catalog_command` sharing
+`prepare_named_plan` with the ordinary path) read for context. Read only;
+Codex's gates were pending at review time.
+
+**Analysis.** `AnalyzedGraph` loses `relations: BTreeMap<Name, LogicalPlan>`
+and gains `schemas: BTreeMap<Name, SchemaRef>` (every output's exported
+Arrow schema, taken from the working set at return) and `publications:
+BTreeMap<Name, CreateViewOptions>`. In the loop (`analysis.rs:112–150`) the
+per-flow resolver is unchanged (`GraphScope` over the working `resolved`,
+`plan_config_with_overrides(flow.sql_conf)`, `with_relation_scope`); for an
+output with `view: Some(definition)` it now calls
+`resolve_view_publication(definition.clone())`, stores the options and keeps
+the plan for the existing `rename_logical_plan`/install path. The working
+plans stay local to `analyze` and are converted to schemas on return, so no
+`LogicalPlan` leaves analysis by type.
+
+**Declared view columns.** `sql.rs:321–333` replaces `definition.input` with
+`with_view_columns(input, columns.clone())` (a `ToDf` rename to the declared
+names) and keeps `definition.columns`, so `resolve_view_publication` resolves
+the renamed input: the plan's fields and the exported schema carry the
+declared names, and `publication::columns`' explicit branch carries the
+declared names and comments into the options. Downstream flows that read a
+persisted view during analysis therefore see the same column names as
+before (`views.feature:9–11` chains `pv1 → pv2 → pv3`; `:66` and `:97` cover
+declared columns with comments). I checked this because the raw-input case
+would have changed the exported names; it does not arise.
+
+**Publication.** `materialize::views` no longer re-resolves: it takes the
+options, forces `replace = true` and `if_not_exists = false` as before, and
+runs `run_catalog_command(ctx, CatalogCommand::CreateView { view, options })`
+→ `sail_plan::prepare_catalog_command` → `prepare_named_plan`, which is the
+ordinary tail (`execute_logical_plan` → optimize → streaming rewrite →
+physical → rename) over an `Extension(CatalogCommandNode)`. An `Extension`
+takes DataFusion's default `DataFrame::new` arm, so no eager authority
+dispatch is involved; `CatalogCommandNode::try_new(ctx, command)` only
+derives the node schema (`catalog.rs:29–35`). Execution runs through the
+same runner drain as every other command. The flow lookup that produced
+`PIPELINE_DATASET_WITHOUT_FLOW` at publication is gone; that condition is
+reported by analysis's phase 6 already.
+
+**Execution.** `execution.rs` keeps its own `resolved` map and `GraphScope`
+(`:72`); `materialize::tables` now reads `analyzed.schemas` where it read
+`relations[..].schema().as_arrow()`. No remaining reference to `relations` in
+`pipelines/` outside tests.
+
+**Error timing (behaviour change, matches Spark).** A persisted view whose
+definition fails to resolve (bad column count, unresolved input, incompatible
+view read) now fails during analysis, before `materialize::tables` truncates
+or creates anything, instead of at publication after tables were
+materialized. Spark analyzes view flows in graph analysis and
+`materializeView` only runs the already-analyzed `CreateViewCommand`
+(`DatasetManager.scala:204–233`), so the new order is the Spark order. Worth
+one Python assertion that a failing view definition leaves tables untouched,
+if `views.feature` does not already pin it.
+
+**Tests.** The artifact tests now require every provider `Weak` lease to be
+released on return, temporary outputs included; a `Tail` over a temporary
+mock table proves the working plan is still available to analysis helpers
+(one scan) before schema-only export; the publication test makes the source
+unavailable after analysis and publishes through the real planner, runner and
+catalog with the captured SQL, types, nullability, comments and namespace and
+zero scans; the clock test still finds `timestamp_now` unfolded before
+export. These are the right discriminators for "definitions across owners,
+plans within owners".
+
+**Findings.** None requiring change. Two notes:
+
+- The exported `schemas` are Arrow schemas (`plan.schema().as_arrow()`), so
+  qualifiers and DataFusion metadata are dropped at the boundary; execution
+  re-derives qualified schemas by re-reading outputs, so nothing consumes the
+  dropped information today. If a later unit wants exported schemas as
+  replay identity, the design's own caveat applies: an Arrow schema is not
+  identity.
+- For the C5 reintegration, E′'s loop must produce exactly these two maps and
+  call `resolve_view_publication` for `view: Some` outputs; the manifest
+  records this (Grust `7fa7d83b`).
