@@ -453,3 +453,117 @@ claims.
 - For C5: E′ touches `execution.rs` only at `GraphScope::new` (already the
   root's form); F–K do not reach the execution loop. Recorded in the
   manifest (Grust `8900b491`).
+
+## 9. Configuration phases: the proposed split and reusable Sail machinery (CF-0254, CF-0256)
+
+Pins: Spark `617618396` (`FlowAnalysis.scala:90–140`, `CoreDataflowNodeProcessor.scala:118–190`,
+`DataflowGraph.scala:149–168`, `QueryPlan.scala:609–627`); Sail `163b2fb52`
+(`pipelines/streaming/binding.rs`, `pipelines/analysis.rs`, `pipelines/graph.rs:232–233`,
+`resolver/query/{project,filter,join,cte}.rs`, `resolver/state.rs`,
+`resolver/expression/wildcard.rs`). Codex's `FLOW-CONFIGURATION-DESIGN.md`
+(Grust `4cc4356f`) read. Read only.
+
+### 9.1 What Spark actually does, phase by phase
+
+1. **Ordered input binding.** `FlowAnalysis.analyze` first runs
+   `CTESubstitution(plan)`, inlining every CTE at each reference site (so a
+   CTE referenced twice is bound twice and an unreferenced CTE binds nothing),
+   then `transformWithSubqueries` over `UnresolvedRelation`, which is
+   `transformDownWithSubqueries`: pre-order, the node first, then the
+   subqueries inside its expressions, then its children left to right
+   (`QueryPlan.scala:609–627`). Each read calls `readGraphInput`, which loads
+   the input and, for a `Flow` input, writes that flow's **resolved** conf
+   into the private analysis conf (`FlowAnalysis.scala:256–260`); a table
+   writes nothing. The private conf after the last read is the first-pass
+   conf for the whole query.
+2. **First semantic analysis** of the substituted plan under that conf
+   (`Dataset.ofRows`), which may fail (`UNRESOLVED_COLUMN` in the probes).
+3. **Merge and validation** (`attemptResolveFlow`): declared map plus the
+   resolved maps of the `Flow` inputs actually used; any key with distinct
+   values is `DUPLICATE_FLOW_SQL_CONF`; the union is the accepted map; if it
+   differs from the declared map the flow function runs again under it, and
+   `ResolvedFlow.sqlConf` is the map of that last call.
+4. **Command reanalysis.** `reanalyzeFlow` builds the table-bounded subgraph
+   and calls `subgraph.resolve()`, so phases 1–3 run again for every flow in
+   the subgraph (each view under its own fusion, the consumer under its),
+   and `BatchTableWrite` wraps the write in the consumer's accepted map.
+
+### 9.2 Assessment of the proposed split
+
+The four-phase split in CF-0254 matches 9.1. Three refinements:
+
+- **Phase 4 is a re-run of phases 1–3 over the closure, not "resolve under
+  the accepted map".** Spark re-derives each flow's conf during reanalysis.
+  With unchanged definitions the result equals the accepted maps computed
+  in graph analysis, so the design's step 3 ("export accepted maps by flow
+  identity") lets reanalysis reuse them and skip re-validation; the
+  difference would only show if a table's schema changed between analysis
+  and the command, which affects plans, not confs. Reusing accepted maps is
+  the cheaper equivalent; say which is chosen.
+- **Accepted maps are per flow, not per output.** A target with several
+  flows has several accepted maps; the design already warns against an
+  output-keyed collapse. The publication export (§7) is output-keyed, so the
+  conf export must be a separate flow-keyed map.
+- **Phase 1 must be a non-semantic traversal.** Sail's resolver resolves
+  inputs before expressions (`project.rs:33→37`, `filter.rs:19→23`,
+  `join.rs:65–66→108`), post-order where Catalyst is pre-order; that is why a
+  semantic first pass cannot supply the order and why the nested-projection
+  and scalar-subquery cases fail early today. The design's step 2 says this;
+  the traversal below is the candidate.
+
+### 9.3 Reusable Sail machinery
+
+- **`streaming/binding.rs` `Walker` (my unit 4 component).** Exhaustive over
+  `spec::QueryNode` and `spec::Expr`, including `InSubquery`, `ScalarSubquery`
+  and `Exists` as plans, and already in Catalyst's order within a node:
+  expressions (with their subqueries) before inputs for `Filter`, `Project`,
+  `Aggregate`, `Sort`, `Limit`, `WithColumns`, `LateralView`, `Pivot`,
+  `Unpivot` and the grouped-map nodes; `Join`: condition, left, right;
+  `SetOperation`: left, right (`binding.rs` `walk`). It qualifies names
+  through the flow's namespace (`GraphScope::qualify`) and records
+  classification. Gaps for the fusion seam, in order of importance:
+  1. `ReadSet` is three `BTreeSet`s, so encounter order and repetition are
+     lost; the shared traversal Codex plans (CF-0256 unit 2) should expose an
+     ordered visit of every read, repeats included.
+  2. `WithCtes` walks the kept (last-wins) definitions once at the definition
+     site, mirroring `resolve_query_with_ctes` (`cte.rs:96–129`), whereas
+     `CTESubstitution` binds at each reference and never binds an
+     unreferenced CTE. For classification the current form is a safe
+     superset; for binding order it must emit a CTE's reads at each
+     reference position and emit nothing for an unused CTE. Note the parity
+     point for Codex's CTE probes: Sail's resolver resolves kept definitions
+     eagerly (`cte.rs:114–127`), so an unused CTE with an unresolvable read
+     fails in Sail and not in Spark.
+  3. `UnresolvedStar` is a leaf while `WildcardOptions.replace_columns`
+     carries expressions the native resolver resolves
+     (`wildcard.rs:248–254`); CF-0256 unit 1 fixes this (my miss).
+  4. `WithRelations` (Connect plan-id references) walks references before the
+     root; Catalyst substitutes plan-id-tagged subplans and propagates
+     `PLAN_ID_TAG` (`FlowAnalysis.scala:121–127`). Preserve the same visit so
+     Connect DataFrame flows bind in the same order as SQL ones.
+- **`GraphScope` as `RelationScope`** records reads during semantic
+  resolution into a set (`analysis.rs:47–68`); keep it for dependency edges
+  and refusal of unknown outputs, not for order.
+- **`PlanResolverState`** holds the resolver's CTE semantics
+  (`enter_cte_scope`, `insert_cte` with `CteKind::Definition`) and the plan-id
+  to field registration (`register_plan_id_for_field`); the binding seam
+  should reuse the keep-last and recursive-scope rules from it and change
+  only the emission point.
+- **`PlanConfig` is immutable per resolver**, which is the right primitive
+  for the two passes: first pass under `plan_config_with_overrides(declared
+⊕ last-writer overrides from the ordered reads)`, second pass under the
+  accepted union. `graph.rs:232–233` already folds pipeline defaults under
+  flow confs (`sql_conf.extend(definition.sql_conf)`), matching
+  `defaultSqlConf ++ flowDef.sqlConf`.
+- **Merge/validation** has no Sail counterpart yet; the design's pure module
+  with per-flow provenance is the right shape, and `DUPLICATE_FLOW_SQL_CONF`'s
+  parameter rule (names sorted by value, first conflicting key found in a
+  grouped map, not deterministic across keys) should be copied literally.
+
+### 9.4 What this does not settle
+
+Codex's thirteen-case differential (3 match, 10 differ) is the acceptance
+baseline; the CTE, default-overlay and unused-input probes it lists are
+still needed before the seam is activated, and nothing here changes the
+bounded lowerer, which refuses helper-executing constructs pre-resolution
+and does not fuse confs.
