@@ -327,3 +327,93 @@ cause: `fail` with one `Arc`, return `Shared` of it, no stringification.
 Residuals unchanged: `Cleanup::Drop` on runtime shutdown publishes
 "interrupted before drainage completed"; worker-side ownership is the
 worker's own session (§3).
+
+## 7. Candidate review (CF-0212): `7505e2ced` on shared contract `16c43aa29`
+
+Pins: `16c43aa29` adds `JobPreparation::capture` (default: `self.cancel()` then
+`NotImplemented`) and `trait CapturedJobPreparation: JobPreparation { fn
+session(&self) -> &ScopedSession }` (`session/job.rs`); `7505e2ced` adds
+`local/preparation/captured.rs`, `execute_with_snapshot` in
+`local/preparation.rs`, and tests in `captured_preparation_tests.rs` and
+`capture_boundary_tests.rs`. Read only.
+
+**Construction.** `capture_snapshot` runs under `catch_unwind`: cancelled
+check (`resources.cancelled().now_or_never()`), `ScopedSession::new(
+self.context.state(), resources)`, optional `with_object_store_registry`.
+On `Err`, the cause is wrapped once in an `Arc`, `preparation.fail(Shared(arc))`
+runs, and `Shared(arc)` is returned, so the caller's error and the report's
+primary are the same allocation; the test asserts `Arc::ptr_eq`. This is the
+§1.1 rule implemented. The `catch_unwind` also covers `context.state()`,
+whose read lock is `parking_lot` (no poisoning), and the drop of a failed
+`ScopedSession`; a panic there is labelled `"capture"`. Fine.
+
+**Cancellation races.** The cancelled check and `state()` are not atomic, so a
+`stop()` landing between them yields a captured object over a cancelled
+scope. Benign: `stop_jobs` calls `control.cancel()`, which for a `Preparing`
+phase calls `resources.cancel()` (admission sealed, cancellation latched) and
+sets `canceled`; any factory registering through the scope during borrowed
+planning is refused with `"task resource scope is sealed"`, and
+`execute_with_snapshot` re-checks `cancelled()` before planning the stream
+and takes the `preparation.cancel()` path. `stop_jobs` then awaits
+`control.completion()`, which completes only when the holder ends the
+preparation (`fail`/`finish`/`cancel`/`complete` or `Drop`), exactly as for a
+legacy preparation held across planning; nothing new blocks or leaks. The
+`captured_stop_refuses_factory_and_unpolled_execute_never_starts_it` test
+covers both orders for the execute boundary; the borrowed-planning refusal
+rests on the planner using the scope, as noted in §1.6.
+
+**Execute from the snapshot.** `execute_with_snapshot(plan, Some(session))`
+derives `session.task_ctx()` (config 7, functions, overlay runtime, scope
+extension already set by `ScopedSession::new`), wraps it with
+`ScopedTaskContext::from_resources` (same `Arc`, set again, harmless), and
+drops the `ScopedSession` inside the closure before `execute_stream`. That is
+the §6 conclusion in code: no execution borrows the captured state. The
+`captured_bound_execution_preserves_planning_snapshot` test pins 7/child at
+planning and at execution beside the unchanged legacy 7/child → 9/parent.
+`None` keeps the late authority capture byte-for-byte.
+
+**Dependency and drop ownership.** `CapturedLocalJobPreparation { preparation,
+session }` drops `preparation` first (`StreamPreparation::Drop` → abandoned →
+cleanup spawned) then `session`; since drain joins tasks rather than counting
+`Arc`s, the order does not matter for settlement. The
+`captured_guard_finish_cancel_and_drop_keep_registered_cleanup_owned` test
+holds a registered supervisor across all three transitions and shows the job
+stays active until release and `result()` is `Ok` only for `finish`. The
+`captured_registry_survives_raw_stream_disposal_until_registered_io_settles`
+test is the §6 claim made observable: the weak registry is alive after the
+output stream is dropped (held by the task-owned `TaskContext`), still alive
+while the registered I/O is held, and gone after drain. Good.
+
+**Findings.**
+
+- **7.1 A second `capture` on a captured object cancels the job.** Because
+  `CapturedJobPreparation: JobPreparation`, the captured object inherits the
+  default `capture`, which calls `self.cancel()` before returning
+  `NotImplemented`. One-shot is thus enforced destructively: a caller that
+  mistakenly captures twice loses the admitted job with a capability error
+  whose text ("not supported by this runner") misdescribes the cause.
+  Override `capture` on `CapturedLocalJobPreparation` (or on the trait as a
+  provided method) to return a typed "already captured" error without
+  cancelling, or document that a second capture is a cancel. Draft check 3
+  is the place to say which.
+- **7.2 The registry argument replaces, it does not overlay.**
+  `with_object_store_registry` rebuilds the runtime with the supplied registry
+  wholesale (`scoped.rs:65–73`, `RuntimeEnvBuilder::with_object_store_registry`),
+  so URLs registered only in the parent runtime become unresolvable in the
+  snapshot ("No suitable object store found"). The tests register the one URL
+  they use. The contract comment ("must already have qualified
+  ownership/routing") is right; the word "overlay" in the draft is not. State
+  that a supplied registry must be complete for the plan, or compose it over
+  the parent's registry explicitly.
+- **7.3 Panic path of capture is untested.** The only fallible step at 55.2.0
+  is unreachable (§1.1), so `fail` is exercised through cancellation only;
+  the panic branch (`panic_error("capture", …)`) has no fixture. Low risk;
+  worth one test if the branch is to be relied on.
+- **7.4 Borrowed planning after `stop`.** Nothing refuses
+  `session().create_physical_plan` on a cancelled scope; refusal happens when
+  a factory registers (sealed) or at execute. That matches the legacy boundary
+  and the draft's check 2 wording, so no change is asked; it is recorded so
+  the resolver's analyzer-only opt-in does not assume planning itself is
+  cancelled.
+
+Nothing else found. No code, no scope change; A–D/E′/Status untouched.
