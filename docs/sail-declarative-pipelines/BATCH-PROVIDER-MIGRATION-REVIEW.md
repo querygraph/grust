@@ -465,10 +465,19 @@ Pins: Spark `617618396` (`FlowAnalysis.scala:90–140`, `CoreDataflowNodeProcess
 
 ### 9.1 What Spark actually does, phase by phase
 
-1. **Ordered input binding.** `FlowAnalysis.analyze` first runs
-   `CTESubstitution(plan)`, inlining every CTE at each reference site (so a
-   CTE referenced twice is bound twice and an unreferenced CTE binds nothing),
-   then `transformWithSubqueries` over `UnresolvedRelation`, which is
+1. **Ordered input binding (corrected after CF-0259).** `FlowAnalysis.analyze`
+   first runs `CTESubstitution(plan)`. The source comment speaks of
+   inlining, but on a plain query the rule runs with `forceInline = false`
+   and yields `WithCTE(plan, cteDefs)` whose `children` are `cteDefs :+ plan`
+   (`cteOperators.scala:239–245`, verified at the pin; the rule itself is not
+   in the pinned checkout's tree), so the pre-order visit below binds every
+   CTE definition's reads first, in definition order, used or not, and then
+   the main plan's reads. Codex's twelve-case probe confirms it:
+   `cte_unused_definition` reaches `DUPLICATE_FLOW_SQL_CONF` although the
+   CTE is unused, and `cte_nested_shadow_unused_outer` fails
+   `UNRESOLVED_COLUMN` with the unused outer CTE's conf bound
+   (`/tmp/sail-sdp-config-cte-reference/observations.json`, Grust
+   `evidence/flow-config-cte-reference`). It then runs `transformWithSubqueries` over `UnresolvedRelation`, which is
    `transformDownWithSubqueries`: pre-order, the node first, then the
    subqueries inside its expressions, then its children left to right
    (`QueryPlan.scala:609–627`). Each read calls `readGraphInput`, which loads
@@ -494,12 +503,11 @@ The four-phase split in CF-0254 matches 9.1. Three refinements:
 
 - **Phase 4 is a re-run of phases 1–3 over the closure, not "resolve under
   the accepted map".** Spark re-derives each flow's conf during reanalysis.
-  With unchanged definitions the result equals the accepted maps computed
-  in graph analysis, so the design's step 3 ("export accepted maps by flow
-  identity") lets reanalysis reuse them and skip re-validation; the
-  difference would only show if a table's schema changed between analysis
-  and the command, which affects plans, not confs. Reusing accepted maps is
-  the cheaper equivalent; say which is chosen.
+  Reusing the accepted maps exported from analysis is a candidate
+  optimization, not shown equivalent: unchanged definitions do not by
+  themselves prove unchanged binding, dependencies or provider observations
+  at command time (CF-0259). Keep actual command reanalysis with table stops
+  until that equivalence is qualified.
 - **Accepted maps are per flow, not per output.** A target with several
   flows has several accepted maps; the design already warns against an
   output-keyed collapse. The publication export (§7) is output-keyed, so the
@@ -526,14 +534,16 @@ The four-phase split in CF-0254 matches 9.1. Three refinements:
      lost; the shared traversal Codex plans (CF-0256 unit 2) should expose an
      ordered visit of every read, repeats included.
   2. `WithCtes` walks the kept (last-wins) definitions once at the definition
-     site, mirroring `resolve_query_with_ctes` (`cte.rs:96–129`), whereas
-     `CTESubstitution` binds at each reference and never binds an
-     unreferenced CTE. For classification the current form is a safe
-     superset; for binding order it must emit a CTE's reads at each
-     reference position and emit nothing for an unused CTE. Note the parity
-     point for Codex's CTE probes: Sail's resolver resolves kept definitions
-     eagerly (`cte.rs:114–127`), so an unused CTE with an unresolvable read
-     fails in Sail and not in Spark.
+     site, then the body, mirroring `resolve_query_with_ctes`
+     (`cte.rs:96–129`). Corrected after CF-0259: this is also Spark's order,
+     because `WithCTE.children = cteDefs :+ plan` and unused definitions are
+     still bound (9.1). My earlier recommendation of reference-site emission
+     with no emission for unused CTEs was wrong and is withdrawn; the
+     definition-site order is reusable as is. Open for Codex's probes:
+     whether Spark binds a _shadowed_ (duplicate-name) definition that Sail
+     drops, and the case-insensitive shadowing case the probe lists
+     (`cte_case_insensitive_shadow`), before the keep-last rule is declared
+     parity.
   3. `UnresolvedStar` is a leaf while `WildcardOptions.replace_columns`
      carries expressions the native resolver resolves
      (`wildcard.rs:248–254`); CF-0256 unit 1 fixes this (my miss).
