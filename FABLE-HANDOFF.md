@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T18:26:41.105280+00:00. Live coordination read through **CF-0182**.
+Snapshot written 2026-10-30T18:43:02.677359+00:00. Live coordination read through **CF-0189**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -13,8 +13,8 @@ Do not redefine success as the currently passing helper or public selection.
 
 Substantial batch/SQL/catalog/ORC-read work and execution-ownership foundations
 are committed in Codex's Sail branch. Streaming/CDC components are offered in a
-parallel Fable branch; **the common ROOT lowercase helper, Grust column kernel and first two pure streaming
-units are integrated; binding/lowering/CDC remain unintegrated**. Public ORC writing, complete session/cluster
+parallel Fable branch; **the common ROOT lowercase helper, Grust column kernel, bounded source/control,
+read binding and corrected admission are integrated; lowering/CDC remain unintegrated**. Public ORC writing, complete session/cluster
 cleanup, durable streaming/CDC effects and full original Scala-suite acceptance
 remain incomplete. Existing execution still rejects incremental/sink pipelines
 before writes. Keep that guard until the effect path is qualified.
@@ -45,12 +45,12 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `b30ec33fb14cb18a6cebb3c6d3c020bdb1cd368a` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `0b81bfcc9e1b2270a437629a0b2145adce82ab0e` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | `ca2038b94` stable-clock regression (terminal101, expected2fail) |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `d0db483082a6891ccac1683dcaa8c425da6eb0f3` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `5df2e9a694e8bcd7fb7f91d815ae1fac87065356` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | `d0db48308` corrected admission (all owned gates terminal) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `a3bee15c3a820ef74d522ed55b9929d9748c86f9` (error-chain correction offered/unintegrated) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `362c97a6bbaefbdb7b7d8742e532898b134d85fa` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `160999b74ed512c871e4a0036075a4709ee12616` (aggregate/window fixtures offered/unintegrated) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `467707a3113620c744260e792f2f6a5663349665` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -160,50 +160,54 @@ Latest fresh public CLI gate is **7723dc4de8d3d8d4641b1445a8049345918fecb7**:
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0181)
+## Current implementation and immediate next work (CF-0189)
 
-Coordinator HEAD **b30ec33fb14cb18a6cebb3c6d3c020bdb1cd368a** is committed/clean.
-[Local preparation](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md)
-a0 passes375 libraries/16 optimized/300+67 public; [ScopedSession](docs/sail-declarative-pipelines/evidence/scoped-session/README.md)
-b90 passes129 library/optimized and unchanged provider/builder controls;
-[helper routing](docs/sail-declarative-pipelines/evidence/resolver-query-session/README.md)
-2e7 passes42 library/optimized and300+67 public. These remain historical exact pins.
-
-[Read factories](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md)
-ddd passes46 library/46 optimized/300+67 public; [writer/schema factories](docs/sail-declarative-pipelines/evidence/resolver-writer-session/README.md)
-772 passes49 library/49 optimized/300+67 public, with separate unchanged writer and
-empty-schema bypass failures. Selected Session reaches factories, lookup remains
-with authority. No public caller supplies the view yet. [Rustdoc correction](docs/sail-declarative-pipelines/evidence/resolver-session-coverage-doc/README.md)
-b30 changes no non-doc source. Procedure/row-level propagation remains next; native
-analyzers need an exact API, not replacement with optimize/new context.
+Coordinator HEAD **d0db483082a6891ccac1683dcaa8c425da6eb0f3** is committed/clean.
+All owned gates terminal. Latest public CLI stays7723dc4de:300+67 regressions,
+not full original SDP acceptance; no public caller supplies the selected Session.
+Historical [local preparation](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md),
+[ScopedSession](docs/sail-declarative-pipelines/evidence/scoped-session/README.md),
+[helper routing](docs/sail-declarative-pipelines/evidence/resolver-query-session/README.md),
+[read](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md) and
+[writer/schema](docs/sail-declarative-pipelines/evidence/resolver-writer-session/README.md)
+packets preserve exact gates and unchanged bypass failures. [Rustdoc b30](docs/sail-declarative-pipelines/evidence/resolver-session-coverage-doc/README.md)
+changes no non-doc source. [Lake metadata/property callbacks](docs/sail-declarative-pipelines/evidence/lake-metadata-session-callbacks/README.md)
+d6d802d22 passes55 plan libraries/6 optimized CPU-load tests; unchanged three-site
+bypass fails3 scoped cases, passes3 legacy cases. Both path/catalog properties and
+DELETE target metadata are exercised through command dispatch; DELETE stops before
+source planning, not an executed mutation. Initial private-access/lint failures retained.
 
 [Neutral bounded contract](docs/sail-declarative-pipelines/evidence/bounded-contract-root-integration/README.md)
-f7 imports44cbb94cc byte-for-byte, 134 common+49 plan tests; [pure control model](docs/sail-declarative-pipelines/evidence/bounded-control-root-integration/README.md)
-853 imports15e206694 byte-for-byte, 134 common+83 Connect tests. Exact fmt/strict
-Clippy pass. Private DTO/sync/control model only; no async SDK, broker, durable record,
-effect or caller activation. Latest public CLI stays772, no new CLI at these pins.
+f7 imports44cbb94cc,134+49 libraries; [pure control](docs/sail-declarative-pipelines/evidence/bounded-control-root-integration/README.md)
+853 imports15e206694,134+83 libraries. [Binding](docs/sail-declarative-pipelines/evidence/bounded-binding-root-integration/README.md)
+2d3f9d499 imports d77 source/tests/minimal GraphScope constructor,134+96 libraries.
+Its two transient test-field expectations are removed in [corrected admission](docs/sail-declarative-pipelines/evidence/bounded-admission-root-integration/README.md)
+d0db48308:134+110 libraries and strict Clippy/fmt; binding exact peer blob, admission
+production prefix exact8f, tests extracted/dedented with one function declaration
+rewrap. Fable co-authorship retained; no runtime/effect/caller activation.
 
-Fable's separate /Users/alexy/src/sail-sdp-fable-components, branch
-work/sdp-pure-components-integration, base rootddd, own target is offered through
-dea394efb82fcb18beac4ed53c109f40648ae99a. Remaining units: d77fc4795 binding/admission
-and minimal GraphScope::new;40b979ec9 lowerer/snapshot and its sha2 consumer edge;
-dea394efb standard error chain. Root integration requires source review and exact
-combined gates. Replayed tip2d96a0ddd on f7 only proves clean application, not tests.
+[Stable clock review](docs/sail-declarative-pipelines/evidence/fable-stable-admission-review/README.md)
+retains initial9pass/1fail and independent date/time9pass/2fail. [Correction replay](docs/sail-declarative-pipelines/evidence/fable-stable-admission-correction-review/README.md)
+81de92a01 replays original ca2038b94 helper/assertions verbatim against8f:3pass/0fail.
+Stable and Volatile signatures mark content non-replayable; Immutable control passes.
+Aggregate/window signature arms are source-covered at root; peer b32e4b678 offers
+four fixtures, not integrated. CF-0188 agrees to a separate actual Sail resolver
+current_timestamp/now/current_date lowerer regression, no new dependency. Pending.
 
-CF-0181 identifies stable-clock replayability gap in admission: is_volatile ignores
-Stable functions, including Sail TimestampNow/current_timestamp and DataFusion date/
-now. Test-only150611117 on d77 fails now while immutable control and eight existing
-cases pass. [Separate date/time cases](docs/sail-declarative-pipelines/evidence/fable-stable-admission-review/README.md)
-ca2038b94 fail independently:9pass/2fail. Both gates terminal. CF-0182 ACKs Fable
-correction; preserve fixtures unchanged for correction replay.
-[Earlier lowerer review](docs/sail-declarative-pipelines/evidence/fable-local-lowering-review/README.md)
-retains original3fail/intermediate2pass1fail/corrected3pass+44 component outcomes.
+Fable components worktree /Users/alexy/src/sail-sdp-fable-components, branch
+work/sdp-pure-components-integration, own target, offered through b32e4b678.
+Next root imports: aggregate/window test-only fixtures;40b979ec9 lowerer/snapshot
+and sha2 edge;dea394efb error chain; actual-resolver clock fixtures once offered.
+Do not import redundant efb173dac extraction. No wholesale C5/event/CDC rebase,
+guard removal, async SDK/Iggy, durable record or shared runtime change implied.
+[Earlier lowerer failures/corrections](docs/sail-declarative-pipelines/evidence/fable-local-lowering-review/README.md)
+remain evidence; mixed modes/multi-leaf views are required follow-up.
 
-No C5/event/CDC wholesale rebase, guard removal or shared runtime changes authorized.
-Mixed modes/multi-leaf local views remain required follow-up. Earlier catalog I/O,
-capture/execution transfer, typed cleanup/primary, cluster and byte/outcome/recovery
-remain open. [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) stays active for Astra;
-notify user before starting the next substantial capture/execution/analyzer API phase.
+Remaining root provider sites: procedure, delta metadata, row-operation factories.
+Native analyzers require an exact API, not optimize/new context. Earlier catalog
+I/O, capture/execution transfer, typed primary/cleanup, session/cluster and byte/
+outcome/recovery remain open. [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) stays active for Astra.
+Notify user before starting the next substantial capture/execution/analyzer API phase.
 
 ## Acceptance accounting and major remaining work
 
@@ -229,48 +233,12 @@ behind a fail-closed guard or an unsupported result and call the goal achieved.
 
 ## Fable offers and integration state
 
-Fable's starting Sail base is `779cb136d988c759a381ea1ace6c2e7649e3dbbc`.
-Original offers: Grust1493d8a36 (columns kernel), Saild07a95c2c (vendor) and
-Sail167d577c6 (CDC definition validation). Preserve them as evidence.
-The original vendor-only commit puts a connect dependency edge in Cargo.lock
-before its Cargo.toml declaration; assemble independently buildable vendor and
-consumer units during integration rather than blindly cherry-picking that defect.
-
-| Offered Sail commit | Work / present review state |
-| --- | --- |
-| `49f32b65d` C1 | Attribute/source identifiers. Exact parser matched JVM on 9,338 names; source/parser correction accepted at that boundary. |
-| `29056716b` C3 | Sink rejection removed from graph validation; source phase correction accepted. |
-| `f4537586b` C2 | Original ROOT lowercase model. Rejected: 1,332 mismatches in 39,215 independent contexts. Preserve failed evidence. |
-| `a495cb02d` C4 | Caller-resolver kernel and Scala map-order adapter. 23,050 independent queries / 771 schemas match; 16 kernel tests, Clippy/fmt and exact vendor hashes pass. |
-| `2dcd0eaa9` | Corrected JDK word-break iterator. 68,588 independent contexts match, including all earlier failures; combined 23,050 lookups also match. Common helper integrated atcae618d7f; CDC consumers still pending. |
-| `550bb198a` C5 | First phase correction; rejected as incomplete global analysis-before-validation ordering. |
-| `1eea0b140` C6 | Construction-test rename, real PySpark-produced wire fixture, opt-in lookup replay. Full source/evidence review pending. |
-| `b7118b953` unit2a | Original-row validation before dedup; pure DataFusion component. Initial source reading performed, independent reference/edge review not finished. |
-| `f7adb3f05` unit2b | Dedup using existing MaxByFunction/StructFunction; disclosed sail-function dependency edge. Independent review not finished. |
-| `c9a0132cf` unit3 | Bounded deterministic source/intents/progress; cross-run incarnation and zero/stall findings raised. |
-| `6620ee940` unit5 | Prepared-input manifest, canonical row order, receipt/content digests. New blocking review CF-0043, below. |
-| `d38058973` | Opt-in external lowercase replay. Fable reports detached gate and both corpus replays; inspect exact evidence. |
-| `769914891` | Offered C5/global-phase + incarnation-bound progress corrections. Fable reports 124 Rust pipeline / 249 Python pipeline tests and a detached verdict in CF-0045. Source-reviewed in CF-0058: fixes earlier checks/progress schedules; no new independent runtime verdict. Schema-merge/missing-source phase divergence and full failure-map semantics remain open. |
-| `dc8b7eb31` | Prepared-input fixes: IPC schema encoding, manifest consistency checks, strict case labels and C4-bound keys at every row count; tested independently at the component boundary in the later source71e4a94d9. |
-| `71e4a94d9` | Expected authoritative InputIdentity binding; Fable detached fmt/Clippy/common/pipeline/maturin/249 Python verdict CF-0052. Independent prepared-component review passes the stated API checks; physical IPC representation boundary remains open. |
-| `33a883091` | Approved move-only lower bounded-source contract extraction; detached common/common-datafusion/Connect and249 Python gate CF-0062. Offered, not integrated. |
-| `bc23c8db6` / `105967e17` | Typed per-flow report and callback carrier, unwired, detached gates CF-0070/0073. Source review CF-0071 requires retaining maps in the raised error, not dropping them when constructing its message. Not integrated. |
-| `798cd35c9` | Retained report variant + actual AnalysisException Status mapping, detached gate CF-0078. Fixes source-level map loss; unwired/unintegrated. |
-| `92ab01326` / `b61da2c98` | Typed merge-error prerequisite then C5 loop; the loop also corrects raw JVM renderer parameters (64 cases), preserves scopes via two constructor call-site edits, and leaves event diagnostics as strict xfail. Offered/unintegrated;133 Rust +265 Python/1 xfail gate. |
-| `f93efc3c9` / `2561606e9` / `7962984be` | Source error-only types (no async conversion), phase6 no-flow ordering, phase4 table/streamingness predicate. Latest detached gate133 Rust +277 Python/1 xfail (CF-0102). Offered/unintegrated. |
-
-Grust offers: kernel727baa3e; evidence5538854f/aba8ef64 (lowercase),31997f0f
-(CDC validation),275e666b (microbatch),834cae55 (streaming/prepared),8b0bd605
-(Iggy),f13e9b48 (corpus replay); draft88e48c03 (bounded admission). These objects
-are in the shared Grust repository and files in the Fable docs worktree.
-The coordination reader2103fb56 was integrated and fixed as Codexb7290eb1;
-IDs/protocol foundation is16a0a7f4. Do not integrate that reader twice.
-
-Peer event follow-up37c4d9c4a remains unintegrated; CF-0123 reports detached gates.
-Earlier3ef4e238a detached gate passes; FIFO13e0d4f96's race/pytest exit1 remains
-retained. HTTP entry fixes scheduling; latest source adds full setup cleanup,
-joined-state assertions and Shared(Context) lines. Shared Status classification
-needs a separate probe; message-only events do not qualify origin/WARN assertions.
+The [historical offer ledger](docs/sail-declarative-pipelines/FABLE-OFFER-HISTORY.md)
+preserves every previous C1–C6, CDC/prepared, event and source-contract offer/pin.
+Current integration is listed above; do not replay earlier offered history wholesale.
+C5/events/CDC definitions/validation/dedup/prepared-input consumers remain pending.
+The original vendor-only Cargo.lock edge must not precede its consumer declaration.
+Keep peer history intact and independently gate each actual root union.
 
 ## Independent reviews and open requests
 

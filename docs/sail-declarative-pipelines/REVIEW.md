@@ -1776,3 +1776,20 @@ confirms d77 marks now/current_date replayable: independent test-only ca2038b94
 9pass/2fail; immutable control passes, initial loop failure retained. CF-0181 review
 and CF-0182 ACK require correction before remaining component imports. Full
 original Spark4.2.1 acceptance remains unproven; inventory counts unchanged.
+
+
+## 2026-10-30 — lake metadata, split binding and corrected admission integrated
+
+[Lake metadata/property callbacks](evidence/lake-metadata-session-callbacks/README.md)
+d6d802d22 pass55 libraries/6 optimized CPU-load cases; unchanged three-site bypass
+fails3 scoped cases and passes3 legacy cases. [Independent unchanged clock replay](evidence/fable-stable-admission-correction-review/README.md)
+81de92a01 passes3 cases against Fable8f after original clock failures.
+
+[Binding integration](evidence/bounded-binding-root-integration/README.md)2d3f9d499
+passes134+96 libraries; [corrected admission](evidence/bounded-admission-root-integration/README.md)
+d0db48308 passes134+110, both exact fmt/strict Clippy. The second removes two
+transient field lint expectations, restores exact binding and extracts peer tests
+with only dedent/header/one declaration rewrap. Initial failures are retained.
+Fable aggregate/window and actual-resolver clock fixtures remain pending; lowering/
+error-chain are separate next imports. No durable streaming/CDC/public activation
+or full original Scala acceptance. Public CLI pin remains7723dc4de; inventory unchanged.

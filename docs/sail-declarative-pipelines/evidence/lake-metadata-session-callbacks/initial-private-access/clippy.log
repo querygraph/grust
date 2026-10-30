@@ -1,0 +1,32 @@
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+error[E0624]: method `resolve_show_table_properties` is private
+   --> crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs:113:29
+    |
+113 |           let plan = resolver.resolve_show_table_properties(table, None).await?;
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private method
+    |
+   ::: crates/sail-plan/src/resolver/command/table_properties.rs:22:5
+    |
+ 22 | /     pub(super) async fn resolve_show_table_properties(
+ 23 | |         &self,
+ 24 | |         table: spec::ObjectName,
+ 25 | |         property: Option<String>,
+ 26 | |     ) -> PlanResult<LogicalPlan> {
+    | |________________________________- private method defined here
+
+error[E0624]: method `resolve_row_level_target` is private
+   --> crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs:116:31
+    |
+116 |           let target = resolver.resolve_row_level_target(&table).await?;
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^ private method
+    |
+   ::: crates/sail-plan/src/resolver/command/row_level.rs:62:5
+    |
+ 62 | /     pub(super) async fn resolve_row_level_target(
+ 63 | |         &self,
+ 64 | |         table: &spec::ObjectName,
+ 65 | |     ) -> PlanResult<RowLevelTarget> {
+    | |___________________________________- private method defined here
+
+For more information about this error, try `rustc --explain E0624`.
+error: could not compile `sail-plan` (lib test) due to 2 previous errors

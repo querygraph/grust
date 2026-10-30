@@ -1,0 +1,218 @@
+diff --git a/crates/sail-plan/src/resolver/command/row_level.rs b/crates/sail-plan/src/resolver/command/row_level.rs
+index 8cab3884c..7f87a57db 100644
+--- a/crates/sail-plan/src/resolver/command/row_level.rs
++++ b/crates/sail-plan/src/resolver/command/row_level.rs
+@@ -70,7 +70,7 @@ impl PlanResolver<'_> {
+                 let location = path.as_ref().to_string();
+                 let metadata = lake_source
+                     .infer_metadata(
+-                        &self.ctx.state(),
++                        self.provider_session().as_session(),
+                         SourceInfo {
+                             paths: vec![location.clone()],
+                             lakehouse_table: None,
+diff --git a/crates/sail-plan/src/resolver/command/table_properties.rs b/crates/sail-plan/src/resolver/command/table_properties.rs
+index d639ed026..b53949bc7 100644
+--- a/crates/sail-plan/src/resolver/command/table_properties.rs
++++ b/crates/sail-plan/src/resolver/command/table_properties.rs
+@@ -42,7 +42,7 @@ impl PlanResolver<'_> {
+             let properties = registry
+                 .get_lake_source(&format)?
+                 .table_properties(
+-                    &self.ctx.state(),
++                    self.provider_session().as_session(),
+                     SourceInfo {
+                         paths: vec![path],
+                         lakehouse_table: None,
+@@ -86,7 +86,7 @@ impl PlanResolver<'_> {
+                     registry
+                         .get_lake_source(format)?
+                         .table_properties(
+-                            &self.ctx.state(),
++                            self.provider_session().as_session(),
+                             SourceInfo {
+                                 paths: vec![location],
+                                 lakehouse_table: Some(context),
+diff --git a/crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs b/crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs
+new file mode 100644
+index 000000000..c03e2f93a
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/lake_metadata_session_tests.rs
+@@ -0,0 +1,166 @@
++use datafusion_expr::TableSource;
++use sail_catalog::provider::{CreateTableMode, CreateTableOptions};
++use sail_common_datafusion::datasource::{DataSource, SinkInfo, SourceInfo};
++use sail_common_datafusion::lakesource::{LakeSource, LakeSourceMetadata};
++
++use super::*;
++
++struct CheckingLake {
++    owner: Option<Arc<TaskResourceScope>>,
++    calls: Arc<AtomicUsize>,
++}
++#[tonic::async_trait]
++impl DataSource for CheckingLake {
++    fn name(&self) -> &str {
++        "delta"
++    }
++    fn as_lake_source(self: Arc<Self>) -> Option<Arc<dyn LakeSource>> {
++        Some(self)
++    }
++    async fn create_source(&self, _: &dyn Session, _: SourceInfo) -> Result<Arc<dyn TableSource>> {
++        datafusion_common::internal_err!("metadata test must not plan a source")
++    }
++    async fn create_writer(&self, _: &dyn Session, _: SinkInfo) -> Result<LogicalPlan> {
++        datafusion_common::internal_err!("metadata test must not plan a writer")
++    }
++}
++#[tonic::async_trait]
++impl LakeSource for CheckingLake {
++    async fn infer_metadata(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<LakeSourceMetadata> {
++        assert_eq!(info.paths, ["/input"]);
++        self.calls.fetch_add(1, Ordering::SeqCst);
++        let store = session
++            .runtime_env()
++            .object_store(ObjectStoreUrl::parse("memory://resolver")?)?;
++        let bytes = if let Some(expected) = &self.owner {
++            let owner = session.extension::<TaskResourceScope>()?;
++            assert!(Arc::ptr_eq(&owner, expected));
++            assert!(Arc::ptr_eq(
++                &session.task_ctx().extension::<TaskResourceScope>()?,
++                expected
++            ));
++            assert_eq!(session.config().target_partitions(), 7);
++            owner.run(move |_| async move { Ok(store.get(&Path::from("input")).await?.bytes().await?) }).await?
++        } else {
++            assert!(session.extension::<TaskResourceScope>().is_err());
++            assert_eq!(session.config().target_partitions(), 9);
++            store.get(&Path::from("input")).await?.bytes().await?
++        };
++        assert_eq!(
++            bytes.as_ref(),
++            if self.owner.is_some() {
++                b"admitted".as_slice()
++            } else {
++                b"parent".as_slice()
++            }
++        );
++        Ok(LakeSourceMetadata {
++            schema: Arc::new(Schema::new(vec![Field::new("id", DataType::Int64, false)])),
++            properties: vec![(
++                "probe".into(),
++                String::from_utf8(bytes.to_vec()).expect("fixture is UTF-8"),
++            )],
++            partition_by: None,
++        })
++    }
++}
++async fn metadata_case(scoped: bool, properties: bool, catalog: bool) -> TestResult {
++    let fixture = Fixture::new().await?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    fixture
++        .ctx
++        .extension::<DataSourceRegistry>()?
++        .register_data_source(Arc::new(CheckingLake {
++            owner: scoped.then(|| fixture.resources.clone()),
++            calls: calls.clone(),
++        }))?;
++    let table = if catalog {
++        fixture
++            .ctx
++            .extension::<CatalogManager>()?
++            .create_table(
++                &["target"],
++                CreateTableOptions {
++                    columns: vec![],
++                    comment: None,
++                    constraints: vec![],
++                    location: Some("/input".into()),
++                    format: "delta".into(),
++                    partition_by: vec![],
++                    sort_by: vec![],
++                    bucket_by: None,
++                    mode: CreateTableMode::Create,
++                    properties: vec![],
++                    is_external: true,
++                    is_write_precondition: false,
++                },
++            )
++            .await?;
++        spec::ObjectName::bare("target")
++    } else {
++        vec!["delta", "/input"].into()
++    };
++    let resolver = if scoped {
++        fixture.resolver()
++    } else {
++        PlanResolver::new(&fixture.ctx, Arc::new(PlanConfig::default()))
++    };
++    if properties {
++        let plan = resolver.resolve_show_table_properties(table, None).await?;
++        assert_eq!(plan.schema().fields().len(), 2);
++    } else {
++        let target = resolver.resolve_row_level_target(&table).await?;
++        assert_eq!(target.location, "/input");
++        assert_eq!(
++            target.options,
++            vec![
++                sail_common_datafusion::datasource::OptionLayer::TablePropertyList {
++                    items: vec![(
++                        "probe".into(),
++                        if scoped { "admitted" } else { "parent" }.into()
++                    )],
++                }
++            ]
++        );
++    }
++    assert_eq!(calls.load(Ordering::SeqCst), 1);
++    assert_eq!(
++        fixture.calls.load(Ordering::SeqCst),
++        0,
++        "metadata precedes physical planning"
++    );
++    assert_eq!(
++        fixture.resources.drain().await?.registered,
++        usize::from(scoped)
++    );
++    assert!(fixture.ctx.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
++#[tokio::test]
++async fn row_target_metadata_uses_selected_session() -> TestResult {
++    metadata_case(true, false, false).await
++}
++#[tokio::test]
++async fn row_target_metadata_without_view_keeps_authority() -> TestResult {
++    metadata_case(false, false, false).await
++}
++#[tokio::test]
++async fn path_properties_use_selected_session() -> TestResult {
++    metadata_case(true, true, false).await
++}
++#[tokio::test]
++async fn path_properties_without_view_keep_authority() -> TestResult {
++    metadata_case(false, true, false).await
++}
++#[tokio::test]
++async fn catalog_properties_use_selected_session() -> TestResult {
++    metadata_case(true, true, true).await
++}
++#[tokio::test]
++async fn catalog_properties_without_view_keep_authority() -> TestResult {
++    metadata_case(false, true, true).await
++}
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index c310704c4..91bb2f9ec 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -319,3 +319,6 @@ mod factories;
+ 
+ #[path = "write_factory_session_tests.rs"]
+ mod writers;
++
++#[path = "lake_metadata_session_tests.rs"]
++mod lake_metadata;

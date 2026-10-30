@@ -1,0 +1,13 @@
+Diff in /Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs:219:
+     Ok(())
+ }
+ 
+[31m-fn using(
+[m[31m-    builder: LogicalPlanBuilder,
+[m[31m-    right: LogicalPlan,
+[m[31m-    kind: JoinType,
+[m[31m-) -> DFResult<LogicalPlan> {
+[m[32m+fn using(builder: LogicalPlanBuilder, right: LogicalPlan, kind: JoinType) -> DFResult<LogicalPlan> {
+[m     builder
+         .join(right, kind, (vec!["id"], vec!["id"]), None)?
+         .build()
