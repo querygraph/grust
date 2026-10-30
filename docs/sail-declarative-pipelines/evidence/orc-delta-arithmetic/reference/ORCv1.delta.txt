@@ -1,0 +1,85 @@
+Delta
+
+The Delta encoding is used for monotonically increasing or decreasing
+sequences. The first two numbers in the sequence can not be identical,
+because the encoding is using the sign of the first delta to determine
+if the series is increasing or decreasing.
+
+
+  2 bytes header
+    
+      2 bits for encoding type (3)
+      5 bits for encoded width (W) of deltas (0 to 64 bits) using the 5 bit
+width encoding table
+      9 bits for run length (L) (1 to 512 values)
+    
+  
+  Base value - encoded as (signed or unsigned) varint
+  Delta base - encoded as signed varint
+  Delta values (W * (L - 2)) bytes - encode each delta after the first
+one. If the delta base is positive, the sequence is increasing and if it is
+negative the sequence is decreasing.
+
+
+The unsigned sequence of [2, 3, 5, 7, 11, 13, 17, 19, 23, 29] would be
+serialized with delta encoding (3), a width of 4 bits (3), length of
+10 (9), a base of 2 (2), and first delta of 1 (2). The resulting
+sequence is [0xc6, 0x09, 0x02, 0x02, 0x22, 0x42, 0x42, 0x46].
+
+Stripes
+
+The body of ORC files consists of a series of stripes. Stripes are
+large (typically ~200MB) and independent of each other and are often
+processed by different tasks. The defining characteristic for columnar
+storage formats is that the data for each column is stored separately
+and that reading data out of the file should be proportional to the
+number of columns read.
+
+In ORC files, each column is stored in several streams that are stored
+next to each other in the file. For example, an integer column is
+represented as two streams PRESENT, which uses one with a bit per
+value recording if the value is non-null, and DATA, which records the
+non-null values. If all of a column’s values in a stripe are non-null,
+the PRESENT stream is omitted from the stripe. For binary data, ORC
+uses three streams PRESENT, DATA, and LENGTH, which stores the length
+of each value. The details of each type will be presented in the
+following subsections.
+
+The layout of each stripe looks like:
+
+  index streams
+    
+      unencrypted
+      encryption variant 1..N
+    
+  
+  data streams
+    
+      unencrypted
+      encryption variant 1..N
+    
+  
+  stripe footer
+
+
+There is a general order for index and data streams:
+
+  Index streams are always placed together in the beginning of the stripe.
+  Data streams are placed together after index streams (if any).
+  Inside index streams or data streams, the unencrypted streams should be
+placed first and then followed by streams grouped by each encryption variant.
+
+
+There is no fixed order within each unencrypted or encryption variant in the
+index and data streams:
+
+  Different stream kinds of the same column can be placed in any order.
+  Streams from different columns can even be placed in any order.
+To get the precise information (a.k.a stream kind, column id and location) of
+a stream within a stripe, the streams field in the StripeFooter described below
+is the single source of truth.
+
+
+In the example of the integer column mentioned above, the order of the
+PRESENT stream and the DATA stream cannot be determined in advance.
+We need to get the precise information by StripeFooter.

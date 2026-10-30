@@ -11329,3 +11329,7 @@ and first audit remain byte-preserved. Refreshed the exact 30-file packet
 provenance and added a REVIEW note. No code edits, gates or commits were run;
 parent must verify fileset/hashes, packaged lock/VCS pin, retained manifest and
 links before the documentation commit. No other ORC packet or Fable edits.
+
+## 2026-10-30T01:10:24.291589+00:00 — DONE ORC delta arithmetic
+
+Native 133c0c5ea13578bd6905070dee11f0e66750cd9a and Sail c38ef0b235ce898fad88aa26434645780dd82f8e pass exact detached gates: 368 native tests (eight ignored), 247 no-default, 201 data-source, formatting, strict Clippy and source/package verification. Independent source review passed; no failed gates. Full SDP scope remains active; document gates precede advance.

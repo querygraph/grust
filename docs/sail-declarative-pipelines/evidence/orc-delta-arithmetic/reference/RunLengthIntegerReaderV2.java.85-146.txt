@@ -1,0 +1,62 @@
+  private void readDeltaValues(int firstByte) throws IOException {
+
+    // extract the number of fixed bits
+    int fb = (firstByte >>> 1) & 0x1f;
+    if (fb != 0) {
+      fb = utils.decodeBitWidth(fb);
+    }
+
+    // extract the blob run length
+    int len = (firstByte & 0x01) << 8;
+    len |= input.read();
+
+    // read the first value stored as vint
+    long firstVal = 0;
+    if (signed) {
+      firstVal = SerializationUtils.readVslong(input);
+    } else {
+      firstVal = SerializationUtils.readVulong(input);
+    }
+
+    // store first value to result buffer
+    long prevVal = firstVal;
+    literals[numLiterals++] = firstVal;
+
+    // if fixed bits is 0 then all values have fixed delta
+    if (fb == 0) {
+      // read the fixed delta value stored as vint (deltas can be negative even
+      // if all number are positive)
+      long fd = SerializationUtils.readVslong(input);
+      if (fd == 0) {
+        assert numLiterals == 1;
+        Arrays.fill(literals, numLiterals, numLiterals + len, literals[0]);
+        numLiterals += len;
+      } else {
+        // add fixed deltas to adjacent values
+        for(int i = 0; i < len; i++) {
+          literals[numLiterals++] = literals[numLiterals - 2] + fd;
+        }
+      }
+    } else {
+      long deltaBase = SerializationUtils.readVslong(input);
+      // add delta base and first value
+      literals[numLiterals++] = firstVal + deltaBase;
+      prevVal = literals[numLiterals - 1];
+      len -= 1;
+
+      // write the unpacked values, add it to previous value and store final
+      // value to result buffer. if the delta base value is negative then it
+      // is a decreasing sequence else an increasing sequence
+      utils.readInts(literals, numLiterals, len, fb, input);
+      while (len > 0) {
+        if (deltaBase < 0) {
+          literals[numLiterals] = prevVal - literals[numLiterals];
+        } else {
+          literals[numLiterals] = prevVal + literals[numLiterals];
+        }
+        prevVal = literals[numLiterals];
+        len--;
+        numLiterals++;
+      }
+    }
+  }

@@ -601,3 +601,7 @@ Thirteen file reads succeed and three errors are retained. Merge and duplicate
 validation must therefore be separate policies; globally recursive CI merging
 would silently accept schemas that this reference rejects. File enumeration and
 Unicode are not universally qualified. No Sail acceptance count changes.
+
+## ORC delta arithmetic at integer extremes
+
+Recorded: 2026-10-30T01:10:24.291589+00:00. [Native `133c0c5ea1` and Sail `c38ef0b235`](evidence/orc-delta-arithmetic/README.md) preserve full-width delta bit patterns with explicit wrapping i64 arithmetic and retain narrow-result checks. Short variable runs fail before payload/output. Eleven new raw-byte tests and two corrected existing controls pass: 368 native (eight ignored), 247 no-default and 201 data-source, plus formatting, strict Clippy and exact package verification. This source-backed Java compatibility choice has no new Java runtime oracle; other integer encodings remain outside the unit.

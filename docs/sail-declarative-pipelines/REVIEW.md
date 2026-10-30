@@ -1415,3 +1415,7 @@ records Arrow 59.2.0 for native gate/package `5937e8a8f1` and Sail vendor
 came from an ignored, non-gated implementation-worktree lock. Exact authoritative
 locks and actual API source excerpts are retained. This is a provenance repair,
 with no code or runtime-count change; documentation gates remain parent-owned.
+
+### ORC RLEv2 delta arithmetic (2026-10-30T01:10:24.291589+00:00)
+
+[Evidence](evidence/orc-delta-arithmetic/README.md) qualifies native `133c0c5ea1` and Sail `c38ef0b235`: 368 native (eight ignored), 247 no-default, 201 data-source, formatting, strict Clippy and exact package checks pass. No public SDP runtime result.
