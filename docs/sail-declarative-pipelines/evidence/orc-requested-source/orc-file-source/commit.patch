@@ -1,0 +1,1225 @@
+commit f49b3f865ce6d2271f3ddcbabfe37859cb7d7acd
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 17:10:41 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 17:10:41 2026 -0700
+
+    feat: execute bounded ORC scans through the ordinary file source
+
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index 4adb16305..f9f81c11d 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -3,6 +3,7 @@ mod options;
+ mod reader;
+ mod requested_schema;
+ mod schema;
++mod source;
+ mod timezone;
+ 
+ pub use metadata::OrcSchemaBridge;
+@@ -10,6 +11,7 @@ pub use options::OrcReadResourceLimits;
+ pub use reader::OrcObjectReader;
+ pub use requested_schema::OrcRequestedSchemaAdapter;
+ pub use schema::infer_schema as infer_orc_schema;
++pub use source::OrcSource;
+ pub use timezone::OrcJavaTimeZoneConfig;
+ 
+ #[cfg(test)]
+diff --git a/crates/sail-data-source/src/formats/orc/opener.rs b/crates/sail-data-source/src/formats/orc/opener.rs
+new file mode 100644
+index 000000000..54a7dea02
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/opener.rs
+@@ -0,0 +1,147 @@
++use std::ops::Range;
++use std::sync::Arc;
++
++use datafusion_common::{DataFusionError, Result, exec_datafusion_err, exec_err};
++use datafusion_datasource::file_stream::{FileOpenFuture, FileOpener};
++use datafusion_datasource::{FileRange, PartitionedFile};
++use futures::StreamExt;
++use object_store::ObjectStore;
++use orc_rust::reader::metadata::{FileMetadata, read_metadata_async_with_options};
++
++use super::super::requested_schema::OrcRequestedSchemaAdapter;
++use super::super::{OrcObjectReader, OrcSchemaBridge, infer_orc_schema};
++use super::OrcSource;
++
++pub(super) struct OrcOpener {
++    source: Arc<OrcSource>,
++    store: Arc<dyn ObjectStore>,
++    batch_size: usize,
++}
++
++impl OrcOpener {
++    pub(super) fn new(
++        source: Arc<OrcSource>,
++        store: Arc<dyn ObjectStore>,
++        batch_size: usize,
++    ) -> Self {
++        Self {
++            source,
++            store,
++            batch_size,
++        }
++    }
++}
++
++impl FileOpener for OrcOpener {
++    fn open(&self, file: PartitionedFile) -> Result<FileOpenFuture> {
++        let source = self.source.clone();
++        let store = self.store.clone();
++        let batch_size = self.batch_size;
++        let range = checked_range(file.range.as_ref(), file.object_meta.size)?;
++        Ok(Box::pin(async move {
++            let limits = source.options.resource_limits(source.pool.as_ref());
++            let size = file.object_meta.size;
++            let mut reader = OrcObjectReader::new(store, file.object_meta, source.pool.clone());
++            let metadata = Arc::new(
++                read_metadata_async_with_options(&mut reader, limits.metadata_options())
++                    .await
++                    .map_err(|error| DataFusionError::External(Box::new(error)))?,
++            );
++            // Keep the full actual and requested schemas for compatibility
++            // validation. Required output columns only control subsequent reads.
++            let file_schema = infer_orc_schema(&metadata, &source.session_timezone)?;
++            if file_schema.fields().is_empty() {
++                // Spark's full-schema positional timestamp check is vacuous for
++                // an empty physical root, then requestedColumnIds returns None.
++                // This differs from selecting no columns from a nonempty file:
++                // that projection must still preserve the file's row count.
++                return Ok(futures::stream::empty().boxed());
++            }
++            let adapter = OrcRequestedSchemaAdapter::try_new(
++                file_schema,
++                source.table_schema.file_schema().clone(),
++                &source.projection.file_indices,
++                source.read_case_sensitive,
++            )?;
++            preflight_stripes(&metadata, size, range.as_ref())?;
++            let (builder, bridge) = OrcSchemaBridge::try_new_reader(
++                reader,
++                metadata,
++                &source.session_timezone,
++                &source.reader_timezone,
++                Some(adapter.file_projection()),
++            )?;
++            if bridge.schema().as_ref() != adapter.input_schema().as_ref() {
++                return exec_err!("ORC requested-schema mapping does not match the reader bridge");
++            }
++            let mut builder = limits.configure_reader(builder).with_batch_size(batch_size);
++            if let Some(range) = range {
++                builder = builder.with_file_byte_range(range);
++            }
++            // Native async decoding owns one active stripe. Keep it directly in
++            // this stream: dropping open/read/scan futures drops retained buffers
++            // and reservations, with no detached producer or prefetch queue.
++            // Parsing and decoding inside one poll remain synchronous.
++            Ok(builder
++                .build_async()
++                .map(move |batch| {
++                    let batch =
++                        batch.map_err(|error| DataFusionError::External(Box::new(error)))?;
++                    adapter.adapt_batch(bridge.adapt_batch(batch)?)
++                })
++                .boxed())
++        }))
++    }
++}
++
++fn checked_range(range: Option<&FileRange>, size: u64) -> Result<Option<Range<usize>>> {
++    let Some(range) = range else {
++        return Ok(None);
++    };
++    let start = usize::try_from(range.start)
++        .map_err(|_| exec_datafusion_err!("ORC file range start is negative or exceeds usize"))?;
++    let end = usize::try_from(range.end)
++        .map_err(|_| exec_datafusion_err!("ORC file range end is negative or exceeds usize"))?;
++    if start > end || range.end as u64 > size {
++        return exec_err!(
++            "ORC file range {}..{} is invalid for object size {size}",
++            range.start,
++            range.end
++        );
++    }
++    Ok(Some(start..end))
++}
++
++fn preflight_stripes(
++    metadata: &FileMetadata,
++    size: u64,
++    range: Option<&Range<usize>>,
++) -> Result<()> {
++    for (index, stripe) in metadata.stripe_metadatas().iter().enumerate() {
++        // Native range selection casts offsets to usize. Check every stripe,
++        // even skipped ones, so a wide offset cannot wrap into the chosen range.
++        let offset = usize::try_from(stripe.offset())
++            .map_err(|_| exec_datafusion_err!("ORC stripe {index} offset exceeds usize"))?;
++        if range.is_some_and(|range| !range.contains(&offset)) {
++            continue;
++        }
++        let end = stripe
++            .offset()
++            .checked_add(stripe.index_length())
++            .and_then(|value| value.checked_add(stripe.data_length()))
++            .and_then(|value| value.checked_add(stripe.footer_length()))
++            .ok_or_else(|| exec_datafusion_err!("ORC stripe {index} extent overflows u64"))?;
++        if end > size {
++            return exec_err!("ORC stripe {index} end {end} exceeds object size {size}");
++        }
++        usize::try_from(stripe.number_of_rows())
++            .map_err(|_| exec_datafusion_err!("ORC stripe {index} row count exceeds usize"))?;
++        // Only the footer is fetched as one buffer here. Index/data sections
++        // contain separate streams; imposing a cap on their aggregate length
++        // would reject otherwise addressable projected reads.
++        if stripe.footer_length() > isize::MAX as u64 {
++            return exec_err!("ORC stripe {index} footer length exceeds addressable memory");
++        }
++    }
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/formats/orc/source.rs b/crates/sail-data-source/src/formats/orc/source.rs
+new file mode 100644
+index 000000000..a2575aa2d
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/source.rs
+@@ -0,0 +1,184 @@
++use std::sync::Arc;
++
++use datafusion::common::tree_node::TreeNodeRecursion;
++use datafusion::execution::memory_pool::MemoryPool;
++use datafusion::physical_expr::PhysicalExpr;
++use datafusion::physical_expr::projection::ProjectionExprs;
++use datafusion::physical_plan::apply_expression_roots;
++use datafusion::physical_plan::metrics::ExecutionPlanMetricsSet;
++use datafusion_common::{Result, exec_err, internal_err, not_impl_err};
++use datafusion_datasource::TableSchema;
++use datafusion_datasource::file::FileSource;
++use datafusion_datasource::file_scan_config::FileScanConfig;
++use datafusion_datasource::file_stream::FileOpener;
++use datafusion_datasource::projection::{ProjectionOpener, SplitProjection};
++use object_store::ObjectStore;
++
++use super::OrcJavaTimeZoneConfig;
++use super::requested_schema::OrcRequestedSchemaAdapter;
++use crate::options::r#gen::OrcReadOptions;
++
++#[path = "opener.rs"]
++mod opener;
++
++use opener::OrcOpener;
++
++/// An ordinary file source with captured ORC semantics and a local runtime pool.
++///
++/// `table_schema` contains the complete requested file schema, even when a later
++/// projection reads only some columns. The reader timezone is captured by the
++/// driver; workers must reconstruct this source with that descriptor and their
++/// own memory pool. The session timezone only labels logical timestamp output.
++/// File-field nullability follows ORC read semantics; a listing entry point must
++/// publish the same normalized schema before building its logical table plan.
++/// Ordinary partition columns are supported. Reader-generated virtual columns
++/// are not implemented and are rejected before constructing the projection.
++#[derive(Debug, Clone)]
++pub struct OrcSource {
++    table_schema: TableSchema,
++    options: OrcReadOptions,
++    reader_timezone: OrcJavaTimeZoneConfig,
++    session_timezone: String,
++    read_case_sensitive: bool,
++    pool: Arc<dyn MemoryPool>,
++    batch_size: Option<usize>,
++    metrics: ExecutionPlanMetricsSet,
++    projection: SplitProjection,
++}
++
++impl OrcSource {
++    pub fn try_new(
++        table_schema: impl Into<TableSchema>,
++        options: OrcReadOptions,
++        reader_timezone: OrcJavaTimeZoneConfig,
++        session_timezone: String,
++        read_case_sensitive: bool,
++        pool: Arc<dyn MemoryPool>,
++    ) -> Result<Self> {
++        // A deserialized worker descriptor must match the compiled profile
++        // before any file is opened. Never recapture the worker's local zone.
++        reader_timezone.native_options()?;
++        let table_schema = table_schema.into();
++        if !table_schema.virtual_columns().is_empty() {
++            // ProjectionOpener treats all non-file fields as partition values.
++            // A virtual field would otherwise index beyond partition_values.
++            return not_impl_err!("ORC virtual columns are not supported");
++        }
++        let table_schema = TableSchema::builder(OrcRequestedSchemaAdapter::nullable_schema(
++            table_schema.file_schema(),
++        ))
++        .with_table_partition_cols(table_schema.table_partition_cols().clone())
++        .build();
++        Ok(Self {
++            projection: SplitProjection::unprojected(&table_schema),
++            table_schema,
++            options,
++            reader_timezone,
++            session_timezone,
++            read_case_sensitive,
++            pool,
++            batch_size: None,
++            metrics: ExecutionPlanMetricsSet::new(),
++        })
++    }
++
++    pub fn options(&self) -> &OrcReadOptions {
++        &self.options
++    }
++
++    pub fn reader_timezone(&self) -> &OrcJavaTimeZoneConfig {
++        &self.reader_timezone
++    }
++
++    pub fn session_timezone(&self) -> &str {
++        &self.session_timezone
++    }
++
++    pub fn read_case_sensitive(&self) -> bool {
++        self.read_case_sensitive
++    }
++}
++
++impl From<OrcSource> for Arc<dyn FileSource> {
++    fn from(source: OrcSource) -> Self {
++        Arc::new(source)
++    }
++}
++
++impl FileSource for OrcSource {
++    fn create_file_opener(
++        &self,
++        object_store: Arc<dyn ObjectStore>,
++        base_config: &FileScanConfig,
++        _partition: usize,
++    ) -> Result<Arc<dyn FileOpener>> {
++        let Some(batch_size) = self.batch_size else {
++            return internal_err!("ORC batch size must be set before creating the file opener");
++        };
++        if batch_size == 0 {
++            return exec_err!("ORC batch size must be greater than zero");
++        }
++        if base_config.file_compression_type.is_compressed() {
++            return exec_err!("ORC does not support outer file compression");
++        }
++        let opener = Arc::new(OrcOpener::new(
++            Arc::new(self.clone()),
++            object_store,
++            batch_size,
++        ));
++        ProjectionOpener::try_new(
++            self.projection.clone(),
++            opener,
++            self.table_schema.file_schema(),
++        )
++    }
++
++    fn table_schema(&self) -> &TableSchema {
++        &self.table_schema
++    }
++
++    fn with_batch_size(&self, batch_size: usize) -> Arc<dyn FileSource> {
++        let mut source = self.clone();
++        source.batch_size = Some(batch_size);
++        Arc::new(source)
++    }
++
++    fn metrics(&self) -> &ExecutionPlanMetricsSet {
++        &self.metrics
++    }
++
++    fn try_pushdown_projection(
++        &self,
++        projection: &ProjectionExprs,
++    ) -> Result<Option<Arc<dyn FileSource>>> {
++        let mut source = self.clone();
++        let projection = self.projection.source.try_merge(projection)?;
++        source.projection = SplitProjection::new(self.table_schema.file_schema(), &projection);
++        Ok(Some(Arc::new(source)))
++    }
++
++    fn projection(&self) -> Option<&ProjectionExprs> {
++        Some(&self.projection.source)
++    }
++
++    fn apply_expressions(
++        &self,
++        f: &mut dyn FnMut(&Arc<dyn PhysicalExpr>) -> Result<TreeNodeRecursion>,
++    ) -> Result<TreeNodeRecursion> {
++        apply_expression_roots(self.projection.source.iter(), f)
++    }
++
++    fn file_type(&self) -> &str {
++        "orc"
++    }
++
++    fn supports_repartitioning(&self) -> bool {
++        // Explicit ranges use stripe-start inclusion. Automatic splitting is
++        // kept separate until optimizer/worker range reconstruction is qualified.
++        false
++    }
++}
++
++#[cfg(test)]
++#[path = "source_tests.rs"]
++mod tests;
+diff --git a/crates/sail-data-source/src/formats/orc/source_lifecycle_tests.rs b/crates/sail-data-source/src/formats/orc/source_lifecycle_tests.rs
+new file mode 100644
+index 000000000..39582daf7
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/source_lifecycle_tests.rs
+@@ -0,0 +1,415 @@
++use std::fmt;
++use std::sync::atomic::{AtomicUsize, Ordering};
++
++use async_trait::async_trait;
++use datafusion::execution::memory_pool::GreedyMemoryPool;
++use futures::StreamExt;
++use futures::stream::BoxStream;
++use object_store::{
++    CopyOptions, GetOptions, GetResult, ListResult, MultipartUpload, ObjectMeta,
++    PutMultipartOptions, PutOptions, PutPayload, PutResult,
++};
++use orc_rust::proto;
++use prost013::Message;
++
++use super::*;
++
++#[derive(Debug)]
++struct ObservedStore {
++    inner: Arc<InMemory>,
++    requests: AtomicUsize,
++    active: Arc<AtomicUsize>,
++    pending_request: Option<usize>,
++}
++
++impl fmt::Display for ObservedStore {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "ORC source test store")
++    }
++}
++
++struct PendingRequest(Arc<AtomicUsize>);
++
++impl Drop for PendingRequest {
++    fn drop(&mut self) {
++        self.0.fetch_sub(1, Ordering::SeqCst);
++    }
++}
++
++#[async_trait]
++impl ObjectStore for ObservedStore {
++    async fn put_opts(
++        &self,
++        path: &Path,
++        payload: PutPayload,
++        options: PutOptions,
++    ) -> object_store::Result<PutResult> {
++        self.inner.put_opts(path, payload, options).await
++    }
++
++    async fn put_multipart_opts(
++        &self,
++        path: &Path,
++        options: PutMultipartOptions,
++    ) -> object_store::Result<Box<dyn MultipartUpload>> {
++        self.inner.put_multipart_opts(path, options).await
++    }
++
++    async fn get_opts(&self, path: &Path, options: GetOptions) -> object_store::Result<GetResult> {
++        let request = self.requests.fetch_add(1, Ordering::SeqCst) + 1;
++        if self.pending_request == Some(request) {
++            self.active.fetch_add(1, Ordering::SeqCst);
++            let _pending = PendingRequest(self.active.clone());
++            return futures::future::pending().await;
++        }
++        self.inner.get_opts(path, options).await
++    }
++
++    fn delete_stream(
++        &self,
++        paths: BoxStream<'static, object_store::Result<Path>>,
++    ) -> BoxStream<'static, object_store::Result<Path>> {
++        self.inner.delete_stream(paths)
++    }
++
++    fn list(&self, prefix: Option<&Path>) -> BoxStream<'static, object_store::Result<ObjectMeta>> {
++        self.inner.list(prefix)
++    }
++
++    async fn list_with_delimiter(&self, prefix: Option<&Path>) -> object_store::Result<ListResult> {
++        self.inner.list_with_delimiter(prefix).await
++    }
++
++    async fn copy_opts(
++        &self,
++        from: &Path,
++        to: &Path,
++        options: CopyOptions,
++    ) -> object_store::Result<()> {
++        self.inner.copy_opts(from, to, options).await
++    }
++}
++
++async fn observed(bytes: Bytes, pending_request: Option<usize>) -> (Scan, Arc<ObservedStore>) {
++    let scan = Scan::new(bytes).await;
++    let store = Arc::new(ObservedStore {
++        inner: scan.store.clone(),
++        requests: AtomicUsize::new(0),
++        active: Arc::new(AtomicUsize::new(0)),
++        pending_request,
++    });
++    scan.context.runtime_env().register_object_store(
++        &url::Url::parse("memory://orc-source").unwrap(),
++        store.clone(),
++    );
++    (scan, store)
++}
++
++#[tokio::test]
++async fn dropping_file_stream_cancels_pending_tail_or_stripe_get_and_releases_pool() {
++    for pending_request in [1, 2] {
++        let (bytes, schema) = fixture();
++        let (scan, store) = observed(bytes, Some(pending_request)).await;
++        let config = scan.builder(Arc::new(scan.source(schema))).build();
++        let mut output = config.open(0, scan.context.clone()).unwrap();
++        assert!(futures::poll!(output.next()).is_pending());
++        assert_eq!(store.requests.load(Ordering::SeqCst), pending_request);
++        assert_eq!(store.active.load(Ordering::SeqCst), 1);
++        assert!(scan.context.memory_pool().reserved() > 0);
++        drop(output);
++        assert_eq!(store.active.load(Ordering::SeqCst), 0);
++        assert_eq!(scan.context.memory_pool().reserved(), 0);
++        // No detached task survives to start another source-driven request.
++        tokio::task::yield_now().await;
++        assert_eq!(store.requests.load(Ordering::SeqCst), pending_request);
++    }
++}
++
++#[tokio::test]
++async fn dropping_decoder_releases_ranges_without_invalidating_a_returned_batch() {
++    let (bytes, schema) = fixture();
++    let (scan, store) = observed(bytes, None).await;
++    let config = scan
++        .builder(Arc::new(scan.source(schema)))
++        .with_batch_size(Some(1))
++        .build();
++    let mut output = config.open(0, scan.context.clone()).unwrap();
++    let batch = output.next().await.unwrap().unwrap();
++    assert_eq!(ids(std::slice::from_ref(&batch)), vec![Some(0)]);
++    assert!(scan.context.memory_pool().reserved() > 0);
++    let requests = store.requests.load(Ordering::SeqCst);
++    drop(output);
++    assert_eq!(scan.context.memory_pool().reserved(), 0);
++    assert_eq!(ids(std::slice::from_ref(&batch)), vec![Some(0)]);
++    tokio::task::yield_now().await;
++    assert_eq!(store.requests.load(Ordering::SeqCst), requests);
++}
++
++#[tokio::test]
++async fn actual_file_stream_applies_local_pool_and_each_metadata_budget() {
++    let (bytes, schema) = fixture();
++    // The uncompressed decoder charges the stream directly, rather than
++    // rejecting a compressed block against its allowed output size.
++    assert!(metadata(&bytes).compression().is_none());
++    let (scan, store) = observed(bytes, None).await;
++    let mut source = scan.source(schema.clone());
++    source.pool = Arc::new(GreedyMemoryPool::new(0));
++    let error = scan
++        .read(scan.builder(Arc::new(source)).build())
++        .await
++        .unwrap_err();
++    assert!(error.to_string().contains("memory"), "{error}");
++    assert_eq!(store.requests.load(Ordering::SeqCst), 0);
++    for (index, expected) in [
++        "Encoded footer and metadata exceed the configured limit",
++        "Decoded stream exceeds the configured output limit",
++        "Decoded stream exceeds the configured output limit",
++        "exceeding maximum schema depth 0",
++    ]
++    .into_iter()
++    .enumerate()
++    {
++        let mut source = scan.source(schema.clone());
++        match index {
++            0 => source.options.max_encoded_metadata_bytes = 0,
++            1 => source.options.max_decoded_metadata_bytes = 0,
++            2 => source.options.max_decoded_stripe_footer_bytes = 0,
++            3 => source.options.max_schema_depth = 0,
++            _ => unreachable!(),
++        }
++        let error = scan
++            .read(scan.builder(Arc::new(source)).build())
++            .await
++            .unwrap_err();
++        let message = error.to_string();
++        assert!(message.contains(expected), "{message}");
++        assert_eq!(scan.context.memory_pool().reserved(), 0);
++    }
++    let batches = scan
++        .read(scan.builder(Arc::new(scan.source(schema))).build())
++        .await
++        .unwrap();
++    assert_eq!(ids(&batches), [0, 1, 2, 3, 4, 5].map(Some));
++    assert_eq!(scan.context.memory_pool().reserved(), 0);
++}
++
++fn rewrite_footer(file: &Bytes, update: impl FnOnce(&mut proto::Footer)) -> Bytes {
++    let postscript_length = usize::from(file[file.len() - 1]);
++    let postscript_start = file.len() - 1 - postscript_length;
++    let mut postscript =
++        proto::PostScript::decode(&file[postscript_start..file.len() - 1]).unwrap();
++    assert_eq!(postscript.compression(), proto::CompressionKind::None);
++    let footer_start = postscript_start - postscript.footer_length() as usize;
++    let mut footer = proto::Footer::decode(&file[footer_start..postscript_start]).unwrap();
++    update(&mut footer);
++    let footer = footer.encode_to_vec();
++    postscript.footer_length = Some(footer.len() as u64);
++    let postscript = postscript.encode_to_vec();
++    let mut result = file[..footer_start].to_vec();
++    result.extend(footer);
++    result.extend(&postscript);
++    result.push(postscript.len().try_into().unwrap());
++    Bytes::from(result)
++}
++
++#[tokio::test]
++async fn selected_stripe_extent_is_checked_before_stripe_io() {
++    let (bytes, schema) = fixture();
++    let boundary = metadata(&bytes).stripe_metadatas()[1].offset() as i64;
++    let corrupt = rewrite_footer(&bytes, |footer| {
++        footer.stripes[1].data_length = Some(bytes.len() as u64 + 1);
++    });
++    let (scan, store) = observed(corrupt, None).await;
++    let config = scan.builder(Arc::new(scan.source(schema.clone()))).build();
++    let error = scan.read(config).await.unwrap_err();
++    assert!(error.to_string().contains("exceeds object size"), "{error}");
++    assert_eq!(store.requests.load(Ordering::SeqCst), 1); // File tail only.
++    assert_eq!(scan.context.memory_pool().reserved(), 0);
++
++    // A malformed unselected stripe extent is not an additional range-read
++    // validity rule. The first stripe remains readable under its exact range.
++    let mut file = scan.file.clone();
++    file.range = Some(FileRange {
++        start: 0,
++        end: boundary,
++    });
++    let config = scan
++        .builder(Arc::new(scan.source(schema)))
++        .with_file_groups(vec![FileGroup::from(vec![file])])
++        .build();
++    assert_eq!(
++        ids(&scan.read(config).await.unwrap()),
++        vec![Some(0), Some(1)]
++    );
++}
++
++#[tokio::test]
++async fn projected_out_invalid_logical_type_is_rejected_before_stripe_io() {
++    let (bytes, schema) = fixture();
++    let corrupt = rewrite_footer(&bytes, |footer| {
++        footer.types[2].kind = Some(proto::r#type::Kind::Decimal as i32);
++        footer.types[2].precision = Some(100);
++        footer.types[2].scale = Some(0);
++    });
++    let (scan, store) = observed(corrupt, None).await;
++    let config = scan
++        .builder(Arc::new(scan.source(schema)))
++        .with_projection_indices(Some(vec![0]))
++        .unwrap()
++        .build();
++    let error = scan.read(config).await.unwrap_err();
++    assert!(error.to_string().contains("decimal"), "{error}");
++    assert_eq!(store.requests.load(Ordering::SeqCst), 1);
++    assert_eq!(scan.context.memory_pool().reserved(), 0);
++}
++
++#[tokio::test]
++async fn source_passes_case_policy_to_each_file_mapper() {
++    let (bytes, _) = fixture();
++    let scan = Scan::new(bytes).await;
++    let requested = Arc::new(Schema::new(vec![Field::new("ID", DataType::Int64, false)]));
++    for case_sensitive in [false, true] {
++        let mut source = scan.source(requested.clone());
++        source.read_case_sensitive = case_sensitive;
++        let batches = scan
++            .read(scan.builder(Arc::new(source)).build())
++            .await
++            .unwrap();
++        let expected = if case_sensitive {
++            vec![None; 6]
++        } else {
++            (0..6).map(Some).collect()
++        };
++        assert_eq!(ids(&batches), expected);
++    }
++}
++
++#[tokio::test]
++async fn full_requested_timestamp_compatibility_precedes_required_projection() {
++    let bytes = Bytes::from_static(include_bytes!(
++        "../../../tests/fixtures/orc/timestamps/foreign_submicro.orc"
++    ));
++    let actual = super::super::super::infer_orc_schema(&metadata(&bytes), "UTC").unwrap();
++    let mut fields = actual
++        .fields()
++        .iter()
++        .map(|field| field.as_ref().clone())
++        .collect::<Vec<_>>();
++    fields[1] = fields[1].clone().with_data_type(DataType::Timestamp(
++        arrow::datatypes::TimeUnit::Microsecond,
++        None,
++    ));
++    let (scan, store) = observed(bytes, None).await;
++    let config = scan
++        .builder(Arc::new(scan.source(Arc::new(Schema::new(fields)))))
++        .with_projection_indices(Some(vec![0]))
++        .unwrap()
++        .build();
++    let error = scan.read(config).await.unwrap_err();
++    assert!(
++        error
++            .to_string()
++            .contains("cannot convert TIMESTAMP to TIMESTAMP_NTZ in full data schema"),
++        "{error}"
++    );
++    assert_eq!(store.requests.load(Ordering::SeqCst), 1);
++}
++
++#[tokio::test]
++async fn empty_physical_root_yields_no_rows_even_when_stripes_declare_rows() {
++    let schema = Arc::new(Schema::empty());
++    let batch = RecordBatch::try_new_with_options(
++        schema.clone(),
++        vec![],
++        &arrow::record_batch::RecordBatchOptions::new().with_row_count(Some(6)),
++    )
++    .unwrap();
++    let mut bytes = Vec::new();
++    let mut writer = ArrowWriterBuilder::new(&mut bytes, schema.clone())
++        .try_build()
++        .unwrap();
++    writer.write(&batch).unwrap();
++    writer.close().unwrap();
++    let bytes = Bytes::from(bytes);
++    let file_metadata = metadata(&bytes);
++    assert_eq!(file_metadata.number_of_rows(), 6);
++    assert!(!file_metadata.stripe_metadatas().is_empty());
++    let (scan, store) = observed(bytes, None).await;
++    for requested in [
++        schema,
++        Arc::new(Schema::new(vec![Field::new(
++            "missing",
++            DataType::Int64,
++            true,
++        )])),
++    ] {
++        let before = store.requests.load(Ordering::SeqCst);
++        let batches = scan
++            .read(scan.builder(Arc::new(scan.source(requested))).build())
++            .await
++            .unwrap();
++        assert!(batches.is_empty());
++        assert_eq!(store.requests.load(Ordering::SeqCst), before + 1); // Tail only.
++        assert_eq!(scan.context.memory_pool().reserved(), 0);
++    }
++}
++
++#[tokio::test]
++async fn constructor_rejects_virtual_columns_but_preserves_ordinary_partitions() {
++    let (bytes, schema) = fixture();
++    let mut scan = Scan::new(bytes).await;
++    let partition = Arc::new(Field::new("region", DataType::Utf8, false));
++    let virtual_column = Arc::new(
++        Field::new("row_number", DataType::Int64, false)
++            .with_extension_type(datafusion::parquet::arrow::RowNumber),
++    );
++    for partitions in [vec![], vec![partition.clone()]] {
++        let table = TableSchema::builder(schema.clone())
++            .with_table_partition_cols(partitions)
++            .with_virtual_columns(vec![virtual_column.clone()])
++            .build();
++        let error = OrcSource::try_new(
++            table,
++            options(),
++            OrcJavaTimeZoneConfig::for_reader_timezone("UTC".to_string()).unwrap(),
++            "UTC".to_string(),
++            true,
++            scan.context.memory_pool().clone(),
++        )
++        .unwrap_err();
++        assert!(matches!(
++            &error,
++            datafusion_common::DataFusionError::NotImplemented(_)
++        ));
++        assert!(
++            error
++                .to_string()
++                .contains("ORC virtual columns are not supported")
++        );
++    }
++
++    scan.file.partition_values = vec![ScalarValue::Utf8(Some("west".to_string()))];
++    let table = TableSchema::builder(schema)
++        .with_table_partition_cols(vec![partition.clone()])
++        .build();
++    let source = scan.source(table);
++    assert_eq!(source.table_schema().table_partition_cols().len(), 1);
++    assert_eq!(source.table_schema().table_partition_cols()[0], partition);
++    let config = scan
++        .builder(Arc::new(source))
++        .with_projection_indices(Some(vec![2]))
++        .unwrap()
++        .build();
++    let batches = scan.read(config).await.unwrap();
++    assert_eq!(batches.iter().map(RecordBatch::num_rows).sum::<usize>(), 6);
++    for batch in batches {
++        assert_eq!(
++            batch
++                .column(0)
++                .as_any()
++                .downcast_ref::<StringArray>()
++                .unwrap(),
++            &StringArray::from(vec!["west"; batch.num_rows()])
++        );
++    }
++}
+diff --git a/crates/sail-data-source/src/formats/orc/source_tests.rs b/crates/sail-data-source/src/formats/orc/source_tests.rs
+new file mode 100644
+index 000000000..c726e8d5e
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/source_tests.rs
+@@ -0,0 +1,427 @@
++#![expect(clippy::unwrap_used)]
++
++use arrow::array::{Array, Int32Array, Int64Array, StringArray, TimestampMicrosecondArray};
++use arrow::compute::concat_batches;
++use arrow::datatypes::{DataType, Field, Schema, SchemaRef};
++use arrow::record_batch::RecordBatch;
++use bytes::Bytes;
++use datafusion::execution::TaskContext;
++use datafusion::execution::object_store::ObjectStoreUrl;
++use datafusion::physical_expr::expressions::{BinaryExpr, Column, Literal};
++use datafusion::physical_expr::projection::ProjectionExpr;
++use datafusion::prelude::SessionContext;
++use datafusion_common::ScalarValue;
++use datafusion_datasource::file_groups::FileGroup;
++use datafusion_datasource::file_scan_config::FileScanConfigBuilder;
++use datafusion_datasource::source::DataSource;
++use datafusion_datasource::{FileRange, PartitionedFile};
++use datafusion_expr::Operator;
++use futures::TryStreamExt;
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use orc_rust::ArrowWriterBuilder;
++use orc_rust::reader::metadata::{FileMetadata, read_metadata_with_options};
++
++use super::*;
++use crate::options::ResolveOptions;
++
++#[path = "source_lifecycle_tests.rs"]
++mod lifecycle;
++
++fn options() -> OrcReadOptions {
++    OrcReadOptions::resolve(&SessionContext::new().state(), vec![]).unwrap()
++}
++
++fn metadata(file: &Bytes) -> FileMetadata {
++    read_metadata_with_options(
++        &mut file.clone(),
++        options()
++            .resource_limits(&datafusion::execution::memory_pool::UnboundedMemoryPool::default())
++            .metadata_options(),
++    )
++    .unwrap()
++}
++
++fn fixture() -> (Bytes, SchemaRef) {
++    let schema = Arc::new(Schema::new(vec![
++        Field::new("id", DataType::Int64, true),
++        Field::new("label", DataType::Utf8, true),
++    ]));
++    let mut bytes = Vec::new();
++    let mut writer = ArrowWriterBuilder::new(&mut bytes, schema.clone())
++        .try_build()
++        .unwrap();
++    for id in [0, 2, 4] {
++        let batch = RecordBatch::try_new(
++            schema.clone(),
++            vec![
++                Arc::new(Int64Array::from(vec![id, id + 1])),
++                Arc::new(StringArray::from(vec![Some(format!("row-{id}")), None])),
++            ],
++        )
++        .unwrap();
++        writer.write(&batch).unwrap();
++        writer.flush_stripe().unwrap();
++    }
++    writer.close().unwrap();
++    let bytes = Bytes::from(bytes);
++    assert_eq!(metadata(&bytes).stripe_metadatas().len(), 3);
++    (bytes, schema)
++}
++
++struct Scan {
++    store: Arc<InMemory>,
++    context: Arc<TaskContext>,
++    file: PartitionedFile,
++}
++
++impl Scan {
++    async fn new(bytes: Bytes) -> Self {
++        let store = Arc::new(InMemory::new());
++        let path = Path::from("data.orc");
++        store.put(&path, bytes.into()).await.unwrap();
++        let file = PartitionedFile::new_from_meta(store.head(&path).await.unwrap());
++        let context = Arc::new(TaskContext::default());
++        context.runtime_env().register_object_store(
++            &url::Url::parse("memory://orc-source").unwrap(),
++            store.clone(),
++        );
++        Self {
++            store,
++            context,
++            file,
++        }
++    }
++
++    fn source(&self, table_schema: impl Into<TableSchema>) -> OrcSource {
++        OrcSource::try_new(
++            table_schema,
++            options(),
++            OrcJavaTimeZoneConfig::for_reader_timezone("UTC".to_string()).unwrap(),
++            "UTC".to_string(),
++            true,
++            self.context.memory_pool().clone(),
++        )
++        .unwrap()
++    }
++
++    fn builder(&self, source: Arc<dyn FileSource>) -> FileScanConfigBuilder {
++        FileScanConfigBuilder::new(
++            ObjectStoreUrl::parse("memory://orc-source").unwrap(),
++            source,
++        )
++        .with_file_groups(vec![FileGroup::from(vec![self.file.clone()])])
++        .with_batch_size(Some(2))
++        .with_preserve_order(true)
++    }
++
++    async fn read(&self, config: FileScanConfig) -> Result<Vec<RecordBatch>> {
++        config.open(0, self.context.clone())?.try_collect().await
++    }
++}
++
++fn ids(batches: &[RecordBatch]) -> Vec<Option<i64>> {
++    batches
++        .iter()
++        .flat_map(|batch| {
++            batch
++                .column(0)
++                .as_any()
++                .downcast_ref::<Int64Array>()
++                .unwrap()
++                .iter()
++        })
++        .collect()
++}
++
++#[tokio::test]
++async fn file_stream_restores_expressions_duplicates_missing_fields_and_partitions() {
++    let (bytes, _) = fixture();
++    let mut scan = Scan::new(bytes).await;
++    scan.file.partition_values = vec![ScalarValue::Utf8(Some("west".to_string()))];
++    let requested = Arc::new(Schema::new(vec![
++        Field::new("id", DataType::Int64, false),
++        Field::new("label", DataType::Utf8, false),
++        Field::new("missing", DataType::Int32, false),
++    ]));
++    let table = TableSchema::builder(requested)
++        .with_table_partition_cols(vec![Arc::new(Field::new("part", DataType::Utf8, false))])
++        .build();
++    let source = scan.source(table);
++    assert!(
++        source
++            .table_schema()
++            .file_schema()
++            .fields()
++            .iter()
++            .all(|field| field.is_nullable())
++    );
++    assert!(!source.table_schema().table_partition_cols()[0].is_nullable());
++    let projection = ProjectionExprs::new([
++        ProjectionExpr::new(Arc::new(Column::new("part", 3)), "partition"),
++        ProjectionExpr::new(
++            Arc::new(BinaryExpr::new(
++                Arc::new(Column::new("id", 0)),
++                Operator::Plus,
++                Arc::new(Literal::new(ScalarValue::Int64(Some(10)))),
++            )),
++            "plus_ten",
++        ),
++        ProjectionExpr::new(Arc::new(Column::new("label", 1)), "label"),
++        ProjectionExpr::new(Arc::new(Column::new("id", 0)), "again"),
++        ProjectionExpr::new(Arc::new(Column::new("missing", 2)), "missing"),
++    ]);
++    let source = source
++        .try_pushdown_projection(&projection)
++        .unwrap()
++        .unwrap();
++    let config = scan.builder(source).build();
++    let output_schema = config.projected_schema().unwrap();
++    let batches = scan.read(config).await.unwrap();
++    assert_eq!(
++        batches
++            .iter()
++            .map(RecordBatch::num_rows)
++            .collect::<Vec<_>>(),
++        vec![2, 2, 2]
++    );
++    let batch = concat_batches(&output_schema, &batches).unwrap();
++    assert_eq!(
++        batch
++            .column(0)
++            .as_any()
++            .downcast_ref::<StringArray>()
++            .unwrap(),
++        &StringArray::from(vec!["west"; 6])
++    );
++    assert_eq!(
++        batch
++            .column(1)
++            .as_any()
++            .downcast_ref::<Int64Array>()
++            .unwrap(),
++        &Int64Array::from(vec![10, 11, 12, 13, 14, 15])
++    );
++    assert_eq!(
++        batch
++            .column(2)
++            .as_any()
++            .downcast_ref::<StringArray>()
++            .unwrap(),
++        &StringArray::from(vec![
++            Some("row-0"),
++            None,
++            Some("row-2"),
++            None,
++            Some("row-4"),
++            None
++        ])
++    );
++    assert_eq!(
++        batch
++            .column(3)
++            .as_any()
++            .downcast_ref::<Int64Array>()
++            .unwrap(),
++        &Int64Array::from(vec![0, 1, 2, 3, 4, 5])
++    );
++    assert_eq!(
++        batch
++            .column(4)
++            .as_any()
++            .downcast_ref::<Int32Array>()
++            .unwrap()
++            .null_count(),
++        6
++    );
++}
++
++#[tokio::test]
++async fn zero_and_partition_only_projections_keep_row_counts_and_file_stream_limits() {
++    let (bytes, schema) = fixture();
++    let mut scan = Scan::new(bytes).await;
++    scan.file.partition_values = vec![ScalarValue::Int32(Some(7))];
++    let table = TableSchema::builder(schema)
++        .with_table_partition_cols(vec![Arc::new(Field::new("part", DataType::Int32, false))])
++        .build();
++    for projection in [vec![], vec![2]] {
++        let config = scan
++            .builder(Arc::new(scan.source(table.clone())))
++            .with_projection_indices(Some(projection.clone()))
++            .unwrap()
++            .with_batch_size(Some(1))
++            .with_limit(Some(3))
++            .build();
++        let batches = scan.read(config).await.unwrap();
++        assert_eq!(
++            batches
++                .iter()
++                .map(RecordBatch::num_rows)
++                .collect::<Vec<_>>(),
++            vec![1, 1, 1]
++        );
++        assert!(
++            batches
++                .iter()
++                .all(|batch| batch.num_columns() == projection.len())
++        );
++        if !projection.is_empty() {
++            for batch in batches {
++                assert_eq!(
++                    batch
++                        .column(0)
++                        .as_any()
++                        .downcast_ref::<Int32Array>()
++                        .unwrap(),
++                    &Int32Array::from(vec![7])
++                );
++            }
++        }
++    }
++}
++
++#[tokio::test]
++async fn file_stream_honors_file_groups_and_limits_across_files() {
++    let (bytes, schema) = fixture();
++    let scan = Scan::new(bytes.clone()).await;
++    let path = Path::from("second.orc");
++    scan.store.put(&path, bytes.into()).await.unwrap();
++    let second = PartitionedFile::new_from_meta(scan.store.head(&path).await.unwrap());
++    let config = scan
++        .builder(Arc::new(scan.source(schema)))
++        .with_file_groups(vec![
++            FileGroup::from(vec![scan.file.clone(), second.clone()]),
++            FileGroup::from(vec![second]),
++        ])
++        .with_limit(Some(8))
++        .build();
++    let first = scan.read(config.clone()).await.unwrap();
++    assert_eq!(ids(&first), [0, 1, 2, 3, 4, 5, 0, 1].map(Some));
++    let second = config
++        .open(1, scan.context.clone())
++        .unwrap()
++        .try_collect::<Vec<_>>()
++        .await
++        .unwrap();
++    assert_eq!(ids(&second), [0, 1, 2, 3, 4, 5].map(Some));
++}
++
++#[tokio::test]
++async fn explicit_ranges_select_stripe_starts_once_with_half_open_boundaries() {
++    let (bytes, schema) = fixture();
++    let boundary = metadata(&bytes).stripe_metadatas()[1].offset() as i64;
++    let scan = Scan::new(bytes).await;
++    let source = scan.source(schema);
++    assert!(!source.supports_repartitioning());
++    let mut combined = Vec::new();
++    for (start, end, expected) in [
++        (0, boundary, vec![Some(0), Some(1)]),
++        (
++            boundary,
++            scan.file.object_meta.size as i64,
++            vec![Some(2), Some(3), Some(4), Some(5)],
++        ),
++        (boundary, boundary, vec![]),
++    ] {
++        let mut file = scan.file.clone();
++        file.range = Some(FileRange { start, end });
++        let config = scan
++            .builder(Arc::new(source.clone()))
++            .with_file_groups(vec![FileGroup::from(vec![file])])
++            .build();
++        let values = ids(&scan.read(config).await.unwrap());
++        assert_eq!(values, expected);
++        combined.extend(values);
++    }
++    assert_eq!(combined, [0, 1, 2, 3, 4, 5].map(Some));
++    for (start, end) in [(-1, 1), (2, 1), (0, scan.file.object_meta.size as i64 + 1)] {
++        let mut file = scan.file.clone();
++        file.range = Some(FileRange { start, end });
++        let config = scan
++            .builder(Arc::new(source.clone()))
++            .with_file_groups(vec![FileGroup::from(vec![file])])
++            .build();
++        assert!(
++            scan.read(config)
++                .await
++                .unwrap_err()
++                .to_string()
++                .contains("ORC file range")
++        );
++    }
++}
++
++#[tokio::test]
++async fn file_stream_preserves_captured_reader_identity_separately_from_display_zone() {
++    let bytes = Bytes::from_static(include_bytes!(
++        "../../../tests/fixtures/orc/timestamps/foreign_submicro.orc"
++    ));
++    let metadata = metadata(&bytes);
++    let scan = Scan::new(bytes).await;
++    for (reader, expected) in [
++        (
++            "UTC",
++            vec![Some(1_577_934_245_123_456), Some(-1_876_544), Some(0), None],
++        ),
++        (
++            "America/Los_Angeles",
++            vec![
++                Some(1_577_963_045_123_456),
++                Some(28_798_123_456),
++                Some(28_800_000_000),
++                None,
++            ],
++        ),
++    ] {
++        for display in ["UTC", "America/Los_Angeles"] {
++            let requested = super::super::infer_orc_schema(&metadata, display).unwrap();
++            let source = OrcSource::try_new(
++                requested,
++                options(),
++                OrcJavaTimeZoneConfig::for_reader_timezone(reader.to_string()).unwrap(),
++                display.to_string(),
++                true,
++                scan.context.memory_pool().clone(),
++            )
++            .unwrap();
++            let batches = scan
++                .read(scan.builder(Arc::new(source)).build())
++                .await
++                .unwrap();
++            let values = batches
++                .iter()
++                .flat_map(|batch| {
++                    batch
++                        .column(1)
++                        .as_any()
++                        .downcast_ref::<TimestampMicrosecondArray>()
++                        .unwrap()
++                        .iter()
++                })
++                .collect::<Vec<_>>();
++            assert_eq!(values, expected);
++            assert_eq!(
++                batches[0].schema().field(1).data_type(),
++                &DataType::Timestamp(
++                    arrow::datatypes::TimeUnit::Microsecond,
++                    Some(display.into())
++                )
++            );
++        }
++    }
++}
++
++#[tokio::test]
++async fn object_changes_fail_under_planned_identity_and_release_reservations() {
++    let (bytes, schema) = fixture();
++    let scan = Scan::new(bytes.clone()).await;
++    let config = scan.builder(Arc::new(scan.source(schema))).build();
++    scan.store
++        .put(&scan.file.object_meta.location, bytes.into())
++        .await
++        .unwrap();
++    let error = scan.read(config).await.unwrap_err();
++    assert!(error.to_string().contains("precondition"), "{error}");
++    assert_eq!(scan.context.memory_pool().reserved(), 0);
++}

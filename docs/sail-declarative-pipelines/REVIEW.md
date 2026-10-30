@@ -1342,3 +1342,12 @@ require last-wins exact duplicate root matching and show a reader-mode differenc
 for the tested BIGINT-to-INT map key. Two successes and two errors are preserved;
 no generic safe-null or wrap rule is inferred. The reference changes the pending
 mapper's requirements, not the SDP acceptance denominator.
+
+### ORC requested adapter and normal file execution (2026-10-30T00:18:01.214574+00:00)
+
+[Evidence](evidence/orc-requested-source/README.md) records separately gated Sail
+`c3f9b77466` (169 tests) and `f49b3f865c` (184 tests),
+with formatting/strict Clippy and retained pre-reference candidate. The real file
+stream now exercises the assembled reader contracts; public registration/worker/
+writer integration and unqualified conversion cases remain incomplete. No full
+SDP, streaming/Iggy or CDC verdict is implied.

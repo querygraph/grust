@@ -477,3 +477,27 @@ mode configuration remain explicit compatibility work until a precise policy is
 implemented and qualified. Both failures, full plans/configurations, two fixtures,
 five Spark sources and three installed ORC class disassemblies are retained.
 Owned JVM 5469 exited cleanly. No public Sail/SDP count changes.
+
+## Requested mapper and ordinary file-source execution
+
+Recorded: 2026-10-30T00:18:01.214574+00:00. [Sail `c3f9b77466` and `f49b3f865c`](evidence/orc-requested-source/README.md)
+implement requested-schema mapping and the ordinary FileSource/FileOpener path.
+Their independent exact gates pass 169 and 184 data-source tests, formatting and
+strict Clippy. Full requested schema survives until timestamp checking; required
+projection is separate. Existing projection/file-stream infrastructure handles
+expressions, partitions, limits and scheduling. Identity-bound ranges, local
+resource limits, selected-stripe object bounds, captured timezone rules and
+drop-owned cancellation now run together in integration tests.
+
+The source distinguishes empty physical schemas from zero-column projection and
+rejects unsupported virtual columns before projection can index them as partitions.
+Explicit ranges are tested; automatic repartitioning remains disabled pending
+worker/optimizer qualification. The mapper preserves the qualified value/name
+rules while reporting map-key narrowing, non-ASCII matching and unqualified
+cross-type evolution as pending capabilities. These are temporary implementation
+boundaries, not changes to the complete Spark SDP target.
+
+Next units connect supplied-schema preparation/physical partition names, semantic
+schema inference, worker codec and public registry. Writer and remaining native
+value-safety/calendar/configuration contracts remain open. This is an internal
+file-source verdict; no public CLI or SDP runtime count is added.

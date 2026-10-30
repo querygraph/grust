@@ -1,0 +1,1138 @@
+commit c5a96ea01ba288cf3c0de5968ba161f8a9f16922
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 16:58:38 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 16:58:38 2026 -0700
+
+    feat: map requested ORC schemas after logical decoding
+
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index b926e0797..4adb16305 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -1,12 +1,14 @@
+ mod metadata;
+ mod options;
+ mod reader;
++mod requested_schema;
+ mod schema;
+ mod timezone;
+ 
+ pub use metadata::OrcSchemaBridge;
+ pub use options::OrcReadResourceLimits;
+ pub use reader::OrcObjectReader;
++pub use requested_schema::OrcRequestedSchemaAdapter;
+ pub use schema::infer_schema as infer_orc_schema;
+ pub use timezone::OrcJavaTimeZoneConfig;
+ 
+diff --git a/crates/sail-data-source/src/formats/orc/requested_schema.rs b/crates/sail-data-source/src/formats/orc/requested_schema.rs
+new file mode 100644
+index 000000000..988014257
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/requested_schema.rs
+@@ -0,0 +1,395 @@
++//! Per-file requested-schema mapping, after native ORC logical conversion.
++
++use std::collections::BTreeSet;
++use std::sync::Arc;
++
++use arrow::datatypes::{
++    DataType, Field, FieldRef, Fields, IntervalUnit, Schema, SchemaRef, TimeUnit,
++};
++use arrow::record_batch::{RecordBatch, RecordBatchOptions};
++use datafusion_common::{Result, exec_err, not_impl_err, plan_err};
++use sail_common::spec;
++
++mod array;
++
++/// Maps a projected, logically converted ORC batch to the requested file columns.
++///
++/// The full requested file schema remains distinct from the required projection.
++/// Timestamp compatibility follows Spark's positional, STRUCT-only check before
++/// required fields are resolved. The reader must use `file_projection()`, apply
++/// [`super::OrcSchemaBridge`], then apply this adapter. A subsequent projection
++/// handles expressions and partition columns.
++///
++/// Case-insensitive mapping currently qualifies ASCII names in the retained
++/// Java baseline. Unicode/locale matching, cross-kind timestamp conversion and
++/// other unqualified leaf conversions fail explicitly; these are remaining
++/// compatibility work, not a complete Spark evolution implementation.
++#[derive(Debug, Clone)]
++pub struct OrcRequestedSchemaAdapter {
++    file_projection: Vec<usize>,
++    input_schema: SchemaRef,
++    schema: SchemaRef,
++    fields: Vec<FieldPlan>,
++}
++
++#[derive(Debug, Clone)]
++struct FieldPlan {
++    source_index: Option<usize>,
++    target: FieldRef,
++    conversion: Conversion,
++}
++
++#[derive(Debug, Clone)]
++enum Conversion {
++    Identity,
++    SafeInteger,
++    TimestampLabel,
++    Struct(Vec<FieldPlan>),
++    List(Box<FieldPlan>),
++    Map(Box<FieldPlan>, Box<FieldPlan>),
++}
++
++impl OrcRequestedSchemaAdapter {
++    /// `required_indices` indexes the full requested file schema. Its order and
++    /// repeated indices are preserved; the native projection is sorted/unique.
++    /// An empty slice requests zero file columns while retaining row counts.
++    pub fn try_new(
++        file_schema: SchemaRef,
++        full_data_schema: SchemaRef,
++        required_indices: &[usize],
++        read_case_sensitive: bool,
++    ) -> Result<Self> {
++        validate_timestamps(file_schema.fields(), full_data_schema.fields(), "root")?;
++        let positional = !file_schema.fields().is_empty()
++            && file_schema
++                .fields()
++                .iter()
++                .all(|f| f.name().starts_with("_col"));
++        if positional && file_schema.fields().len() > full_data_schema.fields().len() {
++            return exec_err!(
++                "ORC positional evolution requires the full data schema: {} file fields, {} requested fields",
++                file_schema.fields().len(),
++                full_data_schema.fields().len()
++            );
++        }
++        let requested = Self::nullable_schema(&full_data_schema);
++        let mut fields = Vec::with_capacity(required_indices.len());
++        let mut projection = BTreeSet::new();
++        for &index in required_indices {
++            let target = requested.fields().get(index).ok_or_else(|| {
++                datafusion_common::plan_datafusion_err!(
++                    "ORC requested projection index {index} is out of bounds"
++                )
++            })?;
++            validate_target(target)?;
++            let source_index = if positional {
++                (index < file_schema.fields().len()).then_some(index)
++            } else {
++                find_field(
++                    file_schema.fields(),
++                    target.name(),
++                    read_case_sensitive,
++                    true,
++                )?
++            };
++            let conversion = if let Some(source_index) = source_index {
++                projection.insert(source_index);
++                compile_field(
++                    &file_schema.fields()[source_index],
++                    target,
++                    read_case_sensitive,
++                )?
++            } else {
++                Conversion::Identity
++            };
++            fields.push(FieldPlan {
++                source_index,
++                target: Arc::clone(target),
++                conversion,
++            });
++        }
++        let file_projection: Vec<_> = projection.into_iter().collect();
++        for field in &mut fields {
++            field.source_index = field
++                .source_index
++                .map(|index| file_projection.partition_point(|&source_index| source_index < index));
++        }
++        Ok(Self {
++            input_schema: Arc::new(file_schema.project(&file_projection)?),
++            schema: Arc::new(requested.project(required_indices)?),
++            file_projection,
++            fields,
++        })
++    }
++
++    /// Spark's ordinary file-read schema is nullable recursively. Preserve field
++    /// names and metadata, including declared TIME/interval types. Arrow's map
++    /// entries and key wrappers remain non-nullable.
++    pub fn nullable_schema(schema: &Schema) -> SchemaRef {
++        Arc::new(Schema::new_with_metadata(
++            schema
++                .fields()
++                .iter()
++                .map(|f| nullable_field(f, true))
++                .collect::<Vec<_>>(),
++            schema.metadata().clone(),
++        ))
++    }
++
++    pub fn file_projection(&self) -> &[usize] {
++        &self.file_projection
++    }
++    pub fn input_schema(&self) -> &SchemaRef {
++        &self.input_schema
++    }
++    pub fn schema(&self) -> &SchemaRef {
++        &self.schema
++    }
++
++    pub fn adapt_batch(&self, batch: RecordBatch) -> Result<RecordBatch> {
++        if batch.schema().fields() != self.input_schema.fields() {
++            return exec_err!(
++                "ORC requested-schema adapter received a different logical input schema"
++            );
++        }
++        let columns = self
++            .fields
++            .iter()
++            .map(|field| array::adapt_field(field, batch.columns(), batch.num_rows()))
++            .collect::<Result<Vec<_>>>()?;
++        Ok(RecordBatch::try_new_with_options(
++            Arc::clone(&self.schema),
++            columns,
++            &RecordBatchOptions::new().with_row_count(Some(batch.num_rows())),
++        )?)
++    }
++}
++
++fn nullable_field(field: &FieldRef, nullable: bool) -> FieldRef {
++    let data_type = match field.data_type() {
++        DataType::Struct(fields) => {
++            DataType::Struct(fields.iter().map(|f| nullable_field(f, true)).collect())
++        }
++        DataType::List(element) => DataType::List(nullable_field(element, true)),
++        DataType::LargeList(element) => DataType::LargeList(nullable_field(element, true)),
++        DataType::FixedSizeList(element, size) => {
++            DataType::FixedSizeList(nullable_field(element, true), *size)
++        }
++        DataType::Map(entries, sorted) => {
++            let entry_type = match entries.data_type() {
++                DataType::Struct(fields) => DataType::Struct(
++                    fields
++                        .iter()
++                        .enumerate()
++                        .map(|(i, f)| nullable_field(f, i != 0))
++                        .collect(),
++                ),
++                other => other.clone(),
++            };
++            DataType::Map(
++                Arc::new(
++                    entries
++                        .as_ref()
++                        .clone()
++                        .with_data_type(entry_type)
++                        .with_nullable(false),
++                ),
++                *sorted,
++            )
++        }
++        other => other.clone(),
++    };
++    Arc::new(
++        field
++            .as_ref()
++            .clone()
++            .with_data_type(data_type)
++            .with_nullable(nullable),
++    )
++}
++
++fn validate_timestamps(file: &Fields, requested: &Fields, path: &str) -> Result<()> {
++    for (source, target) in file.iter().zip(requested) {
++        let path = format!("{path}.{}", target.name());
++        match (source.data_type(), target.data_type()) {
++            (DataType::Timestamp(_, Some(_)), DataType::Timestamp(_, None)) => {
++                return exec_err!(
++                    "ORC cannot convert TIMESTAMP to TIMESTAMP_NTZ in full data schema at {path}"
++                );
++            }
++            (DataType::Timestamp(_, None), DataType::Timestamp(_, Some(_))) => {
++                return exec_err!(
++                    "ORC cannot convert TIMESTAMP_NTZ to TIMESTAMP in full data schema at {path}"
++                );
++            }
++            (DataType::Struct(left), DataType::Struct(right)) => {
++                validate_timestamps(left, right, &path)?
++            }
++            _ => {}
++        }
++    }
++    Ok(())
++}
++
++fn find_field(
++    fields: &Fields,
++    name: &str,
++    case_sensitive: bool,
++    top_level: bool,
++) -> Result<Option<usize>> {
++    if !case_sensitive && (!name.is_ascii() || fields.iter().any(|f| !f.name().is_ascii())) {
++        return not_impl_err!(
++            "ORC case-insensitive Unicode/locale field matching is not yet qualified for {name}"
++        );
++    }
++    let mut matches = fields
++        .iter()
++        .enumerate()
++        .filter(|(_, f)| {
++            if case_sensitive {
++                f.name() == name
++            } else {
++                f.name().eq_ignore_ascii_case(name)
++            }
++        })
++        .map(|(index, _)| index);
++    let first = matches.next();
++    if top_level {
++        if !case_sensitive && matches.next().is_some() {
++            return exec_err!("ORC found duplicate field {name} in case-insensitive mode");
++        }
++        Ok(first)
++    } else {
++        // ORC Java inserts nested physical names in order into its lookup map;
++        // later normalized keys replace earlier ones, without exact-case priority.
++        Ok(matches.next_back().or(first))
++    }
++}
++
++fn validate_target(field: &Field) -> Result<()> {
++    if let Some(value) = field.metadata().get(spec::SAIL_SPARK_TIME_METADATA_KEY) {
++        spec::SparkTimeMetadata::from_json(value)
++            .map_err(|e| datafusion_common::plan_datafusion_err!("{e}"))?;
++        if field.data_type() != &DataType::Time64(TimeUnit::Nanosecond) {
++            return plan_err!("ORC requested TIME metadata requires nanosecond storage");
++        }
++    }
++    if let Some(value) = field.metadata().get(spec::SAIL_SPARK_INTERVAL_METADATA_KEY) {
++        let metadata = spec::SparkIntervalMetadata::from_json(value)
++            .map_err(|e| datafusion_common::plan_datafusion_err!("{e}"))?;
++        let expected = match metadata.interval_unit() {
++            spec::IntervalUnit::YearMonth => DataType::Interval(IntervalUnit::YearMonth),
++            spec::IntervalUnit::DayTime => DataType::Duration(TimeUnit::Microsecond),
++            spec::IntervalUnit::MonthDayNano => {
++                return plan_err!("ORC Spark interval metadata has unsupported unit");
++            }
++        };
++        if field.data_type() != &expected {
++            return plan_err!("ORC requested interval metadata has inconsistent storage");
++        }
++    }
++    match field.data_type() {
++        DataType::Struct(fields) => {
++            for child in fields {
++                validate_target(child)?;
++            }
++        }
++        DataType::List(child) | DataType::LargeList(child) | DataType::FixedSizeList(child, _) => {
++            validate_target(child)?
++        }
++        DataType::Map(entries, _) => {
++            let DataType::Struct(fields) = entries.data_type() else {
++                return plan_err!("ORC requested map entries must be a struct");
++            };
++            if fields.len() != 2 {
++                return plan_err!("ORC requested map requires key and value fields");
++            }
++            for child in fields {
++                validate_target(child)?;
++            }
++        }
++        _ => {}
++    }
++    Ok(())
++}
++
++fn compile_field(source: &Field, target: &FieldRef, case_sensitive: bool) -> Result<Conversion> {
++    validate_target(source)?;
++    let conversion = match (source.data_type(), target.data_type()) {
++        (DataType::Struct(source_fields), DataType::Struct(target_fields)) => {
++            let fields = target_fields
++                .iter()
++                .map(|target| {
++                    let source_index =
++                        find_field(source_fields, target.name(), case_sensitive, false)?;
++                    let conversion = match source_index {
++                        Some(index) => {
++                            compile_field(&source_fields[index], target, case_sensitive)?
++                        }
++                        None => Conversion::Identity,
++                    };
++                    Ok(FieldPlan {
++                        source_index,
++                        target: Arc::clone(target),
++                        conversion,
++                    })
++                })
++                .collect::<Result<Vec<_>>>()?;
++            Conversion::Struct(fields)
++        }
++        (DataType::List(source), DataType::List(target)) => Conversion::List(Box::new(FieldPlan {
++            source_index: Some(0),
++            target: Arc::clone(target),
++            conversion: compile_field(source, target, case_sensitive)?,
++        })),
++        (DataType::Map(source, source_sorted), DataType::Map(target, target_sorted))
++            if source_sorted == target_sorted =>
++        {
++            let (DataType::Struct(source_fields), DataType::Struct(target_fields)) =
++                (source.data_type(), target.data_type())
++            else {
++                return plan_err!("ORC map entries must be structs");
++            };
++            if source_fields.len() != 2 || target_fields.len() != 2 {
++                return plan_err!("ORC map requires key and value fields");
++            }
++            let child = |index: usize| -> Result<Box<FieldPlan>> {
++                Ok(Box::new(FieldPlan {
++                    source_index: Some(index),
++                    target: Arc::clone(&target_fields[index]),
++                    conversion: compile_field(
++                        &source_fields[index],
++                        &target_fields[index],
++                        case_sensitive,
++                    )?,
++                }))
++            };
++            Conversion::Map(child(0)?, child(1)?)
++        }
++        (left, right) if left == right => Conversion::Identity,
++        (left, right) if signed_integer(left) && signed_integer(right) => Conversion::SafeInteger,
++        (
++            DataType::Timestamp(TimeUnit::Microsecond, Some(_)),
++            DataType::Timestamp(TimeUnit::Microsecond, Some(_)),
++        ) => Conversion::TimestampLabel,
++        _ => {
++            return not_impl_err!(
++                "ORC requested-schema conversion from {} to {} for {} is not yet qualified",
++                source.data_type(),
++                target.data_type(),
++                target.name()
++            );
++        }
++    };
++    Ok(conversion)
++}
++
++fn signed_integer(data_type: &DataType) -> bool {
++    matches!(
++        data_type,
++        DataType::Int8 | DataType::Int16 | DataType::Int32 | DataType::Int64
++    )
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-data-source/src/formats/orc/requested_schema/array.rs b/crates/sail-data-source/src/formats/orc/requested_schema/array.rs
+new file mode 100644
+index 000000000..638467a00
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/requested_schema/array.rs
+@@ -0,0 +1,98 @@
++use std::sync::Arc;
++
++use arrow::array::{Array, ArrayRef, ListArray, MapArray, StructArray, new_null_array};
++use arrow::compute::{CastOptions, cast_with_options};
++use arrow::datatypes::DataType;
++use datafusion_common::{Result, exec_datafusion_err, exec_err};
++use sail_common_datafusion::array::record_batch::cast_array_recursively;
++
++use super::{Conversion, FieldPlan};
++
++pub(super) fn adapt_field(plan: &FieldPlan, columns: &[ArrayRef], rows: usize) -> Result<ArrayRef> {
++    match plan.source_index {
++        None => Ok(new_null_array(plan.target.data_type(), rows)),
++        Some(index) => {
++            let source = columns
++                .get(index)
++                .ok_or_else(|| exec_datafusion_err!("ORC mapped column {index} is absent"))?;
++            adapt_array(plan, source)
++        }
++    }
++}
++
++fn adapt_array(plan: &FieldPlan, source: &ArrayRef) -> Result<ArrayRef> {
++    match &plan.conversion {
++        Conversion::Identity => Ok(Arc::clone(source)),
++        Conversion::SafeInteger => Ok(cast_with_options(
++            source,
++            plan.target.data_type(),
++            &CastOptions {
++                safe: true,
++                ..Default::default()
++            },
++        )?),
++        Conversion::TimestampLabel => cast_array_recursively(source, plan.target.data_type()),
++        Conversion::Struct(fields) => {
++            let source = source
++                .as_any()
++                .downcast_ref::<StructArray>()
++                .ok_or_else(|| {
++                    exec_datafusion_err!(
++                        "ORC requested struct has a different input representation"
++                    )
++                })?;
++            let columns = fields
++                .iter()
++                .map(|field| adapt_field(field, source.columns(), source.len()))
++                .collect::<Result<Vec<_>>>()?;
++            let DataType::Struct(target_fields) = plan.target.data_type() else {
++                return exec_err!("ORC requested struct plan has a different target type");
++            };
++            Ok(Arc::new(StructArray::try_new_with_length(
++                target_fields.clone(),
++                columns,
++                source.nulls().cloned(),
++                source.len(),
++            )?))
++        }
++        Conversion::List(element) => {
++            let source = source.as_any().downcast_ref::<ListArray>().ok_or_else(|| {
++                exec_datafusion_err!("ORC requested list has a different input representation")
++            })?;
++            Ok(Arc::new(ListArray::try_new(
++                Arc::clone(&element.target),
++                source.offsets().clone(),
++                adapt_array(element, source.values())?,
++                source.nulls().cloned(),
++            )?))
++        }
++        Conversion::Map(key, value) => {
++            let source = source.as_any().downcast_ref::<MapArray>().ok_or_else(|| {
++                exec_datafusion_err!("ORC requested map has a different input representation")
++            })?;
++            let DataType::Map(entries, sorted) = plan.target.data_type() else {
++                return exec_err!("ORC requested map plan has a different target type");
++            };
++            let DataType::Struct(fields) = entries.data_type() else {
++                return exec_err!("ORC requested map entries are not a struct");
++            };
++            let arrays = vec![
++                adapt_array(key, source.keys())?,
++                adapt_array(value, source.values())?,
++            ];
++            let entries_array = StructArray::try_new_with_length(
++                fields.clone(),
++                arrays,
++                None,
++                source.entries().len(),
++            )?;
++            Ok(Arc::new(MapArray::try_new(
++                Arc::clone(entries),
++                source.offsets().clone(),
++                entries_array,
++                source.nulls().cloned(),
++                *sorted,
++            )?))
++        }
++    }
++}
+diff --git a/crates/sail-data-source/src/formats/orc/requested_schema/container_tests.rs b/crates/sail-data-source/src/formats/orc/requested_schema/container_tests.rs
+new file mode 100644
+index 000000000..97116a4c7
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/requested_schema/container_tests.rs
+@@ -0,0 +1,219 @@
++#![expect(clippy::unwrap_used)]
++
++use arrow::array::{
++    Array, DurationMicrosecondArray, IntervalYearMonthArray, ListArray, MapArray,
++    Time64NanosecondArray,
++};
++use arrow::buffer::{NullBuffer, OffsetBuffer, ScalarBuffer};
++
++use super::*;
++
++#[test]
++fn nested_struct_projection_preserves_slices_parent_nulls_and_disjoint_fields() {
++    let children: Fields =
++        vec![field("Bar", DataType::Int32), field("bar", DataType::Int32)].into();
++    let data = StructArray::try_new(
++        children.clone(),
++        vec![
++            Arc::new(Int32Array::from(vec![11, 12, 13])),
++            Arc::new(Int32Array::from(vec![21, 22, 23])),
++        ],
++        Some(NullBuffer::from(vec![true, false, true])),
++    )
++    .unwrap()
++    .slice(1, 2);
++    let file = schema(vec![field("st", DataType::Struct(children))]);
++    for targets in [
++        vec![
++            field("BAR", DataType::Int32),
++            field("missing", DataType::Boolean),
++        ],
++        vec![field("missing", DataType::Boolean)],
++        vec![],
++    ] {
++        let requested = schema(vec![field("st", DataType::Struct(targets.clone().into()))]);
++        let adapter =
++            OrcRequestedSchemaAdapter::try_new(file.clone(), requested, &[0], false).unwrap();
++        let output = adapter
++            .adapt_batch(RecordBatch::try_new(file.clone(), vec![Arc::new(data.clone())]).unwrap())
++            .unwrap();
++        let data = output
++            .column(0)
++            .as_any()
++            .downcast_ref::<StructArray>()
++            .unwrap();
++        assert_eq!(data.len(), 2);
++        assert!(data.is_null(0) && data.is_valid(1));
++        if targets.len() == 2 {
++            assert_eq!(
++                data.column(0)
++                    .as_any()
++                    .downcast_ref::<Int32Array>()
++                    .unwrap()
++                    .value(1),
++                23
++            );
++        }
++        if !targets.is_empty() {
++            assert_eq!(data.column(targets.len() - 1).null_count(), 2);
++        }
++    }
++}
++
++#[test]
++fn time_and_interval_requested_metadata_does_not_truncate_storage() {
++    use spec::IntervalFieldType::{Day, Month, Second, Year};
++    let file = OrcRequestedSchemaAdapter::nullable_schema(&schema(vec![
++        time("t", 0),
++        interval("ym", spec::IntervalUnit::YearMonth, Year, Month),
++        interval("dt", spec::IntervalUnit::DayTime, Day, Second),
++    ]));
++    let requested = schema(vec![
++        time("t", 3),
++        interval("ym", spec::IntervalUnit::YearMonth, Year, Year),
++        interval("dt", spec::IntervalUnit::DayTime, Day, Day),
++    ]);
++    let adapter =
++        OrcRequestedSchemaAdapter::try_new(file.clone(), requested, &[0, 1, 2], true).unwrap();
++    let columns: Vec<ArrayRef> = vec![
++        Arc::new(Time64NanosecondArray::from(vec![
++            Some(45_296_123_456_000),
++            Some(86_399_999_999_000),
++            None,
++        ])),
++        Arc::new(IntervalYearMonthArray::from(vec![
++            Some(14),
++            Some(-14),
++            None,
++        ])),
++        Arc::new(DurationMicrosecondArray::from(vec![
++            Some(183_845_123_456),
++            Some(-183_845_123_456),
++            None,
++        ])),
++    ];
++    let output = adapter
++        .adapt_batch(RecordBatch::try_new(file, columns.clone()).unwrap())
++        .unwrap();
++    for (source, target) in columns.iter().zip(output.columns()) {
++        assert!(Arc::ptr_eq(source, target));
++    }
++    assert_eq!(
++        output
++            .schema()
++            .field(0)
++            .metadata()
++            .get(spec::SAIL_SPARK_TIME_METADATA_KEY),
++        time("t", 3)
++            .metadata()
++            .get(spec::SAIL_SPARK_TIME_METADATA_KEY)
++    );
++    assert_eq!(
++        output
++            .schema()
++            .field(1)
++            .metadata()
++            .get(spec::SAIL_SPARK_INTERVAL_METADATA_KEY),
++        interval("ym", spec::IntervalUnit::YearMonth, Year, Year)
++            .metadata()
++            .get(spec::SAIL_SPARK_INTERVAL_METADATA_KEY)
++    );
++}
++
++#[test]
++fn list_and_map_slices_keep_offsets_nulls_and_semantic_metadata() {
++    let element = time("item", 0);
++    let list = ListArray::try_new(
++        element.clone(),
++        OffsetBuffer::new(ScalarBuffer::from(vec![0, 1, 1, 3])),
++        Arc::new(Time64NanosecondArray::from(vec![
++            1,
++            45_296_123_456_000,
++            86_399_999_999_000,
++        ])),
++        Some(NullBuffer::from(vec![true, false, true])),
++    )
++    .unwrap()
++    .slice(1, 2);
++    let source_entries: Fields = vec![
++        Arc::new(Field::new("native_keys", DataType::Utf8, false)),
++        time("native_values", 0),
++    ]
++    .into();
++    let entries = StructArray::try_new(
++        source_entries.clone(),
++        vec![
++            Arc::new(StringArray::from(vec!["a", "b", "c"])),
++            Arc::new(Time64NanosecondArray::from(vec![
++                1,
++                45_296_123_456_000,
++                86_399_999_999_000,
++            ])),
++        ],
++        None,
++    )
++    .unwrap();
++    let source_entry = Arc::new(Field::new(
++        "native_entries",
++        DataType::Struct(source_entries),
++        false,
++    ));
++    let map = MapArray::try_new(
++        source_entry.clone(),
++        OffsetBuffer::new(ScalarBuffer::from(vec![0, 1, 1, 3])),
++        entries,
++        Some(NullBuffer::from(vec![true, false, true])),
++        false,
++    )
++    .unwrap()
++    .slice(1, 2);
++    let file = schema(vec![
++        field("xs", DataType::List(element)),
++        field("m", DataType::Map(source_entry, false)),
++    ]);
++    let target_entries = Arc::new(Field::new(
++        "entries",
++        DataType::Struct(vec![field("key", DataType::Utf8), time("value", 3)].into()),
++        true,
++    ));
++    let requested = schema(vec![
++        field("xs", DataType::List(time("element", 6))),
++        field("m", DataType::Map(target_entries, false)),
++    ]);
++    let adapter =
++        OrcRequestedSchemaAdapter::try_new(file.clone(), requested, &[0, 1], true).unwrap();
++    let output = adapter
++        .adapt_batch(
++            RecordBatch::try_new(file, vec![Arc::new(list.clone()), Arc::new(map.clone())])
++                .unwrap(),
++        )
++        .unwrap();
++    let got = output
++        .column(0)
++        .as_any()
++        .downcast_ref::<ListArray>()
++        .unwrap();
++    assert_eq!(got.offsets(), list.offsets());
++    assert_eq!(got.nulls(), list.nulls());
++    assert_eq!(
++        values::<Time64NanosecondType>(got.values()),
++        [Some(1), Some(45_296_123_456_000), Some(86_399_999_999_000)]
++    );
++    let got = output
++        .column(1)
++        .as_any()
++        .downcast_ref::<MapArray>()
++        .unwrap();
++    assert_eq!(got.offsets(), map.offsets());
++    assert_eq!(got.nulls(), map.nulls());
++    assert_eq!(got.entries().fields()[0].name(), "key");
++    assert!(!got.entries().fields()[0].is_nullable());
++    assert_eq!(
++        values::<Time64NanosecondType>(got.values()),
++        [Some(1), Some(45_296_123_456_000), Some(86_399_999_999_000)]
++    );
++    assert_eq!(
++        got.entries().fields()[1].metadata(),
++        time("value", 3).metadata()
++    );
++}
+diff --git a/crates/sail-data-source/src/formats/orc/requested_schema/tests.rs b/crates/sail-data-source/src/formats/orc/requested_schema/tests.rs
+new file mode 100644
+index 000000000..79a9dd4c3
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/requested_schema/tests.rs
+@@ -0,0 +1,375 @@
++#![expect(clippy::unwrap_used)]
++
++use std::collections::HashMap;
++
++use arrow::array::{ArrayRef, Int32Array, Int64Array, PrimitiveArray, StringArray, StructArray};
++use arrow::datatypes::{ArrowPrimitiveType, Int8Type, Int32Type, Int64Type, Time64NanosecondType};
++use bytes::Bytes;
++use orc_rust::reader::metadata::{MetadataReadOptions, read_metadata_with_options};
++
++use super::*;
++use crate::formats::orc::{OrcJavaTimeZoneConfig, OrcSchemaBridge, infer_orc_schema};
++
++fn field(name: &str, data_type: DataType) -> FieldRef {
++    Arc::new(Field::new(name, data_type, true))
++}
++
++fn schema(fields: Vec<FieldRef>) -> SchemaRef {
++    Arc::new(Schema::new(fields))
++}
++
++fn values<T: ArrowPrimitiveType>(array: &ArrayRef) -> Vec<Option<T::Native>> {
++    array
++        .as_any()
++        .downcast_ref::<PrimitiveArray<T>>()
++        .unwrap()
++        .iter()
++        .collect()
++}
++
++fn time(name: &str, precision: i32) -> FieldRef {
++    Arc::new(
++        Field::new(name, DataType::Time64(TimeUnit::Nanosecond), false).with_metadata(
++            HashMap::from([(
++                spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++                spec::SparkTimeMetadata::try_new(precision)
++                    .unwrap()
++                    .to_json()
++                    .unwrap(),
++            )]),
++        ),
++    )
++}
++
++fn interval(
++    name: &str,
++    unit: spec::IntervalUnit,
++    start: spec::IntervalFieldType,
++    end: spec::IntervalFieldType,
++) -> FieldRef {
++    let data_type = match unit {
++        spec::IntervalUnit::YearMonth => DataType::Interval(IntervalUnit::YearMonth),
++        _ => DataType::Duration(TimeUnit::Microsecond),
++    };
++    Arc::new(
++        Field::new(name, data_type, true).with_metadata(HashMap::from([(
++            spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
++            spec::SparkIntervalMetadata::try_new(unit, Some(start), Some(end))
++                .unwrap()
++                .unwrap()
++                .to_json()
++                .unwrap(),
++        )])),
++    )
++}
++
++#[test]
++fn full_timestamp_check_precedes_projection_and_name_matching() {
++    let ltz = DataType::Timestamp(TimeUnit::Microsecond, Some("UTC".into()));
++    let ntz = DataType::Timestamp(TimeUnit::Microsecond, None);
++    let file = schema(vec![field("ltz", ltz.clone()), field("ntz", ntz.clone())]);
++    let selected =
++        OrcRequestedSchemaAdapter::try_new(file.clone(), file.clone(), &[1], true).unwrap();
++    assert_eq!(selected.file_projection(), &[1]);
++    for required in [vec![], vec![0]] {
++        let only_second = schema(vec![field("ntz", ntz.clone())]);
++        let error = OrcRequestedSchemaAdapter::try_new(file.clone(), only_second, &required, true)
++            .unwrap_err();
++        assert!(error.to_string().contains("TIMESTAMP to TIMESTAMP_NTZ"));
++    }
++    let reordered = schema(vec![field("ntz", ntz.clone()), field("ltz", ltz.clone())]);
++    assert!(OrcRequestedSchemaAdapter::try_new(file.clone(), reordered, &[1], true).is_err());
++    let file_struct = schema(vec![field("st", DataType::Struct(file.fields().clone()))]);
++    let bad_struct = schema(vec![field(
++        "st",
++        DataType::Struct(vec![field("ltz", ntz.clone()), field("ntz", ltz.clone())].into()),
++    )]);
++    assert!(OrcRequestedSchemaAdapter::try_new(file_struct, bad_struct, &[], true).is_err());
++    // Spark's full-schema timestamp check does not recurse through arrays. A
++    // selected cross-kind array conversion remains explicitly unqualified.
++    let file_list = schema(vec![field("xs", DataType::List(field("item", ltz)))]);
++    let requested_list = schema(vec![field("xs", DataType::List(field("item", ntz)))]);
++    assert!(
++        OrcRequestedSchemaAdapter::try_new(file_list.clone(), requested_list.clone(), &[], true)
++            .is_ok()
++    );
++    let error =
++        OrcRequestedSchemaAdapter::try_new(file_list, requested_list, &[0], true).unwrap_err();
++    assert!(error.to_string().contains("not yet qualified"));
++}
++
++#[test]
++fn projection_preserves_requested_names_duplicates_missing_values_and_safe_narrowing() {
++    let file = schema(vec![
++        field("Bar", DataType::Int64),
++        field("Foo", DataType::Int32),
++    ]);
++    let requested = schema(vec![
++        Arc::new(
++            Field::new("foo", DataType::Int64, false)
++                .with_metadata(HashMap::from([("user".into(), "retained".into())])),
++        ),
++        field("missing", DataType::Utf8),
++        field("bar", DataType::Int8),
++    ]);
++    let adapter =
++        OrcRequestedSchemaAdapter::try_new(file.clone(), requested, &[2, 0, 2, 1], false).unwrap();
++    assert_eq!(adapter.file_projection(), &[0, 1]);
++    let input = RecordBatch::try_new(
++        file,
++        vec![
++            Arc::new(Int64Array::from(vec![Some(128), Some(-128), None])),
++            Arc::new(Int32Array::from(vec![7, 8, 9])),
++        ],
++    )
++    .unwrap();
++    let output = adapter.adapt_batch(input).unwrap();
++    assert_eq!(
++        output
++            .schema()
++            .fields()
++            .iter()
++            .map(|f| f.name().as_str())
++            .collect::<Vec<_>>(),
++        ["bar", "foo", "bar", "missing"]
++    );
++    assert!(output.schema().fields().iter().all(|f| f.is_nullable()));
++    assert_eq!(
++        output.schema().field(1).metadata().get("user").unwrap(),
++        "retained"
++    );
++    assert_eq!(
++        values::<Int8Type>(output.column(0)),
++        [None, Some(-128), None]
++    );
++    assert_eq!(
++        values::<Int64Type>(output.column(1)),
++        [Some(7), Some(8), Some(9)]
++    );
++    assert_eq!(
++        values::<Int8Type>(output.column(2)),
++        [None, Some(-128), None]
++    );
++    assert_eq!(output.column(3).null_count(), 3);
++}
++
++#[test]
++fn missing_columns_and_zero_projection_retain_row_counts() {
++    let file = schema(vec![field("present", DataType::Int32)]);
++    let requested = schema(vec![Arc::new(Field::new("absent", DataType::Int32, false))]);
++    for required in [vec![], vec![0]] {
++        let adapter =
++            OrcRequestedSchemaAdapter::try_new(file.clone(), requested.clone(), &required, true)
++                .unwrap();
++        assert!(adapter.file_projection().is_empty());
++        for rows in [0, 3] {
++            let batch = RecordBatch::try_new_with_options(
++                adapter.input_schema().clone(),
++                vec![],
++                &RecordBatchOptions::new().with_row_count(Some(rows)),
++            )
++            .unwrap();
++            let output = adapter.adapt_batch(batch).unwrap();
++            assert_eq!(
++                (output.num_columns(), output.num_rows()),
++                (required.len(), rows)
++            );
++            if !required.is_empty() {
++                assert_eq!(output.column(0).null_count(), rows);
++            }
++        }
++    }
++}
++
++#[test]
++fn top_level_ambiguity_is_required_only_and_nested_matching_is_last_wins() {
++    let file = schema(vec![
++        field("Foo", DataType::Int32),
++        field("foo", DataType::Int32),
++        field("ok", DataType::Int32),
++    ]);
++    let requested = schema(vec![
++        field("foo", DataType::Int32),
++        field("ok", DataType::Int32),
++    ]);
++    assert!(
++        OrcRequestedSchemaAdapter::try_new(file.clone(), requested.clone(), &[1], false).is_ok()
++    );
++    assert!(
++        OrcRequestedSchemaAdapter::try_new(file, requested, &[0], false)
++            .unwrap_err()
++            .to_string()
++            .contains("duplicate field")
++    );
++    for (names, input, name, expected) in [
++        (["Bar", "bar"], [11, 22], "BAR", 22),
++        (["Bar", "bar"], [11, 22], "Bar", 22),
++        (["bar", "Bar"], [22, 11], "bar", 11),
++        (["bar", "Bar"], [22, 11], "BAR", 11),
++    ] {
++        let fields: Fields = names.map(|n| field(n, DataType::Int32)).into();
++        let data = StructArray::try_new(
++            fields.clone(),
++            input
++                .map(|v| Arc::new(Int32Array::from(vec![v])) as ArrayRef)
++                .into(),
++            None,
++        )
++        .unwrap();
++        let file = schema(vec![field("st", DataType::Struct(fields))]);
++        let requested = schema(vec![field(
++            "st",
++            DataType::Struct(vec![field(name, DataType::Int32)].into()),
++        )]);
++        let adapter =
++            OrcRequestedSchemaAdapter::try_new(file.clone(), requested, &[0], false).unwrap();
++        let output = adapter
++            .adapt_batch(RecordBatch::try_new(file, vec![Arc::new(data)]).unwrap())
++            .unwrap();
++        let data = output
++            .column(0)
++            .as_any()
++            .downcast_ref::<StructArray>()
++            .unwrap();
++        assert_eq!(values::<Int32Type>(data.column(0)), [Some(expected)]);
++        assert_eq!(data.fields()[0].name(), name);
++    }
++}
++
++#[test]
++fn hive_fallback_uses_literal_prefix_full_schema_width_and_requested_ordinals() {
++    let file = schema(vec![
++        field("_column", DataType::Int32),
++        field("_col1", DataType::Utf8),
++    ]);
++    let requested = schema(vec![
++        field("renamed", DataType::Int64),
++        field("second", DataType::Utf8),
++        field("missing", DataType::Int32),
++    ]);
++    let adapter =
++        OrcRequestedSchemaAdapter::try_new(file.clone(), requested, &[2, 1], true).unwrap();
++    assert_eq!(adapter.file_projection(), &[1]);
++    let output = adapter
++        .adapt_batch(
++            RecordBatch::try_new(
++                adapter.input_schema().clone(),
++                vec![Arc::new(StringArray::from(vec![Some("eleven"), None]))],
++            )
++            .unwrap(),
++        )
++        .unwrap();
++    assert_eq!(output.column(0).null_count(), 2);
++    assert_eq!(
++        output
++            .column(1)
++            .as_any()
++            .downcast_ref::<StringArray>()
++            .unwrap()
++            .iter()
++            .collect::<Vec<_>>(),
++        [Some("eleven"), None]
++    );
++    let error = OrcRequestedSchemaAdapter::try_new(
++        file,
++        schema(vec![field("second", DataType::Utf8)]),
++        &[],
++        true,
++    )
++    .unwrap_err();
++    assert!(error.to_string().contains("requires the full data schema"));
++}
++
++#[test]
++fn invalid_projections_input_and_unqualified_conversions_are_explicit() {
++    let file = schema(vec![field("n", DataType::Int32)]);
++    assert!(OrcRequestedSchemaAdapter::try_new(file.clone(), file.clone(), &[1], true).is_err());
++    let adapter =
++        OrcRequestedSchemaAdapter::try_new(file.clone(), file.clone(), &[0], true).unwrap();
++    let wrong = RecordBatch::try_new(
++        schema(vec![field("other", DataType::Int32)]),
++        vec![Arc::new(Int32Array::from(vec![1]))],
++    )
++    .unwrap();
++    assert!(adapter.adapt_batch(wrong).is_err());
++    for (from, to) in [
++        (DataType::Utf8, DataType::Int32),
++        (DataType::Decimal128(10, 2), DataType::Decimal128(8, 2)),
++    ] {
++        let error = OrcRequestedSchemaAdapter::try_new(
++            schema(vec![field("x", from)]),
++            schema(vec![field("x", to)]),
++            &[0],
++            true,
++        )
++        .unwrap_err();
++        assert!(error.to_string().contains("not yet qualified"));
++    }
++    let unicode = schema(vec![field("é", DataType::Int32)]);
++    assert!(
++        OrcRequestedSchemaAdapter::try_new(unicode.clone(), unicode.clone(), &[0], true).is_ok()
++    );
++    assert!(OrcRequestedSchemaAdapter::try_new(unicode.clone(), unicode, &[0], false).is_err());
++    let wrong_time = schema(vec![Arc::new(
++        time("n", 3)
++            .as_ref()
++            .clone()
++            .with_data_type(DataType::Int32),
++    )]);
++    assert!(OrcRequestedSchemaAdapter::try_new(file, wrong_time, &[0], true).is_err());
++    let bad_map = schema(vec![field(
++        "missing",
++        DataType::Map(field("entries", DataType::Int32), false),
++    )]);
++    assert!(OrcRequestedSchemaAdapter::try_new(schema(vec![]), bad_map, &[0], true).is_err());
++}
++
++#[test]
++fn real_spark_fractional_time_file_is_reinterpreted_after_native_bridge() {
++    let mut bytes = Bytes::from_static(include_bytes!(
++        "../../../../tests/fixtures/orc/time_precisions.orc"
++    ));
++    let metadata = Arc::new(
++        read_metadata_with_options(
++            &mut bytes,
++            MetadataReadOptions {
++                max_encoded_metadata_bytes: Some(64 * 1024),
++                max_decoded_metadata_bytes: Some(64 * 1024),
++                max_schema_depth: Some(16),
++            },
++        )
++        .unwrap(),
++    );
++    let file = infer_orc_schema(&metadata, "UTC").unwrap();
++    let mut fields = file.fields().to_vec();
++    fields[1] = time("t0", 3);
++    let adapter = OrcRequestedSchemaAdapter::try_new(file, schema(fields), &[1], true).unwrap();
++    let (builder, bridge) = OrcSchemaBridge::try_new_reader(
++        bytes,
++        metadata,
++        "UTC",
++        &OrcJavaTimeZoneConfig::for_reader_timezone("UTC".into()).unwrap(),
++        Some(adapter.file_projection()),
++    )
++    .unwrap();
++    let mut actual = Vec::new();
++    for batch in builder.with_batch_size(1).build() {
++        let output = adapter
++            .adapt_batch(bridge.adapt_batch(batch.unwrap()).unwrap())
++            .unwrap();
++        assert_eq!(output.schema().fields(), adapter.schema().fields());
++        actual.extend(values::<Time64NanosecondType>(output.column(0)));
++    }
++    assert_eq!(
++        actual,
++        [
++            Some(0),
++            Some(45_296_123_456_000),
++            Some(86_399_999_999_000),
++            None
++        ]
++    );
++}
++
++#[path = "container_tests.rs"]
++mod container_tests;

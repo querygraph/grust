@@ -11243,3 +11243,12 @@ and three installed ORC class disassemblies retained. Case-sensitive exact root
 duplicates select last; tested map-key narrowing wraps vectorized and errors
 non-vectorized. Owned JVM 5469 exited 0/absent. Mapper corrections remain separate;
 no Sail runtime pass. Read-only offline/document gates precede branch advance.
+
+## 2026-10-30T00:18:01.214574+00:00 — DONE ORC mapper and ordinary file-source gates
+
+Sail c3f9b77466 and f49b3f865c passed exact detached
+formatting, strict Clippy and 169/184 data-source tests. Preserved the earlier
+passing mapper candidate superseded by fresh Spark evidence. Ordinary FileStream
+integration is tested; public registry/codec/writer remain separate. Temporary
+map-key/Unicode/conversion/virtual-column limits stay explicit, with full SDP
+scope unchanged. Documentation gates precede advance.
