@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T10:26:37.320382+00:00. Live coordination read through **CF-0058**.
+Snapshot written 2026-10-30T10:27:27.719953+00:00. Live coordination read through **CF-0059**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -57,10 +57,10 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `02d39b5fead46b694725c97de1b2341793100ca2` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `bdcedc333a3c52672b170b3b0819715969487ff6` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e54035d3d7b1540c11d8ff31924ab7eb4db8a006` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `02d39b5fe` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `71e4a94d910c7afa978eaf1cc98beccb5df92051` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `33a883091295c46a86617dd919095e3ca03c6deb` (move-only commit observed; not yet offered/gated in the live channel) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `a0e5644b8e8e3ab90feeaafe7ac39c2993186b7b` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
@@ -77,10 +77,11 @@ use `git -C <correct-repository> show <commit>:<path>` for immutable offers.
 Sail and Grust are different object databases; do not run their `git show` in
 the other repository. Resolve short hashes to full hashes before gating.
 
-Sail `origin/main` was inspected at `d803e13f01c626a0bb6869871a92e7d14e148e2f`.
-The latest two origin commits were fetched, not silently merged into the SDP
-branch. Any new merge/rebase needs its own exact combined gate. Do not infer a
-main update from a fetch or from a historical document header.
+Local Sail `main` was explicitly fast-forwarded via `git fetch origin main:main`
+from0ba425c03 to `d803e13f01c626a0bb6869871a92e7d14e148e2f`, then equality with
+origin/main was verified. No worktree had main checked out. The SDP branch has
+not incorporated that upstream delta; any new merge/rebase needs its own exact
+combined gate. Main synchronization is not evidence that the SDP tree was rebased.
 
 ## User constraints and ownership
 
