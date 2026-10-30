@@ -903,7 +903,7 @@ Notes:
 
 - `is_source_format` must equal the resolver's own path-read predicate
   (`read.rs:48–80`, the registry format check), or the trace and the
-  resolver will disagree on whether `parquet.\`/p\`` is a graph read; the
+  resolver will disagree on whether ``parquet.` followed by a path` is a graph read; the
   caller supplies it, so the equality is a wiring obligation.
 - A subquery inside a `Read`'s sample or temporal expression is visited after
   the read is recorded; in Spark `Sample` is a parent operator visited before
