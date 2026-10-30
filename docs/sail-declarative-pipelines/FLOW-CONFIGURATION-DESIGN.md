@@ -1,9 +1,14 @@
 # Flow configuration phases for Spark 4.2.1 parity
 
-Status: thirteen-case [Spark/Sail baseline](evidence/flow-config-fusion-reference/README.md)
+Status: [native phase design](NATIVE-INPUT-BINDING-DESIGN.md) selects an ordered graph-view
+trace through the existing resolver as the next prototype; no opaque provider slot
+is selected. The [external metadata oracle](evidence/flow-config-external-read-reference/README.md)
+separates private semantic settings from run-session Parquet metadata settings.
+The thirteen-case [Spark/Sail baseline](evidence/flow-config-fusion-reference/README.md)
 and twelve additional [CTE/default reference cases](evidence/flow-config-cte-reference/README.md)
 are established. Native input binding still requires a prototype before activation.
-Sail source is163b2fb52; reference source is617618396. No production config-fusion
+Baseline Sail source is163b2fb52; reference source is617618396. Preparatory
+query-navigation work is now0d0064b6e; it does not change those parity results. No production config-fusion
 change is selected by this document. The [batch ownership design](BATCH-PROVIDER-MIGRATION-DESIGN.md)
 continues to govern admission, provider lifetime and per-command plan maps.
 
@@ -90,8 +95,8 @@ binder's helper refusals are admission policy, not a batch SQL limitation.
    added graph-default/CTE/filter/union cases now constrain the primitive; complete
    recursive/legacy CTE and dynamic-name coverage before claiming general parity. Do not
    replace the ten current mismatches with assertions of Sail's existing behavior.
-2. Prototype a native, request-local binding stage that resolves input relations
-   in Spark-compatible order before ordinary semantic expression resolution. Reuse
+2. Prototype an ordered graph-view configuration trace before ordinary native
+   semantic expression resolution, using existing GraphScope and PlanResolver. Reuse
    Sail's parsing, CTE namespace and catalog/view resolution rules. Preserve plan
    IDs, alias identities and repeated-reference behavior. No serialized-tree walk,
    duplicate SQL parser, shared-session mutation or provider export is selected.
@@ -113,8 +118,9 @@ binder's helper refusals are admission policy, not a batch SQL limitation.
 
 Each numbered change is a review boundary, not permission for a large combined
 refactor. The native binding prototype may need smaller preparatory commits.
-The next design decision is the minimum native seam that can preserve binding
-order across SQL/Connect plans and CTEs while leaving normal callers unchanged.
+The next native seam is ordered graph-view configuration tracing plus an explicitly
+qualified semantic/provider-setting split. Additional prepared-provider machinery
+remains deferred; normal callers keep their existing defaults.
 
 ## Preparatory implementation
 

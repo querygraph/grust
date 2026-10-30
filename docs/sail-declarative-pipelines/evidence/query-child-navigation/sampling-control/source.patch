@@ -1,0 +1,54 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+index 61801c1fc..2e5988e9f 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+@@ -451,18 +451,6 @@ impl Walker<'_> {
+         expr.visit_subqueries(&mut |query| self.walk(query, cte_scope))
+     }
+ 
+-    fn sample(
+-        &mut self,
+-        sample: &spec::TableSample,
+-        cte_scope: &HashSet<String>,
+-    ) -> Result<(), BindingError> {
+-        match &sample.method {
+-            spec::TableSampleMethod::Percent { value }
+-            | spec::TableSampleMethod::Rows { value } => self.expr(value, cte_scope),
+-            spec::TableSampleMethod::Bucket { .. } => Ok(()),
+-        }
+-    }
+-
+     fn walk(
+         &mut self,
+         plan: &spec::QueryPlan,
+@@ -473,15 +461,7 @@ impl Walker<'_> {
+             N::Read {
+                 read_type,
+                 is_streaming,
+-            } => {
+-                self.read(read_type, *is_streaming, cte_scope)?;
+-                if let spec::ReadType::NamedTable(table) = read_type
+-                    && let Some(sample) = &table.sample
+-                {
+-                    self.sample(sample, cte_scope)?;
+-                }
+-                Ok(())
+-            }
++            } => self.read(read_type, *is_streaming, cte_scope),
+             // Leaves without query inputs; literal rows and an inline table
+             // function still carry expressions.
+             N::LocalRelation { .. }
+@@ -526,11 +506,8 @@ impl Walker<'_> {
+             | N::ToSchema { input, .. }
+             | N::DropNa { input, .. }
+             | N::Replace { input, .. }
+-            | N::TableAlias { input, .. } => self.walk(input, cte_scope),
+-            N::TableSample { input, sample } => {
+-                self.sample(sample, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
++            | N::TableAlias { input, .. }
++            | N::TableSample { input, .. } => self.walk(input, cte_scope),
+             // One required input with expressions.
+             N::Filter { input, condition } => {
+                 self.expr(condition, cte_scope)?;

@@ -1,0 +1,916 @@
+diff --git a/crates/sail-common/src/spec/mod.rs b/crates/sail-common/src/spec/mod.rs
+index 798f27acd..a67a88ce7 100644
+--- a/crates/sail-common/src/spec/mod.rs
++++ b/crates/sail-common/src/spec/mod.rs
+@@ -3,6 +3,7 @@ mod data_type;
+ mod expression;
+ mod literal;
+ mod plan;
++mod query_children;
+ mod snapshot_reference;
+ mod subqueries;
+ mod time;
+@@ -12,5 +13,6 @@ pub use data_type::*;
+ pub use expression::*;
+ pub use literal::*;
+ pub use plan::*;
++pub use query_children::QueryChild;
+ pub use snapshot_reference::*;
+ pub use time::*;
+diff --git a/crates/sail-common/src/spec/query_child_tests.rs b/crates/sail-common/src/spec/query_child_tests.rs
+new file mode 100644
+index 000000000..16803c6bd
+--- /dev/null
++++ b/crates/sail-common/src/spec/query_child_tests.rs
+@@ -0,0 +1,193 @@
++use std::convert::Infallible;
++use std::sync::Arc;
++
++use super::*;
++use crate::spec::{Join, JoinCriteria, JoinType, ObjectName, QueryNode, ReadNamedTable};
++
++fn read(name: &str) -> QueryPlan {
++    QueryPlan::new(QueryNode::Read {
++        read_type: ReadType::NamedTable(Box::new(ReadNamedTable {
++            name: ObjectName::bare(name),
++            temporal: None,
++            sample: None,
++            options: vec![],
++        })),
++        is_streaming: false,
++    })
++}
++fn scalar(name: &str) -> Expr {
++    Expr::ScalarSubquery {
++        subquery: Box::new(read(name)),
++    }
++}
++fn names(plan: &QueryPlan, seen: &mut Vec<String>) -> Result<(), Infallible> {
++    if let QueryNode::Read {
++        read_type: ReadType::NamedTable(table),
++        ..
++    } = &plan.node
++    {
++        seen.push(table.name.parts()[0].as_ref().to_string());
++    }
++    plan.visit_children(&mut |child| match child {
++        QueryChild::Expression(expr) => expr.visit_subqueries(&mut |query| names(query, seen)),
++        QueryChild::Window(window) => window.visit_subqueries(&mut |query| names(query, seen)),
++        QueryChild::Query(query) => names(query, seen),
++    })
++}
++
++#[test]
++fn expression_subqueries_precede_inputs_and_join_condition_precedes_both_sides()
++-> Result<(), Infallible> {
++    let plan = QueryPlan::new(QueryNode::Project {
++        expressions: vec![scalar("projection"), scalar("projection")],
++        input: Some(Box::new(QueryPlan::new(QueryNode::Join(Join {
++            left: Box::new(read("z_left")),
++            right: Box::new(read("a_right")),
++            join_type: JoinType::Inner,
++            join_data_type: None,
++            join_criteria: Some(JoinCriteria::On(scalar("condition"))),
++        })))),
++    });
++    let mut seen = vec![];
++    names(&plan, &mut seen)?;
++    assert_eq!(
++        seen,
++        ["projection", "projection", "condition", "z_left", "a_right"]
++    );
++    Ok(())
++}
++
++#[test]
++fn cte_definitions_and_reference_lists_are_unfiltered_structural_children() -> Result<(), Infallible>
++{
++    let ctes = QueryPlan::new(QueryNode::WithCtes {
++        recursive: false,
++        ctes: vec![
++            ("same".into(), read("unused")),
++            ("same".into(), read("last")),
++        ],
++        input: Box::new(read("body")),
++    });
++    let plan = QueryPlan::new(QueryNode::WithRelations {
++        root: Box::new(ctes),
++        references: vec![read("ref"), read("ref")],
++    });
++    let mut seen = vec![];
++    names(&plan, &mut seen)?;
++    // No CTE shadowing/name lookup or reference deduplication is imposed here.
++    assert_eq!(seen, ["ref", "ref", "unused", "last", "body"]);
++    Ok(())
++}
++
++#[test]
++fn callback_borrows_original_children_and_errors_before_later_inputs() {
++    let plan = QueryPlan::new(QueryNode::Filter {
++        condition: scalar("condition"),
++        input: Box::new(read("input")),
++    });
++    let error = Arc::new("original error");
++    let mut seen = vec![];
++    let result = plan.visit_children(&mut |child| match child {
++        QueryChild::Expression(expr) => {
++            seen.push(expr);
++            Err(Arc::clone(&error))
++        }
++        QueryChild::Query(_) | QueryChild::Window(_) => panic!("visited after callback error"),
++    });
++    assert!(result.is_err_and(|e| Arc::ptr_eq(&e, &error)));
++    let QueryNode::Filter { condition, .. } = &plan.node else {
++        unreachable!()
++    };
++    assert_eq!(seen.len(), 1);
++    assert!(std::ptr::eq(seen[0], condition));
++}
++
++#[test]
++fn sampling_temporal_dynamic_and_function_fields_expose_their_expressions() -> Result<(), Infallible>
++{
++    let sample = || TableSample {
++        method: TableSampleMethod::Percent {
++            value: scalar("sample"),
++        },
++        seed: None,
++    };
++    let plans = [
++        QueryPlan::new(QueryNode::Read {
++            read_type: ReadType::NamedTable(Box::new(ReadNamedTable {
++                name: ObjectName::bare("outer"),
++                temporal: Some(TableTemporal::Version {
++                    value: scalar("version"),
++                }),
++                sample: Some(sample()),
++                options: vec![],
++            })),
++            is_streaming: false,
++        }),
++        QueryPlan::new(QueryNode::Read {
++            read_type: ReadType::DynamicTable(Box::new(crate::spec::ReadDynamicTable {
++                name: scalar("dynamic"),
++                sample: Some(sample()),
++                options: vec![],
++            })),
++            is_streaming: false,
++        }),
++        QueryPlan::new(QueryNode::Read {
++            read_type: ReadType::Udtf(Box::new(crate::spec::ReadUdtf {
++                name: ObjectName::bare("f"),
++                arguments: vec![scalar("positional")],
++                named_arguments: vec![("key".into(), scalar("named"))],
++                options: vec![],
++            })),
++            is_streaming: false,
++        }),
++        QueryPlan::new(QueryNode::Read {
++            read_type: ReadType::DataSource(Box::new(crate::spec::ReadDataSource {
++                format: None,
++                schema: None,
++                options: vec![],
++                paths: vec![],
++                predicates: vec![scalar("predicate")],
++            })),
++            is_streaming: false,
++        }),
++    ];
++    let mut seen = vec![];
++    for plan in plans {
++        names(&plan, &mut seen)?;
++    }
++    assert_eq!(
++        seen,
++        [
++            "outer",
++            "version",
++            "sample",
++            "dynamic",
++            "sample",
++            "positional",
++            "named",
++            "predicate"
++        ]
++    );
++    Ok(())
++}
++
++#[test]
++fn named_window_fields_visit_before_the_input_without_resolving_the_window()
++-> Result<(), Infallible> {
++    let plan = QueryPlan::new(QueryNode::NamedWindows {
++        input: Box::new(read("input")),
++        windows: vec![(
++            "w".into(),
++            Window::Unnamed {
++                cluster_by: vec![],
++                partition_by: vec![scalar("partition")],
++                order_by: vec![],
++                frame: None,
++            },
++        )],
++    });
++    let mut seen = vec![];
++    names(&plan, &mut seen)?;
++    assert_eq!(seen, ["partition", "input"]);
++    Ok(())
++}
+diff --git a/crates/sail-common/src/spec/query_children.rs b/crates/sail-common/src/spec/query_children.rs
+new file mode 100644
+index 000000000..13de9fdb4
+--- /dev/null
++++ b/crates/sail-common/src/spec/query_children.rs
+@@ -0,0 +1,323 @@
++//! Borrowed query-node children for request-local inspection, without resolution.
++use super::{
++    Expr, QueryPlan, ReadType, SortOrder, TableSample, TableSampleMethod, TableTemporal, Window,
++};
++
++/// A query node's expression/window fields and query inputs. This is structural
++/// navigation: the caller decides whether/how to recurse, interpret scopes,
++/// expand plan-ID references or admit helper-executing constructs.
++#[derive(Debug, Clone, Copy)]
++pub enum QueryChild<'a> {
++    Expression(&'a Expr),
++    Window(&'a Window),
++    Query(&'a QueryPlan),
++}
++
++impl QueryPlan {
++    /// Visit this node's children without cloning, resolving or descending.
++    ///
++    /// Expression/window fields precede query inputs. Lists retain their order
++    /// and duplicates. CTE definitions are unfiltered and precede the body;
++    /// WithRelations references precede its root. Scope, name matching, CTE
++    /// shadowing and plan-ID lookup remain caller policy, not this traversal's.
++    /// The first callback error is returned unchanged. This is not a semantic
++    /// resolution order or a general Catalyst traversal equivalence guarantee.
++    pub fn visit_children<'a, E>(
++        &'a self,
++        visitor: &mut impl FnMut(QueryChild<'a>) -> Result<(), E>,
++    ) -> Result<(), E> {
++        use super::QueryNode as N;
++        match &self.node {
++            N::Read { read_type, .. } => visit_read(read_type, visitor),
++            // Leaves without query inputs; literal rows and an inline table
++            // function still carry expressions.
++            N::LocalRelation { .. }
++            | N::CachedLocalRelation { .. }
++            | N::CachedRemoteRelation { .. }
++            | N::Range(_)
++            | N::Empty { .. } => Ok(()),
++            N::Values(rows) => rows.iter().try_for_each(|row| visit_exprs(row, visitor)),
++            N::CommonInlineUserDefinedTableFunction(function) => {
++                visit_exprs(&function.arguments, visitor)
++            }
++            N::Tail { input, limit } => {
++                visitor(QueryChild::Expression(limit))?;
++                visitor(QueryChild::Query(input))
++            }
++            N::StatSummary { input, .. }
++            | N::StatDescribe { input, .. }
++            | N::StatCrosstab { input, .. }
++            | N::StatCov { input, .. }
++            | N::StatCorr { input, .. }
++            | N::StatApproxQuantile { input, .. }
++            | N::StatFreqItems { input, .. } => visitor(QueryChild::Query(input)),
++            N::StatSampleBy { input, column, .. } => {
++                visitor(QueryChild::Expression(column))?;
++                visitor(QueryChild::Query(input))
++            }
++            // One required input, no expressions.
++            N::SubqueryAlias { input, .. }
++            | N::Repartition { input, .. }
++            | N::ToDf { input, .. }
++            | N::WithColumnsRenamed { input, .. }
++            | N::ToSchema { input, .. }
++            | N::DropNa { input, .. }
++            | N::Replace { input, .. }
++            | N::TableAlias { input, .. } => visitor(QueryChild::Query(input)),
++            N::TableSample { input, sample } => {
++                visit_sample(sample, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            // One required input with expressions.
++            N::Filter { input, condition } => {
++                visitor(QueryChild::Expression(condition))?;
++                visitor(QueryChild::Query(input))
++            }
++            N::Sort { input, order, .. } => {
++                visit_sort_orders(order, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::Limit { input, skip, limit } => {
++                for expr in [skip, limit].into_iter().flatten() {
++                    visitor(QueryChild::Expression(expr))?;
++                }
++                visitor(QueryChild::Query(input))
++            }
++            N::Drop { input, columns, .. } => {
++                visit_exprs(columns, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::WithColumns { input, aliases } => {
++                visit_exprs(aliases, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::Hint {
++                input, parameters, ..
++            } => {
++                visit_exprs(parameters, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::RepartitionByExpression {
++                input,
++                partition_expressions,
++                ..
++            } => {
++                visit_exprs(partition_expressions, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::MapPartitions {
++                input, function, ..
++            } => {
++                visit_exprs(&function.arguments, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::CollectMetrics { input, metrics, .. } => {
++                visit_exprs(metrics, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::FillNa { input, values, .. } => {
++                visit_exprs(values, visitor)?;
++                visitor(QueryChild::Query(input))
++            }
++            N::WithParameters {
++                input,
++                positional_arguments,
++                named_arguments,
++            } => {
++                visit_exprs(positional_arguments, visitor)?;
++                for (_, argument) in named_arguments {
++                    visitor(QueryChild::Expression(argument))?;
++                }
++                visitor(QueryChild::Query(input))
++            }
++            N::NamedWindows { input, windows } => {
++                for (_, window) in windows {
++                    visitor(QueryChild::Window(window))?;
++                }
++                visitor(QueryChild::Query(input))
++            }
++            // One optional input with expressions.
++            N::Project { input, expressions } => {
++                visit_exprs(expressions, visitor)?;
++                match input {
++                    Some(input) => visitor(QueryChild::Query(input)),
++                    None => Ok(()),
++                }
++            }
++            N::LateralView {
++                input,
++                arguments,
++                named_arguments,
++                ..
++            } => {
++                visit_exprs(arguments, visitor)?;
++                for (_, argument) in named_arguments {
++                    visitor(QueryChild::Expression(argument))?;
++                }
++                match input {
++                    Some(input) => visitor(QueryChild::Query(input)),
++                    None => Ok(()),
++                }
++            }
++            // Nested structs with one input.
++            N::Aggregate(aggregate) => {
++                visit_exprs(&aggregate.grouping, visitor)?;
++                visit_exprs(&aggregate.aggregate, visitor)?;
++                if let Some(having) = &aggregate.having {
++                    visitor(QueryChild::Expression(having))?;
++                }
++                visitor(QueryChild::Query(&aggregate.input))
++            }
++            N::Sample(sample) => visitor(QueryChild::Query(&sample.input)),
++            N::Deduplicate(deduplicate) => visitor(QueryChild::Query(&deduplicate.input)),
++            N::Pivot(pivot) => {
++                if let Some(grouping) = &pivot.grouping {
++                    visit_exprs(grouping, visitor)?;
++                }
++                visit_exprs(&pivot.aggregate, visitor)?;
++                visit_exprs(&pivot.columns, visitor)?;
++                for value in &pivot.values {
++                    visit_exprs(&value.values, visitor)?;
++                }
++                visitor(QueryChild::Query(&pivot.input))
++            }
++            N::Unpivot(unpivot) => {
++                if let Some(ids) = &unpivot.ids {
++                    visit_exprs(ids, visitor)?;
++                }
++                for value in unpivot.values.iter().flatten() {
++                    visit_exprs(&value.columns, visitor)?;
++                }
++                visitor(QueryChild::Query(&unpivot.input))
++            }
++            N::Parse(parse) => visitor(QueryChild::Query(&parse.input)),
++            N::WithWatermark(watermark) => visitor(QueryChild::Query(&watermark.input)),
++            N::ApplyInPandasWithState(apply) => {
++                visit_exprs(&apply.grouping_expressions, visitor)?;
++                visit_exprs(&apply.function.arguments, visitor)?;
++                visitor(QueryChild::Query(&apply.input))
++            }
++            N::GroupMap(group) => {
++                visit_exprs(&group.grouping_expressions, visitor)?;
++                visit_exprs(&group.sorting_expressions, visitor)?;
++                visit_exprs(&group.initial_grouping_expressions, visitor)?;
++                visit_exprs(&group.function.arguments, visitor)?;
++                visitor(QueryChild::Query(&group.input))?;
++                match &group.initial_input {
++                    Some(initial) => visitor(QueryChild::Query(initial)),
++                    None => Ok(()),
++                }
++            }
++            // Several inputs.
++            N::Join(join) => {
++                if let Some(super::JoinCriteria::On(condition)) = &join.join_criteria {
++                    visitor(QueryChild::Expression(condition))?;
++                }
++                visitor(QueryChild::Query(&join.left))?;
++                visitor(QueryChild::Query(&join.right))
++            }
++            N::LateralJoin {
++                left,
++                right,
++                join_condition,
++                ..
++            } => {
++                if let Some(condition) = join_condition {
++                    visitor(QueryChild::Expression(condition))?;
++                }
++                visitor(QueryChild::Query(left))?;
++                visitor(QueryChild::Query(right))
++            }
++            N::SetOperation(set) => {
++                visitor(QueryChild::Query(&set.left))?;
++                visitor(QueryChild::Query(&set.right))
++            }
++            N::CoGroupMap(cogroup) => {
++                visit_exprs(&cogroup.input_grouping_expressions, visitor)?;
++                visit_exprs(&cogroup.other_grouping_expressions, visitor)?;
++                visit_exprs(&cogroup.input_sorting_expressions, visitor)?;
++                visit_exprs(&cogroup.other_sorting_expressions, visitor)?;
++                visit_exprs(&cogroup.function.arguments, visitor)?;
++                visitor(QueryChild::Query(&cogroup.input))?;
++                visitor(QueryChild::Query(&cogroup.other))
++            }
++            N::WithRelations { root, references } => {
++                for reference in references {
++                    visitor(QueryChild::Query(reference))?;
++                }
++                visitor(QueryChild::Query(root))
++            }
++            N::WithCtes { input, ctes, .. } => {
++                for (_, definition) in ctes {
++                    visitor(QueryChild::Query(definition))?;
++                }
++                visitor(QueryChild::Query(input))
++            }
++        }
++    }
++}
++
++fn visit_exprs<'a, E>(
++    exprs: &'a [Expr],
++    visitor: &mut impl FnMut(QueryChild<'a>) -> Result<(), E>,
++) -> Result<(), E> {
++    exprs
++        .iter()
++        .try_for_each(|expr| visitor(QueryChild::Expression(expr)))
++}
++fn visit_sort_orders<'a, E>(
++    orders: &'a [SortOrder],
++    visitor: &mut impl FnMut(QueryChild<'a>) -> Result<(), E>,
++) -> Result<(), E> {
++    orders
++        .iter()
++        .try_for_each(|order| visitor(QueryChild::Expression(&order.child)))
++}
++fn visit_sample<'a, E>(
++    sample: &'a TableSample,
++    visitor: &mut impl FnMut(QueryChild<'a>) -> Result<(), E>,
++) -> Result<(), E> {
++    match &sample.method {
++        TableSampleMethod::Percent { value } | TableSampleMethod::Rows { value } => {
++            visitor(QueryChild::Expression(value))
++        }
++        TableSampleMethod::Bucket { .. } => Ok(()),
++    }
++}
++fn visit_read<'a, E>(
++    read: &'a ReadType,
++    visitor: &mut impl FnMut(QueryChild<'a>) -> Result<(), E>,
++) -> Result<(), E> {
++    match read {
++        ReadType::NamedTable(table) => {
++            if let Some(TableTemporal::Version { value } | TableTemporal::Timestamp { value }) =
++                &table.temporal
++            {
++                visitor(QueryChild::Expression(value))?;
++            }
++            if let Some(sample) = &table.sample {
++                visit_sample(sample, visitor)?;
++            }
++            Ok(())
++        }
++        ReadType::DynamicTable(table) => {
++            visitor(QueryChild::Expression(&table.name))?;
++            if let Some(sample) = &table.sample {
++                visit_sample(sample, visitor)?;
++            }
++            Ok(())
++        }
++        ReadType::DataSource(source) => visit_exprs(&source.predicates, visitor),
++        ReadType::Udtf(function) => {
++            visit_exprs(&function.arguments, visitor)?;
++            for (_, arg) in &function.named_arguments {
++                visitor(QueryChild::Expression(arg))?;
++            }
++            Ok(())
++        }
++    }
++}
++
++#[cfg(test)]
++#[path = "query_child_tests.rs"]
++mod tests;
+diff --git a/crates/sail-common/src/spec/subqueries.rs b/crates/sail-common/src/spec/subqueries.rs
+index 51978c6b0..5d1408dfc 100644
+--- a/crates/sail-common/src/spec/subqueries.rs
++++ b/crates/sail-common/src/spec/subqueries.rs
+@@ -146,7 +146,9 @@ impl Window {
+                             | WindowFrameBoundary::Value(expr) => {
+                                 expr.visit_subqueries(visitor)?;
+                             }
+-                            _ => {}
++                            WindowFrameBoundary::CurrentRow
++                            | WindowFrameBoundary::UnboundedPreceding
++                            | WindowFrameBoundary::UnboundedFollowing => {}
+                         }
+                     }
+                 }
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+index 61801c1fc..38274fe16 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+@@ -419,84 +419,26 @@ impl Walker<'_> {
+         Ok(())
+     }
+ 
+-    fn exprs(
+-        &mut self,
+-        exprs: &[spec::Expr],
+-        cte_scope: &HashSet<String>,
+-    ) -> Result<(), BindingError> {
+-        exprs.iter().try_for_each(|expr| self.expr(expr, cte_scope))
+-    }
+-
+-    fn sort_orders(
+-        &mut self,
+-        orders: &[spec::SortOrder],
+-        cte_scope: &HashSet<String>,
+-    ) -> Result<(), BindingError> {
+-        orders
+-            .iter()
+-            .try_for_each(|order| self.expr(&order.child, cte_scope))
+-    }
+-
+-    fn window(
+-        &mut self,
+-        window: &spec::Window,
+-        cte_scope: &HashSet<String>,
+-    ) -> Result<(), BindingError> {
+-        window.visit_subqueries(&mut |query| self.walk(query, cte_scope))
+-    }
+-
+-    /// Follow embedded queries through the shared typed expression traversal.
+     /// Query/CTE scope and admission policy remain this walker's responsibility.
+     fn expr(&mut self, expr: &spec::Expr, cte_scope: &HashSet<String>) -> Result<(), BindingError> {
+         expr.visit_subqueries(&mut |query| self.walk(query, cte_scope))
+     }
+ 
+-    fn sample(
+-        &mut self,
+-        sample: &spec::TableSample,
+-        cte_scope: &HashSet<String>,
+-    ) -> Result<(), BindingError> {
+-        match &sample.method {
+-            spec::TableSampleMethod::Percent { value }
+-            | spec::TableSampleMethod::Rows { value } => self.expr(value, cte_scope),
+-            spec::TableSampleMethod::Bucket { .. } => Ok(()),
+-        }
+-    }
+-
+     fn walk(
+         &mut self,
+         plan: &spec::QueryPlan,
+         cte_scope: &HashSet<String>,
+     ) -> Result<(), BindingError> {
+         use spec::QueryNode as N;
++        // Admission policy stays here; structural traversal has no refusals.
+         match &plan.node {
+             N::Read {
+                 read_type,
+                 is_streaming,
+             } => {
+                 self.read(read_type, *is_streaming, cte_scope)?;
+-                if let spec::ReadType::NamedTable(table) = read_type
+-                    && let Some(sample) = &table.sample
+-                {
+-                    self.sample(sample, cte_scope)?;
+-                }
+-                Ok(())
+             }
+-            // Leaves without query inputs; literal rows and an inline table
+-            // function still carry expressions.
+-            N::LocalRelation { .. }
+-            | N::CachedLocalRelation { .. }
+-            | N::CachedRemoteRelation { .. }
+-            | N::Range(_)
+-            | N::Empty { .. } => Ok(()),
+-            N::Values(rows) => rows.iter().try_for_each(|row| self.exprs(row, cte_scope)),
+             N::CommonInlineUserDefinedTableFunction(function) => {
+-                // Without a declared return type the schema comes from the
+-                // UDTF's `analyze`, which `resolve_python_udtf_plan` runs in
+-                // Python during resolution (`query/udtf.rs`): an unowned
+-                // helper, refused here until Python analysis has an owner.
+-                // A declared return type resolves without it, so the
+-                // arguments keep their classification.
+                 if let spec::TableFunctionDefinition::PythonUdtf {
+                     return_type: None, ..
+                 } = &function.function
+@@ -505,211 +447,19 @@ impl Walker<'_> {
+                         "dynamic inline table function",
+                     ));
+                 }
+-                self.exprs(&function.arguments, cte_scope)
+-            }
+-            // Constructs whose resolution executes a helper plan.
+-            N::Tail { .. } => Err(BindingError::Tail),
+-            N::Pivot(pivot) if pivot.values.is_empty() => Err(BindingError::PivotInference),
+-            N::StatSummary { .. } => Err(BindingError::StatHelper("summary")),
+-            N::StatDescribe { .. } => Err(BindingError::StatHelper("describe")),
+-            N::StatCrosstab { .. } => Err(BindingError::StatHelper("crosstab")),
+-            N::StatCov { .. } => Err(BindingError::StatHelper("covariance")),
+-            N::StatCorr { .. } => Err(BindingError::StatHelper("correlation")),
+-            N::StatApproxQuantile { .. } => Err(BindingError::StatHelper("approximate quantile")),
+-            N::StatFreqItems { .. } => Err(BindingError::StatHelper("frequent items")),
+-            N::StatSampleBy { .. } => Err(BindingError::StatHelper("sample by")),
+-            // One required input, no expressions.
+-            N::SubqueryAlias { input, .. }
+-            | N::Repartition { input, .. }
+-            | N::ToDf { input, .. }
+-            | N::WithColumnsRenamed { input, .. }
+-            | N::ToSchema { input, .. }
+-            | N::DropNa { input, .. }
+-            | N::Replace { input, .. }
+-            | N::TableAlias { input, .. } => self.walk(input, cte_scope),
+-            N::TableSample { input, sample } => {
+-                self.sample(sample, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            // One required input with expressions.
+-            N::Filter { input, condition } => {
+-                self.expr(condition, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::Sort { input, order, .. } => {
+-                self.sort_orders(order, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::Limit { input, skip, limit } => {
+-                for expr in [skip, limit].into_iter().flatten() {
+-                    self.expr(expr, cte_scope)?;
+-                }
+-                self.walk(input, cte_scope)
+-            }
+-            N::Drop { input, columns, .. } => {
+-                self.exprs(columns, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::WithColumns { input, aliases } => {
+-                self.exprs(aliases, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::Hint {
+-                input, parameters, ..
+-            } => {
+-                self.exprs(parameters, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::RepartitionByExpression {
+-                input,
+-                partition_expressions,
+-                ..
+-            } => {
+-                self.exprs(partition_expressions, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::MapPartitions {
+-                input, function, ..
+-            } => {
+-                self.exprs(&function.arguments, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::CollectMetrics { input, metrics, .. } => {
+-                self.exprs(metrics, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::FillNa { input, values, .. } => {
+-                self.exprs(values, cte_scope)?;
+-                self.walk(input, cte_scope)
+-            }
+-            N::WithParameters {
+-                input,
+-                positional_arguments,
+-                named_arguments,
+-            } => {
+-                self.exprs(positional_arguments, cte_scope)?;
+-                for (_, argument) in named_arguments {
+-                    self.expr(argument, cte_scope)?;
+-                }
+-                self.walk(input, cte_scope)
+-            }
+-            N::NamedWindows { input, windows } => {
+-                for (_, window) in windows {
+-                    self.window(window, cte_scope)?;
+-                }
+-                self.walk(input, cte_scope)
+-            }
+-            // One optional input with expressions.
+-            N::Project { input, expressions } => {
+-                self.exprs(expressions, cte_scope)?;
+-                match input {
+-                    Some(input) => self.walk(input, cte_scope),
+-                    None => Ok(()),
+-                }
+-            }
+-            N::LateralView {
+-                input,
+-                arguments,
+-                named_arguments,
+-                ..
+-            } => {
+-                self.exprs(arguments, cte_scope)?;
+-                for (_, argument) in named_arguments {
+-                    self.expr(argument, cte_scope)?;
+-                }
+-                match input {
+-                    Some(input) => self.walk(input, cte_scope),
+-                    None => Ok(()),
+-                }
+-            }
+-            // Nested structs with one input.
+-            N::Aggregate(aggregate) => {
+-                self.exprs(&aggregate.grouping, cte_scope)?;
+-                self.exprs(&aggregate.aggregate, cte_scope)?;
+-                if let Some(having) = &aggregate.having {
+-                    self.expr(having, cte_scope)?;
+-                }
+-                self.walk(&aggregate.input, cte_scope)
+-            }
+-            N::Sample(sample) => self.walk(&sample.input, cte_scope),
+-            N::Deduplicate(deduplicate) => self.walk(&deduplicate.input, cte_scope),
+-            N::Pivot(pivot) => {
+-                if let Some(grouping) = &pivot.grouping {
+-                    self.exprs(grouping, cte_scope)?;
+-                }
+-                self.exprs(&pivot.aggregate, cte_scope)?;
+-                self.exprs(&pivot.columns, cte_scope)?;
+-                for value in &pivot.values {
+-                    self.exprs(&value.values, cte_scope)?;
+-                }
+-                self.walk(&pivot.input, cte_scope)
+-            }
+-            N::Unpivot(unpivot) => {
+-                if let Some(ids) = &unpivot.ids {
+-                    self.exprs(ids, cte_scope)?;
+-                }
+-                for value in unpivot.values.iter().flatten() {
+-                    self.exprs(&value.columns, cte_scope)?;
+-                }
+-                self.walk(&unpivot.input, cte_scope)
+-            }
+-            N::Parse(parse) => self.walk(&parse.input, cte_scope),
+-            N::WithWatermark(watermark) => self.walk(&watermark.input, cte_scope),
+-            N::ApplyInPandasWithState(apply) => {
+-                self.exprs(&apply.grouping_expressions, cte_scope)?;
+-                self.exprs(&apply.function.arguments, cte_scope)?;
+-                self.walk(&apply.input, cte_scope)
+-            }
+-            N::GroupMap(group) => {
+-                self.exprs(&group.grouping_expressions, cte_scope)?;
+-                self.exprs(&group.sorting_expressions, cte_scope)?;
+-                self.exprs(&group.initial_grouping_expressions, cte_scope)?;
+-                self.exprs(&group.function.arguments, cte_scope)?;
+-                self.walk(&group.input, cte_scope)?;
+-                match &group.initial_input {
+-                    Some(initial) => self.walk(initial, cte_scope),
+-                    None => Ok(()),
+-                }
+-            }
+-            // Several inputs.
+-            N::Join(join) => {
+-                if let Some(spec::JoinCriteria::On(condition)) = &join.join_criteria {
+-                    self.expr(condition, cte_scope)?;
+-                }
+-                self.walk(&join.left, cte_scope)?;
+-                self.walk(&join.right, cte_scope)
+-            }
+-            N::LateralJoin {
+-                left,
+-                right,
+-                join_condition,
+-                ..
+-            } => {
+-                if let Some(condition) = join_condition {
+-                    self.expr(condition, cte_scope)?;
+-                }
+-                self.walk(left, cte_scope)?;
+-                self.walk(right, cte_scope)
+-            }
+-            N::SetOperation(set) => {
+-                self.walk(&set.left, cte_scope)?;
+-                self.walk(&set.right, cte_scope)
+-            }
+-            N::CoGroupMap(cogroup) => {
+-                self.exprs(&cogroup.input_grouping_expressions, cte_scope)?;
+-                self.exprs(&cogroup.other_grouping_expressions, cte_scope)?;
+-                self.exprs(&cogroup.input_sorting_expressions, cte_scope)?;
+-                self.exprs(&cogroup.other_sorting_expressions, cte_scope)?;
+-                self.exprs(&cogroup.function.arguments, cte_scope)?;
+-                self.walk(&cogroup.input, cte_scope)?;
+-                self.walk(&cogroup.other, cte_scope)
+-            }
+-            N::WithRelations { root, references } => {
+-                for reference in references {
+-                    self.walk(reference, cte_scope)?;
+-                }
+-                self.walk(root, cte_scope)
+             }
++            N::Tail { .. } => return Err(BindingError::Tail),
++            N::Pivot(pivot) if pivot.values.is_empty() => return Err(BindingError::PivotInference),
++            N::StatSummary { .. } => return Err(BindingError::StatHelper("summary")),
++            N::StatDescribe { .. } => return Err(BindingError::StatHelper("describe")),
++            N::StatCrosstab { .. } => return Err(BindingError::StatHelper("crosstab")),
++            N::StatCov { .. } => return Err(BindingError::StatHelper("covariance")),
++            N::StatCorr { .. } => return Err(BindingError::StatHelper("correlation")),
++            N::StatApproxQuantile { .. } => {
++                return Err(BindingError::StatHelper("approximate quantile"));
++            }
++            N::StatFreqItems { .. } => return Err(BindingError::StatHelper("frequent items")),
++            N::StatSampleBy { .. } => return Err(BindingError::StatHelper("sample by")),
+             N::WithCtes {
+                 input,
+                 ctes,
+@@ -735,9 +485,17 @@ impl Walker<'_> {
+                     self.walk(definition, &inner)?;
+                     inner.insert(name.as_ref().to_string());
+                 }
+-                self.walk(input, &inner)
++                return self.walk(input, &inner);
+             }
++            _ => {}
+         }
++        plan.visit_children(&mut |child| match child {
++            spec::QueryChild::Expression(expr) => self.expr(expr, cte_scope),
++            spec::QueryChild::Window(window) => {
++                window.visit_subqueries(&mut |query| self.walk(query, cte_scope))
++            }
++            spec::QueryChild::Query(query) => self.walk(query, cte_scope),
++        })
+     }
+ }
+ 
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
+index 1d4e7d8b4..e58e427b7 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
+@@ -726,3 +726,16 @@ fn a_static_inline_table_function_still_classifies_reads_in_its_arguments() -> T
+     );
+     Ok(())
+ }
++
++#[test]
++fn query_navigation_reports_the_first_expression_read_before_its_input() {
++    let plan = filter(read("body", false), exists(read("condition", false)));
++    assert_eq!(
++        validate(plan, &[], &[]),
++        Err(BindingError::UnboundCatalogRead(name(&[
++            "c",
++            "d",
++            "condition"
++        ])))
++    );
++}

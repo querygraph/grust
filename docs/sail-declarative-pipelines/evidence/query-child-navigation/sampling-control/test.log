@@ -1,0 +1,30 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 24.96s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-1aad231f7fc0cda4)
+
+running 2 tests
+test pipelines::streaming::binding::sample_tests::native_percent_sampling_reaches_hidden_reads_before_validation ... ok
+test pipelines::streaming::binding::sample_tests::both_sample_sites_classify_hidden_reads_and_helpers ... FAILED
+
+failures:
+
+---- pipelines::streaming::binding::sample_tests::both_sample_sites_classify_hidden_reads_and_helpers stdout ----
+
+thread 'pipelines::streaming::binding::sample_tests::both_sample_sites_classify_hidden_reads_and_helpers' (90421121) panicked at crates/sail-spark-connect/src/pipelines/streaming/binding_sample_tests.rs:97:17:
+assertion `left == right` failed
+  left: Ok(ReadSet { streaming: {}, local: {["c", "d", "events"]}, statics: {} })
+ right: Err(UnboundCatalogRead(["c", "d", "hidden"]))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    pipelines::streaming::binding::sample_tests::both_sample_sites_classify_hidden_reads_and_helpers
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 148 filtered out; finished in 0.10s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

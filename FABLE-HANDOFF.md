@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T22:46:39.696407+00:00. Live coordination read through **CF-0262**.
+Snapshot written 2026-10-30T23:18:34.934655+00:00. Live coordination read through **CF-0277**.
 Re-read live channel/Git/process state; later entries supersede this snapshot. [Initial scope](codex-fable-handoff.md).
 
 ## Goal and current truth
@@ -42,8 +42,8 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `7a50f2875f0d0042d923658668cfe2671fc56255` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `4cc4356f98a45eef862a9aa9649ae7fd43da0611` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `0d0064b6e6106a0f817926ff8a46965017248275` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `f59c957516d912d243b7c593134303af67db5cae` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
@@ -156,10 +156,10 @@ Latest fresh public CLI gate is **163b2fb52f9ba2961cd0338046d4d2f4cf91f686**:
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0262)
+## Current implementation and immediate next work (CF-0277)
 
-Coordinator HEAD **7a50f2875f0d0042d923658668cfe2671fc56255** is committed/clean.
-All owned gates terminal. [New units](docs/sail-declarative-pipelines/evidence/expression-subquery-traversal/README.md):744b16867 wildcard replacement read/helper classification (148 Connect);7a50f2875 shared pure Expr/Window query traversal (28 common+148 Connect), strict Clippy/fmt; unchanged controls1/1 and2/2. Initial test-only compile failures retained. Latest rebuilt public gate remains163b (300+67), not these commits; no public captured Session installation.
+Coordinator HEAD **0d0064b6e6106a0f817926ff8a46965017248275** is committed/clean.
+All owned gates terminal. [New units](docs/sail-declarative-pipelines/evidence/query-child-navigation/README.md):6db sampling150 Connect/1+1 control;75f typed query navigation33 common+151 Connect/4+1 control;0d0 explicit policy list151 Connect, fmt/strict Clippy. [Earlier expression units](docs/sail-declarative-pipelines/evidence/expression-subquery-traversal/README.md) retain28+148 and controls. Latest rebuilt public remains163b300+67, not these units; no captured public Session.
 
 [Read](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md),
 [writer/schema](docs/sail-declarative-pipelines/evidence/resolver-writer-session/README.md) and
@@ -237,7 +237,7 @@ uses view flow namespace/config and consumer config for table reads. Each map dr
 no eager post-write read. Mock leases and unrelated-closure checks qualify that scope.
 163b2fb52 removes dead required/with_dependencies selection state. Two unchanged-test
 controls each2pass/1fail. Fable0ceb51c8/fea89cc0 reviews consumed through CF-0248.
-Active Astra phase: [configuration design](docs/sail-declarative-pipelines/FLOW-CONFIGURATION-DESIGN.md) and [13-case baseline](docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/README.md):3 match/10 differ; first binding/semantic pass precedes conflict/union/re-resolution, table stop holds. No production fusion yet. Fable CF-0251/0253 agree; CF-0260 accepts unused-CTE correction; [12 CTE/default probes](docs/sail-declarative-pipelines/evidence/flow-config-cte-reference/README.md) constrain native binding, and CF-0261 offers the shared expression primitive; CF-0262 ACKs read-only review (not a completed verdict). Captured physical preparation/planning admission,
+Active Astra phase: [native input design](docs/sail-declarative-pipelines/NATIVE-INPUT-BINDING-DESIGN.md) selects ordered graph-view trace/private config through existing resolver, then success-only union/re-resolution; no opaque slots selected. [Seven metadata cases+two controls](docs/sail-declarative-pipelines/evidence/flow-config-external-read-reference/README.md) show session-base Parquet metadata vs private semantic config; per-occurrence premise not established.13-case baseline still3/10;12 CTE/default probes hold. Fable CF-0273/0274 agrees on smaller path; CF-0275 ACKs; CF-0277 authorizes Fable pure merge/first-pass maps only on own0d0 parent; root retains trace/native wiring/activation, no E′/F–K authority. Captured physical preparation/planning admission,
 capture panic, catalog/Python I/O, shutdown, SDK/ORC/CDC/C0 and Scala acceptance remain.
 Mock plan-map leases do not qualify SDK/session/factory caches. C5 E′ must preserve schemas/publications, one-resolution publication and per-command execution; never restore required/with_dependencies.
 
