@@ -1,0 +1,162 @@
+{
+  "recorded": "2026-10-30T01:23:31.850605+00:00",
+  "scope": "Read-only pinned source/installed class audit; no new Spark process or mode runtime observation.",
+  "sources": [
+    {
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/internal/SessionState.scala",
+      "retained": "SessionState.scala",
+      "sha256": "2dc5656c38388eccd7c6bb09c7d78de4cefbd7a8ee787416f5d30407302f36bc",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    },
+    {
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSource.scala",
+      "retained": "DataSource.scala",
+      "sha256": "9e9f3aea3a5043f9643e121b773b3b714613a6fdfe01bd1e16a274b73e91d624",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    },
+    {
+      "path": "sql/catalyst/src/main/scala/org/apache/spark/sql/internal/SQLConf.scala",
+      "retained": "SQLConf.scala",
+      "sha256": "79a3d5dd34522f1891f955037533cde092f17407e8b426514e0b595f65ef27cc",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    },
+    {
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/orc/OrcUtils.scala",
+      "retained": "OrcUtils.scala",
+      "sha256": "7140177b194695046cada1108acc446aede4f0019e4fcfc1e3d1aa0d5f52753e",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    },
+    {
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/orc/OrcFileFormat.scala",
+      "retained": "OrcFileFormat.scala",
+      "sha256": "f30d72ed107ae13c51825957fabc22e1fd646c40c44001a041a7966da0a4d1b4",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    },
+    {
+      "path": "sql/api/src/main/scala/org/apache/spark/sql/catalyst/util/CaseInsensitiveMap.scala",
+      "retained": "CaseInsensitiveMap.scala",
+      "sha256": "b64f9a4bcf93b1d630a0ad3978de1e2bbc07454c03607320a8be9140c3420209",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    },
+    {
+      "archive": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/orc-core-2.3.0-shaded-protobuf.jar",
+      "archive_sha256": "6f70ed3f491122f0b74e8cf09d8986970ce44b72ba22ff96c8f5622220495a15",
+      "member": "org/apache/orc/OrcConf.class",
+      "class_sha256": "dbcf242d7f16af8d76c5c585f942ef571e658ff013c9dbf35bcfbe9e1889fdfe",
+      "retained": "OrcConf.javap.txt",
+      "sha256": "b405a284cc4f3940851c665612e8649afcc04a160ddb3a5e6da4ec421dc348a3"
+    },
+    {
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/DataSourceScanExec.scala",
+      "retained": "DataSourceScanExec.scala",
+      "sha256": "522ddf8f718bae8be23c8287b11761f90e789caff9bd0ef03e89fbac0dc600b4",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    },
+    {
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/v2/orc/OrcScanBuilder.scala",
+      "retained": "OrcScanBuilder.scala",
+      "sha256": "a9fb4a9fc2f2c2b9334133b232eadbf71bbd5e8c606744a74d54e1ec94b694e4",
+      "pin": "617618396087429b5627a86ce933bb0f5d6645cb"
+    }
+  ],
+  "updated": "2026-10-30T01:31:48.490666+00:00",
+  "excerpts": [
+    {
+      "file": "SessionState.scala",
+      "start": 117,
+      "end": 127,
+      "text": "117:   def newHadoopConf(): Configuration = SessionState.newHadoopConf(\n118:     sharedState.sparkContext.hadoopConfiguration,\n119:     conf)\n120: \n121:   def newHadoopConfWithOptions(options: Map[String, String]): Configuration = {\n122:     val hadoopConf = newHadoopConf()\n123:     options.foreach { case (k, v) =>\n124:       if ((v ne null) && k != \"path\" && k != \"paths\") {\n125:         hadoopConf.set(k, v)\n126:       }\n127:     }"
+    },
+    {
+      "file": "SessionState.scala",
+      "start": 146,
+      "end": 151,
+      "text": "146: private[sql] object SessionState {\n147:   def newHadoopConf(hadoopConf: Configuration, sqlConf: SQLConf): Configuration = {\n148:     val newHadoopConf = new Configuration(hadoopConf)\n149:     sqlConf.getAllConfs.foreach { case (k, v) => if (v ne null) newHadoopConf.set(k, v) }\n150:     newHadoopConf\n151:   }"
+    },
+    {
+      "file": "DataSource.scala",
+      "start": 138,
+      "end": 142,
+      "text": "138: \n139:   lazy val sourceInfo: SourceInfo = sourceSchema()\n140:   private val caseInsensitiveOptions = CaseInsensitiveMap(options)\n141:   private val equality = conf.resolver\n142: "
+    },
+    {
+      "file": "DataSource.scala",
+      "start": 223,
+      "end": 229,
+      "text": "223:     }.orElse {\n224:       // Remove \"path\" option so that it is not added to the paths returned by\n225:       // `tempFileIndex.allFiles()`.\n226:       format.inferSchema(\n227:         sparkSession,\n228:         caseInsensitiveOptions - \"path\",\n229:         tempFileIndex.allFiles())"
+    },
+    {
+      "file": "DataSource.scala",
+      "start": 443,
+      "end": 449,
+      "text": "443:         HadoopFsRelation(\n444:           fileCatalog,\n445:           partitionSchema = partitionSchema,\n446:           dataSchema = if (forceNullable) dataSchema.asNullable else dataSchema,\n447:           bucketSpec = bucketSpec,\n448:           format,\n449:           caseInsensitiveOptions)(sparkSession)"
+    },
+    {
+      "file": "DataSource.scala",
+      "start": 677,
+      "end": 686,
+      "text": "677:   def lookupDataSource(provider: String, conf: SQLConf): Class[_] = {\n678:     val provider1 = backwardCompatibilityMap.getOrElse(provider, provider) match {\n679:       case name if name.equalsIgnoreCase(\"orc\") &&\n680:           conf.getConf(SQLConf.ORC_IMPLEMENTATION) == \"native\" =>\n681:         classOf[OrcDataSourceV2].getCanonicalName\n682:       case name if name.equalsIgnoreCase(\"orc\") &&\n683:           conf.getConf(SQLConf.ORC_IMPLEMENTATION) == \"hive\" =>\n684:         \"org.apache.spark.sql.hive.orc.OrcFileFormat\"\n685:       case \"com.databricks.spark.avro\" if conf.replaceDatabricksSparkAvroEnabled =>\n686:         \"org.apache.spark.sql.avro.AvroFileFormat\""
+    },
+    {
+      "file": "SQLConf.scala",
+      "start": 1796,
+      "end": 1804,
+      "text": "1796:   val ORC_IMPLEMENTATION = buildConf(\"spark.sql.orc.impl\")\n1797:     .doc(\"When native, use the native version of ORC support instead of the ORC library in Hive. \" +\n1798:       \"It is 'hive' by default prior to Spark 2.4.\")\n1799:     .version(\"2.3.0\")\n1800:     .internal()\n1801:     .stringConf\n1802:     .checkValues(Set(\"hive\", \"native\"))\n1803:     .createWithDefault(\"native\")\n1804: "
+    },
+    {
+      "file": "SQLConf.scala",
+      "start": 5031,
+      "end": 5038,
+      "text": "5031:   val USE_V1_SOURCE_LIST = buildConf(\"spark.sql.sources.useV1SourceList\")\n5032:     .internal()\n5033:     .doc(\"A comma-separated list of data source short names or fully qualified data source \" +\n5034:       \"implementation class names for which Data Source V2 code path is disabled. These data \" +\n5035:       \"sources will fallback to Data Source V1 code path.\")\n5036:     .version(\"3.0.0\")\n5037:     .stringConf\n5038:     .createWithDefault(\"avro,csv,json,kafka,orc,parquet,text\")"
+    },
+    {
+      "file": "SQLConf.scala",
+      "start": 8900,
+      "end": 8908,
+      "text": "8900:     Array.tabulate(keys.size())(i => this.getConfString(keys.get(i)))\n8901:   }\n8902: \n8903:   /**\n8904:    * Return all the configuration properties that have been set (i.e. not the default).\n8905:    * This creates a new copy of the config properties in the form of a Map.\n8906:    */\n8907:   def getAllConfs: immutable.Map[String, String] =\n8908:     settings.synchronized { settings.asScala.toMap }"
+    },
+    {
+      "file": "OrcUtils.scala",
+      "start": 242,
+      "end": 253,
+      "text": "242: \n243:     checkTimestampCompatibility(toCatalystSchema(orcSchema), dataSchema)\n244:     val orcFieldNames = orcSchema.getFieldNames.asScala\n245:     val forcePositionalEvolution = OrcConf.FORCE_POSITIONAL_EVOLUTION.getBoolean(conf)\n246:     if (orcFieldNames.isEmpty) {\n247:       // SPARK-8501: Some old empty ORC files always have an empty schema stored in their footer.\n248:       None\n249:     } else {\n250:       if (forcePositionalEvolution || orcFieldNames.forall(_.startsWith(\"_col\"))) {\n251:         // This is either an ORC file written by an old version of Hive and there are no field\n252:         // names in the physical schema, or `orc.force.positional.evolution=true` is forced because\n253:         // the file was written by a newer version of Hive where"
+    },
+    {
+      "file": "CaseInsensitiveMap.scala",
+      "start": 29,
+      "end": 60,
+      "text": "29: class CaseInsensitiveMap[T] private (val originalMap: Map[String, T])\n30:     extends Map[String, T]\n31:     with Serializable {\n32: \n33:   val keyLowerCasedMap = originalMap.map(kv => kv.copy(_1 = kv._1.toLowerCase(Locale.ROOT)))\n34: \n35:   override def get(k: String): Option[T] = keyLowerCasedMap.get(k.toLowerCase(Locale.ROOT))\n36: \n37:   override def contains(k: String): Boolean =\n38:     keyLowerCasedMap.contains(k.toLowerCase(Locale.ROOT))\n39: \n40:   override def updated[B1 >: T](key: String, value: B1): CaseInsensitiveMap[B1] = {\n41:     new CaseInsensitiveMap[B1](originalMap.filter(!_._1.equalsIgnoreCase(key)) + (key -> value))\n42:   }\n43: \n44:   override def +[B1 >: T](kv: (String, B1)): CaseInsensitiveMap[B1] = this.updated(kv._1, kv._2)\n45: \n46:   def ++(xs: IterableOnce[(String, T)]): CaseInsensitiveMap[T] = {\n47:     xs.iterator.foldLeft(this) { (m, kv) => m.updated(kv._1, kv._2) }\n48:   }\n49: \n50:   override def iterator: Iterator[(String, T)] = keyLowerCasedMap.iterator\n51: \n52:   override def removed(key: String): Map[String, T] = {\n53:     new CaseInsensitiveMap(originalMap.filter(!_._1.equalsIgnoreCase(key)))\n54:   }\n55: \n56:   def toMap: Map[String, T] = originalMap\n57: }\n58: \n59: object CaseInsensitiveMap {\n60:   def apply[T](params: Map[String, T]): CaseInsensitiveMap[T] = params match {"
+    },
+    {
+      "file": "DataSourceScanExec.scala",
+      "start": 720,
+      "end": 733,
+      "text": "720: \n721:   lazy val inputRDD: RDD[InternalRow] = {\n722:     val options = relation.options +\n723:       (FileFormat.OPTION_RETURNING_BATCH -> supportsColumnar.toString)\n724:     val readFile: (PartitionedFile) => Iterator[InternalRow] =\n725:       relation.fileFormat.buildReaderWithPartitionValues(\n726:         sparkSession = relation.sparkSession,\n727:         dataSchema = relation.dataSchema,\n728:         partitionSchema = relation.partitionSchema,\n729:         requiredSchema = requiredSchema,\n730:         filters = pushedDownFilters,\n731:         options = options,\n732:         hadoopConf = getHadoopConf(relation.sparkSession, relation.options))\n733: "
+    },
+    {
+      "file": "OrcScanBuilder.scala",
+      "start": 40,
+      "end": 47,
+      "text": "40:   extends FileScanBuilder(sparkSession, fileIndex, dataSchema)\n41:   with SupportsPushDownAggregates {\n42: \n43:   lazy val hadoopConf = {\n44:     val caseSensitiveMap = options.asCaseSensitiveMap.asScala.toMap\n45:     // Hadoop Configurations are case sensitive.\n46:     sparkSession.sessionState.newHadoopConfWithOptions(caseSensitiveMap)\n47:   }"
+    },
+    {
+      "file": "OrcConf.javap.txt",
+      "start": 192,
+      "end": 222,
+      "text": "192:   private java.lang.String lookupValue(java.util.Properties, org.apache.hadoop.conf.Configuration);\n193:     Code:\n194:        0: aconst_null\n195:        1: astore_3\n196:        2: aload_1\n197:        3: ifnull        15\n198:        6: aload_1\n199:        7: aload_0\n200:        8: getfield      #203                // Field attribute:Ljava/lang/String;\n201:       11: invokevirtual #217                // Method java/util/Properties.getProperty:(Ljava/lang/String;)Ljava/lang/String;\n202:       14: astore_3\n203:       15: aload_3\n204:       16: ifnonnull     52\n205:       19: aload_2\n206:       20: ifnull        52\n207:       23: aload_2\n208:       24: aload_0\n209:       25: getfield      #203                // Field attribute:Ljava/lang/String;\n210:       28: invokevirtual #223                // Method org/apache/hadoop/conf/Configuration.get:(Ljava/lang/String;)Ljava/lang/String;\n211:       31: astore_3\n212:       32: aload_3\n213:       33: ifnonnull     52\n214:       36: aload_0\n215:       37: getfield      #207                // Field hiveConfName:Ljava/lang/String;\n216:       40: ifnull        52\n217:       43: aload_2\n218:       44: aload_0\n219:       45: getfield      #207                // Field hiveConfName:Ljava/lang/String;\n220:       48: invokevirtual #223                // Method org/apache/hadoop/conf/Configuration.get:(Ljava/lang/String;)Ljava/lang/String;\n221:       51: astore_3\n222:       52: aload_3"
+    },
+    {
+      "file": "OrcConf.javap.txt",
+      "start": 381,
+      "end": 405,
+      "text": "381:   public boolean getBoolean(java.util.Properties, org.apache.hadoop.conf.Configuration);\n382:     Code:\n383:        0: aload_0\n384:        1: aload_1\n385:        2: aload_2\n386:        3: invokevirtual #228                // Method lookupValue:(Ljava/util/Properties;Lorg/apache/hadoop/conf/Configuration;)Ljava/lang/String;\n387:        6: astore_3\n388:        7: aload_3\n389:        8: ifnull        16\n390:       11: aload_3\n391:       12: invokestatic  #303                // Method java/lang/Boolean.parseBoolean:(Ljava/lang/String;)Z\n392:       15: ireturn\n393:       16: aload_0\n394:       17: getfield      #210                // Field defaultValue:Ljava/lang/Object;\n395:       20: checkcast     #304                // class java/lang/Boolean\n396:       23: invokevirtual #309                // Method java/lang/Boolean.booleanValue:()Z\n397:       26: ireturn\n398: \n399:   public boolean getBoolean(org.apache.hadoop.conf.Configuration);\n400:     Code:\n401:        0: aload_0\n402:        1: aconst_null\n403:        2: aload_1\n404:        3: invokevirtual #312                // Method getBoolean:(Ljava/util/Properties;Lorg/apache/hadoop/conf/Configuration;)Z\n405:        6: ireturn"
+    },
+    {
+      "file": "OrcConf.javap.txt",
+      "start": 1104,
+      "end": 1115,
+      "text": "1104:     1048: new           #1                  // class org/apache/orc/OrcConf\n1105:     1051: dup\n1106:     1052: ldc_w         #625                // String FORCE_POSITIONAL_EVOLUTION\n1107:     1055: bipush        38\n1108:     1057: ldc_w         #626                // String orc.force.positional.evolution\n1109:     1060: ldc_w         #626                // String orc.force.positional.evolution\n1110:     1063: iconst_0\n1111:     1064: invokestatic  #374                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;\n1112:     1067: ldc_w         #628                // String Require schema evolution to match the top level columns using position\\nrather than column names. This provides backwards compatibility with\\nHive 2.1.\n1113:     1070: invokespecial #350                // Method \"<init>\":(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;)V\n1114:     1073: putstatic     #118                // Field FORCE_POSITIONAL_EVOLUTION:Lorg/apache/orc/OrcConf;\n1115:     1076: new           #1                  // class org/apache/orc/OrcConf"
+    }
+  ],
+  "frozen_at": "2026-10-30T01:36:06.920369+00:00"
+}

@@ -11345,3 +11345,25 @@ Sail 1462cc9c92c01ea36ce55a02c07db409fe32d95a passes exact detached formatting, 
 ## 2026-10-30T01:30:22.188858+00:00 — DONE ORC listing options/default bridge
 
 Sail 26b9461b93092ab99f1d5718fa82c73327970a27 passes exact detached formatting, strict Clippy, 206 data-source and 66 Connect tests. Twelve scoped files, ten new tests. Root and independent source reviews passed; no public runtime verdict.
+
+## 2026-10-30T01:45:45.044697+00:00 — ACK ORC unsupported read-mode evidence
+
+Archiving Sail c01623c184bdf8f688e9153a263283694cd39a2b and its exact
+B2 library gates, frozen implementation and pinned source/bytecode reference in
+`evidence/orc-mode-guard`. Scope is documentation only; parent owns the detached
+documentation gate and commit. No Fable or D/E packet edits.
+
+## 2026-10-30T01:48:41.571074+00:00 — DONE ORC unsupported read-mode evidence draft
+
+Archived Sail c01623c184bdf8f688e9153a263283694cd39a2b with its exact
+formatting/strict Clippy/210 data-source/70 Connect passing gate receipts, patch,
+eleven frozen source files, and pinned Spark/ORC source-bytecode reference.
+`evidence/orc-mode-guard/provenance.json` covers the exact 37-file packet besides
+itself. The root-reported pre-candidate wrapper KeyError remains preparation
+evidence, without an invented raw log or failed Rust verdict. No fresh mode
+runtime, broker, public ORC or complete SDP acceptance is claimed.
+
+Appended focused design/review notes and prepared the read-only verifier at
+`/tmp/sail-sdp-orc-mode-guard-evidence-gate.py`. Parent must run it in the detached
+documentation gate before advancing. No gates, commits, Fable or D/E packet edits
+were performed in this documentation task.

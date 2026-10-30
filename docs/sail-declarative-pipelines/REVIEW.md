@@ -1431,3 +1431,14 @@ Recorded: 2026-10-30T01:22:08.518358+00:00. [Sail `1462cc9c92`](evidence/orc-sem
 ## ORC listing options and session defaults
 
 Recorded: 2026-10-30T01:30:22.188858+00:00. [Sail `26b9461b93`](evidence/orc-listing-options/README.md) adds generated planning options and immutable session defaults, preserving table/read precedence and strict Spark boolean syntax. Formatting, strict Clippy, 206 data-source and 66 Connect tests pass. Partial config failures refresh the mirror without replacing the original error. Resource wire fields are unchanged; mode guarding and public read integration remain separate.
+
+### ORC unsupported read modes (2026-10-30T01:47:05.999454+00:00)
+
+[Evidence](evidence/orc-mode-guard/README.md) qualifies Sail `c01623c184` with
+formatting, strict Clippy, 210 data-source and 70 Connect tests. Eight new tests
+cover mode errors, layer precedence and immutable/partial-update snapshots.
+The independent source review found no blocker. Default V1 versus V2 option-case
+behavior is source/bytecode evidence, without a fresh mode runtime or broker
+probe. A pre-candidate wrapper KeyError is retained as preparation evidence;
+no B2 Rust gate failed. Hive/forced-position support, public ORC and full SDP
+acceptance are not claimed.

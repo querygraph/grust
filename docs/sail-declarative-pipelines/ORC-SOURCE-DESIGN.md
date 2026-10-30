@@ -617,3 +617,15 @@ Recorded: 2026-10-30T01:22:08.518358+00:00. [Sail `1462cc9c92`](evidence/orc-sem
 ## ORC listing options and session defaults
 
 Recorded: 2026-10-30T01:30:22.188858+00:00. [Sail `26b9461b93`](evidence/orc-listing-options/README.md) adds generated planning options and immutable session defaults, preserving table/read precedence and strict Spark boolean syntax. Formatting, strict Clippy, 206 data-source and 66 Connect tests pass. Partial config failures refresh the mirror without replacing the original error. Resource wire fields are unchanged; mode guarding and public read integration remain separate.
+
+## Reject unsupported ORC modes at the read boundary
+
+Recorded: 2026-10-30T01:47:05.999454+00:00. [Sail `c01623c184`](evidence/orc-mode-guard/README.md)
+adds immutable mode snapshots and read-boundary errors for Hive, invalid session
+implementations and effective forced positional evolution. Explicit false
+read/table overrides remain valid; automatic legacy mapping is unchanged.
+Formatting, strict Clippy, 210 data-source and 70 Connect tests pass. Pinned
+source/bytecode qualifies default V1 option casing, with V2 differences retained;
+no fresh mode runtime or broker probe was run. The preparation-wrapper error is
+retained separately from Rust gates. Public ORC, writer and full SDP qualification
+remain outside this checkpoint.
