@@ -1,0 +1,471 @@
+{
+  "cases": [
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "dup",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "dup: int32"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.mapKeyDedupPolicy": "EXCEPTION",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "fixture": "duplicate_exact_top",
+      "name": "duplicate_sensitive_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "dup",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [dup#1]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/duplicate_exact_top.orc]\nReadSchema: struct<dup:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [dup#1]\n\n\n",
+      "projection": null,
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "dup",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "dup",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.mapKeyDedupPolicy": "EXCEPTION",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "error": {
+        "condition": "FAILED_READ_FILE.NO_HINT",
+        "message": "[FAILED_READ_FILE.NO_HINT] Encountered error while reading file file:///private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/duplicate_exact_top.orc.  SQLSTATE: KD001\n\nJVM stacktrace:\norg.apache.spark.SparkException\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.cannotReadFilesError(QueryExecutionErrors.scala:933)\n\tat org.apache.spark.sql.execution.datasources.v2.FileDataSourceV2$.attachFilePath(FileDataSourceV2.scala:142)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext(FileScanRDD.scala:149)\n\tat org.apache.spark.sql.execution.FileSourceScanExec$$anon$1.hasNext(DataSourceScanExec.scala:777)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.columnartorow_nextBatch_0$(:-1)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.processNext(:-1)\n\tat org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:44)\n\tat org.apache.spark.sql.execution.WholeStageCodegenEvaluatorFactory$WholeStageCodegenPartitionEvaluator$$anon$1.hasNext(WholeStageCodegenEvaluatorFactory.scala:50)\n\tat org.apache.spark.sql.execution.arrow.ArrowConverters$ArrowBatchIterator.hasNext(ArrowConverters.scala:108)\n\tat scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:593)\n\tat scala.collection.mutable.Growable.addAll(Growable.scala:61)\n\tat scala.collection.mutable.Growable.addAll$(Growable.scala:57)\n\tat scala.collection.mutable.ArrayBuilder.addAll(ArrayBuilder.scala:75)\n\tat scala.collection.IterableOnceOps.toArray(IterableOnce.scala:1528)\n\tat scala.collection.IterableOnceOps.toArray$(IterableOnce.scala:1521)\n\tat scala.collection.AbstractIterator.toArray(Iterator.scala:1313)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.$anonfun$processAsArrowBatches$9(SparkConnectPlanExecution.scala:267)\n\tat org.apache.spark.SparkContext.$anonfun$submitJob$1(SparkContext.scala:2646)\n\tat org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:93)\n\tat org.apache.spark.TaskContext.runTaskWithListeners(TaskContext.scala:206)\n\tat org.apache.spark.scheduler.Task.run(Task.scala:147)\n\tat org.apache.spark.executor.Executor$TaskRunner.$anonfun$run$4(Executor.scala:894)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally(SparkErrorUtils.scala:86)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally$(SparkErrorUtils.scala:83)\n\tat org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:97)\n\tat org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:897)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)\nCaused by: org.apache.spark.SparkRuntimeException: Found duplicate field(s) \"dup\": [dup, dup] in case-insensitive mode.\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.foundDuplicateFieldInCaseInsensitiveModeError(QueryExecutionErrors.scala:1121)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$11(OrcUtils.scala:294)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$11$adapted(OrcUtils.scala:289)\n\tat scala.Option.map(Option.scala:242)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$10(OrcUtils.scala:289)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$10$adapted(OrcUtils.scala:286)\n\tat scala.collection.ArrayOps$.map$extension(ArrayOps.scala:936)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.requestedColumnIds(OrcUtils.scala:286)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcFileFormat.$anonfun$buildReaderWithPartitionValues$2(OrcFileFormat.scala:182)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.org$apache$spark$sql$execution$datasources$FileScanRDD$$anon$$readCurrentFile(FileScanRDD.scala:238)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.nextIterator(FileScanRDD.scala:298)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext0(FileScanRDD.scala:138)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext(FileScanRDD.scala:147)\n\tat org.apache.spark.sql.execution.FileSourceScanExec$$anon$1.hasNext(DataSourceScanExec.scala:777)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.columnartorow_nextBatch_0$(:-1)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.processNext(:-1)\n\tat org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:44)\n\tat org.apache.spark.sql.execution.WholeStageCodegenEvaluatorFactory$WholeStageCodegenPartitionEvaluator$$anon$1.hasNext(WholeStageCodegenEvaluatorFactory.scala:50)\n\tat org.apache.spark.sql.execution.arrow.ArrowConverters$ArrowBatchIterator.hasNext(ArrowConverters.scala:108)\n\tat scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:593)\n\tat scala.collection.mutable.Growable.addAll(Growable.scala:61)\n\tat scala.collection.mutable.Growable.addAll$(Growable.scala:57)\n\tat scala.collection.mutable.ArrayBuilder.addAll(ArrayBuilder.scala:75)\n\tat scala.collection.IterableOnceOps.toArray(IterableOnce.scala:1528)\n\tat scala.collection.IterableOnceOps.toArray$(IterableOnce.scala:1521)\n\tat scala.collection.AbstractIterator.toArray(Iterator.scala:1313)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.$anonfun$processAsArrowBatches$9(SparkConnectPlanExecution.scala:267)\n\tat org.apache.spark.SparkContext.$anonfun$submitJob$1(SparkContext.scala:2646)\n\tat org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:93)\n\tat org.apache.spark.TaskContext.runTaskWithListeners(TaskContext.scala:206)\n\tat org.apache.spark.scheduler.Task.run(Task.scala:147)\n\tat org.apache.spark.executor.Executor$TaskRunner.$anonfun$run$4(Executor.scala:894)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally(SparkErrorUtils.scala:86)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally$(SparkErrorUtils.scala:83)\n\tat org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:97)\n\tat org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:897)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+        "python_type": "SparkException",
+        "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sail-sdp-orc-duplicate-key-reference/probe.py\", line 168, in main\n    result['arrow'] = arrow_result(output.toArrow())\n                                   ^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 1986, in toArrow\n    table, _ = self._to_table()\n               ^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 1974, in _to_table\n    table, schema, self._execution_info = self._session.client.to_table(\n                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1039, in to_table\n    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)\n                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.SparkException: [FAILED_READ_FILE.NO_HINT] Encountered error while reading file file:///private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/duplicate_exact_top.orc.  SQLSTATE: KD001\n\nJVM stacktrace:\norg.apache.spark.SparkException\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.cannotReadFilesError(QueryExecutionErrors.scala:933)\n\tat org.apache.spark.sql.execution.datasources.v2.FileDataSourceV2$.attachFilePath(FileDataSourceV2.scala:142)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext(FileScanRDD.scala:149)\n\tat org.apache.spark.sql.execution.FileSourceScanExec$$anon$1.hasNext(DataSourceScanExec.scala:777)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.columnartorow_nextBatch_0$(:-1)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.processNext(:-1)\n\tat org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:44)\n\tat org.apache.spark.sql.execution.WholeStageCodegenEvaluatorFactory$WholeStageCodegenPartitionEvaluator$$anon$1.hasNext(WholeStageCodegenEvaluatorFactory.scala:50)\n\tat org.apache.spark.sql.execution.arrow.ArrowConverters$ArrowBatchIterator.hasNext(ArrowConverters.scala:108)\n\tat scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:593)\n\tat scala.collection.mutable.Growable.addAll(Growable.scala:61)\n\tat scala.collection.mutable.Growable.addAll$(Growable.scala:57)\n\tat scala.collection.mutable.ArrayBuilder.addAll(ArrayBuilder.scala:75)\n\tat scala.collection.IterableOnceOps.toArray(IterableOnce.scala:1528)\n\tat scala.collection.IterableOnceOps.toArray$(IterableOnce.scala:1521)\n\tat scala.collection.AbstractIterator.toArray(Iterator.scala:1313)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.$anonfun$processAsArrowBatches$9(SparkConnectPlanExecution.scala:267)\n\tat org.apache.spark.SparkContext.$anonfun$submitJob$1(SparkContext.scala:2646)\n\tat org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:93)\n\tat org.apache.spark.TaskContext.runTaskWithListeners(TaskContext.scala:206)\n\tat org.apache.spark.scheduler.Task.run(Task.scala:147)\n\tat org.apache.spark.executor.Executor$TaskRunner.$anonfun$run$4(Executor.scala:894)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally(SparkErrorUtils.scala:86)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally$(SparkErrorUtils.scala:83)\n\tat org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:97)\n\tat org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:897)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)\nCaused by: org.apache.spark.SparkRuntimeException: Found duplicate field(s) \"dup\": [dup, dup] in case-insensitive mode.\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.foundDuplicateFieldInCaseInsensitiveModeError(QueryExecutionErrors.scala:1121)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$11(OrcUtils.scala:294)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$11$adapted(OrcUtils.scala:289)\n\tat scala.Option.map(Option.scala:242)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$10(OrcUtils.scala:289)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.$anonfun$requestedColumnIds$10$adapted(OrcUtils.scala:286)\n\tat scala.collection.ArrayOps$.map$extension(ArrayOps.scala:936)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcUtils$.requestedColumnIds(OrcUtils.scala:286)\n\tat org.apache.spark.sql.execution.datasources.orc.OrcFileFormat.$anonfun$buildReaderWithPartitionValues$2(OrcFileFormat.scala:182)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.org$apache$spark$sql$execution$datasources$FileScanRDD$$anon$$readCurrentFile(FileScanRDD.scala:238)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.nextIterator(FileScanRDD.scala:298)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext0(FileScanRDD.scala:138)\n\tat org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext(FileScanRDD.scala:147)\n\tat org.apache.spark.sql.execution.FileSourceScanExec$$anon$1.hasNext(DataSourceScanExec.scala:777)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.columnartorow_nextBatch_0$(:-1)\n\tat org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage1.processNext(:-1)\n\tat org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:44)\n\tat org.apache.spark.sql.execution.WholeStageCodegenEvaluatorFactory$WholeStageCodegenPartitionEvaluator$$anon$1.hasNext(WholeStageCodegenEvaluatorFactory.scala:50)\n\tat org.apache.spark.sql.execution.arrow.ArrowConverters$ArrowBatchIterator.hasNext(ArrowConverters.scala:108)\n\tat scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:593)\n\tat scala.collection.mutable.Growable.addAll(Growable.scala:61)\n\tat scala.collection.mutable.Growable.addAll$(Growable.scala:57)\n\tat scala.collection.mutable.ArrayBuilder.addAll(ArrayBuilder.scala:75)\n\tat scala.collection.IterableOnceOps.toArray(IterableOnce.scala:1528)\n\tat scala.collection.IterableOnceOps.toArray$(IterableOnce.scala:1521)\n\tat scala.collection.AbstractIterator.toArray(Iterator.scala:1313)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.$anonfun$processAsArrowBatches$9(SparkConnectPlanExecution.scala:267)\n\tat org.apache.spark.SparkContext.$anonfun$submitJob$1(SparkContext.scala:2646)\n\tat org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:93)\n\tat org.apache.spark.TaskContext.runTaskWithListeners(TaskContext.scala:206)\n\tat org.apache.spark.scheduler.Task.run(Task.scala:147)\n\tat org.apache.spark.executor.Executor$TaskRunner.$anonfun$run$4(Executor.scala:894)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally(SparkErrorUtils.scala:86)\n\tat org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally$(SparkErrorUtils.scala:83)\n\tat org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:97)\n\tat org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:897)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)\n"
+      },
+      "fixture": "duplicate_exact_top",
+      "name": "duplicate_sensitive_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "dup",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [dup#5]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/duplicate_exact_top.orc]\nReadSchema: struct<dup:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [dup#5]\n\n\n",
+      "projection": null,
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "dup",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "dup",
+            "nullable": true,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "error"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "key",
+            "nullable": false,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              1,
+              -2147483648
+            ]
+          },
+          {
+            "name": "value",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "one",
+              "overflow"
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "schema": "key: int32 not null\nvalue: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.mapKeyDedupPolicy": "EXCEPTION",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "fixture": "map_long_keys",
+      "name": "map_key_narrow_vector_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "key",
+            "nullable": false,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "physical_plan": "== Physical Plan ==\n* Generate (4)\n+- * Filter (3)\n   +- * ColumnarToRow (2)\n      +- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [m#9]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/map_long_keys.orc]\nPushedFilters: [IsNotNull(m)]\nReadSchema: struct<m:map<int,string>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [m#9]\n\n(3) Filter [codegen id : 1]\nInput [1]: [m#9]\nCondition : ((size(m#9, false) > 0) AND isnotnull(m#9))\n\n(4) Generate [codegen id : 1]\nInput [1]: [m#9]\nArguments: explode(m#9), false, [key#15, value#16]\n\n\n",
+      "projection": "explode(m) AS (key, value)",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "m",
+            "nullable": true,
+            "type": {
+              "keyType": "integer",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": "string"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "m",
+            "nullable": true,
+            "type": {
+              "keyType": "integer",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": "string"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.mapKeyDedupPolicy": "EXCEPTION",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "false",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "error": {
+        "condition": "FAILED_READ_FILE.NO_HINT",
+        "message": "[FAILED_READ_FILE.NO_HINT] Encountered error while reading file file:///private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/map_long_keys.orc.  SQLSTATE: KD001",
+        "python_type": "SparkException",
+        "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/sail-sdp-orc-duplicate-key-reference/probe.py\", line 168, in main\n    result['arrow'] = arrow_result(output.toArrow())\n                                   ^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 1986, in toArrow\n    table, _ = self._to_table()\n               ^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py\", line 1974, in _to_table\n    table, schema, self._execution_info = self._session.client.to_table(\n                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1039, in to_table\n    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)\n                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.SparkException: [FAILED_READ_FILE.NO_HINT] Encountered error while reading file file:///private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/map_long_keys.orc.  SQLSTATE: KD001\n"
+      },
+      "fixture": "map_long_keys",
+      "name": "map_key_narrow_vector_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "key",
+            "nullable": false,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "value",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "physical_plan": "== Physical Plan ==\n* Generate (3)\n+- * Filter (2)\n   +- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [m#21]\nBatched: false\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/map_long_keys.orc]\nPushedFilters: [IsNotNull(m)]\nReadSchema: struct<m:map<int,string>>\n\n(2) Filter [codegen id : 1]\nInput [1]: [m#21]\nCondition : ((size(m#21, false) > 0) AND isnotnull(m#21))\n\n(3) Generate [codegen id : 1]\nInput [1]: [m#21]\nArguments: explode(m#21), false, [key#27, value#28]\n\n\n",
+      "projection": "explode(m) AS (key, value)",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "m",
+            "nullable": true,
+            "type": {
+              "keyType": "integer",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": "string"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "m",
+            "nullable": true,
+            "type": {
+              "keyType": "integer",
+              "type": "map",
+              "valueContainsNull": true,
+              "valueType": "string"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "error"
+    }
+  ],
+  "config": {
+    "spark.sql.ansi.enabled": "true",
+    "spark.sql.caseSensitive": "true",
+    "spark.sql.files.ignoreCorruptFiles": "false",
+    "spark.sql.mapKeyDedupPolicy": "EXCEPTION",
+    "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+    "spark.sql.orc.enableVectorizedReader": "true",
+    "spark.sql.orc.filterPushdown": "true",
+    "spark.sql.orc.impl": "native",
+    "spark.sql.orc.mergeSchema": "false",
+    "spark.sql.session.timeZone": "UTC",
+    "spark.sql.shuffle.partitions": "1",
+    "spark.sql.timeType.enabled": "false",
+    "spark.sql.timestampType": "TIMESTAMP_LTZ"
+  },
+  "fixtures": {
+    "duplicate_exact_top": {
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "dup",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "dup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "dup: int32\ndup: int32"
+      },
+      "path": "/private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/duplicate_exact_top.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "dup",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11
+            ]
+          },
+          {
+            "name": "dup",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              22
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "dup: int32\ndup: int32"
+      },
+      "physical_schema": "dup: int32\ndup: int32",
+      "sha256": "611ce7ac50e8802e4f49973d571bb57f5de973c1bb3ea305e96c4206d96f9ea4",
+      "size": 288,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "map_long_keys": {
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "m",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "map<int64, string>",
+            "values": [
+              [
+                [
+                  1,
+                  "one"
+                ],
+                [
+                  2147483648,
+                  "overflow"
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "m: map<int64, string>\n  child 0, entries: struct<key: int64 not null, value: string> not null\n      child 0, key: int64 not null\n      child 1, value: string"
+      },
+      "path": "/private/tmp/sail-sdp-orc-duplicate-key-reference/inputs/map_long_keys.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "m",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "map<int64, string>",
+            "values": [
+              [
+                [
+                  1,
+                  "one"
+                ],
+                [
+                  2147483648,
+                  "overflow"
+                ]
+              ]
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "m: map<int64, string>\n  child 0, entries: struct<key: int64 not null, value: string> not null\n      child 0, key: int64 not null\n      child 1, value: string"
+      },
+      "physical_schema": "m: map<int64, string>\n  child 0, entries: struct<key: int64 not null, value: string> not null\n      child 0, key: int64 not null\n      child 1, value: string",
+      "sha256": "fcd365f6a80c9d93da5581606e6b96a9018fd1875aa4378227fac415bacfb1de",
+      "size": 443,
+      "stage": "physical_read",
+      "status": "success"
+    }
+  },
+  "java": {
+    "actual_pid": 5469,
+    "default_timezone_id": "UTC",
+    "format_locale": "en-US",
+    "gateway_pid": 5469,
+    "oldmapping_property": "false",
+    "runtime_version": "20.0.2+9-78",
+    "tzdb_versions": [
+      "2023c"
+    ],
+    "user_timezone_property": "UTC",
+    "vendor": "Oracle Corporation"
+  },
+  "java_tool_options": "-Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+  "owned_gateway_exit_code": 0,
+  "pyarrow_version": "26.0.0",
+  "python_pid": 5449,
+  "recorded_at_utc": "2026-10-29T23:58:01.310627+00:00",
+  "scope": "Bounded Spark reference only; no Sail runtime or general map-key conversion guarantee",
+  "script_sha256": "f9432b70893a4513c2e8c12569b7d8509f40fbfded100711693bff809e354d91",
+  "spark_context": {
+    "driver_memory": "512m",
+    "master": "local[1]"
+  },
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_version": "4.2.1",
+  "status": "completed"
+}

@@ -1,0 +1,34 @@
+  @Override
+  public boolean getBoolean(int rowId) {
+    return longData.vector[getRowIndex(rowId)] == 1;
+  }
+
+  @Override
+  public byte getByte(int rowId) {
+    return (byte) longData.vector[getRowIndex(rowId)];
+  }
+
+  @Override
+  public short getShort(int rowId) {
+    return (short) longData.vector[getRowIndex(rowId)];
+  }
+
+  @Override
+  public int getInt(int rowId) {
+    int value = (int) longData.vector[getRowIndex(rowId)];
+    if (isDate) {
+      return RebaseDateTime.rebaseJulianToGregorianDays(value);
+    } else {
+      return value;
+    }
+  }
+
+  @Override
+  public long getLong(int rowId) {
+    int index = getRowIndex(rowId);
+    if (isTimestamp) {
+      return DateTimeUtils.fromJavaTimestamp(timestampData.asScratchTimestamp(index));
+    } else {
+      return longData.vector[index];
+    }
+  }

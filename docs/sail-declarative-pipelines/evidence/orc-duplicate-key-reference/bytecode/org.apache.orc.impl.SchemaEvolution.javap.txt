@@ -1,0 +1,1108 @@
+Compiled from "SchemaEvolution.java"
+public class org.apache.orc.impl.SchemaEvolution {
+  private final org.apache.orc.TypeDescription[] readerFileTypes;
+
+  private final boolean[] readerIncluded;
+
+  private final int readerColumnOffset;
+
+  private final boolean[] fileIncluded;
+
+  private final org.apache.orc.TypeDescription fileSchema;
+
+  private final org.apache.orc.TypeDescription readerSchema;
+
+  private boolean hasConversion;
+
+  private boolean isOnlyImplicitConversion;
+
+  private final boolean isAcid;
+
+  final boolean isSchemaEvolutionCaseAware;
+
+  private final boolean includeAcidColumns;
+
+  private final boolean[] ppdSafeConversion;
+
+  private final boolean positionalColumns;
+
+  private static final org.slf4j.Logger LOG;
+
+  private static final java.util.regex.Pattern missingMetadataPattern;
+
+  private static final java.util.List<java.lang.String> acidEventFieldNames;
+
+  public org.apache.orc.impl.SchemaEvolution(org.apache.orc.TypeDescription, org.apache.orc.TypeDescription, org.apache.orc.Reader$Options);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_3
+       5: invokevirtual #7                  // Method org/apache/orc/Reader$Options.getTolerateMissingSchema:()Z
+       8: istore        4
+      10: aload_3
+      11: invokevirtual #13                 // Method org/apache/orc/Reader$Options.getInclude:()[Z
+      14: astore        5
+      16: aload_0
+      17: aload_3
+      18: invokevirtual #17                 // Method org/apache/orc/Reader$Options.getIsSchemaEvolutionCaseAware:()Z
+      21: putfield      #20                 // Field isSchemaEvolutionCaseAware:Z
+      24: aload_0
+      25: aload         5
+      27: ifnonnull     34
+      30: aconst_null
+      31: goto          42
+      34: aload         5
+      36: aload         5
+      38: arraylength
+      39: invokestatic  #26                 // Method java/util/Arrays.copyOf:([ZI)[Z
+      42: putfield      #32                 // Field readerIncluded:[Z
+      45: aload_0
+      46: aload_1
+      47: invokevirtual #36                 // Method org/apache/orc/TypeDescription.getMaximumId:()I
+      50: iconst_1
+      51: iadd
+      52: newarray       boolean
+      54: putfield      #42                 // Field fileIncluded:[Z
+      57: aload_0
+      58: iconst_0
+      59: putfield      #45                 // Field hasConversion:Z
+      62: aload_0
+      63: iconst_1
+      64: putfield      #48                 // Field isOnlyImplicitConversion:Z
+      67: aload_0
+      68: aload_1
+      69: putfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+      72: aload_2
+      73: ifnonnull     83
+      76: aload_0
+      77: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+      80: goto          84
+      83: aload_2
+      84: astore_2
+      85: aload_0
+      86: aload_1
+      87: invokestatic  #55                 // Method checkAcidSchema:(Lorg/apache/orc/TypeDescription;)Z
+      90: putfield      #59                 // Field isAcid:Z
+      93: aload_2
+      94: invokestatic  #55                 // Method checkAcidSchema:(Lorg/apache/orc/TypeDescription;)Z
+      97: istore        6
+      99: aload_0
+     100: aload_3
+     101: invokevirtual #62                 // Method org/apache/orc/Reader$Options.getIncludeAcidColumns:()Z
+     104: putfield      #65                 // Field includeAcidColumns:Z
+     107: aload_0
+     108: aload_0
+     109: getfield      #59                 // Field isAcid:Z
+     112: ifeq          131
+     115: iload         6
+     117: ifne          131
+     120: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+     123: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     128: goto          132
+     131: iconst_0
+     132: putfield      #77                 // Field readerColumnOffset:I
+     135: aload_0
+     136: getfield      #59                 // Field isAcid:Z
+     139: ifeq          158
+     142: iload         6
+     144: ifne          158
+     147: aload_0
+     148: aload_2
+     149: invokestatic  #81                 // Method createEventSchema:(Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+     152: putfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     155: goto          163
+     158: aload_0
+     159: aload_2
+     160: putfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     163: aload_0
+     164: getfield      #32                 // Field readerIncluded:[Z
+     167: ifnull        217
+     170: aload_0
+     171: getfield      #32                 // Field readerIncluded:[Z
+     174: arraylength
+     175: aload_0
+     176: getfield      #77                 // Field readerColumnOffset:I
+     179: iadd
+     180: aload_0
+     181: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     184: invokevirtual #36                 // Method org/apache/orc/TypeDescription.getMaximumId:()I
+     187: iconst_1
+     188: iadd
+     189: if_icmpeq     217
+     192: new           #88                 // class java/lang/IllegalArgumentException
+     195: dup
+     196: aload_0
+     197: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     200: invokevirtual #90                 // Method org/apache/orc/TypeDescription.toJson:()Ljava/lang/String;
+     203: aload_0
+     204: getfield      #32                 // Field readerIncluded:[Z
+     207: arraylength
+     208: invokedynamic #94,  0             // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;I)Ljava/lang/String;
+     213: invokespecial #98                 // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+     216: athrow
+     217: aload_0
+     218: aload_0
+     219: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     222: invokevirtual #36                 // Method org/apache/orc/TypeDescription.getMaximumId:()I
+     225: iconst_1
+     226: iadd
+     227: anewarray     #37                 // class org/apache/orc/TypeDescription
+     230: putfield      #101                // Field readerFileTypes:[Lorg/apache/orc/TypeDescription;
+     233: iconst_0
+     234: istore        7
+     236: aload_3
+     237: invokevirtual #105                // Method org/apache/orc/Reader$Options.getForcePositionalEvolution:()Z
+     240: ifeq          263
+     243: aload_0
+     244: getfield      #59                 // Field isAcid:Z
+     247: ifeq          254
+     250: iconst_2
+     251: goto          258
+     254: aload_3
+     255: invokevirtual #108                // Method org/apache/orc/Reader$Options.getPositionalEvolutionLevel:()I
+     258: istore        7
+     260: goto          358
+     263: aload_0
+     264: aload_0
+     265: getfield      #59                 // Field isAcid:Z
+     268: ifeq          278
+     271: aload_1
+     272: invokestatic  #111                // Method getBaseRow:(Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+     275: goto          279
+     278: aload_1
+     279: invokevirtual #114                // Method hasColumnNames:(Lorg/apache/orc/TypeDescription;)Z
+     282: ifne          358
+     285: aload_0
+     286: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+     289: aload_0
+     290: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     293: invokevirtual #117                // Method org/apache/orc/TypeDescription.equals:(Ljava/lang/Object;)Z
+     296: ifne          358
+     299: iload         4
+     301: ifne          314
+     304: new           #121                // class java/lang/RuntimeException
+     307: dup
+     308: ldc           #123                // String Found that schema metadata is missing from file. This is likely caused by a writer earlier than HIVE-4243. Will not try to reconcile schemas
+     310: invokespecial #125                // Method java/lang/RuntimeException."<init>":(Ljava/lang/String;)V
+     313: athrow
+     314: getstatic     #126                // Field LOG:Lorg/slf4j/Logger;
+     317: aload_0
+     318: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+     321: invokestatic  #130                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     324: aload_0
+     325: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     328: invokestatic  #130                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     331: invokedynamic #136,  0            // InvokeDynamic #1:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+     336: invokeinterface #139,  2          // InterfaceMethod org/slf4j/Logger.warn:(Ljava/lang/String;)V
+     341: aload_0
+     342: getfield      #59                 // Field isAcid:Z
+     345: ifeq          352
+     348: iconst_2
+     349: goto          356
+     352: aload_3
+     353: invokevirtual #108                // Method org/apache/orc/Reader$Options.getPositionalEvolutionLevel:()I
+     356: istore        7
+     358: aload_0
+     359: aload_1
+     360: aload_0
+     361: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+     364: iload         7
+     366: invokevirtual #144                // Method buildConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;I)V
+     369: aload_0
+     370: aload_3
+     371: invokevirtual #105                // Method org/apache/orc/Reader$Options.getForcePositionalEvolution:()Z
+     374: putfield      #148                // Field positionalColumns:Z
+     377: aload_0
+     378: aload_0
+     379: invokevirtual #151                // Method populatePpdSafeConversion:()[Z
+     382: putfield      #154                // Field ppdSafeConversion:[Z
+     385: return
+
+  public org.apache.orc.impl.SchemaEvolution(org.apache.orc.TypeDescription, boolean[]);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aconst_null
+       3: aload_2
+       4: invokespecial #157                // Method "<init>":(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;[Z)V
+       7: return
+
+  public org.apache.orc.impl.SchemaEvolution(org.apache.orc.TypeDescription, org.apache.orc.TypeDescription, boolean[]);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: new           #8                  // class org/apache/orc/Reader$Options
+       6: dup
+       7: new           #160                // class org/apache/hadoop/conf/Configuration
+      10: dup
+      11: invokespecial #162                // Method org/apache/hadoop/conf/Configuration."<init>":()V
+      14: invokespecial #163                // Method org/apache/orc/Reader$Options."<init>":(Lorg/apache/hadoop/conf/Configuration;)V
+      17: aload_3
+      18: invokevirtual #166                // Method org/apache/orc/Reader$Options.include:([Z)Lorg/apache/orc/Reader$Options;
+      21: invokespecial #170                // Method "<init>":(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;Lorg/apache/orc/Reader$Options;)V
+      24: return
+
+  private boolean hasColumnNames(org.apache.orc.TypeDescription);
+    Code:
+       0: aload_1
+       1: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+       4: getstatic     #177                // Field org/apache/orc/TypeDescription$Category.STRUCT:Lorg/apache/orc/TypeDescription$Category;
+       7: if_acmpeq     12
+      10: iconst_1
+      11: ireturn
+      12: aload_1
+      13: invokevirtual #183                // Method org/apache/orc/TypeDescription.getFieldNames:()Ljava/util/List;
+      16: invokeinterface #187,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      21: astore_2
+      22: aload_2
+      23: invokeinterface #191,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      28: ifeq          59
+      31: aload_2
+      32: invokeinterface #196,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      37: checkcast     #131                // class java/lang/String
+      40: astore_3
+      41: getstatic     #200                // Field missingMetadataPattern:Ljava/util/regex/Pattern;
+      44: aload_3
+      45: invokevirtual #204                // Method java/util/regex/Pattern.matcher:(Ljava/lang/CharSequence;)Ljava/util/regex/Matcher;
+      48: invokevirtual #210                // Method java/util/regex/Matcher.matches:()Z
+      51: ifne          56
+      54: iconst_1
+      55: ireturn
+      56: goto          22
+      59: iconst_0
+      60: ireturn
+
+  public boolean isSchemaEvolutionCaseAware();
+    Code:
+       0: aload_0
+       1: getfield      #20                 // Field isSchemaEvolutionCaseAware:Z
+       4: ireturn
+
+  public org.apache.orc.TypeDescription getReaderSchema();
+    Code:
+       0: aload_0
+       1: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+       4: areturn
+
+  public org.apache.orc.TypeDescription getReaderBaseSchema();
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field isAcid:Z
+       4: ifeq          17
+       7: aload_0
+       8: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+      11: invokestatic  #111                // Method getBaseRow:(Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      14: goto          21
+      17: aload_0
+      18: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+      21: areturn
+
+  boolean isAcid();
+    Code:
+       0: aload_0
+       1: getfield      #59                 // Field isAcid:Z
+       4: ireturn
+
+  public boolean hasConversion();
+    Code:
+       0: aload_0
+       1: getfield      #45                 // Field hasConversion:Z
+       4: ireturn
+
+  public boolean isOnlyImplicitConversion();
+    Code:
+       0: aload_0
+       1: getfield      #48                 // Field isOnlyImplicitConversion:Z
+       4: ireturn
+
+  public org.apache.orc.TypeDescription getFileSchema();
+    Code:
+       0: aload_0
+       1: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+       4: areturn
+
+  public org.apache.orc.TypeDescription getFileType(org.apache.orc.TypeDescription);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+       5: invokevirtual #218                // Method getFileType:(I)Lorg/apache/orc/TypeDescription;
+       8: areturn
+
+  public org.apache.orc.TypeDescription getFileType(int);
+    Code:
+       0: aload_0
+       1: getfield      #101                // Field readerFileTypes:[Lorg/apache/orc/TypeDescription;
+       4: iload_1
+       5: aaload
+       6: areturn
+
+  public boolean[] getReaderIncluded();
+    Code:
+       0: aload_0
+       1: getfield      #32                 // Field readerIncluded:[Z
+       4: areturn
+
+  public boolean[] getFileIncluded();
+    Code:
+       0: aload_0
+       1: getfield      #42                 // Field fileIncluded:[Z
+       4: areturn
+
+  public boolean getPositionalColumns();
+    Code:
+       0: aload_0
+       1: getfield      #148                // Field positionalColumns:Z
+       4: ireturn
+
+  private boolean typesAreImplicitConversion(org.apache.orc.TypeDescription, org.apache.orc.TypeDescription);
+    Code:
+       0: getstatic     #222                // Field org/apache/orc/impl/SchemaEvolution$1.$SwitchMap$org$apache$orc$TypeDescription$Category:[I
+       3: aload_1
+       4: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+       7: invokevirtual #228                // Method org/apache/orc/TypeDescription$Category.ordinal:()I
+      10: iaload
+      11: tableswitch   { // 1 to 6
+                     1: 48
+                     2: 89
+                     3: 117
+                     4: 132
+                     5: 147
+                     6: 147
+               default: 205
+          }
+      48: aload_2
+      49: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      52: getstatic     #231                // Field org/apache/orc/TypeDescription$Category.SHORT:Lorg/apache/orc/TypeDescription$Category;
+      55: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+      58: ifne          87
+      61: aload_2
+      62: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      65: getstatic     #235                // Field org/apache/orc/TypeDescription$Category.INT:Lorg/apache/orc/TypeDescription$Category;
+      68: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+      71: ifne          87
+      74: aload_2
+      75: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      78: getstatic     #238                // Field org/apache/orc/TypeDescription$Category.LONG:Lorg/apache/orc/TypeDescription$Category;
+      81: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+      84: ifeq          205
+      87: iconst_1
+      88: ireturn
+      89: aload_2
+      90: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      93: getstatic     #235                // Field org/apache/orc/TypeDescription$Category.INT:Lorg/apache/orc/TypeDescription$Category;
+      96: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+      99: ifne          115
+     102: aload_2
+     103: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     106: getstatic     #238                // Field org/apache/orc/TypeDescription$Category.LONG:Lorg/apache/orc/TypeDescription$Category;
+     109: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     112: ifeq          205
+     115: iconst_1
+     116: ireturn
+     117: aload_2
+     118: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     121: getstatic     #238                // Field org/apache/orc/TypeDescription$Category.LONG:Lorg/apache/orc/TypeDescription$Category;
+     124: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     127: ifeq          205
+     130: iconst_1
+     131: ireturn
+     132: aload_2
+     133: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     136: getstatic     #241                // Field org/apache/orc/TypeDescription$Category.DOUBLE:Lorg/apache/orc/TypeDescription$Category;
+     139: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     142: ifeq          205
+     145: iconst_1
+     146: ireturn
+     147: aload_2
+     148: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     151: getstatic     #244                // Field org/apache/orc/TypeDescription$Category.STRING:Lorg/apache/orc/TypeDescription$Category;
+     154: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     157: ifeq          162
+     160: iconst_1
+     161: ireturn
+     162: aload_2
+     163: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     166: getstatic     #247                // Field org/apache/orc/TypeDescription$Category.CHAR:Lorg/apache/orc/TypeDescription$Category;
+     169: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     172: ifne          188
+     175: aload_2
+     176: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     179: getstatic     #250                // Field org/apache/orc/TypeDescription$Category.VARCHAR:Lorg/apache/orc/TypeDescription$Category;
+     182: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     185: ifeq          205
+     188: aload_1
+     189: invokevirtual #253                // Method org/apache/orc/TypeDescription.getMaxLength:()I
+     192: aload_2
+     193: invokevirtual #253                // Method org/apache/orc/TypeDescription.getMaxLength:()I
+     196: if_icmpgt     203
+     199: iconst_1
+     200: goto          204
+     203: iconst_0
+     204: ireturn
+     205: iconst_0
+     206: ireturn
+
+  public boolean isPPDSafeConversion(int);
+    Code:
+       0: aload_0
+       1: invokevirtual #256                // Method hasConversion:()Z
+       4: ifeq          35
+       7: iload_1
+       8: iflt          33
+      11: iload_1
+      12: aload_0
+      13: getfield      #154                // Field ppdSafeConversion:[Z
+      16: arraylength
+      17: if_icmpge     33
+      20: aload_0
+      21: getfield      #154                // Field ppdSafeConversion:[Z
+      24: iload_1
+      25: baload
+      26: ifeq          33
+      29: iconst_1
+      30: goto          34
+      33: iconst_0
+      34: ireturn
+      35: iconst_1
+      36: ireturn
+
+  private boolean[] populatePpdSafeConversion();
+    Code:
+       0: aload_0
+       1: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+       4: ifnull        21
+       7: aload_0
+       8: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+      11: ifnull        21
+      14: aload_0
+      15: getfield      #101                // Field readerFileTypes:[Lorg/apache/orc/TypeDescription;
+      18: ifnonnull     23
+      21: aconst_null
+      22: areturn
+      23: aload_0
+      24: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+      27: invokevirtual #36                 // Method org/apache/orc/TypeDescription.getMaximumId:()I
+      30: iconst_1
+      31: iadd
+      32: newarray       boolean
+      34: astore_1
+      35: aload_0
+      36: aload_0
+      37: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+      40: aload_0
+      41: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+      44: invokevirtual #258                // Method validatePPDConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;)Z
+      47: istore_2
+      48: aload_1
+      49: aload_0
+      50: getfield      #51                 // Field fileSchema:Lorg/apache/orc/TypeDescription;
+      53: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+      56: iload_2
+      57: bastore
+      58: aload_0
+      59: aload_1
+      60: aload_0
+      61: getfield      #85                 // Field readerSchema:Lorg/apache/orc/TypeDescription;
+      64: invokevirtual #262                // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      67: invokevirtual #265                // Method populatePpdSafeConversionForChildren:([ZLjava/util/List;)[Z
+      70: areturn
+
+  private boolean[] populatePpdSafeConversionForChildren(boolean[], java.util.List<org.apache.orc.TypeDescription>);
+    Code:
+       0: aload_2
+       1: ifnull        81
+       4: aload_2
+       5: invokeinterface #187,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      10: astore        4
+      12: aload         4
+      14: invokeinterface #191,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      19: ifeq          81
+      22: aload         4
+      24: invokeinterface #196,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      29: checkcast     #37                 // class org/apache/orc/TypeDescription
+      32: astore        5
+      34: aload_0
+      35: aload         5
+      37: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+      40: invokevirtual #218                // Method getFileType:(I)Lorg/apache/orc/TypeDescription;
+      43: astore        6
+      45: aload_0
+      46: aload         6
+      48: aload         5
+      50: invokevirtual #258                // Method validatePPDConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;)Z
+      53: istore_3
+      54: aload         6
+      56: ifnull        67
+      59: aload_1
+      60: aload         6
+      62: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+      65: iload_3
+      66: bastore
+      67: aload_0
+      68: aload_1
+      69: aload         5
+      71: invokevirtual #262                // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      74: invokevirtual #265                // Method populatePpdSafeConversionForChildren:([ZLjava/util/List;)[Z
+      77: pop
+      78: goto          12
+      81: aload_1
+      82: areturn
+
+  private boolean validatePPDConversion(org.apache.orc.TypeDescription, org.apache.orc.TypeDescription);
+    Code:
+       0: aload_1
+       1: ifnonnull     6
+       4: iconst_0
+       5: ireturn
+       6: aload_1
+       7: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      10: invokevirtual #269                // Method org/apache/orc/TypeDescription$Category.isPrimitive:()Z
+      13: ifeq          222
+      16: aload_1
+      17: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      20: aload_2
+      21: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      24: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+      27: ifeq          54
+      30: aload_1
+      31: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      34: getstatic     #272                // Field org/apache/orc/TypeDescription$Category.DECIMAL:Lorg/apache/orc/TypeDescription$Category;
+      37: if_acmpne     48
+      40: aload_1
+      41: aload_2
+      42: invokevirtual #117                // Method org/apache/orc/TypeDescription.equals:(Ljava/lang/Object;)Z
+      45: ifeq          52
+      48: iconst_1
+      49: goto          53
+      52: iconst_0
+      53: ireturn
+      54: getstatic     #222                // Field org/apache/orc/impl/SchemaEvolution$1.$SwitchMap$org$apache$orc$TypeDescription$Category:[I
+      57: aload_1
+      58: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      61: invokevirtual #228                // Method org/apache/orc/TypeDescription$Category.ordinal:()I
+      64: iaload
+      65: tableswitch   { // 1 to 7
+                     1: 108
+                     2: 149
+                     3: 177
+                     4: 222
+                     5: 222
+                     6: 207
+                     7: 192
+               default: 222
+          }
+     108: aload_2
+     109: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     112: getstatic     #231                // Field org/apache/orc/TypeDescription$Category.SHORT:Lorg/apache/orc/TypeDescription$Category;
+     115: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     118: ifne          147
+     121: aload_2
+     122: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     125: getstatic     #235                // Field org/apache/orc/TypeDescription$Category.INT:Lorg/apache/orc/TypeDescription$Category;
+     128: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     131: ifne          147
+     134: aload_2
+     135: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     138: getstatic     #238                // Field org/apache/orc/TypeDescription$Category.LONG:Lorg/apache/orc/TypeDescription$Category;
+     141: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     144: ifeq          222
+     147: iconst_1
+     148: ireturn
+     149: aload_2
+     150: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     153: getstatic     #235                // Field org/apache/orc/TypeDescription$Category.INT:Lorg/apache/orc/TypeDescription$Category;
+     156: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     159: ifne          175
+     162: aload_2
+     163: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     166: getstatic     #238                // Field org/apache/orc/TypeDescription$Category.LONG:Lorg/apache/orc/TypeDescription$Category;
+     169: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     172: ifeq          222
+     175: iconst_1
+     176: ireturn
+     177: aload_2
+     178: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     181: getstatic     #238                // Field org/apache/orc/TypeDescription$Category.LONG:Lorg/apache/orc/TypeDescription$Category;
+     184: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     187: ifeq          222
+     190: iconst_1
+     191: ireturn
+     192: aload_2
+     193: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     196: getstatic     #250                // Field org/apache/orc/TypeDescription$Category.VARCHAR:Lorg/apache/orc/TypeDescription$Category;
+     199: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     202: ifeq          222
+     205: iconst_1
+     206: ireturn
+     207: aload_2
+     208: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     211: getstatic     #244                // Field org/apache/orc/TypeDescription$Category.STRING:Lorg/apache/orc/TypeDescription$Category;
+     214: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+     217: ifeq          222
+     220: iconst_1
+     221: ireturn
+     222: iconst_0
+     223: ireturn
+
+  public boolean includeReaderColumn(int);
+    Code:
+       0: iload_1
+       1: ifne          6
+       4: iconst_1
+       5: ireturn
+       6: aload_0
+       7: getfield      #59                 // Field isAcid:Z
+      10: ifeq          53
+      13: iload_1
+      14: aload_0
+      15: getfield      #77                 // Field readerColumnOffset:I
+      18: if_icmpge     26
+      21: aload_0
+      22: getfield      #65                 // Field includeAcidColumns:Z
+      25: ireturn
+      26: aload_0
+      27: getfield      #32                 // Field readerIncluded:[Z
+      30: ifnull        47
+      33: aload_0
+      34: getfield      #32                 // Field readerIncluded:[Z
+      37: iload_1
+      38: aload_0
+      39: getfield      #77                 // Field readerColumnOffset:I
+      42: isub
+      43: baload
+      44: ifeq          51
+      47: iconst_1
+      48: goto          52
+      51: iconst_0
+      52: ireturn
+      53: aload_0
+      54: getfield      #32                 // Field readerIncluded:[Z
+      57: ifnull        69
+      60: aload_0
+      61: getfield      #32                 // Field readerIncluded:[Z
+      64: iload_1
+      65: baload
+      66: ifeq          73
+      69: iconst_1
+      70: goto          74
+      73: iconst_0
+      74: ireturn
+
+  void buildConversion(org.apache.orc.TypeDescription, org.apache.orc.TypeDescription, int);
+    Code:
+       0: aload_0
+       1: aload_2
+       2: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+       5: invokevirtual #275                // Method includeReaderColumn:(I)Z
+       8: ifne          12
+      11: return
+      12: iconst_1
+      13: istore        4
+      15: aload_1
+      16: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      19: aload_2
+      20: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      23: if_acmpne     606
+      26: getstatic     #222                // Field org/apache/orc/impl/SchemaEvolution$1.$SwitchMap$org$apache$orc$TypeDescription$Category:[I
+      29: aload_2
+      30: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      33: invokevirtual #228                // Method org/apache/orc/TypeDescription$Category.ordinal:()I
+      36: iaload
+      37: tableswitch   { // 1 to 21
+                     1: 136
+                     2: 136
+                     3: 136
+                     4: 136
+                     5: 139
+                     6: 139
+                     7: 136
+                     8: 136
+                     9: 136
+                    10: 136
+                    11: 136
+                    12: 136
+                    13: 136
+                    14: 136
+                    15: 136
+                    16: 136
+                    17: 172
+                    18: 207
+                    19: 207
+                    20: 207
+                    21: 297
+               default: 589
+          }
+     136: goto          632
+     139: aload_1
+     140: invokevirtual #253                // Method org/apache/orc/TypeDescription.getMaxLength:()I
+     143: aload_2
+     144: invokevirtual #253                // Method org/apache/orc/TypeDescription.getMaxLength:()I
+     147: if_icmpeq     632
+     150: aload_0
+     151: iconst_1
+     152: putfield      #45                 // Field hasConversion:Z
+     155: aload_0
+     156: aload_1
+     157: aload_2
+     158: invokevirtual #279                // Method typesAreImplicitConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;)Z
+     161: ifne          632
+     164: aload_0
+     165: iconst_0
+     166: putfield      #48                 // Field isOnlyImplicitConversion:Z
+     169: goto          632
+     172: aload_1
+     173: invokevirtual #282                // Method org/apache/orc/TypeDescription.getPrecision:()I
+     176: aload_2
+     177: invokevirtual #282                // Method org/apache/orc/TypeDescription.getPrecision:()I
+     180: if_icmpne     194
+     183: aload_1
+     184: invokevirtual #285                // Method org/apache/orc/TypeDescription.getScale:()I
+     187: aload_2
+     188: invokevirtual #285                // Method org/apache/orc/TypeDescription.getScale:()I
+     191: if_icmpeq     632
+     194: aload_0
+     195: iconst_1
+     196: putfield      #45                 // Field hasConversion:Z
+     199: aload_0
+     200: iconst_0
+     201: putfield      #48                 // Field isOnlyImplicitConversion:Z
+     204: goto          632
+     207: aload_1
+     208: invokevirtual #262                // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+     211: astore        5
+     213: aload_2
+     214: invokevirtual #262                // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+     217: astore        6
+     219: aload         5
+     221: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     226: aload         6
+     228: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     233: if_icmpne     291
+     236: iconst_0
+     237: istore        7
+     239: iload         7
+     241: aload         5
+     243: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     248: if_icmpge     288
+     251: aload_0
+     252: aload         5
+     254: iload         7
+     256: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     261: checkcast     #37                 // class org/apache/orc/TypeDescription
+     264: aload         6
+     266: iload         7
+     268: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     273: checkcast     #37                 // class org/apache/orc/TypeDescription
+     276: iload_3
+     277: iconst_1
+     278: isub
+     279: invokevirtual #144                // Method buildConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;I)V
+     282: iinc          7, 1
+     285: goto          239
+     288: goto          632
+     291: iconst_0
+     292: istore        4
+     294: goto          632
+     297: aload_2
+     298: invokevirtual #262                // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+     301: astore        5
+     303: aload_1
+     304: invokevirtual #262                // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+     307: astore        6
+     309: aload         6
+     311: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     316: aload         5
+     318: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     323: if_icmpeq     336
+     326: aload_0
+     327: iconst_1
+     328: putfield      #45                 // Field hasConversion:Z
+     331: aload_0
+     332: iconst_0
+     333: putfield      #48                 // Field isOnlyImplicitConversion:Z
+     336: iload_3
+     337: ifgt          520
+     340: aload_2
+     341: invokevirtual #183                // Method org/apache/orc/TypeDescription.getFieldNames:()Ljava/util/List;
+     344: astore        7
+     346: aload_1
+     347: invokevirtual #183                // Method org/apache/orc/TypeDescription.getFieldNames:()Ljava/util/List;
+     350: astore        8
+     352: aload_0
+     353: getfield      #20                 // Field isSchemaEvolutionCaseAware:Z
+     356: ifeq          371
+     359: new           #292                // class java/util/HashMap
+     362: dup
+     363: invokespecial #294                // Method java/util/HashMap."<init>":()V
+     366: astore        9
+     368: goto          380
+     371: new           #295                // class org/apache/orc/impl/SchemaEvolution$CaseInsensitiveMap
+     374: dup
+     375: invokespecial #297                // Method org/apache/orc/impl/SchemaEvolution$CaseInsensitiveMap."<init>":()V
+     378: astore        9
+     380: iconst_0
+     381: istore        10
+     383: iload         10
+     385: aload         8
+     387: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     392: if_icmpge     437
+     395: aload         8
+     397: iload         10
+     399: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     404: checkcast     #131                // class java/lang/String
+     407: astore        11
+     409: aload         9
+     411: aload         11
+     413: aload         6
+     415: iload         10
+     417: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     422: checkcast     #37                 // class org/apache/orc/TypeDescription
+     425: invokeinterface #298,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     430: pop
+     431: iinc          10, 1
+     434: goto          383
+     437: iconst_0
+     438: istore        10
+     440: iload         10
+     442: aload         7
+     444: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     449: if_icmpge     517
+     452: aload         7
+     454: iload         10
+     456: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     461: checkcast     #131                // class java/lang/String
+     464: astore        11
+     466: aload         5
+     468: iload         10
+     470: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     475: checkcast     #37                 // class org/apache/orc/TypeDescription
+     478: astore        12
+     480: aload         9
+     482: aload         11
+     484: invokeinterface #304,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+     489: checkcast     #37                 // class org/apache/orc/TypeDescription
+     492: astore        13
+     494: aload         13
+     496: ifnonnull     502
+     499: goto          511
+     502: aload_0
+     503: aload         13
+     505: aload         12
+     507: iconst_0
+     508: invokevirtual #144                // Method buildConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;I)V
+     511: iinc          10, 1
+     514: goto          440
+     517: goto          632
+     520: aload         6
+     522: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     527: aload         5
+     529: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+     534: invokestatic  #307                // Method java/lang/Math.min:(II)I
+     537: istore        7
+     539: iconst_0
+     540: istore        8
+     542: iload         8
+     544: iload         7
+     546: if_icmpge     586
+     549: aload_0
+     550: aload         6
+     552: iload         8
+     554: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     559: checkcast     #37                 // class org/apache/orc/TypeDescription
+     562: aload         5
+     564: iload         8
+     566: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     571: checkcast     #37                 // class org/apache/orc/TypeDescription
+     574: iload_3
+     575: iconst_1
+     576: isub
+     577: invokevirtual #144                // Method buildConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;I)V
+     580: iinc          8, 1
+     583: goto          542
+     586: goto          632
+     589: new           #88                 // class java/lang/IllegalArgumentException
+     592: dup
+     593: aload_2
+     594: invokestatic  #130                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     597: invokedynamic #313,  0            // InvokeDynamic #2:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     602: invokespecial #98                 // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+     605: athrow
+     606: aload_1
+     607: aload_2
+     608: invokestatic  #316                // Method org/apache/orc/impl/ConvertTreeReaderFactory.canConvert:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;)Z
+     611: istore        4
+     613: aload_0
+     614: iconst_1
+     615: putfield      #45                 // Field hasConversion:Z
+     618: aload_0
+     619: aload_1
+     620: aload_2
+     621: invokevirtual #279                // Method typesAreImplicitConversion:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;)Z
+     624: ifne          632
+     627: aload_0
+     628: iconst_0
+     629: putfield      #48                 // Field isOnlyImplicitConversion:Z
+     632: iload         4
+     634: ifeq          660
+     637: aload_0
+     638: getfield      #101                // Field readerFileTypes:[Lorg/apache/orc/TypeDescription;
+     641: aload_2
+     642: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+     645: aload_1
+     646: aastore
+     647: aload_0
+     648: getfield      #42                 // Field fileIncluded:[Z
+     651: aload_1
+     652: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+     655: iconst_1
+     656: bastore
+     657: goto          706
+     660: new           #321                // class org/apache/orc/impl/SchemaEvolution$IllegalEvolutionException
+     663: dup
+     664: ldc_w         #323                // String ORC does not support type conversion from file type %s (%d) to reader type %s (%d)
+     667: iconst_4
+     668: anewarray     #2                  // class java/lang/Object
+     671: dup
+     672: iconst_0
+     673: aload_1
+     674: aastore
+     675: dup
+     676: iconst_1
+     677: aload_1
+     678: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+     681: invokestatic  #325                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     684: aastore
+     685: dup
+     686: iconst_2
+     687: aload_2
+     688: aastore
+     689: dup
+     690: iconst_3
+     691: aload_2
+     692: invokevirtual #215                // Method org/apache/orc/TypeDescription.getId:()I
+     695: invokestatic  #325                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     698: aastore
+     699: invokestatic  #330                // Method java/lang/String.format:(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
+     702: invokespecial #334                // Method org/apache/orc/impl/SchemaEvolution$IllegalEvolutionException."<init>":(Ljava/lang/String;)V
+     705: athrow
+     706: return
+
+  public static boolean checkAcidSchema(org.apache.orc.TypeDescription);
+    Code:
+       0: aload_0
+       1: invokevirtual #173                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+       4: getstatic     #177                // Field org/apache/orc/TypeDescription$Category.STRUCT:Lorg/apache/orc/TypeDescription$Category;
+       7: invokevirtual #234                // Method org/apache/orc/TypeDescription$Category.equals:(Ljava/lang/Object;)Z
+      10: ifeq          87
+      13: aload_0
+      14: invokevirtual #183                // Method org/apache/orc/TypeDescription.getFieldNames:()Ljava/util/List;
+      17: astore_1
+      18: aload_1
+      19: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+      24: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      27: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+      32: if_icmpeq     37
+      35: iconst_0
+      36: ireturn
+      37: iconst_0
+      38: istore_2
+      39: iload_2
+      40: aload_1
+      41: invokeinterface #72,  1           // InterfaceMethod java/util/List.size:()I
+      46: if_icmpge     85
+      49: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      52: iload_2
+      53: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      58: checkcast     #131                // class java/lang/String
+      61: aload_1
+      62: iload_2
+      63: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      68: checkcast     #131                // class java/lang/String
+      71: invokevirtual #335                // Method java/lang/String.equalsIgnoreCase:(Ljava/lang/String;)Z
+      74: ifne          79
+      77: iconst_0
+      78: ireturn
+      79: iinc          2, 1
+      82: goto          39
+      85: iconst_1
+      86: ireturn
+      87: iconst_0
+      88: ireturn
+
+  public static org.apache.orc.TypeDescription createEventSchema(org.apache.orc.TypeDescription);
+    Code:
+       0: invokestatic  #339                // Method org/apache/orc/TypeDescription.createStruct:()Lorg/apache/orc/TypeDescription;
+       3: ldc_w         #343                // String operation
+       6: invokestatic  #345                // Method org/apache/orc/TypeDescription.createInt:()Lorg/apache/orc/TypeDescription;
+       9: invokevirtual #348                // Method org/apache/orc/TypeDescription.addField:(Ljava/lang/String;Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      12: ldc_w         #352                // String originalTransaction
+      15: invokestatic  #354                // Method org/apache/orc/TypeDescription.createLong:()Lorg/apache/orc/TypeDescription;
+      18: invokevirtual #348                // Method org/apache/orc/TypeDescription.addField:(Ljava/lang/String;Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      21: ldc_w         #357                // String bucket
+      24: invokestatic  #345                // Method org/apache/orc/TypeDescription.createInt:()Lorg/apache/orc/TypeDescription;
+      27: invokevirtual #348                // Method org/apache/orc/TypeDescription.addField:(Ljava/lang/String;Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      30: ldc_w         #359                // String rowId
+      33: invokestatic  #354                // Method org/apache/orc/TypeDescription.createLong:()Lorg/apache/orc/TypeDescription;
+      36: invokevirtual #348                // Method org/apache/orc/TypeDescription.addField:(Ljava/lang/String;Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      39: ldc_w         #361                // String currentTransaction
+      42: invokestatic  #354                // Method org/apache/orc/TypeDescription.createLong:()Lorg/apache/orc/TypeDescription;
+      45: invokevirtual #348                // Method org/apache/orc/TypeDescription.addField:(Ljava/lang/String;Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      48: ldc_w         #363                // String row
+      51: aload_0
+      52: invokevirtual #365                // Method org/apache/orc/TypeDescription.clone:()Lorg/apache/orc/TypeDescription;
+      55: invokevirtual #348                // Method org/apache/orc/TypeDescription.addField:(Ljava/lang/String;Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      58: astore_1
+      59: aload_1
+      60: areturn
+
+  public static org.apache.orc.TypeDescription getBaseRow(org.apache.orc.TypeDescription);
+    Code:
+       0: iconst_5
+       1: istore_1
+       2: aload_0
+       3: invokevirtual #262                // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+       6: iconst_5
+       7: invokeinterface #288,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      12: checkcast     #37                 // class org/apache/orc/TypeDescription
+      15: areturn
+
+  static {};
+    Code:
+       0: ldc           #21                 // class org/apache/orc/impl/SchemaEvolution
+       2: invokestatic  #368                // Method org/slf4j/LoggerFactory.getLogger:(Ljava/lang/Class;)Lorg/slf4j/Logger;
+       5: putstatic     #126                // Field LOG:Lorg/slf4j/Logger;
+       8: ldc_w         #374                // String _col\\d+
+      11: invokestatic  #376                // Method java/util/regex/Pattern.compile:(Ljava/lang/String;)Ljava/util/regex/Pattern;
+      14: putstatic     #200                // Field missingMetadataPattern:Ljava/util/regex/Pattern;
+      17: new           #380                // class java/util/ArrayList
+      20: dup
+      21: invokespecial #382                // Method java/util/ArrayList."<init>":()V
+      24: putstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      27: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      30: ldc_w         #343                // String operation
+      33: invokeinterface #383,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      38: pop
+      39: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      42: ldc_w         #352                // String originalTransaction
+      45: invokeinterface #383,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      50: pop
+      51: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      54: ldc_w         #357                // String bucket
+      57: invokeinterface #383,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      62: pop
+      63: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      66: ldc_w         #359                // String rowId
+      69: invokeinterface #383,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      74: pop
+      75: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      78: ldc_w         #361                // String currentTransaction
+      81: invokeinterface #383,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      86: pop
+      87: getstatic     #68                 // Field acidEventFieldNames:Ljava/util/List;
+      90: ldc_w         #363                // String row
+      93: invokeinterface #383,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      98: pop
+      99: return
+}

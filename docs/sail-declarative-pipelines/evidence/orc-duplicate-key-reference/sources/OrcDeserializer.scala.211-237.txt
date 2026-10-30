@@ -1,0 +1,27 @@
+      case MapType(keyType, valueType, _) => (ordinal, value) =>
+        val orcMap = value.asInstanceOf[OrcMap[WritableComparable[_], WritableComparable[_]]]
+        val length = orcMap.size()
+        val keyArray = createArrayData(keyType, length)
+        val keyUpdater = new ArrayDataUpdater(keyArray)
+        val keyConverter = newWriter(keyType, keyUpdater)
+        val valueArray = createArrayData(valueType, length)
+        val valueUpdater = new ArrayDataUpdater(valueArray)
+        val valueConverter = newWriter(valueType, valueUpdater)
+
+        var i = 0
+        val it = orcMap.entrySet().iterator()
+        while (it.hasNext) {
+          val entry = it.next()
+          keyConverter(i, entry.getKey)
+          val value = entry.getValue
+          if (value == null) {
+            valueArray.setNullAt(i)
+          } else {
+            valueConverter(i, value)
+          }
+          i += 1
+        }
+
+        // The ORC map will never have null or duplicated map keys, it's safe to create a
+        // ArrayBasedMapData directly here.
+        updater.set(ordinal, new ArrayBasedMapData(keyArray, valueArray))

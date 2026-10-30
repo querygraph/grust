@@ -11235,3 +11235,11 @@ strict Clippy and portable-package verification. No failed attempts. Retained
 remaining intrinsic value-safety and pinned semantic-merge reuse audits. Mapper
 and ordinary source drafts are separate units and not yet runtime-qualified.
 Documentation gates precede advance; full SDP objective remains active.
+
+## 2026-10-30T00:04:08.752583+00:00 — DONE focused Spark duplicate/map-key reference
+
+Four fresh Spark 4.2.1 observations, two physical ORCs, five pinned source blobs
+and three installed ORC class disassemblies retained. Case-sensitive exact root
+duplicates select last; tested map-key narrowing wraps vectorized and errors
+non-vectorized. Owned JVM 5469 exited 0/absent. Mapper corrections remain separate;
+no Sail runtime pass. Read-only offline/document gates precede branch advance.

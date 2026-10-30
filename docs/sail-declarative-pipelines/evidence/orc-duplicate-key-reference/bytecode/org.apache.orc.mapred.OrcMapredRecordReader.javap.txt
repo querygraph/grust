@@ -1,0 +1,1238 @@
+Compiled from "OrcMapredRecordReader.java"
+public class org.apache.orc.mapred.OrcMapredRecordReader<V extends org.apache.hadoop.io.WritableComparable> implements org.apache.hadoop.mapred.RecordReader<org.apache.hadoop.io.NullWritable, V> {
+  private final org.apache.orc.TypeDescription schema;
+
+  private final org.apache.orc.RecordReader batchReader;
+
+  private final org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch batch;
+
+  private int rowInBatch;
+
+  public org.apache.orc.mapred.OrcMapredRecordReader(org.apache.orc.RecordReader, org.apache.orc.TypeDescription) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: aload_1
+       6: putfield      #7                  // Field batchReader:Lorg/apache/orc/RecordReader;
+       9: aload_0
+      10: aload_2
+      11: invokevirtual #13                 // Method org/apache/orc/TypeDescription.createRowBatch:()Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      14: putfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      17: aload_0
+      18: aload_2
+      19: putfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+      22: aload_0
+      23: iconst_0
+      24: putfield      #27                 // Field rowInBatch:I
+      27: return
+
+  protected org.apache.orc.mapred.OrcMapredRecordReader(org.apache.orc.Reader, org.apache.orc.Reader$Options) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_2
+       4: invokevirtual #31                 // Method org/apache/orc/Reader$Options.getRowBatchSize:()I
+       7: invokespecial #37                 // Method "<init>":(Lorg/apache/orc/Reader;Lorg/apache/orc/Reader$Options;I)V
+      10: return
+
+  protected org.apache.orc.mapred.OrcMapredRecordReader(org.apache.orc.Reader, org.apache.orc.Reader$Options, int) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: aload_1
+       6: aload_2
+       7: invokeinterface #40,  2           // InterfaceMethod org/apache/orc/Reader.rows:(Lorg/apache/orc/Reader$Options;)Lorg/apache/orc/RecordReader;
+      12: putfield      #7                  // Field batchReader:Lorg/apache/orc/RecordReader;
+      15: aload_2
+      16: invokevirtual #46                 // Method org/apache/orc/Reader$Options.getSchema:()Lorg/apache/orc/TypeDescription;
+      19: ifnonnull     35
+      22: aload_0
+      23: aload_1
+      24: invokeinterface #50,  1           // InterfaceMethod org/apache/orc/Reader.getSchema:()Lorg/apache/orc/TypeDescription;
+      29: putfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+      32: goto          43
+      35: aload_0
+      36: aload_2
+      37: invokevirtual #46                 // Method org/apache/orc/Reader$Options.getSchema:()Lorg/apache/orc/TypeDescription;
+      40: putfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+      43: aload_0
+      44: aload_0
+      45: getfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+      48: iload_3
+      49: invokevirtual #51                 // Method org/apache/orc/TypeDescription.createRowBatch:(I)Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      52: putfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      55: aload_0
+      56: iconst_0
+      57: putfield      #27                 // Field rowInBatch:I
+      60: return
+
+  boolean ensureBatch() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #27                 // Field rowInBatch:I
+       4: aload_0
+       5: getfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+       8: getfield      #54                 // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.size:I
+      11: if_icmplt     33
+      14: aload_0
+      15: iconst_0
+      16: putfield      #27                 // Field rowInBatch:I
+      19: aload_0
+      20: getfield      #7                  // Field batchReader:Lorg/apache/orc/RecordReader;
+      23: aload_0
+      24: getfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      27: invokeinterface #59,  2           // InterfaceMethod org/apache/orc/RecordReader.nextBatch:(Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;)Z
+      32: ireturn
+      33: iconst_1
+      34: ireturn
+
+  public boolean next(org.apache.hadoop.io.NullWritable, V) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokevirtual #65                 // Method ensureBatch:()Z
+       4: ifne          9
+       7: iconst_0
+       8: ireturn
+       9: aload_0
+      10: getfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      13: getfield      #69                 // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.selectedInUse:Z
+      16: ifeq          34
+      19: aload_0
+      20: getfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      23: getfield      #73                 // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.selected:[I
+      26: aload_0
+      27: getfield      #27                 // Field rowInBatch:I
+      30: iaload
+      31: goto          38
+      34: aload_0
+      35: getfield      #27                 // Field rowInBatch:I
+      38: istore_3
+      39: aload_0
+      40: getfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+      43: invokevirtual #77                 // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      46: getstatic     #81                 // Field org/apache/orc/TypeDescription$Category.STRUCT:Lorg/apache/orc/TypeDescription$Category;
+      49: if_acmpne     135
+      52: aload_2
+      53: checkcast     #87                 // class org/apache/orc/mapred/OrcStruct
+      56: astore        4
+      58: aload_0
+      59: getfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+      62: invokevirtual #89                 // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      65: astore        5
+      67: aload         5
+      69: invokeinterface #93,  1           // InterfaceMethod java/util/List.size:()I
+      74: istore        6
+      76: iconst_0
+      77: istore        7
+      79: iload         7
+      81: iload         6
+      83: if_icmpge     132
+      86: aload         4
+      88: iload         7
+      90: aload_0
+      91: getfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+      94: getfield      #97                 // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.cols:[Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+      97: iload         7
+      99: aaload
+     100: iload_3
+     101: aload         5
+     103: iload         7
+     105: invokeinterface #101,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     110: checkcast     #14                 // class org/apache/orc/TypeDescription
+     113: aload         4
+     115: iload         7
+     117: invokevirtual #105                // Method org/apache/orc/mapred/OrcStruct.getFieldValue:(I)Lorg/apache/hadoop/io/WritableComparable;
+     120: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     123: invokevirtual #113                // Method org/apache/orc/mapred/OrcStruct.setFieldValue:(ILorg/apache/hadoop/io/WritableComparable;)V
+     126: iinc          7, 1
+     129: goto          79
+     132: goto          154
+     135: aload_0
+     136: getfield      #19                 // Field batch:Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;
+     139: getfield      #97                 // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.cols:[Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+     142: iconst_0
+     143: aaload
+     144: iload_3
+     145: aload_0
+     146: getfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+     149: aload_2
+     150: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     153: pop
+     154: aload_0
+     155: dup
+     156: getfield      #27                 // Field rowInBatch:I
+     159: iconst_1
+     160: iadd
+     161: putfield      #27                 // Field rowInBatch:I
+     164: iconst_1
+     165: ireturn
+
+  public org.apache.hadoop.io.NullWritable createKey();
+    Code:
+       0: invokestatic  #117                // Method org/apache/hadoop/io/NullWritable.get:()Lorg/apache/hadoop/io/NullWritable;
+       3: areturn
+
+  public V createValue();
+    Code:
+       0: aload_0
+       1: getfield      #23                 // Field schema:Lorg/apache/orc/TypeDescription;
+       4: invokestatic  #122                // Method org/apache/orc/mapred/OrcStruct.createValue:(Lorg/apache/orc/TypeDescription;)Lorg/apache/hadoop/io/WritableComparable;
+       7: areturn
+
+  public long getPos() throws java.io.IOException;
+    Code:
+       0: lconst_0
+       1: lreturn
+
+  public void close() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #7                  // Field batchReader:Lorg/apache/orc/RecordReader;
+       4: invokeinterface #126,  1          // InterfaceMethod org/apache/orc/RecordReader.close:()V
+       9: return
+
+  public float getProgress() throws java.io.IOException;
+    Code:
+       0: fconst_0
+       1: freturn
+
+  static org.apache.hadoop.io.BooleanWritable nextBoolean(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          79
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #145                // class org/apache/hadoop/io/BooleanWritable
+      35: if_acmpeq     49
+      38: new           #145                // class org/apache/hadoop/io/BooleanWritable
+      41: dup
+      42: invokespecial #147                // Method org/apache/hadoop/io/BooleanWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #145                // class org/apache/hadoop/io/BooleanWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #148                // class org/apache/hadoop/hive/ql/exec/vector/LongColumnVector
+      59: getfield      #150                // Field org/apache/hadoop/hive/ql/exec/vector/LongColumnVector.vector:[J
+      62: iload_1
+      63: laload
+      64: lconst_0
+      65: lcmp
+      66: ifeq          73
+      69: iconst_1
+      70: goto          74
+      73: iconst_0
+      74: invokevirtual #154                // Method org/apache/hadoop/io/BooleanWritable.set:(Z)V
+      77: aload_3
+      78: areturn
+      79: aconst_null
+      80: areturn
+
+  static org.apache.hadoop.io.ByteWritable nextByte(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          71
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #158                // class org/apache/hadoop/io/ByteWritable
+      35: if_acmpeq     49
+      38: new           #158                // class org/apache/hadoop/io/ByteWritable
+      41: dup
+      42: invokespecial #160                // Method org/apache/hadoop/io/ByteWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #158                // class org/apache/hadoop/io/ByteWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #148                // class org/apache/hadoop/hive/ql/exec/vector/LongColumnVector
+      59: getfield      #150                // Field org/apache/hadoop/hive/ql/exec/vector/LongColumnVector.vector:[J
+      62: iload_1
+      63: laload
+      64: l2i
+      65: i2b
+      66: invokevirtual #161                // Method org/apache/hadoop/io/ByteWritable.set:(B)V
+      69: aload_3
+      70: areturn
+      71: aconst_null
+      72: areturn
+
+  static org.apache.hadoop.io.ShortWritable nextShort(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          71
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #164                // class org/apache/hadoop/io/ShortWritable
+      35: if_acmpeq     49
+      38: new           #164                // class org/apache/hadoop/io/ShortWritable
+      41: dup
+      42: invokespecial #166                // Method org/apache/hadoop/io/ShortWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #164                // class org/apache/hadoop/io/ShortWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #148                // class org/apache/hadoop/hive/ql/exec/vector/LongColumnVector
+      59: getfield      #150                // Field org/apache/hadoop/hive/ql/exec/vector/LongColumnVector.vector:[J
+      62: iload_1
+      63: laload
+      64: l2i
+      65: i2s
+      66: invokevirtual #167                // Method org/apache/hadoop/io/ShortWritable.set:(S)V
+      69: aload_3
+      70: areturn
+      71: aconst_null
+      72: areturn
+
+  static org.apache.hadoop.io.IntWritable nextInt(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          70
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #170                // class org/apache/hadoop/io/IntWritable
+      35: if_acmpeq     49
+      38: new           #170                // class org/apache/hadoop/io/IntWritable
+      41: dup
+      42: invokespecial #172                // Method org/apache/hadoop/io/IntWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #170                // class org/apache/hadoop/io/IntWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #148                // class org/apache/hadoop/hive/ql/exec/vector/LongColumnVector
+      59: getfield      #150                // Field org/apache/hadoop/hive/ql/exec/vector/LongColumnVector.vector:[J
+      62: iload_1
+      63: laload
+      64: l2i
+      65: invokevirtual #173                // Method org/apache/hadoop/io/IntWritable.set:(I)V
+      68: aload_3
+      69: areturn
+      70: aconst_null
+      71: areturn
+
+  static org.apache.hadoop.io.LongWritable nextLong(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          69
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #176                // class org/apache/hadoop/io/LongWritable
+      35: if_acmpeq     49
+      38: new           #176                // class org/apache/hadoop/io/LongWritable
+      41: dup
+      42: invokespecial #178                // Method org/apache/hadoop/io/LongWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #176                // class org/apache/hadoop/io/LongWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #148                // class org/apache/hadoop/hive/ql/exec/vector/LongColumnVector
+      59: getfield      #150                // Field org/apache/hadoop/hive/ql/exec/vector/LongColumnVector.vector:[J
+      62: iload_1
+      63: laload
+      64: invokevirtual #179                // Method org/apache/hadoop/io/LongWritable.set:(J)V
+      67: aload_3
+      68: areturn
+      69: aconst_null
+      70: areturn
+
+  static org.apache.hadoop.io.FloatWritable nextFloat(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          70
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #182                // class org/apache/hadoop/io/FloatWritable
+      35: if_acmpeq     49
+      38: new           #182                // class org/apache/hadoop/io/FloatWritable
+      41: dup
+      42: invokespecial #184                // Method org/apache/hadoop/io/FloatWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #182                // class org/apache/hadoop/io/FloatWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #185                // class org/apache/hadoop/hive/ql/exec/vector/DoubleColumnVector
+      59: getfield      #187                // Field org/apache/hadoop/hive/ql/exec/vector/DoubleColumnVector.vector:[D
+      62: iload_1
+      63: daload
+      64: d2f
+      65: invokevirtual #190                // Method org/apache/hadoop/io/FloatWritable.set:(F)V
+      68: aload_3
+      69: areturn
+      70: aconst_null
+      71: areturn
+
+  static org.apache.hadoop.io.DoubleWritable nextDouble(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          69
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #193                // class org/apache/hadoop/io/DoubleWritable
+      35: if_acmpeq     49
+      38: new           #193                // class org/apache/hadoop/io/DoubleWritable
+      41: dup
+      42: invokespecial #195                // Method org/apache/hadoop/io/DoubleWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #193                // class org/apache/hadoop/io/DoubleWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #185                // class org/apache/hadoop/hive/ql/exec/vector/DoubleColumnVector
+      59: getfield      #187                // Field org/apache/hadoop/hive/ql/exec/vector/DoubleColumnVector.vector:[D
+      62: iload_1
+      63: daload
+      64: invokevirtual #196                // Method org/apache/hadoop/io/DoubleWritable.set:(D)V
+      67: aload_3
+      68: areturn
+      69: aconst_null
+      70: areturn
+
+  static org.apache.hadoop.io.Text nextString(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          87
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #199                // class org/apache/hadoop/io/Text
+      35: if_acmpeq     49
+      38: new           #199                // class org/apache/hadoop/io/Text
+      41: dup
+      42: invokespecial #201                // Method org/apache/hadoop/io/Text."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #199                // class org/apache/hadoop/io/Text
+      53: astore_3
+      54: aload_0
+      55: checkcast     #202                // class org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector
+      58: astore        4
+      60: aload_3
+      61: aload         4
+      63: getfield      #204                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.vector:[[B
+      66: iload_1
+      67: aaload
+      68: aload         4
+      70: getfield      #207                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.start:[I
+      73: iload_1
+      74: iaload
+      75: aload         4
+      77: getfield      #210                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.length:[I
+      80: iload_1
+      81: iaload
+      82: invokevirtual #213                // Method org/apache/hadoop/io/Text.set:([BII)V
+      85: aload_3
+      86: areturn
+      87: aconst_null
+      88: areturn
+
+  static org.apache.hadoop.io.BytesWritable nextBinary(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          87
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #216                // class org/apache/hadoop/io/BytesWritable
+      35: if_acmpeq     49
+      38: new           #216                // class org/apache/hadoop/io/BytesWritable
+      41: dup
+      42: invokespecial #218                // Method org/apache/hadoop/io/BytesWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #216                // class org/apache/hadoop/io/BytesWritable
+      53: astore_3
+      54: aload_0
+      55: checkcast     #202                // class org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector
+      58: astore        4
+      60: aload_3
+      61: aload         4
+      63: getfield      #204                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.vector:[[B
+      66: iload_1
+      67: aaload
+      68: aload         4
+      70: getfield      #207                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.start:[I
+      73: iload_1
+      74: iaload
+      75: aload         4
+      77: getfield      #210                // Field org/apache/hadoop/hive/ql/exec/vector/BytesColumnVector.length:[I
+      80: iload_1
+      81: iaload
+      82: invokevirtual #219                // Method org/apache/hadoop/io/BytesWritable.set:([BII)V
+      85: aload_3
+      86: areturn
+      87: aconst_null
+      88: areturn
+
+  static org.apache.hadoop.hive.serde2.io.HiveDecimalWritable nextDecimal(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          69
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #220                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+      35: if_acmpeq     49
+      38: new           #220                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+      41: dup
+      42: invokespecial #222                // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #220                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+      53: astore_3
+      54: aload_3
+      55: aload_0
+      56: checkcast     #223                // class org/apache/hadoop/hive/ql/exec/vector/DecimalColumnVector
+      59: getfield      #225                // Field org/apache/hadoop/hive/ql/exec/vector/DecimalColumnVector.vector:[Lorg/apache/hadoop/hive/serde2/io/HiveDecimalWritable;
+      62: iload_1
+      63: aaload
+      64: invokevirtual #228                // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable.set:(Lorg/apache/hadoop/hive/serde2/io/HiveDecimalWritable;)V
+      67: aload_3
+      68: areturn
+      69: aconst_null
+      70: areturn
+
+  static org.apache.hadoop.hive.serde2.io.DateWritable nextDate(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          74
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #231                // class org/apache/hadoop/hive/serde2/io/DateWritable
+      35: if_acmpeq     49
+      38: new           #231                // class org/apache/hadoop/hive/serde2/io/DateWritable
+      41: dup
+      42: invokespecial #233                // Method org/apache/hadoop/hive/serde2/io/DateWritable."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #231                // class org/apache/hadoop/hive/serde2/io/DateWritable
+      53: astore_3
+      54: aload_0
+      55: checkcast     #148                // class org/apache/hadoop/hive/ql/exec/vector/LongColumnVector
+      58: getfield      #150                // Field org/apache/hadoop/hive/ql/exec/vector/LongColumnVector.vector:[J
+      61: iload_1
+      62: laload
+      63: l2i
+      64: istore        4
+      66: aload_3
+      67: iload         4
+      69: invokevirtual #234                // Method org/apache/hadoop/hive/serde2/io/DateWritable.set:(I)V
+      72: aload_3
+      73: areturn
+      74: aconst_null
+      75: areturn
+
+  static org.apache.orc.mapred.OrcTimestamp nextTimestamp(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          84
+      25: aload_2
+      26: ifnull        38
+      29: aload_2
+      30: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      33: ldc           #235                // class org/apache/orc/mapred/OrcTimestamp
+      35: if_acmpeq     49
+      38: new           #235                // class org/apache/orc/mapred/OrcTimestamp
+      41: dup
+      42: invokespecial #237                // Method org/apache/orc/mapred/OrcTimestamp."<init>":()V
+      45: astore_3
+      46: goto          54
+      49: aload_2
+      50: checkcast     #235                // class org/apache/orc/mapred/OrcTimestamp
+      53: astore_3
+      54: aload_0
+      55: checkcast     #238                // class org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector
+      58: astore        4
+      60: aload_3
+      61: aload         4
+      63: getfield      #240                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.time:[J
+      66: iload_1
+      67: laload
+      68: invokevirtual #243                // Method org/apache/orc/mapred/OrcTimestamp.setTime:(J)V
+      71: aload_3
+      72: aload         4
+      74: getfield      #246                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.nanos:[I
+      77: iload_1
+      78: iaload
+      79: invokevirtual #249                // Method org/apache/orc/mapred/OrcTimestamp.setNanos:(I)V
+      82: aload_3
+      83: areturn
+      84: aconst_null
+      85: areturn
+
+  static org.apache.orc.mapred.OrcStruct nextStruct(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, org.apache.orc.TypeDescription, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          130
+      25: aload_2
+      26: invokevirtual #89                 // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      29: astore        5
+      31: aload         5
+      33: invokeinterface #93,  1           // InterfaceMethod java/util/List.size:()I
+      38: istore        6
+      40: aload_3
+      41: aload_2
+      42: invokestatic  #252                // Method isReusable:(Ljava/lang/Object;Lorg/apache/orc/TypeDescription;)Z
+      45: ifeq          57
+      48: aload_3
+      49: checkcast     #87                 // class org/apache/orc/mapred/OrcStruct
+      52: astore        4
+      54: goto          67
+      57: new           #87                 // class org/apache/orc/mapred/OrcStruct
+      60: dup
+      61: aload_2
+      62: invokespecial #256                // Method org/apache/orc/mapred/OrcStruct."<init>":(Lorg/apache/orc/TypeDescription;)V
+      65: astore        4
+      67: aload_0
+      68: checkcast     #259                // class org/apache/hadoop/hive/ql/exec/vector/StructColumnVector
+      71: astore        7
+      73: iconst_0
+      74: istore        8
+      76: iload         8
+      78: iload         6
+      80: if_icmpge     127
+      83: aload         4
+      85: iload         8
+      87: aload         7
+      89: getfield      #261                // Field org/apache/hadoop/hive/ql/exec/vector/StructColumnVector.fields:[Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+      92: iload         8
+      94: aaload
+      95: iload_1
+      96: aload         5
+      98: iload         8
+     100: invokeinterface #101,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     105: checkcast     #14                 // class org/apache/orc/TypeDescription
+     108: aload         4
+     110: iload         8
+     112: invokevirtual #105                // Method org/apache/orc/mapred/OrcStruct.getFieldValue:(I)Lorg/apache/hadoop/io/WritableComparable;
+     115: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     118: invokevirtual #113                // Method org/apache/orc/mapred/OrcStruct.setFieldValue:(ILorg/apache/hadoop/io/WritableComparable;)V
+     121: iinc          8, 1
+     124: goto          76
+     127: aload         4
+     129: areturn
+     130: aconst_null
+     131: areturn
+
+  private static boolean isReusable(java.lang.Object, org.apache.orc.TypeDescription);
+    Code:
+       0: aload_0
+       1: ifnull        13
+       4: aload_0
+       5: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+       8: ldc           #87                 // class org/apache/orc/mapred/OrcStruct
+      10: if_acmpeq     15
+      13: iconst_0
+      14: ireturn
+      15: aload_0
+      16: checkcast     #87                 // class org/apache/orc/mapred/OrcStruct
+      19: invokevirtual #264                // Method org/apache/orc/mapred/OrcStruct.getSchema:()Lorg/apache/orc/TypeDescription;
+      22: aload_1
+      23: invokevirtual #265                // Method org/apache/orc/TypeDescription.equals:(Ljava/lang/Object;)Z
+      26: ireturn
+
+  static org.apache.orc.mapred.OrcUnion nextUnion(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, org.apache.orc.TypeDescription, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          119
+      25: aload_2
+      26: invokevirtual #89                 // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      29: astore        5
+      31: aload_3
+      32: ifnull        45
+      35: aload_3
+      36: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      39: ldc_w         #269                // class org/apache/orc/mapred/OrcUnion
+      42: if_acmpeq     58
+      45: new           #269                // class org/apache/orc/mapred/OrcUnion
+      48: dup
+      49: aload_2
+      50: invokespecial #271                // Method org/apache/orc/mapred/OrcUnion."<init>":(Lorg/apache/orc/TypeDescription;)V
+      53: astore        4
+      55: goto          64
+      58: aload_3
+      59: checkcast     #269                // class org/apache/orc/mapred/OrcUnion
+      62: astore        4
+      64: aload_0
+      65: checkcast     #272                // class org/apache/hadoop/hive/ql/exec/vector/UnionColumnVector
+      68: astore        6
+      70: aload         6
+      72: getfield      #274                // Field org/apache/hadoop/hive/ql/exec/vector/UnionColumnVector.tags:[I
+      75: iload_1
+      76: iaload
+      77: i2b
+      78: istore        7
+      80: aload         4
+      82: iload         7
+      84: aload         6
+      86: getfield      #277                // Field org/apache/hadoop/hive/ql/exec/vector/UnionColumnVector.fields:[Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+      89: iload         7
+      91: aaload
+      92: iload_1
+      93: aload         5
+      95: iload         7
+      97: invokeinterface #101,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     102: checkcast     #14                 // class org/apache/orc/TypeDescription
+     105: aload         4
+     107: invokevirtual #278                // Method org/apache/orc/mapred/OrcUnion.getObject:()Lorg/apache/hadoop/io/Writable;
+     110: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     113: invokevirtual #282                // Method org/apache/orc/mapred/OrcUnion.set:(ILorg/apache/hadoop/io/WritableComparable;)V
+     116: aload         4
+     118: areturn
+     119: aconst_null
+     120: areturn
+
+  static org.apache.orc.mapred.OrcList nextList(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, org.apache.orc.TypeDescription, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          252
+      25: aload_2
+      26: invokevirtual #89                 // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      29: astore        5
+      31: aload         5
+      33: iconst_0
+      34: invokeinterface #101,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      39: checkcast     #14                 // class org/apache/orc/TypeDescription
+      42: astore        6
+      44: aload_3
+      45: ifnull        58
+      48: aload_3
+      49: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      52: ldc_w         #284                // class java/util/ArrayList
+      55: if_acmpeq     71
+      58: new           #286                // class org/apache/orc/mapred/OrcList
+      61: dup
+      62: aload_2
+      63: invokespecial #288                // Method org/apache/orc/mapred/OrcList."<init>":(Lorg/apache/orc/TypeDescription;)V
+      66: astore        4
+      68: goto          77
+      71: aload_3
+      72: checkcast     #286                // class org/apache/orc/mapred/OrcList
+      75: astore        4
+      77: aload_0
+      78: checkcast     #289                // class org/apache/hadoop/hive/ql/exec/vector/ListColumnVector
+      81: astore        7
+      83: aload         7
+      85: getfield      #291                // Field org/apache/hadoop/hive/ql/exec/vector/ListColumnVector.lengths:[J
+      88: iload_1
+      89: laload
+      90: l2i
+      91: istore        8
+      93: aload         7
+      95: getfield      #294                // Field org/apache/hadoop/hive/ql/exec/vector/ListColumnVector.offsets:[J
+      98: iload_1
+      99: laload
+     100: l2i
+     101: istore        9
+     103: aload         4
+     105: iload         8
+     107: invokevirtual #297                // Method org/apache/orc/mapred/OrcList.ensureCapacity:(I)V
+     110: aload         4
+     112: invokevirtual #300                // Method org/apache/orc/mapred/OrcList.size:()I
+     115: istore        10
+     117: iconst_0
+     118: istore        11
+     120: iload         11
+     122: iload         8
+     124: if_icmpge     170
+     127: iload         11
+     129: iload         10
+     131: if_icmpge     170
+     134: aload         4
+     136: iload         11
+     138: aload         7
+     140: getfield      #301                // Field org/apache/hadoop/hive/ql/exec/vector/ListColumnVector.child:Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+     143: iload         9
+     145: iload         11
+     147: iadd
+     148: aload         6
+     150: aload         4
+     152: iload         11
+     154: invokevirtual #305                // Method org/apache/orc/mapred/OrcList.get:(I)Ljava/lang/Object;
+     157: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     160: invokevirtual #306                // Method org/apache/orc/mapred/OrcList.set:(ILjava/lang/Object;)Ljava/lang/Object;
+     163: pop
+     164: iinc          11, 1
+     167: goto          120
+     170: iload         8
+     172: iload         10
+     174: if_icmpge     207
+     177: iload         10
+     179: iconst_1
+     180: isub
+     181: istore        12
+     183: iload         12
+     185: iload         8
+     187: if_icmplt     204
+     190: aload         4
+     192: iload         12
+     194: invokevirtual #309                // Method org/apache/orc/mapred/OrcList.remove:(I)Ljava/lang/Object;
+     197: pop
+     198: iinc          12, -1
+     201: goto          183
+     204: goto          249
+     207: iload         10
+     209: iload         8
+     211: if_icmpge     249
+     214: iload         11
+     216: iload         8
+     218: if_icmpge     249
+     221: aload         4
+     223: aload         7
+     225: getfield      #301                // Field org/apache/hadoop/hive/ql/exec/vector/ListColumnVector.child:Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+     228: iload         9
+     230: iload         11
+     232: iadd
+     233: aload         6
+     235: aconst_null
+     236: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     239: invokevirtual #312                // Method org/apache/orc/mapred/OrcList.add:(Ljava/lang/Object;)Z
+     242: pop
+     243: iinc          11, 1
+     246: goto          214
+     249: aload         4
+     251: areturn
+     252: aconst_null
+     253: areturn
+
+  static org.apache.orc.mapred.OrcMap nextMap(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, org.apache.orc.TypeDescription, java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isRepeating:Z
+       4: ifeq          9
+       7: iconst_0
+       8: istore_1
+       9: aload_0
+      10: getfield      #134                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.noNulls:Z
+      13: ifne          25
+      16: aload_0
+      17: getfield      #137                // Field org/apache/hadoop/hive/ql/exec/vector/ColumnVector.isNull:[Z
+      20: iload_1
+      21: baload
+      22: ifne          178
+      25: aload_0
+      26: checkcast     #315                // class org/apache/hadoop/hive/ql/exec/vector/MapColumnVector
+      29: astore        4
+      31: aload         4
+      33: getfield      #317                // Field org/apache/hadoop/hive/ql/exec/vector/MapColumnVector.lengths:[J
+      36: iload_1
+      37: laload
+      38: l2i
+      39: istore        5
+      41: aload         4
+      43: getfield      #318                // Field org/apache/hadoop/hive/ql/exec/vector/MapColumnVector.offsets:[J
+      46: iload_1
+      47: laload
+      48: l2i
+      49: istore        6
+      51: aload_2
+      52: invokevirtual #89                 // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      55: astore        8
+      57: aload         8
+      59: iconst_0
+      60: invokeinterface #101,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      65: checkcast     #14                 // class org/apache/orc/TypeDescription
+      68: astore        9
+      70: aload         8
+      72: iconst_1
+      73: invokeinterface #101,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      78: checkcast     #14                 // class org/apache/orc/TypeDescription
+      81: astore        10
+      83: aload_3
+      84: ifnull        97
+      87: aload_3
+      88: invokevirtual #141                // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      91: ldc_w         #319                // class org/apache/orc/mapred/OrcMap
+      94: if_acmpeq     110
+      97: new           #319                // class org/apache/orc/mapred/OrcMap
+     100: dup
+     101: aload_2
+     102: invokespecial #321                // Method org/apache/orc/mapred/OrcMap."<init>":(Lorg/apache/orc/TypeDescription;)V
+     105: astore        7
+     107: goto          121
+     110: aload_3
+     111: checkcast     #319                // class org/apache/orc/mapred/OrcMap
+     114: astore        7
+     116: aload         7
+     118: invokevirtual #322                // Method org/apache/orc/mapred/OrcMap.clear:()V
+     121: iconst_0
+     122: istore        11
+     124: iload         11
+     126: iload         5
+     128: if_icmpge     175
+     131: aload         7
+     133: aload         4
+     135: getfield      #325                // Field org/apache/hadoop/hive/ql/exec/vector/MapColumnVector.keys:Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+     138: iload         11
+     140: iload         6
+     142: iadd
+     143: aload         9
+     145: aconst_null
+     146: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     149: aload         4
+     151: getfield      #328                // Field org/apache/hadoop/hive/ql/exec/vector/MapColumnVector.values:Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;
+     154: iload         11
+     156: iload         6
+     158: iadd
+     159: aload         10
+     161: aconst_null
+     162: invokestatic  #109                // Method nextValue:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/hadoop/io/WritableComparable;
+     165: invokevirtual #331                // Method org/apache/orc/mapred/OrcMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     168: pop
+     169: iinc          11, 1
+     172: goto          124
+     175: aload         7
+     177: areturn
+     178: aconst_null
+     179: areturn
+
+  public static org.apache.hadoop.io.WritableComparable nextValue(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, int, org.apache.orc.TypeDescription, java.lang.Object);
+    Code:
+       0: getstatic     #335                // Field org/apache/orc/mapred/OrcMapredRecordReader$1.$SwitchMap$org$apache$orc$TypeDescription$Category:[I
+       3: aload_2
+       4: invokevirtual #77                 // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+       7: invokevirtual #340                // Method org/apache/orc/TypeDescription$Category.ordinal:()I
+      10: iaload
+      11: tableswitch   { // 1 to 19
+                     1: 100
+                     2: 107
+                     3: 114
+                     4: 121
+                     5: 128
+                     6: 135
+                     7: 142
+                     8: 149
+                     9: 149
+                    10: 149
+                    11: 156
+                    12: 163
+                    13: 170
+                    14: 177
+                    15: 177
+                    16: 184
+                    17: 192
+                    18: 200
+                    19: 208
+               default: 216
+          }
+     100: aload_0
+     101: iload_1
+     102: aload_3
+     103: invokestatic  #343                // Method nextBoolean:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/BooleanWritable;
+     106: areturn
+     107: aload_0
+     108: iload_1
+     109: aload_3
+     110: invokestatic  #347                // Method nextByte:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/ByteWritable;
+     113: areturn
+     114: aload_0
+     115: iload_1
+     116: aload_3
+     117: invokestatic  #351                // Method nextShort:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/ShortWritable;
+     120: areturn
+     121: aload_0
+     122: iload_1
+     123: aload_3
+     124: invokestatic  #355                // Method nextInt:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/IntWritable;
+     127: areturn
+     128: aload_0
+     129: iload_1
+     130: aload_3
+     131: invokestatic  #359                // Method nextLong:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/LongWritable;
+     134: areturn
+     135: aload_0
+     136: iload_1
+     137: aload_3
+     138: invokestatic  #363                // Method nextFloat:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/FloatWritable;
+     141: areturn
+     142: aload_0
+     143: iload_1
+     144: aload_3
+     145: invokestatic  #367                // Method nextDouble:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/DoubleWritable;
+     148: areturn
+     149: aload_0
+     150: iload_1
+     151: aload_3
+     152: invokestatic  #371                // Method nextString:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/Text;
+     155: areturn
+     156: aload_0
+     157: iload_1
+     158: aload_3
+     159: invokestatic  #375                // Method nextBinary:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/io/BytesWritable;
+     162: areturn
+     163: aload_0
+     164: iload_1
+     165: aload_3
+     166: invokestatic  #379                // Method nextDecimal:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/hive/serde2/io/HiveDecimalWritable;
+     169: areturn
+     170: aload_0
+     171: iload_1
+     172: aload_3
+     173: invokestatic  #383                // Method nextDate:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/hadoop/hive/serde2/io/DateWritable;
+     176: areturn
+     177: aload_0
+     178: iload_1
+     179: aload_3
+     180: invokestatic  #387                // Method nextTimestamp:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILjava/lang/Object;)Lorg/apache/orc/mapred/OrcTimestamp;
+     183: areturn
+     184: aload_0
+     185: iload_1
+     186: aload_2
+     187: aload_3
+     188: invokestatic  #391                // Method nextStruct:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/orc/mapred/OrcStruct;
+     191: areturn
+     192: aload_0
+     193: iload_1
+     194: aload_2
+     195: aload_3
+     196: invokestatic  #395                // Method nextUnion:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/orc/mapred/OrcUnion;
+     199: areturn
+     200: aload_0
+     201: iload_1
+     202: aload_2
+     203: aload_3
+     204: invokestatic  #399                // Method nextList:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/orc/mapred/OrcList;
+     207: areturn
+     208: aload_0
+     209: iload_1
+     210: aload_2
+     211: aload_3
+     212: invokestatic  #403                // Method nextMap:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;ILorg/apache/orc/TypeDescription;Ljava/lang/Object;)Lorg/apache/orc/mapred/OrcMap;
+     215: areturn
+     216: new           #407                // class java/lang/IllegalArgumentException
+     219: dup
+     220: aload_2
+     221: invokestatic  #409                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     224: invokedynamic #415,  0            // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     229: invokespecial #419                // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+     232: athrow
+
+  public java.lang.Object createValue();
+    Code:
+       0: aload_0
+       1: invokevirtual #422                // Method createValue:()Lorg/apache/hadoop/io/WritableComparable;
+       4: areturn
+
+  public java.lang.Object createKey();
+    Code:
+       0: aload_0
+       1: invokevirtual #425                // Method createKey:()Lorg/apache/hadoop/io/NullWritable;
+       4: areturn
+
+  public boolean next(java.lang.Object, java.lang.Object) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: checkcast     #118                // class org/apache/hadoop/io/NullWritable
+       5: aload_2
+       6: checkcast     #428                // class org/apache/hadoop/io/WritableComparable
+       9: invokevirtual #430                // Method next:(Lorg/apache/hadoop/io/NullWritable;Lorg/apache/hadoop/io/WritableComparable;)Z
+      12: ireturn
+}

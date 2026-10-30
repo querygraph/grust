@@ -1334,3 +1334,11 @@ and exact Sail vendor `25524aa551`. Three new malformed/valid controls
 preserve null-stream failure ordering; full native tests pass 323 (eight ignored),
 no-default 202, Sail data-source 156. Source/value-safety/merge follow-ups are
 retained explicitly; no new public pipeline runtime pass is claimed.
+
+### ORC duplicate names and narrowing map keys (2026-10-30T00:04:08.752583+00:00)
+
+[Four retained Spark observations](evidence/orc-duplicate-key-reference/README.md)
+require last-wins exact duplicate root matching and show a reader-mode difference
+for the tested BIGINT-to-INT map key. Two successes and two errors are preserved;
+no generic safe-null or wrap rule is inferred. The reference changes the pending
+mapper's requirements, not the SDP acceptance denominator.

@@ -460,3 +460,20 @@ merge audit distinguishes existing pipeline semantic merging, outer versus neste
 case policy, and requested-reader matching. Source/opener/mapper drafts remain
 outside this verdict until their own exact gates; public ORC/SDP runtime remains
 unqualified by these dependency changes.
+
+## Duplicate root names and mode-dependent map-key narrowing
+
+Recorded: 2026-10-30T00:04:08.752583+00:00. [Four fresh Spark 4.2.1 observations](evidence/orc-duplicate-key-reference/README.md)
+resolve two adapter questions before its first commit. Exact duplicate root names
+select the last physical field in case-sensitive mode; case-insensitive mode
+retains its duplicate-name error. The mapper must preserve that distinction.
+
+For the retained MAP<BIGINT,STRING> fixture, requested MAP<INT,STRING> and explode
+projection, vectorized mode wraps key 2147483648 to -2147483648; non-vectorized mode
+fails with a retained nextMap/TreeMap NullPointerException. This does not establish
+a general map conversion rule. Do not apply ordinary safe integer null-on-overflow
+semantics to map keys. Narrowing keys, nested/sliced/null-parent cases and reader
+mode configuration remain explicit compatibility work until a precise policy is
+implemented and qualified. Both failures, full plans/configurations, two fixtures,
+five Spark sources and three installed ORC class disassemblies are retained.
+Owned JVM 5469 exited cleanly. No public Sail/SDP count changes.

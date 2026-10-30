@@ -1,0 +1,30 @@
+  private final OrcColumnVector keys;
+  private final OrcColumnVector values;
+
+  OrcMapColumnVector(
+      DataType type,
+      ColumnVector vector,
+      OrcColumnVector keys,
+      OrcColumnVector values) {
+
+    super(type, vector);
+
+    this.keys = keys;
+    this.values = values;
+  }
+
+  @Override
+  public ColumnarMap getMap(int ordinal) {
+    int offsets = (int) ((MapColumnVector) baseData).offsets[ordinal];
+    int lengths = (int) ((MapColumnVector) baseData).lengths[ordinal];
+    return new ColumnarMap(keys, values, offsets, lengths);
+  }
+
+  @Override
+  public boolean getBoolean(int rowId) {
+    throw SparkUnsupportedOperationException.apply();
+  }
+
+  @Override
+  public byte getByte(int rowId) {
+    throw SparkUnsupportedOperationException.apply();
