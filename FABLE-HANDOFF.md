@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T16:55:39.743927+00:00. Live coordination read through **CF-0143**.
+Snapshot written 2026-10-30T17:07:33.120581+00:00. Live coordination read through **CF-0149**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -49,11 +49,11 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `b90c4fbbef8ed16dc59f2348898852e78e71d798` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `1ade7122d3067f484833fa355ac536827fcd8c68` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `b90c4fbbe` (ScopedSession gates terminal/passed) |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `099b47188a42d125993e24c4dd519d24e6e470a7` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `2e7beda82` (resolver helper Session gate running) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `ebf631edd3b41b288a2c4d899a7a82dd658582e1` (binding offered/unintegrated CF-0139) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `cc4dcb08d183ec6aea660d5b71d63d80acd166fd` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `2e9f098b248d2dbbb75b04a0c96de8d7f6d2e116` (admission offered/unintegrated CF-0145) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `659dc0c230c2b352ab6fd3a57f21e0039a7c554a` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -163,44 +163,43 @@ Latest fresh public CLI gate is **a0a369baada5b3b78d66c11c6694191da72d6fe8**:
 owned server stopped (exit0/no listeners). Session5964 is terminal. Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0141)
+## Current implementation and immediate next work (CF-0149)
 
-Coordinator HEAD **b90c4fbbef8ed16dc59f2348898852e78e71d798** is committed/clean.
-[Existing-owner helper](docs/sail-declarative-pipelines/evidence/task-context-existing-owner/README.md)
-18bfee751 passes125 library/optimized tests. [Local bound preparation](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md)
-a0a369baa passes375 libraries,16 optimized local and300 public+67 upstream tests;
-unchanged admission-bypass fails. It borrows its minting runner and publishes to
-stop before planning; execute consumes the object and reuses the exact owner.
-Legacy local execute delegates with late authoritative context capture. Other
-runners keep legacy execute/default unsupported preparation; callers are unmigrated.
+Coordinator HEAD **b90c4fbbef8ed16dc59f2348898852e78e71d798**. Earlier a0 local
+preparation passes375 libraries,16 optimized and300 public+67 upstream; b90
+ScopedSession passes129 library/optimized tests and unchanged provider/builder
+controls. [Local packet](docs/sail-declarative-pipelines/evidence/local-bound-preparation/README.md),
+[Session packet](docs/sail-declarative-pipelines/evidence/scoped-session/README.md).
 
-[ScopedSession packet](docs/sail-declarative-pipelines/evidence/scoped-session/README.md)
-b90c4fbbe passes129 library/129 optimized tests, fmt/strict Clippy. The component
-owns captured state without rebuilding, attaches exact scope and exposes an isolated
-registry to Session providers/planners/derived tasks. Final controls679da6a20 and
-ec54a6f2d fail actual wrong-store bytes and native prepared/UDF regressions.
-Compile/lint failures and earlier pointer-only control are retained. No production
-registry is installed; native authority remains on SessionContext. optimize/expression
-creation delegate to preserved state; arbitrary custom-runtime callbacks/downcasts
-remain audit obligations. Latest public CLI is a0, not b90. All root gates terminal.
+Dirty resolver unit: mod.rs/session.rs; query/{mod.rs,session_tests.rs,limit.rs,
+pivoting.rs,time_travel.rs,stat.rs,read.rs}. Exact candidate
+`2e7beda829a107768d0bb00f6d526c6d4d268b30`, label resolver-query-session-registry,
+passes fmt/strict Clippy/42 sail-plan libraries. It adds an optional borrowed
+Session for four helper-query sites and preserves it in the nested view resolver;
+default collection stays on authoritative ctx. Factories/final execution/callers
+are not migrated. Five tests exercise actual helpers and the legacy fallback.
+Unchanged bypassa63d6fb35 fails four helpers/missing scope; fallback passes.
+The first qualifier expected the Rust type name instead of the extension's human
+name; source/tests unchanged, raw exit101 retained and corrected qualifier resumed.
+Session32905 is live: optimized42 plan tests then fresh public CLI regression.
+Inspect /tmp/sail-sdp-resolver-query-session-registry-{gate.json,rust.log},
+/tmp/sail-sdp-resolver-helper-session-bypass-receipt.json, optimized sail-plan-release
+receipt and /tmp/sail-sdp-resolver-query-session-public before qualification/advance.
+Never move its detached gate while live. Initial420190263 missing test trait import
+failure is retained. After success: qualify exact receipts/source/binary/control,
+conditionally advance, archive evidence, update design/REVIEW/handoff and post DONE.
 
 [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) remains active
-for Astra. Next: pass the explicit Session view through resolver factories/helper
-queries, preserve authoritative command dispatch and capture timing, transfer the
-same context into bound execution, and implement cluster preparation before generic
-caller migration. Typed primary/cleanup transport, byte/outcome/recovery remain open.
-[Registry probe](docs/sail-declarative-pipelines/evidence/planning-state-registry-probe/README.md)
-1c1c4abcd disproves general builder preservation; never revive that recipe casually.
+for Astra. Next: provider factory propagation, authority/capture and execution
+transfer, typed primary/cleanup transport and cluster preparation before generic
+caller migration. Routing/byte/outcome/recovery/full acceptance remain incomplete.
 
-Fable component1 ebf631edd is offered/unintegrated. CF-0140 [source review](docs/sail-declarative-pipelines/evidence/fable-binding-source-review/README.md)
-finds ignored expression subqueries before resolution and asks for CTE shadowing
-and duplicate binding fixes. [Independent validator probe](docs/sail-declarative-pipelines/evidence/fable-binding-expression-review/README.md)
-3e6ca3c34 compiles and fails both scalar/EXISTS fixtures as expected. CF-0142
-acknowledges correction; CF-0143 sends exact replay fixtures. No provider/RPC claim.
-Session55876 is terminal; gate restored to b90. Pure unit4 scope
-is approved on its existing branch. Mixed read modes are an incomplete first-unit
-restriction with a required follow-up; full Spark behavior is still the target.
-No shared runtime/source async/sealed-authority change approved by that scope.
+Fable binding correction41f09ec47 and admission2e9f098b2 are offered/unintegrated;
+CF-0149 reports their detached gates. Original two validator gaps are [confirmed](docs/sail-declarative-pipelines/evidence/fable-binding-expression-review/README.md);
+correction replay is pending. CF-0146/0148 [admission review](docs/sail-declarative-pipelines/evidence/fable-admission-source-review/README.md)
+requires join orientation, separate range-subquery counts and actual provider/static
+provenance (including local analysis placeholders); Fable accepts in CF-0147.
+Mixed read modes remain required follow-up, not a permanent selected restriction.
 
 ## Acceptance accounting and major remaining work
 

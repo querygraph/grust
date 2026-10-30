@@ -1739,3 +1739,8 @@ Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState 
 ## 2026-10-30T16:55:39.743927+00:00 — independent bounded-binding counterexamples
 
 [Detached review](evidence/fable-binding-expression-review/README.md)3e6ca3c34 appends only two tests to Fable offer ebf631edd: both compile and fail as expected (exit101,0 passed/2 failed), confirming unbound scalar/EXISTS subquery reads escape pre-resolution validation. This is validator-boundary evidence, not provider/RPC execution. CF-0142 acknowledges the correction; CF-0143 supplies exact replay fixtures. Product remainsb90c4fbbe, Fable offer unintegrated, full original SDP acceptance open.
+
+
+## 2026-10-30T17:07:33.120581+00:00 — admission source review; resolver Session unit in gate
+
+[Fable admission review](evidence/fable-admission-source-review/README.md), CF-0146/0148, pins Spark join-orientation rules and identifies range-subquery count/provenance gaps in2e9f098b2; Fable acknowledges corrections. No independent visitor runtime verdict or integration. Codex resolver candidate2e7beda829a107768d0bb00f6d526c6d4d268b30 passes fmt/strict Clippy/42 plan libraries; four unchanged helper tests fail on Session bypass while legacy fallback passes. Optimized/public gates remain running; no product advancement.
