@@ -104,8 +104,16 @@ sqlConf` is the raw confs passed to that call (`FlowAnalysis.scala:72`),
   be: resolve a command's view closure and its own query under the union of
   the consumer's and the traversed views' flow confs, fail with
   `DUPLICATE_FLOW_SQL_CONF` on conflicting values, stop the union at tables,
-  and fold pipeline defaults under flow confs; the `BTreeSet` dependency
-  topology is sufficient for this because the rule is order-independent.
+  and fold pipeline defaults under flow confs. Qualification from Codex's
+  live Spark 4.2.1 probes (CF-0252, `evidence/flow-config-fusion-reference/
+attempt-02/observations.json`): the successful union and the conflict
+  check are order-independent, so the `BTreeSet` topology suffices for them,
+  but the first-pass failure precedence is not. With one upstream view
+  setting `caseSensitive=true` and another `false`, a consumer whose first
+  pass runs under the last-written value can fail `UNRESOLVED_COLUMN` before
+  the merge validation ever throws `DUPLICATE_FLOW_SQL_CONF`; reversing the
+  SQL input order flips which error is reported. Reproducing that observable
+  precedence needs the ordered pre-analysis input binding, not only the set.
 - **2.2 Persisted views are not materialization points in Spark.** The
   closure stops at tables only; an upstream persisted view's defining flow is
   re-analyzed inside the consumer's subgraph. Sail publishes the view at
