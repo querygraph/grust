@@ -1,0 +1,46 @@
+{
+  "sail_commit": "0744270849723e2fca7cf1c0b9ba101c572f853d",
+  "base": "cba833ae08a4844afcb4e5edef0cc894231d0d82",
+  "packages": [
+    "sail-object-store"
+  ],
+  "started_at": "2026-10-30T07:02:36.957249+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-object-store",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-effect-baseline-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-object-store",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "log": "/tmp/sail-sdp-checkpoint-effect-baseline-clippy.log",
+      "sha256": "7ef1535e8880dfc1677b6dde712b341f55d3a91832127cd5ec8d094e65194204"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T07:03:42.499284+00:00"
+}

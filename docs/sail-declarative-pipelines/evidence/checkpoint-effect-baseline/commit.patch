@@ -1,0 +1,123 @@
+diff --git a/crates/sail-object-store/src/layers/runtime.rs b/crates/sail-object-store/src/layers/runtime.rs
+index 32060cf37..de01334ae 100644
+--- a/crates/sail-object-store/src/layers/runtime.rs
++++ b/crates/sail-object-store/src/layers/runtime.rs
+@@ -21,6 +21,10 @@ use tokio_util::sync::CancellationToken;
+ use tokio_util::task::{AbortOnDropHandle, TaskTracker};
+ use tonic::codegen::Bytes;
+ 
++#[cfg(test)]
++#[path = "runtime_effect_tests.rs"]
++mod effect_tests;
++
+ #[derive(Debug)]
+ pub struct RuntimeAwareObjectStore {
+     inner: Arc<dyn ObjectStore>,
+diff --git a/crates/sail-object-store/src/layers/runtime_effect_tests.rs b/crates/sail-object-store/src/layers/runtime_effect_tests.rs
+new file mode 100644
+index 000000000..ce265a7ea
+--- /dev/null
++++ b/crates/sail-object-store/src/layers/runtime_effect_tests.rs
+@@ -0,0 +1,102 @@
++//! Characterizes the publication boundary a session cleanup owner must join.
++
++use std::sync::Arc;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::time::Duration;
++
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use object_store::{MultipartUpload, ObjectStoreExt, PutPayload, PutResult, Result, UploadPart};
++use tokio::runtime::Handle;
++use tokio::sync::oneshot;
++use tokio::time::timeout;
++
++use super::RuntimeAwareMultipartUpload;
++
++#[derive(Debug)]
++struct HeldPublication {
++    store: Arc<InMemory>,
++    path: Path,
++    started: Option<oneshot::Sender<()>>,
++    release: Option<oneshot::Receiver<()>>,
++    disposed: Option<oneshot::Sender<()>>,
++    aborts: Arc<AtomicUsize>,
++}
++
++impl Drop for HeldPublication {
++    fn drop(&mut self) {
++        if let Some(disposed) = self.disposed.take() {
++            let _ = disposed.send(());
++        }
++    }
++}
++
++#[async_trait::async_trait]
++impl MultipartUpload for HeldPublication {
++    fn put_part(&mut self, _: PutPayload) -> UploadPart {
++        Box::pin(async {
++            Err(object_store::Error::NotSupported {
++                source: "fixture publishes only in complete".into(),
++            })
++        })
++    }
++
++    async fn complete(&mut self) -> Result<PutResult> {
++        if let Some(started) = self.started.take() {
++            let _ = started.send(());
++        }
++        if let Some(release) = self.release.take() {
++            release
++                .await
++                .map_err(|error| object_store::Error::Generic {
++                    store: "HeldPublication",
++                    source: Box::new(error),
++                })?;
++        }
++        self.store.put(&self.path, "late publication".into()).await
++    }
++
++    async fn abort(&mut self) -> Result<()> {
++        self.aborts.fetch_add(1, Ordering::SeqCst);
++        Ok(())
++    }
++}
++
++#[tokio::test]
++async fn canceled_completion_can_republish_after_namespace_deletion()
++-> Result<(), Box<dyn std::error::Error>> {
++    let store = Arc::new(InMemory::new());
++    let path = Path::from("checkpoint/session/part");
++    store.put(&path, "old publication".into()).await?;
++    let (started, started_rx) = oneshot::channel();
++    let (release, release_rx) = oneshot::channel();
++    let (disposed, disposed_rx) = oneshot::channel();
++    let aborts = Arc::new(AtomicUsize::new(0));
++    let inner = HeldPublication {
++        store: store.clone(),
++        path: path.clone(),
++        started: Some(started),
++        release: Some(release_rx),
++        disposed: Some(disposed),
++        aborts: aborts.clone(),
++    };
++    let mut upload = RuntimeAwareMultipartUpload::new(Box::new(inner), Handle::current());
++    let caller = tokio::spawn(async move { upload.complete().await });
++    timeout(Duration::from_secs(5), started_rx).await??;
++    caller.abort();
++    assert!(caller.await.is_err_and(|error| error.is_cancelled()));
++
++    // The caller has been joined, but the runtime-owned completion is still held.
++    store.delete(&path).await?;
++    assert!(matches!(
++        store.head(&path).await,
++        Err(object_store::Error::NotFound { .. })
++    ));
++    release.send(()).map_err(|_| "completion disappeared")?;
++    timeout(Duration::from_secs(5), disposed_rx).await??;
++    assert_eq!(store.get(&path).await?.bytes().await?, "late publication");
++    assert_eq!(aborts.load(Ordering::SeqCst), 0);
++    // Preserving an admitted commit is intentional. The future session barrier
++    // must join it before deleting the namespace; aborting the caller is insufficient.
++    Ok(())
++}
