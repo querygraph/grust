@@ -1,0 +1,29 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 22.41s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-1aad231f7fc0cda4)
+
+running 6 tests
+test pipelines::analysis::artifact_tests::analysis_persisted_view_exports_schema_without_provider ... ok
+test pipelines::analysis::artifact_tests::analysis_materialized_table_exports_schema_without_provider ... ok
+test pipelines::analysis::artifact_tests::analysis_temporary_view_exports_schema_without_provider ... ok
+test pipelines::analysis::artifact_tests::analysis_temporary_clock_remains_unfolded ... ok
+test pipelines::analysis::artifact_tests::persisted_view_publishes_captured_columns_after_source_is_unavailable ... FAILED
+test pipelines::analysis::artifact_tests::temporary_working_plan_remains_available_for_analysis_helper_execution ... ok
+
+failures:
+
+---- pipelines::analysis::artifact_tests::persisted_view_publishes_captured_columns_after_source_is_unavailable stdout ----
+Error: DataFusionError(Internal("source unavailable after analysis"))
+
+
+failures:
+    pipelines::analysis::artifact_tests::persisted_view_publishes_captured_columns_after_source_is_unavailable
+
+test result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 137 filtered out; finished in 0.14s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

@@ -160,8 +160,10 @@ The [batch migration trace](BATCH-PROVIDER-MIGRATION-DESIGN.md) distinguishes
 analysis artifacts from execution's separate plan cache: only temporary views
 retain full analysis plans; table and persisted-view outputs retain schemas.
 Persisted-view publication extracts columns and stores SQL/metadata, while batch
-execution starts a fresh map. Do not infer an analysis-time Delta provider is
-physically scanned from analyzed.relations on that path. The actual execution
+execution starts a fresh map. That historical trace must not be read as an
+analysis-time Delta provider scan from analyzed.relations. Since f0ac099e6,
+analysis exports only schemas and native publication options, no LogicalPlan;
+provider plans remain in its working set and drop before it returns. The actual execution
 cache still retains temporary/read_output plans across commands and needs fresh
 owner bindings before migration. Bounded lowering re-resolves over explicit
 bindings. External static/local identity assertions and snapshot JSON remain

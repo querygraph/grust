@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T21:30:30.436727+00:00. Live coordination read through **CF-0233**.
+Snapshot written 2026-10-30T22:01:07.463132+00:00. Live coordination read through **CF-0243**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -43,8 +43,8 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `5717f1c500feaae80f11c71ec4a4db650b135626` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `b86e4fa88510f537d35f3556dd2c76987778120c` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `f0ac099e66d811f97dcc668f1c39366948b7cdf3` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `d0d19d515e6edd6bc2a7d8e6c10553031b15654b` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
@@ -152,16 +152,16 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest fresh public CLI gate is **5717f1c500feaae80f11c71ec4a4db650b135626**:
+Latest fresh public CLI gate is **f0ac099e66d811f97dcc668f1c39366948b7cdf3**:
 300 selected public +67 upstream Python executions pass, rebuilt CLI pinned and
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0233)
+## Current implementation and immediate next work (CF-0243)
 
-Coordinator HEAD **5717f1c500feaae80f11c71ec4a4db650b135626** is committed/clean.
-All owned gates terminal. [Latest public gate](docs/sail-declarative-pipelines/evidence/view-publication-metadata/README.md)
-is5717f1c50:83 Plan+139 Connect libraries/strict Clippy/fmt, fresh300 public+67
+Coordinator HEAD **f0ac099e66d811f97dcc668f1c39366948b7cdf3** is committed/clean.
+All owned gates terminal. [Latest public gate](docs/sail-declarative-pipelines/evidence/analysis-time-view-publication/README.md)
+isf0ac099e6:86 Plan+143 Connect libraries/strict Clippy/fmt, fresh300 public+67
 upstream Python, Spark4.2.1, owned server exit0/no listeners. Historical09 remains
 archived. Public callers still do not install a captured Session.
 
@@ -227,20 +227,21 @@ review consumed; CF-0223 withdraws unreachable view-mode fixture request.
 No captured public/cluster/provider activation or C5/Status scope expansion.
 
 [Batch design](docs/sail-declarative-pipelines/BATCH-PROVIDER-MIGRATION-DESIGN.md) and [source audit](docs/sail-declarative-pipelines/evidence/batch-provider-migration/README.md)
-correct earlier inference: only temporary analysis plans retain providers; table/
-persisted artifacts are schemas. Execution's separate plan cache is the owner hazard.
-Spark target: stop at tables, traverse both graph-local view kinds, fuse upstream
-Flow settings by overwrite in read order; table reads use command configuration.
-[Artifacts](docs/sail-declarative-pipelines/evidence/batch-analysis-artifacts/README.md) 954e025c5:139 libraries, zero mock scans, clocks unfolded; all-plan control1pass/3fail.
-Same-source/same-binary env control retains137pass/2ORCfail→139pass; import-Clippy failure retained.
-[Metadata helpers](docs/sail-declarative-pipelines/evidence/view-publication-metadata/README.md) 5717f1c50 privately extracts native columns/namespace conversion:83+139 libraries/strict Clippy/fmt and fresh300+67 public pass.
-Five pure tests pin lazy names/error order/types/comments/properties. Initial unused
-PlanError Clippy failure retained; CF-0230 review confirms parent-equivalent order.
-CF-0232 corrects Copy: generic DataFrame path, not eager authority dispatch.
-Next: publication artifact/DTO matching isAnalyzed=true, per-command closure/fusion
-fixtures, captured physical preparation and qualified caller activation. No DTO yet.
-Capture panic fixture, prior catalog/Python I/O, shutdown, SDK/ORC/CDC/C0 and full
-original Spark acceptance remain open. Definitions/metadata cross owners; plans stay local.
+retain the execution-cache hazard and Spark's table-only stop/view/config fusion target.
+[Historical artifacts](docs/sail-declarative-pipelines/evidence/batch-analysis-artifacts/README.md)954 retains139 libraries/1+3 control and137+2→139 same-binary env proof; [native helpers](docs/sail-declarative-pipelines/evidence/view-publication-metadata/README.md)5717 retains222 libraries/initial unused-import failure.
+[Publication artifact](docs/sail-declarative-pipelines/evidence/analysis-time-view-publication/README.md)
+31dfb2cc9: native view/options (225 libraries); f4a6a541f: prepared catalog stages (227).
+f0ac099e6 exports only schemas/publications (229); full working plans drop before return.
+All provider Weak leases release; Tail still sees working data (one memory scan).
+Source-unavailable publication preserves SQL/types/nullability/comments/namespace;
+unchanged re-resolution control5pass/1fail. Fresh rebuilt300 public+67 upstream
+pass on4.2.1, server exit0/no listener. Fable0e16b01f/CF-0242 corrections incorporated.
+Arrow metadata remains; qualifiers/dependencies are not replay identity. Generic
+invalid definitions already failed analysis; do not overstate changed error timing.
+Next: per-command view closure/config fixtures, captured physical preparation and
+planning admission. Execution's provider cache, capture panic, catalog/Python I/O,
+shutdown, SDK/ORC/CDC/C0 and full original Scala acceptance remain open.
+C5 E′ must preserve schemas/publications and the native one-resolution view path.
 
 ## Acceptance accounting and major remaining work
 

@@ -1,0 +1,215 @@
+commit f4a6a541f5ad5b6bba08f9b60702032257fbf74c
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 14:38:25 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 14:38:25 2026 -0700
+
+    Prepare existing catalog commands through the shared Sail planning stages
+
+diff --git a/crates/sail-plan/src/lib.rs b/crates/sail-plan/src/lib.rs
+index d6fc8e534..919e426fc 100644
+--- a/crates/sail-plan/src/lib.rs
++++ b/crates/sail-plan/src/lib.rs
+@@ -5,10 +5,12 @@ use datafusion::physical_plan::{ExecutionPlan, displayable};
+ use datafusion::prelude::SessionContext;
+ use datafusion_common::Result;
+ use datafusion_common::display::{PlanType, StringifiedPlan, ToStringifiedPlan};
+-use datafusion_expr::LogicalPlan;
++use datafusion_expr::{Extension, LogicalPlan};
++use sail_catalog::command::CatalogCommand;
+ use sail_common::spec;
+ use sail_common_datafusion::rename::physical_plan::rename_physical_plan;
+ 
++use crate::catalog::CatalogCommandNode;
+ use crate::config::PlanConfig;
+ use crate::error::PlanResult;
+ use crate::resolver::PlanResolver;
+@@ -49,13 +51,33 @@ pub async fn resolve_and_execute_plan_with_scope(
+     plan: spec::Plan,
+     scope: Option<&dyn RelationScope>,
+ ) -> PlanResult<(Arc<dyn ExecutionPlan>, Vec<StringifiedPlan>)> {
+-    let mut info = vec![];
+     let resolver = PlanResolver::new(ctx, config);
+     let resolver = match scope {
+         Some(scope) => resolver.with_relation_scope(scope),
+         None => resolver,
+     };
+-    let NamedPlan { plan, fields } = resolver.resolve_named_plan(plan).await?;
++    let named = resolver.resolve_named_plan(plan).await?;
++    prepare_named_plan(ctx, named).await
++}
++
++/// Prepare catalog metadata through Sail's ordinary planning stages without
++/// resolving SQL or its source query again. This does not admit a job or execute
++/// the returned stream; callers retain those responsibilities.
++pub async fn prepare_catalog_command(
++    ctx: &SessionContext,
++    command: CatalogCommand,
++) -> PlanResult<(Arc<dyn ExecutionPlan>, Vec<StringifiedPlan>)> {
++    let plan = LogicalPlan::Extension(Extension {
++        node: Arc::new(CatalogCommandNode::try_new(ctx, command)?),
++    });
++    prepare_named_plan(ctx, NamedPlan { plan, fields: None }).await
++}
++
++async fn prepare_named_plan(
++    ctx: &SessionContext,
++    NamedPlan { plan, fields }: NamedPlan,
++) -> PlanResult<(Arc<dyn ExecutionPlan>, Vec<StringifiedPlan>)> {
++    let mut info = vec![];
+     info.push(plan.to_stringified(PlanType::InitialLogicalPlan));
+     let df = execute_logical_plan(ctx, plan).await?;
+     let (session_state, plan) = df.into_parts();
+diff --git a/crates/sail-spark-connect/src/pipelines/catalog_preparation_tests.rs b/crates/sail-spark-connect/src/pipelines/catalog_preparation_tests.rs
+new file mode 100644
+index 000000000..804a7ebd9
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/catalog_preparation_tests.rs
+@@ -0,0 +1,136 @@
++use std::sync::Arc;
++
++use datafusion::arrow::datatypes::DataType;
++use datafusion::execution::SessionStateBuilder;
++use datafusion::prelude::SessionContext;
++use futures::TryStreamExt;
++use sail_catalog::command::CatalogCommand;
++use sail_catalog::manager::CatalogManager;
++use sail_catalog::provider::{CreateViewColumnOptions, CreateViewOptions};
++use sail_common::spec;
++use sail_common_datafusion::catalog::TableKind;
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_common_datafusion::session::job::JobService;
++use sail_execution::job_runner::LocalJobRunner;
++
++use super::sql;
++use crate::session::SparkSession;
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++pub(super) fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
++    let context = sql::tests::resolution_context()?;
++    let state = SessionStateBuilder::new_from_existing(context.state())
++        .with_query_planner(sail_session::planner::new_query_planner())
++        .build();
++    *context.state_ref().write() = state;
++    context
++        .state_ref()
++        .write()
++        .config_mut()
++        .set_extension(Arc::new(JobService::new(Box::new(
++            LocalJobRunner::default(),
++        ))));
++    Ok(context)
++}
++#[tokio::test]
++async fn prepared_catalog_view_keeps_metadata_and_executes_only_when_consumed() -> TestResult {
++    let ctx = context()?;
++    let manager = ctx.extension::<CatalogManager>()?;
++    let options = CreateViewOptions {
++        definition: "SELECT 1 AS id /* original */".into(),
++        columns: vec![CreateViewColumnOptions {
++            name: "id".into(),
++            data_type: DataType::Int32,
++            nullable: false,
++            comment: Some("column comment".into()),
++        }],
++        comment: Some("view comment".into()),
++        if_not_exists: false,
++        replace: true,
++        properties: vec![
++            ("user".into(), "keep".into()),
++            ("view.catalogAndNamespace.numParts".into(), "2".into()),
++            (
++                "view.catalogAndNamespace.part.0".into(),
++                "test_catalog".into(),
++            ),
++            ("view.catalogAndNamespace.part.1".into(), "test_db".into()),
++        ],
++    };
++    let (plan, info) = sail_plan::prepare_catalog_command(
++        &ctx,
++        CatalogCommand::CreateView {
++            view: vec!["target".into()],
++            options: options.clone(),
++        },
++    )
++    .await?;
++    assert_eq!(info.len(), 3);
++    assert!(manager.get_table_or_view(&["target"]).await.is_err());
++    let service = ctx.extension::<JobService>()?;
++    let output = service.runner().execute(&ctx, plan).await?;
++    let batches = output.try_collect::<Vec<_>>().await?;
++    assert_eq!(
++        batches.iter().map(|batch| batch.num_rows()).sum::<usize>(),
++        1
++    );
++    let status = manager.get_table_or_view(&["target"]).await?;
++    let TableKind::View {
++        definition,
++        columns,
++        comment,
++        properties,
++    } = status.kind
++    else {
++        return Err("catalog did not publish a view".into());
++    };
++    assert_eq!(definition, options.definition);
++    assert_eq!(comment, options.comment);
++    assert_eq!(properties, options.properties);
++    assert_eq!(columns[0].name, "id");
++    assert_eq!(columns[0].data_type, DataType::Int32);
++    assert!(!columns[0].nullable);
++    assert_eq!(columns[0].comment.as_deref(), Some("column comment"));
++    service.runner().stop().await?;
++    Ok(())
++}
++#[tokio::test]
++async fn prepared_catalog_command_matches_resolved_command_results_and_diagnostics() -> TestResult {
++    let ctx = context()?;
++    let (prepared, prepared_info) =
++        sail_plan::prepare_catalog_command(&ctx, CatalogCommand::CurrentDatabase).await?;
++    let (native, native_info) = sail_plan::resolve_and_execute_plan(
++        &ctx,
++        ctx.extension::<SparkSession>()?.plan_config()?,
++        spec::Plan::Command(spec::CommandPlan::new(spec::CommandNode::CurrentDatabase)),
++    )
++    .await?;
++    let service = ctx.extension::<JobService>()?;
++    let prepared = service
++        .runner()
++        .execute(&ctx, prepared)
++        .await?
++        .try_collect::<Vec<_>>()
++        .await?;
++    let native = service
++        .runner()
++        .execute(&ctx, native)
++        .await?
++        .try_collect::<Vec<_>>()
++        .await?;
++    assert_eq!(prepared, native);
++    assert_eq!(prepared_info.len(), native_info.len());
++    assert_eq!(
++        prepared_info
++            .iter()
++            .map(|item| item.plan.as_str())
++            .collect::<Vec<_>>(),
++        native_info
++            .iter()
++            .map(|item| item.plan.as_str())
++            .collect::<Vec<_>>()
++    );
++    service.runner().stop().await?;
++    Ok(())
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/mod.rs b/crates/sail-spark-connect/src/pipelines/mod.rs
+index 30e4609bc..1620b0401 100644
+--- a/crates/sail-spark-connect/src/pipelines/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/mod.rs
+@@ -231,3 +231,6 @@ pub(crate) async fn handle_command(
+         rx,
+     ))
+ }
++
++#[cfg(test)]
++mod catalog_preparation_tests;

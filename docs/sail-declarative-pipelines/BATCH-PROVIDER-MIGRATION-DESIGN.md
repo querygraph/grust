@@ -6,7 +6,7 @@ This continues [capture transfer](CAPTURE-EXECUTION-TRANSFER-DESIGN.md) and
 [pre-planning ownership](PRE-PLANNING-OWNERSHIP-DESIGN.md). It selects no public
 activation, new catalog contract, Delta change, cluster transport or CDC effects.
 
-## What the batch source actually retains
+## Historical boundary at Sail17b8ac254 (before the publication artifact)
 
 | Phase | Current behavior | Ownership implication |
 | --- | --- | --- |
@@ -129,7 +129,9 @@ analysis owns its input, then carrying only the same CatalogCommand::CreateView
 metadata to its publication command. Reuse the native resolver's column/name/
 comment/namespace rules through a focused helper rather than a second implementation.
 Check refresh-time config/schema behavior against Spark before selecting this API.
-This publication representation is still a candidate, not a committed change.
+The representation is now the existing CreateViewOptions, produced by native
+resolve_view_publication and carried separately from schemas. No new catalog DTO
+is introduced. The implemented publication unit below uses this path.
 
 For an execution command, build a fresh relation scope from graph/flow specs and
 committed table names. Select Spark's rule explicitly: traverse both temporary
@@ -200,8 +202,9 @@ consumer in input-read order, and table reads under command configuration. The
 current helper extraction preserves Sail behavior; those semantic changes need
 separate observable fixtures and commits. Normal per-command clock folding already
 matches this direction; avoid exporting folded plans rather than inventing an
-analysis-time clock defect. Publication metadata must match isAnalyzed=true
-semantics, with exact schema/columns/SQL/namespace behavior still to qualify.
+analysis-time clock defect. Publication metadata must match isAnalyzed=true semantics. The implemented unit
+now checks captured schema/columns/SQL/namespace and source unavailability; other
+Catalyst/backend validation and runtime parity requirements remain open.
 
 ## First preparatory implementation
 
@@ -212,16 +215,43 @@ combined CLI run on5717f1c50 passes300 public+67 upstream Python cases with
 Spark4.2.1; rebuilt binary pinned, owned server stopped. See the
 [metadata packet](evidence/view-publication-metadata/README.md). No public API,
 publication DTO, pipeline artifact or semantic configuration change is selected
-by this extraction. Deriving and carrying already-analyzed publication metadata
-remains the next separately reviewable unit.
+by this extraction. Deriving and carrying already-analyzed publication metadata is implemented below.
+
+## Implemented analysis-time publication
+
+[Three units](evidence/analysis-time-view-publication/README.md) expose native
+resolved-plan/publication options (31dfb2cc9), shared catalog-command preparation
+(f4a6a541f), then pipeline schema/publication-only export (f0ac099e6). Full plans
+stay in analysis's working set until helper work/schema derivation ends. The
+returned AnalyzedGraph has schemas: BTreeMap<Name,SchemaRef> and publications:
+BTreeMap<Name,CreateViewOptions>, with no executable plan field. All mock provider
+leases release on return, including temporary outputs. Arrow metadata is retained;
+DataFusion qualifiers/functional dependencies are not carried as replay identity.
+
+Persisted views are resolved once in analysis. Publication consumes the native
+options through ordinary Sail planning and runner execution, without resolving the
+query again; source-unavailable publication succeeds with captured metadata and
+zero scans. The unchanged re-resolution control gives5pass/1fail. A Tail count
+still uses the working plan during analysis, and a clock stays unfolded before
+schema export. Final86+143 libraries/fmt/strict Clippy and fresh300+67 public CLI
+regression pass on Spark4.2.1, owned server stopped. This does not wire captured
+owners or fix execution's separate provider-plan cache/config fusion.
+
+Many invalid view definitions already failed in initial analysis before this
+change; the new guarantee is absence of a second resolution after successful
+analysis. Existing private-view failure coverage asserts both the view and a valid
+materialized table are not published. Do not overstate changed error timing or
+infer all Catalyst/backend checks from metadata capture. Fable review and precision
+response are retained in the packet.
 
 ## Incremental review units and evidence
 
 1. Characterize analysis artifact/provider retention and unresolved clocks; archive
    source traces distinguishing analysis, publication and execution caches.
-2. Resolve the publication DTO/helper shape against Spark's view schema/config
-   behavior. Refactor schema/publication artifacts without owner or execution changes;
-   prove actual provider release and unchanged dependency/schema/error behavior.
+2. Implemented31dfb2cc9/f4a6a541f/f0ac099e6: reuse CreateViewOptions and native
+   metadata rules, prepare catalog commands through ordinary stages, export only
+   schemas/publications and drop provider plans. Preserve the exact evidence above;
+   further Catalyst/backend parity is not implied by these checked properties.
 3. Replace execution's cross-command provider cache with definition/name descriptors
    and per-command resolution. Compare nondeterministic temporary versus table
    behavior, forward references, repeated reads, namespace/config, excluded inputs,
@@ -237,5 +267,5 @@ remains the next separately reviewable unit.
 
 The above does not replace remaining ORC writer, Python analysis, durable streaming/
 Iggy/CDC, catalog coverage or full Spark4.2.1 SDP acceptance. Local unit tests and
-source traces are evidence for their stated scope only. No implementation of this
-migration is implied by this design document.
+source traces are evidence for their stated scope only. Only the explicit implementation units above are qualified. Remaining owner,
+closure, configuration and captured-physical-preparation migration is not activated.
