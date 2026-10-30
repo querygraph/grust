@@ -142,3 +142,7 @@ from this checkpoint.
 ## Writer admission foundation
 
 Recorded 2026-10-30T02:50:57.640372+00:00. [Native `41304b061d` and Sail `ce68e73a6f`](evidence/orc-writer-admission/README.md) complete W0/W1: builder schema/zero-batch rejection precedes output, followed by an exact18-patch vendor update. Native372 default/251 no-default and Sail224 library tests pass with formatting/strict Clippy. Four new native tests exercise rejection-before-output and supported empty/multi-stripe files. The initial test-only compile failure is retained. Semantic writer admission, byte accounting, cancellation/upload ownership and public writing remain open.
+
+## Writer compression selection foundation
+
+Recorded 2026-10-30T02:56:38.637466+00:00. [Sail `88a8ecfcb8`](evidence/orc-write-compression/README.md) adds source-qualified codec naming, selection-before-validation and native capability checks. Four new tests verify precedence, invalid/unsupported distinctions and actual ORC footer codec kinds. All228 data-source tests and formatting/strict Clippy pass. This completes the codec component of W3; generated layers, session snapshot wiring and sink activation remain open. No new public SDP count is claimed.
