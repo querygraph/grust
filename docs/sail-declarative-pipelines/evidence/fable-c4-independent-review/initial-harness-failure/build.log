@@ -1,0 +1,49 @@
+     Locking 35 packages to latest Rust 1.98.1 compatible versions
+      Adding icu_collections v2.3.0 (available: v2.4.0)
+      Adding icu_properties v2.3.0 (available: v2.4.0)
+      Adding icu_properties_data v2.3.0 (available: v2.4.0)
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling stable_deref_trait v1.2.1
+   Compiling writeable v0.6.4
+   Compiling utf_types v1.0.0
+   Compiling litemap v0.8.3
+   Compiling icu_properties_data v2.3.0
+   Compiling memchr v2.8.3
+   Compiling icu_casemap_data v2.3.0
+   Compiling regex-syntax v0.8.11
+   Compiling utf8_iter v1.1.0
+   Compiling aho-corasick v1.1.5
+   Compiling regex-automata v0.4.18
+   Compiling syn v3.0.9
+   Compiling regex v1.13.1
+   Compiling synstructure v0.14.0
+   Compiling zerovec-derive v0.11.7
+   Compiling displaydoc v0.2.7
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerofrom v0.1.8
+   Compiling yoke v0.8.4
+   Compiling zerovec v0.11.9
+   Compiling zerotrie v0.2.5
+   Compiling tinystr v0.8.5
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.3.0
+   Compiling icu_locale_core v2.4.0
+   Compiling icu_provider v2.4.0
+   Compiling icu_properties v2.3.0
+   Compiling icu_casemap v2.3.0
+   Compiling c4-independent-probe v0.0.0 (/tmp/sail-sdp-c4-independent-probe)
+error: character constant must be escaped: `\t`
+ --> src/main.rs:7:93
+  |
+7 | fn main(){for line in io::stdin().lock().lines(){let s=line.unwrap();let mut items=s.split('    ');let n:usize=items.next().unwrap()....
+  |                                                                                             ^^^^
+  |
+help: escape the character
+  |
+7 | fn main(){for line in io::stdin().lock().lines(){let s=line.unwrap();let mut items=s.split('\t');let n:usize=items.next().unwrap().parse().unwrap();let fields:Vec<String>=(0..n).map(|_|text(items.next().unwrap())).collect();let query=text(items.next().unwrap());let lookup=lookup::FieldLookup::new(&fields);let a=lookup.resolver(schema::Case::Sensitive)(&query).map(|x|x as i64).unwrap_or(-1);let b=lookup.resolver(schema::Case::Insensitive)(&query).map(|x|x as i64).unwrap_or(-1);println!("{a},{b}");}}
+  |                                                                                             ++
+
+error: could not compile `c4-independent-probe` (bin "c4-independent-probe") due to 1 previous error

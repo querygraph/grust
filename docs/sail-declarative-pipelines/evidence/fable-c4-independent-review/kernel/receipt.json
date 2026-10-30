@@ -1,0 +1,62 @@
+{
+  "scope": "Standalone exact vendored kernel; not full Grust or Sail gate",
+  "source": {
+    "repository": "https://github.com/querygraph/grust",
+    "commit": "727baa3e983a6a8b1d6055f8c3b0ccdb85bd78b3",
+    "path": "crates/grust-columns",
+    "files_sha256": {
+      "Cargo.toml": "4848918c3be8465c75ce7bc8eb6a67943a44c8aef7e8bacf8f9b8253a88bf709",
+      "LICENSE-MIT": "99d43669bd0d8086aa12829db4ca8090e72cd7cfbb09d6fca86ab0e5c8dd8efd",
+      "src/lib.rs": "3a776ca2a66e0645e92e43e1c2e8cec97f3e3ad253c7b1a33bc10c8d6f2a5835",
+      "src/tests.rs": "c96be59061575340a716a4c48eb8a4c1d97bf267a47b2f8bce2df489b279fdf1"
+    }
+  },
+  "checks": [
+    {
+      "name": "test",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--manifest-path",
+        "/tmp/sail-sdp-c4-kernel-review/Cargo.toml"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--manifest-path",
+        "/tmp/sail-sdp-c4-kernel-review/Cargo.toml",
+        "--all-targets",
+        "--locked",
+        "--",
+        "-D",
+        "warnings",
+        "-D",
+        "clippy::unwrap_used",
+        "-D",
+        "clippy::expect_used",
+        "-D",
+        "clippy::panic"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--manifest-path",
+        "/tmp/sail-sdp-c4-kernel-review/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0
+    }
+  ]
+}
