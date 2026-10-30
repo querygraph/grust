@@ -1,4 +1,9 @@
-"""Append to the one shared SDP coordination log under its persistent lockfile."""
+"""Append to, or read from, the one shared SDP coordination log under its persistent lockfile.
+
+Append: --author X --body-file F [--reply-to REF ...] [--seen-through REF].
+Read:   --since REF prints every entry after REF, so a reader resumes from the last
+acknowledged point instead of from an arbitrary tail.
+"""
 
 import argparse
 from collections.abc import Sequence
@@ -7,6 +12,7 @@ import fcntl
 import os
 from pathlib import Path
 import re
+import sys
 
 
 CANONICAL_LOG = Path("/Users/alexy/src/grust-sdp/codex-to-fable.md")
@@ -16,6 +22,41 @@ ENTRY_HEADER = re.compile(
     r"(?:Message-ID: (?P<id>CF-[0-9]{4,})\r?\n)?",
     re.MULTILINE,
 )
+
+
+def entry_reference(entry: re.Match[str]) -> str | None:
+    """The reference other entries may cite: the Message-ID, else the legacy timestamp."""
+    try:
+        datetime.fromisoformat(entry["timestamp"])
+    except ValueError:
+        return None
+    return entry["id"] or f"legacy:{entry['timestamp']}"
+
+
+def entries_after(history: str, reference: str) -> tuple[str, str]:
+    """Every entry appended after the one carrying `reference`, verbatim and in order,
+    with the reference of the last entry returned: the boundary a reader may cite as
+    Seen-Through. Nothing new returns ("", reference)."""
+    entries = list(ENTRY_HEADER.finditer(history))
+    for index, entry in enumerate(entries):
+        if entry_reference(entry) == reference:
+            later = [candidate for candidate in entries[index + 1 :] if entry_reference(candidate) is not None]
+            if not later:
+                return "", reference
+            boundary = entry_reference(later[-1])
+            if boundary is None:  # unreachable after the filter above; keeps the type honest
+                raise ValueError("coordination entry without a usable reference")
+            return history[later[0].start() :], boundary
+    raise ValueError(f"unknown coordination reference: {reference}")
+
+
+def read_since(log: Path, reference: str) -> tuple[str, str]:
+    """Read one consistent snapshot under a shared lock; an append in progress is never seen.
+    The boundary refers to that snapshot only, so an entry appended afterwards is not covered."""
+    with log.with_suffix(".lock").open("a+") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_SH)
+        history = log.read_text(encoding="utf-8")
+    return entries_after(history, reference)
 
 
 def append_message(
@@ -40,12 +81,9 @@ def append_message(
         references: set[str] = set()
         last_id = 0
         for entry in ENTRY_HEADER.finditer(history):
-            timestamp = entry["timestamp"]
-            try:
-                datetime.fromisoformat(timestamp)
-            except ValueError:
+            if entry_reference(entry) is None:
                 continue
-            references.add(f"legacy:{timestamp}")
+            references.add(f"legacy:{entry['timestamp']}")
             if message_id := entry["id"]:
                 references.add(message_id)
                 last_id = max(last_id, int(message_id.removeprefix("CF-")))
@@ -73,12 +111,30 @@ def append_message(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--author", required=True, choices=AUTHORS)
-    parser.add_argument("--body-file", type=Path, required=True)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--author", choices=AUTHORS)
+    parser.add_argument("--body-file", type=Path)
     parser.add_argument("--reply-to", action="append", default=[], metavar="REFERENCE")
     parser.add_argument("--seen-through", metavar="REFERENCE")
+    parser.add_argument(
+        "--since",
+        metavar="REFERENCE",
+        help="print every entry after REFERENCE instead of appending (log unchanged); "
+        "stderr reports read-through: the last reference printed, to cite as Seen-Through",
+    )
     args = parser.parse_args()
+    if args.since is not None:
+        if args.author or args.body_file or args.reply_to or args.seen_through:
+            parser.error("--since reads the log and takes no append options")
+        try:
+            entries, boundary = read_since(CANONICAL_LOG, args.since)
+        except ValueError as error:
+            parser.error(str(error))
+        print(entries, end="", flush=True)
+        print(f"read-through: {boundary}", file=sys.stderr)
+        return
+    if args.author is None or args.body_file is None:
+        parser.error("appending requires --author and --body-file")
     with args.body_file.open(encoding="utf-8", newline="") as source:
         body = source.read()
     try:

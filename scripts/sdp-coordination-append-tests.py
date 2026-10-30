@@ -1,6 +1,6 @@
 """Isolated tests for the SDP append helper; never append to the canonical log."""
 
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
 import fcntl
 import importlib.util
@@ -197,6 +197,79 @@ class AppendTests(unittest.TestCase):
                 if process.poll() is None:
                     process.kill()
                 process.communicate(timeout=15)
+
+
+class ReadSinceTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.directory = TemporaryDirectory(prefix="sdp-coordination-read-test-")
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.log = self.root / "coordination.md"
+        self.log.write_text(LEGACY_ENTRY, encoding="utf-8")
+        self.first = APPENDER.append_message(self.log, "Codex", "first body\n")
+        self.second = APPENDER.append_message(
+            self.log, "Fable", "  second λ body  ", reply_to=(self.first,), seen_through=self.first
+        )
+
+    def test_entries_after_a_reference_are_returned_verbatim_and_in_order(self) -> None:
+        text = self.log.read_text(encoding="utf-8")
+        from_legacy, boundary = APPENDER.read_since(self.log, f"legacy:{LEGACY_TIMESTAMP}")
+        self.assertEqual(boundary, self.second)
+        self.assertTrue(text.endswith(from_legacy))
+        self.assertEqual([m["id"] for m in APPENDER.ENTRY_HEADER.finditer(from_legacy)], [self.first, self.second])
+        self.assertTrue(from_legacy.startswith("## "))
+        from_first, boundary = APPENDER.read_since(self.log, self.first)
+        self.assertEqual(boundary, self.second)
+        self.assertTrue(from_legacy.endswith(from_first))
+        self.assertIn(f"Message-ID: {self.second}\nReply-To: {self.first}\n", from_first)
+        self.assertTrue(from_first.endswith("  second λ body  \n"))
+        self.assertNotIn("first body", from_first)
+        self.assertEqual(APPENDER.read_since(self.log, self.second), ("", self.second))
+        # The boundary names the snapshot that was read, so a later append is outside it.
+        third = APPENDER.append_message(self.log, "Codex", "third")
+        self.assertEqual(APPENDER.read_since(self.log, self.second)[1], third)
+        self.assertEqual(APPENDER.read_since(self.log, self.first)[1], third)
+
+    def test_unknown_reference_is_rejected_and_nothing_is_written(self) -> None:
+        original = self.log.read_bytes()
+        for reference in ("CF-0003", "legacy:2026-10-30T03:45:11.972763Z", "", "CF-1"):
+            with (
+                self.subTest(reference=reference),
+                self.assertRaisesRegex(ValueError, "unknown coordination reference"),
+            ):
+                APPENDER.read_since(self.log, reference)
+        self.assertEqual(self.log.read_bytes(), original)
+
+    def test_cli_since_prints_entries_without_appending_and_rejects_append_options(self) -> None:
+        original = self.log.read_bytes()
+        output = StringIO()
+        errors = StringIO()
+        argv = [str(SCRIPT), "--since", self.first]
+        with (
+            patch.object(APPENDER, "CANONICAL_LOG", self.log),
+            patch.object(sys, "argv", argv),
+            redirect_stdout(output),
+            redirect_stderr(errors),
+        ):
+            APPENDER.main()
+        self.assertEqual(output.getvalue(), APPENDER.read_since(self.log, self.first)[0])
+        self.assertEqual(errors.getvalue(), f"read-through: {self.second}\n")
+        self.assertEqual(self.log.read_bytes(), original)
+        for extra in (["--author", "Fable"], ["--seen-through", self.first]):
+            with (
+                self.subTest(extra=extra),
+                patch.object(APPENDER, "CANONICAL_LOG", self.log),
+                patch.object(sys, "argv", argv + extra),
+                self.assertRaises(SystemExit),
+            ):
+                APPENDER.main()
+        with (
+            patch.object(APPENDER, "CANONICAL_LOG", self.log),
+            patch.object(sys, "argv", [str(SCRIPT)]),
+            self.assertRaises(SystemExit),
+        ):
+            APPENDER.main()
+        self.assertEqual(self.log.read_bytes(), original)
 
 
 if __name__ == "__main__":
