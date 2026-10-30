@@ -46,7 +46,7 @@ Pinned Spark source617618396087429b5627a86ce933bb0f5d6645cb supports a
 consumer-local reanalysis boundary. BatchTableWrite.executeInternal calls
 graph.reanalyzeFlow(flow).df before its append write (FlowExecution.scala256–294).
 DataflowGraph.reanalyzeFlow149–168 collects the upstream closure while stopping
-at materialization points, creates a new subgraph and resolves the requested flow.
+at tables (views, persisted or temporary, are traversed), creates a new subgraph and resolves the requested flow.
 This is stronger evidence than assuming Sail's current run-wide plan cache is a
 required Spark invariant. Runtime result/error comparisons are still required.
 
@@ -99,9 +99,10 @@ qualify artifact shape and the source trace, not real backend lifetime/effects.
    order. Preserve upstream-table reads after committed writes, excluded-table
    view publication, original SQL, namespace, columns/comments and error timing.
 5. Preserve full schema semantics and dependency edges. A table reference means the
-   committed output, not producer recomputation. A temporary view is an expression
-   definition; reevaluate it in the consuming command owner as required by its
-   semantics, with unchanged flow-specific configuration and qualified namespace.
+   committed output, not producer recomputation. A graph-local view is an expression
+   definition. Traverse temporary and persisted view definitions within the
+   consuming command, stopping at tables, with the Spark configuration fusion
+   and qualified namespace rules below.
 6. Keep typed primary and cleanup outcomes independently available. Cancellation
    or drained resources do not establish target rollback/commit confirmation.
 7. Cluster capture remains unsupported. Driver Session/registry Arcs are not worker
@@ -130,13 +131,28 @@ comment/namespace rules through a focused helper rather than a second implementa
 Check refresh-time config/schema behavior against Spark before selecting this API.
 This publication representation is still a candidate, not a committed change.
 
-For an execution command, build a fresh relation scope from immutable graph/flow
-specs and committed-output names. Resolve required temporary views in topological
-order under that command's captured Session, preserving each definition's own
-SQL config and namespace. Resolve committed table/view reads only after upstream
-writes, under that same owner. Cache plans only within this command; discard them
-before its owner finishes. The run controller keeps definitions/committed identities
-and bounded progress rather than a map of provider plans.
+For an execution command, build a fresh relation scope from graph/flow specs and
+committed table names. Select Spark's rule explicitly: traverse both temporary
+and graph-local persisted view definitions, stopping at tables; do not substitute
+a catalog read for a graph-local persisted view's flow. Persisted-view publication
+still occurs as its own phase, independently of how consumers resolve that flow.
+External catalog views keep the catalog resolver's namespace semantics.
+
+Resolve table reads only after upstream writes, under the consuming command's
+owner and effective configuration, rather than the session-only plan_config used
+by read_output today. Cache plans within this command, then discard them. Keep
+definitions/committed identities and bounded progress in run control.
+
+Configuration target: start with the consumer's flow settings; reading an upstream
+Flow fuses that flow's settings by overwrite, in input-read order, matching Spark's
+readGraphInput/setConfString. This is a parity change from Sail's current separate
+view-body and consumer settings, not a property to claim already preserved. Fixture
+both caseSensitive combinations and conflicting settings on multiple/repeated
+view reads. BTreeSet dependency edges do not preserve read order: capture an ordered
+trace as well as the deduplicated dependency graph before selecting an algorithm.
+Do not infer that a topological traversal or merging sorted names gives the same
+precedence. Resolve exact producer/consumer analysis phases against those fixtures;
+no configuration fusion implementation is selected in this refactor.
 
 Do not inline upstream table producer queries to avoid reading a table: that changes
 nondeterministic results and recomputes already committed effects. Do not treat
@@ -160,7 +176,10 @@ logical plan and claim identical behavior.
 Trace the actual SDP command set (CreateTable/AlterTable/Truncate/WriteTo/CreateView)
 to Sail catalog/barrier/row-level nodes. Share optimizer, streaming rewrite, field
 renaming and diagnostics where possible, while retaining explicit authority
-handling for logical statements that require it. Unsupported branches must report
+handling for logical statements that require it. DataFusion55.2.0 Copy follows its generic DataFrame::new branch; it is not an
+eager authority arm. Ddl and Statement also need their subvariant behavior traced.
+Use an exhaustive match over LogicalPlan variants for authority/captured dispatch,
+so added variants require an explicit decision. Unsupported branches must report
 unsupported rather than silently run a different captured/legacy path. Admission
 must precede eager effects; any required authority mutation precedes the snapshot
 that is promised for subsequent query planning.
@@ -171,6 +190,30 @@ Do not call such an intermediate state complete provider ownership. A supplied
 registry must be complete or explicitly composed with parent resolution, because
 capture replaces it wholesale. Provider-bound stores and catalog calls need their
 own admitted operations and error/settlement policy before the guarantee expands.
+
+## Review response CF-0227
+
+Fable7b240a4e confirms the source trace and identifies the previously ambiguous
+view/config rules. The target is Spark parity: table-only stopping points,
+graph-local persisted-view reanalysis, upstream flow settings overwriting the
+consumer in input-read order, and table reads under command configuration. The
+current helper extraction preserves Sail behavior; those semantic changes need
+separate observable fixtures and commits. Normal per-command clock folding already
+matches this direction; avoid exporting folded plans rather than inventing an
+analysis-time clock defect. Publication metadata must match isAnalyzed=true
+semantics, with exact schema/columns/SQL/namespace behavior still to qualify.
+
+## First preparatory implementation
+
+Sail5717f1c50 extracts private pure column/namespace conversion from the native
+CreateView resolver, preserving resolution/validation/name/authority order.
+Five direct tests and exact fmt/strict Clippy/83+139 libraries pass. A fresh
+combined CLI run on5717f1c50 passes300 public+67 upstream Python cases with
+Spark4.2.1; rebuilt binary pinned, owned server stopped. See the
+[metadata packet](evidence/view-publication-metadata/README.md). No public API,
+publication DTO, pipeline artifact or semantic configuration change is selected
+by this extraction. Deriving and carrying already-analyzed publication metadata
+remains the next separately reviewable unit.
 
 ## Incremental review units and evidence
 

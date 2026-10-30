@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T21:18:42.909507+00:00. Live coordination read through **CF-0226**.
+Snapshot written 2026-10-30T21:30:30.436727+00:00. Live coordination read through **CF-0233**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -43,8 +43,8 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `954e025c5631adc1fa25d204613183ddd613a5f4` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `872308f8b7608b855af9d80e2b9f2b1713a4806a` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `5717f1c500feaae80f11c71ec4a4db650b135626` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `b86e4fa88510f537d35f3556dd2c76987778120c` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
@@ -152,18 +152,18 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest fresh public CLI gate is **09d2f0cb89cbb92f186f5096ba04ade7a665282c**:
+Latest fresh public CLI gate is **5717f1c500feaae80f11c71ec4a4db650b135626**:
 300 selected public +67 upstream Python executions pass, rebuilt CLI pinned and
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0226)
+## Current implementation and immediate next work (CF-0233)
 
-Coordinator HEAD **954e025c5631adc1fa25d204613183ddd613a5f4** is committed/clean.
-Recheck live handles; exact gates and controls linked below. [Latest public gate](docs/sail-declarative-pipelines/evidence/bounded-resolved-clocks/README.md)
-remains09d2f0cb8:324 combined libraries/strict Clippy/fmt, fresh300 public+67 upstream
-Python, Spark4.2.1, owned server exit0/no listeners. New callback units below have
-no fresh CLI verdict. Public callers still do not install a captured Session.
+Coordinator HEAD **5717f1c500feaae80f11c71ec4a4db650b135626** is committed/clean.
+All owned gates terminal. [Latest public gate](docs/sail-declarative-pipelines/evidence/view-publication-metadata/README.md)
+is5717f1c50:83 Plan+139 Connect libraries/strict Clippy/fmt, fresh300 public+67
+upstream Python, Spark4.2.1, owned server exit0/no listeners. Historical09 remains
+archived. Public callers still do not install a captured Session.
 
 [Read](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md),
 [writer/schema](docs/sail-declarative-pipelines/evidence/resolver-writer-session/README.md) and
@@ -213,33 +213,34 @@ reported inCF-0206; queue delay/self-matching pgrep failure disclosed. No root i
 authorized yet; two CDC phase calls/four assertions remain reintegration obligations.
 No Status-rendering policy selected. Original peer history remains untouched.
 
-**Capture primitives implemented; provider/caller Astra checkpoint active**, announced. [Capture design](docs/sail-declarative-pipelines/CAPTURE-EXECUTION-TRANSFER-DESIGN.md)
+**Capture primitives implemented; provider/caller Astra checkpoint active**. [Design](docs/sail-declarative-pipelines/CAPTURE-EXECUTION-TRANSFER-DESIGN.md)
 retains worker transport, Delta lineage, primary/cleanup and provider limits.
-[Shared contract](docs/sail-declarative-pipelines/evidence/captured-preparation-contract/README.md)
-16c43aa29:136+223 libraries/one optimized case; explicit unsupported cancellation.
-[Local capture](docs/sail-declarative-pipelines/evidence/local-captured-execution/README.md)
-7505e2ced:136+228 libraries/optimized6+9 overlapping cases, all load workers joined;
-a74c3f429 documents recapture cancel/complete registry replacement. Initial failed
-attempts, held-I/O registry lifetime and authority control are retained in packets.
-[Boundary](docs/sail-declarative-pipelines/evidence/capture-execution-boundary/README.md)
-e42e1be96 pins legacy7/child→9/parent. [Analyzer](docs/sail-declarative-pipelines/evidence/scoped-native-analyzer/README.md)
-ece5b6aed is optimizer-free; unchanged optimizer control1pass/1fail retained.
-[Typed resolver](docs/sail-declarative-pipelines/evidence/resolver-native-analyzer/README.md)
-17b8ac254:136+78 libraries/strict Clippy/fmt, authority control2pass/5fail. Last setter wins, child mode preserved; two native command sites use typed analyzer.
-CF-0221 review consumed; CF-0223 withdraws unreachable view-mode fixture request.
-No new public/cluster/provider activation or C5/Status scope expansion.
+[Shared contract](docs/sail-declarative-pipelines/evidence/captured-preparation-contract/README.md) 16c43aa29:136+223 libraries/one optimized case; explicit unsupported cancellation.
+[Local capture](docs/sail-declarative-pipelines/evidence/local-captured-execution/README.md) 7505e2ced:136+228 libraries/optimized6+9 overlapping cases, all load workers joined.
+a74c3f429 documents recapture cancel/complete registry replacement; failed attempts,
+held-I/O registry lifetime and authority control retained in the packets.
+[Boundary](docs/sail-declarative-pipelines/evidence/capture-execution-boundary/README.md) e42e1be96 pins legacy7/child→9/parent.
+[Analyzer](docs/sail-declarative-pipelines/evidence/scoped-native-analyzer/README.md) ece5b6aed is optimizer-free; optimizer control1pass/1fail retained.
+[Typed resolver](docs/sail-declarative-pipelines/evidence/resolver-native-analyzer/README.md) 17b8ac254:136+78 libraries/strict Clippy/fmt, authority control2pass/5fail.
+Last setter wins, child mode preserved, two native command sites routed. CF-0221
+review consumed; CF-0223 withdraws unreachable view-mode fixture request.
+No captured public/cluster/provider activation or C5/Status scope expansion.
 
 [Batch design](docs/sail-declarative-pipelines/BATCH-PROVIDER-MIGRATION-DESIGN.md) and [source audit](docs/sail-declarative-pipelines/evidence/batch-provider-migration/README.md)
-correct earlier inference: analysis full plans only for temporary views; table/
-persisted artifacts are schemas, publication persists SQL/columns. Execution's
-separate cross-command provider cache is the actual future owner hazard. Spark reanalyzeFlow stops at materialized boundaries; preserve upstream sqlConf fusion.
-[Artifact tests](docs/sail-declarative-pipelines/evidence/batch-analysis-artifacts/README.md)
-954e025c5:139 Connect libraries/strict Clippy/fmt, zero mock scans, clocks unfolded;
-all-plan control1pass/3fail. Same-source/same-binary PySpark-env control retains137pass/2ORCfail→139pass; initial unused-import Clippy failure also retained.
-Preferred direction: metadata/definitions across owners, plans within one owner. Publication DTO exact shape remains candidate; CF-0225 Fable review ACK consumed.
-Next: review findings, publication helper/artifact refactor, per-command closure,
-captured physical preparation, then qualified caller activation. Panic fixture,
-prior catalog/Python I/O, shutdown, SDK/ORC/CDC/C0 and full Spark acceptance remain open.
+correct earlier inference: only temporary analysis plans retain providers; table/
+persisted artifacts are schemas. Execution's separate plan cache is the owner hazard.
+Spark target: stop at tables, traverse both graph-local view kinds, fuse upstream
+Flow settings by overwrite in read order; table reads use command configuration.
+[Artifacts](docs/sail-declarative-pipelines/evidence/batch-analysis-artifacts/README.md) 954e025c5:139 libraries, zero mock scans, clocks unfolded; all-plan control1pass/3fail.
+Same-source/same-binary env control retains137pass/2ORCfail→139pass; import-Clippy failure retained.
+[Metadata helpers](docs/sail-declarative-pipelines/evidence/view-publication-metadata/README.md) 5717f1c50 privately extracts native columns/namespace conversion:83+139 libraries/strict Clippy/fmt and fresh300+67 public pass.
+Five pure tests pin lazy names/error order/types/comments/properties. Initial unused
+PlanError Clippy failure retained; CF-0230 review confirms parent-equivalent order.
+CF-0232 corrects Copy: generic DataFrame path, not eager authority dispatch.
+Next: publication artifact/DTO matching isAnalyzed=true, per-command closure/fusion
+fixtures, captured physical preparation and qualified caller activation. No DTO yet.
+Capture panic fixture, prior catalog/Python I/O, shutdown, SDK/ORC/CDC/C0 and full
+original Spark acceptance remain open. Definitions/metadata cross owners; plans stay local.
 
 ## Acceptance accounting and major remaining work
 

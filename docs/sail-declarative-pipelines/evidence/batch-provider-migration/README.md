@@ -20,3 +20,10 @@ already analyzed logical plan and creation namespace. Reference FlowAnalysis
 fuses upstream flow SQLConf; this needs precedence/config tests during migration.
 No new runtime behavior is selected by source excerpts. See separate artifact
 characterization evidence when its exact gates are qualified.
+
+Fable's original batch review7b240a4e and corrected3cb82d5e are retained.
+Use fable-batch-review-updated.md for current findings: upstream Flow settings
+overwrite consumer settings in input-read order, both view kinds are traversed
+until tables, and DataFusion Copy is not an eager authority arm. The updated
+review also checks the private metadata helper extraction5717f1c50 line by line.
+The active design records the source corrections; no public activation follows.
