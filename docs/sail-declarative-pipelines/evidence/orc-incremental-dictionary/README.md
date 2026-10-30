@@ -25,3 +25,9 @@ retain the sequencing contract and limits. Required final offsets/payload still
 consume memory; this is not full native heap accounting. RLE delta arithmetic and
 remaining primitive allocation paths stay separate. Public format integration,
 writer and complete SDP acceptance remain open.
+
+The [Arrow provenance correction](ARROW-PROVENANCE-CORRECTION.md) records that
+both actual gates used Arrow 59.2.0. It preserves the stale proposal citation and
+incorrect first follow-up attribution, distinguishes the non-gated implementation
+lock, and retains exact gate/package/Sail locks plus the verified API sources.
+Code and runtime gate results are unchanged.

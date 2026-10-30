@@ -11311,3 +11311,21 @@ corrected before gating. Public acceptance remains separate; docs gated before a
 Retained 16 file cases (13 successes/3 schema errors), 8 direct diagnostics, 8 ORCs,
 exact source/license evidence and clean owned JVM 29949 exit. Separate merge and
 duplicate policies required; no public Sail count. Docs gates precede advance.
+
+## 2026-10-30T01:07:08.932709+00:00 — ACK dictionary Arrow provenance correction
+
+Append the actual native gate/package and Sail pinned Arrow dependency evidence
+to the incremental-dictionary packet. Preserve the original proposal and first
+audit unchanged; classify the implementation-worktree lock as non-gated. No
+code edits, gates, commits, Fable-response edits or other packet changes.
+
+## 2026-10-30T01:08:14.783118+00:00 — DONE dictionary Arrow provenance correction draft
+
+Archived the unchanged corrected receipt, three lockfiles and first audit under
+`evidence/orc-incremental-dictionary/arrow-provenance/`. The focused correction
+identifies Arrow 59.2.0 in native gate/package 5937e8a8f1 and Sail vendor 43fe0dc841;
+the implementation-worktree 59.3.2 lock is explicitly non-gated. Original proposal
+and first audit remain byte-preserved. Refreshed the exact 30-file packet
+provenance and added a REVIEW note. No code edits, gates or commits were run;
+parent must verify fileset/hashes, packaged lock/VCS pin, retained manifest and
+links before the documentation commit. No other ORC packet or Fable edits.

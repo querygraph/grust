@@ -1,0 +1,1083 @@
+{
+  "recorded": "2026-10-30T01:01:33.020181+00:00",
+  "correction": "Original proposal cites58.4.0 and first follow-up labels implementation worktree59.3.2 as actual native reader resolution. The latter was not the gate: native Cargo.lock is ignored/untracked. Authoritative detached native gate and packaged dictionary crate both resolve Arrow59.2.0; Sail tracked lock at vendor commit43fe0dc8 also resolves59.2.0. Preserve both earlier artifacts as historical errors, superseded for gate provenance by this receipt.",
+  "scope": "Read-only actual lock/package/source inspection. No rebuild, test execution or modification of previous artifacts. Runtime results remain root-owned existing evidence.",
+  "native_gate_commit": "5937e8a8f1154aff333818dc365ffc6367c84d5f",
+  "sail_vendor_commit": "43fe0dc841ec18b2a0e666f0bb05d01a95007852",
+  "lockfiles": [
+    {
+      "role": "native_detached_gate",
+      "path": "/Users/alexy/src/orc-rust-sdp-gate/Cargo.lock",
+      "sha256": "29dd0ca91217b64ca2d56f25db1993a889ceb20961233fa2c60009339a06338e",
+      "packages": [
+        {
+          "name": "arrow",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "61d285d16bce7d0be61912f7928342b673067b6b7d7ef6cc179258ba7de1fecf",
+          "dependencies": [
+            "arrow-arith",
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-cast",
+            "arrow-csv",
+            "arrow-data",
+            "arrow-ipc",
+            "arrow-json",
+            "arrow-ord",
+            "arrow-row",
+            "arrow-schema",
+            "arrow-select",
+            "arrow-string"
+          ]
+        },
+        {
+          "name": "arrow-arith",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "757ef1836251e88222542a7da2623bc1c9cb9e20afefa6db2c41e79991cd91d4",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "chrono",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-array",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "bc9a4a4b2b5ecd0e04df03471661cb61f28bed3c7fd50994715129b01b2edb97",
+          "dependencies": [
+            "ahash",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "chrono",
+            "chrono-tz",
+            "half",
+            "hashbrown",
+            "num-complex",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-buffer",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "c12b576ef18c1deb80925a248b25ad84f419198d791b8e293fc6aaa60441fe90",
+          "dependencies": [
+            "bytes",
+            "half",
+            "num-bigint 0.5.1",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-cast",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "68338a9096a5dc9bc11927c58c43a8526d96bf6abd2012ef6c0c9f505991cc79",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-ord",
+            "arrow-schema",
+            "arrow-select",
+            "atoi",
+            "base64 0.23.1",
+            "chrono",
+            "comfy-table",
+            "half",
+            "lexical-core",
+            "num-traits",
+            "ryu"
+          ]
+        },
+        {
+          "name": "arrow-csv",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "25011b52b346407d497ef0030e12b45e4f2d0cc279efc09c4f3d09106db30e36",
+          "dependencies": [
+            "arrow-array",
+            "arrow-cast",
+            "arrow-schema",
+            "chrono",
+            "csv",
+            "csv-core",
+            "regex"
+          ]
+        },
+        {
+          "name": "arrow-data",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "723fe4aeed7604e00b9883a465af4ff0a0e6c44c03e41a68c3d1cbc403e0e44d",
+          "dependencies": [
+            "arrow-buffer",
+            "arrow-schema",
+            "half",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-ipc",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "149437b14371f5b9ec60f5ddc751483ae99d7a7072653c0075e5e469156eea7b",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "arrow-select",
+            "flatbuffers",
+            "lz4_flex 0.14.0",
+            "zstd"
+          ]
+        },
+        {
+          "name": "arrow-json",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "f18b9123ccfec418a663f821c9a034af339711678c11ffe00d3ec07da5ff9f7e",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-cast",
+            "arrow-ord",
+            "arrow-schema",
+            "arrow-select",
+            "chrono",
+            "half",
+            "indexmap",
+            "itoa",
+            "lexical-core",
+            "memchr",
+            "num-traits",
+            "ryu",
+            "serde_core",
+            "serde_json",
+            "simdutf8"
+          ]
+        },
+        {
+          "name": "arrow-ord",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "e6c08dff0686cf23ca4f562803f191ccbeb726dbae6309cd4b4aaf65e0f2c979",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "arrow-select"
+          ]
+        },
+        {
+          "name": "arrow-row",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "bbec439386df71ad570e6758a946111322b9e9dc8db83b5527321f0b4c9119c2",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "half"
+          ]
+        },
+        {
+          "name": "arrow-schema",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "e6fed2ca0d1eade57e811cbe73b98ad50cc08a1183e13b2d2aa43a7df593f40e"
+        },
+        {
+          "name": "arrow-select",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "466b19cf75130b891dc1b23a84b343c714c62c64c9c62e365c76aa0ff90a53fb",
+          "dependencies": [
+            "ahash",
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-string",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "c838a25bb3691e919e0f617616ac51a4ff8517a952e29ca133cf0c22b2ce65b1",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "arrow-select",
+            "memchr",
+            "num-traits",
+            "regex",
+            "regex-syntax"
+          ]
+        },
+        {
+          "name": "orc-rust",
+          "version": "0.9.0",
+          "dependencies": [
+            "anyhow",
+            "arrow",
+            "arrow-ipc",
+            "arrow-json",
+            "async-trait",
+            "bytemuck",
+            "bytes",
+            "chrono",
+            "chrono-tz",
+            "clap",
+            "criterion",
+            "fallible-streaming-iterator",
+            "flate2",
+            "futures",
+            "futures-util",
+            "log",
+            "lz4_flex 0.11.6",
+            "lzokay",
+            "num",
+            "opendal",
+            "pretty_assertions",
+            "proptest",
+            "prost",
+            "serde",
+            "serde_json",
+            "snafu",
+            "snap",
+            "tokio",
+            "zstd"
+          ]
+        }
+      ],
+      "tracked": false,
+      "head_at_audit": "133c0c5ea13578bd6905070dee11f0e66750cd9a"
+    },
+    {
+      "role": "sail_detached_gate",
+      "path": "/Users/alexy/src/sail-sdp-gate/Cargo.lock",
+      "sha256": "92c572736928f7708fe3749254e08f6ebcf60eba5a7b6615cfb444d2f98cf572",
+      "packages": [
+        {
+          "name": "arrow",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "61d285d16bce7d0be61912f7928342b673067b6b7d7ef6cc179258ba7de1fecf",
+          "dependencies": [
+            "arrow-arith",
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-cast",
+            "arrow-csv",
+            "arrow-data",
+            "arrow-ipc",
+            "arrow-json",
+            "arrow-ord",
+            "arrow-row",
+            "arrow-schema",
+            "arrow-select",
+            "arrow-string"
+          ]
+        },
+        {
+          "name": "arrow-arith",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "757ef1836251e88222542a7da2623bc1c9cb9e20afefa6db2c41e79991cd91d4",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "chrono",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-array",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "bc9a4a4b2b5ecd0e04df03471661cb61f28bed3c7fd50994715129b01b2edb97",
+          "dependencies": [
+            "ahash",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "chrono",
+            "chrono-tz",
+            "half",
+            "hashbrown 0.17.1",
+            "libc",
+            "num-complex",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-avro",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "9fb45cd6bd2b25c0965793b83200eaca82214273a8030fbbc2d783e4c7c65a61",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-schema",
+            "bytes",
+            "bzip2",
+            "crc",
+            "flate2",
+            "indexmap 2.14.2",
+            "liblzma",
+            "rand 0.9.5",
+            "serde",
+            "serde_json",
+            "snap",
+            "strum_macros 0.28.0",
+            "uuid",
+            "zstd 0.13.3"
+          ]
+        },
+        {
+          "name": "arrow-buffer",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "c12b576ef18c1deb80925a248b25ad84f419198d791b8e293fc6aaa60441fe90",
+          "dependencies": [
+            "bytes",
+            "half",
+            "num-bigint 0.5.1",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-cast",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "68338a9096a5dc9bc11927c58c43a8526d96bf6abd2012ef6c0c9f505991cc79",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-ord",
+            "arrow-schema",
+            "arrow-select",
+            "atoi",
+            "base64 0.23.1",
+            "chrono",
+            "comfy-table 7.2.2",
+            "half",
+            "lexical-core",
+            "num-traits",
+            "ryu"
+          ]
+        },
+        {
+          "name": "arrow-csv",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "25011b52b346407d497ef0030e12b45e4f2d0cc279efc09c4f3d09106db30e36",
+          "dependencies": [
+            "arrow-array",
+            "arrow-cast",
+            "arrow-schema",
+            "chrono",
+            "csv",
+            "csv-core",
+            "regex"
+          ]
+        },
+        {
+          "name": "arrow-data",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "723fe4aeed7604e00b9883a465af4ff0a0e6c44c03e41a68c3d1cbc403e0e44d",
+          "dependencies": [
+            "arrow-buffer",
+            "arrow-schema",
+            "half",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-flight",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "2bebfacc9d71f0728f6774164e4d4254b5e504d2b46812d0512d8290ec119a64",
+          "dependencies": [
+            "arrow-arith",
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-cast",
+            "arrow-data",
+            "arrow-ipc",
+            "arrow-ord",
+            "arrow-row",
+            "arrow-schema",
+            "arrow-select",
+            "arrow-string",
+            "base64 0.23.1",
+            "bytes",
+            "futures",
+            "once_cell",
+            "prost 0.14.4",
+            "prost-types",
+            "tonic",
+            "tonic-prost"
+          ]
+        },
+        {
+          "name": "arrow-ipc",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "149437b14371f5b9ec60f5ddc751483ae99d7a7072653c0075e5e469156eea7b",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "arrow-select",
+            "flatbuffers",
+            "lz4_flex 0.14.0",
+            "zstd 0.13.3"
+          ]
+        },
+        {
+          "name": "arrow-json",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "f18b9123ccfec418a663f821c9a034af339711678c11ffe00d3ec07da5ff9f7e",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-cast",
+            "arrow-ord",
+            "arrow-schema",
+            "arrow-select",
+            "chrono",
+            "half",
+            "indexmap 2.14.2",
+            "itoa",
+            "lexical-core",
+            "memchr",
+            "num-traits",
+            "ryu",
+            "serde_core",
+            "serde_json",
+            "simdutf8"
+          ]
+        },
+        {
+          "name": "arrow-ord",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "e6c08dff0686cf23ca4f562803f191ccbeb726dbae6309cd4b4aaf65e0f2c979",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "arrow-select"
+          ]
+        },
+        {
+          "name": "arrow-pyarrow",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "c196ecc25b3a8dcbc1d842f2619cee653dcfa2fb8b56a291bc0481c3cf5c3821",
+          "dependencies": [
+            "arrow-array",
+            "arrow-data",
+            "arrow-schema",
+            "pyo3"
+          ]
+        },
+        {
+          "name": "arrow-row",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "bbec439386df71ad570e6758a946111322b9e9dc8db83b5527321f0b4c9119c2",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "half"
+          ]
+        },
+        {
+          "name": "arrow-schema",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "e6fed2ca0d1eade57e811cbe73b98ad50cc08a1183e13b2d2aa43a7df593f40e",
+          "dependencies": [
+            "bitflags 2.13.2",
+            "serde",
+            "serde_core",
+            "serde_json"
+          ]
+        },
+        {
+          "name": "arrow-select",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "466b19cf75130b891dc1b23a84b343c714c62c64c9c62e365c76aa0ff90a53fb",
+          "dependencies": [
+            "ahash",
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-string",
+          "version": "59.2.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "c838a25bb3691e919e0f617616ac51a4ff8517a952e29ca133cf0c22b2ce65b1",
+          "dependencies": [
+            "arrow-array",
+            "arrow-buffer",
+            "arrow-data",
+            "arrow-schema",
+            "arrow-select",
+            "memchr",
+            "num-traits",
+            "regex",
+            "regex-syntax 0.8.11"
+          ]
+        },
+        {
+          "name": "orc-rust",
+          "version": "0.9.0",
+          "dependencies": [
+            "arrow",
+            "async-trait",
+            "bytemuck",
+            "bytes",
+            "chrono",
+            "chrono-tz",
+            "fallible-streaming-iterator",
+            "flate2",
+            "futures",
+            "futures-util",
+            "log",
+            "lz4_flex 0.11.6",
+            "lzokay",
+            "num",
+            "prost 0.13.5",
+            "snafu",
+            "snap",
+            "tokio",
+            "zstd 0.13.3"
+          ]
+        }
+      ],
+      "tracked": true,
+      "head_at_audit": "5563ea165917fbcc9d59144da3f131f26428f07c"
+    },
+    {
+      "role": "non_gated_native_implementation_worktree",
+      "path": "/Users/alexy/src/orc-rust-sdp/Cargo.lock",
+      "sha256": "e05cb16276a1ae9f48477d31dc14a17b4eea21251a531743ca84a0d235c654b0",
+      "packages": [
+        {
+          "name": "arrow",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "3f04e0a89cc175eaf3740282537851e6fd9d7276f97730b9d0ea2859c11a85df",
+          "dependencies": [
+            "arrow-arith",
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-cast 59.3.2",
+            "arrow-csv",
+            "arrow-data 59.3.2",
+            "arrow-ipc 59.3.2",
+            "arrow-json 59.3.2",
+            "arrow-ord 59.3.2",
+            "arrow-row",
+            "arrow-schema 59.3.2",
+            "arrow-select 59.3.2",
+            "arrow-string"
+          ]
+        },
+        {
+          "name": "arrow-arith",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "157943c720919e8f5b6731407ce5cd4c9a5ef47a75bf10edaf24b7081b5763ef",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-schema 59.3.2",
+            "chrono",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-array",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "7b11eb61b95868592ad6edbd537465a6940eb3c81a875addecec24283301b267",
+          "dependencies": [
+            "ahash",
+            "arrow-buffer 58.4.1",
+            "arrow-data 58.4.1",
+            "arrow-schema 58.4.1",
+            "chrono",
+            "half",
+            "hashbrown",
+            "num-complex",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-array",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "72b5b1682924f11ecf6929689c16cbc69efbb6dd141b06ad98ee1cb10d858c43",
+          "dependencies": [
+            "ahash",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-schema 59.3.2",
+            "chrono",
+            "chrono-tz",
+            "half",
+            "hashbrown",
+            "num-complex",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-buffer",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "53ee609a07eb721c2e4a7669d7bb88e2106c560e7dec1219096fecf5eae356d1",
+          "dependencies": [
+            "bytes",
+            "half",
+            "num-bigint 0.4.8",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-buffer",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "b5d687afc6c927965a8a759f3b68de91933d9dfa2e1bb6e156bac84b85665e92",
+          "dependencies": [
+            "bytes",
+            "half",
+            "num-bigint 0.5.1",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-cast",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "9575323ffeb4bc6955f39bf8716f734671a32780f1fac9ba6c2891048fc0ea1f",
+          "dependencies": [
+            "arrow-array 58.4.1",
+            "arrow-buffer 58.4.1",
+            "arrow-data 58.4.1",
+            "arrow-ord 58.4.1",
+            "arrow-schema 58.4.1",
+            "arrow-select 58.4.1",
+            "atoi",
+            "base64 0.22.1",
+            "chrono",
+            "half",
+            "lexical-core",
+            "num-traits",
+            "ryu"
+          ]
+        },
+        {
+          "name": "arrow-cast",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "3f23c3379feede42135ef27ca60e67f6e643cd4343ae74e4c8b16c83f55afd85",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-ord 59.3.2",
+            "arrow-schema 59.3.2",
+            "arrow-select 59.3.2",
+            "atoi",
+            "base64 0.23.1",
+            "chrono",
+            "comfy-table",
+            "half",
+            "lexical-core",
+            "num-traits",
+            "ryu"
+          ]
+        },
+        {
+          "name": "arrow-csv",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "85b1984628b091b8319b3c305fce21d04f9e9b2578bb733b0d0108462ae1d698",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-cast 59.3.2",
+            "arrow-schema 59.3.2",
+            "chrono",
+            "csv",
+            "csv-core",
+            "regex"
+          ]
+        },
+        {
+          "name": "arrow-data",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "10791765e6927cdd8ace5bf0e51a69f38a1c3aded2db93561b003c332d02ee2a",
+          "dependencies": [
+            "arrow-buffer 58.4.1",
+            "arrow-schema 58.4.1",
+            "half",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-data",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "bb0a031c7ff5e2bdb443117054fb466af1d4df5b7f0ecbe197713dc8b113b1ba",
+          "dependencies": [
+            "arrow-buffer 59.3.2",
+            "arrow-schema 59.3.2",
+            "half",
+            "num-integer",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-ipc",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "165051f1f996f19b50c4d2cdb7ed02ddd400d8d984b422bf6848507eee099c3d",
+          "dependencies": [
+            "arrow-array 58.4.1",
+            "arrow-buffer 58.4.1",
+            "arrow-data 58.4.1",
+            "arrow-schema 58.4.1",
+            "arrow-select 58.4.1",
+            "flatbuffers",
+            "lz4_flex 0.13.1"
+          ]
+        },
+        {
+          "name": "arrow-ipc",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "f5dd1afadda2eb821aaf851bb4c0adef60c30cc0f1a29bd02fb99dd07fb9f58d",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-schema 59.3.2",
+            "arrow-select 59.3.2",
+            "flatbuffers",
+            "lz4_flex 0.14.0",
+            "zstd"
+          ]
+        },
+        {
+          "name": "arrow-json",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "a0efe21cd317f22e6b8d7eecc4ed71a043e7269a7bc313a8827c7fb8733866ca",
+          "dependencies": [
+            "arrow-array 58.4.1",
+            "arrow-buffer 58.4.1",
+            "arrow-cast 58.4.1",
+            "arrow-ord 58.4.1",
+            "arrow-schema 58.4.1",
+            "arrow-select 58.4.1",
+            "chrono",
+            "half",
+            "indexmap",
+            "itoa",
+            "lexical-core",
+            "memchr",
+            "num-traits",
+            "ryu",
+            "serde_core",
+            "serde_json",
+            "simdutf8"
+          ]
+        },
+        {
+          "name": "arrow-json",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "e2bc4d56a0dad84cc51c5812ccff48b642047a1f3be80349cd84318983e79edb",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-cast 59.3.2",
+            "arrow-ord 59.3.2",
+            "arrow-schema 59.3.2",
+            "arrow-select 59.3.2",
+            "chrono",
+            "half",
+            "indexmap",
+            "itoa",
+            "lexical-core",
+            "memchr",
+            "num-traits",
+            "ryu",
+            "serde_core",
+            "serde_json",
+            "simdutf8"
+          ]
+        },
+        {
+          "name": "arrow-ord",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "908a1b5aeefce5c6eb2a0a4e98f4ccacbd441fe0ed23fb799e634cd0135821e5",
+          "dependencies": [
+            "arrow-array 58.4.1",
+            "arrow-buffer 58.4.1",
+            "arrow-data 58.4.1",
+            "arrow-schema 58.4.1",
+            "arrow-select 58.4.1"
+          ]
+        },
+        {
+          "name": "arrow-ord",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "561b8209faa2cd489764b7fd07d7cb9e8d274d78048c38de59f77c41140cb834",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-schema 59.3.2",
+            "arrow-select 59.3.2"
+          ]
+        },
+        {
+          "name": "arrow-row",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "0d8c68b87a569f92b90c46cb0a09d86bd9609ddc9b1bf1fc5a503c8c6907c14e",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-schema 59.3.2",
+            "half"
+          ]
+        },
+        {
+          "name": "arrow-schema",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "8506ad465ebb9483bb6efa1e2e78a313549122c6dd67dc2f7087297b762eaede"
+        },
+        {
+          "name": "arrow-schema",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "e87acb0c6bf6237fca7a50d7b51e801c98a18a5fe6f3bb34f7d77b85ca165388"
+        },
+        {
+          "name": "arrow-select",
+          "version": "58.4.1",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "fd0f0a0d641356ae2df829af5d635ed9fb93fbeb0d39f3239487cb5fdb37a6ef",
+          "dependencies": [
+            "ahash",
+            "arrow-array 58.4.1",
+            "arrow-buffer 58.4.1",
+            "arrow-data 58.4.1",
+            "arrow-schema 58.4.1",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-select",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "c844141958d805b47d1208e0d12aac53fcf388ce8011639fe82aa492adde0bb4",
+          "dependencies": [
+            "ahash",
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-schema 59.3.2",
+            "num-traits"
+          ]
+        },
+        {
+          "name": "arrow-string",
+          "version": "59.3.2",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "bc130892b1a9552da77971924b390e06cf375d1f7e4344a7b7b40ca4426fa470",
+          "dependencies": [
+            "arrow-array 59.3.2",
+            "arrow-buffer 59.3.2",
+            "arrow-data 59.3.2",
+            "arrow-schema 59.3.2",
+            "arrow-select 59.3.2",
+            "memchr",
+            "num-traits",
+            "regex",
+            "regex-syntax"
+          ]
+        },
+        {
+          "name": "orc-rust",
+          "version": "0.9.0",
+          "dependencies": [
+            "anyhow",
+            "arrow",
+            "arrow-ipc 58.4.1",
+            "arrow-json 58.4.1",
+            "async-trait",
+            "bytemuck",
+            "bytes",
+            "chrono",
+            "chrono-tz",
+            "clap",
+            "criterion",
+            "fallible-streaming-iterator",
+            "flate2",
+            "futures",
+            "futures-util",
+            "log",
+            "lz4_flex 0.11.6",
+            "lzokay-native",
+            "num",
+            "opendal",
+            "pretty_assertions",
+            "proptest",
+            "prost",
+            "serde",
+            "serde_json",
+            "snafu",
+            "snap",
+            "tokio",
+            "zstd"
+          ]
+        }
+      ],
+      "tracked": false,
+      "head_at_audit": "5937e8a8f1154aff333818dc365ffc6367c84d5f"
+    }
+  ],
+  "package": {
+    "path": "/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/orc-incremental-dictionary/orc-rust-0.9.0.crate",
+    "sha256": "f504451f9d2ae1315f67438a12da397e3a916cc6d1264844c3fc8dfc4d8ef718",
+    "lock_member": "orc-rust-0.9.0/Cargo.lock",
+    "lock_sha256": "29dd0ca91217b64ca2d56f25db1993a889ceb20961233fa2c60009339a06338e",
+    "lock_identical_to_native_gate": true,
+    "vcs": {
+      "git": {
+        "sha1": "5937e8a8f1154aff333818dc365ffc6367c84d5f"
+      },
+      "path_in_vcs": ""
+    },
+    "vcs_sha256": "a074112ad3e62445961ba5e5dfd7560dcf0847de372e3a876d5189ef9beea1c3"
+  },
+  "sail_lock_pinned_commit_matches_current_gate_and_implementation": true,
+  "historical_first_audit": {
+    "path": "/tmp/sail-sdp-orc-dictionary-actual-arrow-source.json",
+    "sha256": "4b5044c139e1c3ec9adb7ca2d42602ca6951f0168d076c80f82c805fc56d9d83",
+    "status": "Unchanged;59.3.2 source findings are ancillary, not gate-resolution evidence."
+  },
+  "actual_api_sources": [
+    {
+      "crate": "arrow-array",
+      "version": "59.2.0",
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.2.0/src/array/byte_array.rs",
+      "sha256": "30a3455bde1accb8c8bf54fe419428330142db5891f99190482a872c118d53c3",
+      "excerpts": [
+        {
+          "start": 122,
+          "end": 155,
+          "text": "122:     /// Create a new [`GenericByteArray`] from the provided parts, returning an error on failure\n123:     ///\n124:     /// # Errors\n125:     ///\n126:     /// * `offsets.len() - 1 != nulls.len()`\n127:     /// * Any consecutive pair of `offsets` does not denote a valid slice of `values`\n128:     pub fn try_new(\n129:         offsets: OffsetBuffer<T::Offset>,\n130:         values: Buffer,\n131:         nulls: Option<NullBuffer>,\n132:     ) -> Result<Self, ArrowError> {\n133:         let len = offsets.len() - 1;\n134: \n135:         // Verify that each pair of offsets is a valid slices of values\n136:         T::validate(&offsets, &values)?;\n137: \n138:         if let Some(n) = nulls.as_ref() {\n139:             if n.len() != len {\n140:                 return Err(ArrowError::InvalidArgumentError(format!(\n141:                     \"Incorrect length of null buffer for {}{}Array, expected {len} got {}\",\n142:                     T::Offset::PREFIX,\n143:                     T::PREFIX,\n144:                     n.len(),\n145:                 )));\n146:             }\n147:         }\n148: \n149:         Ok(Self {\n150:             data_type: T::DATA_TYPE,\n151:             value_offsets: offsets,\n152:             value_data: values,\n153:             nulls,\n154:         })\n155:     }"
+        }
+      ]
+    },
+    {
+      "crate": "arrow-array",
+      "version": "59.2.0",
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.2.0/src/array/dictionary_array.rs",
+      "sha256": "27bc3a27f3fe2819c4d81d390557f48d4fcfb1ee879c5b8aa4d58cd4de85e950",
+      "excerpts": [
+        {
+          "start": 282,
+          "end": 317,
+          "text": "282:     /// Attempt to create a new DictionaryArray with a specified keys\n283:     /// (indexes into the dictionary) and values (dictionary)\n284:     /// array.\n285:     ///\n286:     /// # Errors\n287:     ///\n288:     /// Returns an error if any `keys[i] >= values.len() || keys[i] < 0`\n289:     pub fn try_new(keys: PrimitiveArray<K>, values: ArrayRef) -> Result<Self, ArrowError> {\n290:         let data_type = DataType::Dictionary(\n291:             Box::new(keys.data_type().clone()),\n292:             Box::new(values.data_type().clone()),\n293:         );\n294: \n295:         // // we can skip the validating the keys if they are all null\n296:         let all_null = keys.null_count() == keys.len();\n297: \n298:         if !all_null {\n299:             let zero = K::Native::usize_as(0);\n300:             let values_len = values.len();\n301: \n302:             if let Some((idx, v)) = keys.values().iter().enumerate().find(|(idx, v)| {\n303:                 (v.is_lt(zero) || v.as_usize() >= values_len) && keys.is_valid(*idx)\n304:             }) {\n305:                 return Err(ArrowError::InvalidArgumentError(format!(\n306:                     \"Invalid dictionary key {v:?} at index {idx}, expected 0 <= key < {values_len}\",\n307:                 )));\n308:             }\n309:         }\n310: \n311:         Ok(Self {\n312:             data_type,\n313:             keys,\n314:             values,\n315:             is_ordered: false,\n316:         })\n317:     }"
+        }
+      ]
+    },
+    {
+      "crate": "arrow-buffer",
+      "version": "59.2.0",
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-buffer-59.2.0/src/buffer/offset.rs",
+      "sha256": "1f091a91fcea45b3bf01cd2b7d86cb5ca836a31a85259770281da75b2ba8aa73",
+      "excerpts": [
+        {
+          "start": 61,
+          "end": 80,
+          "text": "61: impl<O: ArrowNativeType> OffsetBuffer<O> {\n62:     /// Create a new [`OffsetBuffer`] from the provided [`ScalarBuffer`]\n63:     ///\n64:     /// # Panics\n65:     ///\n66:     /// Panics if `buffer` is not a non-empty buffer containing\n67:     /// monotonically increasing values greater than or equal to zero\n68:     pub fn new(buffer: ScalarBuffer<O>) -> Self {\n69:         assert!(!buffer.is_empty(), \"offsets cannot be empty\");\n70:         assert!(\n71:             buffer[0] >= O::usize_as(0),\n72:             \"offsets must be greater than 0\"\n73:         );\n74:         assert!(\n75:             buffer.windows(2).all(|w| w[0] <= w[1]),\n76:             \"offsets must be monotonically increasing\"\n77:         );\n78:         Self(buffer)\n79:     }\n80: "
+        }
+      ]
+    },
+    {
+      "crate": "arrow-array",
+      "version": "59.2.0",
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.2.0/src/types.rs",
+      "sha256": "0410e95297da4d0b02be3eb63499c851d5057e593b50c48af67f5f396b86155d",
+      "excerpts": [
+        {
+          "start": 1635,
+          "end": 1652,
+          "text": "1635: /// See [Variable Size Binary Layout](https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout)\n1636: pub trait ByteArrayType: 'static + Send + Sync + bytes::ByteArrayTypeSealed {\n1637:     /// Type of offset i.e i32/i64\n1638:     type Offset: OffsetSizeTrait;\n1639:     /// Type for representing its equivalent rust type i.e\n1640:     /// Utf8Array will have native type has &str\n1641:     /// BinaryArray will have type as [u8]\n1642:     type Native: bytes::ByteArrayNativeType + AsRef<Self::Native> + AsRef<[u8]> + ?Sized;\n1643: \n1644:     /// \"Binary\" or \"String\", for use in error messages\n1645:     const PREFIX: &'static str;\n1646: \n1647:     /// Datatype of array elements\n1648:     const DATA_TYPE: DataType;\n1649: \n1650:     /// Verifies that every consecutive pair of `offsets` denotes a valid slice of `values`\n1651:     fn validate(offsets: &OffsetBuffer<Self::Offset>, values: &Buffer) -> Result<(), ArrowError>;\n1652: }"
+        },
+        {
+          "start": 1655,
+          "end": 1698,
+          "text": "1655: pub struct GenericStringType<O: OffsetSizeTrait> {\n1656:     phantom: PhantomData<O>,\n1657: }\n1658: \n1659: impl<O: OffsetSizeTrait> ByteArrayType for GenericStringType<O> {\n1660:     type Offset = O;\n1661:     type Native = str;\n1662:     const PREFIX: &'static str = \"String\";\n1663: \n1664:     const DATA_TYPE: DataType = if O::IS_LARGE {\n1665:         DataType::LargeUtf8\n1666:     } else {\n1667:         DataType::Utf8\n1668:     };\n1669: \n1670:     fn validate(offsets: &OffsetBuffer<Self::Offset>, values: &Buffer) -> Result<(), ArrowError> {\n1671:         // Verify that the slice as a whole is valid UTF-8\n1672:         let validated = std::str::from_utf8(values).map_err(|e| {\n1673:             ArrowError::InvalidArgumentError(format!(\"Encountered non UTF-8 data: {e}\"))\n1674:         })?;\n1675: \n1676:         // Verify each offset is at a valid character boundary in this UTF-8 array\n1677:         for offset in offsets.iter() {\n1678:             let o = offset.as_usize();\n1679:             if !validated.is_char_boundary(o) {\n1680:                 if o < validated.len() {\n1681:                     return Err(ArrowError::InvalidArgumentError(format!(\n1682:                         \"Split UTF-8 codepoint at offset {o}\"\n1683:                     )));\n1684:                 }\n1685:                 return Err(ArrowError::InvalidArgumentError(format!(\n1686:                     \"Offset of {o} exceeds length of values {}\",\n1687:                     validated.len()\n1688:                 )));\n1689:             }\n1690:         }\n1691:         Ok(())\n1692:     }\n1693: }\n1694: \n1695: /// An arrow utf8 array with i32 offsets\n1696: pub type Utf8Type = GenericStringType<i32>;\n1697: /// An arrow utf8 array with i64 offsets\n1698: pub type LargeUtf8Type = GenericStringType<i64>;"
+        },
+        {
+          "start": 1702,
+          "end": 1733,
+          "text": "1702:     phantom: PhantomData<O>,\n1703: }\n1704: \n1705: impl<O: OffsetSizeTrait> ByteArrayType for GenericBinaryType<O> {\n1706:     type Offset = O;\n1707:     type Native = [u8];\n1708:     const PREFIX: &'static str = \"Binary\";\n1709: \n1710:     const DATA_TYPE: DataType = if O::IS_LARGE {\n1711:         DataType::LargeBinary\n1712:     } else {\n1713:         DataType::Binary\n1714:     };\n1715: \n1716:     fn validate(offsets: &OffsetBuffer<Self::Offset>, values: &Buffer) -> Result<(), ArrowError> {\n1717:         // offsets are guaranteed to be monotonically increasing and non-empty\n1718:         let max_offset = offsets.last().unwrap().as_usize();\n1719:         if values.len() < max_offset {\n1720:             return Err(ArrowError::InvalidArgumentError(format!(\n1721:                 \"Maximum offset of {max_offset} is larger than values of length {}\",\n1722:                 values.len()\n1723:             )));\n1724:         }\n1725:         Ok(())\n1726:     }\n1727: }\n1728: \n1729: /// An arrow binary array with i32 offsets\n1730: pub type BinaryType = GenericBinaryType<i32>;\n1731: /// An arrow binary array with i64 offsets\n1732: pub type LargeBinaryType = GenericBinaryType<i64>;\n1733: "
+        }
+      ]
+    }
+  ],
+  "conclusion": "Actual59.2.0 APIs support the dictionary design: StringArray uses i32 byte offsets, usize entry count; nonempty nonnegative nondecreasing offsets; valid-key bounds against values.len(); all-null keys accepted; string slice/UTF-8 checks remain. No new i32 entry-count ceiling. Source claims stand; dependency-provenance wording is corrected."
+}

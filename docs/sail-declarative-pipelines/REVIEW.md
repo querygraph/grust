@@ -1405,3 +1405,13 @@ not a public ORC registration, cluster or complete SDP verdict.
 errors and 8 direct JVM diagnostics against Spark 4.2.1. It confirms nested case
 reset followed by recursive duplicate validation, with owned JVM shutdown and
 source/license evidence. Sail semantic inference remains a subsequent unit.
+
+### Dictionary Arrow dependency provenance (2026-10-30T01:07:55.872424+00:00)
+
+[The correction](evidence/orc-incremental-dictionary/ARROW-PROVENANCE-CORRECTION.md)
+records Arrow 59.2.0 for native gate/package `5937e8a8f1` and Sail vendor
+`43fe0dc841`. The proposal's 58.4.0 citation and first follow-up's incorrect
+59.3.2 gate attribution remain unchanged as historical evidence; the latter
+came from an ignored, non-gated implementation-worktree lock. Exact authoritative
+locks and actual API source excerpts are retained. This is a provenance repair,
+with no code or runtime-count change; documentation gates remain parent-owned.
