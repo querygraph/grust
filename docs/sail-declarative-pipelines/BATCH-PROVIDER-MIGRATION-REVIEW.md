@@ -633,3 +633,64 @@ bite.
   `assertNoNameConflictsInCTE`; Codex's `cte_case_insensitive_shadow` case).
   As Codex says, this is a general resolver parity concern, not something to
   copy silently into the new phase.
+
+## 11. Sampling classification and typed query-child navigation (CF-0266): `6db005e39`, `75f63e823`
+
+Read only; both on Codex's worktree, the first integrated, the second under
+its gates at review time.
+
+**`6db005e39` (sampling).** The binder gains `sample(&TableSample)`: `Percent`
+and `Rows` walk their `value` expression under the enclosing CTE scope,
+`Bucket` carries none. It is called from the `Read` arm for
+`ReadNamedTable.sample` after `read()` classifies the relation, and from a
+new `TableSample { input, sample }` arm before the input. Tests classify
+hidden reads and helpers at both sites, and a native witness shows
+`resolve_query_read_named_table` reaches a hidden percent read before its
+foldability validation (`query/read.rs:398`). Native `Rows` is `value: _`
+there, so Codex's conservative classification of `Rows` contents is right
+and its "no Rows execution claimed" is the correct boundary. No change
+requested.
+
+**`75f63e823` (navigation).** `sail-common/src/spec/query_children.rs` adds
+`QueryChild<'a> { Expression(&Expr), Window(&Window), Query(&QueryPlan) }`
+and `QueryPlan::visit_children`, exhaustive over `QueryNode` with no default
+arm: expressions and windows before query inputs on every node, `Join`
+condition before left and right, `SetOperation` left then right,
+`WithRelations` references before root, `WithCtes` raw definitions in
+declared order before the body, `Read` exposing `TableTemporal`
+`Version`/`Timestamp` values, `NamedTable`/`DynamicTable` samples,
+`DynamicTable.name`, `DataSource.predicates` and `Udtf` arguments. Field and
+list order and repeats are preserved; the first typed error stops the walk.
+`subqueries.rs` now enumerates the three expression-free frame-boundary kinds
+instead of `_ => {}` (the optional note from §10, taken). The binder's `walk`
+becomes a policy pre-match (classify `Read`, refuse dynamic UDTF, `Tail`,
+pivot inference and the `Stat*` helpers, apply its keep-last CTE scope and
+return) followed by `plan.visit_children` dispatching `Expression` to
+`expr`, `Window` to `visit_subqueries`, `Query` to `walk`; 265 lines of node
+matching leave `binding.rs`. Classification semantics are unchanged: read
+kinds the binder refuses (`TimeTravel`, `DataSource`, `Udtf`, `DynamicTable`)
+are refused in `read()` before navigation would visit their expressions, and
+static UDTF arguments, pivot values, sampling expressions and window frames
+are visited as before. The new binder test pins that a filter's condition
+read is reported before its unbound body; the common tests pin order,
+structural CTE/reference children, borrowed identity with early error, and
+the sampling/temporal/dynamic/function fields.
+
+**Finding (minor, recommended).** The binder's policy pre-match ends in
+`_ => {}`. Before this unit the binder's own `match` was exhaustive over
+`QueryNode`, so adding a node variant failed to compile until a policy
+(refuse, classify or navigate) was written. Now a new variant compiles and is
+silently navigated; navigation's own exhaustive match still forces the new
+variant to be _listed_, but not its policy. Listing the navigated variants
+explicitly with `=> {}` in the pre-match (one arm per group, as the old code
+did) restores the compile-time forcing at the cost of the variant list. Not
+a correctness defect today; it is the "deferred edit is a failing test"
+rule from the working discipline, applied to the type system.
+
+**Notes for the fusion seam.** Navigation gives the structural pre-order
+Codex needs for an ordered binder, with CTE definitions raw and unfiltered,
+which is Spark's `WithCTE.children` order (§9 as corrected). The binder's
+keep-last filtering is its own policy and stays in the binder; a fusion
+binder must decide its CTE policy from Spark's `CTESubstitution` rules
+(resolver-based name matching, conflict assertion), which §10 lists as an
+open parity point.
