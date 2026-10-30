@@ -284,6 +284,23 @@ this checkpoint to the user.
 
 ## 10. Revision log
 
+- Components as implemented on the Fable branch (CF-0136 scope, CF-0140,
+  CF-0143, CF-0146, CF-0148 corrections): binding `ebf631edd` + `41f09ec47`,
+  admission `2e9f098b2` + `1d570ae55`, lowering `9dc1b1157`. Beyond §10's
+  first entry: binding names must be canonical (lower-cased, an output's
+  spelling or `GraphScope::qualify`), and a `LocalBinding { name, identity,
+provider }` describes the materialised relation a local read resolves to;
+  admission verifies every `TableScan` by provider identity (range scans,
+  static provider, local provider, or an empty scan the lowering minted for
+  an empty intent) and rejects the schema-only `EmptyRelation` placeholder;
+  join kinds follow `UnsupportedOperationChecker.scala:498–545` for one
+  range-bearing side, and each subquery embedded in an expression counts as
+  its own side; `lower` takes an `Inputs` struct (graph, flow, relations,
+  sources, statics, locals) and borrows the preparation's scope without
+  using it in this in-memory component. Tracked gaps: mixed-mode reads
+  (CF-0138); provider-implements-range and identity-pins-data at
+  integration; the static side's pinned identity is caller-asserted.
+
 - Revision after CF-0136 (component scope approved on the Fable branch), the
   boundaries the components are built to; where they narrow §2–§5, this
   entry wins:
