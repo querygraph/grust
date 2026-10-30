@@ -153,3 +153,45 @@ right discriminator.
   unit 2.
 - No live backend verdicts; no original Scala-suite execution; only source
   reading at the pins above.
+
+## 5. Publication helper extraction (CF-0228): `5717f1c50` on `954e025c5`
+
+Files: `resolver/command/catalog/view.rs` (−48 lines), new
+`view/publication.rs` (`columns`, `set_namespace`), `view/publication/tests.rs`
+(five tests). Compared line by line against the parent's
+`resolve_catalog_create_view` (`view.rs:22–75` at `954e025c5`).
+
+**Behaviour preserved.** `columns(schema, explicit, names)` is the former
+`if let Some(columns)` block verbatim: the same count check with the same
+`AnalysisError` text, the same `zip` over `schema.fields()`, the same
+`data_type`/`nullable`/`comment` carry-over for explicit columns and
+`comment: None` for inferred ones. The field-name lookup is passed as an
+`FnOnce` closure (`|| Self::get_field_names(schema, state)`) and is called only
+in the inferred branch, exactly where the parent called it; `get_field_names`
+stays `pub(super)` in `resolver/schema.rs:102`, so the Spark field-naming rule
+and its dependence on `PlanResolverState` remain native and outside the
+helper. `set_namespace` is the former `retain`/`push`/`extend` sequence
+verbatim. Call order in the resolver is unchanged: resolve input → columns →
+`CatalogManager` lookup → namespace → `set_namespace` → `CreateViewOptions`
+(`view.rs:18–37` at the candidate), so explicit-count validation still
+precedes name resolution, which still precedes authority access.
+
+**Tests.** Explicit columns keep types, nullability and comments without
+calling the name callback; inferred columns use the callback's names and do
+not inherit input comments; the count error wins over name resolution (the
+callback is not called); a name-resolution failure keeps its original
+`PlanError` variant; namespace properties replace the reserved keys and keep
+unrelated properties in order. Each is a pure test of the helper; none
+touches resolution or the catalog.
+
+**Observations, no change requested.**
+
+- The helper is a correct boundary for the design's unit 2: a future
+  analysis-time publication caller must hand it the same resolved
+  `DFSchema` and the same native name callback, which keeps Spark's
+  field-name rule in the resolver rather than in a DTO.
+- `zip` truncates silently if `names()` ever returned a different length than
+  the schema has fields; that is the parent's behaviour too, and by
+  construction the names come from the same schema. Not a fixture request.
+- No public API, DTO or pipeline change; the design's publication
+  representation remains a candidate, as stated.
