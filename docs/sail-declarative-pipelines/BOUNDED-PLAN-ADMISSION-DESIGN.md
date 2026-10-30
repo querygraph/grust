@@ -360,7 +360,8 @@ identity }`; any other catalog scan is rejected before resolution. One
      an operator's expressions is inspected and any that is not `Immutable`
      marks the evidence non-replayable, with the function named in the
      evidence; no function is special-cased by name. Codex's test-only
-     fixtures (`150611117`) are replayed as independent cases beside an
+     fixtures (`150611117`, split as `ca2038b94` in CF-0183) are replayed
+     as independent cases beside an
      `Immutable` arithmetic control and an `Immutable` built-in (`abs`)
      control.
 
