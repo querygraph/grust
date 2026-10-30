@@ -11417,3 +11417,18 @@ detached documentation gate. No gates or commits run here. Direct explicit-empty
 reads remain unchanged; CREATE inference/persistence and arbitrary catalog
 metadata remain separate work. No public retry, writer, complete SDP,
 streaming/Iggy or CDC verdict is added by this packet.
+
+## 2026-10-30T02:28:56.970019+00:00 — ACK ORC public evidence closeout
+
+Archive exact Sail07fa5d5bee reader activation and75ac384c4 catalog fallback
+qualification, retained failures, original CTAS controls and partial inventory
+update. Public tests296 and upstream executions67 pass; root owns final detached
+documentation checks and commit. Next writer design phase was announced.
+
+## 2026-10-30T02:31:29.051088+00:00 — DONE ORC public evidence draft
+
+Archived Sail07fa5d5bee exact public296/upstream67 qualification, library201,
+Spark10 reference, both retained failures and paired catalog/CTAS controls.
+Packet provenance SHA256 40fe457dcc59ae72a45d14389e9d804415cfe3668dbb4db9daa1919a659d93a8.
+One inventory record expands parameter coverage without changing462/97/59 totals.
+Archive verifier passes; final detached documentation gate and commit are next.

@@ -129,11 +129,19 @@ Iceberg REST catalog, using Parquet in the primary catalog. Rows, schemas,
 providers and catalog cleanup are checked. This is partial behavioral coverage
 of SqlPipelineSuite:759, with no original Scala/JVM matrix run claimed.
 
-Three batch file-format instances (Parquet/JSON/CSV) and the empty-location cause
-now have partial wire ports. ORC remains a verified failure with a passing Spark
-fixture/control; the [shared file-source handoff](FILE-SOURCE-DESIGN-HANDOFF.md)
-records it explicitly. Original streaming output, writer setup, per-flow failure
-container/attribution and missing-file instance remain unqualified.
+All four batch file-format instances (Parquet/ORC/JSON/CSV) now have partial
+direct-MV wire ports, with the [ORC public receipt](evidence/orc-public-registration/README.md)
+qualifying the retained ORC instance at Sail `07fa5d5bee`. A separate probe uses
+the retained Spark-written RANGE file for the original no-USING CTAS call and
+direct batch MV, checking rows 0,1,2, nullable BIGINT schema and the CTAS's default
+Parquet provider. The added CTAS command-result `.collect()` failed on UInt64
+conversion; that failure remains separate from the passing original call shape.
+The [shared file-source handoff](FILE-SOURCE-DESIGN-HANDOFF.md) and earlier failure
+receipts remain historical evidence. Original Sail ORC writer setup and streaming
+output b remain unqualified, as do per-flow failure container/attribution and the
+missing-file instance. The empty-location cause retains its partial wire port.
+This extends one already mapped parameter grid: 462 static registrations, 97
+reviewed and 59 partial ports remain unchanged; no original Scala suite is qualified.
 
 
 SqlPipelineSuite:634's combined two-file fixture now has all five original output

@@ -1,0 +1,93 @@
+{
+  "description": "Byte-for-byte copy of the retained Spark-written ORC read reference. No fixture generation or runtime requalification was performed for this public test unit.",
+  "source_fixture": "crates/sail-data-source/tests/fixtures/orc/time_precisions.orc",
+  "source_reference": "crates/sail-data-source/tests/fixtures/orc/spark-reference.json",
+  "source_reference_sha256": "09507f5ea17646ac37ad35f301ff93d6c6f095c1eec735ec9a4f60bd4bf09dbe",
+  "spark_version": "4.2.1",
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "settings": {
+    "spark.sql.timeType.enabled": "true",
+    "spark.sql.session.timeZone": "UTC"
+  },
+  "case": {
+    "name": "time_precisions",
+    "file": "time_precisions.orc",
+    "sha256": "7504f8007af001893ccd60b873ded01bffae4b4cf4af95b1e054e7b07ff92986",
+    "sql": "SELECT id, CAST(t AS TIME(0)) AS t0, CAST(t AS TIME(3)) AS t3, CAST(t AS TIME(6)) AS t6\nFROM VALUES (0, '00:00:00'), (1, '12:34:56.123456'), (2, '23:59:59.999999'), (3, CAST(NULL AS STRING)) AS v(id,t)",
+    "read_schema": {
+      "type": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": true,
+          "metadata": {}
+        },
+        {
+          "name": "t0",
+          "type": "time(0)",
+          "nullable": true,
+          "metadata": {}
+        },
+        {
+          "name": "t3",
+          "type": "time(3)",
+          "nullable": true,
+          "metadata": {}
+        },
+        {
+          "name": "t6",
+          "type": "time(6)",
+          "nullable": true,
+          "metadata": {}
+        }
+      ]
+    },
+    "read_arrow": {
+      "outcome": "passed",
+      "value": {
+        "schema": "id: int32\nt0: time64[ns]\nt3: time64[ns]\nt6: time64[ns]",
+        "columns": {
+          "id": {
+            "type": "int32",
+            "values": [
+              0,
+              1,
+              2,
+              3
+            ]
+          },
+          "t0": {
+            "type": "time64[ns]",
+            "storage_values": [
+              0,
+              45296123456000,
+              86399999999000,
+              null
+            ]
+          },
+          "t3": {
+            "type": "time64[ns]",
+            "storage_values": [
+              0,
+              45296123456000,
+              86399999999000,
+              null
+            ]
+          },
+          "t6": {
+            "type": "time64[ns]",
+            "storage_values": [
+              0,
+              45296123456000,
+              86399999999000,
+              null
+            ]
+          }
+        }
+      }
+    }
+  },
+  "requested_schema_reference": "docs/sail-declarative-pipelines/evidence/orc-schema-evolution-reference/evolution/results.json (Grust)",
+  "requested_schema_contract": "Requesting TIME(3) for physical t0 TIME(0) preserves the same stored nanosecond values; this is distinct from an SQL TIME precision cast."
+}

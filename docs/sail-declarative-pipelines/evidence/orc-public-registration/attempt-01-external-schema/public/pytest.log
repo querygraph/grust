@@ -1,0 +1,42 @@
+........................................................................ [ 24%]
+........................................................................ [ 48%]
+........................................................................ [ 72%]
+.......................................................................F [ 97%]
+........                                                                 [100%]
+=================================== FAILURES ===================================
+_____________ test_orc_external_catalog_table_reads_existing_files _____________
+
+orc_spark = <pyspark.sql.connect.session.SparkSession object at 0x116eae810>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-143/test_orc_external_catalog_tabl0')
+
+    def test_orc_external_catalog_table_reads_existing_files(orc_spark, tmp_path):
+        directory = tmp_path / "external_orc"
+        path = directory / "part.orc"
+        write_ids(path, [3, 1])
+        original_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        name = "orc_external_reader"
+        try:
+            orc_spark.sql(f"CREATE TABLE {name} USING orc LOCATION '{escape_sql_string_literal(str(directory))}'")
+            assert orc_spark.catalog.tableExists(name)
+            frame = orc_spark.table(name)
+>           assert frame.schema == T.StructType([T.StructField("id", T.IntegerType())])
+E           assert StructType([]) == StructType([S...ype(), True)])
+E             
+E             Use -v to get more diff
+
+python/pysail/tests/spark/datasource/test_orc.py:65: AssertionError
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/datasource/test_orc.py::test_orc_external_catalog_table_reads_existing_files
+1 failed, 295 passed, 176 warnings in 11.22s

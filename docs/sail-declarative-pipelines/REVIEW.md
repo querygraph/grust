@@ -1471,3 +1471,23 @@ It also keeps the comment-only preparation refusal and both source variants,
 separately from passing Rust checks. CREATE-time schema persistence and arbitrary
 catalog field metadata remain a later shared catalog unit. No passing public
 retry, writer or full SDP result is claimed here.
+
+## Public ORC reads and batch pipeline qualification
+
+Recorded: 2026-10-30T02:28:56.970019+00:00. [Sail `07fa5d5bee`](evidence/orc-public-registration/README.md)
+registers the ordinary ORC reader. The exact CLI passes 296 selected public cases
+and 67 upstream Python executions; 175 execution and 26 session library tests,
+formatting and strict Clippy also pass. Ten unchanged new reader cases pass on
+Spark Connect 4.2.1. The first 295/1 run remains retained; the separate shared
+named-read fallback `75ac384c4` corrects its empty catalog-schema failure.
+
+The final result checker incorrectly required 67 unique upstream IDs. Supplemental
+verification confirms all 67 executions, 63 unique IDs and the same five inherited
+base-test executions as the prior baseline, with exact multiplicities and source
+evidence. The raw checker failure is preserved; no tests were omitted or rerun.
+The original no-USING CTAS and direct batch MV pass with the retained Spark ORC
+RANGE fixture. An extra CTAS command-result `.collect()` exposes a separate
+UInt64 conversion gap and remains recorded. CREATE-time schema persistence and
+ORC writing remain open. The writer design checkpoint has been announced.
+Canonical coverage stays 462 registrations, 97 reviewed and 59 partial ports;
+original Scala-suite, streaming/Iggy, CDC and full SDP qualification remain open.

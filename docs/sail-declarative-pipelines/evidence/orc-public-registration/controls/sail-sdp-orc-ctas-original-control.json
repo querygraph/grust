@@ -1,0 +1,152 @@
+{
+  "started_at": "2026-10-30T02:21:25.439239+00:00",
+  "server": {
+    "before": {
+      "candidate_sha256": "ee37abc7f2f7922793dc2f54beae680fe5ade92eb5ac9bd3d98b01ed27f59faa",
+      "cargo_lock_sha256": "92c572736928f7708fe3749254e08f6ebcf60eba5a7b6615cfb444d2f98cf572",
+      "detached": true,
+      "head": "07fa5d5bee4be197c000e9229beef76af1da377e",
+      "sources": {
+        "crates/sail-session/src/formats.rs": "537d22b659c4ca6fbfa01e11cd97052ff4244b292acd959e524c6c2ab235a57f",
+        "python/pysail/tests/spark/datasource/orc_data/spark-reference.json": "2a7a1e2e295fad6b2728538f227a9237c4796b86ae67d6813c27893ef1b13fbc",
+        "python/pysail/tests/spark/datasource/orc_data/time_precisions.orc": "7504f8007af001893ccd60b873ded01bffae4b4cf4af95b1e054e7b07ff92986",
+        "python/pysail/tests/spark/datasource/test_orc.py": "c8e73063a7aeb9085b7e801ac67561747cb67d545f60974d092f9f982e879f2c",
+        "python/pysail/tests/spark/pipelines/test_file_sources.py": "d860e9406a069261de11f9ad541b744cb50aa3902c7d5bc58a242057ee019cd0"
+      },
+      "status": "",
+      "tree": "c1b07b90f13a6eb773280b4c85add3b5886a7734"
+    },
+    "build_json_sha256": "26033d07871b17f3804c100ee14d2fbe43aaf157ba81f107bb7549bf0c2911b1",
+    "cli_sha256": "5950a2d089c8c545a48f6b9d22e283d33bd03ef5a3837b7431e2fc78928b394b",
+    "command": [
+      "/Users/alexy/src/sail-sdp-gate/target/debug/sail",
+      "spark",
+      "server",
+      "--port",
+      "50088"
+    ],
+    "environment_overrides": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONPATH": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages",
+      "VIRTUAL_ENV": "/Users/alexy/src/sail-pipelines-proposal/.venv"
+    },
+    "label": "orc-public-registration",
+    "outcome": "running",
+    "pid": 89230,
+    "port": 50088,
+    "remote": "sc://localhost:50088",
+    "sail_commit": "07fa5d5bee4be197c000e9229beef76af1da377e",
+    "started_at": "2026-10-30T02:16:15.078394+00:00",
+    "supervisor_pid": 89203
+  },
+  "script_sha256": "862e8f1b71f0a3f8b7765a62f8b829215451ec547eb63080ebd179523b68911d",
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "source_test": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:434",
+  "source_file": "/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/orc-source-design/spark-inputs/range/part-00000-74b0efde-68df-4650-b64c-a1581facdd5d-c000.zstd.orc",
+  "source_sha256": "4e5c93a653db3bdd447775b059fc7f9c25f5ad4f66eb6d6d5c0596b89d04d5b8",
+  "scope": "Original no-USING CTAS and direct batch MV output assertions using retained Spark-written RANGE fixture. No Sail ORC writer or streaming b execution.",
+  "cases": [
+    {
+      "name": "ctas",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "describe_extended": [
+        [
+          "id",
+          "bigint",
+          null
+        ],
+        [
+          "",
+          "",
+          null
+        ],
+        [
+          "# Detailed Table Information",
+          "",
+          null
+        ],
+        [
+          "Database",
+          "default",
+          null
+        ],
+        [
+          "Table",
+          "orc_ctas_dc232b423ba841fda729540e44368d25",
+          null
+        ],
+        [
+          "Type",
+          "MANAGED",
+          null
+        ],
+        [
+          "Provider",
+          "parquet",
+          null
+        ],
+        [
+          "Location",
+          "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-orc-ctas-b_jjnk25/warehouse/orc_ctas_dc232b423ba841fda729540e44368d25-99f1e821-a240-4e55-8382-0ba360f648dc",
+          null
+        ]
+      ]
+    },
+    {
+      "name": "batch_mv",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ]
+    }
+  ],
+  "correction": "Original Spark fixture calls spark.sql(CTAS) without collecting its command result. Prior extra-collect failure is preserved separately; data assertions unchanged.",
+  "spark_version": "4.2.1",
+  "default_format": "parquet",
+  "ctas_sql": "CREATE TABLE orc_ctas_dc232b423ba841fda729540e44368d25 AS SELECT * FROM orc.`/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/orc-source-design/spark-inputs/range/part-00000-74b0efde-68df-4650-b64c-a1581facdd5d-c000.zstd.orc`",
+  "mv_sql": "CREATE MATERIALIZED VIEW orc_mv_dc232b423ba841fda729540e44368d25 AS SELECT * FROM orc.`/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/orc-source-design/spark-inputs/range/part-00000-74b0efde-68df-4650-b64c-a1581facdd5d-c000.zstd.orc`",
+  "outcome": "passed",
+  "tables_absent": true,
+  "source_unchanged": true,
+  "cleanup_errors": [],
+  "completed_at": "2026-10-30T02:21:25.563394+00:00"
+}

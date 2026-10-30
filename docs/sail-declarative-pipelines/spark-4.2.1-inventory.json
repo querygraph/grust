@@ -3967,15 +3967,22 @@
       "status": "partial-behavioral-port",
       "sail_tests": [
         "python/pysail/tests/spark/pipelines/test_file_sources.py::test_batch_pipeline_reads_file_source[parquet]",
+        "python/pysail/tests/spark/pipelines/test_file_sources.py::test_batch_pipeline_reads_file_source[orc]",
         "python/pysail/tests/spark/pipelines/test_file_sources.py::test_batch_pipeline_reads_file_source[json]",
         "python/pysail/tests/spark/pipelines/test_file_sources.py::test_batch_pipeline_reads_file_source[csv]"
       ],
       "coverage_review": {
         "phase": "batch-file-input",
-        "covered_assertions": "Batch MV directly reading Parquet/JSON/CSV files returns original 0,1,2 values (CSV strings). All four generated fixture formats, including ORC, pass on Spark 4.2.1.",
-        "remaining_assertions": "ORC remains unsupported in Sail. Original external table plus streaming output is unported. Inputs are generated with PyArrow/stdlib instead of original Spark writer. Original Scala suite is unexecuted.",
-        "sail_evidence": "evidence/9c42934ed8e095b2e7ccaafeef2faea3f35f797a/pytest.xml",
+        "covered_assertions": "Batch MV directly reading Parquet/ORC/JSON/CSV files returns original 0,1,2 values (CSV strings), including the retained ORC parameter instance on Sail 07fa5d5bee4be197c000e9229beef76af1da377e. All four generated fixture formats pass on Spark 4.2.1. A separate retained Spark-written RANGE ORC probe passes the original no-USING CTAS call and direct batch MV, with rows 0,1,2, nullable BIGINT schema and default Parquet CTAS provider.",
+        "remaining_assertions": "Original Sail ORC writer setup and streaming output b over the CTAS table remain unported. The four-format pytest inputs use PyArrow/stdlib; the separate ORC CTAS/MV probe reuses a retained Spark-written file rather than exercising Sail ORC writing. Original Scala suite is unexecuted.",
+        "sail_evidence": "evidence/orc-public-registration/public/pytest.xml",
+        "qualification_evidence": "evidence/orc-public-registration/supplemental-qualification/qualification.json",
+        "ctas_probe_evidence": "evidence/orc-public-registration/controls/sail-sdp-orc-ctas-original-control.json",
+        "historical_sail_evidence": "evidence/9c42934ed8e095b2e7ccaafeef2faea3f35f797a/pytest.xml",
         "gap_evidence": "evidence/file-source-design-boundary/provenance.json",
+        "gap_evidence_scope": "Historical unsupported-ORC baseline, retained unchanged; direct batch reads are now qualified by the current receipt.",
+        "additional_command_response_gap": "The extra CTAS command-result .collect() failed on UInt64-to-PySpark conversion. It is absent from original Spark line 445; only that extra action was removed for the original-call probe, whose row/schema/provider assertions are unchanged.",
+        "additional_command_response_gap_evidence": "evidence/orc-public-registration/controls/sail-sdp-orc-ctas-control.json",
         "scala_suite_executed": false,
         "parameter_instances": [
           "parquet",
@@ -3983,11 +3990,10 @@
           "json",
           "csv"
         ],
-        "unsupported_instances": [
-          "orc"
-        ]
+        "unsupported_instances": []
       },
       "failing_pytest_reproduction": {
+        "status": "historical-failure",
         "name": "test_batch_pipeline_reads_file_source[orc]",
         "source": "evidence/file-source-design-boundary/test_file_sources.py",
         "evidence": "evidence/file-source-design-boundary/initial-sail.xml"
