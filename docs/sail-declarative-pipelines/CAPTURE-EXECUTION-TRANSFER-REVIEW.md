@@ -271,3 +271,59 @@ where Self: 'a` is consistent with the borrowed-runner lifetime already on
   root.
 - The Status-rendering question (CF-0120/0121) is unchanged; the A–D units and
   the C5 manifest are unaffected by this review.
+
+## 6. Follow-up (CF-0210): what survives raw-stream disposal and settlement
+
+Codex's remaining question: a `TaskContext` keeps only a subset of the
+captured `SessionState`; which dependencies survive disposal of the raw
+stream and settlement of registered I/O? Traced at the same root.
+
+**What a `TaskContext` owns.** `session_id`, `task_id`, a `SessionConfig`
+(the `Arc<ConfigOptions>` and the typed `extensions` map), the four function
+maps, and `Arc<RuntimeEnv>` (`datafusion-execution/src/task.rs:52–69`;
+`From<&SessionState>` copies exactly these, `session_state.rs:2316–2330`;
+`From<&dyn Session>` the same, `datafusion-session/src/session.rs:209–223`).
+Because the extensions map travels, every session extension Sail installs
+(`CatalogManager`, `TaskResourceScope`, `DataSourceRegistry`, `PlanService`,
+the Delta table cache) is reachable at execution through
+`SessionExtensionAccessor for TaskContext` (`sail-common-datafusion/src/
+extension.rs:56`). What is not carried: analyzer, optimizer, physical
+optimizers, query planner, catalog list, table options, execution props,
+statistics registry.
+
+**None of the missing parts is read at execution.** Physical plan nodes own
+their dependencies by `Arc` (providers, UDF implementations, Delta
+`log_store` in `commit_exec`); file scans resolve their store from the task
+context at open (`datafusion-datasource/src/file_scan_config/mod.rs:706`,
+`context.runtime_env().object_store(&self.object_store_url)`). A grep of
+Sail's `physical_plan`, `physical`, `datasource` and `sail-execution` trees
+for `SessionState` outside tests finds two things: the codec's function
+defaults (`proto/codec.rs:3587, 4497`) and `scan_by_adds_exec.rs:88, 201`,
+which _rebuilds_ a `SessionState` at execution from
+`self.context.session_config().clone()` and `self.context.runtime_env()`, so
+it inherits the snapshot's config and overlay runtime and nothing else from
+the captured state. No execute-time path borrows the captured
+`SessionState`.
+
+**Disposal and settlement own what they need.** `Inner` owns `resources` and
+`runtime`; `Cleanup` owns `Arc<Inner>`, the raw stream and the primary error
+(`managed_stream.rs:316–322`). `dispose()` drops the stream under
+`catch_unwind`, then `run()` awaits `resources.drain()`, which joins every
+registered task; registered factories are `'static` closures moved into
+`runtime.spawn` (`task_resources.rs:159–199`), so each task owns its captures
+(stores, writers, clients) by value. The join report is published to
+`completion`. Therefore what survives disposal is exactly what plan nodes and
+spawned tasks own by `Arc`; the stream wrapper does not need to retain the
+captured state, and the full `ScopedSession` is needed only while `session()`
+is in use for resolution and planning. The one reference-shaped dependency is
+the runner borrow on the preparation (`&'a LocalJobRunner`), used by `reap`,
+which does not reach streams or tasks.
+
+**Shared causes.** `Inner::drain` already returns the admission error as
+`DataFusionError::Shared(error)` while pushing the same `Arc` into the
+report's failures; a synchronous `capture` can do the same with its typed
+cause: `fail` with one `Arc`, return `Shared` of it, no stringification.
+
+Residuals unchanged: `Cleanup::Drop` on runtime shutdown publishes
+"interrupted before drainage completed"; worker-side ownership is the
+worker's own session (§3).
