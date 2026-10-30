@@ -1,10 +1,8 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T16:07:36.968903+00:00. Live coordination read through **CF-0131**.
-This is a living replacement-agent handoff, not a completion report. Re-read the
-live channel and Git/process state before acting; later entries supersede this
-snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
-for initial scope; this document carries the work and findings since then.
+Snapshot written 2026-10-30T16:29:27.581357+00:00. Live coordination read through **CF-0133**.
+Re-read the live channel and Git/process state before acting; later entries supersede
+this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
 ## Goal and current truth
 
@@ -30,8 +28,7 @@ consumer167d577c6.
 
 ## First actions after resuming
 
-1. Read applicable AGENTS.md (especially Grust's gate, source/evidence and Sail
-   file discipline), this handoff, and the current coordination protocol below.
+1. Read applicable AGENTS.md, this handoff and the coordination protocol below.
 2. Determine which role you replace. A successor taking over Codex uses the
    coordinator worktrees; a successor replacing parallel Fable uses Fable's
    worktrees. A handoff file or old ACK does not establish that another agent
@@ -45,16 +42,15 @@ consumer167d577c6.
    contract extraction approval in CF-0056; async API changes remain separate.
    Review C5/progress corrections separately. C0 remains
    a user-notified Astra design checkpoint; do not select its authority implicitly.
-6. Continue useful independent work rather than waiting on intent or a file.
-   Only call a wait verified when you poll an actual live process/session handle.
+6. Continue independent work; only claim a live wait after polling its actual handle.
 
 ## Worktrees, branches and source pins
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `f9adaaf41653a38b8dfb0f32684428ea0b0ef8de` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `65fa928168aff0ddefd43b2c7a1010c9fa44e841` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed no-stream candidate `f9adaaf41` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `18bfee751f61c06a1597ead382de72f11ceae4dd` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `817ae5a68dc665fb5abd8bc2a9a8680ffca00208` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `a0a369baa` (gate running) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `37c4d9c4a52718ec3bfa7af99cb033ea67779b8f` (event follow-up offered/unintegrated CF-0121) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `e349107a3190a0acc890ea4baf73446d313c3c46` |
@@ -70,8 +66,7 @@ consumer167d577c6.
 `lakecat` checkout. Do not edit/reset/rebase another participant's worktree,
 target directory or running processes. Git objects are shared across worktrees:
 use `git -C <correct-repository> show <commit>:<path>` for immutable offers.
-Sail and Grust are different object databases; do not run their `git show` in
-the other repository. Resolve short hashes to full hashes before gating.
+Sail/Grust object databases differ; resolve short hashes before gating.
 
 Local Sail `main` was explicitly fast-forwarded via `git fetch origin main:main`
 from0ba425c03 through d803e13f0 to `ac4690078021cf2a5402dc5c7b38a886f1916c73`, then equality with
@@ -112,8 +107,8 @@ links to the canonical log; the tracked Grust Fable copy is historical.
   /Users/alexy/src/grust-sdp/scripts/sdp-coordination-append.py --since CF-0044
 ```
 
-Read all stdout. The final stderr `read-through: CF-…` is the snapshot boundary
-to use as Seen-Through; later appends are outside it. Write a body file, then:
+Read all stdout; use final stderr `read-through: CF-…` as Seen-Through.
+Write a body file, then:
 
 ```sh
 /Users/alexy/src/sail-pipelines-proposal/.venv/bin/python \
@@ -168,37 +163,44 @@ Latest fresh public CLI gate is exactly **47c473e6b**:300 selected public and
 owned server stopped. The previous a2cee8f00 public verdict remains archived.
 Earlier gates are terminal; see the active unit below before touching gate processes.
 
-## Current preparation API design and latest implementation
+## Active local preparation implementation (CF-0133)
 
-Coordinator source **f9adaaf41** is committed/clean: StreamPreparation.finish()
-and cancel() consume the guard, return the existing control and never take the
-caller's typed result. Finish seals without cancel, cancel latches it; a later
-finish cannot erase a prior request.124 library/124 optimized tests, fmt/strict
-Clippy pass; assignment-controla151a55b9 fails the unchanged cancellation test.
-[Packet](docs/sail-declarative-pipelines/evidence/preparation-no-stream/README.md).
+Coordinator HEAD **18bfee751** is committed: ScopedTaskContext.from_resources
+attaches the already-admitted exact owner; new() still creates a fresh scope.
+125 common library/125 optimized tests pass. New runner API/implementation remains
+dirty: common session/job.rs, context doc, execution job_runner.rs/local.rs and
+local/preparation.rs, tests.rs, preparation_tests.rs. Candidate
+`a0a369baada5b3b78d66c11c6694191da72d6fe8`, label local-bound-preparation-qualified,
+passes fmt/strict Clippy,125 common-datafusion+221 execution+29 session library
+and16 optimized local tests under ten CPU-load workers, all joined. Admission-
+bypass control761c11853 fails unchanged registry assertion (exit101,0 versus1).
+Session5964 now runs the fresh public CLI build/gate on that detached candidate.
+Do not move its gate or launch a competing server50094 until terminal.
+Earlierc3cc4df2f passes125+220+29; final adds unpolled-execute cancellation coverage.
+
+The move-only object borrows its minting runner, so no Arc-core refactor or cross-
+runner argument exists. Admission is in the existing stop-visible map before
+planning. It clones authoritative SessionContext by sharing state, capturing the
+TaskContext only at execution and reusing the exact scope. This preserves legacy
+late capture; it does not establish a frozen operation-state overlay. Existing
+local execute delegates through the object. Cluster execute stays intact; the new
+optional preparation capability is unimplemented there. No planning caller or
+registry/byte/outcome policy is activated. Next: inspect session5964 and the receipt/logs under
+/tmp/sail-sdp-local-bound-preparation-public before qualifying or advancing.
 
 [Design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) remains
-active for Astra. Selected shape: begin returns a move-only object bound to its
-runner; execute(plan) consumes that object rather than passing it back to an
-arbitrary runner. resources/control plus no-stream finish/cancel preserve caller
-borrows and typed errors. Actual runner trait/core/stop wiring remains unimplemented.
-Admission precedes authoritative SET; execution snapshot capture must occur at an
-explicit later phase. Its exact API and simultaneous-error transport remain open.
-CF-0131 confirms compatibility with Fable lowering/flow.sql_conf, not shared scope.
-
-Prior97f9983d5 observer and d8e5213c6 registered-I/O tests are
-[qualified](docs/sail-declarative-pipelines/evidence/planning-cancellation-observer/README.md):
-actual I/O can settle after cancellation and its waiter/guard are gone; drainage
-still waits. Use that packet's corrected stress parser; its first wrapper misread
-“120 passed” as “0 passed”, while raw tests passed and all workers joined.
-[Context probe](docs/sail-declarative-pipelines/evidence/planning-context-design-probe/README.md):
-config/UDF copies share catalogs; native SET on the clone is not authoritative.
-Bootstrap hazard affects default/custom contexts, not normal Sail server catalogs;
-no global runtime swap or whole-state merge-back.
-
-Prior facadebebabdb9e remains qualified at214 execution/12 optimized tests; routing,
-byte/outcome/recovery policy and provider/child/session/cluster joins remain open.
-Next: implement the finite local preparation object and explicit context capture.
+active for Astra; typed cleanup/primary errors stay separate. Prior no-stream
+[finish/cancel](docs/sail-declarative-pipelines/evidence/preparation-no-stream/README.md),
+[registered-I/O](docs/sail-declarative-pipelines/evidence/planning-cancellation-observer/README.md)
+and [context probe](docs/sail-declarative-pipelines/evidence/planning-context-design-probe/README.md)
+retain exact controls and failures. Public CLI verdict remains47c473e6b.
+Receipts: /tmp/sail-sdp-local-bound-preparation-qualified-{gate.json,rust.log};
+/tmp/sail-sdp-local-preparation-admission-control-receipt.json; optimized receipt
+/tmp/sail-sdp-local-bound-preparation-qualified-sail-execution-release/receipt.json.
+After exact qualification, conditionally advance the candidate, archive both the
+18bfee helper and local unit evidence in Grust, update design/REVIEW and post DONE.
+Context capture, caller/cluster migration, routing, memory/outcome/recovery and
+original SDP acceptance remain incomplete.
 
 ## Acceptance accounting and major remaining work
 
@@ -491,9 +493,6 @@ check a Markdown edit; the relevant document/source checks suffice.
 
 ## Continuing this handoff
 
-Update this file with new source pins, decisions, outstanding findings, concrete
-process handles and validated evidence as the work advances. Keep it under reviewable
-size by linking detailed immutable packets and the chronological REVIEW index.
-A successor should post what it read, which role it takes, and exact next file
-scope. Full completion requires original-scope evidence for every named requirement;
-a green partial selection or the presence of these documents cannot establish it.
+Keep source pins, decisions, findings, process handles and evidence current; link
+immutable packets and REVIEW for detail. A successor posts its read-through, role
+and file scope. Completion requires evidence for the full original goal.
