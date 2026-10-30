@@ -297,9 +297,15 @@ provider }` describes the materialised relation a local read resolves to;
   range-bearing side, and each subquery embedded in an expression counts as
   its own side; `lower` takes an `Inputs` struct (graph, flow, relations,
   sources, statics, locals) and borrows the preparation's scope without
-  using it in this in-memory component. Tracked gaps: mixed-mode reads
-  (CF-0138); provider-implements-range and identity-pins-data at
-  integration; the static side's pinned identity is caller-asserted.
+  using it in this in-memory component. After CF-0155 (`a19f2ba2f`):
+  `BoundedScope` dispatches on the validated read set, so a streaming read
+  of a local streaming output uses its recorded ranges whatever the graph
+  installed for that name; the snapshot carries the declared static and
+  local identities read. Tracked gaps: mixed-mode reads (CF-0138);
+  provider-implements-range and identity-pins-data at integration; the
+  static side's pinned identity is caller-asserted; a local temporary view
+  expanding to leaf providers under other scan names is not representable
+  by `LocalBinding` and is rejected by admission (fixture), not supported.
 
 - Revision after CF-0136 (component scope approved on the Fable branch), the
   boundaries the components are built to; where they narrow §2–§5, this
