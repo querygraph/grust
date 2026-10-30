@@ -629,3 +629,27 @@ source/bytecode qualifies default V1 option casing, with V2 differences retained
 no fresh mode runtime or broker probe was run. The preparation-wrapper error is
 retained separately from Rust gates. Public ORC, writer and full SDP qualification
 remain outside this checkpoint.
+
+## Assemble ORC reads through ordinary listing
+
+Recorded: 2026-10-30T01:56:45.152066+00:00. [Sail `03e8783f21`](evidence/orc-readformat/README.md)
+passes formatting, strict Clippy and 224 data-source library tests, including
+14 adapter/factory cases. The read format selects all eligible identities, skips
+physical-empty roots, and chooses first-usable or shared semantic merge followed
+by recursive duplicate validation. Supplied nullable schemas, including empty
+schemas, bypass footer inference. Existing OrcSource scan properties and local
+pool binding are retained; the captured numeric reader profile stays separate
+from the session display label.
+
+Execution uses the shared listing/cache again, so backend relisting is not
+guaranteed. Conditional reads preserve each supplied identity without creating
+an inference-to-execution inventory snapshot. The failed candidate's 217 passed
+and 3 failed results remain archived. Two fixtures used unsupported native
+STRUCT writing; reproducible PyArrow fixtures replace those calls. The original
+TIME cache explanation remains source-supported, without an original cache-hit
+trace. Corrected tests now observe all 12 listed objects and a conditional read
+of late file 11 before requiring the unchanged precision-conflict error.
+
+This is the read-library assembly checkpoint. Public registry/CLI/SDP runtime,
+writer support and broader acceptance remain separate; factory/sink writing
+returns an explicit unsupported error. No streaming/Iggy or CDC verdict changes.

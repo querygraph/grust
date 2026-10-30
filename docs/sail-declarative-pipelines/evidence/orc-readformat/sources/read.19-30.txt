@@ -1,0 +1,12 @@
+19: /// Ordinary listing reads with a captured reader zone and display label.
+20: ///
+21: /// Inference and execution each use their listed object identities. Execution
+22: /// uses the shared listing/cache again; this does not establish a snapshot
+23: /// spanning schema inference and execution.
+24: #[derive(Debug, Clone)]
+25: pub struct OrcReadFormat {
+26:     pub(super) options: OrcReadOptions,
+27:     pub(super) listing_options: OrcListingReadOptions,
+28:     pub(super) reader_timezone: OrcJavaTimeZoneConfig,
+29:     pub(super) session_timezone: String,
+30: }

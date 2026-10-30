@@ -1,0 +1,30 @@
+184: /// Select inference inputs without changing the existing sampling behavior.
+185: /// Both modes reuse the listing URL, hidden-file, and path-glob filters.
+186: pub async fn select_listing_files<'a>(
+187:     ctx: &dyn Session,
+188:     urls: &'a [ListingTableUrl],
+189:     path_glob_filter: Option<&'a PathGlobFilter>,
+190:     selection: ListingFileSelection,
+191: ) -> Result<Vec<ListingFileSample<'a>>> {
+192:     if selection == ListingFileSelection::Sample {
+193:         return sample_listing_files(ctx, urls, path_glob_filter).await;
+194:     }
+195:     let mut groups = Vec::with_capacity(urls.len());
+196:     for url in urls {
+197:         let store = ctx.runtime_env().object_store(url)?;
+198:         let mut objects: Vec<_> = list_all_files(url, ctx, store.as_ref(), path_glob_filter)
+199:             .await?
+200:             .try_filter(|meta| futures::future::ready(meta.size > 0))
+201:             .try_collect()
+202:             .await?;
+203:         objects.sort_by(|left, right| left.location.cmp(&right.location));
+204:         groups.push(ListingFileSample {
+205:             url,
+206:             store,
+207:             objects,
+208:         });
+209:     }
+210:     Ok(groups)
+211: }
+212: 
+213: pub fn validate_partitions(

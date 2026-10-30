@@ -1,0 +1,31 @@
+304: pub async fn list_all_files<'a>(
+305:     url: &'a ListingTableUrl,
+306:     ctx: &'a dyn Session,
+307:     store: &'a dyn ObjectStore,
+308:     path_glob_filter: Option<&'a PathGlobFilter>,
+309: ) -> Result<BoxStream<'a, Result<ObjectMeta>>> {
+310:     let exec_options = &ctx.config_options().execution;
+311:     let ignore_subdirectory = exec_options.listing_table_ignore_subdirectory;
+312:     // If the prefix is a file, use a head request, otherwise use a list request.
+313:     let list = match url.is_collection() {
+314:         true => match ctx.runtime_env().cache_manager.get_list_files_cache() {
+315:             None => store.list(Some(url.prefix())),
+316:             Some(cache) => {
+317:                 let key = TableScopedPath {
+318:                     table: None,
+319:                     path: url.prefix().clone(),
+320:                 };
+321:                 if let Some(res) = cache.get(&key) {
+322:                     debug!("Hit list all files cache");
+323:                     futures::stream::iter(res.files.as_ref().clone().into_iter().map(Ok)).boxed()
+324:                 } else {
+325:                     let list_res = store.list(Some(url.prefix()));
+326:                     let vec = list_res.try_collect::<Vec<ObjectMeta>>().await?;
+327:                     cache.put(&key, CachedFileList::new(vec.clone()));
+328:                     futures::stream::iter(vec.into_iter().map(Ok)).boxed()
+329:                 }
+330:             }
+331:         },
+332:         false => futures::stream::once(store.head(url.prefix())).boxed(),
+333:     };
+334:     Ok(list

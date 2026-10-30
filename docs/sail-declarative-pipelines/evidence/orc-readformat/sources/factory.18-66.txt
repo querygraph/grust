@@ -1,0 +1,49 @@
+18: 
+19: #[derive(Debug, Default)]
+20: pub struct OrcFormatFactory;
+21: 
+22: impl FormatFactory for OrcFormatFactory {
+23:     type Read = OrcReadFormat;
+24:     type Write = OrcWriteFormat;
+25: 
+26:     fn name() -> &'static str {
+27:         "orc"
+28:     }
+29: 
+30:     fn read(ctx: &dyn Session, options: Vec<OptionLayer>) -> Result<Self::Read> {
+31:         read_with_timezone(ctx, options, get_system_timezone)
+32:     }
+33: 
+34:     fn write(_ctx: &dyn Session, _options: Vec<OptionLayer>) -> Result<Self::Write> {
+35:         not_impl_err!("ORC writing is not implemented")
+36:     }
+37: }
+38: 
+39: fn read_with_timezone(
+40:     ctx: &dyn Session,
+41:     options: Vec<OptionLayer>,
+42:     timezone: impl FnOnce() -> CommonResult<String>,
+43: ) -> Result<OrcReadFormat> {
+44:     let resource_options = OrcReadOptions::resolve(ctx, options.clone())?;
+45:     let listing_options = OrcListingReadOptions::resolve(ctx, options)?;
+46:     // This is Sail's host IANA-zone capture policy, not a JVM-default lookup.
+47:     // Neither later session display changes nor workers recapture this value.
+48:     let reader_timezone = OrcJavaTimeZoneConfig::for_reader_timezone(
+49:         timezone().map_err(|error| DataFusionError::External(Box::new(error)))?,
+50:     )?;
+51:     let session_timezone = arrow_timezone_label(
+52:         ctx.config_options()
+53:             .execution
+54:             .time_zone
+55:             .as_deref()
+56:             .unwrap_or("UTC"),
+57:     )
+58:     .into_owned();
+59:     Ok(OrcReadFormat {
+60:         options: resource_options,
+61:         listing_options,
+62:         reader_timezone,
+63:         session_timezone,
+64:     })
+65: }
+66: 

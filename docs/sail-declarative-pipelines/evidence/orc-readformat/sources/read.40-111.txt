@@ -1,0 +1,72 @@
+40: impl ReadFormat for OrcReadFormat {
+41:     fn schema_inference_file_selection(&self) -> ListingFileSelection {
+42:         // Even without schema merging, the first usable root may be beyond
+43:         // the default ten samples. Partition inference uses this same inventory.
+44:         ListingFileSelection::All
+45:     }
+46: 
+47:     async fn infer_compression(
+48:         &self,
+49:         _ctx: &dyn Session,
+50:         _files: &[ListingFileSample<'_>],
+51:     ) -> Result<CompressionTypeVariant> {
+52:         // ORC records its internal compression in the postscript.
+53:         Ok(CompressionTypeVariant::UNCOMPRESSED)
+54:     }
+55: 
+56:     async fn infer_schema(
+57:         &self,
+58:         ctx: &dyn Session,
+59:         files: &[ListingFileSample<'_>],
+60:         compression: CompressionTypeVariant,
+61:         read_case_sensitive: bool,
+62:     ) -> Result<SchemaRef> {
+63:         check_compression(compression)?;
+64:         let pool = ctx.runtime_env().memory_pool.clone();
+65:         let limits = self.options.resource_limits(pool.as_ref());
+66:         let mut schema: Option<(SchemaRef, &object_store::path::Path)> = None;
+67:         for group in files {
+68:             for object in &group.objects {
+69:                 let context = |error: DataFusionError| {
+70:                     DataFusionError::Context(
+71:                         format!("inferring ORC schema from {}", object.location),
+72:                         Box::new(error),
+73:                     )
+74:                 };
+75:                 let mut reader =
+76:                     OrcObjectReader::new(group.store.clone(), object.clone(), pool.clone());
+77:                 let metadata =
+78:                     read_metadata_async_with_options(&mut reader, limits.metadata_options())
+79:                         .await
+80:                         .map_err(|error| context(DataFusionError::External(Box::new(error))))?;
+81:                 let next =
+82:                     super::infer_orc_schema(&metadata, &self.session_timezone).map_err(context)?;
+83:                 if next.fields().is_empty() {
+84:                     continue;
+85:                 }
+86:                 let merged = match schema {
+87:                     Some((previous, _)) => Arc::new(
+88:                         merge_spark_file_schemas(&previous, &next, read_case_sensitive)
+89:                             .map_err(context)?,
+90:                     ),
+91:                     None => next,
+92:                 };
+93:                 if !self.listing_options.merge_schema {
+94:                     validate_field_names(merged.fields(), read_case_sensitive).map_err(context)?;
+95:                     return Ok(merged);
+96:                 }
+97:                 schema = Some((merged, &object.location));
+98:             }
+99:         }
+100:         let Some((schema, last_schema_path)) = schema else {
+101:             return plan_err!("Unable to infer ORC schema: no nonempty physical schema found");
+102:         };
+103:         // Merging may introduce duplicate nested names even when root fields
+104:         // matched case-insensitively. Validate the final relation recursively.
+105:         validate_field_names(schema.fields(), read_case_sensitive).map_err(|error| {
+106:             DataFusionError::Context(
+107:                 format!("validating merged ORC schema through {last_schema_path}"),
+108:                 Box::new(error),
+109:             )
+110:         })?;
+111:         Ok(schema)

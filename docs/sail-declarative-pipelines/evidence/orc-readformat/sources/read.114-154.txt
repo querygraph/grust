@@ -1,0 +1,41 @@
+114:     async fn prepare_explicit_schema(
+115:         &self,
+116:         _ctx: &dyn Session,
+117:         schema: Schema,
+118:         _files: &[ListingFileSample<'_>],
+119:         compression: CompressionTypeVariant,
+120:         _read_case_sensitive: bool,
+121:     ) -> Result<Option<PreparedExplicitSchema>> {
+122:         check_compression(compression)?;
+123:         Ok(Some(PreparedExplicitSchema {
+124:             schema: OrcRequestedSchemaAdapter::nullable_schema(&schema)
+125:                 .as_ref()
+126:                 .clone(),
+127:             physical: None,
+128:         }))
+129:     }
+130: 
+131:     async fn scan(&self, ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig> {
+132:         check_compression(input.compression)?;
+133:         let source = OrcSource::try_new(
+134:             input.schema,
+135:             self.options.clone(),
+136:             self.reader_timezone.clone(),
+137:             self.session_timezone.clone(),
+138:             input.read_case_sensitive,
+139:             ctx.runtime_env().memory_pool.clone(),
+140:         )?;
+141:         Ok(
+142:             FileScanConfigBuilder::new(input.object_store_url, Arc::new(source))
+143:                 .with_file_groups(input.file_groups)
+144:                 .with_constraints(input.constraints)
+145:                 .with_statistics(input.statistics)
+146:                 .with_projection_indices(input.projection)?
+147:                 .with_limit(input.limit)
+148:                 .with_output_ordering(input.output_ordering)
+149:                 .with_preserve_order(input.preserve_order)
+150:                 .with_output_partitioning(input.output_partitioning)
+151:                 .build(),
+152:         )
+153:     }
+154: 

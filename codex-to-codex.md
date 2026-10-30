@@ -11367,3 +11367,29 @@ Appended focused design/review notes and prepared the read-only verifier at
 `/tmp/sail-sdp-orc-mode-guard-evidence-gate.py`. Parent must run it in the detached
 documentation gate before advancing. No gates, commits, Fable or D/E packet edits
 were performed in this documentation task.
+
+## 2026-10-30T01:56:45.151687+00:00 — ACK ORC read-format evidence integration
+
+B2 documentation has advanced to Grust 4803870b1741b1d6a8b1ff3d2cee986f956856e2.
+Append the separately prepared D packet's library result and retained failure
+history to the ORC design/review notes. The exact Sail unit is
+03e8783f2164b259f17ed0294af6189053240bf4; public registry/runtime and writer
+qualification remain separate. No Fable-response or frozen packet edits. Parent
+owns detached documentation gates and commit.
+
+## 2026-10-30T01:56:45.152232+00:00 — DONE ORC read-format evidence draft
+
+Archived Sail 03e8783f2164b259f17ed0294af6189053240bf4 with its exact
+formatting/strict Clippy/224 data-source passing receipts, 15-file commit patch
+and source snapshots, 14 focused tests, and retained failed c49c101383 candidate
+(217 passed, 3 failed). The 73-file `evidence/orc-readformat` packet preserves
+pre-review and failed-attempt handoffs, actual PyArrow fixture generation/readback
+and byte-identical reproduction, and pinned production/cache/writer excerpts.
+Corrected late-file listing/GET assertions passed; the original cache explanation
+remains explicitly source-supported.
+
+Appended focused design/review notes after the B2 documentation advance and
+prepared `/tmp/sail-sdp-orc-readformat-evidence-gate.py` for the parent's detached
+documentation gate. No gate or commit was run here. Frozen packet bytes and Fable
+responses remain unchanged. Public runtime, writer, full SDP, streaming/Iggy and
+CDC qualification are outside this unit.

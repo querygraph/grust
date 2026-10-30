@@ -1,0 +1,180 @@
+{
+  "recorded_utc": "2026-10-30T01:43:46.985706+00:00",
+  "repo": "/Users/alexy/src/sail-pipelines-proposal",
+  "head": "c01623c184bdf8f688e9153a263283694cd39a2b",
+  "scope": "Private ordinary ORC ReadFormat/factory; no registry, writer, or mode guard activation",
+  "files": [
+    {
+      "path": "crates/sail-data-source/src/formats/orc/mod.rs",
+      "sha256": "bb6391437826d5b1af109184d6f14da3f6e10717cb93f7b6716b949ff19d23e4",
+      "bytes": 671,
+      "lines": 27
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/factory.rs",
+      "sha256": "5c2022c9f3e8ae3c1b4e84237125c5c7e07d38149010fdf533e7e0cba4163411",
+      "bytes": 2626,
+      "lines": 84
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/factory_tests.rs",
+      "sha256": "2061901cff1d74e87936039b5e33095555c2cacd98382ab34b83bd2ee5bf782f",
+      "bytes": 2420,
+      "lines": 70
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read.rs",
+      "sha256": "151fb5499c42007962524f2753b3f48c1238d296572e74af86b320738005b397",
+      "bytes": 6541,
+      "lines": 162
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_tests.rs",
+      "sha256": "d353be5931ac32ff5276cebeffb9253056de78157f83688f228b006c31db7db8",
+      "bytes": 5399,
+      "lines": 159
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_test_store.rs",
+      "sha256": "2d387d6d79d6151c488b9e7956de13c85339fc55222df8ecf7762b07b3536fcb",
+      "bytes": 2346,
+      "lines": 84
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_inference_tests.rs",
+      "sha256": "3396385b959f7d7d2288017c3b979830e9ddf3e5cdabbf4df0b0d12a1c1f7f6e",
+      "bytes": 10278,
+      "lines": 313
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_listing_tests.rs",
+      "sha256": "e0fa4ec95b2fe509431f06b9539583ce5c590af76320cc96953885b0e5927c83",
+      "bytes": 7739,
+      "lines": 234
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_resource_tests.rs",
+      "sha256": "4290ddcdf342677521737461a2170d51cd8b7e70580517fd2c6e6244e4a404eb",
+      "bytes": 10283,
+      "lines": 270
+    },
+    {
+      "path": "crates/sail-data-source/tests/fixtures/orc/listing_inference/README.md",
+      "sha256": "1194ef2a7098a3e818fc46fafffe7f380b00b6b15b3ca79da9289395e4795863",
+      "bytes": 959,
+      "lines": 17
+    },
+    {
+      "path": "crates/sail-data-source/tests/fixtures/orc/listing_inference/generate.py",
+      "sha256": "4869a225749c82f7afed2771a8ad99d8c4164155d078386b828e037399d6d8b7",
+      "bytes": 1419,
+      "lines": 40
+    },
+    {
+      "path": "crates/sail-data-source/tests/fixtures/orc/listing_inference/nested_duplicate.orc",
+      "sha256": "e3031e2ee4d9e45bd5537e8546c797ec651c33e01e118435d4586c6810bcfee7",
+      "bytes": 344
+    },
+    {
+      "path": "crates/sail-data-source/tests/fixtures/orc/listing_inference/nested_lower.orc",
+      "sha256": "b6404b3ef403405653c99a99e4febba458012c3f9da63084ecca8f9e135b3a46",
+      "bytes": 251
+    },
+    {
+      "path": "crates/sail-data-source/tests/fixtures/orc/listing_inference/nested_upper.orc",
+      "sha256": "b080f7f3c0994b3066221854e9802e64683ce5755d8eecef5c3d5669c6027c4e",
+      "bytes": 251
+    },
+    {
+      "path": "crates/sail-data-source/tests/fixtures/orc/listing_inference/reference.json",
+      "sha256": "040623db484873a67561f005a18cb3dbd4013ffc11f1924c24a15145b535a428",
+      "bytes": 1226,
+      "lines": 48
+    }
+  ],
+  "checks_executed": [
+    "rustfmt +nightly --edition 2024 (owned files)",
+    "git diff --check",
+    "PyArrow26 fixture generation plus exact schema/value readback",
+    "Independent temporary regeneration; all3 ORC bytes reproduce exactly"
+  ],
+  "checks_not_executed": [
+    "cargo build",
+    "cargo clippy",
+    "cargo test"
+  ],
+  "tests": [
+    {
+      "path": "crates/sail-data-source/src/formats/orc/factory_tests.rs",
+      "name": "reader_capture_is_once_and_separate_from_the_captured_display_label"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/factory_tests.rs",
+      "name": "timezone_capture_failures_keep_their_cause_and_writes_are_explicitly_unsupported"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_inference_tests.rs",
+      "name": "both_modes_find_usable_schemas_after_eleven_empty_roots_and_merge_sees_late_fields"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_inference_tests.rs",
+      "name": "first_schema_stops_before_later_corruption_but_merge_retains_the_original_failure"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_inference_tests.rs",
+      "name": "merge_preserves_spark_time_annotations_and_rejects_late_precision_mismatch"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_inference_tests.rs",
+      "name": "authoritative_case_policy_controls_root_merge_and_final_nested_validation"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_inference_tests.rs",
+      "name": "single_file_duplicate_names_are_checked_even_without_merge"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_listing_tests.rs",
+      "name": "supplied_empty_bypasses_inference_and_keeps_nonempty_file_row_counts"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_listing_tests.rs",
+      "name": "explicit_schema_nullability_is_published_before_scan_and_missing_columns_are_null"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_listing_tests.rs",
+      "name": "glob_partition_alias_pruning_and_projection_use_the_normal_listing_path"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_resource_tests.rs",
+      "name": "inference_uses_listed_identity_and_reports_replaced_or_identityless_objects"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_resource_tests.rs",
+      "name": "inference_applies_configured_metadata_limits_and_the_local_pool"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_resource_tests.rs",
+      "name": "scan_preserves_properties_captured_configuration_and_actual_projection"
+    },
+    {
+      "path": "crates/sail-data-source/src/formats/orc/read_resource_tests.rs",
+      "name": "scan_binds_the_current_pool_and_direct_paths_reject_outer_compression"
+    }
+  ],
+  "test_count": 14,
+  "pre_review_snapshot": "pre-review/",
+  "source_review_corrections": [
+    "Avoid TableSource Debug bound via Result::err().unwrap() in negative inference tests",
+    "Preserve uppercase partition alias using Column::from_name",
+    "Replace explicit panic branches with cause-preserving matches assertions",
+    "Assert stored full-schema partition index1 separately from advertised projected index0"
+  ],
+  "previous_attempt": {
+    "candidate": "c49c101383",
+    "status": "217 passed,3 fixture failures; not advanced",
+    "original_packet": "attempt-01/",
+    "root_raw_gate_packet": "/tmp/sail-sdp-orc-readformat-attempt-01-fixtures"
+  },
+  "fixture_correction_audit": "/tmp/sail-sdp-orc-readformat-fixture-correction/source-audit.json",
+  "review": "Independent read-only production and correction reviews passed; corrected Rust runtime assertions await root gates"
+}

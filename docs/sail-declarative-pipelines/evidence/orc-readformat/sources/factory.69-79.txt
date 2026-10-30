@@ -1,0 +1,11 @@
+69: pub struct OrcWriteFormat;
+70: 
+71: #[async_trait]
+72: impl WriteFormat for OrcWriteFormat {
+73:     async fn sink(
+74:         &self,
+75:         _ctx: &dyn Session,
+76:         _input: ListingSinkInput,
+77:     ) -> Result<Arc<dyn ExecutionPlan>> {
+78:         not_impl_err!("ORC writing is not implemented")
+79:     }

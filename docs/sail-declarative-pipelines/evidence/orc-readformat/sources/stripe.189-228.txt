@@ -1,0 +1,40 @@
+189: fn create_encoder(field: &FieldRef) -> Box<dyn ColumnStripeEncoder> {
+190:     match field.data_type() {
+191:         ArrowDataType::Float32 => Box::new(FloatColumnEncoder::new(ColumnEncoding::Direct)),
+192:         ArrowDataType::Float64 => Box::new(DoubleColumnEncoder::new(ColumnEncoding::Direct)),
+193:         ArrowDataType::Int8 => Box::new(ByteColumnEncoder::new(ColumnEncoding::Direct)),
+194:         ArrowDataType::Int16 => Box::new(Int16ColumnEncoder::new(ColumnEncoding::DirectV2)),
+195:         ArrowDataType::Int32 => Box::new(Int32ColumnEncoder::new(ColumnEncoding::DirectV2)),
+196:         ArrowDataType::Int64 => Box::new(Int64ColumnEncoder::new(ColumnEncoding::DirectV2)),
+197:         ArrowDataType::Date32 => Box::new(DateColumnEncoder::new(ColumnEncoding::DirectV2)),
+198:         // TODO: Support non-UTC Arrow timestamp timezones. ORC TIMESTAMP_INSTANT
+199:         // does not preserve the original Arrow timezone metadata.
+200:         ArrowDataType::Timestamp(TimeUnit::Second, timezone)
+201:             if matches!(timezone.as_deref(), None | Some("UTC")) =>
+202:         {
+203:             Box::new(TimestampColumnEncoder::<TimestampSecondType>::new())
+204:         }
+205:         ArrowDataType::Timestamp(TimeUnit::Millisecond, timezone)
+206:             if matches!(timezone.as_deref(), None | Some("UTC")) =>
+207:         {
+208:             Box::new(TimestampColumnEncoder::<TimestampMillisecondType>::new())
+209:         }
+210:         ArrowDataType::Timestamp(TimeUnit::Microsecond, timezone)
+211:             if matches!(timezone.as_deref(), None | Some("UTC")) =>
+212:         {
+213:             Box::new(TimestampColumnEncoder::<TimestampMicrosecondType>::new())
+214:         }
+215:         ArrowDataType::Timestamp(TimeUnit::Nanosecond, timezone)
+216:             if matches!(timezone.as_deref(), None | Some("UTC")) =>
+217:         {
+218:             Box::new(TimestampColumnEncoder::<TimestampNanosecondType>::new())
+219:         }
+220:         ArrowDataType::Utf8 => Box::new(StringColumnEncoder::new()),
+221:         ArrowDataType::LargeUtf8 => Box::new(LargeStringColumnEncoder::new()),
+222:         ArrowDataType::Binary => Box::new(BinaryColumnEncoder::new()),
+223:         ArrowDataType::LargeBinary => Box::new(LargeBinaryColumnEncoder::new()),
+224:         ArrowDataType::Boolean => Box::new(BooleanColumnEncoder::new()),
+225:         // TODO: support more datatypes
+226:         _ => unimplemented!("unsupported datatype"),
+227:     }
+228: }

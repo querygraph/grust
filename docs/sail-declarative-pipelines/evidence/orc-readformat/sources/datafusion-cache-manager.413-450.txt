@@ -1,0 +1,38 @@
+413: pub struct CacheManagerConfig {
+414:     /// Enable caching of file statistics when listing files.
+415:     /// Enabling the cache avoids repeatedly reading file statistics in a DataFusion session.
+416:     /// Default is enabled. Currently only Parquet files are supported.
+417:     pub file_statistics_cache: Option<Arc<FileStatisticsCache>>,
+418:     /// Limit of the file statistics cache, in bytes. Default: 20MiB.
+419:     pub file_statistics_cache_limit: usize,
+420:     /// Enable caching of file metadata when listing files.
+421:     /// Enabling the cache avoids repeat list and object metadata fetch operations, which may be
+422:     /// expensive in certain situations (e.g. remote object storage), for objects under paths that
+423:     /// are cached.
+424:     /// Note that if this option is enabled, DataFusion will not see any updates to the underlying
+425:     /// storage for at least `list_files_cache_ttl` duration.
+426:     /// Default is enabled.
+427:     pub list_files_cache: Option<Arc<ListFilesCache>>,
+428:     /// Limit of the `list_files_cache`, in bytes. Default: 1MiB.
+429:     pub list_files_cache_limit: usize,
+430:     /// The duration the list files cache will consider an entry valid after insertion. Note that
+431:     /// changes to the underlying storage system, such as adding or removing data, will not be
+432:     /// visible until an entry expires. Default: None (infinite).
+433:     pub list_files_cache_ttl: Option<Duration>,
+434:     /// Cache of file-embedded metadata, used to avoid reading it multiple times when processing a
+435:     /// data file (e.g., Parquet footer and page metadata).
+436:     /// If not provided, the [`CacheManager`] will create it.
+437:     pub file_metadata_cache: Option<Arc<FileMetadataCache>>,
+438:     /// Limit of the file-embedded metadata cache, in bytes.
+439:     pub metadata_cache_limit: usize,
+440: }
+441: 
+442: impl Default for CacheManagerConfig {
+443:     fn default() -> Self {
+444:         Self {
+445:             file_statistics_cache: Default::default(),
+446:             file_statistics_cache_limit: DEFAULT_FILE_STATISTICS_MEMORY_LIMIT,
+447:             list_files_cache: Default::default(),
+448:             list_files_cache_limit: DEFAULT_LIST_FILES_CACHE_MEMORY_LIMIT,
+449:             list_files_cache_ttl: DEFAULT_LIST_FILES_CACHE_TTL,
+450:             file_metadata_cache: Default::default(),

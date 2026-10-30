@@ -1,0 +1,18 @@
+330:         let list_files_cache: Option<Arc<ListFilesCache>> = match &config.list_files_cache
+331:         {
+332:             Some(lfc) if config.list_files_cache_limit > 0 => {
+333:                 // the cache memory limit or ttl might have changed, ensure they are updated
+334:                 lfc.update_cache_limit(config.list_files_cache_limit);
+335:                 // Only update TTL if explicitly set in config, otherwise preserve the cache's existing TTL
+336:                 if let Some(ttl) = config.list_files_cache_ttl {
+337:                     lfc.update_cache_ttl(Some(ttl));
+338:                 }
+339:                 Some(Arc::clone(lfc))
+340:             }
+341:             None if config.list_files_cache_limit > 0 => Some(Arc::new(
+342:                 DefaultCache::<TableScopedPath, CachedFileList>::new_with_ttl(
+343:                     config.list_files_cache_limit,
+344:                     config.list_files_cache_ttl,
+345:                 )
+346:                 .with_name("DefaultListFilesCache"),
+347:             )),

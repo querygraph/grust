@@ -1,0 +1,112 @@
+{
+  "recorded_utc": "2026-10-30T01:40:15.587809+00:00",
+  "failed_candidate": "c49c101383",
+  "failed_result": {
+    "passed": 217,
+    "failed": 3,
+    "advanced": false
+  },
+  "cause_status": "Two STRUCT fixtures demonstrably used unsupported native writer; TIME cache explanation is source-supported, not instrumented runtime cache-hit evidence from attempt01. Corrected Rust assertions require observed list and GET of late11; root gates pending.",
+  "corrections": [
+    "Real PyArrow STRUCT fixtures replace native STRUCT writer",
+    "Successful two-file merge and complete12-object mismatch inventory use separate contexts",
+    "Actual listed ObjectMeta and conditional GET11 assertions precede precision-conflict expectation",
+    "First-mode control requires no GET11",
+    "Doc comment accurately names shared listing/cache and retains no-snapshot statement"
+  ],
+  "fixture_generator_command": [
+    "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "/tmp/sail-sdp-orc-readformat-fixture-correction/regenerated/generate.py"
+  ],
+  "fixture_generator_exit": 0,
+  "fixture_reproduction": "all3 bytes identical; PyArrow schema/row equality assertions pass on both generations",
+  "rust_checks": "No Cargo/build/tests; nightly formatting and diff checks only",
+  "fixture_reference": {
+    "generator": "pyarrow.orc.write_table",
+    "python_version": "3.12.14",
+    "pyarrow_version": "26.0.0",
+    "files": [
+      {
+        "path": "nested_upper.orc",
+        "sha256": "b080f7f3c0994b3066221854e9802e64683ce5755d8eecef5c3d5669c6027c4e",
+        "bytes": 251,
+        "schema": "s: struct<Value: int64>\n  child 0, Value: int64",
+        "rows": [
+          {
+            "s": {
+              "Value": 1
+            }
+          }
+        ]
+      },
+      {
+        "path": "nested_lower.orc",
+        "sha256": "b6404b3ef403405653c99a99e4febba458012c3f9da63084ecca8f9e135b3a46",
+        "bytes": 251,
+        "schema": "s: struct<value: int64>\n  child 0, value: int64",
+        "rows": [
+          {
+            "s": {
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "path": "nested_duplicate.orc",
+        "sha256": "e3031e2ee4d9e45bd5537e8546c797ec651c33e01e118435d4586c6810bcfee7",
+        "bytes": 344,
+        "schema": "s: struct<Value: int64, value: int64>\n  child 0, Value: int64\n  child 1, value: int64",
+        "rows": [
+          {
+            "s": {
+              "Value": 1,
+              "value": 2
+            }
+          }
+        ]
+      }
+    ],
+    "generator_sha256": "4869a225749c82f7afed2771a8ad99d8c4164155d078386b828e037399d6d8b7"
+  },
+  "source_evidence": [
+    {
+      "source": "/Users/alexy/src/sail-pipelines-proposal/crates/sail-data-source/src/listing/utils.rs",
+      "sha256": "958d2992f6fd3b48921788b8756cb08fcf998134c42f047952d94b834de829c3",
+      "ranges": [
+        {
+          "first": 304,
+          "last": 332,
+          "excerpt": "304: pub async fn list_all_files<'a>(\n305:     url: &'a ListingTableUrl,\n306:     ctx: &'a dyn Session,\n307:     store: &'a dyn ObjectStore,\n308:     path_glob_filter: Option<&'a PathGlobFilter>,\n309: ) -> Result<BoxStream<'a, Result<ObjectMeta>>> {\n310:     let exec_options = &ctx.config_options().execution;\n311:     let ignore_subdirectory = exec_options.listing_table_ignore_subdirectory;\n312:     // If the prefix is a file, use a head request, otherwise use a list request.\n313:     let list = match url.is_collection() {\n314:         true => match ctx.runtime_env().cache_manager.get_list_files_cache() {\n315:             None => store.list(Some(url.prefix())),\n316:             Some(cache) => {\n317:                 let key = TableScopedPath {\n318:                     table: None,\n319:                     path: url.prefix().clone(),\n320:                 };\n321:                 if let Some(res) = cache.get(&key) {\n322:                     debug!(\"Hit list all files cache\");\n323:                     futures::stream::iter(res.files.as_ref().clone().into_iter().map(Ok)).boxed()\n324:                 } else {\n325:                     let list_res = store.list(Some(url.prefix()));\n326:                     let vec = list_res.try_collect::<Vec<ObjectMeta>>().await?;\n327:                     cache.put(&key, CachedFileList::new(vec.clone()));\n328:                     futures::stream::iter(vec.into_iter().map(Ok)).boxed()\n329:                 }\n330:             }\n331:         },\n332:         false => futures::stream::once(store.head(url.prefix())).boxed(),"
+        }
+      ]
+    },
+    {
+      "source": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-execution-55.2.0/src/cache/cache_manager.rs",
+      "sha256": "f3dcaddc593a0195dc32b872447bea149a7271a1227801176f6f3046ec81541b",
+      "ranges": [
+        {
+          "first": 330,
+          "last": 347,
+          "excerpt": "330:         let list_files_cache: Option<Arc<ListFilesCache>> = match &config.list_files_cache\n331:         {\n332:             Some(lfc) if config.list_files_cache_limit > 0 => {\n333:                 // the cache memory limit or ttl might have changed, ensure they are updated\n334:                 lfc.update_cache_limit(config.list_files_cache_limit);\n335:                 // Only update TTL if explicitly set in config, otherwise preserve the cache's existing TTL\n336:                 if let Some(ttl) = config.list_files_cache_ttl {\n337:                     lfc.update_cache_ttl(Some(ttl));\n338:                 }\n339:                 Some(Arc::clone(lfc))\n340:             }\n341:             None if config.list_files_cache_limit > 0 => Some(Arc::new(\n342:                 DefaultCache::<TableScopedPath, CachedFileList>::new_with_ttl(\n343:                     config.list_files_cache_limit,\n344:                     config.list_files_cache_ttl,\n345:                 )\n346:                 .with_name(\"DefaultListFilesCache\"),\n347:             )),"
+        },
+        {
+          "first": 413,
+          "last": 450,
+          "excerpt": "413: pub struct CacheManagerConfig {\n414:     /// Enable caching of file statistics when listing files.\n415:     /// Enabling the cache avoids repeatedly reading file statistics in a DataFusion session.\n416:     /// Default is enabled. Currently only Parquet files are supported.\n417:     pub file_statistics_cache: Option<Arc<FileStatisticsCache>>,\n418:     /// Limit of the file statistics cache, in bytes. Default: 20MiB.\n419:     pub file_statistics_cache_limit: usize,\n420:     /// Enable caching of file metadata when listing files.\n421:     /// Enabling the cache avoids repeat list and object metadata fetch operations, which may be\n422:     /// expensive in certain situations (e.g. remote object storage), for objects under paths that\n423:     /// are cached.\n424:     /// Note that if this option is enabled, DataFusion will not see any updates to the underlying\n425:     /// storage for at least `list_files_cache_ttl` duration.\n426:     /// Default is enabled.\n427:     pub list_files_cache: Option<Arc<ListFilesCache>>,\n428:     /// Limit of the `list_files_cache`, in bytes. Default: 1MiB.\n429:     pub list_files_cache_limit: usize,\n430:     /// The duration the list files cache will consider an entry valid after insertion. Note that\n431:     /// changes to the underlying storage system, such as adding or removing data, will not be\n432:     /// visible until an entry expires. Default: None (infinite).\n433:     pub list_files_cache_ttl: Option<Duration>,\n434:     /// Cache of file-embedded metadata, used to avoid reading it multiple times when processing a\n435:     /// data file (e.g., Parquet footer and page metadata).\n436:     /// If not provided, the [`CacheManager`] will create it.\n437:     pub file_metadata_cache: Option<Arc<FileMetadataCache>>,\n438:     /// Limit of the file-embedded metadata cache, in bytes.\n439:     pub metadata_cache_limit: usize,\n440: }\n441: \n442: impl Default for CacheManagerConfig {\n443:     fn default() -> Self {\n444:         Self {\n445:             file_statistics_cache: Default::default(),\n446:             file_statistics_cache_limit: DEFAULT_FILE_STATISTICS_MEMORY_LIMIT,\n447:             list_files_cache: Default::default(),\n448:             list_files_cache_limit: DEFAULT_LIST_FILES_CACHE_MEMORY_LIMIT,\n449:             list_files_cache_ttl: DEFAULT_LIST_FILES_CACHE_TTL,\n450:             file_metadata_cache: Default::default(),"
+        }
+      ]
+    },
+    {
+      "source": "/Users/alexy/src/sail-pipelines-proposal/vendor/orc-rust/src/writer/stripe.rs",
+      "sha256": "6c76d30deb39f9242121aab8084ec7b0458d989a14de34081ca81544c07da924",
+      "ranges": [
+        {
+          "first": 189,
+          "last": 228,
+          "excerpt": "189: fn create_encoder(field: &FieldRef) -> Box<dyn ColumnStripeEncoder> {\n190:     match field.data_type() {\n191:         ArrowDataType::Float32 => Box::new(FloatColumnEncoder::new(ColumnEncoding::Direct)),\n192:         ArrowDataType::Float64 => Box::new(DoubleColumnEncoder::new(ColumnEncoding::Direct)),\n193:         ArrowDataType::Int8 => Box::new(ByteColumnEncoder::new(ColumnEncoding::Direct)),\n194:         ArrowDataType::Int16 => Box::new(Int16ColumnEncoder::new(ColumnEncoding::DirectV2)),\n195:         ArrowDataType::Int32 => Box::new(Int32ColumnEncoder::new(ColumnEncoding::DirectV2)),\n196:         ArrowDataType::Int64 => Box::new(Int64ColumnEncoder::new(ColumnEncoding::DirectV2)),\n197:         ArrowDataType::Date32 => Box::new(DateColumnEncoder::new(ColumnEncoding::DirectV2)),\n198:         // TODO: Support non-UTC Arrow timestamp timezones. ORC TIMESTAMP_INSTANT\n199:         // does not preserve the original Arrow timezone metadata.\n200:         ArrowDataType::Timestamp(TimeUnit::Second, timezone)\n201:             if matches!(timezone.as_deref(), None | Some(\"UTC\")) =>\n202:         {\n203:             Box::new(TimestampColumnEncoder::<TimestampSecondType>::new())\n204:         }\n205:         ArrowDataType::Timestamp(TimeUnit::Millisecond, timezone)\n206:             if matches!(timezone.as_deref(), None | Some(\"UTC\")) =>\n207:         {\n208:             Box::new(TimestampColumnEncoder::<TimestampMillisecondType>::new())\n209:         }\n210:         ArrowDataType::Timestamp(TimeUnit::Microsecond, timezone)\n211:             if matches!(timezone.as_deref(), None | Some(\"UTC\")) =>\n212:         {\n213:             Box::new(TimestampColumnEncoder::<TimestampMicrosecondType>::new())\n214:         }\n215:         ArrowDataType::Timestamp(TimeUnit::Nanosecond, timezone)\n216:             if matches!(timezone.as_deref(), None | Some(\"UTC\")) =>\n217:         {\n218:             Box::new(TimestampColumnEncoder::<TimestampNanosecondType>::new())\n219:         }\n220:         ArrowDataType::Utf8 => Box::new(StringColumnEncoder::new()),\n221:         ArrowDataType::LargeUtf8 => Box::new(LargeStringColumnEncoder::new()),\n222:         ArrowDataType::Binary => Box::new(BinaryColumnEncoder::new()),\n223:         ArrowDataType::LargeBinary => Box::new(LargeBinaryColumnEncoder::new()),\n224:         ArrowDataType::Boolean => Box::new(BooleanColumnEncoder::new()),\n225:         // TODO: support more datatypes\n226:         _ => unimplemented!(\"unsupported datatype\"),\n227:     }\n228: }"
+        }
+      ]
+    }
+  ]
+}

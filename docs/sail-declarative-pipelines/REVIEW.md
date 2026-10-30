@@ -1442,3 +1442,16 @@ behavior is source/bytecode evidence, without a fresh mode runtime or broker
 probe. A pre-candidate wrapper KeyError is retained as preparation evidence;
 no B2 Rust gate failed. Hive/forced-position support, public ORC and full SDP
 acceptance are not claimed.
+
+### ORC ordinary read-format assembly (2026-10-30T01:56:45.152066+00:00)
+
+[Evidence](evidence/orc-readformat/README.md) qualifies Sail `03e8783f21` with
+formatting, strict Clippy and 224 data-source library tests. Review the existing
+listing hooks, full requested schema and scan-property forwarding, distinct
+captured reader/display settings, and file-context errors preserving causes.
+The 14 new tests cover actual listing/decoder scans; the failed 217/3 candidate,
+pre-review snapshots and fixture correction remain preserved. The successful
+retry requires late file 11 to be listed and read before the same TIME conflict;
+the original cache cause is source-supported rather than an observed cache hit.
+Shared listing/cache reuse provides no inference-to-execution snapshot guarantee.
+No public ORC runtime, writer or complete SDP acceptance count changes here.
