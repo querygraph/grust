@@ -1638,3 +1638,17 @@ column-selection primitives with all16 tests/fmt/strict Clippy passing. Only the
 workspace member and its own lock package are added; no Connect consumer yet.
 [Evidence](evidence/grust-columns-integration/README.md). C5 schema-inference
 precedence remains open and has been sent to Fable for a focused proposal.
+
+
+## 2026-10-30T10:47:34.190530+00:00 — retained multipart component
+
+Sail `4cb9aec14cd8aa8725e79326c968a5672dc4dd0e` adds the whole lifetime
+supervisor in sail-object-store, with33 library tests/fmt/strict Clippy and16
+optimized multipart tests under ten joined CPU-load workers passing. It owns
+creation/parts/settlement independently of observers. A deterministic notification
+control fails unchanged assertions; original typed part/abort causes are retained.
+[Evidence](evidence/owned-multipart/README.md), [design](OWNED-MULTIPART-SUPERVISOR-DESIGN.md).
+No new dependency, legacy-wrapper change, installed owner adapter or checkpoint
+routing. Complete errors remain uncertain; nested/provider/session guarantees
+remain open. C5 review CF-0064/0066 preserves the original per-flow wrapper/maps
+contract instead of the proposed first-error shortcut.

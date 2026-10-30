@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T10:27:27.719953+00:00. Live coordination read through **CF-0059**.
+Snapshot written 2026-10-30T10:47:34.189444+00:00. Live coordination read through **CF-0066**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -56,12 +56,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `02d39b5fead46b694725c97de1b2341793100ca2` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e54035d3d7b1540c11d8ff31924ab7eb4db8a006` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `02d39b5fe` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `4cb9aec14cd8aa8725e79326c968a5672dc4dd0e` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `36ec1cd04f4efc9c639f15e4f282c6235ccba381` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `4cb9aec14` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `33a883091295c46a86617dd919095e3ca03c6deb` (move-only commit observed; not yet offered/gated in the live channel) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `a0e5644b8e8e3ab90feeaafe7ac39c2993186b7b` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `33a883091295c46a86617dd919095e3ca03c6deb` (offered, detached gate CF-0062) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `7548f336abe62f37c46d22040a394b554f86b94f` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -161,6 +161,7 @@ Recent implementation units relevant to the current work:
 | `36525a06f8` | Characterization: held multipart completion republishes a deleted object after caller cancellation/join. No production behavior change. [Packet](docs/sail-declarative-pipelines/evidence/checkpoint-effect-baseline/README.md) |
 | `34eb270d00` | Preserve commit + cleanup typed errors as Collection/Context, retaining nonretryable unknown-commit classification. [Packet](docs/sail-declarative-pipelines/evidence/checkpoint-typed-errors/README.md) |
 | `590fc2f9d3` | TaskResourceScope.run shares typed completed results with retained supervisor ownership; owned_put.put joins a PUT through lost callers. 107 library + 4 optimized CPU-load tests pass; no dependency change or production routing activation. [Packet](docs/sail-declarative-pipelines/evidence/owned-put/README.md) |
+| `4cb9aec14` | Whole multipart supervisor in sail-object-store, no new dependency or routing. 33 library + 16 optimized CPU-load tests pass; notification control fails unchanged regression. [Packet](docs/sail-declarative-pipelines/evidence/owned-multipart/README.md) |
 
 Latest public runtime gate at `34eb270d00`: 15 physical-plan library tests, formatting,
 strict all-target/all-feature Clippy, a fresh exact-commit CLI, 300 selected public
@@ -168,7 +169,7 @@ cases and 67 upstream Python executions pass. An unchanged-production control
 fails the precise lost-nonretryable-cause assertion. The initial test-style Clippy
 failure is retained. Owned server was stopped; do not assume any current process
 is live from this historical result. No root-owned build/test handle is pending
-at this handoff snapshot; the owned PUT library/release gates are terminal too.
+at this handoff snapshot; the owned PUT and multipart library/release gates are terminal too.
 Documentation gates are short-lived and must be polled
 if a replacement arrives during one.
 
@@ -217,9 +218,10 @@ consumer units during integration rather than blindly cherry-picking that defect
 | `c9a0132cf` unit3 | Bounded deterministic source/intents/progress; cross-run incarnation and zero/stall findings raised. |
 | `6620ee940` unit5 | Prepared-input manifest, canonical row order, receipt/content digests. New blocking review CF-0043, below. |
 | `d38058973` | Opt-in external lowercase replay. Fable reports detached gate and both corpus replays; inspect exact evidence. |
-| `769914891` | Offered C5/global-phase + incarnation-bound progress corrections. Fable reports 124 Rust pipeline / 249 Python pipeline tests and a detached verdict in CF-0045. **Not yet independently reviewed by Codex.** Known schema-merge/missing-source precedence divergence remains disclosed. |
+| `769914891` | Offered C5/global-phase + incarnation-bound progress corrections. Fable reports 124 Rust pipeline / 249 Python pipeline tests and a detached verdict in CF-0045. Source-reviewed in CF-0058: fixes earlier checks/progress schedules; no new independent runtime verdict. Schema-merge/missing-source phase divergence and full failure-map semantics remain open. |
 | `dc8b7eb31` | Prepared-input fixes: IPC schema encoding, manifest consistency checks, strict case labels and C4-bound keys at every row count; tested independently at the component boundary in the later source71e4a94d9. |
 | `71e4a94d9` | Expected authoritative InputIdentity binding; Fable detached fmt/Clippy/common/pipeline/maturin/249 Python verdict CF-0052. Independent prepared-component review passes the stated API checks; physical IPC representation boundary remains open. |
+| `33a883091` | Approved move-only lower bounded-source contract extraction; detached common/common-datafusion/Connect and249 Python gate CF-0062. Offered, not integrated. |
 
 Grust offers: kernel727baa3e; evidence5538854f/aba8ef64 (lowercase),31997f0f
 (CDC validation),275e666b (microbatch),834cae55 (streaming/prepared),8b0bd605
@@ -302,10 +304,17 @@ CF-0058 records C5 source review: previous global streamingness/CDC checks move 
 resolution, but in-loop schema-merge versus unrelated missing-source ordering remains
 a parity gap. Fable is asked for a minimal phase-separation proposal and explicit
 unresolved-error collection semantics; source review is not a new runtime verdict.
-Next integration work: definition/validation/dedup units, with C5/progress qualified
-separately, without removing execution guards or selecting C0. The next coordinator
-runtime design phase is whole multipart ownership; notify the user before beginning
-so they can switch to Astra. That phase has not begun in this snapshot.
+CF-0064/0066 reject the first-error shortcut: original Scala suites inspect the
+outer UnresolvedPipelineException and complete nested cause maps. Draft7548f336
+moves toward that model but still guesses reader attribution/final inference timing;
+all readers must fail at actual demand-time inference, and final unobserved inference
+must not become a synthetic direct flow failure. Cycle detection covers the failed
+subgraph, including disconnected failures. Fable may implement only a small private
+typed failure-report/wrapper model with tests; the resolution algorithm, transport
+activation and events remain separate unapproved units. Next integration work remains
+definition/validation/dedup and lower source-contract review, preserving execution
+guards and C0. The announced multipart design phase produced the component below;
+future provider/routing/session design checkpoints still need their own notice.
 
 ## Runtime and ORC work Codex must continue
 
@@ -332,9 +341,20 @@ The typed-error prerequisite is done at34eb270d00. The owned PUT component is
 committed at590fc2f9d3: run retains a completed result future in the existing scope,
 shares the original typed error with observer/drain, and invokes no provider for
 sealed or unpolled calls. It is not routed into existing pipeline writes yet.
-Next implementation units: whole multipart lifetime, isolated context/registry routing, checkpoint
-integration, then truthful session deletion/manager shutdown and distributed
-qualification. Keep scope/source/candidate gates granular. Never authorize prefix
+The multipart component is now implemented at4cb9aec14: prepare an unstarted
+supervisor, register its entire run before creation, then await a command handle.
+It retains raw creation/part/complete/abort futures, bounded FIFO part admission,
+concurrent uploads, shared typed errors and exactly one disposition. Notifications
+happen outside the admission lock and capacity is released before result wakeup.
+Failed complete remains uncertain without blind abort. No legacy-wrapper change,
+TaskResourceScope adapter or production routing is installed. Read the
+[concrete design](docs/sail-declarative-pipelines/OWNED-MULTIPART-SUPERVISOR-DESIGN.md).
+33 library/16 optimized tests pass, all ten load workers joined. Initial fixture
+compile failure, failed notification control, canceled wrong-checkout run and
+superseded passing candidates are retained in its evidence packet.
+Next units: execution-owner adapter, provider/runtime-wrapper qualification,
+isolated context/registry routing, checkpoint integration, then truthful session
+deletion/manager shutdown and distributed qualification. Keep scope/source/candidate gates granular. Never authorize prefix
 deletion on an unconfirmed stop or timeout, and do not treat cancellation as join.
 
 Session architecture keeps policy in sail-session: retained cleanup ownership,
