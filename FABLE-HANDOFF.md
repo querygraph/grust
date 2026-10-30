@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T16:32:35.536477+00:00. Live coordination read through **CF-0134**.
+Snapshot written 2026-10-30T16:38:04.335292+00:00. Live coordination read through **CF-0136**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -49,8 +49,8 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `a0a369baada5b3b78d66c11c6694191da72d6fe8` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `817ae5a68dc665fb5abd8bc2a9a8680ffca00208` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `a0a369baa` (all gates terminal/passed) |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `8eb1517a212d0488db854f88fa5f99b4de541168` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `1c1c4abcd` (design-only probe; two tests passed) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `37c4d9c4a52718ec3bfa7af99cb033ea67779b8f` (event follow-up offered/unintegrated CF-0121) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `e349107a3190a0acc890ea4baf73446d313c3c46` |
@@ -189,7 +189,12 @@ for Astra. Next: explicit operation-state/capture authority and typed primary+
 cleanup transport, then actual planning-caller and cluster migration. Resolver
 helper queries/provider factories must participate; final-only TaskContext routing
 misses planning I/O. Archive updates to design/REVIEW and handoff are in this unit.
-No active coordinator gate remains after session5964; recheck live state on resume.
+Session44455 design-only probe is terminal: prepared statements disappear after
+builder reconstruction; custom UDF can retain temporary config after restoration.
+[Probe packet](docs/sail-declarative-pipelines/evidence/planning-state-registry-probe/README.md)
+pins1c1c4abcd; product staysa0. CF-0135/0136 approves Fable pure unit4 components
+on its existing branch, with name/source/visitor/pre-resolution corrections. No
+shared runtime, source-async or sealed-authority edits approved by that scope.
 Context overlay, routing, memory/outcome/recovery and original acceptance remain open.
 
 ## Acceptance accounting and major remaining work

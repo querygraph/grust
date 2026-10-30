@@ -292,3 +292,25 @@ constraints are incorporated; no new shared edit or async source API is approved
 by their incorporation. The exact runner/handoff/session-authority API remains
 the next design task. Independent source/transport review of Fable's event stack
 continues separately; its reported green gates do not integrate that branch.
+
+
+## State preservation counterexample after the bootstrap-safe recipe
+
+[Additional source-pinned probe](evidence/planning-state-registry-probe/README.md),
+`1c1c4abcd4754427067ef30a211c47fa480cf81a`, passes two native tests on a0a369baa.
+Direct SessionState clone preserves a prepared statement; the builder loses it,
+even with explicit session id/post-build config restore. A custom config-sensitive
+UDF is rebuilt against temporary create-default=false; restoring config=true does
+not rebind it. This does not assert a current normal Sail built-in failure.
+The previous recipe is insufficient for a general operation-state constructor.
+Private prepared-plan accessors expose no full-registry copy hook in this version.
+No workaround dropping that registry is accepted by this design.
+
+Fable's CF-0135 unit4 request is answered in CF-0136: use the existing offered
+branch and borrow scope/context; no full stack rebase or shared runtime edits.
+The pure binding/visitor/lowering components may proceed in separate gated units,
+with collision-proof binding validation, proven source/static identity, complete
+subquery/join traversal and pre-resolution rejection of unbound/provider helper
+paths. Synthetic qualified names are spellable, not an authority token. Lowered
+plan alone does not establish absence of resolver I/O. No sealed-content/C0 or
+async-source contract change is approved by that component scope.

@@ -1724,3 +1724,8 @@ Sail `f9adaaf41653a38b8dfb0f32684428ea0b0ef8de` adds finish/cancel exits without
 ## 2026-10-30T16:32:35.536477+00:00 — existing owner and local bound preparation
 
 Sail `18bfee751f61c06a1597ead382de72f11ceae4dd` attaches an existing exact scope ([helper evidence](evidence/task-context-existing-owner/README.md));125 library/125 optimized tests pass. Sail `a0a369baada5b3b78d66c11c6694191da72d6fe8` adds common JobPreparation and the local runner-bound implementation, preserving authoritative shared state with late execution capture.375 library/16 optimized tests, fmt/strict Clippy and rebuilt CLI300 public+67 upstream pass; unchanged admission-bypass control fails. [Evidence](evidence/local-bound-preparation/README.md). No planning callers are migrated; cluster preparation, context overlay/routing, outcome/byte/recovery policy and full original SDP acceptance remain open.
+
+
+## 2026-10-30T16:38:04.335292+00:00 — state-registry preservation experiment and unit4 scope
+
+[Design-only probe](evidence/planning-state-registry-probe/README.md)1c1c4abcd passes fmt/two native tests: direct state clone retains prepared statements/UDF Arcs; rebuilding loses prepared statements and can bind a custom UDF to temporary config despite post-build restoration. No product activation. CF-0136 approves separate Fable binding/admission/lowering components on its existing base with explicit corrections for spellable synthetic names, source identity, hidden joins and pre-admission resolver I/O. General operation-state/cluster/routing and full original SDP acceptance remain open.
