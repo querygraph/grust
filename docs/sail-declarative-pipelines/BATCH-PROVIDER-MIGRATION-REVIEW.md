@@ -231,10 +231,12 @@ The publication entry adds a public method to `PlanResolver`; it publishes
 nothing and creates no owner. When explicit columns are given, `NamedPlan.
 fields` carries the resolver's field names while `options.columns` carries
 the explicit names, which is the native split as well (the plan keeps
-resolver names; the catalog view gets the declared list). For pipelines this
-does not arise: `pipelines/sql.rs:316–326` folds declared columns into the
-input with `with_view_columns`, so the publication path sees `columns: None`
-and both name lists come from `get_field_names`.
+resolver names; the catalog view gets the declared list). For pipelines, corrected
+after CF-0237: `pipelines/sql.rs:321–333` wraps the input with
+`with_view_columns(definition.columns.clone())` but does not clear
+`definition.columns`, so explicit columns and comments stay `Some` and the
+publication path carries them as the native path does; the two name lists
+differ exactly when the user declared names, as in native SQL.
 
 **Tests.** Explicit and inferred options are compared for equality against
 the options the native `CatalogCommandNode::CreateView` carries, together with

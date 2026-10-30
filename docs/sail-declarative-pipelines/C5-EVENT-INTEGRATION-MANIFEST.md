@@ -151,16 +151,22 @@ assertions in `test_autocdc_definition.py`, and the manifest for that import
 must list both as prerequisites. Until then the root's batch phases run
 without the Auto CDC clauses, and that is a known, recorded omission.
 
-**Reintegration obligation added after CF-0234.** Codex's publication units
-add a publication-options map (one field) to `AnalyzedGraph` in
-`pipelines/analysis.rs`, produced during analysis and consumed by
-`materialize::views` instead of a second query resolution. E′ rewrites
-`analysis.rs` and touches its callers in `execution.rs` and `materialize.rs`;
-when E′ is prepared it must carry that field and its producer through the
-loop rewrite and keep `materialize::views` consuming it. The manifest's
-"shared files" table therefore gains `analysis.rs`, `execution.rs` and
-`materialize.rs` as root-changed files once those units land, and E′'s dry run
-must be redone against that root.
+**Reintegration obligation added after CF-0234, strengthened after
+CF-0237.** Codex's publication units change `AnalyzedGraph` in
+`pipelines/analysis.rs`: `relations: BTreeMap<Name, LogicalPlan>` is removed
+and replaced by `schemas: BTreeMap<Name, SchemaRef>` and `publications:
+BTreeMap<Name, CreateViewOptions>`; full temporary-view plans live only in
+analysis's working set and are dropped before return; persisted views are
+resolved once during analysis through `resolve_view_publication`; and
+`materialize::views` consumes the options through the prepared
+catalog-command path instead of a second resolution. E′ rewrites `analysis.rs`
+and touches `execution.rs` and `materialize.rs`, so E′ must be rebuilt on
+that root: it must produce `schemas` and `publications` from its loop (not
+`relations`), keep the working set local to analysis, and leave
+`materialize::views` on the options path. The "shared files" table gains
+`analysis.rs`, `execution.rs` and `materialize.rs` as root-changed files, and
+E′'s dry run must be redone against that root. "Adding one field" is not
+sufficient.
 
 ## 6. Dry run against the root
 
