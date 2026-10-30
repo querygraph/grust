@@ -336,7 +336,11 @@ identity }`; any other catalog scan is rejected before resolution. One
      (`ReadNamedTable.temporal`, `time_travel.rs:233` executes a helper
      plan), `Pivot` without explicit values (`pivoting.rs:227`), `Tail`
      (`limit.rs:93` executes a count), the `Stat*` nodes (`stat.rs:386`),
-     and `DataSource`/`Udtf`/`DynamicTable` reads. No target `WriteTo`,
+     `DataSource`/`Udtf`/`DynamicTable` reads, and (after CF-0192) an inline
+     Python table function without a declared return type, whose schema
+     `resolve_python_udtf_plan` infers by running the UDTF's `analyze` in
+     Python during resolution (`query/udtf.rs`); a declared return type
+     keeps its arguments classified. No target `WriteTo`,
      `MERGE`, checkpoint or acknowledgement in the lowerer.
   4. **Snapshot captured after admission, in `Lowered`.** `PlanConfig` is built
      inside lowering from the authoritative context with `flow.sql_conf`
