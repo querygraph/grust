@@ -344,3 +344,26 @@ post-resolution admission. The review also requests resolver-aligned CTE shadowi
 and duplicate binding rejection. No independent runtime verdict or integration is
 claimed. CF-0138 allows the first unit's mixed-mode rejection only as a tracked gap;
 the original Spark behavior remains required follow-up, not a permanent restriction.
+
+
+## Resolver helper queries consume the supplied Session view
+
+Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` adds an optional borrowed
+PlanResolver::with_query_session and routes the four resolution-time query
+executions through it: pivot inference, time-travel scalar, tail count and
+crosstab distinct values. The nested stored-view resolver propagates the same
+borrowed view. With none supplied, collection still uses the existing authoritative
+SessionContext path. There is no detached planner or session-command redirection.
+[Evidence](evidence/resolver-query-session/README.md):42 library/42 optimized
+tests, fmt/strict Clippy, unchanged four-helper bypass control and rebuilt CLI
+300 selected+67 upstream tests pass at this exact source. Config timing tests use
+direct native config-state mutation, not an actual SQL/RPC SET. The nested view
+propagation has source/regression coverage, not a new isolated view/helper fixture.
+
+This unit does not migrate a public caller or route source/write/procedure factories.
+It requires the caller to retain admission and choose a view after authoritative
+mutation; it does not prove that an arbitrary supplied Session came from that
+context. Final physical execution must receive the same selected context rather
+than silently recapturing authority. Provider factory propagation, native command
+separation, capture/transfer API, typed primary+cleanup and cluster preparation
+remain the next integration units. Keep the full original Spark SDP objective.

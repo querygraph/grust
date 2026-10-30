@@ -203,3 +203,8 @@ Sail `18bfee751f61c06a1597ead382de72f11ceae4dd` attaches an existing exact scope
 ## 2026-10-30T16:51:51.068075+00:00 — captured Session view and binding review
 
 Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState through DataFusion Session, attaches the exact scope and optionally overlays the provider/planner/task registry.129 library/129 optimized tests and fmt/strict Clippy pass; unchanged builder and actual wrong-store controls fail. [Evidence](evidence/scoped-session/README.md) retains compile/lint failures, earlier positives and the earlier pointer-only control. No resolver/runner/context routing activation; latest public verdict remainsa0. [Fable binding review](evidence/fable-binding-source-review/README.md), CF-0140, identifies ignored expression subqueries and requests CTE/binding identity fixes. Full original SDP acceptance, cluster/session joins and effect policy remain open.
+
+
+## 2026-10-30T17:16:01.021618+00:00 — resolver helper Session propagation
+
+Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` routes four actual resolution-time queries through an optional borrowed Session and propagates it in nested view resolution; default authoritative collection stays intact.42 library/42 optimized, fmt/strict Clippy and fresh CLI300 public+67 upstream pass; unchanged bypass fails all four helper tests while fallback passes. [Evidence](evidence/resolver-query-session/README.md) retains initial missing-import failure, the qualifier extension-name correction and all source/log/binary receipts. No provider-factory/public-caller/final-execution migration or full original SDP verdict.

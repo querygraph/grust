@@ -1,0 +1,34 @@
+    Checking sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+    Checking orc-rust v0.9.0 (/Users/alexy/src/sail-sdp-gate/vendor/orc-rust)
+    Checking sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+    Checking sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+    Checking sail-object-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-object-store)
+    Checking sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+    Checking sail-catalog v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog)
+    Checking sail-cache v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-cache)
+    Checking sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+    Checking sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+    Checking sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+    Checking sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+    Checking sail-catalog-memory v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-memory)
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+error[E0599]: no method named `register_store` found for struct `std::sync::Arc<datafusion::datasource::object_store::DefaultObjectStoreRegistry>` in the current scope
+   --> crates/sail-plan/src/resolver/query/session_tests.rs:164:18
+    |
+164 |         registry.register_store(url.as_ref(), child);
+    |                  ^^^^^^^^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `deregister_store` with a similar name, but with different arguments
+   --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-execution-55.2.0/src/object_store.rs:162:5
+    |
+162 |     fn deregister_store(&self, url: &Url) -> Result<Arc<dyn ObjectStore>> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: trait `ObjectStoreRegistry` which provides `register_store` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use datafusion::datasource::object_store::ObjectStoreRegistry;
+    |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-plan` (lib test) due to 1 previous error

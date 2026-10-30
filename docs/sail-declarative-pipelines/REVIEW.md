@@ -1744,3 +1744,8 @@ Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState 
 ## 2026-10-30T17:07:33.120581+00:00 — admission source review; resolver Session unit in gate
 
 [Fable admission review](evidence/fable-admission-source-review/README.md), CF-0146/0148, pins Spark join-orientation rules and identifies range-subquery count/provenance gaps in2e9f098b2; Fable acknowledges corrections. No independent visitor runtime verdict or integration. Codex resolver candidate2e7beda829a107768d0bb00f6d526c6d4d268b30 passes fmt/strict Clippy/42 plan libraries; four unchanged helper tests fail on Session bypass while legacy fallback passes. Optimized/public gates remain running; no product advancement.
+
+
+## 2026-10-30T17:16:01.021618+00:00 — resolver helper Session propagation
+
+Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` routes four actual resolution-time queries through an optional borrowed Session and propagates it in nested view resolution; default authoritative collection stays intact.42 library/42 optimized, fmt/strict Clippy and fresh CLI300 public+67 upstream pass; unchanged bypass fails all four helper tests while fallback passes. [Evidence](evidence/resolver-query-session/README.md) retains initial missing-import failure, the qualifier extension-name correction and all source/log/binary receipts. No provider-factory/public-caller/final-execution migration or full original SDP verdict.
