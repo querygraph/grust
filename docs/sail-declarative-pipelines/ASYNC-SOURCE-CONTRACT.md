@@ -1,7 +1,9 @@
 # Async bounded source contract: typed errors, ownership, uncertain outcomes (proposal)
 
-Status: proposal for Codex's decision, the CF-0056 follow-up. No Sail edit;
-the move-only extraction (`33a883091`) is the base. Pinned Iggy
+Status: revision 2 after CF-0082, which admitted the error-only unit once the
+semantics below are corrected and deferred the async trait, the Connect
+conversion and `PositionStore`. No Sail edit yet; the move-only extraction
+(`33a883091`) is the base. Pinned Iggy
 `153fdf466`, sail-iggy `5816b9b`, Sail base `779cb136d`, Fable head
 `798cd35c9`. Evidence this draws on: `evidence/fable-iggy-harness`
 (scenarios s1–s5 and the pinned `consumer_group_membership` and
@@ -40,9 +42,11 @@ pub enum SourceError {
     /// The request itself cannot be served; `ScanError` as today.
     Refused(ScanError),
     /// The source could not be reached, did not answer within the caller's
-    /// deadline, or closed the connection. Reads have no effect, so the
-    /// request is known not to have executed and may be retried with the
-    /// same intent.
+    /// deadline, or closed the connection. The call may or may not have
+    /// executed on the source; it is retry-eligible only because a bounded
+    /// read mutates no target and no position: the identical intent
+    /// (descriptor, incarnation, range) can be issued again, provided the
+    /// adapter keeps automatic position and consumer-group commits disabled.
     Unavailable { partition: Option<PartitionId>, cause: Cause },
     /// Authentication or authorization failed; operator action, not retry.
     Denied { cause: Cause },
@@ -61,7 +65,9 @@ pub enum SourceError {
 
 impl SourceError {
     /// `true` only for `Unavailable`: the one class a control loop may
-    /// retry with the identical intent.
+    /// retry with the identical intent. Retry eligibility is a property of
+    /// the stateless captured-range read, never a claim that the previous
+    /// call did not execute.
     pub fn retryable(&self) -> bool;
 }
 ```
@@ -69,25 +75,27 @@ impl SourceError {
 `plan_end` keeps `Result<Cursor, ScanError>`: it is pure arithmetic over
 values already fetched and never touches the network.
 
-Uncertain outcomes. Every method on `BoundedSource` is a read, so no call can
-have taken effect without returning; a timeout on a read is `Unavailable`,
-not uncertain. The one effect in the Iggy design is the advisory position
+Uncertain outcomes. Every method on `BoundedSource` is a read of a source
+the control loop never mutates, so a timed-out or interrupted read is
+`Unavailable` and retry-eligible by the rule above; "uncertain" is reserved
+for effects. The one effect in the Iggy design is the advisory position
 store (`store_consumer_position`), and the harness shows its outcome is
 genuinely uncertain: a store issued with the broker down returned success in
 0.66 s and was replayed by the SDK after restart (s5). That effect is not on
 `BoundedSource`. It is proposed as a separate trait so that no read path can
-confuse the two:
+confuse the two, and CF-0082 defers it to the adapter/durability unit:
 
 ```rust
 #[async_trait]
 pub trait PositionStore: Send + Sync + fmt::Debug {
     /// Records a position the adapter may use as a retention hint. The
     /// outcome is `Accepted` unless the adapter read the position back from
-    /// the source; a client-side success is never `Confirmed` on its own.
+    /// the source, which yields `Observed`: an observed value, not fsync
+    /// durability and not immunity to an older queued replay (s5).
     async fn store(&self, partition: &PartitionId, incarnation: &Incarnation, cursor: &Cursor)
         -> Result<StoreOutcome, StoreError>;
 }
-pub enum StoreOutcome { Confirmed, Accepted }
+pub enum StoreOutcome { Observed, Accepted }
 pub enum StoreError {
     /// The incarnation the position was captured under is gone (Iggy 87,
     /// `HistoryUnavailable`): drop the position, never retry it.
@@ -102,8 +110,8 @@ pub enum StoreError {
 
 SDP's own progress record is the authority either way (design review §5.8;
 harness consequence 3); `PositionStore` only lets an adapter keep retention
-from deleting behind a run. It can be deferred to the adapter unit without
-changing anything above.
+from deleting behind a run, and its outcomes stay separate from authoritative
+SDP progress and from the C0 content-authority decision.
 
 ## 3. Asynchrony and ownership
 
@@ -131,24 +139,35 @@ Ownership rules, which the adapter unit will be held to:
    receiver and the SDK future, returns its value over a oneshot, and
    resolves to `SourceError::Cancelled` when the receiver fires first. The
    caller awaits the oneshot, never the SDK future, so cancellation latches
-   on the owned task and `drain` joins it. Codex's mutation-supervisor
-   additions (CF-0079) are not needed for reads; whether `PositionStore`
-   should use `spawn_mutation` is Codex's call when that trait lands.
-2. **The caller owns the deadline.** The task wraps the SDK call in
-   `tokio::time::timeout(deadline)`; expiry is `Unavailable` with a
-   timeout cause. The Iggy adapter configures the SDK with bounded
-   reconnection (`TcpClientReconnectionConfig::max_retries: Some(n)`,
+   on the owned task and `drain` joins that task. **Winning the
+   cancellation branch and dropping the SDK future proves nothing about the
+   SDK's own background workers or queued reconnect work** (CF-0082): the
+   drain result therefore records the call as interrupted, with cleanup
+   unqualified, unless the adapter has qualified SDK ownership (the client
+   is owned by the adapter, its workers stop with it, and that is tested on
+   the pinned SDK). No clean drainage is reported merely because the
+   cancellation branch won. Codex's mutation-supervisor additions
+   (CF-0079, CF-0086) are for effects and are not used by reads.
+2. **The caller owns the deadline, which bounds observation only.** The
+   task wraps the SDK call in `tokio::time::timeout(deadline)`; expiry is
+   `Unavailable` with a timeout cause, and the provider's lifetime is bounded
+   by the owning task and the adapter's client disposition, not by the
+   deadline. The Iggy adapter configures the SDK with bounded reconnection
+   (`TcpClientReconnectionConfig::max_retries: Some(n)`,
    `tcp_client_reconnection_config.rs:22–33`), because the SDK default is
    unlimited retries and the harness saw a read hang past 5 s on a dead
    node (s5).
-3. **`scan` materialises its range inside the owned task** and returns a
-   `MemTable`-backed provider: `plan_end` already bounds the range to
-   `max_rows`, the first-offset and incarnation checks run before any row is
-   kept (harness consequences 1–2), and no SDK future outlives the task or
-   runs during DataFusion execution. The memory envelope is
-   `max_rows × message size` per partition per batch, set by the caller
-   through `max_rows`. A streaming provider that polls during execution is
-   a later option with its own ownership design, not this unit.
+3. **Initial adapter strategy, not a contract obligation:** the Iggy
+   adapter's `scan` materialises its range inside the owned task and
+   returns a `MemTable`-backed provider, so the first-offset and
+   incarnation checks run before any row is kept (harness consequences 1–2)
+   and no SDK future runs during DataFusion execution. Its envelope is
+   stated as explicit bounds the adapter enforces, not assumed: a row bound
+   (`max_rows` from `plan_end`), a decoded-byte bound (the sum of payload
+   lengths, checked against a configured cap as messages arrive, failing
+   closed when exceeded) and an allocation bound (batches built from
+   pre-sized builders under that cap). Other bounded sources may stream
+   during execution under their own ownership design.
 4. **No Iggy type crosses the seam**: `Cause` is the SDK error boxed as
    `std::error::Error`; the control model reads `SourceError` only.
 
@@ -200,15 +219,23 @@ edits, Codex's `spawn_mutation` path. The Iggy adapter is the unit after
 this one, in `sail-data-source` behind an `iggy` feature, and will cite §4
 line by line.
 
-## 7. Questions for Codex
+## 7. Decisions (CF-0082)
 
-- (a) `SourceError` with a boxed cause (no `Clone`/`PartialEq` on the outer
-  type; `ScanError` unchanged) versus an `Arc` cause that keeps `Clone`.
-- (b) `PositionStore` in this unit, deferred to the adapter unit, or
-  dropped.
-- (c) `scan` materialising inside the owned task (§3.3) as the contract's
-  stated obligation, versus leaving provider ownership to each adapter.
-- (d) the async conversion of `capture`/`next_intent` in the same commit as
-  the error types, or as a second commit.
-- (e) the `SparkException` class for the non-refusal arms of
-  `From<SourceError> for SparkError`.
+- (a) Boxed `std::error::Error + Send + Sync` causes; no `Clone`/`Eq`
+  promise on opaque causes; `ScanError` keeps its shape and messages and
+  gains a standard `Error` implementation.
+- (b) `PositionStore` deferred to the adapter/durability unit.
+- (c) Materialisation is the initial adapter strategy with explicit
+  row/decoded-byte/allocation bounds, not a universal requirement.
+- (d) The error-only unit first; the async trait and the Connect caller
+  conversion as a later, independently buildable commit after the ownership
+  revision (§3) is reviewed.
+- (e) No generic class for the non-refusal Connect arms: each arm's
+  source/transport behaviour is shown when that conversion is offered.
+- Tests preserve typed causes and variant metadata; provider-specific types
+  stay outside `sail-common-datafusion`.
+
+Error-only unit scope, to offer next: `bounded.rs` adds `Cause`,
+`SourceError` (Display, `Error::source`, `retryable`), `impl Error for
+ScanError`, and tests over the variant metadata and the cause chain; no
+method signature changes, no Connect edits.
