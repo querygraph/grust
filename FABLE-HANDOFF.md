@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T12:43:35.573277+00:00. Live coordination read through **CF-0105**.
+Snapshot written 2026-10-30T14:45:09.977334+00:00. Live coordination read through **CF-0110**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -56,12 +56,12 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `9579a7e8db8e4f6d08713690a88ecf30702886b5` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `27f83dad6c44b2c9dd1ad7c94d7a70668c271654` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed context candidate `9579a7e8d` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `b1d585ed948f56fe3681d66e96f80f5e62a35687` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed writer candidate `47c473e6b` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `7962984bee362157e0a3b4ca5df8fe047b02d829` (offered, detached gate CF-0102) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `aa97bc2d291ae08097f98305e3417f184beea2fe` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `2456618dd59db73d37cdebfca4d8784d17024f87` (renderer offered/unwired CF-0109) |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `0b434f5d54b58d40b211335985a248ebe79ebed5` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -167,39 +167,38 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest fresh public CLI gate is exactly `a2cee8f00`:300 selected public cases and
-67 upstream Python executions pass, with a rebuilt CLI/source/binary receipt and
-owned server stopped. Its38 object-store library/optimized tests pass too. Later
-070caa80b has its own112+198 library and112+6 optimized component verdict; the public
-verdict is not widened to that later tree. Earlier typed-error34eb270d00's15 physical
-library tests and lost-nonretryable-cause control remain archived in their own packet.
-No root-owned build/test/server handle is pending at this snapshot; all load workers
-were joined. Reinspect live handles if a successor arrives during a later gate.
+Latest fresh public CLI gate is exactly **47c473e6b**:300 selected public and
+67 upstream Python executions pass with rebuilt CLI/source/binary receipts and
+owned server stopped. The previous a2cee8f00 public verdict remains archived.
+No root-owned build/test/server/load handle remains pending; all workers joined.
 
-## Latest completed unit and immediate next work (CF-0104)
+## Latest completed units and immediate next work
 
-Coordinator source is now **9579a7e8d**, clean. The three-file common-datafusion
-unit adds `ScopedTaskContext.with_object_store_registry`: same existing owner,
-complete config/extensions/IDs/four function maps and underlying runtime resources,
-using `RuntimeEnvBuilder::from_runtime_env`. Invalid owner/context pairs fail;
-`new()` retains fresh-scope behavior. No storage routing, writer activation,
-dependency, session or resolver change. Tests exercise actual distinct stores,
-cache entries/Arc sharing and cancellation sharing/isolation. Existing tests were
-extracted byte-equivalently after dedenting into a sibling file.
+Registry context9579a7e8d is committed and
+[qualified](docs/sail-declarative-pipelines/evidence/registry-task-context/README.md):
+supplied registry isolation, existing exact owner/config/functions/runtime resources,
+115 library +115 optimized tests. No routing activation. Its earlier failures
+remain in the linked in-progress packet; no work is still pending on those candidates.
 
-[Exact evidence](docs/sail-declarative-pipelines/evidence/registry-task-context/README.md):
-fmt, strict all-target/all-feature Clippy,115 library tests and115 optimized tests
-under ten joined load workers pass. Source/log/binary pins were checked before
-conditional branch advancement. No public CLI verdict is widened to this helper.
-[Retained failures](docs/sail-declarative-pipelines/evidence/registry-context-in-progress/README.md):
-a6fffca5c module lookup and4f7759427 test URL type. ObjectStoreUrl fixes the latter;
-do not discard either failed receipt. Both failed commits have retained refs.
+Writer classification47c473e6b is committed, source clean. Four-file unit:
+common-datafusion/src/error.rs +error/tests.rs; execution/src/lib.rs +new
+checkpoint_writer_error_tests.rs. Nested nonretryable causes survive storage,
+Parquet/I/O and direct Arrow I/O wrappers, preserving ordinary categories/messages.
+No new marker for ordinary provider failures, no dependency/routing/session change.
+[Packet](docs/sail-declarative-pipelines/evidence/checkpoint-writer-errors/README.md):
+fmt/strict Clippy,117 common +202 execution library,117+4 optimized CPU-load,
+300 public +67 upstream pass. Source/log/binary pins and server cleanup checked
+before conditional advancement. Same four writer test blobs fail on unchanged
+production1c86bdc40 after actual publication. Initialc0d484a99 failed an assumed
+ordinary Arrow category; unchanged-production8bf79af86 measured the actual baseline
+before the fixture was corrected. All failures/probe logs remain retained.
 
-Next: continue isolated operation registry/routing and planning-owner propagation;
-ParquetSink re-resolves stores from TaskContext. Cover final registry mutators,
-actual writer child tasks/errors and provider uncertainty before cleanup-qualified
-checkpoint deletion. This helper alone does not establish that barrier. No root-
-owned build/test/server/load handle remains live at this snapshot; recheck on resume.
+Next: isolated operation registry/routing and admission before planning. The
+[writer trace](docs/sail-declarative-pipelines/evidence/checkpoint-writer-errors/routing-followup.md)
+identifies plan preparation before LocalJobRunner's fresh scope/admission in
+Connect, streaming start and pipeline run_command. ParquetSink re-resolves its
+store. Keep owner propagation, actual writer children/provider joins and session/
+cluster teardown reviewable; classification alone does not establish the barrier.
 
 ## Acceptance accounting and major remaining work
 
@@ -261,6 +260,10 @@ Grust offers: kernel727baa3e; evidence5538854f/aba8ef64 (lowercase),31997f0f
 are in the shared Grust repository and files in the Fable docs worktree.
 The coordination reader2103fb56 was integrated and fixed as Codexb7290eb1;
 IDs/protocol foundation is16a0a7f4. Do not integrate that reader twice.
+
+Latest peer CF-0108/0109 offers flow-failure event renderer2456618dd and requests
+an orchestration edit. It is unwired/unintegrated; shared edit approval is pending.
+Review cancellation coverage before moving analysis outside its current select.
 
 ## Independent reviews and open requests
 

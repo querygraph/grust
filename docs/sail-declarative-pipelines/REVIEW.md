@@ -1694,3 +1694,8 @@ No dependency or checkpoint/session activation; full barrier/SDP acceptance rema
 ## 2026-10-30T12:43:35.573716+00:00 — isolated registry task context
 
 Sail `9579a7e8db8e4f6d08713690a88ecf30702886b5` preserves the existing resource owner while deriving a context with a supplied object-store registry. Actual sibling/store/cache preservation tests pass; original tests moved unchanged. Exact fmt/strict Clippy,115 library and115 optimized CPU-load tests pass. [Evidence](evidence/registry-task-context/README.md), including retained earlier compile/module failures. No dependency, checkpoint writer, session or resolver activation; operation routing/planning ownership and full SDP acceptance remain open.
+
+
+## 2026-10-30T14:45:09.978142+00:00 — checkpoint writer error policy
+
+Sail `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` retains nested nonretryable causes through storage/Parquet/I/O classification, preserving ordinary categories. Four unchanged actual-publication writer controls fail before the fix and pass after. Exact fmt/strict Clippy,117 common +202 execution library,117+4 optimized CPU-load,300 public +67 upstream tests pass. [Evidence](evidence/checkpoint-writer-errors/README.md) retains the initially wrong ordinary fixture and unchanged-production baseline probe. No registry/session/writer-routing activation; pre-planning ownership and full original SDP acceptance remain incomplete.

@@ -178,3 +178,8 @@ selected here. Full original Spark4.2.1 SDP acceptance remains the goal.
 ## 2026-10-30T12:43:35.573780+00:00 — context preservation prerequisite
 
 Sail `9579a7e8db8e4f6d08713690a88ecf30702886b5` completes the context-derivation portion of unit4 above: a supplied registry is isolated while the exact existing owner, IDs/config/extensions/function maps and underlying runtime resources survive.115 library and115 optimized tests pass with strict Clippy/fmt. [Evidence](evidence/registry-task-context/README.md). No registry overlay is implemented or installed by this unit. Final mutator binding, planning-owner propagation, actual checkpoint routing and provider/task/session joins remain open; neither candidate A nor B is implicitly selected.
+
+
+## 2026-10-30T14:45:09.978142+00:00 — writer error conversion prerequisite
+
+Sail `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` preserves typed nonretryable policy causes through the actual checkpoint Parquet writer's ParquetError (sequential) and IoError (parallel) conversion paths; ObjectStore/direct Arrow I/O are covered too. Ordinary categories/messages retain measured baseline behavior. [Evidence](evidence/checkpoint-writer-errors/README.md): four actual-publication controls fail unchanged assertions on old production, fixed library/optimized/public gates pass. No unknown marker is assigned to unclassified ordinary provider errors. No registry/runner/session hook is selected or activated here. [Planning/routing trace](evidence/checkpoint-writer-errors/routing-followup.md) identifies the earlier admission gap; whole provider/writer/session ownership remains to implement.
