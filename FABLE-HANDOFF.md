@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T12:40:31.060640+00:00. Live coordination read through **CF-0104**.
+Snapshot written 2026-10-30T12:43:35.573277+00:00. Live coordination read through **CF-0105**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -56,9 +56,9 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `070caa80b6695942318dbc24c90dae6e6bc0dfd7` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `6b3e136bc95d11c9302c0dce3dabb603441a3975` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | failed context candidate `4f7759427459d7c1bc7237decd540efd6f644886` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `9579a7e8db8e4f6d08713690a88ecf30702886b5` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `27f83dad6c44b2c9dd1ad7c94d7a70668c271654` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | passed context candidate `9579a7e8d` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `7962984bee362157e0a3b4ca5df8fe047b02d829` (offered, detached gate CF-0102) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `aa97bc2d291ae08097f98305e3417f184beea2fe` |
@@ -176,33 +176,30 @@ library tests and lost-nonretryable-cause control remain archived in their own p
 No root-owned build/test/server handle is pending at this snapshot; all load workers
 were joined. Reinspect live handles if a successor arrives during a later gate.
 
-## In progress: isolated task-context registry seam (CF-0104)
+## Latest completed unit and immediate next work (CF-0104)
 
-Coordinator source remains **070caa80b**, with three uncommitted files under
-`crates/sail-common-datafusion/src/`: modified `task_resources_context.rs`, new
-`task_resources_context_tests.rs` and `task_resources_registry_context_tests.rs`.
-The helper `ScopedTaskContext.with_object_store_registry` preserves the existing
-resource owner, config/extensions, IDs, four function maps and underlying runtime
-resources via `RuntimeEnvBuilder::from_runtime_env`. It rejects inconsistent
-context/owner pairs; `new()` still creates a fresh scope. No storage routing,
-writer activation, dependency, session or resolver change has been made.
+Coordinator source is now **9579a7e8d**, clean. The three-file common-datafusion
+unit adds `ScopedTaskContext.with_object_store_registry`: same existing owner,
+complete config/extensions/IDs/four function maps and underlying runtime resources,
+using `RuntimeEnvBuilder::from_runtime_env`. Invalid owner/context pairs fail;
+`new()` retains fresh-scope behavior. No storage routing, writer activation,
+dependency, session or resolver change. Tests exercise actual distinct stores,
+cache entries/Arc sharing and cancellation sharing/isolation. Existing tests were
+extracted byte-equivalently after dedenting into a sibling file.
 
-Tests intend to verify cache entries/Arc sharing, actual parent/sibling store
-isolation and invalid owners. **They have not passed.** Candidate
-`a6fffca5c33fd04c767607221d697ed309e07b94` failed fmt/module lookup because a nested
-inline test module resolved a nonexistent src/tests path. Extracting the existing
-tests into a sibling file fixed module resolution. The next detached candidate
-`4f7759427459d7c1bc7237decd540efd6f644886` passes fmt but fails Clippy compilation:
-E0277 at registry test line155, `.object_store(&url)` requires `AsRef<Url>`.
-Preserved [receipts and raw logs](docs/sail-declarative-pipelines/evidence/registry-context-in-progress/README.md)
-cover both failures. No library/optimized/public tests ran for this helper.
+[Exact evidence](docs/sail-declarative-pipelines/evidence/registry-task-context/README.md):
+fmt, strict all-target/all-feature Clippy,115 library tests and115 optimized tests
+under ten joined load workers pass. Source/log/binary pins were checked before
+conditional branch advancement. No public CLI verdict is widened to this helper.
+[Retained failures](docs/sail-declarative-pipelines/evidence/registry-context-in-progress/README.md):
+a6fffca5c module lookup and4f7759427 test URL type. ObjectStoreUrl fixes the latter;
+do not discard either failed receipt. Both failed commits have retained refs.
 
-Next: fix the fixture using the actual DataFusion URL API; preserve failures;
-prepare a fresh candidate, run library/fmt/Clippy and optimized CPU-load gates,
-then qualify/advance conditionally. Check original extracted tests stay equivalent.
-Only afterward archive success, update designs/log/handoff and continue operation
-routing/planning-owner propagation. Both gate processes are terminal; no root-owned
-build/test/server/load process was observed during this snapshot.
+Next: continue isolated operation registry/routing and planning-owner propagation;
+ParquetSink re-resolves stores from TaskContext. Cover final registry mutators,
+actual writer child tasks/errors and provider uncertainty before cleanup-qualified
+checkpoint deletion. This helper alone does not establish that barrier. No root-
+owned build/test/server/load handle remains live at this snapshot; recheck on resume.
 
 ## Acceptance accounting and major remaining work
 

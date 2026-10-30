@@ -173,3 +173,8 @@ as proof of retryable multipart disposal.
 
 No C0 byte-authority, B12 tie, Iggy position-store or CDC durability decision is
 selected here. Full original Spark4.2.1 SDP acceptance remains the goal.
+
+
+## 2026-10-30T12:43:35.573780+00:00 — context preservation prerequisite
+
+Sail `9579a7e8db8e4f6d08713690a88ecf30702886b5` completes the context-derivation portion of unit4 above: a supplied registry is isolated while the exact existing owner, IDs/config/extensions/function maps and underlying runtime resources survive.115 library and115 optimized tests pass with strict Clippy/fmt. [Evidence](evidence/registry-task-context/README.md). No registry overlay is implemented or installed by this unit. Final mutator binding, planning-owner propagation, actual checkpoint routing and provider/task/session joins remain open; neither candidate A nor B is implicitly selected.

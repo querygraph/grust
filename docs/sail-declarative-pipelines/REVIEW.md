@@ -1689,3 +1689,8 @@ No dependency or checkpoint/session activation; full barrier/SDP acceptance rema
 
 Sail `070caa80b6695942318dbc24c90dae6e6bc0dfd7`: 112 common +198 execution library tests/fmt/strict Clippy and112+6 optimized tests pass. Interrupted mutation observers classify uncertainty before drainage; typed observer/join errors remain. Two unchanged real-publication controls fail before the fix. [Evidence](evidence/interrupted-mutation-observers/README.md).
 No dependency or checkpoint/session activation; full barrier/SDP acceptance remains open.
+
+
+## 2026-10-30T12:43:35.573716+00:00 — isolated registry task context
+
+Sail `9579a7e8db8e4f6d08713690a88ecf30702886b5` preserves the existing resource owner while deriving a context with a supplied object-store registry. Actual sibling/store/cache preservation tests pass; original tests moved unchanged. Exact fmt/strict Clippy,115 library and115 optimized CPU-load tests pass. [Evidence](evidence/registry-task-context/README.md), including retained earlier compile/module failures. No dependency, checkpoint writer, session or resolver activation; operation routing/planning ownership and full SDP acceptance remain open.
