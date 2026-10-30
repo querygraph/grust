@@ -1,0 +1,62 @@
+{
+  "sail_commit": "1462cc9c92c01ea36ce55a02c07db409fe32d95a",
+  "base": "18b1eed311c3bc6f66758595faf4eadb131af48e",
+  "packages": [
+    "sail-common-datafusion"
+  ],
+  "started_at": "2026-10-30T01:17:12.527715+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common-datafusion",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-orc-semantic-merge-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common-datafusion",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-orc-semantic-merge-clippy.log",
+      "sha256": "a3d143c927d4c6a1cc7a3dc80decf99c8e35e0c966c97587a5d2fdf91821a9c4"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common-datafusion",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-orc-semantic-merge-rust.log",
+      "sha256": "728c771704138ca6c06d7a7e403c9401b39db4c2061c1f3042dd6db8c580656c"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T01:19:16.339997+00:00",
+  "outcome": "passed"
+}

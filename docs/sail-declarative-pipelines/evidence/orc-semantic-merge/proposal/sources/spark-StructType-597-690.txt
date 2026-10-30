@@ -1,0 +1,94 @@
+597:   private[sql] def merge(
+598:       left: DataType,
+599:       right: DataType,
+600:       caseSensitive: Boolean = true): DataType =
+601:     mergeInternal(
+602:       left,
+603:       right,
+604:       (s1: StructType, s2: StructType) => {
+605:         val leftFields = s1.fields
+606:         val rightFields = s2.fields
+607:         val newFields = mutable.ArrayBuffer.empty[StructField]
+608: 
+609:         def normalize(name: String): String = {
+610:           if (caseSensitive) name else name.toLowerCase(Locale.ROOT)
+611:         }
+612: 
+613:         val rightMapped = fieldsMap(rightFields, caseSensitive)
+614:         leftFields.foreach { case leftField @ StructField(leftName, leftType, leftNullable, _) =>
+615:           rightMapped
+616:             .get(normalize(leftName))
+617:             .map { case rightField @ StructField(rightName, rightType, rightNullable, _) =>
+618:               try {
+619:                 leftField.copy(
+620:                   dataType = merge(leftType, rightType),
+621:                   nullable = leftNullable || rightNullable)
+622:               } catch {
+623:                 case NonFatal(e) =>
+624:                   throw DataTypeErrors.cannotMergeIncompatibleDataTypesError(leftType, rightType)
+625:               }
+626:             }
+627:             .orElse {
+628:               Some(leftField)
+629:             }
+630:             .foreach(newFields += _)
+631:         }
+632: 
+633:         val leftMapped = fieldsMap(leftFields, caseSensitive)
+634:         rightFields
+635:           .filterNot(f => leftMapped.contains(normalize(f.name)))
+636:           .foreach { f =>
+637:             newFields += f
+638:           }
+639: 
+640:         StructType(newFields.toArray)
+641:       })
+642: 
+643:   private def mergeInternal(
+644:       left: DataType,
+645:       right: DataType,
+646:       mergeStruct: (StructType, StructType) => StructType): DataType =
+647:     (left, right) match {
+648:       case (
+649:             ArrayType(leftElementType, leftContainsNull),
+650:             ArrayType(rightElementType, rightContainsNull)) =>
+651:         ArrayType(
+652:           mergeInternal(leftElementType, rightElementType, mergeStruct),
+653:           leftContainsNull || rightContainsNull)
+654: 
+655:       case (
+656:             MapType(leftKeyType, leftValueType, leftContainsNull),
+657:             MapType(rightKeyType, rightValueType, rightContainsNull)) =>
+658:         MapType(
+659:           mergeInternal(leftKeyType, rightKeyType, mergeStruct),
+660:           mergeInternal(leftValueType, rightValueType, mergeStruct),
+661:           leftContainsNull || rightContainsNull)
+662: 
+663:       case (s1: StructType, s2: StructType) => mergeStruct(s1, s2)
+664: 
+665:       case (
+666:             DecimalType.Fixed(leftPrecision, leftScale),
+667:             DecimalType.Fixed(rightPrecision, rightScale)) =>
+668:         if (leftScale == rightScale) {
+669:           DecimalType(leftPrecision.max(rightPrecision), leftScale)
+670:         } else {
+671:           throw DataTypeErrors.cannotMergeDecimalTypesWithIncompatibleScaleError(
+672:             leftScale,
+673:             rightScale)
+674:         }
+675: 
+676:       case (leftUdt: UserDefinedType[_], rightUdt: UserDefinedType[_])
+677:           if leftUdt.userClass == rightUdt.userClass =>
+678:         leftUdt
+679: 
+680:       case (YearMonthIntervalType(lstart, lend), YearMonthIntervalType(rstart, rend)) =>
+681:         YearMonthIntervalType(Math.min(lstart, rstart).toByte, Math.max(lend, rend).toByte)
+682: 
+683:       case (DayTimeIntervalType(lstart, lend), DayTimeIntervalType(rstart, rend)) =>
+684:         DayTimeIntervalType(Math.min(lstart, rstart).toByte, Math.max(lend, rend).toByte)
+685: 
+686:       case (leftType, rightType) if leftType == rightType =>
+687:         leftType
+688: 
+689:       case _ =>
+690:         throw DataTypeErrors.cannotMergeIncompatibleDataTypesError(left, right)

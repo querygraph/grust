@@ -1,0 +1,18 @@
+271:     let data_type = match parsed {
+272:         spec::DataType::Time { precision } => {
+273:             if kind != Kind::Long {
+274:                 return Err(invalid(
+275:                     column,
+276:                     format!("TIME annotation requires LONG storage, found {kind:?}"),
+277:                 ));
+278:             }
+279:             let time = spec::SparkTimeMetadata::try_new(precision)
+280:                 .map_err(|error| invalid(column, error))?;
+281:             metadata.insert(
+282:                 spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
+283:                 time.to_json().map_err(|error| invalid(column, error))?,
+284:             );
+285:             catalog_type = format!("time({precision})");
+286:             // Spark stores nanoseconds at every declared precision. A string
+287:             // cast to TIME(0) can retain fractions; preserve those stored bits.
+288:             DataType::Time64(TimeUnit::Nanosecond)

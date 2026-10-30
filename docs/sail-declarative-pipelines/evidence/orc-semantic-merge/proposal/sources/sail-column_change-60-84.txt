@@ -1,0 +1,25 @@
+60: pub fn validate_field_names(fields: &[FieldRef], case_sensitive: bool) -> Result<()> {
+61:     let mut names = std::collections::HashSet::new();
+62:     for field in fields {
+63:         let name = if case_sensitive {
+64:             field.name().clone()
+65:         } else {
+66:             field.name().to_lowercase()
+67:         };
+68:         if !names.insert(name) {
+69:             return plan_err!("Column '{}' already exists", field.name());
+70:         }
+71:         validate_type(field.data_type(), case_sensitive)?;
+72:     }
+73:     Ok(())
+74: }
+75: 
+76: fn validate_type(ty: &DataType, case_sensitive: bool) -> Result<()> {
+77:     match ty {
+78:         DataType::Struct(fields) => validate_field_names(fields, case_sensitive),
+79:         DataType::List(field) | DataType::LargeList(field) | DataType::Map(field, _) => {
+80:             validate_type(field.data_type(), case_sensitive)
+81:         }
+82:         _ => Ok(()),
+83:     }
+84: }

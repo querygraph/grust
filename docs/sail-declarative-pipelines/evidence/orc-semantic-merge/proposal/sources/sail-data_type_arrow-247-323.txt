@@ -1,0 +1,77 @@
+247:             adt::DataType::Time32(adt::TimeUnit::Second) => Kind::Time(sdt::Time {
+248:                 precision: Some(0),
+249:                 type_variation_reference: 0,
+250:             }),
+251:             adt::DataType::Time32(adt::TimeUnit::Millisecond) => Kind::Time(sdt::Time {
+252:                 precision: Some(3),
+253:                 type_variation_reference: 0,
+254:             }),
+255:             adt::DataType::Time64(adt::TimeUnit::Microsecond) => Kind::Time(sdt::Time {
+256:                 precision: Some(6),
+257:                 type_variation_reference: 0,
+258:             }),
+259:             adt::DataType::Time64(adt::TimeUnit::Nanosecond) => return Err(error(&data_type)),
+260:             adt::DataType::Time32(_) | adt::DataType::Time64(_) => return Err(error(&data_type)),
+261:             adt::DataType::Interval(adt::IntervalUnit::MonthDayNano) => {
+262:                 Kind::CalendarInterval(sdt::CalendarInterval::default())
+263:             }
+264:             adt::DataType::Interval(adt::IntervalUnit::YearMonth) => {
+265:                 Kind::YearMonthInterval(sdt::YearMonthInterval {
+266:                     start_field: None,
+267:                     end_field: None,
+268:                     type_variation_reference: 0,
+269:                 })
+270:             }
+271:             adt::DataType::Interval(adt::IntervalUnit::DayTime) => {
+272:                 Kind::DayTimeInterval(sdt::DayTimeInterval {
+273:                     start_field: None,
+274:                     end_field: None,
+275:                     type_variation_reference: 0,
+276:                 })
+277:             }
+278:             adt::DataType::Duration(adt::TimeUnit::Microsecond) => {
+279:                 Kind::DayTimeInterval(sdt::DayTimeInterval {
+280:                     start_field: None,
+281:                     end_field: None,
+282:                     type_variation_reference: 0,
+283:                 })
+284:             }
+285:             adt::DataType::Duration(
+286:                 adt::TimeUnit::Second | adt::TimeUnit::Millisecond | adt::TimeUnit::Nanosecond,
+287:             ) => return Err(error(&data_type)),
+288:             adt::DataType::List(field)
+289:             | adt::DataType::FixedSizeList(field, _)
+290:             | adt::DataType::LargeList(field)
+291:             | adt::DataType::ListView(field)
+292:             | adt::DataType::LargeListView(field) => {
+293:                 let field = sdt::StructField::try_from(field.as_ref().clone())?;
+294:                 Kind::Array(Box::new(sdt::Array {
+295:                     element_type: field.data_type.map(Box::new),
+296:                     contains_null: field.nullable,
+297:                     type_variation_reference: 0,
+298:                 }))
+299:             }
+300:             adt::DataType::Struct(fields) => Kind::Struct(sdt::Struct {
+301:                 fields: fields
+302:                     .into_iter()
+303:                     .map(|f| f.as_ref().clone().try_into())
+304:                     .collect::<SparkResult<Vec<sdt::StructField>>>()?,
+305:                 type_variation_reference: 0,
+306:             }),
+307:             adt::DataType::Map(ref field, ref _keys_sorted) => {
+308:                 let field = sdt::StructField::try_from(field.as_ref().clone())?;
+309:                 let Some(DataType {
+310:                     kind: Some(Kind::Struct(sdt::Struct { fields, .. })),
+311:                 }) = field.data_type
+312:                 else {
+313:                     return Err(error(&data_type));
+314:                 };
+315:                 let [key_field, value_field] = fields.as_slice() else {
+316:                     return Err(error(&data_type));
+317:                 };
+318:                 Kind::Map(Box::new(sdt::Map {
+319:                     key_type: key_field.data_type.clone().map(Box::new),
+320:                     value_type: value_field.data_type.clone().map(Box::new),
+321:                     value_contains_null: value_field.nullable,
+322:                     type_variation_reference: 0,
+323:                 }))

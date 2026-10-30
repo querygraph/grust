@@ -1423,3 +1423,7 @@ with no code or runtime-count change; documentation gates remain parent-owned.
 ### Listing inference case context (2026-10-30T01:12:57.301049+00:00)
 
 [Sail `18b1eed311`](evidence/listing-inference-case/README.md) passes 202 data-source tests, formatting and strict Clippy. Captured read policy reaches ordinary, empty-fallback and explicit physical inference independently of SQL identifier normalization. No public runtime verdict.
+
+## ORC semantic merge qualification
+
+Recorded: 2026-10-30T01:22:08.518358+00:00. [Sail `1462cc9c92`](evidence/orc-semantic-merge/README.md) adds the focused Arrow merger below Connect/data-source, preserving TIME/interval semantics and qualified root/nested case behavior. Existing pipeline normalization stays unchanged. Formatting, strict Clippy and 76 common-datafusion tests pass, including ten new cases. Final duplicate validation remains independent. Public format integration and full SDP acceptance remain open.

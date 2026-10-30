@@ -1,0 +1,35 @@
+628: impl SparkIntervalMetadata {
+629:     pub fn try_new(
+630:         interval_unit: IntervalUnit,
+631:         start_field: Option<IntervalFieldType>,
+632:         end_field: Option<IntervalFieldType>,
+633:     ) -> CommonResult<Option<Self>> {
+634:         let (default_start, default_end) = match interval_unit {
+635:             IntervalUnit::YearMonth => (IntervalFieldType::Year, IntervalFieldType::Month),
+636:             IntervalUnit::DayTime => (IntervalFieldType::Day, IntervalFieldType::Second),
+637:             IntervalUnit::MonthDayNano => return Ok(None),
+638:         };
+639:         let has_explicit_start = start_field.is_some();
+640:         let start_field = start_field.unwrap_or(default_start);
+641:         let end_field = end_field.unwrap_or(if has_explicit_start {
+642:             start_field
+643:         } else {
+644:             default_end
+645:         });
+646:         if start_field > end_field {
+647:             return Err(CommonError::invalid(format!(
+648:                 "interval start field {start_field:?} must not follow end field {end_field:?}"
+649:             )));
+650:         }
+651:         let metadata = match interval_unit {
+652:             IntervalUnit::YearMonth => Self::YearMonth {
+653:                 start_field: start_field.try_into()?,
+654:                 end_field: end_field.try_into()?,
+655:             },
+656:             IntervalUnit::DayTime => Self::DayTime {
+657:                 start_field: start_field.try_into()?,
+658:                 end_field: end_field.try_into()?,
+659:             },
+660:             IntervalUnit::MonthDayNano => unreachable!(),
+661:         };
+662:         Ok(Some(metadata.validate()?))

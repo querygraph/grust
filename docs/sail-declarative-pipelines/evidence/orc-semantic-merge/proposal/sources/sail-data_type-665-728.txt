@@ -1,0 +1,64 @@
+665:     pub fn from_json(value: &str) -> CommonResult<Self> {
+666:         serde_json::from_str::<Self>(value)
+667:             .map_err(|error| CommonError::invalid(format!("Spark interval metadata: {error}")))?
+668:             .validate()
+669:     }
+670: 
+671:     pub fn to_json(self) -> CommonResult<String> {
+672:         let metadata = self.validate()?;
+673:         serde_json::to_string(&metadata)
+674:             .map_err(|error| CommonError::internal(format!("Spark interval metadata: {error}")))
+675:     }
+676: 
+677:     pub fn interval_unit(self) -> IntervalUnit {
+678:         match self {
+679:             Self::YearMonth { .. } => IntervalUnit::YearMonth,
+680:             Self::DayTime { .. } => IntervalUnit::DayTime,
+681:         }
+682:     }
+683: 
+684:     pub fn start_field(self) -> IntervalFieldType {
+685:         match self {
+686:             Self::YearMonth { start_field, .. } => start_field.into(),
+687:             Self::DayTime { start_field, .. } => start_field.into(),
+688:         }
+689:     }
+690: 
+691:     pub fn end_field(self) -> IntervalFieldType {
+692:         match self {
+693:             Self::YearMonth { end_field, .. } => end_field.into(),
+694:             Self::DayTime { end_field, .. } => end_field.into(),
+695:         }
+696:     }
+697: 
+698:     pub fn wider(self, other: Self) -> Option<Self> {
+699:         match (self, other) {
+700:             (
+701:                 Self::YearMonth {
+702:                     start_field: left_start,
+703:                     end_field: left_end,
+704:                 },
+705:                 Self::YearMonth {
+706:                     start_field: right_start,
+707:                     end_field: right_end,
+708:                 },
+709:             ) => Some(Self::YearMonth {
+710:                 start_field: left_start.min(right_start),
+711:                 end_field: left_end.max(right_end),
+712:             }),
+713:             (
+714:                 Self::DayTime {
+715:                     start_field: left_start,
+716:                     end_field: left_end,
+717:                 },
+718:                 Self::DayTime {
+719:                     start_field: right_start,
+720:                     end_field: right_end,
+721:                 },
+722:             ) => Some(Self::DayTime {
+723:                 start_field: left_start.min(right_start),
+724:                 end_field: left_end.max(right_end),
+725:             }),
+726:             _ => None,
+727:         }
+728:     }

@@ -1,0 +1,59 @@
+55: /// A trait for format-specific logic for reading listing files.
+56: #[async_trait]
+57: pub trait ReadFormat: Debug + Send + Sync + 'static {
+58:     /// Select files supplied to schema, compression, and partition inference.
+59:     /// Formats retain the first-ten-nonempty-files-per-URL default unless they opt in.
+60:     fn schema_inference_file_selection(&self) -> ListingFileSelection {
+61:         ListingFileSelection::Sample
+62:     }
+63: 
+64:     async fn infer_compression(
+65:         &self,
+66:         ctx: &dyn Session,
+67:         files: &[ListingFileSample<'_>],
+68:     ) -> Result<CompressionTypeVariant>;
+69: 
+70:     /// Infer the file schema from the given files.
+71:     async fn infer_schema(
+72:         &self,
+73:         ctx: &dyn Session,
+74:         files: &[ListingFileSample<'_>],
+75:         compression: CompressionTypeVariant,
+76:     ) -> Result<SchemaRef>;
+77: 
+78:     /// Prepare a supplied schema before partition columns are separated.
+79:     ///
+80:     /// The default retains legacy name reconciliation and physical-schema
+81:     /// inference. An empty schema returns `None`, requesting ordinary inference.
+82:     /// Formats can instead retain an explicit schema (including an empty one)
+83:     /// and defer per-file compatibility checks by returning `Some` without a
+84:     /// physical schema. This hook is not called when no schema was supplied.
+85:     async fn prepare_explicit_schema(
+86:         &self,
+87:         ctx: &dyn Session,
+88:         schema: Schema,
+89:         files: &[ListingFileSample<'_>],
+90:         compression: CompressionTypeVariant,
+91:         read_case_sensitive: bool,
+92:     ) -> Result<Option<PreparedExplicitSchema>> {
+93:         if schema.fields().is_empty() {
+94:             return Ok(None);
+95:         }
+96:         let physical = if self.requires_explicit_schema_validation() {
+97:             Some(self.infer_schema(ctx, files, compression).await?)
+98:         } else if read_case_sensitive {
+99:             None
+100:         } else {
+101:             self.infer_schema(ctx, files, compression).await.ok()
+102:         };
+103:         // Reconcile names so readers and file statistics that resolve columns
+104:         // by exact name can find the requested case-insensitive columns.
+105:         let schema = if read_case_sensitive {
+106:             schema
+107:         } else if let Some(physical) = &physical {
+108:             reconcile_schema_names_case_insensitive(schema, physical)?
+109:         } else {
+110:             // Keep the user schema when optional physical inference fails.
+111:             schema
+112:         };
+113:         Ok(Some(PreparedExplicitSchema { schema, physical }))

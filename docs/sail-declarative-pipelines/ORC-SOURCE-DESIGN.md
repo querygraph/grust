@@ -609,3 +609,7 @@ Recorded: 2026-10-30T01:10:24.291589+00:00. [Native `133c0c5ea1` and Sail `c38ef
 ## Supply captured case policy to inference
 
 Recorded: 2026-10-30T01:12:57.301049+00:00. [Sail `18b1eed311`](evidence/listing-inference-case/README.md) adds the captured read-case flag to ReadFormat inference and forwards it through every shared inference path. Existing formats accept an unused argument without changing behavior. Formatting, strict Clippy and 202 data-source tests pass. ORC can now use the same authoritative policy for inference and scan; its public factory remains a separate unit.
+
+## Shared semantic schema merge
+
+Recorded: 2026-10-30T01:22:08.518358+00:00. [Sail `1462cc9c92`](evidence/orc-semantic-merge/README.md) adds the focused Arrow merger below Connect/data-source, preserving TIME/interval semantics and qualified root/nested case behavior. Existing pipeline normalization stays unchanged. Formatting, strict Clippy and 76 common-datafusion tests pass, including ten new cases. Final duplicate validation remains independent. Public format integration and full SDP acceptance remain open.

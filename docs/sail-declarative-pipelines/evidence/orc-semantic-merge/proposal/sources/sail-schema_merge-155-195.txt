@@ -1,0 +1,41 @@
+155:     fn time_field(name: &str, precision: i32, nullable: bool) -> SparkResult<adt::Field> {
+156:         Ok(adt::Field::new(
+157:             name,
+158:             adt::DataType::Time64(adt::TimeUnit::Nanosecond),
+159:             nullable,
+160:         )
+161:         .with_metadata(HashMap::from([(
+162:             spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
+163:             spec::SparkTimeMetadata::try_new(precision)?.to_json()?,
+164:         )])))
+165:     }
+166: 
+167:     fn fields(field: adt::Field) -> SparkResult<spec::Fields> {
+168:         // Use the same Arrow -> Connect -> spec normalization as schema::spark_fields.
+169:         Ok(vec![spec::FieldRef::try_from(StructField::try_from(field)?)?].into())
+170:     }
+171: 
+172:     // Spark 4.2.1 StructType.merge preserves equal TIME precision and merges nullability;
+173:     // different precisions are incompatible despite sharing Arrow nanosecond storage.
+174:     #[test]
+175:     fn time_merge_preserves_precision_and_combines_nullability() -> SparkResult<()> {
+176:         let left = fields(time_field("clock", 3, false)?)?;
+177:         let right = fields(time_field("clock", 3, true)?)?;
+178: 
+179:         assert_eq!(merge_fields(&left, &right)?, right);
+180:         assert_eq!(merge_fields(&right, &left)?, right);
+181:         assert_eq!(right[0].data_type, spec::DataType::Time { precision: 3 });
+182:         Ok(())
+183:     }
+184: 
+185:     #[test]
+186:     fn time_merge_rejects_different_precision_with_identical_arrow_storage() -> SparkResult<()> {
+187:         for (left_precision, right_precision) in [(0, 3), (3, 6), (1, 2)] {
+188:             let left = time_field("clock", left_precision, false)?;
+189:             let right = time_field("clock", right_precision, true)?;
+190:             assert_eq!(left.data_type(), right.data_type());
+191: 
+192:             let left = fields(left)?;
+193:             let right = fields(right)?;
+194:             assert!(merge_fields(&left, &right).is_err());
+195:             assert!(merge_fields(&right, &left).is_err());

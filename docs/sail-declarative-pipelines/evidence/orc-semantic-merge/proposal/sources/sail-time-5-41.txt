@@ -1,0 +1,37 @@
+5: pub const SAIL_SPARK_TIME_METADATA_KEY: &str = "SAIL::spark::time";
+6: 
+7: /// Spark's declared TIME precision, independent of Arrow's storage resolution.
+8: ///
+9: /// Fields carrying this metadata use Arrow Time64(Nanosecond). The precision
+10: /// describes the Spark type; it does not request rounding or truncation of data.
+11: #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+12: #[serde(deny_unknown_fields)]
+13: pub struct SparkTimeMetadata {
+14:     precision: i32,
+15: }
+16: 
+17: impl SparkTimeMetadata {
+18:     pub fn try_new(precision: i32) -> CommonResult<Self> {
+19:         if !(0..=6).contains(&precision) {
+20:             return Err(CommonError::invalid(format!(
+21:                 "Spark TIME precision must be between 0 and 6: {precision}"
+22:             )));
+23:         }
+24:         Ok(Self { precision })
+25:     }
+26: 
+27:     pub fn precision(self) -> i32 {
+28:         self.precision
+29:     }
+30: 
+31:     pub fn from_json(value: &str) -> CommonResult<Self> {
+32:         let metadata = serde_json::from_str::<Self>(value)
+33:             .map_err(|error| CommonError::invalid(format!("Spark TIME metadata: {error}")))?;
+34:         Self::try_new(metadata.precision)
+35:     }
+36: 
+37:     pub fn to_json(self) -> CommonResult<String> {
+38:         let metadata = Self::try_new(self.precision)?;
+39:         serde_json::to_string(&metadata)
+40:             .map_err(|error| CommonError::internal(format!("Spark TIME metadata: {error}")))
+41:     }

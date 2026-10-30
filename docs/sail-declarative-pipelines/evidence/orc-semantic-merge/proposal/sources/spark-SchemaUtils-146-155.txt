@@ -1,0 +1,10 @@
+146:   def checkColumnNameDuplication(columnNames: Seq[String], caseSensitiveAnalysis: Boolean): Unit = {
+147:     // scalastyle:off caselocale
+148:     val names = if (caseSensitiveAnalysis) columnNames else columnNames.map(_.toLowerCase)
+149:     // scalastyle:on caselocale
+150:     if (names.distinct.length != names.length) {
+151:       val columnName = names.groupBy(identity).toSeq.sortBy(_._1).collectFirst {
+152:         case (x, ys) if ys.length > 1 => x
+153:       }.get
+154:       throw QueryCompilationErrors.columnAlreadyExistsError(columnName)
+155:     }

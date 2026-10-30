@@ -1,0 +1,20 @@
+57: /// Merges per-file inferred schemas, normalizing each one before the merge.
+58: ///
+59: /// [`Schema::try_merge`] rejects fields whose data types differ, so the normalization has to
+60: /// happen before the merge rather than after it. A directory holding the same column as
+61: /// `timestamp[ms]` in one file and `timestamp[us]` in another would otherwise fail to merge,
+62: /// even though Spark represents both as a single timestamp type, and that failure would occur
+63: /// before [`rewrite_unsupported_fields`] ever ran.
+64: pub fn try_merge_normalized(
+65:     schemas: impl IntoIterator<Item = Schema>,
+66:     nanoseconds: NanosecondTimestamps,
+67: ) -> Result<Schema> {
+68:     Ok(Schema::try_merge(schemas.into_iter().map(|schema| {
+69:         normalize_unsupported_fields(&schema, nanoseconds)
+70:     }))?)
+71: }
+72: 
+73: fn normalize_unsupported_fields(schema: &Schema, nanoseconds: NanosecondTimestamps) -> Schema {
+74:     // TODO: Apply Spark-compatible type normalization recursively inside structs, lists, and
+75:     // maps. Only top-level fields are normalized today, so nested millisecond timestamps remain
+76:     // unsupported even though Spark accepts them (SPARK recurses through nested timestamp leaves).

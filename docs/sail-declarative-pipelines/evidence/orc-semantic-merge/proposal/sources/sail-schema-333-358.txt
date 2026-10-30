@@ -1,0 +1,26 @@
+333:         spec::DataType::Interval {
+334:             interval_unit,
+335:             start_field,
+336:             end_field,
+337:         } if (interval_unit == spec::IntervalUnit::YearMonth && kind == Kind::Int)
+338:             || (interval_unit == spec::IntervalUnit::DayTime && kind == Kind::Long) =>
+339:         {
+340:             let interval =
+341:                 spec::SparkIntervalMetadata::try_new(interval_unit, start_field, end_field)
+342:                     .map_err(|error| invalid(column, error))?
+343:                     .ok_or_else(|| invalid(column, "unsupported interval annotation"))?;
+344:             metadata.insert(
+345:                 spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
+346:                 interval.to_json().map_err(|error| invalid(column, error))?,
+347:             );
+348:             let start = interval_field_name(interval.start_field());
+349:             let end = interval_field_name(interval.end_field());
+350:             catalog_type = if start == end {
+351:                 format!("interval {start}")
+352:             } else {
+353:                 format!("interval {start} to {end}")
+354:             };
+355:             match interval_unit {
+356:                 spec::IntervalUnit::YearMonth => DataType::Interval(IntervalUnit::YearMonth),
+357:                 _ => DataType::Duration(TimeUnit::Microsecond),
+358:             }

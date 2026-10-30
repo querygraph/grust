@@ -1,0 +1,19 @@
+51: /// Infer Spark logical types from a validated ORC footer.
+52: ///
+53: /// Spark 4.2.1 OrcUtils.toCatalystSchema/orcTypeDescription establish the physical
+54: /// encodings and Catalyst annotations. Field nullability is recursive; map keys
+55: /// remain non-null. Container names follow Sail's logical schema; the reader
+56: /// adapts native ORC container fields by position. Callers reading untrusted files
+57: /// must bound metadata bytes and schema depth through `MetadataReadOptions`.
+58: pub fn infer_schema(metadata: &FileMetadata, session_timezone: &str) -> Result<SchemaRef> {
+59:     let root = convert(metadata.column_types(), 0, session_timezone)?;
+60:     let DataType::Struct(fields) = root.data_type else {
+61:         return Err(invalid(0, "expected a STRUCT root"));
+62:     };
+63:     let mut schema_metadata = HashMap::new();
+64:     if let Some(version) = metadata.user_custom_metadata().get(SPARK_VERSION) {
+65:         let version = std::str::from_utf8(version)
+66:             .map_err(|_| invalid(0, "Spark version metadata is not UTF-8"))?;
+67:         schema_metadata.insert(SPARK_VERSION.to_string(), version.to_string());
+68:     }
+69:     Ok(Arc::new(Schema::new_with_metadata(fields, schema_metadata)))

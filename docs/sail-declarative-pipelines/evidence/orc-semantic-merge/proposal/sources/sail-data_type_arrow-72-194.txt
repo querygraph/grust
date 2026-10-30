@@ -1,0 +1,123 @@
+72: impl TryFrom<adt::Field> for sdt::StructField {
+73:     type Error = SparkError;
+74: 
+75:     fn try_from(field: adt::Field) -> SparkResult<sdt::StructField> {
+76:         let udt_metadata = field.metadata().get(spec::SAIL_SPARK_UDT_METADATA_KEY);
+77:         let extension_type_name = field.extension_type_name();
+78: 
+79:         let data_type = if let Some(metadata) =
+80:             field.metadata().get(spec::SAIL_SPARK_TIME_METADATA_KEY)
+81:         {
+82:             let metadata = spec::SparkTimeMetadata::from_json(metadata)?;
+83:             spark_time_data_type(field.data_type(), metadata)?
+84:         } else if let Some(udt_metadata) = udt_metadata {
+85:             let udt_metadata: spec::SparkUdtMetadata = serde_json::from_str(udt_metadata)?;
+86:             DataType {
+87:                 kind: Some(sdt::Kind::Udt(Box::new(sdt::Udt {
+88:                     r#type: "udt".to_string(),
+89:                     jvm_class: udt_metadata.jvm_class,
+90:                     python_class: udt_metadata.python_class,
+91:                     serialized_python_class: udt_metadata.serialized_python_class,
+92:                     sql_type: Some(Box::new(field.data_type().clone().try_into()?)),
+93:                 }))),
+94:             }
+95:         } else if extension_type_name == Some(GeoArrowWkbType::NAME) {
+96:             let ext = field.try_extension_type::<GeoArrowWkbType>()?;
+97:             let meta: SparkGeoMetadata = ext.metadata.try_into()?;
+98: 
+99:             match meta.kind {
+100:                 SparkGeoKind::Geography => DataType {
+101:                     kind: Some(sdt::Kind::Geography(sdt::Geography {
+102:                         srid: meta.srid,
+103:                         type_variation_reference: 0,
+104:                     })),
+105:                 },
+106:                 SparkGeoKind::Geometry => DataType {
+107:                     kind: Some(sdt::Kind::Geometry(sdt::Geometry {
+108:                         srid: meta.srid,
+109:                         type_variation_reference: 0,
+110:                     })),
+111:                 },
+112:             }
+113:         } else if is_variant_storage_field(&field) {
+114:             DataType {
+115:                 kind: Some(sdt::Kind::Variant(sdt::Variant {
+116:                     type_variation_reference: 0,
+117:                 })),
+118:             }
+119:         } else if let Some(metadata) = field.metadata().get(spec::SAIL_SPARK_INTERVAL_METADATA_KEY)
+120:         {
+121:             let metadata = spec::SparkIntervalMetadata::from_json(metadata)?;
+122:             spark_interval_data_type(field.data_type(), metadata)?
+123:         } else {
+124:             field.data_type().clone().try_into()?
+125:         };
+126:         Ok(sdt::StructField {
+127:             name: field.name().clone(),
+128:             data_type: Some(data_type),
+129:             nullable: field.is_nullable(),
+130:             metadata: field
+131:                 .metadata()
+132:                 .get(spec::SPARK_METADATA_JSON_KEY)
+133:                 .cloned()
+134:                 .or_else(|| {
+135:                     field
+136:                         .metadata()
+137:                         .get("comment")
+138:                         .map(|comment| serde_json::json!({ "comment": comment }).to_string())
+139:                 }),
+140:         })
+141:     }
+142: }
+143: 
+144: fn spark_time_data_type(
+145:     arrow_type: &adt::DataType,
+146:     metadata: spec::SparkTimeMetadata,
+147: ) -> SparkResult<DataType> {
+148:     if arrow_type != &adt::DataType::Time64(adt::TimeUnit::Nanosecond) {
+149:         return Err(SparkError::invalid(format!(
+150:             "Spark TIME metadata requires Arrow Time64(Nanosecond), found {arrow_type}"
+151:         )));
+152:     }
+153:     Ok(DataType {
+154:         kind: Some(sdt::Kind::Time(sdt::Time {
+155:             precision: Some(metadata.precision()),
+156:             type_variation_reference: 0,
+157:         })),
+158:     })
+159: }
+160: 
+161: fn spark_interval_data_type(
+162:     arrow_type: &adt::DataType,
+163:     metadata: spec::SparkIntervalMetadata,
+164: ) -> SparkResult<DataType> {
+165:     let interval_unit = metadata.interval_unit();
+166:     let kind = match metadata {
+167:         spec::SparkIntervalMetadata::YearMonth {
+168:             start_field,
+169:             end_field,
+170:         } if arrow_type == &adt::DataType::Interval(adt::IntervalUnit::YearMonth) => {
+171:             sdt::Kind::YearMonthInterval(sdt::YearMonthInterval {
+172:                 start_field: Some(start_field as i32),
+173:                 end_field: Some(end_field as i32),
+174:                 type_variation_reference: 0,
+175:             })
+176:         }
+177:         spec::SparkIntervalMetadata::DayTime {
+178:             start_field,
+179:             end_field,
+180:         } if arrow_type == &adt::DataType::Duration(adt::TimeUnit::Microsecond) => {
+181:             sdt::Kind::DayTimeInterval(sdt::DayTimeInterval {
+182:                 start_field: Some(start_field as i32),
+183:                 end_field: Some(end_field as i32),
+184:                 type_variation_reference: 0,
+185:             })
+186:         }
+187:         _ => {
+188:             return Err(SparkError::invalid(format!(
+189:                 "Spark interval metadata {:?} does not match Arrow type {arrow_type}",
+190:                 interval_unit
+191:             )));
+192:         }
+193:     };
+194:     Ok(DataType { kind: Some(kind) })

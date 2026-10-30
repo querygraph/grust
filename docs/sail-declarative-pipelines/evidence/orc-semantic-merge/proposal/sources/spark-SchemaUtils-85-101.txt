@@ -1,0 +1,17 @@
+85:   def checkSchemaColumnNameDuplication(
+86:       schema: DataType,
+87:       caseSensitiveAnalysis: Boolean = false): Unit = {
+88:     schema match {
+89:       case ArrayType(elementType, _) =>
+90:         checkSchemaColumnNameDuplication(elementType, caseSensitiveAnalysis)
+91:       case MapType(keyType, valueType, _) =>
+92:         checkSchemaColumnNameDuplication(keyType, caseSensitiveAnalysis)
+93:         checkSchemaColumnNameDuplication(valueType, caseSensitiveAnalysis)
+94:       case structType: StructType =>
+95:         val fields = structType.fields
+96:         checkColumnNameDuplication(fields.map(_.name).toImmutableArraySeq, caseSensitiveAnalysis)
+97:         fields.foreach { field =>
+98:           checkSchemaColumnNameDuplication(field.dataType, caseSensitiveAnalysis)
+99:         }
+100:       case _ =>
+101:     }

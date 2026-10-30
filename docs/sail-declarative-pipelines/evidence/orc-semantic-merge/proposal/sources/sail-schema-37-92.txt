@@ -1,0 +1,56 @@
+37: pub(super) fn infer(
+38:     ctx: &SessionContext,
+39:     output: &Output,
+40:     plans: &[LogicalPlan],
+41: ) -> SparkResult<Schema> {
+42:     let inferred = plans
+43:         .iter()
+44:         .try_fold(spec::Fields::empty(), |fields, plan| {
+45:             let result = spark_fields(plan.schema().as_arrow())
+46:                 .and_then(|next| merge_fields(&fields, &next));
+47:             result.map_err(|error| {
+48:                 analysis(
+49:                     "UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA",
+50:                     format!("{}: {error}", quoted(&output.name)),
+51:                 )
+52:             })
+53:         })?;
+54:     let resolver = PlanResolver::new(ctx, ctx.extension::<SparkSession>()?.plan_config()?);
+55:     let Some(schema) = &output.schema else {
+56:         return arrow_schema(&resolver, inferred);
+57:     };
+58:     let declared = arrow_schema(&resolver, schema.fields.clone())?;
+59:     let declared_fields = spark_fields(&declared)?;
+60:     let merged = merge_fields(&declared_fields, &inferred).map_err(|error| {
+61:         analysis(
+62:             "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+63:             format!(
+64:                 "'{}' has a user-specified schema that is incompatible: specified {declared:?}, inferred {inferred:?}: {error}",
+65:                 output.name.join(".")
+66:             ),
+67:         )
+68:     })?;
+69:     // Spark validates the merged schema against the declaration after schema
+70:     // inference. A successful merge alone still admits undeclared columns or
+71:     // weaker nullability constraints.
+72:     if merged != declared_fields {
+73:         return Err(analysis(
+74:             "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+75:             format!(
+76:                 "'{}' has a user-specified schema that is incompatible: specified {declared:?}, inferred {inferred:?}",
+77:                 output.name.join(".")
+78:             ),
+79:         ));
+80:     }
+81:     Ok(declared)
+82: }
+83: 
+84: fn spark_fields(schema: &Schema) -> SparkResult<spec::Fields> {
+85:     // Reuse Spark's schema conversion to normalize Arrow representations such
+86:     // as Utf8View and retain semantic types carried by extension metadata.
+87:     schema
+88:         .fields()
+89:         .iter()
+90:         .map(|field| spec::FieldRef::try_from(StructField::try_from(field.as_ref().clone())?))
+91:         .collect()
+92: }

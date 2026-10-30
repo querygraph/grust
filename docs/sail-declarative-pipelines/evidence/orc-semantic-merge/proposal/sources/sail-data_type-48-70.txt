@@ -1,0 +1,23 @@
+48: impl TryFrom<sdt::StructField> for spec::FieldRef {
+49:     type Error = SparkError;
+50: 
+51:     fn try_from(field: sdt::StructField) -> SparkResult<spec::FieldRef> {
+52:         let sdt::StructField {
+53:             name,
+54:             data_type,
+55:             nullable,
+56:             metadata,
+57:         } = field;
+58:         let data_type = data_type.required("data type")?;
+59:         let data_type = spec::DataType::try_from(data_type)?;
+60:         let metadata = metadata
+61:             .filter(|m| !m.trim().is_empty())
+62:             .map(|m| vec![(spec::SPARK_METADATA_JSON_KEY.to_string(), m)])
+63:             .unwrap_or_default();
+64:         Ok(Arc::new(spec::Field {
+65:             name,
+66:             data_type,
+67:             nullable,
+68:             metadata,
+69:         }))
+70:     }

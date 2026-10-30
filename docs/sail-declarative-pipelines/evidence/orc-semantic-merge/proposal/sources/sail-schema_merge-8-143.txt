@@ -1,0 +1,136 @@
+8: /// Spark 4.2.1's SchemaMergingUtils delegates to StructType.merge. Field order
+9: /// and metadata come from the left schema; matching fields merge their types
+10: /// and nullability. Arrow's merge also merges metadata and promotes Null types,
+11: /// which would change the pipeline's declared-schema compatibility contract.
+12: pub(super) fn merge_fields(left: &spec::Fields, right: &spec::Fields) -> SparkResult<spec::Fields> {
+13:     let right_by_name: HashMap<_, _> = right.iter().map(|field| (&field.name, field)).collect();
+14:     let left_names: HashSet<_> = left.iter().map(|field| &field.name).collect();
+15:     let mut fields = Vec::with_capacity(left.len() + right.len());
+16:     for field in left {
+17:         let merged = match right_by_name.get(&field.name) {
+18:             Some(other) => Arc::new(spec::Field {
+19:                 data_type: merge_type(&field.data_type, &other.data_type)?,
+20:                 nullable: field.nullable || other.nullable,
+21:                 ..field.as_ref().clone()
+22:             }),
+23:             None => Arc::clone(field),
+24:         };
+25:         fields.push(merged);
+26:     }
+27:     fields.extend(
+28:         right
+29:             .iter()
+30:             .filter(|field| !left_names.contains(&field.name))
+31:             .cloned(),
+32:     );
+33:     Ok(fields.into())
+34: }
+35: 
+36: fn merge_type(left: &spec::DataType, right: &spec::DataType) -> SparkResult<spec::DataType> {
+37:     use spec::DataType;
+38: 
+39:     if left == right {
+40:         return Ok(left.clone());
+41:     }
+42:     Ok(match (left, right) {
+43:         (DataType::Struct { fields: left }, DataType::Struct { fields: right }) => {
+44:             DataType::Struct {
+45:                 fields: merge_fields(left, right)?,
+46:             }
+47:         }
+48:         (
+49:             DataType::List {
+50:                 data_type: left,
+51:                 nullable: left_nullable,
+52:             },
+53:             DataType::List {
+54:                 data_type: right,
+55:                 nullable: right_nullable,
+56:             },
+57:         ) => DataType::List {
+58:             data_type: Box::new(merge_type(left, right)?),
+59:             nullable: *left_nullable || *right_nullable,
+60:         },
+61:         (
+62:             DataType::Map {
+63:                 key_type: left_key,
+64:                 value_type: left_value,
+65:                 value_type_nullable: left_nullable,
+66:                 keys_sorted,
+67:             },
+68:             DataType::Map {
+69:                 key_type: right_key,
+70:                 value_type: right_value,
+71:                 value_type_nullable: right_nullable,
+72:                 ..
+73:             },
+74:         ) => DataType::Map {
+75:             key_type: Box::new(merge_type(left_key, right_key)?),
+76:             value_type: Box::new(merge_type(left_value, right_value)?),
+77:             value_type_nullable: *left_nullable || *right_nullable,
+78:             keys_sorted: *keys_sorted,
+79:         },
+80:         (
+81:             DataType::Decimal128 {
+82:                 precision: left_precision,
+83:                 scale: left_scale,
+84:             },
+85:             DataType::Decimal128 {
+86:                 precision: right_precision,
+87:                 scale: right_scale,
+88:             },
+89:         ) if left_scale == right_scale => DataType::Decimal128 {
+90:             precision: *left_precision.max(right_precision),
+91:             scale: *left_scale,
+92:         },
+93:         (
+94:             DataType::Interval {
+95:                 interval_unit: left_unit,
+96:                 start_field: left_start,
+97:                 end_field: left_end,
+98:             },
+99:             DataType::Interval {
+100:                 interval_unit: right_unit,
+101:                 start_field: right_start,
+102:                 end_field: right_end,
+103:             },
+104:         ) if left_unit == right_unit => {
+105:             let (default_start, default_end) = match left_unit {
+106:                 spec::IntervalUnit::YearMonth => (
+107:                     spec::IntervalFieldType::Year,
+108:                     spec::IntervalFieldType::Month,
+109:                 ),
+110:                 spec::IntervalUnit::DayTime => (
+111:                     spec::IntervalFieldType::Day,
+112:                     spec::IntervalFieldType::Second,
+113:                 ),
+114:                 spec::IntervalUnit::MonthDayNano => return incompatible(left, right),
+115:             };
+116:             let left_end = left_end.unwrap_or(left_start.unwrap_or(default_end));
+117:             let right_end = right_end.unwrap_or(right_start.unwrap_or(default_end));
+118:             DataType::Interval {
+119:                 interval_unit: *left_unit,
+120:                 start_field: Some(
+121:                     left_start
+122:                         .unwrap_or(default_start)
+123:                         .min(right_start.unwrap_or(default_start)),
+124:                 ),
+125:                 end_field: Some(left_end.max(right_end)),
+126:             }
+127:         }
+128:         (
+129:             DataType::UserDefined {
+130:                 jvm_class: Some(left_class),
+131:                 ..
+132:             },
+133:             DataType::UserDefined {
+134:                 jvm_class: Some(right_class),
+135:                 ..
+136:             },
+137:         ) if left_class == right_class => left.clone(),
+138:         _ => return incompatible(left, right),
+139:     })
+140: }
+141: 
+142: fn incompatible(left: &spec::DataType, right: &spec::DataType) -> SparkResult<spec::DataType> {
+143:     Err(SparkError::invalid(format!(

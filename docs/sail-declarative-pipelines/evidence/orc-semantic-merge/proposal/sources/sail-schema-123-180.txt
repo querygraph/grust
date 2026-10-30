@@ -1,0 +1,58 @@
+123:         Kind::Struct => {
+124:             let children = ty
+125:                 .subtypes
+126:                 .iter()
+127:                 .map(|&child| convert(types, child as usize, timezone))
+128:                 .collect::<Result<Vec<_>>>()?;
+129:             let has_char_varchar = children.iter().any(|child| child.has_char_varchar);
+130:             // Spark StructType.catalogString uses raw names, unlike .sql, which
+131:             // quotes identifiers. JSON serialization below handles JSON escaping.
+132:             let catalog_type = children
+133:                 .iter()
+134:                 .zip(&ty.field_names)
+135:                 .map(|(child, name)| format!("{name}:{}", child.catalog_type))
+136:                 .collect::<Vec<_>>()
+137:                 .join(",");
+138:             let fields = children
+139:                 .into_iter()
+140:                 .zip(&ty.field_names)
+141:                 .map(|(child, name)| child.into_field(name, true, column == 0))
+142:                 .collect::<Fields>();
+143:             LogicalType::new(DataType::Struct(fields), format!("struct<{catalog_type}>"))
+144:                 .with_char_varchar(has_char_varchar)
+145:         }
+146:         Kind::List => {
+147:             let child = convert(types, ty.subtypes[0] as usize, timezone)?;
+148:             let catalog_type = format!("array<{}>", child.catalog_type);
+149:             let has_char_varchar = child.has_char_varchar;
+150:             LogicalType::new(
+151:                 DataType::List(Arc::new(child.into_field(
+152:                     spec::SAIL_LIST_FIELD_NAME,
+153:                     true,
+154:                     false,
+155:                 ))),
+156:                 catalog_type,
+157:             )
+158:             .with_char_varchar(has_char_varchar)
+159:         }
+160:         Kind::Map => {
+161:             let key = convert(types, ty.subtypes[0] as usize, timezone)?;
+162:             let value = convert(types, ty.subtypes[1] as usize, timezone)?;
+163:             let catalog_type = format!("map<{},{}>", key.catalog_type, value.catalog_type);
+164:             let has_char_varchar = key.has_char_varchar || value.has_char_varchar;
+165:             let fields = vec![
+166:                 key.into_field(spec::SAIL_MAP_KEY_FIELD_NAME, false, false),
+167:                 value.into_field(spec::SAIL_MAP_VALUE_FIELD_NAME, true, false),
+168:             ];
+169:             LogicalType::new(
+170:                 DataType::Map(
+171:                     Arc::new(Field::new(
+172:                         spec::SAIL_MAP_FIELD_NAME,
+173:                         DataType::Struct(fields.into()),
+174:                         false,
+175:                     )),
+176:                     false,
+177:                 ),
+178:                 catalog_type,
+179:             )
+180:             .with_char_varchar(has_char_varchar)

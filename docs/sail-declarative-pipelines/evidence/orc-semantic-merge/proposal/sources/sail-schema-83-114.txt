@@ -1,0 +1,32 @@
+83: ) -> Schema {
+84:     Schema::new_with_metadata(
+85:         schema
+86:             .fields()
+87:             .iter()
+88:             .map(|field| {
+89:                 normalize_field_with_options(
+90:                     field,
+91:                     utf8_and_binary_to_large,
+92:                     large_to_utf8_and_binary,
+93:                 )
+94:             })
+95:             .collect::<Vec<_>>(),
+96:         schema.metadata().clone(),
+97:     )
+98: }
+99: 
+100: pub fn normalize_field_with_options(
+101:     field: &FieldRef,
+102:     utf8_and_binary_to_large: bool,
+103:     large_to_utf8_and_binary: bool,
+104: ) -> FieldRef {
+105:     Arc::new(field.as_ref().clone().with_data_type(normalize_data_type(
+106:         field.data_type(),
+107:         utf8_and_binary_to_large,
+108:         large_to_utf8_and_binary,
+109:     )))
+110: }
+111: 
+112: pub fn normalize_data_type(
+113:     data_type: &DataType,
+114:     utf8_and_binary_to_large: bool,

@@ -1,0 +1,8 @@
+176: fn arrow_schema(resolver: &PlanResolver<'_>, fields: spec::Fields) -> SparkResult<Schema> {
+177:     let data_type = resolver.resolve_data_type_for_plan(&spec::DataType::Struct { fields })?;
+178:     let DataType::Struct(fields) = data_type else {
+179:         return Err(SparkError::internal(
+180:             "resolved pipeline schema is not a struct",
+181:         ));
+182:     };
+183:     Ok(Schema::new(fields))

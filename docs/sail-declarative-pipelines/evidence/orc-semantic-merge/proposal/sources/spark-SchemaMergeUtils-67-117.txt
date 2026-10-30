@@ -1,0 +1,51 @@
+67:     val fileSourceOptions = new FileSourceOptions(CaseInsensitiveMap(parameters))
+68:     val ignoreCorruptFiles = fileSourceOptions.ignoreCorruptFiles
+69:     val ignoreMissingFiles = fileSourceOptions.ignoreMissingFiles
+70:     val caseSensitive = sparkSession.sessionState.conf.caseSensitiveAnalysis
+71: 
+72:     // Issues a Spark job to read Parquet/ORC schema in parallel. Propagate the session's SQL
+73:     // configs to the executors so that reading the schema stored in file metadata (which calls
+74:     // `DataType.fromJson`) observes session settings such as
+75:     // `spark.sql.udt.allowCreatingUDTFromString` instead of executor-side defaults.
+76:     val partiallyMergedSchemas =
+77:       SQLExecution.withSQLConfPropagated(sparkSession) {
+78:         sparkSession
+79:           .sparkContext
+80:           .parallelize(partialFileStatusInfo, numParallelism)
+81:           .mapPartitions { iterator =>
+82:             // Resembles fake `FileStatus`es with serialized path and length information.
+83:             val fakeFileStatuses = iterator.map { case (path, length) =>
+84:               new FileStatus(length, false, 0, 0, 0, 0, null, null, null, new Path(path))
+85:             }.toSeq
+86: 
+87:             val schemas = schemaReader(
+88:               fakeFileStatuses, serializedConf.value, ignoreCorruptFiles, ignoreMissingFiles)
+89: 
+90:             if (schemas.isEmpty) {
+91:               Iterator.empty
+92:             } else {
+93:               var mergedSchema = schemas.head
+94:               schemas.tail.foreach { schema =>
+95:                 try {
+96:                   mergedSchema = mergedSchema.merge(schema, caseSensitive)
+97:                 } catch { case cause: SparkException =>
+98:                   throw QueryExecutionErrors.failedMergingSchemaError(mergedSchema, schema, cause)
+99:                 }
+100:               }
+101:               Iterator.single(mergedSchema)
+102:             }
+103:           }.collect()
+104:       }
+105: 
+106:     if (partiallyMergedSchemas.isEmpty) {
+107:       None
+108:     } else {
+109:       var finalSchema = partiallyMergedSchemas.head
+110:       partiallyMergedSchemas.tail.foreach { schema =>
+111:         try {
+112:           finalSchema = finalSchema.merge(schema, caseSensitive)
+113:         } catch { case cause: SparkException =>
+114:           throw QueryExecutionErrors.failedMergingSchemaError(finalSchema, schema, cause)
+115:         }
+116:       }
+117:       Some(finalSchema)
