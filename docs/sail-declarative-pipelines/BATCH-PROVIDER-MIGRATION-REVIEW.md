@@ -814,3 +814,38 @@ tail first, as a behaviour-preserving refactor; keep sampling in the
 semantic pass and time travel in preparation; decide dynamic identifiers
 explicitly; and settle CTE name matching under the initial conf before
 declaring binding order Spark-equivalent. No code, no scope change.
+
+### 12.6 Addendum after CF-0272: what the semantic cases establish
+
+CF-0272 (read after §12 was written) reports that Codex's five external-file
+probes all fail `COLUMN_ALREADY_EXISTS` regardless of order or of a
+declared-true or graph-true conf, so Parquet metadata validation appears to
+read the run-session conf, not the private flow conf. That does not establish
+the read-point premise for external reads; a rerun with direct SQL controls
+is in progress. Separating what is and is not established:
+
+- **Established by the thirteen semantic cases** (`evidence/
+flow-config-fusion-reference`, `flow-config-cte-reference`): the first-pass
+  analysis conf is the declared map overwritten by each graph **view** input's
+  resolved conf in binding order (CTE definitions first, then pre-order with
+  expression subqueries before inputs); analysis under that conf can fail
+  before merge; merge is a union of the declared map and the used view
+  inputs' maps with conflicts rejected; a changed union re-runs the
+  resolution; tables contribute nothing.
+- **Not established**: that any external read's preparation (file metadata,
+  schema inference, catalog lookup) observes the private conf at its read
+  point rather than the session conf.
+
+Consequence for the representation. For **graph inputs** the prepared plan is
+either a view's resolved plan or a catalog table read, and neither depends
+on the consumer's conf at its occurrence; two occurrences of one view bind
+the same plan. So for graph inputs a name-keyed scope (`GraphScope`) remains
+sufficient, and what the binder must add is only the **ordered trace** of
+graph-view reads (to compute the first-pass conf and the used-input set),
+which the navigation unit already yields. Per-occurrence slots
+(`ReadType::Bound`, §12.2) are needed **only if** external reads prove
+read-point sensitive; until the rerun says so, the smaller seam is:
+navigation-ordered trace → first-pass `PlanConfig` → ordinary resolution
+with `GraphScope` → merge/validate → conditional second resolution, with no
+new spec variant. §12.2 stands as the design to reach for if the probe
+reverses; it should not be selected on the metadata premise, as Codex says.
