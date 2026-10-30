@@ -7,8 +7,9 @@ Pins the raw merge failure Spark's last validation phase (`DataflowGraph.inferre
   `.venvs/fable-spark-4.2.1` (hashes in `provenance.txt`), JDK 17.0.8, calling the
   `private[sql]` instance method `left.merge(right, caseSensitive = true)`, which is
   what `SchemaMergingUtils.mergeSchemas` delegates to.
-- Cases: `cases.txt`, `cases2.txt`, `cases3.txt` (39 pairs: scalars, nested structs,
-  arrays, maps, decimals, intervals, time, variant, quoted names, `NOT NULL`).
+- Cases: `cases.txt` to `cases4.txt` (64 pairs: scalars, nested structs, arrays, maps,
+  decimals and their defaults, intervals, time, variant, void, quoted names, `NOT NULL`,
+  SMALLINT and CHAR/VARCHAR lengths at every nesting depth).
 - Raw output: `merge-oracle*.out`.
 
 Findings carried into Sail (`pipelines/schema_merge.rs`, `pipelines/schema.rs`):
@@ -24,6 +25,10 @@ Findings carried into Sail (`pipelines/schema_merge.rs`, `pipelines/schema.rs`):
   interval unit union, nullability union, field-order and extra-field union; no
   integer, float or string-length widening. Sail's kernel already matched every
   case; only the reported pair changed (innermost → top-level).
-- Renderer divergences recorded as a fixture, not fixed here: Spark prints
-  `SMALLINT` where Sail's DDL renderer prints `SHORT` (pinned by `test_toddl.py`);
-  `CHAR(n)`/`VARCHAR(n)` do not survive Sail's Arrow round trip and print as `STRING`.
+- Parameter parity: `schema::sql_type_name` renders `toSQLType` from the retained
+  spec types (Sail `b61da2c98`, per CF-0089), so every `left`/`right` string in the
+  64 cases matches the JVM byte for byte, including `SMALLINT`, `CHAR(n)`/`VARCHAR(n)`
+  in nested positions, `TIME(6)` and `DECIMAL(10,0)` defaults and `VOID`. The public
+  `toDDL` renderer (which prints `SHORT`, pinned by `test_toddl.py`) is untouched.
+  Schema acceptance (the `Ok` rows) is compared after both sides pass through Sail's
+  DDL renderer and is a separate property from string parity.
