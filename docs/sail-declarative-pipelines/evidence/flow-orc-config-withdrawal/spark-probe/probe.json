@@ -1,0 +1,191 @@
+{
+  "root": "/tmp/sail-sdp-flow-config-probe-24c4d43eb7934af0a64435e7a7548035",
+  "cases": [
+    {
+      "name": "graph-default",
+      "commands": [
+        {
+          "kind": "create_dataflow_graph",
+          "sql_conf": {
+            "spark.sql.orc.mergeSchema": "true"
+          }
+        },
+        {
+          "kind": "define_output",
+          "sql_conf": null
+        },
+        {
+          "kind": "define_flow",
+          "sql_conf": {}
+        },
+        {
+          "kind": "drop_dataflow_graph",
+          "sql_conf": null
+        }
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        {
+          "id": 0
+        },
+        {
+          "id": 1
+        },
+        {
+          "id": 2
+        },
+        {
+          "id": 3
+        },
+        {
+          "id": 4
+        },
+        {
+          "id": 5
+        },
+        {
+          "id": 6
+        },
+        {
+          "id": 7
+        },
+        {
+          "id": 8
+        },
+        {
+          "id": 9
+        },
+        {
+          "id": 10
+        }
+      ],
+      "ambient_merge_schema": "false"
+    },
+    {
+      "name": "explicit-flow",
+      "commands": [
+        {
+          "kind": "create_dataflow_graph",
+          "sql_conf": {
+            "spark.sql.orc.mergeSchema": "false"
+          }
+        },
+        {
+          "kind": "define_output",
+          "sql_conf": null
+        },
+        {
+          "kind": "define_flow",
+          "sql_conf": {
+            "spark.sql.orc.mergeSchema": "true"
+          }
+        },
+        {
+          "kind": "drop_dataflow_graph",
+          "sql_conf": null
+        }
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        {
+          "id": 0
+        },
+        {
+          "id": 1
+        },
+        {
+          "id": 2
+        },
+        {
+          "id": 3
+        },
+        {
+          "id": 4
+        },
+        {
+          "id": 5
+        },
+        {
+          "id": 6
+        },
+        {
+          "id": 7
+        },
+        {
+          "id": 8
+        },
+        {
+          "id": 9
+        },
+        {
+          "id": 10
+        }
+      ],
+      "ambient_merge_schema": "false"
+    },
+    {
+      "name": "sql-graph-default",
+      "commands": [
+        {
+          "kind": "create_dataflow_graph",
+          "sql_conf": {
+            "spark.sql.orc.mergeSchema": "true"
+          }
+        },
+        {
+          "kind": "define_sql_graph_elements",
+          "sql_conf": null
+        },
+        {
+          "kind": "drop_dataflow_graph",
+          "sql_conf": null
+        }
+      ],
+      "error": "Traceback (most recent call last):\n  File \"/tmp/sail-sdp-flow-config-probe.py\", line 55, in <module>\n    tests.run_graph(spark, graph_id, root)\n  File \"/Users/alexy/src/sail-pipelines-proposal/python/pysail/tests/spark/pipelines/test_flow_file_config.py\", line 68, in run_graph\n    client.handle_pipeline_events(\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 53, in handle_pipeline_events\n    for result in iter:\n                  ^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1245, in execute_command_as_iterator\n    for response in self._execute_and_fetch_as_iterator(req, observations or {}):\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.AnalysisException: The column number of the existing table spark_catalog.default.orc_config_probe_b2b80b1d332749c08e8fb5e5fbba45ca (struct<id:int>) doesn't match the data schema (struct<id:int,extra:int>).\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.mismatchedTableColumnNumberError(QueryCompilationErrors.scala:2044)\n\tat org.apache.spark.sql.execution.datasources.PreprocessTableCreation$$anonfun$apply$2.applyOrElse(rules.scala:196)\n\tat org.apache.spark.sql.execution.datasources.PreprocessTableCreation$$anonfun$apply$2.applyOrElse(rules.scala:140)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsDownWithPruning$2(AnalysisHelper.scala:200)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.$anonfun$resolveOperatorsDownWithPruning$1(AnalysisHelper.scala:200)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.allowInvokingTransformsInAnalyzer(AnalysisHelper.scala:416)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsDownWithPruning(AnalysisHelper.scala:198)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsDownWithPruning$(AnalysisHelper.scala:194)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsWithPruning(AnalysisHelper.scala:100)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperatorsWithPruning$(AnalysisHelper.scala:97)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperatorsWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperators(AnalysisHelper.scala:77)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.resolveOperators$(AnalysisHelper.scala:76)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.resolveOperators(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.execution.datasources.PreprocessTableCreation.apply(rules.scala:140)\n\tat org.apache.spark.sql.execution.datasources.PreprocessTableCreation.apply(rules.scala:138)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.super$execute(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeSameContext$1(Analyzer.scala:468)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.org$apache$spark$sql$catalyst$analysis$Analyzer$$executeSameContext(Analyzer.scala:468)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$execute$1(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.AnalysisContext$.withNewAnalysisContext(Analyzer.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:463)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.execute(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:273)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyCommandExecuted$1(QueryExecution.scala:234)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$commandExecuted$1(QueryExecution.scala:240)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.commandExecuted(QueryExecution.scala:240)\n\tat org.apache.spark.sql.execution.QueryExecution.assertCommandExecuted(QueryExecution.scala:325)\n\tat org.apache.spark.sql.execution.command.SaveAsV1TableCommand.runCommand(ddl.scala:1034)\n\tat org.apache.spark.sql.execution.command.SaveAsV1TableCommand.run(ddl.scala:1027)\n\tat org.apache.spark.sql.execution.command.ExecutedCommandExec.sideEffectResult$lzycompute(commands.scala:79)\n\tat org.apache.spark.sql.execution.command.ExecutedCommandExec.sideEffectResult(commands.scala:77)\n\tat org.apache.spark.sql.execution.command.ExecutedCommandExec.executeCollect(commands.scala:88)\n\tat org.apache.spark.sql.execution.QueryExecution$.$anonfun$runCommand$2(QueryExecution.scala:973)\n\tat org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$8(SQLExecution.scala:228)\n\tat org.apache.spark.sql.execution.SQLExecution$.withSessionTagsApplied(SQLExecution.scala:352)\n\tat org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$7(SQLExecution.scala:189)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$6(SQLExecution.scala:189)\n\tat org.apache.spark.sql.execution.SQLExecution$.withSQLConfPropagated(SQLExecution.scala:375)\n\tat org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$1(SQLExecution.scala:188)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.SQLExecution$.withNewExecutionId0(SQLExecution.scala:130)\n\tat org.apache.spark.sql.execution.SQLExecution$.withNewExecutionId(SQLExecution.scala:317)\n\tat org.apache.spark.sql.execution.QueryExecution$.$anonfun$runCommand$1(QueryExecution.scala:971)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution$.runCommand(QueryExecution.scala:971)\n\tat org.apache.spark.sql.execution.QueryExecution.org$apache$spark$sql$execution$QueryExecution$$eagerlyExecute$1(QueryExecution.scala:262)\n\tat org.apache.spark.sql.execution.QueryExecution$$anonfun$eagerlyExecuteCommands$1.applyOrElse(QueryExecution.scala:277)\n\tat org.apache.spark.sql.execution.QueryExecution$$anonfun$eagerlyExecuteCommands$1.applyOrElse(QueryExecution.scala:270)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformDownWithPruning$1(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformDownWithPruning(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.org$apache$spark$sql$catalyst$plans$logical$AnalysisHelper$$super$transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning(AnalysisHelper.scala:360)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning$(AnalysisHelper.scala:356)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformDown(TreeNode.scala:471)\n\tat org.apache.spark.sql.execution.QueryExecution.eagerlyExecuteCommands(QueryExecution.scala:270)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyCommandExecuted$1(QueryExecution.scala:234)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$commandExecuted$1(QueryExecution.scala:240)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.commandExecuted(QueryExecution.scala:240)\n\tat org.apache.spark.sql.execution.QueryExecution.assertCommandExecuted(QueryExecution.scala:325)\n\tat org.apache.spark.sql.classic.DataFrameWriter.runCommand(DataFrameWriter.scala:615)\n\tat org.apache.spark.sql.classic.DataFrameWriter.saveAsTable(DataFrameWriter.scala:446)\n\tat org.apache.spark.sql.pipelines.graph.BatchTableWrite.$anonfun$executeInternal$5(FlowExecution.scala:288)\n\tat scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)\n\tat scala.concurrent.Future$.$anonfun$apply$1(Future.scala:691)\n\tat scala.concurrent.impl.Promise$Transformation.run(Promise.scala:500)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)\n"
+    },
+    {
+      "name": "named-path-graph-default",
+      "commands": [
+        {
+          "kind": "create_dataflow_graph",
+          "sql_conf": {
+            "spark.sql.orc.mergeSchema": "true"
+          }
+        },
+        {
+          "kind": "define_output",
+          "sql_conf": null
+        },
+        {
+          "kind": "define_flow",
+          "sql_conf": {}
+        },
+        {
+          "kind": "drop_dataflow_graph",
+          "sql_conf": null
+        }
+      ]
+    }
+  ],
+  "spark_version": "4.2.1"
+}

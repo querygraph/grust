@@ -1,0 +1,44 @@
+{
+  "commit": "71f24a87a2f2b5b38bd012388e3ce6589c7c6d46",
+  "phase": "baseline",
+  "started": "2026-10-30T04:23:30.052512+00:00",
+  "checks": [
+    {
+      "name": "version",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "-c",
+        "from pyspark.sql import SparkSession; s=SparkSession.builder.remote('sc://localhost:50092').create(); assert s.version=='4.2.1',s.version; print(s.version); s.stop()"
+      ],
+      "exit_code": 0,
+      "sha256": "e5d77a995a7d89c4b24498cb8947c3b40e53f4d2c0ba2380796cdb059d237848"
+    },
+    {
+      "name": "pytest",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "/Users/alexy/src/sail-pipelines-proposal/python/pysail/tests/spark/pipelines/test_flow_file_config.py",
+        "--junitxml=/tmp/sail-sdp-flow-config-baseline/pytest.xml"
+      ],
+      "exit_code": 1,
+      "sha256": "f64b04118b9c99aeadd26aa8315c4b2f95be0896baeb6586c6a2bba44452b982"
+    }
+  ],
+  "cli_sha256": "2893452fe508a68a6f6a4961d11d7be3db8414854aae6ca8aa66534d1a7fb65a",
+  "test_file": "/Users/alexy/src/sail-pipelines-proposal/python/pysail/tests/spark/pipelines/test_flow_file_config.py",
+  "test_sha256": "de1c8a403e551c96cd69d5dd13d3bc791a49196cbdb005dcc80ee67a78948c8c",
+  "server_pid": 93283,
+  "pytest": {
+    "tests": 4,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "outcome": "expected baseline regression",
+  "server_exit": 0,
+  "remaining_owners": [],
+  "finished": "2026-10-30T04:23:41.873625+00:00"
+}

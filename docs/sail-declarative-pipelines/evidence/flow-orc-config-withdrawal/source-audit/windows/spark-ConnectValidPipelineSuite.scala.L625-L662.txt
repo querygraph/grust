@@ -1,0 +1,38 @@
+  test("per-flow confs are visible to the analyzer but do not leak onto the run session") {
+    val key = "pipelines.test.flowConfIsolation"
+    assert(spark.conf.getOption(key).isEmpty)
+
+    val inputId = TableIdentifier("conf_observer")
+    // (conf the analyzer reads via SQLConf.get, conf on the run session) captured during load().
+    var observed: (Option[String], Option[String]) = null
+    val runSession = spark
+    val observingInput = new Input {
+      override def identifier: TableIdentifier = inputId
+      override def origin: QueryOrigin = QueryOrigin()
+      override def load(asStreaming: Boolean): DataFrame = {
+        observed = (SQLConf.get.getAllConfs.get(key), runSession.conf.getOption(key))
+        runSession.range(1).toDF()
+      }
+    }
+
+    val result = FlowAnalysis
+      .createFlowFunctionFromLogicalPlan(UnresolvedRelation(Seq("conf_observer")))
+      .call(
+        allInputs = Set(inputId),
+        availableInputs = Seq(observingInput),
+        configuration = Map(key -> "flowValue"),
+        queryContext = QueryContext(currentCatalog = None, currentDatabase = None),
+        queryOrigin = QueryOrigin())
+
+    assert(result.dataFrame.isSuccess, s"flow analysis failed: ${result.dataFrame}")
+    assert(observed != null, "input.load was not invoked during analysis")
+    val (analyzerConf, runConf) = observed
+    // The per-flow conf is what the analyzer reads ...
+    assert(analyzerConf.contains("flowValue"))
+    // ... but it must not leak onto the session the pipeline is run from.
+    assert(
+      !runConf.contains("flowValue"),
+      "per-flow conf leaked onto the run session during flow analysis")
+    // ... and nothing is left behind on the run session afterwards.
+    assert(spark.conf.getOption(key).isEmpty)
+  }

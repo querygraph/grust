@@ -1,0 +1,40 @@
+  test("Spark confs are correctly registered") {
+    val unresolvedDataflowGraph = unresolvedDataflowGraphFromSql(
+      sqlText = """
+                  |CREATE MATERIALIZED VIEW a AS SELECT id FROM range(1,2);
+                  |SET conf.test = a;
+                  |CREATE VIEW b AS SELECT id from range(1,2);
+                  |SET conf.test = b;
+                  |SET conf.test2 = c;
+                  |CREATE STREAMING TABLE c AS SELECT id FROM range(1,2);
+                  |""".stripMargin
+    )
+
+    val resolvedDataflowGraph = unresolvedDataflowGraph.resolve()
+
+    assert(
+      resolvedDataflowGraph.flows
+        .find(_.identifier == fullyQualifiedIdentifier("a"))
+        .head
+        .sqlConf == Map.empty
+    )
+
+    assert(
+      resolvedDataflowGraph.flows
+        .find(_.identifier == fullyQualifiedIdentifier("b"))
+        .head
+        .sqlConf == Map(
+        "conf.test" -> "a"
+      )
+    )
+
+    assert(
+      resolvedDataflowGraph.flows
+        .find(_.identifier == fullyQualifiedIdentifier("c"))
+        .head
+        .sqlConf == Map(
+        "conf.test" -> "b",
+        "conf.test2" -> "c"
+      )
+    )
+  }

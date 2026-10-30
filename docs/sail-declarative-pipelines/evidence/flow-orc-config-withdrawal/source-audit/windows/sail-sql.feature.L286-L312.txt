@@ -1,0 +1,27 @@
+  Scenario: SET configuration is captured per flow and reset between files
+    Given pipeline SQL file timezone.sql
+      """
+      SET spark.sql.session.timeZone = America/Los_Angeles;
+      CREATE MATERIALIZED VIEW pacific AS
+      SELECT hour(TIMESTAMP '2024-01-01 12:00:00+00:00') AS hour;
+      SET spark.sql.session.timeZone = UTC;
+      CREATE MATERIALIZED VIEW utc AS
+      SELECT hour(TIMESTAMP '2024-01-01 12:00:00+00:00') AS hour;
+      """
+    Given pipeline SQL file default.sql
+      """
+      CREATE MATERIALIZED VIEW default_timezone AS
+      SELECT hour(TIMESTAMP '2024-01-01 12:00:00+00:00') AS hour;
+      """
+    When the pipeline runs
+    When query
+      """
+      SELECT 'pacific' AS zone, hour FROM pacific
+      UNION ALL SELECT 'utc', hour FROM utc
+      UNION ALL SELECT 'default', hour FROM default_timezone
+      """
+    Then query result
+      | zone    | hour |
+      | pacific | 4    |
+      | utc     | 12   |
+      | default | 12   |

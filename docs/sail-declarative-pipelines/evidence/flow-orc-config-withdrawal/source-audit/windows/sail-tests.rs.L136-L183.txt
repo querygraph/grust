@@ -1,0 +1,48 @@
+#[tokio::test]
+async fn sql_configuration_is_captured_per_flow_and_reset_per_file() -> SparkResult<()> {
+    let mut graph = graph();
+    register_sql(
+        &mut graph,
+        "CREATE MATERIALIZED VIEW a AS SELECT id FROM range(1, 2); \
+         SET conf.test = a; \
+         CREATE VIEW b AS SELECT id FROM range(1, 2); \
+         SET conf.test = b; \
+         SET conf.test2 = c; \
+         CREATE STREAMING TABLE c AS SELECT id FROM range(1, 2);",
+        "configuration.sql",
+    )
+    .await?;
+    let configurations: Vec<_> = graph
+        .definition
+        .flows
+        .iter()
+        .map(|flow| (flow.name.clone(), flow.sql_conf.clone()))
+        .collect();
+    assert_eq!(
+        configurations,
+        vec![
+            (name("a"), HashMap::new()),
+            (name("b"), HashMap::from([("conf.test".into(), "a".into())])),
+            (
+                name("c"),
+                HashMap::from([
+                    ("conf.test".into(), "b".into()),
+                    ("conf.test2".into(), "c".into()),
+                ])
+            ),
+        ]
+    );
+    assert!(graph.definition.sql_conf.is_empty());
+    register_sql(
+        &mut graph,
+        "CREATE MATERIALIZED VIEW d AS SELECT 1 AS value",
+        "next.sql",
+    )
+    .await?;
+    let Some(flow) = graph.definition.flows.last() else {
+        return Err(SparkError::internal("expected next-file flow"));
+    };
+    assert_eq!(flow.name, name("d"));
+    assert!(flow.sql_conf.is_empty());
+    Ok(())
+}

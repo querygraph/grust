@@ -1,0 +1,41 @@
+  private def transformReadRel(rel: proto.Read): LogicalPlan = {
+
+    rel.getReadTypeCase match {
+      case proto.Read.ReadTypeCase.NAMED_TABLE =>
+        UnresolvedRelation(
+          parser.parseMultipartIdentifier(rel.getNamedTable.getUnparsedIdentifier),
+          new CaseInsensitiveStringMap(rel.getNamedTable.getOptionsMap),
+          isStreaming = rel.getIsStreaming)
+
+      case proto.Read.ReadTypeCase.DATA_SOURCE if !rel.getIsStreaming =>
+        val reader = session.read
+        val localMap = CaseInsensitiveMap[String](rel.getDataSource.getOptionsMap.asScala.toMap)
+        if (rel.getDataSource.getFormat == "jdbc" && rel.getDataSource.getPredicatesCount > 0) {
+          if (!localMap.contains(JDBCOptions.JDBC_URL) ||
+            !localMap.contains(JDBCOptions.JDBC_TABLE_NAME)) {
+            throw InvalidInputErrors.invalidJdbcParams()
+          }
+
+          val url = localMap.get(JDBCOptions.JDBC_URL).get
+          val table = localMap.get(JDBCOptions.JDBC_TABLE_NAME).get
+          val predicates = rel.getDataSource.getPredicatesList.asScala.toArray
+          val properties = new Properties()
+          properties.putAll(rel.getDataSource.getOptionsMap)
+          reader.jdbc(url, table, predicates, properties).queryExecution.analyzed
+        } else if (rel.getDataSource.getPredicatesCount == 0) {
+          if (rel.getDataSource.hasFormat) {
+            reader.format(rel.getDataSource.getFormat)
+          }
+          localMap.foreach { case (key, value) => reader.option(key, value) }
+          if (rel.getDataSource.hasSchema && rel.getDataSource.getSchema.nonEmpty) {
+            reader.schema(parseSchema(rel.getDataSource.getSchema))
+          }
+          if (rel.getDataSource.getPathsCount == 0) {
+            reader.load().queryExecution.analyzed
+          } else if (rel.getDataSource.getPathsCount == 1) {
+            reader.load(rel.getDataSource.getPaths(0)).queryExecution.analyzed
+          } else {
+            reader.load(rel.getDataSource.getPathsList.asScala.toSeq: _*).queryExecution.analyzed
+          }
+        } else {
+          throw InvalidInputErrors.predicatesNotSupportedForDataSource(

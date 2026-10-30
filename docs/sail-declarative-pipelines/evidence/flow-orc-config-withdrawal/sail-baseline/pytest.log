@@ -1,0 +1,92 @@
+F..F                                                                     [100%]
+=================================== FAILURES ===================================
+___ test_orc_schema_merge_uses_graph_flow_and_read_precedence[graph-default] ___
+
+native_orc_pipeline_session = <pyspark.sql.connect.session.SparkSession object at 0x119c39370>
+evolving_orc_files = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-148/test_orc_schema_merge_uses_gra0/orc_input')
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-148/test_orc_schema_merge_uses_gra0')
+graph_merge = 'true', flow_merge = None, read_merge = None, merged = True
+
+    @pytest.mark.parametrize(
+        "graph_merge, flow_merge, read_merge, merged",
+        [
+            pytest.param("true", None, None, True, id="graph-default"),
+            pytest.param("true", "false", None, False, id="flow-overrides-graph"),
+            pytest.param("false", "false", "true", True, id="read-option-overrides-flow"),
+        ],
+    )
+    def test_orc_schema_merge_uses_graph_flow_and_read_precedence(
+        native_orc_pipeline_session, evolving_orc_files, tmp_path, graph_merge, flow_merge, read_merge, merged
+    ):
+        spark = native_orc_pipeline_session
+        output = "flow_file_config_" + uuid4().hex
+        flow_conf = {} if flow_merge is None else {MERGE_SCHEMA: flow_merge}
+    
+        def read_input():
+            reader = spark.read
+            if read_merge is not None:
+                reader = reader.option("mergeSchema", read_merge)
+            return reader.orc(str(evolving_orc_files))
+    
+        try:
+            with configured_graph(spark, {MERGE_SCHEMA: graph_merge}) as (graph_id, registry):
+                with registration.graph_element_registration_context(registry):
+                    dp.materialized_view(name=output, spark_conf=flow_conf, format="parquet")(read_input)
+                run_graph(spark, graph_id, tmp_path)
+            assert spark.conf.get(MERGE_SCHEMA) == "false"
+            assert spark.conf.get(ORC_IMPL) == "native"
+            frame = spark.table(output)
+            fields = [T.StructField("id", T.IntegerType())]
+            expected = [Row(id=index) for index in range(11)]
+            if merged:
+                fields.append(T.StructField("extra", T.IntegerType()))
+                expected = [Row(id=index, extra=None) for index in range(10)] + [Row(id=10, extra=42)]
+>           assert frame.schema == T.StructType(fields)
+E           assert StructType([S...ype(), True)]) == StructType([S...ype(), True)])
+E             
+E             Use -v to get more diff
+
+../sail-pipelines-proposal/python/pysail/tests/spark/pipelines/test_flow_file_config.py:107: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-30 04:23:40: Starting pipeline analysis
+2026-10-30 04:23:40: Pipeline run completed
+_____________ test_persisted_orc_input_uses_consumer_flow_settings _____________
+
+native_orc_pipeline_session = <pyspark.sql.connect.session.SparkSession object at 0x119d8dfd0>
+evolving_orc_files = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-148/test_persisted_orc_input_uses_0/orc_input')
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-148/test_persisted_orc_input_uses_0')
+
+    @pytest.mark.skipif(is_jvm_spark(), reason="Sail only: Hive ORC reader is intentionally unsupported")
+    def test_persisted_orc_input_uses_consumer_flow_settings(native_orc_pipeline_session, evolving_orc_files, tmp_path):
+        """Supplemental Sail capability guard, not a Spark reader-compatibility assertion."""
+        spark = native_orc_pipeline_session
+        suffix = uuid4().hex
+        producer, consumer = "persisted_orc_" + suffix, "orc_consumer_" + suffix
+        files = sorted(evolving_orc_files.glob("*.orc"))
+        hashes = [hashlib.sha256(path.read_bytes()).hexdigest() for path in files]
+        try:
+            location = escape_sql_string_literal(str(evolving_orc_files))
+            spark.sql(f"CREATE TABLE {producer} (id INT) USING orc LOCATION '{location}'")
+            assert spark.table(producer).orderBy("id").collect() == [Row(id=index) for index in range(11)]
+            with configured_graph(spark, None) as (graph_id, registry):
+                with registration.graph_element_registration_context(registry):
+                    # Analysis sees this definition. Consumer-only refresh must instead
+                    # read the existing ORC table, without executing this producer.
+                    dp.materialized_view(name=producer, format="orc")(
+                        lambda: spark.range(1).selectExpr("CAST(999 AS INT) AS id")
+                    )
+                    dp.materialized_view(name=consumer, spark_conf={ORC_IMPL: "hive"}, format="parquet")(
+                        lambda: spark.table(producer)
+                    )
+>               with pytest.raises(PySparkException, match="Hive ORC reader is not supported"):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               Failed: DID NOT RAISE PySparkException
+
+../sail-pipelines-proposal/python/pysail/tests/spark/pipelines/test_flow_file_config.py:135: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-30 04:23:40: Starting pipeline analysis
+2026-10-30 04:23:40: Pipeline run completed
+=========================== short test summary info ============================
+FAILED ../sail-pipelines-proposal/python/pysail/tests/spark/pipelines/test_flow_file_config.py::test_orc_schema_merge_uses_graph_flow_and_read_precedence[graph-default]
+FAILED ../sail-pipelines-proposal/python/pysail/tests/spark/pipelines/test_flow_file_config.py::test_persisted_orc_input_uses_consumer_flow_settings
+2 failed, 2 passed in 0.58s

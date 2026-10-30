@@ -1,0 +1,28 @@
+    def outer(
+        decorated: QueryFunction,
+    ) -> None:
+        _validate_decorated(decorated, "materialized_view")
+
+        resolved_name = name or decorated.__name__
+        registry = get_active_graph_element_registry()
+        registry.register_output(
+            MaterializedView(
+                comment=comment,
+                name=resolved_name,
+                table_properties=table_properties or {},
+                partition_cols=partition_cols,
+                cluster_by=cluster_by,
+                schema=schema,
+                source_code_location=source_code_location,
+                format=format,
+            )
+        )
+        registry.register_flow(
+            Flow(
+                name=resolved_name,
+                target=resolved_name,
+                spark_conf=spark_conf or {},
+                source_code_location=source_code_location,
+                func=decorated,
+            )
+        )

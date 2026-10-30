@@ -1,0 +1,649 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/analysis.rs b/crates/sail-spark-connect/src/pipelines/analysis.rs
+index 9b8bb737c..3896ce6cf 100644
+--- a/crates/sail-spark-connect/src/pipelines/analysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/analysis.rs
+@@ -105,8 +105,9 @@ pub(super) async fn analyze(
+                     reads: Mutex::default(),
+                     flow,
+                 };
+-                let config = spark.plan_config_with_overrides(flow.sql_conf.clone())?;
+-                let resolver = PlanResolver::new(ctx, config).with_relation_scope(&scope);
++                let planning = spark.planning_context(ctx, flow.sql_conf.clone())?;
++                let resolver = PlanResolver::new(&planning.context, planning.config)
++                    .with_relation_scope(&scope);
+                 let result = resolver
+                     .resolve_named_plan(spec::Plan::Query(flow.query.clone()))
+                     .await;
+diff --git a/crates/sail-spark-connect/src/pipelines/execution.rs b/crates/sail-spark-connect/src/pipelines/execution.rs
+index a0a09faa3..1e9a1fc42 100644
+--- a/crates/sail-spark-connect/src/pipelines/execution.rs
++++ b/crates/sail-spark-connect/src/pipelines/execution.rs
+@@ -50,23 +50,30 @@ pub(super) async fn execute(
+         {
+             continue;
+         }
+-        // Read catalog inputs only when a query consumes them, after selected
+-        // upstream tables have been written. A view-only refresh does no reads.
+-        for input in analyzed.dependencies.get(&name).into_iter().flatten() {
+-            if graph.outputs.iter().any(|output| {
+-                &output.name == input
+-                    && output.kind != OutputType::TemporaryView
+-                    && (output.view.is_some() || !resolved.contains_key(input))
+-            }) {
+-                resolved.insert(input.clone(), read_output(ctx, input.clone()).await?);
+-            }
+-        }
+         let flow = graph
+             .flows
+             .iter()
+             .find(|x| x.target == name)
+             .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", name.join(".")))?;
+-        let config = spark.plan_config_with_overrides(flow.sql_conf.clone())?;
++        let planning = spark.planning_context(ctx, flow.sql_conf.clone())?;
++        let ctx = &planning.context;
++        let config = planning.config;
++        // Read catalog inputs only when a query consumes them, after selected
++        // upstream tables have been written, using that consumer's settings.
++        // Persisted scans cannot be cached across flows with different defaults.
++        // Temporary-view definitions keep their own already-resolved plans.
++        for input in analyzed.dependencies.get(&name).into_iter().flatten() {
++            if graph
++                .outputs
++                .iter()
++                .any(|output| &output.name == input && output.kind != OutputType::TemporaryView)
++            {
++                resolved.insert(
++                    input.clone(),
++                    read_output(ctx, config.clone(), input.clone()).await?,
++                );
++            }
++        }
+         let scope = GraphScope {
+             graph,
+             resolved: &resolved,
+@@ -86,9 +93,8 @@ pub(super) async fn execute(
+             continue;
+         }
+         run_command(ctx, config, table_write_command(output, flow), Some(&scope)).await?;
+-        // Downstream flows scan the newly committed table. They must not inline
+-        // and recompute the producer's definition, especially for nondeterminism.
+-        resolved.insert(name.clone(), read_output(ctx, name).await?);
++        // Downstream consumers scan this committed table in their own context;
++        // they never inline/recompute the producer's definition.
+     }
+     Ok(())
+ }
+@@ -143,6 +149,7 @@ fn table_write_command(output: &Output, flow: &Flow) -> spec::CommandNode {
+ 
+ async fn read_output(
+     ctx: &SessionContext,
++    config: Arc<PlanConfig>,
+     name: super::graph::Name,
+ ) -> SparkResult<datafusion::logical_expr::LogicalPlan> {
+     let read = spec::QueryPlan::new(spec::QueryNode::Read {
+@@ -154,7 +161,7 @@ async fn read_output(
+         })),
+         is_streaming: false,
+     });
+-    let plan = PlanResolver::new(ctx, ctx.extension::<SparkSession>()?.plan_config()?)
++    let plan = PlanResolver::new(ctx, config)
+         .resolve_named_plan(spec::Plan::Query(read))
+         .await?;
+     let plan = match plan.fields {
+diff --git a/crates/sail-spark-connect/src/pipelines/materialize.rs b/crates/sail-spark-connect/src/pipelines/materialize.rs
+index a8215f382..f640abf7f 100644
+--- a/crates/sail-spark-connect/src/pipelines/materialize.rs
++++ b/crates/sail-spark-connect/src/pipelines/materialize.rs
+@@ -26,9 +26,11 @@ pub(super) async fn tables(
+     selection: &Selection,
+ ) -> SparkResult<()> {
+     let manager = ctx.extension::<CatalogManager>()?;
+-    let config = ctx
++    let planning = ctx
+         .extension::<SparkSession>()?
+-        .plan_config_with_overrides(graph.sql_conf.clone())?;
++        .planning_context(ctx, graph.sql_conf.clone())?;
++    let ctx = &planning.context;
++    let config = planning.config;
+     for output in &graph.outputs {
+         if output.kind != OutputType::MaterializedView
+             || output.view.is_some()
+@@ -272,9 +274,10 @@ pub(super) async fn views(
+         };
+         definition.replace = true;
+         definition.if_not_exists = false;
++        let planning = spark.planning_context(ctx, flow.sql_conf.clone())?;
+         run_command(
+-            ctx,
+-            spark.plan_config_with_overrides(flow.sql_conf.clone())?,
++            &planning.context,
++            planning.config,
+             spec::CommandNode::CreateView {
+                 view: name.clone().into(),
+                 definition,
+diff --git a/crates/sail-spark-connect/src/session.rs b/crates/sail-spark-connect/src/session.rs
+index f8161f81c..fbd9c5863 100644
+--- a/crates/sail-spark-connect/src/session.rs
++++ b/crates/sail-spark-connect/src/session.rs
+@@ -22,6 +22,8 @@ use crate::streaming::{
+     StreamingQueryManager, StreamingQueryStatus,
+ };
+ 
++mod planning;
++
+ #[derive(Debug, Clone)]
+ pub(crate) struct SparkSessionOptions {
+     pub execution_heartbeat_interval: Duration,
+@@ -106,19 +108,6 @@ impl SparkSession {
+         ))
+     }
+ 
+-    pub(crate) fn plan_config_with_overrides(
+-        &self,
+-        overrides: impl IntoIterator<Item = (String, String)>,
+-    ) -> SparkResult<Arc<PlanConfig>> {
+-        let mut runtime = self.state.lock()?.config.clone();
+-        for (key, value) in overrides {
+-            runtime.set(key, value)?;
+-        }
+-        let mut config = PlanConfig::try_from(&runtime)?;
+-        config.session_user_id = self.user_id().to_string();
+-        Ok(Arc::new(config))
+-    }
+-
+     pub(crate) fn add_pipeline(&self, graph: PipelineGraph) -> SparkResult<String> {
+         let id = uuid::Uuid::new_v4().to_string();
+         self.state
+diff --git a/crates/sail-spark-connect/src/session/planning.rs b/crates/sail-spark-connect/src/session/planning.rs
+new file mode 100644
+index 000000000..2b747de1d
+--- /dev/null
++++ b/crates/sail-spark-connect/src/session/planning.rs
+@@ -0,0 +1,50 @@
++use std::sync::Arc;
++
++use datafusion::prelude::SessionContext;
++use sail_plan::config::PlanConfig;
++
++use super::SparkSession;
++use crate::error::SparkResult;
++
++pub(crate) struct PlanningContext {
++    pub context: SessionContext,
++    pub config: Arc<PlanConfig>,
++}
++
++impl SparkSession {
++    /// Apply flow/graph settings to a private planning state. Shared services,
++    /// catalogs, functions and runtime retain their identity; session settings
++    /// are never temporarily changed while an asynchronous plan is resolved.
++    pub(crate) fn planning_context(
++        &self,
++        parent: &SessionContext,
++        overrides: impl IntoIterator<Item = (String, String)>,
++    ) -> SparkResult<PlanningContext> {
++        // Release the Spark mutex before taking the DataFusion state lock:
++        // ordinary configuration updates may acquire these in the other order.
++        let mut runtime = self.state.lock()?.config.clone();
++        for (key, value) in overrides {
++            runtime.set(key, value)?;
++        }
++        let mut config = PlanConfig::try_from(&runtime)?;
++        config.session_user_id = self.user_id().to_string();
++        let read_defaults = runtime.orc_listing_defaults()?;
++        let read_modes = runtime.orc_read_modes();
++        let write_defaults = runtime.orc_write_defaults()?;
++
++        let mut state = parent.state();
++        let options = state.config_mut();
++        options.set_extension(Arc::new(read_defaults));
++        options.set_extension(Arc::new(read_modes));
++        options.set_extension(Arc::new(write_defaults));
++        options.options_mut().execution.time_zone = Some(config.session_timezone.to_string());
++        Ok(PlanningContext {
++            context: SessionContext::new_with_state(state),
++            config: Arc::new(config),
++        })
++    }
++}
++
++#[cfg(test)]
++#[path = "planning_tests.rs"]
++mod tests;
+diff --git a/crates/sail-spark-connect/src/session/planning_tests.rs b/crates/sail-spark-connect/src/session/planning_tests.rs
+new file mode 100644
+index 000000000..a85550434
+--- /dev/null
++++ b/crates/sail-spark-connect/src/session/planning_tests.rs
+@@ -0,0 +1,282 @@
++use std::sync::Arc;
++use std::time::Duration;
++
++use datafusion::arrow::datatypes::DataType;
++use datafusion::common::ScalarValue;
++use datafusion::logical_expr::{ColumnarValue, Volatility, create_udf};
++use datafusion::prelude::{SessionConfig, SessionContext};
++use sail_common_datafusion::datasource::OptionLayer;
++use sail_common_datafusion::extension::{SessionExtension, SessionExtensionAccessor};
++use sail_data_source::formats::orc::{OrcFormatFactory, OrcWriteCompression, OrcWriteConfig};
++use sail_data_source::listing::source::FormatFactory;
++use sail_data_source::options::ResolveOptions;
++use sail_data_source::options::r#gen::OrcListingReadOptions;
++use tokio::sync::Barrier;
++
++use super::*;
++use crate::service::handle_config_set;
++use crate::session::SparkSessionOptions;
++use crate::spark::connect::KeyValue;
++
++type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
++
++const COMPRESSION: &str = "spark.sql.orc.compression.codec";
++const MERGE: &str = "spark.sql.orc.mergeSchema";
++const ZONE: &str = "spark.sql.session.timeZone";
++
++struct SharedService;
++impl SessionExtension for SharedService {
++    fn name() -> &'static str {
++        "planning test shared service"
++    }
++}
++
++fn context() -> TestResult<SessionContext> {
++    pyo3::Python::initialize();
++    let spark = SparkSession::try_new(
++        "planning-test".into(),
++        "planning-user".into(),
++        SparkSessionOptions {
++            execution_heartbeat_interval: Duration::from_secs(1),
++        },
++    )?;
++    let context = SessionContext::new_with_config(
++        SessionConfig::new()
++            .with_target_partitions(7)
++            .with_extension(Arc::new(spark))
++            .with_extension(Arc::new(SharedService)),
++    );
++    set(
++        &context,
++        &[(COMPRESSION, "snappy"), (MERGE, "false"), (ZONE, "UTC")],
++    )?;
++    Ok(context)
++}
++
++fn set(context: &SessionContext, pairs: &[(&str, &str)]) -> TestResult {
++    handle_config_set(
++        context,
++        pairs
++            .iter()
++            .map(|(key, value)| KeyValue {
++                key: (*key).into(),
++                value: Some((*value).into()),
++            })
++            .collect(),
++    )?;
++    Ok(())
++}
++
++fn overrides(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
++    pairs
++        .iter()
++        .map(|(k, v)| ((*k).into(), (*v).into()))
++        .collect()
++}
++
++fn effective(context: &SessionContext) -> TestResult<(bool, OrcWriteCompression, String)> {
++    let state = context.state();
++    Ok((
++        OrcListingReadOptions::resolve(&state, vec![])?.merge_schema,
++        OrcWriteConfig::resolve(&state, vec![])?.compression,
++        state
++            .config_options()
++            .execution
++            .time_zone
++            .clone()
++            .ok_or("missing timezone")?,
++    ))
++}
++
++#[test]
++fn flow_snapshot_keeps_plan_and_format_settings_consistent_after_session_changes() -> TestResult {
++    let parent = context()?;
++    let spark = parent.extension::<SparkSession>()?;
++    let planning = spark.planning_context(
++        &parent,
++        overrides(&[
++            (COMPRESSION, "zlib"),
++            (MERGE, "true"),
++            (ZONE, "America/New_York"),
++            ("spark.sql.ansi.enabled", "false"),
++        ]),
++    )?;
++    assert!(!planning.config.ansi_mode);
++    assert_eq!(
++        planning.config.session_timezone.as_ref(),
++        "America/New_York"
++    );
++    assert_eq!(planning.config.session_user_id, "planning-user");
++    let expected = (true, OrcWriteCompression::Zlib, "America/New_York".into());
++    assert_eq!(effective(&planning.context)?, expected);
++    assert_eq!(
++        effective(&parent)?,
++        (false, OrcWriteCompression::Snappy, "UTC".into())
++    );
++    set(&parent, &[(COMPRESSION, "lz4"), (ZONE, "Asia/Tokyo")])?;
++    let newer = spark.planning_context(&parent, [])?;
++    assert_eq!(
++        effective(&newer.context)?,
++        (false, OrcWriteCompression::Lz4, "Asia/Tokyo".into())
++    );
++    assert_eq!(effective(&planning.context)?, expected);
++    Ok(())
++}
++
++#[test]
++fn rejected_override_does_not_partially_mutate_the_parent() -> TestResult {
++    let parent = context()?;
++    let spark = parent.extension::<SparkSession>()?;
++    for invalid in [(MERGE, "invalid"), (COMPRESSION, " zstd ")] {
++        assert!(
++            spark
++                .planning_context(&parent, overrides(&[(COMPRESSION, "zlib"), invalid]))
++                .is_err()
++        );
++        assert_eq!(
++            effective(&parent)?,
++            (false, OrcWriteCompression::Snappy, "UTC".into())
++        );
++        assert_eq!(
++            spark.get_config(vec![COMPRESSION.into()])?[0]
++                .value
++                .as_deref(),
++            Some("snappy")
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn planning_state_retains_shared_resources_and_registered_functions() -> TestResult {
++    let parent = context()?;
++    parent.register_udf(create_udf(
++        "planning_identity",
++        vec![],
++        DataType::Int32,
++        Volatility::Immutable,
++        Arc::new(|_| Ok(ColumnarValue::Scalar(ScalarValue::Int32(Some(7))))),
++    ));
++    let planning = parent
++        .extension::<SparkSession>()?
++        .planning_context(&parent, [])?;
++    let child = &planning.context;
++    assert_eq!(parent.session_id(), child.session_id());
++    assert!(!Arc::ptr_eq(&parent.state_ref(), &child.state_ref()));
++    assert!(Arc::ptr_eq(&parent.runtime_env(), &child.runtime_env()));
++    assert!(Arc::ptr_eq(
++        &parent.extension::<SharedService>()?,
++        &child.extension::<SharedService>()?
++    ));
++    assert!(Arc::ptr_eq(
++        &parent.extension::<SparkSession>()?,
++        &child.extension::<SparkSession>()?
++    ));
++    let a = parent.state();
++    let b = child.state();
++    assert!(Arc::ptr_eq(a.query_planner(), b.query_planner()));
++    assert!(Arc::ptr_eq(a.catalog_list(), b.catalog_list()));
++    assert!(Arc::ptr_eq(
++        a.scalar_functions()
++            .get("planning_identity")
++            .ok_or("parent UDF absent")?,
++        b.scalar_functions()
++            .get("planning_identity")
++            .ok_or("child UDF absent")?,
++    ));
++    child
++        .state_ref()
++        .write()
++        .config_mut()
++        .options_mut()
++        .execution
++        .target_partitions = 9;
++    assert_eq!(
++        parent.state().config_options().execution.target_partitions,
++        7
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn concurrent_flow_format_planning_is_isolated_from_parent_updates() -> TestResult {
++    let parent = context()?;
++    let ready = Arc::new(Barrier::new(3));
++    let release = Arc::new(Barrier::new(3));
++    let mut tasks = vec![];
++    for (implementation, codec, expected) in [
++        ("native", "zlib", OrcWriteCompression::Zlib),
++        ("hive", "snappy", OrcWriteCompression::Snappy),
++    ] {
++        let parent = parent.clone();
++        let ready = ready.clone();
++        let release = release.clone();
++        tasks.push(tokio::spawn(async move {
++            let planning = parent.extension::<SparkSession>()?.planning_context(
++                &parent,
++                overrides(&[("spark.sql.orc.impl", implementation), (COMPRESSION, codec)]),
++            )?;
++            ready.wait().await;
++            release.wait().await;
++            let state = planning.context.state();
++            let read = OrcFormatFactory::read(&state, vec![]);
++            if implementation == "native" {
++                read?;
++            } else {
++                let error = read.err().ok_or("Hive ORC mode was lost")?;
++                assert!(error.to_string().contains("Hive ORC reader"));
++            }
++            assert_eq!(
++                OrcWriteConfig::resolve(&state, vec![])?.compression,
++                expected
++            );
++            Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
++        }));
++    }
++    ready.wait().await;
++    set(&parent, &[(COMPRESSION, "lz4"), (MERGE, "true")])?;
++    release.wait().await;
++    for task in tasks {
++        task.await??;
++    }
++    assert_eq!(
++        effective(&parent)?,
++        (true, OrcWriteCompression::Lz4, "UTC".into())
++    );
++    Ok(())
++}
++
++#[test]
++fn explicit_format_options_override_flow_defaults_after_context_capture() -> TestResult {
++    let parent = context()?;
++    let planning = parent.extension::<SparkSession>()?.planning_context(
++        &parent,
++        overrides(&[
++            (COMPRESSION, "zlib"),
++            (MERGE, "true"),
++            ("orc.force.positional.evolution", "true"),
++        ]),
++    )?;
++    let state = planning.context.state();
++    assert!(OrcFormatFactory::read(&state, vec![]).is_err());
++    let layer = OptionLayer::OptionList {
++        items: overrides(&[
++            ("mergeSchema", "false"),
++            ("orc.force.positional.evolution", "false"),
++        ]),
++    };
++    assert!(!OrcListingReadOptions::resolve(&state, vec![layer.clone()])?.merge_schema);
++    OrcFormatFactory::read(&state, vec![layer])?;
++    let codec = OrcWriteConfig::resolve(
++        &state,
++        vec![OptionLayer::OptionList {
++            items: overrides(&[("compression", "none")]),
++        }],
++    )?;
++    assert_eq!(codec.compression, OrcWriteCompression::None);
++    assert_eq!(
++        effective(&parent)?,
++        (false, OrcWriteCompression::Snappy, "UTC".into())
++    );
++    Ok(())
++}
+diff --git a/python/pysail/tests/spark/pipelines/test_flow_file_config.py b/python/pysail/tests/spark/pipelines/test_flow_file_config.py
+new file mode 100644
+index 000000000..c45193504
+--- /dev/null
++++ b/python/pysail/tests/spark/pipelines/test_flow_file_config.py
+@@ -0,0 +1,143 @@
++"""Supplemental file-source checks for isolated graph/flow SQL configuration.
++
++Spark's source contract is ConnectValidPipelineSuite:625, :664 and :723:
++https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ConnectValidPipelineSuite.scala
++These ORC fixtures extend that contract; they are not exact ports of those tests.
++"""
++
++import hashlib
++from contextlib import contextmanager
++from uuid import uuid4
++
++import pyarrow as pa
++import pytest
++from pyarrow import orc
++from pysail.testing.spark.utils.common import is_jvm_spark
++from pysail.testing.spark.utils.sql import escape_sql_string_literal
++from pyspark.errors import PySparkException
++from pyspark.sql import Row
++from pyspark.sql import types as T
++from pyspark.sql.connect import proto as pb
++
++dp = pytest.importorskip("pyspark.pipelines")
++registry_module = pytest.importorskip("pyspark.pipelines.spark_connect_graph_element_registry")
++client = pytest.importorskip("pyspark.pipelines.spark_connect_pipeline")
++registration = pytest.importorskip("pyspark.pipelines.graph_element_registry")
++
++MERGE_SCHEMA = "spark.sql.orc.mergeSchema"
++ORC_IMPL = "spark.sql.orc.impl"
++
++
++@pytest.fixture
++def native_orc_pipeline_session(pipeline_spark):
++    settings = {MERGE_SCHEMA: "false", ORC_IMPL: "native"}
++    previous = {key: pipeline_spark.conf.get(key) for key in settings}
++    try:
++        for key, value in settings.items():
++            pipeline_spark.conf.set(key, value)
++        yield pipeline_spark
++    finally:
++        for key, value in previous.items():
++            pipeline_spark.conf.set(key, value)
++
++
++@pytest.fixture
++def evolving_orc_files(tmp_path):
++    directory = tmp_path / "orc_input"
++    directory.mkdir()
++    for index in range(11):
++        columns = {"id": pa.array([index], type=pa.int32())}
++        if index == 10:
++            columns["extra"] = pa.array([42], type=pa.int32())
++        orc.write_table(pa.table(columns), directory / f"{index:02d}.orc")
++    return directory
++
++
++@contextmanager
++def configured_graph(spark, sql_conf):
++    graph_id = client.create_dataflow_graph(spark, None, None, sql_conf)
++    try:
++        yield graph_id, registry_module.SparkConnectGraphElementRegistry(spark, graph_id)
++    finally:
++        command = pb.Command()
++        command.pipeline_command.drop_dataflow_graph.dataflow_graph_id = graph_id
++        spark.client.execute_command(command)
++
++
++def run_graph(spark, graph_id, tmp_path, refresh=None):
++    client.handle_pipeline_events(
++        client.start_run(spark, graph_id, None, False, refresh, False, (tmp_path / graph_id).as_uri())
++    )
++
++
++@pytest.mark.parametrize(
++    "graph_merge, flow_merge, read_merge, merged",
++    [
++        pytest.param("true", None, None, True, id="graph-default"),
++        pytest.param("true", "false", None, False, id="flow-overrides-graph"),
++        pytest.param("false", "false", "true", True, id="read-option-overrides-flow"),
++    ],
++)
++def test_orc_schema_merge_uses_graph_flow_and_read_precedence(
++    native_orc_pipeline_session, evolving_orc_files, tmp_path, graph_merge, flow_merge, read_merge, merged
++):
++    spark = native_orc_pipeline_session
++    output = "flow_file_config_" + uuid4().hex
++    flow_conf = {} if flow_merge is None else {MERGE_SCHEMA: flow_merge}
++
++    def read_input():
++        reader = spark.read
++        if read_merge is not None:
++            reader = reader.option("mergeSchema", read_merge)
++        return reader.orc(str(evolving_orc_files))
++
++    try:
++        with configured_graph(spark, {MERGE_SCHEMA: graph_merge}) as (graph_id, registry):
++            with registration.graph_element_registration_context(registry):
++                dp.materialized_view(name=output, spark_conf=flow_conf, format="parquet")(read_input)
++            run_graph(spark, graph_id, tmp_path)
++        assert spark.conf.get(MERGE_SCHEMA) == "false"
++        assert spark.conf.get(ORC_IMPL) == "native"
++        frame = spark.table(output)
++        fields = [T.StructField("id", T.IntegerType())]
++        expected = [Row(id=index) for index in range(11)]
++        if merged:
++            fields.append(T.StructField("extra", T.IntegerType()))
++            expected = [Row(id=index, extra=None) for index in range(10)] + [Row(id=10, extra=42)]
++        assert frame.schema == T.StructType(fields)
++        assert frame.orderBy("id").collect() == expected
++    finally:
++        spark.sql(f"DROP TABLE IF EXISTS {output}")
++
++
++@pytest.mark.skipif(is_jvm_spark(), reason="Sail only: Hive ORC reader is intentionally unsupported")
++def test_persisted_orc_input_uses_consumer_flow_settings(native_orc_pipeline_session, evolving_orc_files, tmp_path):
++    """Supplemental Sail capability guard, not a Spark reader-compatibility assertion."""
++    spark = native_orc_pipeline_session
++    suffix = uuid4().hex
++    producer, consumer = "persisted_orc_" + suffix, "orc_consumer_" + suffix
++    files = sorted(evolving_orc_files.glob("*.orc"))
++    hashes = [hashlib.sha256(path.read_bytes()).hexdigest() for path in files]
++    try:
++        location = escape_sql_string_literal(str(evolving_orc_files))
++        spark.sql(f"CREATE TABLE {producer} (id INT) USING orc LOCATION '{location}'")
++        assert spark.table(producer).orderBy("id").collect() == [Row(id=index) for index in range(11)]
++        with configured_graph(spark, None) as (graph_id, registry):
++            with registration.graph_element_registration_context(registry):
++                # Analysis sees this definition. Consumer-only refresh must instead
++                # read the existing ORC table, without executing this producer.
++                dp.materialized_view(name=producer, format="orc")(
++                    lambda: spark.range(1).selectExpr("CAST(999 AS INT) AS id")
++                )
++                dp.materialized_view(name=consumer, spark_conf={ORC_IMPL: "hive"}, format="parquet")(
++                    lambda: spark.table(producer)
++                )
++            with pytest.raises(PySparkException, match="Hive ORC reader is not supported"):
++                run_graph(spark, graph_id, tmp_path, refresh=[consumer])
++        assert spark.conf.get(ORC_IMPL) == "native"
++        assert spark.conf.get(MERGE_SCHEMA) == "false"
++        assert spark.table(producer).orderBy("id").collect() == [Row(id=index) for index in range(11)]
++    finally:
++        spark.sql(f"DROP TABLE IF EXISTS {consumer}")
++        spark.sql(f"DROP TABLE IF EXISTS {producer}")
++    assert [hashlib.sha256(path.read_bytes()).hexdigest() for path in files] == hashes

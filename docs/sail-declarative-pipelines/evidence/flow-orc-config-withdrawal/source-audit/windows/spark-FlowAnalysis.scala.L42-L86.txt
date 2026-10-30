@@ -1,0 +1,45 @@
+  def createFlowFunctionFromLogicalPlan(plan: LogicalPlan): FlowFunction = {
+    (allInputs: Set[TableIdentifier],
+      availableInputs: Seq[Input],
+      confs: Map[String, String],
+      queryContext: QueryContext,
+      queryOrigin: QueryOrigin) => {
+      // Flows are resolved in parallel on a shared session, so applying per-flow confs by mutating
+      // that session's conf would race across flows. Instead, give each flow a private SQLConf
+      // (a clone of the session's conf plus this flow's overrides) and install it for the analyzing
+      // thread via SQLConf.withExistingConf. Analysis still runs on the shared session, so its
+      // catalog and the resolved DataFrames are unaffected; only the confs the analyzer reads are
+      // isolated per flow.
+      val spark = SparkSession.active
+      val ctx = FlowAnalysisContext(
+        allInputs = allInputs,
+        availableInputs = availableInputs,
+        queryContext = queryContext,
+        spark = spark,
+        flowConf = spark.sessionState.conf.clone()
+      )
+      val df = SQLConf.withExistingConf(ctx.flowConf) {
+        confs.foreach { case (k, v) => ctx.setConf(k, v) }
+        Try(FlowAnalysis.analyze(ctx, plan))
+      }
+      FlowFunctionResult(
+        requestedInputs = ctx.requestedInputs.toSet,
+        batchInputs = ctx.batchInputs.toSet,
+        streamingInputs = ctx.streamingInputs.toSet,
+        usedExternalInputs = ctx.externalInputs.toSet,
+        dataFrame = df,
+        sqlConf = confs
+      )
+    }
+  }
+
+  /**
+   * Constructs an analyzed [[DataFrame]] from a [[LogicalPlan]] by resolving Pipelines specific
+   * TVFs and datasets that cannot be resolved directly by Catalyst.
+   *
+   * This runs on the flow-resolution thread pool, which may differ from the thread that defined
+   * the flow (e.g. in a Python REPL), so it must not depend on ambient singletons or thread-locals
+   * carried over from that defining thread. The one piece of per-flow state it relies on - the
+   * flow's SQL confs - is installed on the analyzing thread by
+   * [[createFlowFunctionFromLogicalPlan]] via `SQLConf.withExistingConf`, so the Catalyst analysis
+   * this triggers reads them through `SQLConf.get`.

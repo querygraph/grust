@@ -1,0 +1,13 @@
+    flow.getDetailsCase match {
+      case proto.PipelineCommand.DefineFlow.DetailsCase.RELATION_FLOW_DETAILS =>
+        val relationFlowDetails = flow.getRelationFlowDetails
+        graphElementRegistry.registerFlow(
+          UntypedFlow(
+            identifier = flowIdentifier,
+            destinationIdentifier = destinationIdentifier,
+            func = FlowAnalysis.createFlowFunctionFromLogicalPlan(
+              transformRelationFunc(relationFlowDetails.getRelation)),
+            sqlConf = flow.getSqlConfMap.asScala.toMap,
+            once = false,
+            queryContext = QueryContext(Option(defaultCatalog), Option(defaultDatabase)),
+            origin = flowOrigin(flow, flowIdentifier)))

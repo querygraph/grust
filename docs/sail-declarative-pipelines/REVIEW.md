@@ -1535,3 +1535,15 @@ Recorded 2026-10-30T03:54:50.229850+00:00. [Sail `e02e4f712f`](evidence/task-mon
 ## Primitive writer semantic schema preflight
 
 Recorded 2026-10-30T04:09:02.782340+00:00. [Sail `71f24a87a2`](evidence/orc-write-schema/README.md) adds OrcWriteSchema with storage-type and semantic-metadata admission, preserving the original schema. Six new tests include orphaned/unknown logical metadata, later-field rejection and native nullable multi-batch round trips. All237 data-source library tests, formatting and strict Clippy pass. Public writing remains rejected; the future sink/worker must invoke the preflight before opening output. Temporal/nested/decimal parity, local ownership, native accounting, graph/flow write defaults and public activation remain open. No new Spark suite or public SDP coverage is claimed.
+
+## Flow ORC configuration assumption withdrawn
+
+Recorded 2026-10-30T04:33:40.204528+00:00. [Candidate `42c65ecf64`](evidence/flow-orc-config-withdrawal/README.md)
+was withdrawn before branch advancement. Real Spark4.2.1 ignores graph/flow
+mergeSchema overrides for this direct-read registration fixture; the SQL-path
+variant instead fails with differing initial and execution schemas. The evidence
+retains the candidate, baseline failures, reference mismatch and incomplete probe.
+Read, analyzer and write-time settings require separate phase-specific evidence;
+blanket graph/flow ORC override propagation is not an approved implementation unit.
+Sail remains at `71f24a87a2` with no new coverage claim. Write-time configuration
+and public ORC writing remain open.
