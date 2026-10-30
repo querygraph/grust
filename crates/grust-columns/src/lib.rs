@@ -1,41 +1,27 @@
 //! Column-name selection and reservation checks, without schemas, engines,
-//! runtimes, or a case-folding policy of their own.
+//! runtimes, or a name-resolution policy of their own.
 //!
 //! Extracted for Sail's declarative pipelines, where Spark's Auto CDC
 //! arguments select, require and reserve columns by name under the session's
 //! `spark.sql.caseSensitive` setting. Each function mirrors one Spark
 //! primitive, so callers can port Spark assertions one to one:
 //!
-//! - [`field_index`] is `StructType.getFieldIndex` or
-//!   `getFieldIndexCaseInsensitive`.
 //! - [`select`] is `ColumnSelection.applyToSchema`, returning indices.
 //! - [`reserved`] and [`unresolved`] are the reserved-prefix and
 //!   keys-present checks on `AutoCdcMergeFlow`.
 //!
-//! Name equality is supplied by the caller as `matches(field, name)`, so the
-//! engine keeps its own Spark-parity comparator (Sail's
-//! `spark_case_insensitive_name_eq`, or the lower-cased lookup of Spark's
-//! `CaseInsensitiveMap`) and this crate carries no second Unicode
-//! implementation. [`exact`] is the case-sensitive comparator.
-//!
-//! Field names are unique within a schema by contract. A duplicate name
-//! resolves to its first occurrence; nothing here diagnoses duplicates.
+//! Selection resolves names through a caller-supplied resolver,
+//! `resolve(name) -> Option<index>`, because the engine owns the lookup policy:
+//! Spark's `StructType` resolves through a name-to-index map whose duplicate
+//! and case-collision behavior is the map's, not a search over the field
+//! list. The reserved-prefix and required-name checks take a pairwise
+//! comparator, `matches(field, name)`, as Spark's analysis `Resolver` does.
+//! This crate carries no case folding of its own; [`exact`] is the
+//! case-sensitive comparator.
 
 /// Case-sensitive name equality: Spark's `caseSensitiveResolution`.
 pub fn exact(left: &str, right: &str) -> bool {
     left == right
-}
-
-/// `StructType.getFieldIndex` or `getFieldIndexCaseInsensitive`: the first
-/// field that `matches` `name`.
-pub fn field_index<S, M>(fields: &[S], name: &str, matches: M) -> Option<usize>
-where
-    S: AsRef<str>,
-    M: Fn(&str, &str) -> bool,
-{
-    fields
-        .iter()
-        .position(|field| matches(field.as_ref(), name))
 }
 
 /// Which named columns a selection keeps.
@@ -47,36 +33,37 @@ pub enum Selection<'a, N> {
     Exclude(&'a [N]),
 }
 
-/// Selection names that match no field: distinct, in request order, spelled
-/// as the caller wrote them.
+/// Selection names that resolve to no field: distinct, in request order,
+/// spelled as the caller wrote them.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Unresolved {
     pub names: Vec<String>,
 }
 
-/// `ColumnSelection.applyToSchema`: the indices of the fields a selection
-/// retains, in field order. Several names that match the same field keep it
-/// once. If any name matches no field, every such name is reported and
-/// nothing is selected.
-pub fn select<S, N, M>(
-    fields: &[S],
+/// `ColumnSelection.applyToSchema`: the indices, among `field_count` fields,
+/// that a selection retains, in field order. Each name is resolved once with
+/// `resolve`; several names resolving to one field keep it once. If any name
+/// resolves to nothing, every such name is reported and nothing is selected.
+/// An index at or beyond `field_count` breaks the resolver's contract and is
+/// reported as unresolved rather than selected.
+pub fn select<N, R>(
+    field_count: usize,
     selection: Selection<'_, N>,
-    matches: M,
+    resolve: R,
 ) -> Result<Vec<usize>, Unresolved>
 where
-    S: AsRef<str>,
     N: AsRef<str>,
-    M: Fn(&str, &str) -> bool,
+    R: Fn(&str) -> Option<usize>,
 {
     let (names, keep_matched) = match selection {
         Selection::Include(names) => (names, true),
         Selection::Exclude(names) => (names, false),
     };
-    let mut matched = vec![false; fields.len()];
+    let mut matched = vec![false; field_count];
     let mut missing: Vec<String> = Vec::new();
     for name in names {
-        match field_index(fields, name.as_ref(), &matches) {
-            Some(index) => matched[index] = true,
+        match resolve(name.as_ref()).and_then(|index| matched.get_mut(index)) {
+            Some(hit) => *hit = true,
             None => {
                 if !missing.iter().any(|seen| seen == name.as_ref()) {
                     missing.push(name.as_ref().to_string());
