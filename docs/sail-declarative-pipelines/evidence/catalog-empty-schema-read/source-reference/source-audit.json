@@ -1,0 +1,522 @@
+{
+  "recorded_at": "2026-10-30T02:07:45.089561+00:00",
+  "scope": "Read-only source audit. No new runtime, gates or worktree edits.",
+  "spark_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "sail_source_pin": "03e8783f2164b259f17ed0294af6189053240bf4",
+  "root_runtime_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+  "sources": [
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSourceStrategy.scala",
+      "retained": "sources/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSourceStrategy.scala",
+      "sha256": "0cc8136d861ab61051d184d051db88d4c5ecada6e11efb46e980e451e51cc102",
+      "bytes": 41778,
+      "excerpts": [
+        {
+          "start": 253,
+          "end": 277,
+          "text": "253: class FindDataSourceTable(sparkSession: SparkSession) extends Rule[LogicalPlan] {\n254:   private def readDataSourceTable(\n255:       table: CatalogTable, extraOptions: CaseInsensitiveStringMap): LogicalPlan = {\n256:     val qualifiedTableName =\n257:       QualifiedTableName(table.identifier.catalog.get, table.database, table.identifier.table)\n258:     val catalog = sparkSession.sessionState.catalog\n259:     val dsOptions = DataSourceUtils.generateDatasourceOptions(extraOptions, table)\n260:     val readFileSourceTableCacheIgnoreOptions =\n261:       SQLConf.get.getConf(SQLConf.READ_FILE_SOURCE_TABLE_CACHE_IGNORE_OPTIONS)\n262:     catalog.getCachedTable(qualifiedTableName) match {\n263:       case null =>\n264:         val dataSource =\n265:           DataSource(\n266:             sparkSession,\n267:             // In older version(prior to 2.1) of Spark, the table schema can be empty and should be\n268:             // inferred at runtime. We should still support it.\n269:             userSpecifiedSchema = if (table.schema.isEmpty) None else Some(table.schema),\n270:             partitionColumns = table.partitionColumnNames,\n271:             bucketSpec = table.bucketSpec,\n272:             className = table.provider.get,\n273:             options = dsOptions,\n274:             catalogTable = Some(table))\n275:         val plan = LogicalRelation(dataSource.resolveRelation(checkFilesExist = false), table)\n276:         catalog.cacheTable(qualifiedTableName, plan)\n277:         plan"
+        }
+      ]
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/command/createDataSourceTables.scala",
+      "retained": "sources/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/command/createDataSourceTables.scala",
+      "sha256": "c5b6a36187dccdaf4329b24f1b5d7097b34154557229ce0fbc2471c4ac18fa4e",
+      "bytes": 11234,
+      "excerpts": [
+        {
+          "start": 49,
+          "end": 126,
+          "text": "49: case class CreateDataSourceTableCommand(table: CatalogTable, ignoreIfExists: Boolean)\n50:   extends LeafRunnableCommand {\n51: \n52:   override def run(sparkSession: SparkSession): Seq[Row] = {\n53:     assert(!table.isViewLike)\n54:     assert(table.provider.isDefined)\n55: \n56:     val sessionState = sparkSession.sessionState\n57:     if (sessionState.catalog.tableExists(table.identifier)) {\n58:       if (ignoreIfExists) {\n59:         return Seq.empty[Row]\n60:       } else {\n61:         throw QueryCompilationErrors.tableAlreadyExistsError(table.identifier.unquotedString)\n62:       }\n63:     }\n64: \n65:     // Create the relation to validate the arguments before writing the metadata to the metastore,\n66:     // and infer the table schema and partition if users didn't specify schema in CREATE TABLE.\n67:     val pathOption = table.storage.locationUri.map(\"path\" -> CatalogUtils.URIToString(_))\n68:     // Fill in some default table options from the session conf\n69:     val tableWithDefaultOptions = table.copy(\n70:       identifier = table.identifier.copy(\n71:         database = Some(\n72:           table.identifier.database.getOrElse(sessionState.catalog.getCurrentDatabase))),\n73:       tracksPartitionsInCatalog = sessionState.conf.manageFilesourcePartitions)\n74:     val dataSource: BaseRelation =\n75:       DataSource(\n76:         sparkSession = sparkSession,\n77:         userSpecifiedSchema = if (table.schema.isEmpty) None else Some(table.schema),\n78:         partitionColumns = table.partitionColumnNames,\n79:         className = table.provider.get,\n80:         bucketSpec = table.bucketSpec,\n81:         options = table.storage.properties ++ pathOption,\n82:         // As discussed in SPARK-19583, we don't check if the location is existed\n83:         catalogTable = Some(tableWithDefaultOptions))\n84:         .resolveRelation(checkFilesExist = false,\n85:           forceNullable = !sessionState.conf.getConf(SQLConf.FILE_SOURCE_INSERT_ENFORCE_NOT_NULL))\n86: \n87:     val partitionColumnNames = if (table.schema.nonEmpty) {\n88:       table.partitionColumnNames\n89:     } else {\n90:       // This is guaranteed in `PreprocessDDL`.\n91:       assert(table.partitionColumnNames.isEmpty)\n92:       dataSource match {\n93:         case r: HadoopFsRelation => r.partitionSchema.fieldNames.toImmutableArraySeq\n94:         case _ => Nil\n95:       }\n96:     }\n97: \n98:     val newTable = dataSource match {\n99:       // Since Spark 2.1, we store the inferred schema of data source in metastore, to avoid\n100:       // inferring the schema again at read path. However if the data source has overlapped columns\n101:       // between data and partition schema, we can't store it in metastore as it breaks the\n102:       // assumption of table schema. Here we fallback to the behavior of Spark prior to 2.1, store\n103:       // empty schema in metastore and infer it at runtime. Note that this also means the new\n104:       // scalable partitioning handling feature(introduced at Spark 2.1) is disabled in this case.\n105:       case r: HadoopFsRelation if r.overlappedPartCols.nonEmpty =>\n106:         logWarning(\"It is not recommended to create a table with overlapped data and partition \" +\n107:           \"columns, as Spark cannot store a valid table schema and has to infer it at runtime, \" +\n108:           \"which hurts performance. Please check your data files and remove the partition \" +\n109:           \"columns in it.\")\n110:         table.copy(schema = new StructType(), partitionColumnNames = Nil)\n111: \n112:       case _ =>\n113:         table.copy(\n114:           schema = dataSource.schema,\n115:           partitionColumnNames = partitionColumnNames,\n116:           // If metastore partition management for file source tables is enabled, we start off with\n117:           // partition provider hive, but no partitions in the metastore. The user has to call\n118:           // `msck repair table` to populate the table partitions.\n119:           tracksPartitionsInCatalog = partitionColumnNames.nonEmpty &&\n120:             sessionState.conf.manageFilesourcePartitions)\n121: \n122:     }\n123: \n124:     sessionState.catalog.createTable(newTable, ignoreIfExists)\n125: \n126:     Seq.empty[Row]"
+        }
+      ]
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSource.scala",
+      "retained": "sources/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSource.scala",
+      "sha256": "9e9f3aea3a5043f9643e121b773b3b714613a6fdfe01bd1e16a274b73e91d624",
+      "bytes": 42667,
+      "excerpts": [
+        {
+          "start": 180,
+          "end": 231,
+          "text": "180:   private def getOrInferFileFormatSchema(\n181:       format: FileFormat,\n182:       getFileIndex: () => InMemoryFileIndex): (StructType, StructType) = {\n183:     lazy val tempFileIndex = getFileIndex()\n184: \n185:     val partitionSchema = if (partitionColumns.isEmpty) {\n186:       // Try to infer partitioning, because no DataSource in the read path provides the partitioning\n187:       // columns properly unless it is a Hive DataSource\n188:       tempFileIndex.partitionSchema\n189:     } else {\n190:       // maintain old behavior before SPARK-18510. If userSpecifiedSchema is empty used inferred\n191:       // partitioning\n192:       if (userSpecifiedSchema.isEmpty) {\n193:         val inferredPartitions = tempFileIndex.partitionSchema\n194:         inferredPartitions\n195:       } else {\n196:         val partitionFields = partitionColumns.map { partitionColumn =>\n197:           userSpecifiedSchema.flatMap(_.find(c => equality(c.name, partitionColumn))).orElse {\n198:             val inferredPartitions = tempFileIndex.partitionSchema\n199:             val inferredOpt = inferredPartitions.find(p => equality(p.name, partitionColumn))\n200:             if (inferredOpt.isDefined) {\n201:               logDebug(\n202:                 s\"\"\"Type of partition column: $partitionColumn not found in specified schema\n203:                    |for $format.\n204:                    |User Specified Schema\n205:                    |=====================\n206:                    |${userSpecifiedSchema.orNull}\n207:                    |\n208:                    |Falling back to inferred dataType if it exists.\n209:                  \"\"\".stripMargin)\n210:             }\n211:             inferredOpt\n212:           }.getOrElse {\n213:             throw QueryCompilationErrors.partitionColumnNotSpecifiedError(\n214:               format.toString, partitionColumn)\n215:           }\n216:         }\n217:         StructType(partitionFields)\n218:       }\n219:     }\n220: \n221:     val dataSchema = userSpecifiedSchema.map { schema =>\n222:       StructType(schema.filterNot(f => partitionSchema.exists(p => equality(p.name, f.name))))\n223:     }.orElse {\n224:       // Remove \"path\" option so that it is not added to the paths returned by\n225:       // `tempFileIndex.allFiles()`.\n226:       format.inferSchema(\n227:         sparkSession,\n228:         caseInsensitiveOptions - \"path\",\n229:         tempFileIndex.allFiles())\n230:     }.getOrElse {\n231:       throw QueryCompilationErrors.dataSchemaNotSpecifiedError(format.toString)"
+        }
+      ]
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-plan/src/resolver/query/read.rs",
+      "retained": "sources/sail/crates/sail-plan/src/resolver/query/read.rs",
+      "sha256": "a6d73d32df4a55a2acf516b2f5d413bc587fd5023bcd8b4aa615b1be2ce4e132",
+      "bytes": 30677,
+      "excerpts": [
+        {
+          "start": 185,
+          "end": 259,
+          "text": "185:         let plan = match status.kind {\n186:             TableKind::Table {\n187:                 columns,\n188:                 comment: _,\n189:                 constraints,\n190:                 format,\n191:                 location,\n192:                 partition_by,\n193:                 sort_by,\n194:                 bucket_by,\n195:                 properties,\n196:                 is_external: _,\n197:             } => {\n198:                 if let Some((_, relation)) = lake_relation.as_ref()\n199:                     && relation.time_travel() == LakeRelationTimeTravel::Unsupported\n200:                     && temporal.is_some()\n201:                 {\n202:                     return Err(PlanError::unsupported(format!(\n203:                         \"SQL time travel is not supported for lake relation '{}'\",\n204:                         relation.name()\n205:                     )));\n206:                 }\n207:                 let schema = Schema::new(columns.iter().map(|x| x.field()).collect::<Vec<_>>());\n208:                 let constraints = self.resolve_catalog_table_constraints(constraints, &schema)?;\n209:                 let temporal_options = self\n210:                     .resolve_time_travel_options(&format, temporal, state)\n211:                     .await?;\n212:                 let lakehouse_table = if let Some((_, relation)) = lake_relation.as_ref() {\n213:                     self.resolve_lakehouse_table_context_for_access(\n214:                         &catalog_reference,\n215:                         LakehouseOperation::Read,\n216:                         Some(&format),\n217:                         vec![],\n218:                         lake_relation_access_purpose(relation.access()),\n219:                     )\n220:                     .await?\n221:                 } else {\n222:                     self.resolve_lakehouse_table_context(\n223:                         &catalog_reference,\n224:                         LakehouseOperation::Read,\n225:                         Some(&format),\n226:                         vec![],\n227:                     )\n228:                     .await?\n229:                 };\n230:                 let info = SourceInfo {\n231:                     paths: location.map(|x| vec![x]).unwrap_or_default(),\n232:                     lakehouse_table: Some(lakehouse_table),\n233:                     schema: Some(schema),\n234:                     constraints,\n235:                     partition_by: partition_by.into_iter().map(|field| field.column).collect(),\n236:                     bucket_by: bucket_by.map(|x| x.into()),\n237:                     sort_order: sort_by.into_iter().map(|x| x.into()).collect(),\n238:                     // TODO: detect duplicated keys in each set of options\n239:                     options: vec![\n240:                         OptionLayer::TablePropertyList { items: properties },\n241:                         OptionLayer::OptionList { items: options },\n242:                         OptionLayer::OptionList {\n243:                             items: temporal_options,\n244:                         },\n245:                     ],\n246:                     read_case_sensitive: self.config.case_sensitive,\n247:                 };\n248:                 let table_source = match lake_relation {\n249:                     Some((relation_provider, relation)) => {\n250:                         relation_provider\n251:                             .create_relation(&self.ctx.state(), info, relation)\n252:                             .await?\n253:                     }\n254:                     None => {\n255:                         data_source_registry\n256:                             .get_data_source(&format)?\n257:                             .create_source(&self.ctx.state(), info)\n258:                             .await?\n259:                     }"
+        },
+        {
+          "start": 597,
+          "end": 635,
+          "text": "597:     pub(super) async fn resolve_query_read_data_source(\n598:         &self,\n599:         source: spec::ReadDataSource,\n600:         state: &mut PlanResolverState,\n601:     ) -> PlanResult<LogicalPlan> {\n602:         let spec::ReadDataSource {\n603:             format,\n604:             schema,\n605:             options,\n606:             paths,\n607:             predicates,\n608:         } = source;\n609:         if !predicates.is_empty() {\n610:             return Err(PlanError::todo(\"data source predicates\"));\n611:         }\n612:         let format = format.unwrap_or_else(|| self.config.default_table_file_format.clone());\n613:         let schema = match schema {\n614:             Some(schema) => Some(self.resolve_schema(schema, state)?),\n615:             None => None,\n616:         };\n617:         let info = SourceInfo {\n618:             paths,\n619:             lakehouse_table: None,\n620:             schema,\n621:             constraints: Default::default(),\n622:             partition_by: vec![],\n623:             bucket_by: None,\n624:             sort_order: vec![],\n625:             // TODO: detect duplicated keys in the set of options\n626:             options: vec![OptionLayer::OptionList {\n627:                 items: options.into_iter().collect(),\n628:             }],\n629:             read_case_sensitive: self.config.case_sensitive,\n630:         };\n631:         let registry = self.ctx.extension::<DataSourceRegistry>()?;\n632:         let table_source = registry\n633:             .get_data_source(&format)?\n634:             .create_source(&self.ctx.state(), info)\n635:             .await?;"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "a6d73d32df4a55a2acf516b2f5d413bc587fd5023bcd8b4aa615b1be2ce4e132"
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-plan/src/resolver/command/catalog/table.rs",
+      "retained": "sources/sail/crates/sail-plan/src/resolver/command/catalog/table.rs",
+      "sha256": "642161c92b5e0ebcf996da43a352c486230e99e29f75c061315fa41ae1a109d4",
+      "bytes": 29637,
+      "excerpts": [
+        {
+          "start": 43,
+          "end": 94,
+          "text": "43:         let is_external = external || spec::has_path_or_location(location.as_deref(), &options);\n44:         if row_format.is_some() {\n45:             return Err(PlanError::todo(\"ROW FORMAT in CREATE TABLE statement\"));\n46:         }\n47:         if !cluster_by.is_empty() {\n48:             return Err(PlanError::todo(\"CLUSTER BY in CREATE TABLE statement\"));\n49:         }\n50:         let mut columns = self.resolve_table_columns(columns, state)?;\n51:         let constraints = self.resolve_table_constraints(constraints)?;\n52:         let location = if let Some(location) = location {\n53:             location\n54:         } else {\n55:             self.resolve_default_table_location(&table).await?\n56:         };\n57:         let format = self.resolve_catalog_data_source_format(file_format)?;\n58:         let partition_by =\n59:             self.resolve_catalog_table_partition_by(partition_by, &mut columns, state)?;\n60:         for partition in &partition_by {\n61:             if columns.iter().any(|column| {\n62:                 column.identity.is_some() && column.name.eq_ignore_ascii_case(&partition.column)\n63:             }) {\n64:                 return Err(PlanError::invalid(format!(\n65:                     \"PARTITIONED BY IDENTITY column `{}` is not supported\",\n66:                     partition.column\n67:                 )));\n68:             }\n69:         }\n70:         let sort_by = self.resolve_catalog_table_sort(sort_by)?;\n71:         let bucket_by = self.resolve_catalog_table_bucket_by(bucket_by)?;\n72:         let properties = properties\n73:             .into_iter()\n74:             .chain(options.into_iter().map(|(k, v)| (format!(\"option.{k}\"), v)))\n75:             .collect();\n76: \n77:         let command = CatalogCommand::CreateTable {\n78:             table: table.into(),\n79:             options: CreateTableOptions {\n80:                 columns,\n81:                 comment,\n82:                 constraints,\n83:                 location: Some(location),\n84:                 format,\n85:                 partition_by,\n86:                 sort_by,\n87:                 bucket_by,\n88:                 mode,\n89:                 properties,\n90:                 is_external,\n91:                 is_write_precondition: false,\n92:             },\n93:         };\n94:         self.resolve_catalog_command(command)"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "642161c92b5e0ebcf996da43a352c486230e99e29f75c061315fa41ae1a109d4"
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-catalog/src/command.rs",
+      "retained": "sources/sail/crates/sail-catalog/src/command.rs",
+      "sha256": "2afd1dcdcb2197b55d2f905a8af978c105441d4c32a3efcf270a827fd46438d7",
+      "bytes": 72593,
+      "excerpts": [
+        {
+          "start": 343,
+          "end": 368,
+          "text": "343:             CatalogCommand::CreateTable { table, options } => {\n344:                 let existed_before = if options.mode.ignore_if_exists() {\n345:                     match manager.get_table_or_view(&table).await {\n346:                         Ok(_) => true,\n347:                         Err(CatalogError::NotFound(_, _)) => false,\n348:                         Err(e) => return Err(e),\n349:                     }\n350:                 } else {\n351:                     false\n352:                 };\n353:                 let Some((options, create_plan)) =\n354:                     prepare_create_table_storage_metadata(ctx, manager, &table, options).await?\n355:                 else {\n356:                     return Ok(display.bools().to_record_batch(vec![true])?);\n357:                 };\n358:                 let status = manager.create_table(&table, options).await?;\n359:                 if !existed_before {\n360:                     prepare_created_table_storage_metadata(\n361:                         ctx,\n362:                         manager,\n363:                         &table,\n364:                         &status,\n365:                         &create_plan,\n366:                     )\n367:                     .await?;\n368:                 }"
+        },
+        {
+          "start": 972,
+          "end": 1058,
+          "text": "972: async fn prepare_create_table_storage_metadata<C: SessionExtensionAccessor>(\n973:     ctx: &C,\n974:     manager: &CatalogManager,\n975:     table: &[String],\n976:     mut options: CreateTableOptions,\n977: ) -> CatalogResult<Option<(CreateTableOptions, LakehouseCreatePlan)>> {\n978:     match manager.get_table_or_view(table).await {\n979:         Ok(_) if options.mode.ignore_if_exists() => return Ok(None),\n980:         Ok(_) if !options.mode.is_replace() => {\n981:             return Err(CatalogError::AlreadyExists(\n982:                 CatalogObject::Table,\n983:                 table.join(\".\"),\n984:             ));\n985:         }\n986:         Ok(_) => {}\n987:         Err(CatalogError::NotFound(_, _)) if options.mode.replace_requires_existing() => {\n988:             return Err(CatalogError::NotFound(\n989:                 CatalogObject::Table,\n990:                 table.join(\".\"),\n991:             ));\n992:         }\n993:         Err(CatalogError::NotFound(_, _)) => {}\n994:         Err(err) => return Err(err),\n995:     }\n996: \n997:     let create_plan = manager\n998:         .plan_lakehouse_create(\n999:             table,\n1000:             LakehouseCreateRequest {\n1001:                 catalog_table: table.to_vec(),\n1002:                 options: options.clone(),\n1003:             },\n1004:         )\n1005:         .await?;\n1006: \n1007:     let LakehouseCreateMaterialization::BeforeCatalogLakeSource { context, .. } =\n1008:         &create_plan.materialization\n1009:     else {\n1010:         return Ok(Some((options, create_plan)));\n1011:     };\n1012: \n1013:     let location = options.location.clone().ok_or_else(|| {\n1014:         CatalogError::InvalidArgument(format!(\n1015:             \"Location is required to create storage metadata for {} tables\",\n1016:             options.format\n1017:         ))\n1018:     })?;\n1019:     let metadata = materialize_lake_source_create_metadata(\n1020:         ctx,\n1021:         &options.format,\n1022:         location,\n1023:         &options.columns,\n1024:         options.comment.clone(),\n1025:         options.partition_by.clone(),\n1026:         options.properties.clone(),\n1027:         options.mode.is_replace(),\n1028:         context.as_deref().cloned(),\n1029:     )\n1030:     .await?;\n1031:     if options.columns.is_empty() {\n1032:         if let Some(schema) = metadata.schema {\n1033:             options.columns = schema\n1034:                 .fields()\n1035:                 .iter()\n1036:                 .map(|field| {\n1037:                     let features =\n1038:                         sail_common_datafusion::column_features::ColumnFeatures::from_field(field);\n1039:                     crate::provider::CreateTableColumnOptions {\n1040:                         name: field.name().clone(),\n1041:                         data_type: field.data_type().clone(),\n1042:                         nullable: field.is_nullable(),\n1043:                         comment: field\n1044:                             .metadata()\n1045:                             .get(\"comment\")\n1046:                             .or_else(|| field.metadata().get(\"doc\"))\n1047:                             .cloned(),\n1048:                         default: features.current_default(),\n1049:                         generated_always_as: features.generation_expression(),\n1050:                         identity: features.identity(),\n1051:                     }\n1052:                 })\n1053:                 .collect();\n1054:         }\n1055:         if let Some(partition_by) = metadata.partition_by {\n1056:             options.partition_by = partition_by;\n1057:         }\n1058:     }"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "2afd1dcdcb2197b55d2f905a8af978c105441d4c32a3efcf270a827fd46438d7"
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-catalog/src/provider/options.rs",
+      "retained": "sources/sail/crates/sail-catalog/src/provider/options.rs",
+      "sha256": "f976073d53d7affffbb3ff6e46651162d3d2352c8d5de914f9c8dc3113648e2f",
+      "bytes": 10352,
+      "excerpts": [
+        {
+          "start": 28,
+          "end": 43,
+          "text": "28: #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Serialize, Deserialize)]\n29: pub struct CreateTableOptions {\n30:     pub columns: Vec<CreateTableColumnOptions>,\n31:     pub comment: Option<String>,\n32:     pub constraints: Vec<CatalogTableConstraint>,\n33:     pub location: Option<String>,\n34:     pub format: String,\n35:     pub partition_by: Vec<CatalogPartitionField>,\n36:     pub sort_by: Vec<CatalogTableSort>,\n37:     pub bucket_by: Option<CatalogTableBucketBy>,\n38:     #[serde(default)]\n39:     pub mode: CreateTableMode,\n40:     pub properties: Vec<(String, String)>,\n41:     pub is_external: bool,\n42:     #[serde(default)]\n43:     pub is_write_precondition: bool,"
+        },
+        {
+          "start": 58,
+          "end": 84,
+          "text": "58: pub fn plain_lakehouse_create_table_metadata_requirement(\n59:     options: &CreateTableOptions,\n60: ) -> CreateTableMetadataRequirement {\n61:     if options.is_write_precondition {\n62:         return CreateTableMetadataRequirement::None;\n63:     }\n64:     if options.format.eq_ignore_ascii_case(\"delta\")\n65:         || options.format.eq_ignore_ascii_case(\"iceberg\")\n66:     {\n67:         CreateTableMetadataRequirement::LakeSource {\n68:             mode: LakeSourceCreateMetadataMode::PathManaged,\n69:         }\n70:     } else {\n71:         CreateTableMetadataRequirement::None\n72:     }\n73: }\n74: \n75: #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Serialize, Deserialize)]\n76: pub struct CreateTableColumnOptions {\n77:     pub name: String,\n78:     pub data_type: DataType,\n79:     pub nullable: bool,\n80:     pub comment: Option<String>,\n81:     pub default: Option<String>,\n82:     pub generated_always_as: Option<String>,\n83:     pub identity: Option<CatalogTableColumnIdentity>,\n84: }"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "f976073d53d7affffbb3ff6e46651162d3d2352c8d5de914f9c8dc3113648e2f"
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-catalog-memory/src/provider.rs",
+      "retained": "sources/sail/crates/sail-catalog-memory/src/provider.rs",
+      "sha256": "b4f5f5b114146f4155f8040e913c8f5955c0748966599cc2851ee42367f93a88",
+      "bytes": 26651,
+      "excerpts": [
+        {
+          "start": 427,
+          "end": 477,
+          "text": "427:         let columns = columns\n428:             .into_iter()\n429:             .map(|x| {\n430:                 let CreateTableColumnOptions {\n431:                     name,\n432:                     data_type,\n433:                     nullable,\n434:                     comment,\n435:                     default,\n436:                     generated_always_as,\n437:                     identity,\n438:                 } = x;\n439:                 let is_partition = partition_by\n440:                     .iter()\n441:                     .any(|x| x.column.eq_ignore_ascii_case(&name));\n442:                 let is_bucket = bucket_by\n443:                     .as_ref()\n444:                     .is_some_and(|b| b.columns.iter().any(|x| x.eq_ignore_ascii_case(&name)));\n445:                 TableColumnStatus {\n446:                     name,\n447:                     data_type,\n448:                     nullable,\n449:                     comment,\n450:                     default,\n451:                     generated_always_as,\n452:                     identity,\n453:                     is_partition,\n454:                     is_bucket,\n455:                     is_cluster: false,\n456:                 }\n457:             })\n458:             .collect();\n459:         let status = TableStatus {\n460:             catalog: Some(self.name.clone()),\n461:             database: database.clone().into(),\n462:             name: table.to_string(),\n463:             kind: TableKind::Table {\n464:                 columns,\n465:                 comment,\n466:                 constraints,\n467:                 location,\n468:                 format,\n469:                 partition_by,\n470:                 sort_by,\n471:                 bucket_by,\n472:                 properties,\n473:                 is_external,\n474:             },\n475:         };\n476:         db.tables.insert(table.to_string(), status.clone());\n477:         Ok(status)"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "b4f5f5b114146f4155f8040e913c8f5955c0748966599cc2851ee42367f93a88"
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-common-datafusion/src/catalog/status.rs",
+      "retained": "sources/sail/crates/sail-common-datafusion/src/catalog/status.rs",
+      "sha256": "aaffe3a21c8c68ce304be4fe365c00fd6b9a22201191bb72b86ad330a5820cb6",
+      "bytes": 18790,
+      "excerpts": [
+        {
+          "start": 118,
+          "end": 137,
+          "text": "118: pub enum TableKind {\n119:     Table {\n120:         columns: Vec<TableColumnStatus>,\n121:         comment: Option<String>,\n122:         constraints: Vec<CatalogTableConstraint>,\n123:         location: Option<String>,\n124:         format: String,\n125:         partition_by: Vec<CatalogPartitionField>,\n126:         sort_by: Vec<CatalogTableSort>,\n127:         bucket_by: Option<CatalogTableBucketBy>,\n128:         properties: Vec<(String, String)>,\n129:         /// Whether the table is external. When `false` the table is managed.\n130:         ///\n131:         /// This flag is purely informational at present: Sail always creates\n132:         /// tables as external (`EXTERNAL=TRUE`, `table_type = EXTERNAL_TABLE`)\n133:         /// and does not differentiate managed vs external behavior for\n134:         /// operations like `DROP TABLE` (metadata-only; data is preserved). The flag\n135:         /// exists so that `type_name()` correctly reports the table type that\n136:         /// was recorded in the HMS metastore by other engines (e.g. Spark).\n137:         is_external: bool,"
+        },
+        {
+          "start": 323,
+          "end": 361,
+          "text": "323: #[derive(Debug, Clone, PartialEq, Eq)]\n324: pub struct TableColumnStatus {\n325:     pub name: String,\n326:     pub data_type: DataType,\n327:     pub nullable: bool,\n328:     pub comment: Option<String>,\n329:     pub default: Option<String>,\n330:     pub generated_always_as: Option<String>,\n331:     pub identity: Option<super::CatalogTableColumnIdentity>,\n332:     pub is_partition: bool,\n333:     pub is_bucket: bool,\n334:     pub is_cluster: bool,\n335: }\n336: \n337: impl TableColumnStatus {\n338:     pub fn field(&self) -> Field {\n339:         let mut metadata = std::collections::HashMap::new();\n340:         if let Some(expr) = &self.generated_always_as {\n341:             let builder = ColumnFeaturesBuilder::new().with_generation_expression(expr.clone());\n342:             metadata.extend(builder.build());\n343:         }\n344:         if let Some(expr) = &self.default {\n345:             let builder = ColumnFeaturesBuilder::new().with_current_default(expr.clone());\n346:             metadata.extend(builder.build());\n347:         }\n348:         if let Some(identity) = &self.identity {\n349:             let builder = ColumnFeaturesBuilder::new().with_identity(identity);\n350:             metadata.extend(builder.build());\n351:         }\n352:         if let Some(comment) = &self.comment {\n353:             metadata.insert(\"comment\".to_string(), comment.clone());\n354:         }\n355:         let field = Field::new(self.name.clone(), self.data_type.clone(), self.nullable);\n356:         if metadata.is_empty() {\n357:             field\n358:         } else {\n359:             field.with_metadata(metadata)\n360:         }\n361:     }"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "aaffe3a21c8c68ce304be4fe365c00fd6b9a22201191bb72b86ad330a5820cb6"
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-data-source/src/listing/source.rs",
+      "retained": "sources/sail/crates/sail-data-source/src/listing/source.rs",
+      "sha256": "998a1da16829ad4f11c6ca88ed3847c016ddfb5930a12afc8fefaec2ca1b0336",
+      "bytes": 16764,
+      "excerpts": [
+        {
+          "start": 83,
+          "end": 100,
+          "text": "83:     /// Prepare a supplied schema before partition columns are separated.\n84:     ///\n85:     /// The default retains legacy name reconciliation and physical-schema\n86:     /// inference. An empty schema returns `None`, requesting ordinary inference.\n87:     /// Formats can instead retain an explicit schema (including an empty one)\n88:     /// and defer per-file compatibility checks by returning `Some` without a\n89:     /// physical schema. This hook is not called when no schema was supplied.\n90:     async fn prepare_explicit_schema(\n91:         &self,\n92:         ctx: &dyn Session,\n93:         schema: Schema,\n94:         files: &[ListingFileSample<'_>],\n95:         compression: CompressionTypeVariant,\n96:         read_case_sensitive: bool,\n97:     ) -> Result<Option<PreparedExplicitSchema>> {\n98:         if schema.fields().is_empty() {\n99:             return Ok(None);\n100:         }"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "998a1da16829ad4f11c6ca88ed3847c016ddfb5930a12afc8fefaec2ca1b0336"
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "crates/sail-data-source/src/formats/orc/read.rs",
+      "retained": "sources/sail/crates/sail-data-source/src/formats/orc/read.rs",
+      "sha256": "151fb5499c42007962524f2753b3f48c1238d296572e74af86b320738005b397",
+      "bytes": 6541,
+      "excerpts": [
+        {
+          "start": 114,
+          "end": 128,
+          "text": "114:     async fn prepare_explicit_schema(\n115:         &self,\n116:         _ctx: &dyn Session,\n117:         schema: Schema,\n118:         _files: &[ListingFileSample<'_>],\n119:         compression: CompressionTypeVariant,\n120:         _read_case_sensitive: bool,\n121:     ) -> Result<Option<PreparedExplicitSchema>> {\n122:         check_compression(compression)?;\n123:         Ok(Some(PreparedExplicitSchema {\n124:             schema: OrcRequestedSchemaAdapter::nullable_schema(&schema)\n125:                 .as_ref()\n126:                 .clone(),\n127:             physical: None,\n128:         }))"
+        }
+      ],
+      "same_source_at_E_candidate": true,
+      "E_candidate": "8ea2c075ed2cccb503c99ece60e18db32a32964c",
+      "E_candidate_sha256": "151fb5499c42007962524f2753b3f48c1238d296572e74af86b320738005b397"
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "LICENSE",
+      "retained": "SPARK-LICENSE",
+      "sha256": "b8ea0873b8410497804dbb19dac00ffa5017d2ab33582b9e7ce46692fa4a0da1",
+      "bytes": 13640
+    },
+    {
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "NOTICE",
+      "retained": "SPARK-NOTICE",
+      "sha256": "9346e8e0a1e21cb45ac792b75ca4d3adfd858bc57dd6627e47714c761e917a0d",
+      "bytes": 2002
+    },
+    {
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "03e8783f2164b259f17ed0294af6189053240bf4",
+      "path": "LICENSE",
+      "retained": "SAIL-LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357
+    }
+  ],
+  "root_runtime_references": [
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/MANIFEST.json",
+      "sha256": "a37a2c10067d9cbf8c180af9e07b04f62fa701b4f0eb025b69fa63f9d8e9f6c2",
+      "bytes": 7247
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/observation.json",
+      "sha256": "83c65583b3ab07c8bc672702e263bb183c433ee17247e18efb0fa223c7a7e532",
+      "bytes": 721
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/catalog-control.json",
+      "sha256": "4c207e6c98b539c6c563b58bd7a508e5ccce057074c7ba6921da1f133ee9de4c",
+      "bytes": 7964
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/catalog-control.py",
+      "sha256": "0ca86c7b511daa0fb77b562b5417adc3c5eb37a78c1d0ceecc35d7954b161f4b",
+      "bytes": 2204
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/public/gate.json",
+      "sha256": "1f91d0ccd447f7adb99718f188a526a1178fd6827245fd3a5267dc52b27098cc",
+      "bytes": 42938
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/public/build.json",
+      "sha256": "9a9fc325fc4d689a7b652b05121cd517d7fc535f6f1282fdc8e432e189978c24",
+      "bytes": 3818
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/public/server.json",
+      "sha256": "e51a7e725e6ddd413b95c18c97336897783818f8ce59421babbea97093634793",
+      "bytes": 2163
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/public/pytest.log",
+      "sha256": "01c6403335bb3b0447cf881aeb53e038d10c1f9c757180d5206542538c50da6c",
+      "bytes": 2742
+    },
+    {
+      "path": "/tmp/sail-sdp-orc-public-attempt-01-external-schema/public/pytest.xml",
+      "sha256": "94a7e1b206fae2f3c3eb6e7f855c8838c35115c73eb394e29870d70085d540c0",
+      "bytes": 49145
+    }
+  ],
+  "root_runtime_control_cli_sha256": "2fc5b810c09cc339849574b01a18afd4b054aa0a2b775d2d9b5896bdf8a597db",
+  "root_runtime_control_cases": [
+    {
+      "format": "orc",
+      "explicit_schema": false,
+      "direct_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_schema": {
+        "type": "struct",
+        "fields": []
+      },
+      "table_rows": [
+        [],
+        []
+      ],
+      "describe": [],
+      "file_unchanged": true
+    },
+    {
+      "format": "orc",
+      "explicit_schema": true,
+      "direct_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_rows": [
+        [
+          3
+        ],
+        [
+          1
+        ]
+      ],
+      "describe": [
+        [
+          "id",
+          "int",
+          null
+        ]
+      ],
+      "file_unchanged": true
+    },
+    {
+      "format": "parquet",
+      "explicit_schema": false,
+      "direct_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_rows": [
+        [
+          3
+        ],
+        [
+          1
+        ]
+      ],
+      "describe": [],
+      "file_unchanged": true
+    },
+    {
+      "format": "parquet",
+      "explicit_schema": true,
+      "direct_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_rows": [
+        [
+          3
+        ],
+        [
+          1
+        ]
+      ],
+      "describe": [
+        [
+          "id",
+          "int",
+          null
+        ]
+      ],
+      "file_unchanged": true
+    },
+    {
+      "format": "json",
+      "explicit_schema": false,
+      "direct_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_rows": [
+        [
+          3
+        ],
+        [
+          1
+        ]
+      ],
+      "describe": [],
+      "file_unchanged": true
+    },
+    {
+      "format": "json",
+      "explicit_schema": true,
+      "direct_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "table_rows": [
+        [
+          3
+        ],
+        [
+          1
+        ]
+      ],
+      "describe": [
+        [
+          "id",
+          "int",
+          null
+        ]
+      ],
+      "file_unchanged": true
+    }
+  ],
+  "first_public_result": {
+    "passed": 295,
+    "failed": 1,
+    "upstream_executed": false,
+    "failure": "test_orc_external_catalog_table_reads_existing_files: omitted catalog schema yielded StructType([])"
+  },
+  "qualification": "Spark fallback is source-supported. Root six-case controls are retained prior Sail observations on candidate 8ea2; not fresh Spark observations."
+}

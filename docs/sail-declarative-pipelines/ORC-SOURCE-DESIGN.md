@@ -653,3 +653,27 @@ of late file 11 before requiring the unchanged precision-conflict error.
 This is the read-library assembly checkpoint. Public registry/CLI/SDP runtime,
 writer support and broader acceptance remain separate; factory/sink writing
 returns an explicit unsupported error. No streaming/Iggy or CDC verdict changes.
+
+## Infer named-table reads with empty stored schemas
+
+Recorded: 2026-10-30T02:15:13.730284+00:00. [Sail `75ac384c4c`](evidence/catalog-empty-schema-read/README.md)
+normalizes an empty catalog schema to an absent schema at the shared named-read
+boundary. This matches Spark's retained compatibility rule and allows ordinary
+source inference. Direct reads with an explicitly empty schema remain distinct;
+nonempty catalog fields, their existing metadata, constraints and read context
+are unchanged. Delta already performs the same normalization downstream, while
+Iceberg ignores this schema carrier. No ORC-specific resolver branch was added.
+
+Formatting, strict Clippy and 37 plan-library tests pass. The original public
+ORC candidate's 295 passed / 1 failed result is retained with its unchanged
+external-table assertion and six same-binary ORC/Parquet/JSON controls. This
+library result does not qualify the later public retry. The comment-only
+preparation mismatch was refused before branch mutation; restoring the exact
+gated comment changed no behavior and no Rust gate failed.
+
+Seven fresh Spark catalog observations also confirm CREATE-time inference and
+schema persistence, plus an existing-table IF NOT EXISTS guard and a separate
+missing-path/new-table error. Those are evidence for a subsequent general Sail
+catalog checkpoint: this fallback does not populate DESCRIBE, persist inferred
+columns, or add an arbitrary field-metadata carrier. Public ORC, writer and full
+SDP acceptance remain separate; streaming/Iggy and CDC design status is unchanged.

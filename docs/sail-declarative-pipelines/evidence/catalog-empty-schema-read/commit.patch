@@ -1,0 +1,23 @@
+commit 75ac384c4c042a9b81793f41c0df944b5217a91a
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 19:08:39 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 19:08:39 2026 -0700
+
+    fix: infer missing schemas when reading catalog tables
+
+diff --git a/crates/sail-plan/src/resolver/query/read.rs b/crates/sail-plan/src/resolver/query/read.rs
+index 8924c7e6c..8cf5555a9 100644
+--- a/crates/sail-plan/src/resolver/query/read.rs
++++ b/crates/sail-plan/src/resolver/query/read.rs
+@@ -230,7 +230,9 @@ impl PlanResolver<'_> {
+                 let info = SourceInfo {
+                     paths: location.map(|x| vec![x]).unwrap_or_default(),
+                     lakehouse_table: Some(lakehouse_table),
+-                    schema: Some(schema),
++                    // An empty stored catalog schema requests runtime inference, as in Spark.
++                    // Explicit schemas in direct data source reads retain their empty/nonempty distinction.
++                    schema: (!schema.fields().is_empty()).then_some(schema),
+                     constraints,
+                     partition_by: partition_by.into_iter().map(|field| field.column).collect(),
+                     bucket_by: bucket_by.map(|x| x.into()),

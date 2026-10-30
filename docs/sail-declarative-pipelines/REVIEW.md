@@ -1455,3 +1455,19 @@ retry requires late file 11 to be listed and read before the same TIME conflict;
 the original cache cause is source-supported rather than an observed cache hit.
 Shared listing/cache reuse provides no inference-to-execution snapshot guarantee.
 No public ORC runtime, writer or complete SDP acceptance count changes here.
+
+### Empty catalog schema compatibility at named reads (2026-10-30T02:15:13.730284+00:00)
+
+[Evidence](evidence/catalog-empty-schema-read/README.md) qualifies the one-file
+Sail `75ac384c4c` fix with formatting, strict Clippy and 37 plan-library tests.
+Named empty catalog schemas request inference; direct explicitly empty schemas
+retain their meaning. Nonempty schemas and constraints remain intact, with
+existing Delta/Iceberg behavior preserved. Independent exact-candidate review
+found no blocker; the root owns the unchanged public regression retry.
+
+The packet retains the first public 295/1 failure, six same-binary Sail controls,
+pinned Spark compatibility/CREATE sources and seven fresh Spark catalog cases.
+It also keeps the comment-only preparation refusal and both source variants,
+separately from passing Rust checks. CREATE-time schema persistence and arbitrary
+catalog field metadata remain a later shared catalog unit. No passing public
+retry, writer or full SDP result is claimed here.

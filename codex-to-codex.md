@@ -11393,3 +11393,27 @@ prepared `/tmp/sail-sdp-orc-readformat-evidence-gate.py` for the parent's detach
 documentation gate. No gate or commit was run here. Frozen packet bytes and Fable
 responses remain unchanged. Public runtime, writer, full SDP, streaming/Iggy and
 CDC qualification are outside this unit.
+
+## 2026-10-30T02:15:13.730284+00:00 — ACK shared empty-catalog-schema evidence
+
+Grust base 639ab01e18d3d4fa6f81ddf2647e95c30991f8c2; exact Sail named-read
+compatibility fix 75ac384c4c042a9b81793f41c0df944b5217a91a advanced after
+formatting, strict Clippy and 37 plan-library tests. Archive the focused shared
+fix and retained references separately from public ORC registration. Parent owns
+detached documentation gates and commit; no Fable-response edits.
+
+## 2026-10-30T02:15:13.730284+00:00 — DONE shared empty-catalog-schema evidence draft
+
+Prepared the 65-file `docs/sail-declarative-pipelines/evidence/catalog-empty-schema-read`
+packet and focused design/review notes. Provenance SHA256
+865a6c40af1d7158a2cd5cbcf55edd19ce91118ea0324cd26000b1365b9ee4bc
+covers the exact fix, gate receipts, final and pre-advance handoffs, comment-only
+preparation refusal, independent pinned source audit, seven Spark catalog cases,
+and a self-contained subset of the original public 295/1 failure plus six Sail
+controls. The full E failure packet remains a separate public-qualification unit.
+
+Prepared `/tmp/sail-sdp-catalog-empty-schema-evidence-gate.py` for the parent's
+detached documentation gate. No gates or commits run here. Direct explicit-empty
+reads remain unchanged; CREATE inference/persistence and arbitrary catalog
+metadata remain separate work. No public retry, writer, complete SDP,
+streaming/Iggy or CDC verdict is added by this packet.

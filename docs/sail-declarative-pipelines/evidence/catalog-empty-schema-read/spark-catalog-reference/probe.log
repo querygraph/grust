@@ -1,0 +1,103 @@
+Picked up JAVA_TOOL_OPTIONS: -Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US
+Picked up JAVA_TOOL_OPTIONS: -Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/30 02:06:10 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.driver.memory to Some(512m) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.driver.memory".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///private/tmp/sail-sdp-orc-catalog-reference/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+I1029 19:06:13.565956 86557264 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(13, generation: 1)
+{"phase": "started", "python_pid": 75247, "jvm_pid": 75290}
+{"phase": "case", "format": "orc", "explicit_schema": false, "status": "succeeded"}
+{"phase": "case", "format": "orc", "explicit_schema": true, "status": "succeeded"}
+{"phase": "case", "format": "parquet", "explicit_schema": false, "status": "succeeded"}
+{"phase": "case", "format": "parquet", "explicit_schema": true, "status": "succeeded"}
+{"phase": "case", "format": "json", "explicit_schema": false, "status": "succeeded"}
+{"phase": "case", "format": "json", "explicit_schema": true, "status": "succeeded"}
+26/10/30 02:06:17 WARN FileStreamSink: Assume no metadata directory. Error while looking for metadata directory in the path: file:/private/tmp/sail-sdp-orc-catalog-reference/missing-location.
+java.io.FileNotFoundException: File file:/private/tmp/sail-sdp-orc-catalog-reference/missing-location does not exist
+	at org.apache.hadoop.fs.RawLocalFileSystem.deprecatedGetFileStatus(RawLocalFileSystem.java:980)
+	at org.apache.hadoop.fs.RawLocalFileSystem.getFileLinkStatusInternal(RawLocalFileSystem.java:1301)
+	at org.apache.hadoop.fs.RawLocalFileSystem.getFileStatus(RawLocalFileSystem.java:970)
+	at org.apache.hadoop.fs.FilterFileSystem.getFileStatus(FilterFileSystem.java:462)
+	at org.apache.spark.sql.execution.streaming.sinks.FileStreamSink$.hasMetadata(FileStreamSink.scala:58)
+	at org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:394)
+	at org.apache.spark.sql.execution.command.CreateDataSourceTableCommand.run(createDataSourceTables.scala:85)
+	at org.apache.spark.sql.execution.command.ExecutedCommandExec.sideEffectResult$lzycompute(commands.scala:79)
+	at org.apache.spark.sql.execution.command.ExecutedCommandExec.sideEffectResult(commands.scala:77)
+	at org.apache.spark.sql.execution.command.ExecutedCommandExec.executeCollect(commands.scala:88)
+	at org.apache.spark.sql.execution.QueryExecution$.$anonfun$runCommand$2(QueryExecution.scala:973)
+	at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$8(SQLExecution.scala:228)
+	at org.apache.spark.sql.execution.SQLExecution$.withSessionTagsApplied(SQLExecution.scala:352)
+	at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$7(SQLExecution.scala:189)
+	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+	at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$6(SQLExecution.scala:189)
+	at org.apache.spark.sql.execution.SQLExecution$.withSQLConfPropagated(SQLExecution.scala:375)
+	at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId0$1(SQLExecution.scala:188)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+	at org.apache.spark.sql.execution.SQLExecution$.withNewExecutionId0(SQLExecution.scala:130)
+	at org.apache.spark.sql.execution.SQLExecution$.withNewExecutionId(SQLExecution.scala:317)
+	at org.apache.spark.sql.execution.QueryExecution$.$anonfun$runCommand$1(QueryExecution.scala:971)
+	at org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)
+	at org.apache.spark.sql.execution.QueryExecution$.runCommand(QueryExecution.scala:971)
+	at org.apache.spark.sql.execution.QueryExecution.org$apache$spark$sql$execution$QueryExecution$$eagerlyExecute$1(QueryExecution.scala:262)
+	at org.apache.spark.sql.execution.QueryExecution$$anonfun$eagerlyExecuteCommands$1.applyOrElse(QueryExecution.scala:277)
+	at org.apache.spark.sql.execution.QueryExecution$$anonfun$eagerlyExecuteCommands$1.applyOrElse(QueryExecution.scala:270)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformDownWithPruning$1(TreeNode.scala:495)
+	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.transformDownWithPruning(TreeNode.scala:495)
+	at org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.org$apache$spark$sql$catalyst$plans$logical$AnalysisHelper$$super$transformDownWithPruning(LogicalPlan.scala:37)
+	at org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning(AnalysisHelper.scala:360)
+	at org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning$(AnalysisHelper.scala:356)
+	at org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)
+	at org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.transformDown(TreeNode.scala:471)
+	at org.apache.spark.sql.execution.QueryExecution.eagerlyExecuteCommands(QueryExecution.scala:270)
+	at org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyCommandExecuted$1(QueryExecution.scala:234)
+	at scala.util.Try$.apply(Try.scala:217)
+	at org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)
+	at org.apache.spark.util.LazyTry.tryT$lzycompute(LazyTry.scala:46)
+	at org.apache.spark.util.LazyTry.tryT(LazyTry.scala:46)
+	at org.apache.spark.util.LazyTry.get(LazyTry.scala:61)
+	at org.apache.spark.sql.execution.QueryExecution.$anonfun$commandExecuted$1(QueryExecution.scala:240)
+	at org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)
+	at org.apache.spark.sql.execution.QueryExecution.commandExecuted(QueryExecution.scala:240)
+	at org.apache.spark.sql.classic.Dataset.<init>(Dataset.scala:276)
+	at org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$5(Dataset.scala:139)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+	at org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:135)
+	at org.apache.spark.sql.classic.SparkSession.$anonfun$sql$5(SparkSession.scala:614)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+	at org.apache.spark.sql.classic.SparkSession.sql(SparkSession.scala:591)
+	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.executeSQL(SparkConnectPlanner.scala:3208)
+	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.handleSqlCommand(SparkConnectPlanner.scala:3056)
+	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2903)
+	at org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)
+	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)
+26/10/30 02:06:17 WARN HadoopFSUtils: The directory file:/private/tmp/sail-sdp-orc-catalog-reference/missing-location was not found. Was it deleted very recently?
+{"phase": "case", "name": "existing_if_not_exists_missing_location", "status": "succeeded"}
+{"phase": "finished", "status": "completed", "summary": {"succeeded": 7, "error": 0}, "jvm_exit": 0}

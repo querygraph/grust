@@ -1,0 +1,29 @@
+250:  * TODO: we should remove the special handling for hive tables after completely making hive as a
+251:  * data source.
+252:  */
+253: class FindDataSourceTable(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+254:   private def readDataSourceTable(
+255:       table: CatalogTable, extraOptions: CaseInsensitiveStringMap): LogicalPlan = {
+256:     val qualifiedTableName =
+257:       QualifiedTableName(table.identifier.catalog.get, table.database, table.identifier.table)
+258:     val catalog = sparkSession.sessionState.catalog
+259:     val dsOptions = DataSourceUtils.generateDatasourceOptions(extraOptions, table)
+260:     val readFileSourceTableCacheIgnoreOptions =
+261:       SQLConf.get.getConf(SQLConf.READ_FILE_SOURCE_TABLE_CACHE_IGNORE_OPTIONS)
+262:     catalog.getCachedTable(qualifiedTableName) match {
+263:       case null =>
+264:         val dataSource =
+265:           DataSource(
+266:             sparkSession,
+267:             // In older version(prior to 2.1) of Spark, the table schema can be empty and should be
+268:             // inferred at runtime. We should still support it.
+269:             userSpecifiedSchema = if (table.schema.isEmpty) None else Some(table.schema),
+270:             partitionColumns = table.partitionColumnNames,
+271:             bucketSpec = table.bucketSpec,
+272:             className = table.provider.get,
+273:             options = dsOptions,
+274:             catalogTable = Some(table))
+275:         val plan = LogicalRelation(dataSource.resolveRelation(checkFilesExist = false), table)
+276:         catalog.cacheTable(qualifiedTableName, plan)
+277:         plan
+278: 

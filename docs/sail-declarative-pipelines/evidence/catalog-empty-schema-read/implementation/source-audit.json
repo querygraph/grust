@@ -1,0 +1,47 @@
+{
+  "created_utc": "2026-10-30T02:08:48.912340+00:00",
+  "sail_base": "03e8783f2164b259f17ed0294af6189053240bf4",
+  "changed_file": "crates/sail-plan/src/resolver/query/read.rs",
+  "changed_sha256": "fb2815fdfdf631256c29172de653b824858adfbc1f6e3a487406a5cbad4bae32",
+  "base_blob": "8924c7e6c412a0410b20f3bdaf50d1104087ef65",
+  "patch_sha256": "544cc97239109cb2996c8e6622954be637860315161d964f96e99c816e87c595",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_path": "sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSourceStrategy.scala",
+  "spark_blob": "7aff4ed1e3de56a9d283442cc926d52f11c0a59c",
+  "checks": {
+    "cargo_nightly_fmt_sail_plan": "passed; formatting only",
+    "git_diff_check": "passed",
+    "build_tests": "not run by agent; root owns exact gates"
+  },
+  "source_observations": {
+    "named_read": "query/read.rs:207-252; constraints resolved before schema normalization; nonempty schema and all other source fields retained",
+    "direct_read": "query/read.rs:615-629 preserves the supplied Option, including Some(empty)",
+    "delta": "sail-delta-lake/src/table/mod.rs:860-861 already maps Some(empty) to None",
+    "iceberg": "sail-iceberg/src/lake_source.rs:1154-1166 ignores schema for both data scan and metadata relation resolution"
+  },
+  "test_plan": [
+    "Existing sail-plan library gate",
+    "Unchanged E external ORC named-table regression",
+    "Existing E explicit-empty read and partition controls; full public packet"
+  ],
+  "scope_exclusions": [
+    "CREATE-time schema inference and catalog persistence",
+    "arbitrary catalog field metadata carrier",
+    "ORC-specific source changes",
+    "registry/public-test draft modifications"
+  ],
+  "root_candidate": "75ac384c4c042a9b81793f41c0df944b5217a91a",
+  "root_gate_at_freeze": "passed formatting, strict Clippy, and 37 sail-plan library tests; advanced exact candidate",
+  "independent_source_packet": {
+    "path": "/tmp/sail-sdp-empty-catalog-read-reference",
+    "manifest_sha256": "2cc640a360e1c3daedcf7ddf1c3c4131318d6ce7afc9224fe3d5ddd26011f38d"
+  },
+  "finalized_utc": "2026-10-30T02:13:56.821402+00:00",
+  "advance_preparation": {
+    "event": "comment-only mismatch refused before branch mutation; root restored exact gated comment",
+    "rust_gate_failed": false,
+    "historical_handoff": "../implementation-pre-advance",
+    "root_observation": "../advance-comment/observation.json",
+    "raw_stderr_retained": false
+  }
+}
