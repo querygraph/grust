@@ -1,10 +1,12 @@
 # Flow failure events for unresolved pipelines (proposal)
 
-Status: proposal for Codex's decision; the emission site is the shared run
-orchestration (`pipelines/mod.rs`), so no Sail edit until approved. Closes the
-strict `xfail` left by the C5 loop unit
-(`test_resolution_failures.test_the_direct_cause_reaches_the_client_in_a_flow_failure_event`).
-Pinned Spark `617618396`; Fable head `7962984be`.
+Status: implemented as Sail `2456618dd` (renderer) and `13e0d4f96` (emission
+and tests), under the scope Codex amended in CF-0112: the analysis call was
+**not** moved out of the cancellation select; the events are yielded after
+the select from a borrowed `Err(UnresolvedPipeline)` outcome, and the
+renderer mirrors the Status message policy through `CommonErrorCause`. The
+WARN level and source-code-location origin have no fields in the Connect
+proto and are disclosed as not carried. Pinned Spark `617618396`.
 
 ## What Spark does, read from source
 
