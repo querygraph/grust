@@ -20,6 +20,32 @@ Base: Sail `779cb136d988c759a381ea1ace6c2e7649e3dbbc`, Grust
 `502cd4f2fedd4c5ab2fd4e5eae3078ce150fa230`, Spark
 `617618396087429b5627a86ce933bb0f5d6645cb`.
 
+## Corrective units after review
+
+Codex's review ([`../fable-cdc-unit1-review`](../fable-cdc-unit1-review/README.md),
+[`../fable-column-oracles`](../fable-column-oracles/README.md),
+[`../fable-c2-context-review`](../fable-c2-context-review/README.md),
+[`../fable-c4-independent-review`](../fable-c4-independent-review/README.md)) led
+to these commits on the same Sail branch, each gated in a detached worktree
+with its own target directory and venv (`provenance.json`, `corrective_units`;
+raw logs under `logs/corrective/`). The offered history is preserved.
+
+| Unit | Sail commit | What changed |
+| --- | --- | --- |
+| C1 | `49f32b65d` | Four-part sources rejected by `toTableIdentifier`'s rule before keys; proto attributes parsed by a port of `AttributeNameParser` (`INVALID_ATTRIBUTE_NAME_SYNTAX`); generic converter untouched |
+| C3 | `29056716b` | Sink rejection removed from graph validation (Spark's is in `FlowPlanner`, never reached by a dry run) |
+| C2 | `f4537586b`, corrected by `2dcd0eaa9` | `sail_common::utils::root_lowercase::spark_root_lowercase`: JDK 17 `Locale.ROOT` lowercase; the first sigma model was refuted by the context review and replaced by a port of the JDK's `RuleBasedBreakIterator` ([`../fable-root-lowercase`](../fable-root-lowercase/README.md)) |
+| C4 | `a495cb02d` | `grust-columns` selection takes a caller resolver (Grust `727baa3e`); Sail `autocdc/lookup.rs` reproduces Spark's `StructType` map order; 515 schemas / 6,366 JVM queries replayed, plus Codex's 256 / 16,684 as an opt-in replay |
+| C5 | `550bb198a` | Auto CDC multiflow and temporary-view checks moved behind flow resolution in Spark's phase order; materialized-view multiflow clause moved after resolution too |
+| C6 | see `provenance.json` | Misnamed proto test replaced by a PySpark 4.2.1 wire-bytes test; schema-selection crosswalk entries relabelled partial; ORC control recorded |
+
+The ORC option test failures reported with the first DONE are explained:
+`get_pyspark_version` falls back to the Spark 3.5 configuration when PySpark
+is not importable by the embedded Python, so the default compression differs;
+with `PYTHONPATH` on the Spark 4.2.1 venv all nine tests pass
+(`logs/corrective/orc-options-control-pythonpath.log`). The original failed
+full-library run stays recorded as failed.
+
 ## Which validation runs where
 
 Spark separates definition-time argument checks from resolution-time schema
@@ -37,14 +63,15 @@ phases; `DefineFlow` never analyzes its inputs.
 | Microbatch           | `ScdBatchValidator`                                                      | `AUTOCDC_MICROBATCH_VALIDATION.*` on original rows before dedup                                                                                                                                                                                                                  | Unit 2; untouched here                                                                                                                                                                                                                                                                                                                              |
 | Incremental run      | `FlowExecution` key drift                                                | `AUTOCDC_INVALID_STATE.*`                                                                                                                                                                                                                                                        | Later unit; untouched here                                                                                                                                                                                                                                                                                                                          |
 
-Case handling follows the pinned call sites: `ColumnSelection.applyToSchema`
+Case handling follows the pinned call sites (after C2 and C4): `ColumnSelection.applyToSchema`
 looks names up through `StructType.getFieldIndexCaseInsensitive`
 (`CaseInsensitiveMap`, `Locale.ROOT` lower-casing), while the key and
 reserved-prefix checks use the analysis `Resolver`
-(`String.equalsIgnoreCase`). Sail supplies both comparators
-(`Case::field_lookup`, `Case::resolver`, the latter through the existing
-`spark_case_insensitive_name_eq` with JDK 17 oracle tests); the vendored
-kernel carries no case folding of its own.
+(`String.equalsIgnoreCase`). Sail supplies the resolver
+comparator through the existing `spark_case_insensitive_name_eq` and the
+lookup through `autocdc/lookup.rs`, which reproduces Spark's name-to-index
+maps over `spark_root_lowercase`; the vendored kernel carries no name policy
+of its own.
 
 ## Reuse inventory
 

@@ -117,5 +117,82 @@
     "No streaming, Iggy, durable store, reconciliation or MERGE runtime; execution of any streaming-table pipeline is still rejected before a write.",
     "Resolution-time validators are tested over field names only and are not wired into analysis.",
     "The original Scala suites did not execute against Sail; the Rust ports and Connect-level Python cases are the executed evidence."
-  ]
+  ],
+  "corrective_units": {
+    "recorded_at": "2026-10-30T07:55:30.499670+00:00",
+    "sail_branch": "work/sdp-streaming-cdc-fable",
+    "sail_head": "1eea0b140a14601196eeaed0ee63225c5db77e94",
+    "commits": [
+      {
+        "unit": "C1",
+        "sail": "49f32b65d438e7115fd5918f7398611ec6154f7a",
+        "subject": "parse Auto CDC source and column identifiers as Spark does"
+      },
+      {
+        "unit": "C3",
+        "sail": "29056716b4c08f57dd3f9ff7277128937ec89cf8",
+        "subject": "keep the Auto CDC sink rejection out of graph validation"
+      },
+      {
+        "unit": "C2",
+        "sail": "f4537586b6c79d60ebc56a183d9744948d812576",
+        "subject": "port JDK 17 Locale.ROOT lowercase (superseded sigma model)",
+        "grust": "5538854f"
+      },
+      {
+        "unit": "C4",
+        "sail": "a495cb02d8aaf642556c69b8b594c461037aeebf",
+        "subject": "resolve Auto CDC column names through Spark StructType lookup",
+        "grust_kernel": "727baa3e983a6a8b1d6055f8c3b0ccdb85bd78b3"
+      },
+      {
+        "unit": "C2 correction",
+        "sail": "2dcd0eaa9a7ba7ed6c85bb813df7b1c3b2eb049f",
+        "subject": "port the JDK word-break iterator for ROOT lowercase final sigma",
+        "grust": "aba8ef64"
+      },
+      {
+        "unit": "C5",
+        "sail": "550bb198a",
+        "subject": "run the Auto CDC graph checks in Spark post-resolution phases"
+      },
+      {
+        "unit": "C6",
+        "sail": "1eea0b140a14601196eeaed0ee63225c5db77e94",
+        "subject": "PySpark wire fixture, review corpus replay"
+      }
+    ],
+    "detached_gate": {
+      "worktree": "/Users/alexy/src/sail-sdp-fable-gate",
+      "target": "/Users/alexy/src/sail-sdp-fable-gate-target",
+      "venv": "/Users/alexy/src/sail-sdp-fable-gate-venv",
+      "script_sha256": "dfe2e92528c36d824191be8a3a1d6835370fdf1ddc32bc54de1232462e526373",
+      "verdicts": [
+        "VERDICT commit=49f32b65d438e7115fd5918f7398611ec6154f7a fmt=0 clippy=0 rust_autocdc=0 maturin=0 pytest_pipelines=0 at 2026-10-30T07:18:34Z",
+        "VERDICT commit=29056716b4c08f57dd3f9ff7277128937ec89cf8 fmt=0 clippy=0 rust_autocdc=0 maturin=0 pytest_pipelines=0 at 2026-10-30T07:21:22Z",
+        "VERDICT commit=f4537586b6c79d60ebc56a183d9744948d812576 fmt=0 clippy=0 rust_common=0 rust_autocdc=0 maturin=0 pytest_pipelines=0 at 2026-10-30T07:28:43Z",
+        "VERDICT commit=a495cb02d8aaf642556c69b8b594c461037aeebf fmt=0 clippy=0 rust_common=0 rust_autocdc=0 maturin=0 pytest_pipelines=0 at 2026-10-30T07:41:41Z",
+        "VERDICT commit=2dcd0eaa9a7ba7ed6c85bb813df7b1c3b2eb049f fmt=0 clippy=0 rust_common=0 rust_autocdc=0 maturin=0 pytest_pipelines=0 at 2026-10-30T07:49:08Z",
+        "VERDICT commit=550bb198a3fc8b8f6f93687b418ff4db9b135088 fmt=0 clippy=0 rust_common=0 rust_autocdc=0 maturin=0 pytest_pipelines=0 at 2026-10-30T07:54:14Z"
+      ]
+    },
+    "orc_control": {
+      "log": "logs/corrective/orc-options-control-pythonpath.log",
+      "cause": "config.rs get_pyspark_version imports pyspark in embedded Python and falls back to the Spark 3.5 configuration (ORC default Snappy) when PySpark is not importable; with PYTHONPATH on the Spark 4.2.1 venv all 9 orc_options_tests pass",
+      "commands": [
+        "cargo test -p sail-spark-connect --lib orc_options_tests",
+        "PYTHONPATH=.venvs/fable-spark-4.2.1/lib/python3.12/site-packages cargo test -p sail-spark-connect --lib orc_options_tests"
+      ]
+    },
+    "review_corpus_replay": {
+      "source": "fable-c4-independent-review (256 fresh schemas, 16,684 queries)",
+      "command": "SAIL_FABLE_LOOKUP_CORPUS=<compact json> cargo test -p sail-spark-connect --lib pipelines::autocdc -- --nocapture",
+      "result": "review corpus: 256 schemas, 16684 queries replayed; 70 passed",
+      "sail_commit": "1eea0b140a14601196eeaed0ee63225c5db77e94"
+    },
+    "wire_fixture": {
+      "file": "logs/corrective/define_flow_wire.json",
+      "sha256": "4dd95bfa6b031c1a34ad5d406738ecb2fd17c886ac1ce0e1dfd488822a9cd7a0"
+    }
+  }
 }
