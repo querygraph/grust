@@ -1,0 +1,27 @@
+  def mergeDataAndPartitionSchema(
+      dataSchema: StructType,
+      partitionSchema: StructType,
+      caseSensitive: Boolean): (StructType, Map[String, StructField]) = {
+    val overlappedPartCols = mutable.Map.empty[String, StructField]
+    partitionSchema.foreach { partitionField =>
+      val partitionFieldName = getColName(partitionField, caseSensitive)
+      if (dataSchema.exists(getColName(_, caseSensitive) == partitionFieldName)) {
+        overlappedPartCols += partitionFieldName -> partitionField
+      }
+    }
+
+    // When data and partition schemas have overlapping columns, the output
+    // schema respects the order of the data schema for the overlapping columns, and it
+    // respects the data types of the partition schema.
+    val fullSchema =
+    StructType(dataSchema.map(f => overlappedPartCols.getOrElse(getColName(f, caseSensitive), f)) ++
+      partitionSchema.filterNot(f => overlappedPartCols.contains(getColName(f, caseSensitive))))
+    (fullSchema, overlappedPartCols.toMap)
+  }
+
+  def getColName(f: StructField, caseSensitive: Boolean): String = {
+    if (caseSensitive) {
+      f.name
+    } else {
+      f.name.toLowerCase(Locale.ROOT)
+    }

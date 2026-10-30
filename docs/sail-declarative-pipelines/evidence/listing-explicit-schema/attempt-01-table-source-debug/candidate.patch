@@ -1,0 +1,573 @@
+diff --git a/crates/sail-data-source/src/listing/explicit_schema_tests.rs b/crates/sail-data-source/src/listing/explicit_schema_tests.rs
+new file mode 100644
+index 000000000..7368b6301
+--- /dev/null
++++ b/crates/sail-data-source/src/listing/explicit_schema_tests.rs
+@@ -0,0 +1,434 @@
++#![expect(clippy::unwrap_used)]
++
++use std::collections::HashMap;
++use std::sync::Mutex;
++
++use bytes::Bytes;
++use datafusion::execution::context::{SessionConfig, SessionContext};
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++
++use super::*;
++
++#[derive(Debug, Default)]
++struct Calls {
++    compression: usize,
++    inference: usize,
++    prepared: Vec<Schema>,
++    validated: Vec<(Schema, Schema)>,
++}
++
++#[derive(Debug)]
++struct Policy {
++    physical: SchemaRef,
++    require_validation: bool,
++    fail_inference: bool,
++    fail_validation: bool,
++    calls: Mutex<Calls>,
++}
++
++impl Default for Policy {
++    fn default() -> Self {
++        Self {
++            physical: Arc::new(Schema::empty()),
++            require_validation: false,
++            fail_inference: false,
++            fail_validation: false,
++            calls: Mutex::default(),
++        }
++    }
++}
++
++#[derive(Debug, Default)]
++struct DefaultReadFormat(Arc<Policy>);
++
++#[derive(Debug, Default)]
++struct PreservingReadFormat(DefaultReadFormat);
++
++impl From<Arc<Policy>> for DefaultReadFormat {
++    fn from(policy: Arc<Policy>) -> Self {
++        Self(policy)
++    }
++}
++
++impl From<Arc<Policy>> for PreservingReadFormat {
++    fn from(policy: Arc<Policy>) -> Self {
++        Self(DefaultReadFormat(policy))
++    }
++}
++
++#[derive(Debug, Default)]
++struct SchemaFactory<R>(PhantomData<R>);
++
++impl<R: ReadFormat + From<Arc<Policy>> + Default> FormatFactory for SchemaFactory<R> {
++    type Read = R;
++    type Write = DefaultReadFormat;
++
++    fn name() -> &'static str {
++        "explicit_schema_test"
++    }
++
++    fn read(ctx: &dyn Session, _options: Vec<OptionLayer>) -> Result<Self::Read> {
++        Ok(ctx.config().get_extension::<Policy>().unwrap().into())
++    }
++
++    fn write(ctx: &dyn Session, _options: Vec<OptionLayer>) -> Result<Self::Write> {
++        Ok(ctx.config().get_extension::<Policy>().unwrap().into())
++    }
++}
++
++#[async_trait]
++impl ReadFormat for DefaultReadFormat {
++    // Deliberately inherit the explicit-schema preparation hook.
++    async fn infer_compression(
++        &self,
++        _ctx: &dyn Session,
++        _files: &[ListingFileSample<'_>],
++    ) -> Result<CompressionTypeVariant> {
++        self.0.calls.lock().unwrap().compression += 1;
++        Ok(CompressionTypeVariant::UNCOMPRESSED)
++    }
++
++    async fn infer_schema(
++        &self,
++        _ctx: &dyn Session,
++        _files: &[ListingFileSample<'_>],
++        _compression: CompressionTypeVariant,
++    ) -> Result<SchemaRef> {
++        self.0.calls.lock().unwrap().inference += 1;
++        if self.0.fail_inference {
++            return plan_err!("test physical inference failure");
++        }
++        Ok(self.0.physical.clone())
++    }
++
++    async fn scan(&self, _ctx: &dyn Session, _input: ListingScanInput) -> Result<FileScanConfig> {
++        plan_err!("test only exercises source preparation")
++    }
++
++    fn requires_explicit_schema_validation(&self) -> bool {
++        self.0.require_validation
++    }
++
++    fn validate_explicit_schema(&self, schema: &Schema, physical: &Schema) -> Result<()> {
++        self.0
++            .calls
++            .lock()
++            .unwrap()
++            .validated
++            .push((schema.clone(), physical.clone()));
++        if self.0.fail_validation {
++            return plan_err!("test explicit validation failure");
++        }
++        Ok(())
++    }
++}
++
++#[async_trait]
++impl ReadFormat for PreservingReadFormat {
++    async fn infer_compression(
++        &self,
++        ctx: &dyn Session,
++        files: &[ListingFileSample<'_>],
++    ) -> Result<CompressionTypeVariant> {
++        self.0.infer_compression(ctx, files).await
++    }
++
++    async fn infer_schema(
++        &self,
++        ctx: &dyn Session,
++        files: &[ListingFileSample<'_>],
++        compression: CompressionTypeVariant,
++    ) -> Result<SchemaRef> {
++        self.0.infer_schema(ctx, files, compression).await
++    }
++
++    async fn prepare_explicit_schema(
++        &self,
++        _ctx: &dyn Session,
++        schema: Schema,
++        files: &[ListingFileSample<'_>],
++        compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
++    ) -> Result<Option<PreparedExplicitSchema>> {
++        assert_eq!(files.len(), 1);
++        assert_eq!(files[0].objects.len(), 1);
++        assert_eq!(compression, CompressionTypeVariant::UNCOMPRESSED);
++        self.0.0.calls.lock().unwrap().prepared.push(schema.clone());
++        Ok(Some(PreparedExplicitSchema {
++            schema,
++            physical: None,
++        }))
++    }
++
++    async fn scan(&self, ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig> {
++        self.0.scan(ctx, input).await
++    }
++
++    fn requires_explicit_schema_validation(&self) -> bool {
++        self.0.requires_explicit_schema_validation()
++    }
++
++    fn validate_explicit_schema(&self, schema: &Schema, physical: &Schema) -> Result<()> {
++        self.0.validate_explicit_schema(schema, physical)
++    }
++}
++
++#[async_trait]
++impl WriteFormat for DefaultReadFormat {
++    async fn sink(
++        &self,
++        _ctx: &dyn Session,
++        _input: ListingSinkInput,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        plan_err!("test format does not support writing")
++    }
++}
++
++async fn fixture(policy: Policy, partitioned: bool) -> Result<(SessionContext, Arc<Policy>)> {
++    let policy = Arc::new(policy);
++    let mut config = SessionConfig::new().with_extension(policy.clone());
++    config
++        .options_mut()
++        .execution
++        .listing_table_ignore_subdirectory = false;
++    let context = SessionContext::new_with_config(config);
++    let store = Arc::new(InMemory::new());
++    let path = if partitioned {
++        "data/p=one/part.bin"
++    } else {
++        "data/part.bin"
++    };
++    store
++        .put(&Path::from(path), Bytes::from_static(b"content").into())
++        .await?;
++    context.register_object_store(&Url::parse("memory://explicit-schema").unwrap(), store);
++    Ok((context, policy))
++}
++
++async fn source<R: ReadFormat + From<Arc<Policy>> + Default>(
++    context: &SessionContext,
++    schema: Option<Schema>,
++    read_case_sensitive: bool,
++    partition_by: Vec<String>,
++) -> Result<Arc<dyn TableSource>> {
++    ListingDataSource::<SchemaFactory<R>>::default()
++        .create_source(
++            &context.state(),
++            SourceInfo {
++                paths: vec!["memory://explicit-schema/data/".into()],
++                lakehouse_table: None,
++                schema,
++                constraints: datafusion_common::Constraints::default(),
++                partition_by,
++                bucket_by: None,
++                sort_order: vec![],
++                options: vec![],
++                read_case_sensitive,
++            },
++        )
++        .await
++}
++
++fn schema(name: &str) -> Schema {
++    Schema::new(vec![Field::new(name, DataType::Int64, false)])
++}
++
++#[tokio::test]
++async fn default_case_policy_and_post_partition_validation_are_unchanged() -> Result<()> {
++    for case_sensitive in [false, true] {
++        for require_validation in [false, true] {
++            let physical = Arc::new(schema("Value"));
++            let (context, policy) = fixture(
++                Policy {
++                    physical: physical.clone(),
++                    require_validation,
++                    ..Default::default()
++                },
++                true,
++            )
++            .await?;
++            let requested = Schema::new(vec![
++                Field::new("value", DataType::Int64, false),
++                Field::new("p", DataType::Utf8, true),
++            ]);
++            let output =
++                source::<DefaultReadFormat>(&context, Some(requested), case_sensitive, vec![])
++                    .await?;
++            let name = if case_sensitive { "value" } else { "Value" };
++            assert_eq!(
++                output.schema().as_ref(),
++                &Schema::new(vec![
++                    Field::new(name, DataType::Int64, false),
++                    Field::new("p", DataType::Utf8, true),
++                ])
++            );
++            let calls = policy.calls.lock().unwrap();
++            let inferred = require_validation || !case_sensitive;
++            assert_eq!(calls.compression, 1);
++            assert_eq!(calls.inference, usize::from(inferred));
++            assert_eq!(calls.validated.len(), usize::from(inferred));
++            if inferred {
++                // The directory-only p column must be removed before validation.
++                assert_eq!(
++                    calls.validated[0],
++                    (schema(name), physical.as_ref().clone())
++                );
++            }
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn default_inference_errors_remain_optional_only_for_case_reconciliation() -> Result<()> {
++    for (case_sensitive, require_validation, expected_inference, should_fail) in [
++        (true, false, 0, false),
++        (false, false, 1, false),
++        (true, true, 1, true),
++        (false, true, 1, true),
++    ] {
++        let (context, policy) = fixture(
++            Policy {
++                fail_inference: true,
++                require_validation,
++                ..Default::default()
++            },
++            false,
++        )
++        .await?;
++        let result =
++            source::<DefaultReadFormat>(&context, Some(schema("value")), case_sensitive, vec![])
++                .await;
++        if should_fail {
++            assert!(
++                result
++                    .unwrap_err()
++                    .to_string()
++                    .contains("physical inference failure")
++            );
++        } else {
++            assert_eq!(result?.schema().as_ref(), &schema("value"));
++        }
++        let calls = policy.calls.lock().unwrap();
++        assert_eq!(calls.inference, expected_inference);
++        assert!(calls.validated.is_empty());
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn default_ambiguity_and_validation_errors_still_propagate() -> Result<()> {
++    let (context, _) = fixture(
++        Policy {
++            physical: Arc::new(Schema::new(vec![
++                Field::new("Value", DataType::Int64, true),
++                Field::new("VALUE", DataType::Int64, true),
++            ])),
++            ..Default::default()
++        },
++        false,
++    )
++    .await?;
++    assert!(
++        source::<DefaultReadFormat>(&context, Some(schema("value")), false, vec![])
++            .await
++            .unwrap_err()
++            .to_string()
++            .contains("Ambiguous case-insensitive column match")
++    );
++
++    let (context, policy) = fixture(
++        Policy {
++            physical: Arc::new(schema("value")),
++            require_validation: true,
++            fail_validation: true,
++            ..Default::default()
++        },
++        true,
++    )
++    .await?;
++    let requested = Schema::new(vec![
++        Field::new("p", DataType::Utf8, false),
++        Field::new("value", DataType::Int64, false),
++    ]);
++    assert!(
++        source::<DefaultReadFormat>(&context, Some(requested), true, vec!["p".into()])
++            .await
++            .unwrap_err()
++            .to_string()
++            .contains("explicit validation failure")
++    );
++    assert_eq!(policy.calls.lock().unwrap().validated[0].0, schema("value"));
++    Ok(())
++}
++
++#[tokio::test]
++async fn override_preserves_requested_fields_without_eager_inference() -> Result<()> {
++    let (context, policy) = fixture(
++        Policy {
++            require_validation: true,
++            fail_inference: true,
++            fail_validation: true,
++            ..Default::default()
++        },
++        false,
++    )
++    .await?;
++    let requested = Schema::new(vec![
++        Field::new("second", DataType::Int32, false)
++            .with_metadata(HashMap::from([("retained".into(), "yes".into())])),
++        Field::new(
++            "FIRST",
++            DataType::Struct(vec![Field::new("child", DataType::Utf8, false)].into()),
++            true,
++        ),
++    ]);
++    let output =
++        source::<PreservingReadFormat>(&context, Some(requested.clone()), false, vec![]).await?;
++    assert_eq!(output.schema().as_ref(), &requested);
++    let calls = policy.calls.lock().unwrap();
++    assert_eq!(calls.compression, 1);
++    assert_eq!(calls.prepared, [requested]);
++    assert_eq!(calls.inference, 0);
++    assert!(calls.validated.is_empty());
++    Ok(())
++}
++
++#[tokio::test]
++async fn explicit_empty_override_is_distinct_from_absent_schema() -> Result<()> {
++    for supplied in [None, Some(Schema::empty())] {
++        let (context, policy) = fixture(
++            Policy {
++                physical: Arc::new(schema("inferred")),
++                ..Default::default()
++            },
++            false,
++        )
++        .await?;
++        let output =
++            source::<PreservingReadFormat>(&context, supplied.clone(), false, vec![]).await?;
++        {
++            let calls = policy.calls.lock().unwrap();
++            if supplied.is_some() {
++                assert!(output.schema().fields().is_empty());
++                assert_eq!(calls.prepared, [Schema::empty()]);
++                assert_eq!(calls.inference, 0);
++            } else {
++                assert_eq!(output.schema().as_ref(), &schema("inferred"));
++                assert!(calls.prepared.is_empty());
++                assert_eq!(calls.inference, 1);
++            }
++        }
++        // Both absent and explicitly empty schemas still infer for legacy formats.
++        let expected_inferences = if supplied.is_some() { 1 } else { 2 };
++        let output = source::<DefaultReadFormat>(&context, supplied, false, vec![]).await?;
++        assert_eq!(output.schema().as_ref(), &schema("inferred"));
++        let calls = policy.calls.lock().unwrap();
++        assert_eq!(calls.inference, expected_inferences);
++        assert_eq!(calls.compression, 2);
++        assert!(calls.validated.is_empty());
++    }
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index 15f0148f5..830310aeb 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -70,6 +70,44 @@ pub trait ReadFormat: Debug + Send + Sync + 'static {
+         compression: CompressionTypeVariant,
+     ) -> Result<SchemaRef>;
+ 
++    /// Prepare a supplied schema before partition columns are separated.
++    ///
++    /// The default retains legacy name reconciliation and physical-schema
++    /// inference. An empty schema returns `None`, requesting ordinary inference.
++    /// Formats can instead retain an explicit schema (including an empty one)
++    /// and defer per-file compatibility checks by returning `Some` without a
++    /// physical schema. This hook is not called when no schema was supplied.
++    async fn prepare_explicit_schema(
++        &self,
++        ctx: &dyn Session,
++        schema: Schema,
++        files: &[ListingFileSample<'_>],
++        compression: CompressionTypeVariant,
++        read_case_sensitive: bool,
++    ) -> Result<Option<PreparedExplicitSchema>> {
++        if schema.fields().is_empty() {
++            return Ok(None);
++        }
++        let physical = if self.requires_explicit_schema_validation() {
++            Some(self.infer_schema(ctx, files, compression).await?)
++        } else if read_case_sensitive {
++            None
++        } else {
++            self.infer_schema(ctx, files, compression).await.ok()
++        };
++        // Reconcile names so readers and file statistics that resolve columns
++        // by exact name can find the requested case-insensitive columns.
++        let schema = if read_case_sensitive {
++            schema
++        } else if let Some(physical) = &physical {
++            reconcile_schema_names_case_insensitive(schema, physical)?
++        } else {
++            // Keep the user schema when optional physical inference fails.
++            schema
++        };
++        Ok(Some(PreparedExplicitSchema { schema, physical }))
++    }
++
+     /// Infer file-level metadata needed for planning.
+     /// The metadata includes statistics and ordering.
+     async fn infer_file_meta(
+@@ -125,6 +163,16 @@ pub struct ListingFileSample<'a> {
+     pub objects: Vec<ObjectMeta>,
+ }
+ 
++/// A format's supplied schema before partition-column extraction.
++#[derive(Debug)]
++pub struct PreparedExplicitSchema {
++    /// Logical schema, including any supplied directory partition columns.
++    pub schema: Schema,
++    /// When present, validate the remaining file schema against this physical
++    /// schema after partition-column extraction.
++    pub physical: Option<SchemaRef>,
++}
++
+ #[derive(Debug, Clone)]
+ pub struct ListingFileMeta {
+     pub statistics: Statistics,
+@@ -208,34 +256,22 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+         .await?;
+         let compression = read_format.infer_compression(ctx, &inference_files).await?;
+ 
+-        let (schema, partition_fields) = match schema {
+-            Some(schema) if !schema.fields().is_empty() => {
+-                let physical = if read_format.requires_explicit_schema_validation() {
+-                    Some(
+-                        read_format
+-                            .infer_schema(ctx, &inference_files, compression)
+-                            .await?,
++        let prepared = match schema {
++            Some(schema) => {
++                read_format
++                    .prepare_explicit_schema(
++                        ctx,
++                        schema,
++                        &inference_files,
++                        compression,
++                        read_case_sensitive,
+                     )
+-                } else if read_case_sensitive {
+-                    None
+-                } else {
+-                    read_format
+-                        .infer_schema(ctx, &inference_files, compression)
+-                        .await
+-                        .ok()
+-                };
+-                // Spark matches a user-specified schema against the physical file
+-                // columns case-insensitively by default (`spark.sql.caseSensitive=false`).
+-                // Reconcile the user column names to the physical names up front so that both
+-                // the file stats and reader (which resolve columns by exact name) find the data.
+-                let schema = if read_case_sensitive {
+-                    schema
+-                } else if let Some(physical) = &physical {
+-                    reconcile_schema_names_case_insensitive(schema, physical)?
+-                } else {
+-                    // Keeps the user schema if physical schema inference is unavailable.
+-                    schema
+-                };
++                    .await?
++            }
++            None => None,
++        };
++        let (schema, partition_fields) = match prepared {
++            Some(PreparedExplicitSchema { schema, physical }) => {
+                 // When the partition columns are not specified, auto-discover
+                 // them from `key=value` segments in the listing paths.
+                 // Without this, columns that exist only in the directory tree
+@@ -261,7 +297,7 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+                 }
+                 (Arc::new(schema), partition_fields)
+             }
+-            _ => {
++            None => {
+                 let schema = read_format
+                     .infer_schema(ctx, &inference_files, compression)
+                     .await?;
+@@ -413,3 +449,7 @@ mod case_sensitivity_tests;
+ #[cfg(test)]
+ #[path = "inference_selection_tests.rs"]
+ mod inference_selection_tests;
++
++#[cfg(test)]
++#[path = "explicit_schema_tests.rs"]
++mod explicit_schema_tests;

@@ -11252,3 +11252,17 @@ passing mapper candidate superseded by fresh Spark evidence. Ordinary FileStream
 integration is tested; public registry/codec/writer remain separate. Temporary
 map-key/Unicode/conversion/virtual-column limits stay explicit, with full SDP
 scope unchanged. Documentation gates precede advance.
+
+## 2026-10-30T00:30:55.305361+00:00 — ACK listing-schema and native-length evidence
+
+Archive the exact supplied-schema hook, native materialized-length gates and Spark
+partition reference in separate review units; preserve failed attempts and current
+runtime limitations. No Fable-response edits or release actions.
+
+## 2026-10-30T00:30:55.449580+00:00 — DONE shared listing supplied-schema hook
+
+Sail b52dfd5ad656d6caf2ae6900f3a25ed83874cdfd passed detached formatting, strict Clippy and 189 data-source
+tests. Test compile/format failures retained without changing assertions. Fresh
+Spark ten-case/eleven-filter partition evidence and pinned source handoff are
+archived for the subsequent shared binding/preparation units. No ORC registry,
+CLI or full SDP verdict. Documentation gates precede branch advance.

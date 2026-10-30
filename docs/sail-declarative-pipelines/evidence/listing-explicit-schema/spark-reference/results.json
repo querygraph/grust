@@ -1,0 +1,1924 @@
+{
+  "cases": [
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "id": 11,
+            "part": "west"
+          },
+          {
+            "id": 12,
+            "part": "west"
+          },
+          {
+            "id": 21,
+            "part": "east"
+          }
+        ],
+        "schema": "id: int32\npart: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "id": 11,
+                "part": "west"
+              },
+              {
+                "id": 12,
+                "part": "west"
+              }
+            ],
+            "schema": "id: int32\npart: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#1, part#2]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#2), (part#2 = west)]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#1, part#2]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "matching_sensitive_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#1, part#2]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#1, part#2]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": false,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "PART",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "string",
+            "values": [
+              null,
+              null,
+              null
+            ]
+          },
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 2,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "PART": null,
+            "id": 11,
+            "part": "west"
+          },
+          {
+            "PART": null,
+            "id": 12,
+            "part": "west"
+          },
+          {
+            "PART": null,
+            "id": 21,
+            "part": "east"
+          }
+        ],
+        "schema": "PART: string\nid: int32\npart: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "PART",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "string",
+                "values": []
+              },
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "int32",
+                "values": []
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 2,
+                "type": "string",
+                "values": []
+              }
+            ],
+            "num_rows": 0,
+            "rows": [],
+            "schema": "PART: string\nid: int32\npart: string"
+          },
+          "expression": "`PART` = 'west'",
+          "field": "PART",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "PART",
+                "nullable": true,
+                "type": "string"
+              },
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* Filter (3)\n+- * ColumnarToRow (2)\n   +- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [3]: [PART#9, id#10, part#11]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPushedFilters: [IsNotNull(PART), EqualTo(PART,west)]\nReadSchema: struct<PART:string,id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [3]: [PART#9, id#10, part#11]\n\n(3) Filter [codegen id : 1]\nInput [3]: [PART#9, id#10, part#11]\nCondition : (isnotnull(PART#9) AND (PART#9 = west))\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        },
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "PART",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "string",
+                "values": [
+                  null,
+                  null
+                ]
+              },
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 2,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "PART": null,
+                "id": 11,
+                "part": "west"
+              },
+              {
+                "PART": null,
+                "id": 12,
+                "part": "west"
+              }
+            ],
+            "schema": "PART: string\nid: int32\npart: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "physical_partition_control",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "PART",
+                "nullable": true,
+                "type": "string"
+              },
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [3]: [PART#9, id#10, part#11]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#11), (part#11 = west)]\nReadSchema: struct<PART:string,id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [3]: [PART#9, id#10, part#11]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "alias_sensitive_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "PART",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [3]: [PART#9, id#10, part#11]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<PART:string,id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [3]: [PART#9, id#10, part#11]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "PART",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "PART",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": false,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "id": 11,
+            "part": "west"
+          },
+          {
+            "id": 12,
+            "part": "west"
+          },
+          {
+            "id": 21,
+            "part": "east"
+          }
+        ],
+        "schema": "id: int32\npart: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "id": 11,
+                "part": "west"
+              },
+              {
+                "id": 12,
+                "part": "west"
+              }
+            ],
+            "schema": "id: int32\npart: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#20, part#21]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#21), (part#21 = west)]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#20, part#21]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "id_only_sensitive_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#20, part#21]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#20, part#21]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": false,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "part": "west"
+          },
+          {
+            "part": "west"
+          },
+          {
+            "part": "east"
+          }
+        ],
+        "schema": "part: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "part": "west"
+              },
+              {
+                "part": "west"
+              }
+            ],
+            "schema": "part: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [part#28]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#28), (part#28 = west)]\nReadSchema: struct<>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [part#28]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "empty_sensitive_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [part#28]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [part#28]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "id": 11,
+            "part": "west"
+          },
+          {
+            "id": 12,
+            "part": "west"
+          },
+          {
+            "id": 21,
+            "part": "east"
+          }
+        ],
+        "schema": "id: int32\npart: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "true",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "id": 11,
+                "part": "west"
+              },
+              {
+                "id": 12,
+                "part": "west"
+              }
+            ],
+            "schema": "id: int32\npart: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#35, part#36]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#36), (part#36 = west)]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#35, part#36]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "absent_sensitive_true",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#35, part#36]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#35, part#36]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": null,
+      "schema_supplied": false,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "id": 11,
+            "part": "west"
+          },
+          {
+            "id": 12,
+            "part": "west"
+          },
+          {
+            "id": 21,
+            "part": "east"
+          }
+        ],
+        "schema": "id: int32\npart: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "id": 11,
+                "part": "west"
+              },
+              {
+                "id": 12,
+                "part": "west"
+              }
+            ],
+            "schema": "id: int32\npart: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#43, part#44]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#44), (part#44 = west)]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#43, part#44]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "matching_sensitive_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#43, part#44]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#43, part#44]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": false,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "PART",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "PART": "west",
+            "id": 11
+          },
+          {
+            "PART": "west",
+            "id": 12
+          },
+          {
+            "PART": "east",
+            "id": 21
+          }
+        ],
+        "schema": "id: int32\nPART: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "PART",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "PART": "west",
+                "id": 11
+              },
+              {
+                "PART": "west",
+                "id": 12
+              }
+            ],
+            "schema": "id: int32\nPART: string"
+          },
+          "expression": "`PART` = 'west'",
+          "field": "PART",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "PART",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#51, PART#52]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(PART#52), (PART#52 = west)]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#51, PART#52]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "alias_sensitive_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "PART",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#51, PART#52]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#51, PART#52]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "PART",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "PART",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": false,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "id": 11,
+            "part": "west"
+          },
+          {
+            "id": 12,
+            "part": "west"
+          },
+          {
+            "id": 21,
+            "part": "east"
+          }
+        ],
+        "schema": "id: int32\npart: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "id": 11,
+                "part": "west"
+              },
+              {
+                "id": 12,
+                "part": "west"
+              }
+            ],
+            "schema": "id: int32\npart: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#59, part#60]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#60), (part#60 = west)]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#59, part#60]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "id_only_sensitive_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#59, part#60]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#59, part#60]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": false,
+            "type": "integer"
+          }
+        ],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "part": "west"
+          },
+          {
+            "part": "west"
+          },
+          {
+            "part": "east"
+          }
+        ],
+        "schema": "part: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "part": "west"
+              },
+              {
+                "part": "west"
+              }
+            ],
+            "schema": "part: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [part#67]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#67), (part#67 = west)]\nReadSchema: struct<>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [part#67]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "empty_sensitive_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [part#67]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [part#67]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": {
+        "fields": [],
+        "type": "struct"
+      },
+      "schema_supplied": true,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12,
+              21
+            ]
+          },
+          {
+            "name": "part",
+            "nullable": true,
+            "ordinal": 1,
+            "type": "string",
+            "values": [
+              "west",
+              "west",
+              "east"
+            ]
+          }
+        ],
+        "num_rows": 3,
+        "rows": [
+          {
+            "id": 11,
+            "part": "west"
+          },
+          {
+            "id": 12,
+            "part": "west"
+          },
+          {
+            "id": 21,
+            "part": "east"
+          }
+        ],
+        "schema": "id: int32\npart: string"
+      },
+      "config": {
+        "spark.sql.ansi.enabled": "true",
+        "spark.sql.caseSensitive": "false",
+        "spark.sql.files.ignoreCorruptFiles": "false",
+        "spark.sql.files.ignoreMissingFiles": "false",
+        "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+        "spark.sql.orc.enableVectorizedReader": "true",
+        "spark.sql.orc.filterPushdown": "true",
+        "spark.sql.orc.impl": "native",
+        "spark.sql.orc.mergeSchema": "false",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.sql.shuffle.partitions": "1",
+        "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+        "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+        "spark.sql.timeType.enabled": "false",
+        "spark.sql.timestampType": "TIMESTAMP_LTZ"
+      },
+      "filters": [
+        {
+          "arrow": {
+            "columns": [
+              {
+                "name": "id",
+                "nullable": true,
+                "ordinal": 0,
+                "type": "int32",
+                "values": [
+                  11,
+                  12
+                ]
+              },
+              {
+                "name": "part",
+                "nullable": true,
+                "ordinal": 1,
+                "type": "string",
+                "values": [
+                  "west",
+                  "west"
+                ]
+              }
+            ],
+            "num_rows": 2,
+            "rows": [
+              {
+                "id": 11,
+                "part": "west"
+              },
+              {
+                "id": 12,
+                "part": "west"
+              }
+            ],
+            "schema": "id: int32\npart: string"
+          },
+          "expression": "`part` = 'west'",
+          "field": "part",
+          "kind": "requested_or_logical",
+          "literal": "west",
+          "output_schema": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "id",
+                "nullable": true,
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "part",
+                "nullable": true,
+                "type": "string"
+              }
+            ],
+            "type": "struct"
+          },
+          "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#74, part#75]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nPartitionFilters: [isnotnull(part#75), (part#75 = west)]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#74, part#75]\n\n\n",
+          "stage": "materialize_to_arrow",
+          "status": "success"
+        }
+      ],
+      "name": "absent_sensitive_false",
+      "output_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [2]: [id#74, part#75]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-partition-schema-reference/inputs]\nReadSchema: struct<id:int>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [2]: [id#74, part#75]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "part",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_schema": null,
+      "schema_supplied": false,
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    }
+  ],
+  "config": {
+    "spark.sql.ansi.enabled": "true",
+    "spark.sql.caseSensitive": "true",
+    "spark.sql.files.ignoreCorruptFiles": "false",
+    "spark.sql.files.ignoreMissingFiles": "false",
+    "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+    "spark.sql.orc.enableVectorizedReader": "true",
+    "spark.sql.orc.filterPushdown": "true",
+    "spark.sql.orc.impl": "native",
+    "spark.sql.orc.mergeSchema": "false",
+    "spark.sql.session.timeZone": "UTC",
+    "spark.sql.shuffle.partitions": "1",
+    "spark.sql.sources.partitionColumnTypeInference.enabled": "true",
+    "spark.sql.sources.useV1SourceList": "avro,csv,json,kafka,orc,parquet,text",
+    "spark.sql.timeType.enabled": "false",
+    "spark.sql.timestampType": "TIMESTAMP_LTZ"
+  },
+  "fixtures": {
+    "east": {
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": false,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              21
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 21
+          }
+        ],
+        "schema": "id: int32 not null"
+      },
+      "partition_directory": "part=east",
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs/part=east/data.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              21
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "rows": [
+          {
+            "id": 21
+          }
+        ],
+        "schema": "id: int32"
+      },
+      "physical_schema": "id: int32",
+      "sha256": "4b5f80839828bd53feb5e286558660116995e1bfcf773e4dace81e2ff43aff8f",
+      "size": 198,
+      "stage": "physical_read",
+      "status": "success"
+    },
+    "west": {
+      "generator": "pyarrow.orc.write_table",
+      "input_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": false,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 11
+          },
+          {
+            "id": 12
+          }
+        ],
+        "schema": "id: int32 not null"
+      },
+      "partition_directory": "part=west",
+      "path": "/private/tmp/sail-sdp-orc-partition-schema-reference/inputs/part=west/data.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "id",
+            "nullable": true,
+            "ordinal": 0,
+            "type": "int32",
+            "values": [
+              11,
+              12
+            ]
+          }
+        ],
+        "num_rows": 2,
+        "rows": [
+          {
+            "id": 11
+          },
+          {
+            "id": 12
+          }
+        ],
+        "schema": "id: int32"
+      },
+      "physical_schema": "id: int32",
+      "sha256": "ae15a55808ace20b64df81777dad3b95aaee8ef15144b4f7942255aaf0f50fd7",
+      "size": 199,
+      "stage": "physical_read",
+      "status": "success"
+    }
+  },
+  "java": {
+    "actual_pid": 16218,
+    "default_timezone_id": "UTC",
+    "format_locale": "en-US",
+    "gateway_pid": 16218,
+    "oldmapping_property": "false",
+    "runtime_version": "20.0.2+9-78",
+    "tzdb_versions": [
+      "2023c"
+    ],
+    "user_timezone_property": "UTC",
+    "vendor": "Oracle Corporation"
+  },
+  "java_tool_options": "-Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+  "owned_gateway_exit_code": 0,
+  "pyarrow_version": "26.0.0",
+  "python_pid": 16206,
+  "recorded_at_utc": "2026-10-30T00:22:44.337643+00:00",
+  "scope": "Ten bounded Spark partition-schema observations; plans are pre-execution, not runtime file-I/O instrumentation",
+  "script_sha256": "beee31d5e58a05f2866b1aa2cfdc3c62dd0edb58ce2d506e89f47dc5581ae11b",
+  "spark_context": {
+    "driver_memory": "512m",
+    "master": "local[1]"
+  },
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_version": "4.2.1",
+  "status": "completed"
+}

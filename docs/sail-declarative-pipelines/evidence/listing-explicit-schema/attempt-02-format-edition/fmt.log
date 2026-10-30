@@ -1,0 +1,45 @@
+Diff in /Users/alexy/src/sail-sdp-gate/crates/sail-data-source/src/listing/explicit_schema_tests.rs:5:
+ 
+ use bytes::Bytes;
+ use datafusion::execution::context::{SessionConfig, SessionContext};
++use object_store::ObjectStoreExt;
+ use object_store::memory::InMemory;
+ use object_store::path::Path;
+-use object_store::ObjectStoreExt;
+ 
+ use super::*;
+ 
+Diff in /Users/alexy/src/sail-sdp-gate/crates/sail-data-source/src/listing/explicit_schema_tests.rs:155:
+         assert_eq!(files.len(), 1);
+         assert_eq!(files[0].objects.len(), 1);
+         assert_eq!(compression, CompressionTypeVariant::UNCOMPRESSED);
+-        self.0
+-             .0
+-            .calls
+-            .lock()
+-            .unwrap()
+-            .prepared
+-            .push(schema.clone());
++        self.0.0.calls.lock().unwrap().prepared.push(schema.clone());
+         Ok(Some(PreparedExplicitSchema {
+             schema,
+             physical: None,
+Diff in /Users/alexy/src/sail-sdp-gate/crates/sail-data-source/src/listing/explicit_schema_tests.rs:308:
+             source::<DefaultReadFormat>(&context, Some(schema("value")), case_sensitive, vec![])
+                 .await;
+         if should_fail {
+-            assert!(result
+-                .err()
+-                .unwrap()
+-                .to_string()
+-                .contains("physical inference failure"));
++            assert!(
++                result
++                    .err()
++                    .unwrap()
++                    .to_string()
++                    .contains("physical inference failure")
++            );
+         } else {
+             assert_eq!(result?.schema().as_ref(), &schema("value"));
+         }

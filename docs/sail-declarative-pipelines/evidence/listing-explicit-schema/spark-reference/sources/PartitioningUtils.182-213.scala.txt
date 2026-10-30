@@ -1,0 +1,32 @@
+      val resolvedPartitionValues = resolvePartitions(pathsWithPartitionValues, caseSensitive)
+
+      // Creates the StructType which represents the partition columns.
+      val fields = {
+        val PartitionValues(columnNames, typedValues) = resolvedPartitionValues.head
+        columnNames.zip(typedValues).map { case (name, TypedPartValue(_, dataType)) =>
+          // We always assume partition columns are nullable since we've no idea whether null values
+          // will be appended in the future.
+          val resultName = userSpecifiedNames.getOrElse(name, name)
+          val resultDataType = userSpecifiedDataTypes.getOrElse(name, dataType)
+          StructField(resultName, resultDataType, nullable = true)
+        }
+      }
+
+      // Finally, we create `Partition`s based on paths and resolved partition values.
+      val partitions = resolvedPartitionValues.zip(pathsWithPartitionValues).map {
+        case (PartitionValues(columnNames, typedValues), (path, _)) =>
+          val rowValues = columnNames.zip(typedValues).map { case (columnName, typedValue) =>
+            try {
+              castPartValueToDesiredType(typedValue.dataType, typedValue.value, zoneId)
+            } catch {
+              case NonFatal(_) =>
+                if (validatePartitionColumns) {
+                  throw QueryExecutionErrors.failedToCastValueToDataTypeForPartitionColumnError(
+                    typedValue.value, typedValue.dataType, columnName)
+                } else null
+            }
+          }
+          PartitionPath(InternalRow.fromSeq(rowValues), path)
+      }
+
+      PartitionSpec(StructType(fields), partitions)

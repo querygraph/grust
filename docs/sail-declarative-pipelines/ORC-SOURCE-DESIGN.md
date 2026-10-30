@@ -501,3 +501,22 @@ Next units connect supplied-schema preparation/physical partition names, semanti
 schema inference, worker codec and public registry. Writer and remaining native
 value-safety/calendar/configuration contracts remain open. This is an internal
 file-source verdict; no public CLI or SDP runtime count is added.
+
+## Supplied schema preparation and physical partition bindings
+
+Recorded: 2026-10-30T00:30:55.449580+00:00. [Sail `b52dfd5ad6`](evidence/listing-explicit-schema/README.md)
+adds the shared ReadFormat hook, preserving defaults while allowing ORC to retain
+an explicit empty or named schema without eager file inference. Formatting,
+strict Clippy and 189 data-source tests pass; both earlier failed attempts remain
+archived with their exact patches and logs.
+
+Ten fresh Spark schema cases and eleven filters confirm that discovery retains
+omitted directory fields. Explicit empty means partition-only rows; absent means
+infer file fields. A case-insensitive supplied PART binds physical part while a
+case-sensitive PART remains a separate null file field. All returned fields are
+nullable in the tested ORC path. These reference facts require shared preparation
+and logical/physical name bindings, including partition-filter rebinding before
+DataFusion parsing and prefix pruning. They are not yet implemented by this hook.
+Mixed physical directory casing, inferred partition types and remaining path
+semantics stay visible general listing requirements. The reference's exact source
+handoff, two fixtures, configs, plans and clean owned-JVM shutdown are retained.

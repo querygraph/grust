@@ -1351,3 +1351,11 @@ with formatting/strict Clippy and retained pre-reference candidate. The real fil
 stream now exercises the assembled reader contracts; public registration/worker/
 writer integration and unqualified conversion cases remain incomplete. No full
 SDP, streaming/Iggy or CDC verdict is implied.
+
+### Shared supplied-schema preparation (2026-10-30T00:30:55.449580+00:00)
+
+[Evidence](evidence/listing-explicit-schema/README.md) qualifies Sail
+`b52dfd5ad6` with 189 data-source tests and retains both failed pre-gate
+attempts. Ten Spark schema cases and eleven filters define subsequent partition
+binding/preparation work; the hook alone does not qualify those behaviors or
+activate public ORC scans. Full SDP scope and public runtime counts are unchanged.
