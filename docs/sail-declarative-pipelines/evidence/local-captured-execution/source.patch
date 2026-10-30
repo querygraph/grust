@@ -1,0 +1,437 @@
+commit 7505e2ced6e51dce9d8fd43c37f5292263bdc58c
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 13:51:51 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 13:51:51 2026 -0700
+
+    Execute local admitted jobs from their captured Session snapshot
+
+diff --git a/crates/sail-execution/src/job_runner/local/capture_boundary_tests.rs b/crates/sail-execution/src/job_runner/local/capture_boundary_tests.rs
+index 296061d03..8a1236c83 100644
+--- a/crates/sail-execution/src/job_runner/local/capture_boundary_tests.rs
++++ b/crates/sail-execution/src/job_runner/local/capture_boundary_tests.rs
+@@ -132,3 +132,77 @@ async fn legacy_bound_execution_recaptures_authority_after_scoped_planning() ->
+     assert!(context.extension::<TaskResourceScope>().is_err());
+     Ok(())
+ }
++
++#[tokio::test]
++async fn captured_bound_execution_preserves_planning_snapshot() -> TestResult {
++    let parent: Arc<dyn ObjectStore> = Arc::new(InMemory::new());
++    let child: Arc<dyn ObjectStore> = Arc::new(InMemory::new());
++    let planner = Arc::new(SnapshotPlanner {
++        store: child.clone(),
++        resources: Mutex::new(None),
++        physical: Mutex::new(None),
++        calls: AtomicUsize::new(0),
++    });
++    let context = SessionContext::new_with_state(
++        SessionStateBuilder::new()
++            .with_config(SessionConfig::new().with_target_partitions(7))
++            .with_query_planner(planner.clone())
++            .build(),
++    );
++    let url = ObjectStoreUrl::parse("memory://capture")?;
++    context
++        .runtime_env()
++        .register_object_store(url.as_ref(), parent.clone());
++    let runner = LocalJobRunner::default();
++    let preparation = (&runner as &dyn JobRunner).begin_preparation(&context)?;
++    let resources = preparation.resources().clone();
++    *planner
++        .resources
++        .lock()
++        .map_err(|_| "owner lock poisoned")? = Some(resources.clone());
++    let registry = Arc::new(DefaultObjectStoreRegistry::new());
++    registry.register_store(url.as_ref(), child.clone());
++    let preparation = preparation.capture(Some(registry))?;
++    context
++        .state_ref()
++        .write()
++        .config_mut()
++        .options_mut()
++        .execution
++        .target_partitions = 9;
++
++    let expected = resources.clone();
++    let executed = Arc::new(AtomicBool::new(false));
++    let observed = executed.clone();
++    *planner.physical.lock().map_err(|_| "plan lock poisoned")? = Some(plan(move |ctx| {
++        assert!(Arc::ptr_eq(
++            &ctx.extension::<TaskResourceScope>()?,
++            &expected
++        ));
++        assert_eq!(ctx.session_config().target_partitions(), 7);
++        let store = ctx
++            .runtime_env()
++            .object_store(ObjectStoreUrl::parse("memory://capture")?)?;
++        assert!(Arc::ptr_eq(&store, &child));
++        observed.store(true, Ordering::SeqCst);
++        Ok(stream(|_| Poll::Ready(None)).0)
++    }));
++    let logical = LogicalPlanBuilder::empty(false).build()?;
++    let physical = preparation.session().create_physical_plan(&logical).await?;
++    assert_eq!(planner.calls.load(Ordering::SeqCst), 1);
++    assert!(!executed.load(Ordering::SeqCst));
++    assert!(
++        preparation
++            .execute(physical)
++            .await?
++            .collect::<Vec<_>>()
++            .await
++            .is_empty()
++    );
++    assert!(executed.load(Ordering::SeqCst));
++    assert_eq!(resources.drain().await?.registered, 0);
++    runner.stop().await?;
++    assert!(runner.lock().active.is_empty());
++    assert!(context.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
+diff --git a/crates/sail-execution/src/job_runner/local/captured_preparation_tests.rs b/crates/sail-execution/src/job_runner/local/captured_preparation_tests.rs
+new file mode 100644
+index 000000000..31a4fb2ab
+--- /dev/null
++++ b/crates/sail-execution/src/job_runner/local/captured_preparation_tests.rs
+@@ -0,0 +1,170 @@
++use datafusion::execution::object_store::{
++    DefaultObjectStoreRegistry, ObjectStoreRegistry, ObjectStoreUrl,
++};
++use futures::FutureExt;
++use object_store::ObjectStore;
++use object_store::memory::InMemory;
++use tokio::time::{Duration, timeout};
++
++use super::*;
++
++#[tokio::test]
++async fn stop_before_capture_retains_same_cause_and_drains_admission() -> TestResult {
++    let runner = LocalJobRunner::default();
++    let context = SessionContext::new();
++    let preparation = (&runner as &dyn JobRunner).begin_preparation(&context)?;
++    let control = preparation.control();
++    let mut stop = Box::pin(runner.stop());
++    assert_pending(stop.as_mut());
++    let error = preparation
++        .capture(None)
++        .err()
++        .ok_or("stopped capture accepted")?;
++    let DataFusionError::Shared(cause) = error else {
++        return Err("capture did not retain shared cause".into());
++    };
++    assert!(cause.to_string().contains("canceled before capture"));
++    let report = timeout(Duration::from_secs(10), control.completion()).await?;
++    let Some(error) = &report.error else {
++        return Err("capture failure report has no primary".into());
++    };
++    let DataFusionError::Shared(reported) = error.as_ref() else {
++        return Err("capture report lost shared cause".into());
++    };
++    assert!(Arc::ptr_eq(&cause, reported));
++    assert!(report.resources_drained);
++    assert!(report.cleanup_result().is_ok());
++    timeout(Duration::from_secs(10), stop).await??;
++    assert!(runner.lock().active.is_empty());
++    Ok(())
++}
++
++#[tokio::test]
++async fn captured_stop_refuses_factory_and_unpolled_execute_never_starts_it() -> TestResult {
++    for stop_first in [false, true] {
++        let runner = LocalJobRunner::default();
++        let context = SessionContext::new();
++        let preparation = (&runner as &dyn JobRunner)
++            .begin_preparation(&context)?
++            .capture(None)?;
++        let control = preparation.control();
++        let calls = Arc::new(AtomicUsize::new(0));
++        let invoked = calls.clone();
++        let physical = plan(move |_| {
++            invoked.fetch_add(1, Ordering::SeqCst);
++            Ok(stream(|_| Poll::Pending).0)
++        });
++        if stop_first {
++            let mut stop = Box::pin(runner.stop());
++            assert_pending(stop.as_mut());
++            assert!(preparation.execute(physical).await.is_err());
++            timeout(Duration::from_secs(10), stop).await??;
++        } else {
++            drop(preparation.execute(physical));
++            timeout(Duration::from_secs(10), runner.stop()).await??;
++        }
++        assert_eq!(calls.load(Ordering::SeqCst), 0);
++        assert!(control.completion().await.resources_drained);
++        assert!(runner.lock().active.is_empty());
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn captured_guard_finish_cancel_and_drop_keep_registered_cleanup_owned() -> TestResult {
++    for transition in [0, 1, 2] {
++        let runner = LocalJobRunner::default();
++        let context = SessionContext::new();
++        let preparation = (&runner as &dyn JobRunner)
++            .begin_preparation(&context)?
++            .capture(None)?;
++        let control = preparation.control();
++        let resources = preparation.resources().clone();
++        let (release, released) = oneshot::channel();
++        resources.spawn(|_| async move {
++            released
++                .await
++                .map_err(|error| DataFusionError::External(Box::new(error)))?;
++            Ok(())
++        })?;
++        match transition {
++            0 => {
++                preparation.finish();
++            }
++            1 => {
++                preparation.cancel();
++            }
++            _ => drop(preparation),
++        }
++        let mut completion = Box::pin(control.completion());
++        assert_pending(completion.as_mut());
++        assert_eq!(runner.lock().active.len(), 1);
++        release
++            .send(())
++            .map_err(|_| "captured cleanup lost supervisor")?;
++        let report = timeout(Duration::from_secs(10), completion).await?;
++        assert!(report.resources_drained);
++        assert!(report.cleanup_result().is_ok());
++        assert_eq!(report.result().is_ok(), transition == 0);
++        assert_eq!(resources.drain().await?.registered, 1);
++        runner.stop().await?;
++        assert!(runner.lock().active.is_empty());
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn captured_registry_survives_raw_stream_disposal_until_registered_io_settles() -> TestResult
++{
++    let runner = LocalJobRunner::default();
++    let context = SessionContext::new();
++    let registry = Arc::new(DefaultObjectStoreRegistry::new());
++    let weak = Arc::downgrade(&registry);
++    let store: Arc<dyn ObjectStore> = Arc::new(InMemory::new());
++    let url = ObjectStoreUrl::parse("memory://captured-lifetime")?;
++    registry.register_store(url.as_ref(), store.clone());
++    let preparation = (&runner as &dyn JobRunner)
++        .begin_preparation(&context)?
++        .capture(Some(registry))?;
++    let control = preparation.control();
++    let resources = preparation.resources().clone();
++    let (observed, observation) = oneshot::channel();
++    let (release, released) = oneshot::channel();
++    let (source, counts) = stream(|_| Poll::Pending);
++    let physical = plan(move |task| {
++        task.extension::<TaskResourceScope>()?
++            .spawn(move |mut canceled| async move {
++                canceled
++                    .wait_for(|value| *value)
++                    .await
++                    .map_err(|error| DataFusionError::External(Box::new(error)))?;
++                let _ = observed.send(());
++                released
++                    .await
++                    .map_err(|error| DataFusionError::External(Box::new(error)))?;
++                let actual = task.runtime_env().object_store(url)?;
++                assert!(Arc::ptr_eq(&actual, &store));
++                Ok(())
++            })?;
++        Ok(source)
++    });
++    let output = preparation.execute(physical).await?;
++    assert!(weak.upgrade().is_some());
++    drop(output);
++    timeout(Duration::from_secs(10), observation).await??;
++    assert_eq!(counts.polls.load(Ordering::SeqCst), 0);
++    assert_eq!(counts.drops.load(Ordering::SeqCst), 1);
++    assert!(weak.upgrade().is_some());
++    assert!(resources.drain().now_or_never().is_none());
++    release
++        .send(())
++        .map_err(|_| "captured I/O lost supervisor")?;
++    let report = timeout(Duration::from_secs(10), control.completion()).await?;
++    assert!(report.resources_drained);
++    assert!(report.cleanup_result().is_ok());
++    assert_eq!(resources.drain().await?.registered, 1);
++    assert!(weak.upgrade().is_none());
++    runner.stop().await?;
++    assert!(runner.lock().active.is_empty());
++    Ok(())
++}
+diff --git a/crates/sail-execution/src/job_runner/local/preparation.rs b/crates/sail-execution/src/job_runner/local/preparation.rs
+index 68dd8a5ad..2e22fd7c6 100644
+--- a/crates/sail-execution/src/job_runner/local/preparation.rs
++++ b/crates/sail-execution/src/job_runner/local/preparation.rs
+@@ -1,6 +1,7 @@
+ use std::panic::{AssertUnwindSafe, catch_unwind};
+ use std::sync::Arc;
+ 
++use datafusion::catalog::Session;
+ use datafusion::common::{Result, internal_datafusion_err};
+ use datafusion::execution::SendableRecordBatchStream;
+ use datafusion::physical_plan::{ExecutionPlan, execute_stream};
+@@ -8,6 +9,7 @@ use datafusion::prelude::SessionContext;
+ use futures::FutureExt;
+ use sail_common_datafusion::managed_stream::{ManagedStreamControl, StreamPreparation};
+ use sail_common_datafusion::session::job::JobPreparation;
++use sail_common_datafusion::session::scoped::ScopedSession;
+ use sail_common_datafusion::task_resources::{ScopedTaskContext, TaskResourceScope};
+ use sail_telemetry::telemetry::global_metrics;
+ use sail_telemetry::{TracingExecOptions, trace_execution_plan};
+@@ -44,6 +46,14 @@ impl LocalJobPreparation<'_> {
+     /// admitted before planning. This matches legacy execute's late capture;
+     /// it does not claim a frozen query snapshot or install storage routing.
+     pub async fn execute(self, plan: Arc<dyn ExecutionPlan>) -> Result<SendableRecordBatchStream> {
++        self.execute_with_snapshot(plan, None).await
++    }
++
++    async fn execute_with_snapshot(
++        self,
++        plan: Arc<dyn ExecutionPlan>,
++        snapshot: Option<ScopedSession>,
++    ) -> Result<SendableRecordBatchStream> {
+         let Self {
+             runner,
+             id,
+@@ -61,7 +71,11 @@ impl LocalJobPreparation<'_> {
+             ));
+         }
+         let prepared = catch_unwind(AssertUnwindSafe(|| {
+-            let scoped = ScopedTaskContext::from_resources(&context.task_ctx(), resources);
++            let task = match snapshot {
++                Some(session) => session.task_ctx(),
++                None => context.task_ctx(),
++            };
++            let scoped = ScopedTaskContext::from_resources(&task, resources);
+             let plan = trace_execution_plan(
+                 plan,
+                 TracingExecOptions {
+@@ -107,6 +121,15 @@ impl JobPreparation for LocalJobPreparation<'_> {
+     fn cancel(self: Box<Self>) -> ManagedStreamControl {
+         (*self).cancel()
+     }
++    fn capture<'a>(
++        self: Box<Self>,
++        registry: Option<Arc<dyn datafusion::execution::object_store::ObjectStoreRegistry>>,
++    ) -> Result<Box<dyn sail_common_datafusion::session::job::CapturedJobPreparation + 'a>>
++    where
++        Self: 'a,
++    {
++        Ok(Box::new((*self).capture_snapshot(registry)?))
++    }
+     async fn execute(
+         self: Box<Self>,
+         plan: Arc<dyn ExecutionPlan>,
+@@ -114,3 +137,5 @@ impl JobPreparation for LocalJobPreparation<'_> {
+         (*self).execute(plan).await
+     }
+ }
++
++mod captured;
+diff --git a/crates/sail-execution/src/job_runner/local/preparation/captured.rs b/crates/sail-execution/src/job_runner/local/preparation/captured.rs
+new file mode 100644
+index 000000000..71a86c08f
+--- /dev/null
++++ b/crates/sail-execution/src/job_runner/local/preparation/captured.rs
+@@ -0,0 +1,84 @@
++use datafusion::common::DataFusionError;
++use datafusion::execution::object_store::ObjectStoreRegistry;
++use sail_common_datafusion::session::job::CapturedJobPreparation;
++
++use super::*;
++
++/// The minting runner and its admission remain bound to one query snapshot.
++pub(super) struct CapturedLocalJobPreparation<'a> {
++    preparation: LocalJobPreparation<'a>,
++    session: ScopedSession,
++}
++
++impl<'a> LocalJobPreparation<'a> {
++    pub(super) fn capture_snapshot(
++        self,
++        registry: Option<Arc<dyn ObjectStoreRegistry>>,
++    ) -> Result<CapturedLocalJobPreparation<'a>> {
++        let captured = catch_unwind(AssertUnwindSafe(|| {
++            if self.resources.cancelled().now_or_never().is_some() {
++                return Err(DataFusionError::Execution(
++                    "managed stream preparation canceled before capture".into(),
++                ));
++            }
++            let session = ScopedSession::new(self.context.state(), self.resources.clone());
++            match registry {
++                Some(registry) => session.with_object_store_registry(registry),
++                None => Ok(session),
++            }
++        }))
++        .unwrap_or_else(|payload| Err(panic_error("capture", payload)));
++        match captured {
++            Ok(session) => Ok(CapturedLocalJobPreparation {
++                preparation: self,
++                session,
++            }),
++            Err(error) => {
++                // Capture is synchronous. The caller saves control before this
++                // transition and can await independently owned cleanup. Keep
++                // the same typed cause reachable from both observations.
++                let error = Arc::new(error);
++                self.preparation
++                    .fail(DataFusionError::Shared(error.clone()));
++                Err(DataFusionError::Shared(error))
++            }
++        }
++    }
++}
++
++impl CapturedJobPreparation for CapturedLocalJobPreparation<'_> {
++    fn session(&self) -> &ScopedSession {
++        &self.session
++    }
++}
++
++#[tonic::async_trait]
++impl JobPreparation for CapturedLocalJobPreparation<'_> {
++    fn resources(&self) -> &Arc<TaskResourceScope> {
++        self.preparation.resources()
++    }
++
++    fn control(&self) -> ManagedStreamControl {
++        self.preparation.control()
++    }
++
++    fn finish(self: Box<Self>) -> ManagedStreamControl {
++        self.preparation.finish()
++    }
++
++    fn cancel(self: Box<Self>) -> ManagedStreamControl {
++        self.preparation.cancel()
++    }
++
++    async fn execute(
++        self: Box<Self>,
++        plan: Arc<dyn ExecutionPlan>,
++    ) -> Result<SendableRecordBatchStream> {
++        // The owned task context copies the captured config/extensions,
++        // functions and runtime. Streams and registered tasks own the further
++        // dependencies they use; no execution borrows this SessionState.
++        self.preparation
++            .execute_with_snapshot(plan, Some(self.session))
++            .await
++    }
++}
+diff --git a/crates/sail-execution/src/job_runner/local/tests.rs b/crates/sail-execution/src/job_runner/local/tests.rs
+index 20c29979b..acf2d0c5c 100644
+--- a/crates/sail-execution/src/job_runner/local/tests.rs
++++ b/crates/sail-execution/src/job_runner/local/tests.rs
+@@ -464,3 +464,6 @@ mod preparation;
+ 
+ #[path = "capture_boundary_tests.rs"]
+ mod capture_boundary;
++
++#[path = "captured_preparation_tests.rs"]
++mod captured_preparation;

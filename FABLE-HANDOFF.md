@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T20:32:29.095003+00:00. Live coordination read through **CF-0208**.
+Snapshot written 2026-10-30T20:57:15.723296+00:00. Live coordination read through **CF-0216**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -45,9 +45,9 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `ece5b6aed15462cbc54f18a6f72482f1f5e2ad51` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e2bd42233c4458211a538e84cd78e117d9f9f02c` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | `ece5b6aed` captured analyzer; all owned gates terminal |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `a74c3f429b092fd5cde6f65d36371760471a07f6` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `711d78e2ce3be3d1c38f1717c2872cdd568da331` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `632c15054918cc305130f61b132cd9acb4b4635b` |
@@ -160,10 +160,10 @@ Latest fresh public CLI gate is **09d2f0cb89cbb92f186f5096ba04ade7a665282c**:
 owned server stopped (exit0/no listeners). Earlier public
 verdict47c473e6b remains archived; these selections are not full SDP acceptance.
 
-## Current implementation and immediate next work (CF-0208)
+## Current implementation and immediate next work (CF-0216)
 
-Coordinator HEAD **ece5b6aed15462cbc54f18a6f72482f1f5e2ad51** is committed/clean.
-All owned code/control/optimized gates terminal. [Latest public gate](docs/sail-declarative-pipelines/evidence/bounded-resolved-clocks/README.md)
+Coordinator HEAD **a74c3f429b092fd5cde6f65d36371760471a07f6** is committed/clean.
+Recheck live handles; exact gates and controls linked below. [Latest public gate](docs/sail-declarative-pipelines/evidence/bounded-resolved-clocks/README.md)
 remains09d2f0cb8:324 combined libraries/strict Clippy/fmt, fresh300 public+67 upstream
 Python, Spark4.2.1, owned server exit0/no listeners. New callback units below have
 no fresh CLI verdict. Public callers still do not install a captured Session.
@@ -216,28 +216,28 @@ reported inCF-0206; queue delay/self-matching pgrep failure disclosed. No root i
 authorized yet; two CDC phase calls/four assertions remain reintegration obligations.
 No Status-rendering policy selected. Original peer history remains untouched.
 
-**Capture/execution/analyzer API checkpoint is now active**, announced before this
-phase. [Design draft](docs/sail-declarative-pipelines/CAPTURE-EXECUTION-TRANSFER-DESIGN.md)
-proposes consuming capture into a runner-bound executor with borrowed session(),
-legacy execute unchanged. API not finalized/implemented. CF-0207 asks read-only
-Fable review of guard/error/drop, provider/plan lifetime and cluster/transport;
-CF-0208 ACKs. No E′/Status/runtime policy expansion.
-[Boundary characterization](docs/sail-declarative-pipelines/evidence/capture-execution-boundary/README.md)
-e42e1be96 is test-only: actual planner config7/child registry, legacy execution
-config9/parent registry, same owner.134+222 libraries/one optimized CPU-load case;
-all ten workers joined. Preserve this expected legacy behavior, not a bug claim.
-[Native analyzer primitive](docs/sail-declarative-pipelines/evidence/scoped-native-analyzer/README.md)
-ece5b6aed adds exact captured analyzer/config, no optimizer,136+71 libraries;
-unchanged optimizer substitution1pass/1fail. Typed analyzer cause reachable. No
-resolver/caller/execution transfer yet. [Source/lifetime audit](docs/sail-declarative-pipelines/evidence/capture-transfer-source-audit/README.md)
-records state() marking execution start, retained Delta log store vs scan-session
-data store, Iceberg metadata/scan phases. Standalone lifetime/escape compiler probes
-prove language pattern only, not Sail/async/cluster/provider semantics.
-Next: review draft/provider lifetime/error transitions before bound capture code;
-then typed resolver analyzer mode, local/cluster capability and caller-specific
-migration. Earlier catalog I/O/Python analysis, primary+cleanup, session/cluster/
-SDK effects, ORC writer, C0 identity and full original Spark acceptance remain open.
-[Parent design](docs/sail-declarative-pipelines/PRE-PLANNING-OWNERSHIP-DESIGN.md) retains earlier constraints.
+**Capture/execution/analyzer API checkpoint is active**, announced before this
+phase. [Design](docs/sail-declarative-pipelines/CAPTURE-EXECUTION-TRANSFER-DESIGN.md)
+records CF-0209/0211 reviews: Delta retains log-store lineage; workers derive their
+own TaskContext. No public/cluster activation or C5/Status scope expansion.
+[Shared contract](docs/sail-declarative-pipelines/evidence/captured-preparation-contract/README.md)
+16c43aa29 inherits ownership/control/execute and adds consuming capture + session().
+Unsupported default explicitly cancels; caller retains typed NotImplemented.
+136+223 libraries/strict Clippy/fmt/one optimized CPU-load case; initial prohibited
+expect_err test-Clippy failure preserved. cc27/361 unintegrated attempts retained.
+[Local capture](docs/sail-declarative-pipelines/evidence/local-captured-execution/README.md)
+7505e2ced captures once, uses saved task context, shares unchanged legacy/error/
+cleanup paths.136+228 libraries and optimized6+9 cases (including two unrelated
+codec cases); all load workers joined. Registry survives stream disposal through
+held task-owned I/O, then releases after drain. Full Session retention unnecessary
+for these owned paths; arbitrary providers and Delta rebinding still unqualified.
+[Boundary](docs/sail-declarative-pipelines/evidence/capture-execution-boundary/README.md)
+e42e1be96 preserves legacy planner7/child→execution9/parent; new captured test7/child
+at both phases. [Analyzer](docs/sail-declarative-pipelines/evidence/scoped-native-analyzer/README.md)
+ece5b6aed is optimizer-free; unchanged optimizer substitution1pass/1fail retained.
+CF-0214 review consumed; a74c3f429 clarifies recapture cancel/registry replacement.
+Next: panic fixture, typed analyzer, provider/cluster/caller qualification. Earlier
+catalog/Python I/O, shutdown, SDK/ORC/CDC, C0 and full Spark acceptance remain open.
 
 ## Acceptance accounting and major remaining work
 
