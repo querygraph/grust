@@ -115,20 +115,26 @@ replace = true, …)` and runs it with the flow's `queryContext` catalog and
   per-command re-resolution preserves this; what it must not do is export a
   folded plan from analysis (the draft already says so). The clock
   characterization is therefore evidence for the direction, not a gap.
-- **2.5 Authority dispatch fork for a captured helper.** The only step of
-  `resolve_and_execute_plan_with_scope` that needs authority is
-  `execute_logical_plan` (`lib.rs:60`), through which DataFusion runs
-  `LogicalPlan::Ddl`/`Statement` and similar eagerly. `optimize` exists on
-  `ScopedSession`, `rewrite_streaming_plan` and `rename_physical_plan` are
-  pure, and `Session::create_physical_plan` is implemented by
-  `ScopedSession`. A captured variant can therefore keep the same shape with
-  one typed fork on the resolved plan's variant: authority dispatch for
-  `Ddl`, `Statement`, `Copy` and whatever else Sail's SDP command set resolves
-  to that DataFusion executes eagerly; captured path otherwise. The draft asks
-  for exactly this trace ("Trace the actual SDP command set …"); the concrete
-  acceptance test is that the fork is exhaustive over `LogicalPlan` variants
-  rather than a default arm, so a new variant fails to compile rather than
-  silently taking either path.
+- **2.5 Authority dispatch fork for a captured helper (corrected after
+  CF-0231).** The only step of `resolve_and_execute_plan_with_scope` that
+  needs authority is `execute_logical_plan` (`lib.rs:60`). Checked at
+  DataFusion 55.2.0 `context/mod.rs:686–770`: the eager arms are specific
+  `DdlStatement` subvariants (`CreateExternalTable`, `CreateMemoryTable`,
+  `CreateView`, `CreateCatalogSchema`, `CreateCatalog`, `DropTable`,
+  `DropView`, `DropCatalogSchema`, `CreateFunction`, `DropFunction`; any other
+  `Ddl` falls through to `DataFrame::new`) and specific `Statement`
+  subvariants (`SetVariable`, `ResetVariable`, `Prepare`, `Execute`,
+  `Deallocate`); every other plan, `Copy` included, takes the default
+  `DataFrame::new(self.state(), plan)` with no eager effect. My earlier text
+  named `Copy` as an authority candidate without checking; withdrawn.
+  `optimize` exists on `ScopedSession`, `rewrite_streaming_plan` and
+  `rename_physical_plan` are pure, and `Session::create_physical_plan` is
+  implemented by `ScopedSession`, so a captured variant keeps the same shape
+  with one fork keyed on those exact subvariants. The acceptance test is that
+  the fork enumerates the `DdlStatement` and `Statement` subvariants
+  explicitly (no default arm over them), so a new subvariant fails to compile
+  rather than silently taking either path; the outer `LogicalPlan` default arm
+  is then correct, because DataFusion's own default is the non-eager path.
 - **2.6 Boundaries 1–7 are consistent with the capture review.** Finite
   owners and drained scopes (§1.4, §6 of the capture review), admit-before-
   planning with planning dropped before the guard (§1.6, §7), cluster
