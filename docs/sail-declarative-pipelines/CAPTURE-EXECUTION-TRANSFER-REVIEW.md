@@ -181,21 +181,28 @@ the store itself is scope-wrapped, and `io/deletion_vector.rs:221` and
 `metadata_relation/mod.rs:150,365` build their own `StoreContext`s from stores
 passed in (not traced further here).
 
-**Batch pipelines (the units on the root).** `materialize.rs` builds
-`GraphScope::new(graph, &analyzed.relations, flow)` and resolves a flow's query
-against the _analysis-time_ relations; at least temporary views' plans are
-reused verbatim (tables are installed as placeholders during analysis and read
-again at materialization; whether `AnalyzedGraph.relations` holds a full plan
-for tables after analysis was not re-checked for this review). A view over a
-Delta table therefore carries an analysis-time `DeltaTableSource` into
-materialization: the Delta split in this section applies to batch pipelines
-today, independent of the capture candidate. The bounded lowerer does not
-reuse analysis plans; it re-resolves over explicit bindings and provider
-identity, so it is unaffected. This is the caller trace the draft asks for in
-"Batch currently analyzes plans for later materialization"; the conclusion is
-that for owner-bound providers the analyzed artifact must be rebound or
-re-resolved under the attempt owner, and the clock point in §3 gives a second,
-provider-independent reason.
+**Batch pipelines (the units on the root).** Corrected after CF-0222 and
+re-verified at `17b8ac254`: the earlier statement that views' analysis-time
+plans and their Delta sources are reused at materialization was wrong.
+`analysis.rs:174–186` retains a full plan only for `OutputType::TemporaryView`;
+every other output, including persisted views (`sql.rs:316–326` maps them to
+a `CreateView` command with the query as definition), is installed as an
+`EmptyRelation` with the inferred schema. `materialize::views` resolves the
+`CreateView` over `analyzed.relations` (`materialize.rs:267–269`) but
+`resolve_catalog_create_view` uses the resolved input only for its schema and
+column list and persists the definition (`command/catalog/view.rs:39–70`).
+`execution.rs:39–91` starts a fresh `resolved` map and fills it with
+`read_output` catalog reads at run time plus the views it resolves itself. So
+no analysis-time `DeltaTableSource` is physically scanned by batch execution
+today; the Delta lineage hazard of this section is not that specific claim.
+The hazard that does exist in batch execution is the one Codex names: within
+one run, `execution.rs` resolves temporary-view plans once and retains
+`read_output` plans across downstream commands, as plain unowned stores, so
+installing fresh owned registries per command without re-resolving that cache
+would cross owners. The bounded lowerer re-resolves over explicit bindings and
+is unaffected. For owner-bound providers the conclusion stands: artifacts
+must be rebound or re-resolved under the owner that executes them, and the
+clock point in §3 is the provider-independent reason.
 
 ## 3. Cluster capability, worker transport, execution start
 
@@ -474,10 +481,15 @@ plan_analyzer.rs:40,125,147`, `service/config_manager.rs:143`; none sets any
   snapshot's `query_execution_start_time`. Pre-existing, not introduced here,
   and consistent with its `require_foldable` purpose; recorded because it is
   the one resolution-time clock that the captured snapshot does not govern.
-- **8.3 Test gap: child-resolver propagation.** One fixture that resolves a
-  persistent view under `Scoped` with a counting analyzer rule would pin
-  `read.rs:362–365` the way `last_session_setter_selects_native_analysis_mode`
-  pins the setters. Low risk given the `Copy` assignment.
+- **8.3 Child-resolver propagation has no reachable discriminator (withdrawn
+  as a fixture request, CF-0222).** `analyze_native` has exactly two callers,
+  both commands (`command/delta.rs:99`, `command/procedure.rs:373`); a
+  persistent view body is a query, and `collect_query` uses the selected
+  session in both modes, so no counting analyzer placed inside a view can
+  observe a Scoped→Generic demotion in the child resolver, and a fixture
+  built that way would pass its own negative control. The `Copy` assignment at
+  `read.rs:362–365` is the guarantee; the gap stays explicit rather than
+  papered over with a vacuous test.
 - **8.4 Helper executions under `Scoped` are owned but not refused.** A tail,
   pivot-without-values, `Stat*` or time-travel read under a scoped resolver
   runs a query on the captured snapshot during resolution. That is correct for
