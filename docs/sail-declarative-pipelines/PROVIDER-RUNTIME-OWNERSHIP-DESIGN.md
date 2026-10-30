@@ -7,6 +7,11 @@ Status: partial design; runtime-interruption prerequisite implemented at Sail
 routing remain unimplemented. This continues [multipart ownership](OWNED-MULTIPART-SUPERVISOR-DESIGN.md)
 and [the earlier effect checkpoint](evidence/checkpoint-effect-adapter-design/README.md).
 
+The active [pre-planning design checkpoint](PRE-PLANNING-OWNERSHIP-DESIGN.md)
+records dependency counterexamples, selected lease/cancellation direction and open
+exact API/context/outcome/memory decisions. Sail97f9983d5 supplies only the latched
+observation prerequisite; no planning or registry activation follows from it.
+
 ## Observed boundary and implemented prerequisite
 
 The new [runtime-loss packet](evidence/owned-mutation-runtime-loss/README.md) records

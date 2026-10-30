@@ -1704,3 +1704,13 @@ Sail `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` retains nested nonretryable caus
 ## 2026-10-30T15:16:11.162904+00:00 — operation-local store facade
 
 Sail `bebabdb9e7ef7d072ea39f9ec9ac536af86a3f50` retains mutation futures and multipart lifetime through an existing scope while preserving ordinary provider conditions.214 library and12 optimized CPU-load tests pass with fmt/strict Clippy. Actual checkpoint sequential/parallel ownership and real conditional-operation controls fail unchanged tests when the corresponding adapter is bypassed. [Evidence](evidence/owned-store-facade/README.md) retains all compile/fixture/capacity failures and superseded gates. No production registry/routing/session activation; next user-notified design checkpoint covers pre-planning ownership, bursts/byte bounds and handled conflict outcomes. Public verdict remains47c473e6b; full original SDP acceptance remains incomplete.
+
+
+## 2026-10-30T15:38:50.348948+00:00 — pre-planning context experiment and cancellation observation
+
+[Design checkpoint](PRE-PLANNING-OWNERSHIP-DESIGN.md) selects finite runner-visible preparation ownership and caller-polled cancellation direction; exact API/context/outcome/memory decisions remain open. [Dependency probe](evidence/planning-context-design-probe/README.md) proves cloned config/UDF state with shared catalogs and the pre-build config-restore catalog overwrite. Sail `97f9983d5310c8ef8c7818e3f4177fd577951312` adds a latched cancellation observer: fmt/strict Clippy,120 library and120 optimized tests pass; changed-only control fails unchanged late-observer assertion. [Evidence](evidence/planning-cancellation-observer/README.md) retains the passing executable/rejected initial substring wrapper and fresh corrected run. No runner/planning/registry/session activation or widened public/Scala verdict.
+
+
+## 2026-10-30T15:49:48.826808+00:00 — registered I/O after cancellation of its borrowed waiter
+
+Test-only Sail `d8e5213c6461a64874d59ef565c07eb943b8d3fb` qualifies CF-0127's combined model: actual I/O entry precedes stop; dropping the caller does not end the registered task; scope drainage stays pending until known settlement and preserves primary cancellation separately.121 library/121 optimized tests plus fmt/strict Clippy pass. [Packet](evidence/planning-cancellation-observer/README.md) retains the earlier positive variant and exact final qualification. The design incorporates Fable's three owners, authority and typed-error constraints, plus resolver helper queries that execute during planning. Exact runner/context/outcome/memory APIs remain open; no production routing or whole SDK/session verdict.
