@@ -1359,3 +1359,11 @@ SDP, streaming/Iggy or CDC verdict is implied.
 attempts. Ten Spark schema cases and eleven filters define subsequent partition
 binding/preparation work; the hook alone does not qualify those behaviors or
 activate public ORC scans. Full SDP scope and public runtime counts are unchanged.
+
+### ORC materialized length admission (2026-10-30T00:34:57.556497+00:00)
+
+[Evidence](evidence/orc-materialized-lengths/README.md) records native
+`9f23442e7f` and exact Sail vendor `947f5123b5`: 331 native tests
+(eight ignored), 210 no-default, 189 Sail data-source, formatting and strict Clippy.
+Negative/overflowing lengths fail before dependent reads/allocations; pending
+skip/dictionary/primitive/RLE work and public-runtime limits remain explicit.

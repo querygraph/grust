@@ -520,3 +520,17 @@ DataFusion parsing and prefix pruning. They are not yet implemented by this hook
 Mixed physical directory casing, inferred partition types and remaining path
 semantics stay visible general listing requirements. The reference's exact source
 handoff, two fixtures, configs, plans and clean owned-JVM shutdown are retained.
+
+## Validate materialized lengths before allocation
+
+Recorded: 2026-10-30T00:34:57.556497+00:00. [Native `9f23442e7f` and Sail `947f5123b5`](evidence/orc-materialized-lengths/README.md)
+validate materialized variable-length batches before dependent allocations and
+reads. Intrinsic addressability, nonnegative decoded lengths, checked totals and
+existing Arrow i32 offset bounds are enforced, with fallible scratch/payload
+allocation and preserved PRESENT error ordering. Eight new malformed/valid tests
+join 331 passing native tests (eight ignored), 210 no-default tests and 189 Sail
+data-source tests; formatting, strict Clippy and exact package checks pass.
+
+This resolves the retained materialized-length finding. Skips, dictionary setup,
+remaining primitive allocations and RLE delta arithmetic retain separate work.
+No total-memory or public ORC/SDP acceptance claim is added.

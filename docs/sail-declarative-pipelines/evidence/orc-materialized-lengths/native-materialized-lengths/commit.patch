@@ -1,0 +1,742 @@
+commit 9f23442e7f9e019c0ec3b0a2d6491929967d41e3
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 17:18:02 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 17:18:02 2026 -0700
+
+    fix: validate materialized ORC lengths before allocation
+
+diff --git a/src/array_decoder/length.rs b/src/array_decoder/length.rs
+new file mode 100644
+index 0000000..b917c7f
+--- /dev/null
++++ b/src/array_decoder/length.rs
+@@ -0,0 +1,97 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::io;
++use std::mem::size_of;
++
++use snafu::{ensure, OptionExt, ResultExt};
++
++use crate::error::{IoSnafu, OffsetOverflowSnafu, OutOfSpecSnafu, Result};
++
++fn check_allocation_size<T>(count: usize) -> Result<()> {
++    let bytes = count.checked_mul(size_of::<T>()).context(OutOfSpecSnafu {
++        msg: "Array buffer byte size overflows usize",
++    })?;
++    ensure!(
++        bytes <= isize::MAX as usize,
++        OutOfSpecSnafu {
++            msg: "Array buffer byte size exceeds addressable memory"
++        }
++    );
++    Ok(())
++}
++
++fn check_offset_buffer_size<O>(count: usize) -> Result<()> {
++    let offsets = count.checked_add(1).context(OutOfSpecSnafu {
++        msg: "Array offset count overflows usize",
++    })?;
++    check_allocation_size::<O>(offsets)
++}
++
++/// Check both scratch and eventual offset-buffer addressability before decoding
++/// PRESENT. Row count is not limited by the offset value type.
++pub(super) fn check_length_buffer_size<O>(count: usize) -> Result<()> {
++    check_offset_buffer_size::<O>(count)?;
++    check_allocation_size::<i64>(count)
++}
++
++/// Allocate the length scratch only after the caller has decoded PRESENT.
++pub(super) fn new_length_buffer<O>(count: usize) -> Result<Vec<i64>> {
++    check_length_buffer_size::<O>(count)?;
++    let mut lengths = Vec::new();
++    lengths
++        .try_reserve_exact(count)
++        .map_err(|error| io::Error::new(io::ErrorKind::OutOfMemory, error))
++        .context(IoSnafu)?;
++    lengths.resize(count, 0);
++    Ok(lengths)
++}
++
++/// Validate decoded unsigned lengths held in the decoder's signed representation.
++/// The total is an i32 offset into the materialized child array or byte payload,
++/// not a limit on the number of rows or on cumulative work across batches.
++pub(super) fn checked_total_length(lengths: &[i64]) -> Result<usize> {
++    let mut total = 0_i64;
++    for &length in lengths {
++        ensure!(
++            length >= 0,
++            OutOfSpecSnafu {
++                msg: "Decoded array length is negative"
++            }
++        );
++        total = total.checked_add(length).context(OutOfSpecSnafu {
++            msg: "Decoded array lengths overflow i64",
++        })?;
++    }
++    ensure!(
++        total <= i64::from(i32::MAX),
++        OffsetOverflowSnafu {
++            total_length: total,
++            max_size: i32::MAX,
++            batch_size: lengths.len(),
++        }
++    );
++    usize::try_from(total).map_err(|_| {
++        OutOfSpecSnafu {
++            msg: "Decoded array length does not fit usize",
++        }
++        .build()
++    })
++}
++
++#[cfg(test)]
++pub(super) mod tests;
+diff --git a/src/array_decoder/length/tests.rs b/src/array_decoder/length/tests.rs
+new file mode 100644
+index 0000000..12d9de1
+--- /dev/null
++++ b/src/array_decoder/length/tests.rs
+@@ -0,0 +1,180 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::io::Cursor;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::sync::Arc;
++
++use arrow::array::ArrayRef;
++use arrow::buffer::NullBuffer;
++
++use super::*;
++use crate::array_decoder::ArrayBatchDecoder;
++use crate::encoding::integer::{get_unsigned_int_decoder, RleVersion};
++use crate::encoding::PrimitiveValueDecoder;
++use crate::error::OrcError;
++
++#[derive(Clone, Copy)]
++pub(crate) enum ExpectedError {
++    Negative,
++    SumOverflow,
++    OffsetOverflow(i64),
++}
++
++pub(crate) struct Case {
++    bytes: Vec<u8>,
++    version: RleVersion,
++    pub(crate) count: usize,
++    pub(crate) expected: ExpectedError,
++}
++
++impl Case {
++    pub(crate) fn decoder(&self) -> Box<dyn PrimitiveValueDecoder<i64> + Send> {
++        get_unsigned_int_decoder(Cursor::new(self.bytes.clone()), self.version)
++    }
++}
++
++pub(crate) fn unsigned_literals(values: &[u64]) -> Vec<u8> {
++    assert!(!values.is_empty() && values.len() <= 128);
++    let mut bytes = vec![(256 - values.len()) as u8];
++    for &value in values {
++        let mut value = value;
++        while value >= 128 {
++            bytes.push((value as u8 & 0x7f) | 0x80);
++            value >>= 7;
++        }
++        bytes.push(value as u8);
++    }
++    bytes
++}
++
++pub(crate) fn malformed_cases() -> Vec<Case> {
++    let mut cases = vec![];
++    for (values, expected) in [
++        (vec![u64::MAX], ExpectedError::Negative),
++        (vec![u64::MAX, 1], ExpectedError::Negative),
++        (vec![i64::MAX as u64, 1], ExpectedError::SumOverflow),
++        (
++            vec![i32::MAX as u64 + 1],
++            ExpectedError::OffsetOverflow(i64::from(i32::MAX) + 1),
++        ),
++        (
++            vec![i32::MAX as u64, 1],
++            ExpectedError::OffsetOverflow(i64::from(i32::MAX) + 1),
++        ),
++    ] {
++        cases.push(Case {
++            bytes: unsigned_literals(&values),
++            version: RleVersion::V1,
++            count: values.len(),
++            expected,
++        });
++        // RLEv2 direct, 64-bit values, one or two literals.
++        let mut bytes = vec![0x7e, (values.len() - 1) as u8];
++        for value in &values {
++            bytes.extend(value.to_be_bytes());
++        }
++        cases.push(Case {
++            bytes,
++            version: RleVersion::V2,
++            count: values.len(),
++            expected,
++        });
++    }
++    // RLEv2 short repeat: three copies of an eight-byte all-ones value.
++    let mut bytes = vec![0x38];
++    bytes.extend(u64::MAX.to_be_bytes());
++    cases.push(Case {
++        bytes,
++        version: RleVersion::V2,
++        count: 3,
++        expected: ExpectedError::Negative,
++    });
++    cases
++}
++
++pub(crate) fn assert_error(error: OrcError, expected: ExpectedError) {
++    match (error, expected) {
++        (OrcError::OutOfSpec { msg, .. }, ExpectedError::Negative) => {
++            assert_eq!(msg, "Decoded array length is negative");
++        }
++        (OrcError::OutOfSpec { msg, .. }, ExpectedError::SumOverflow) => {
++            assert_eq!(msg, "Decoded array lengths overflow i64");
++        }
++        (
++            OrcError::OffsetOverflow {
++                total_length,
++                max_size,
++                ..
++            },
++            ExpectedError::OffsetOverflow(expected),
++        ) => {
++            assert_eq!(total_length, expected);
++            assert_eq!(max_size, i32::MAX);
++        }
++        (error, _) => panic!("unexpected error: {error}"),
++    }
++}
++
++/// Returning a distinct error also catches dependent work without allocating
++/// any length-controlled child array, even if a regression bypasses admission.
++pub(crate) struct Unread(pub(crate) Arc<AtomicUsize>);
++
++impl PrimitiveValueDecoder<i64> for Unread {
++    fn decode(&mut self, _out: &mut [i64]) -> Result<()> {
++        self.0.fetch_add(1, Ordering::Relaxed);
++        OutOfSpecSnafu {
++            msg: "dependent length decoder was invoked",
++        }
++        .fail()
++    }
++
++    fn skip(&mut self, _n: usize) -> Result<()> {
++        panic!("materialization tests do not skip");
++    }
++}
++
++impl ArrayBatchDecoder for Unread {
++    fn next_batch(&mut self, _size: usize, _parent: Option<&NullBuffer>) -> Result<ArrayRef> {
++        self.0.fetch_add(1, Ordering::Relaxed);
++        OutOfSpecSnafu {
++            msg: "dependent child decoder was invoked",
++        }
++        .fail()
++    }
++
++    fn skip_values(&mut self, _n: usize, _parent: Option<&NullBuffer>) -> Result<()> {
++        panic!("materialization tests do not skip");
++    }
++}
++
++#[test]
++fn intrinsic_boundaries_are_checked_without_allocating_large_buffers() {
++    assert_eq!(
++        checked_total_length(&[i64::from(i32::MAX)]).unwrap(),
++        i32::MAX as usize
++    );
++    assert_eq!(checked_total_length(&[0, 0]).unwrap(), 0);
++    assert!(check_offset_buffer_size::<i32>(usize::MAX).is_err());
++    assert!(check_allocation_size::<i64>(usize::MAX / 8 + 1).is_err());
++    assert!(check_allocation_size::<i64>(isize::MAX as usize / 8 + 1).is_err());
++    check_offset_buffer_size::<i32>(isize::MAX as usize / 4 - 1).unwrap();
++    // More than i32::MAX rows is not an offset-value overflow: e.g. all-empty
++    // lists can have zero child values. Check only buffer addressability.
++    #[cfg(target_pointer_width = "64")]
++    check_offset_buffer_size::<i32>(i32::MAX as usize + 1).unwrap();
++}
+diff --git a/src/array_decoder/list.rs b/src/array_decoder/list.rs
+index 6e13147..3c01494 100644
+--- a/src/array_decoder/list.rs
++++ b/src/array_decoder/list.rs
+@@ -31,6 +31,7 @@ use crate::proto::stream::Kind;
+ use crate::error::{ArrowSnafu, Result};
+ use crate::stripe::Stripe;
+ 
++use super::length::{check_length_buffer_size, checked_total_length, new_length_buffer};
+ use super::{array_decoder_factory, ArrayBatchDecoder, PresentDecoder};
+ 
+ pub struct ListArrayDecoder {
+@@ -65,18 +66,19 @@ impl ArrayBatchDecoder for ListArrayDecoder {
+         batch_size: usize,
+         parent_present: Option<&NullBuffer>,
+     ) -> Result<ArrayRef> {
++        check_length_buffer_size::<i32>(batch_size)?;
+         let present =
+             derive_present_vec(&mut self.present, parent_present, batch_size).transpose()?;
+ 
+-        let mut lengths = vec![0; batch_size];
++        let mut lengths = new_length_buffer::<i32>(batch_size)?;
+         if let Some(present) = &present {
+             self.lengths.decode_spaced(&mut lengths, present)?;
+         } else {
+             self.lengths.decode(&mut lengths)?;
+         }
+-        let total_length: i64 = lengths.iter().sum();
++        let total_length = checked_total_length(&lengths)?;
+         // Fetch child array as one Array with total_length elements
+-        let child_array = self.inner.next_batch(total_length as usize, None)?;
++        let child_array = self.inner.next_batch(total_length, None)?;
+         let offsets = OffsetBuffer::from_lengths(lengths.into_iter().map(|l| l as usize));
+         let null_buffer = present;
+ 
+@@ -103,3 +105,98 @@ impl ArrayBatchDecoder for ListArrayDecoder {
+         Ok(())
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use std::io::Cursor;
++    use std::sync::atomic::{AtomicUsize, Ordering};
++
++    use arrow::array::{Array, Int64Array};
++    use arrow::datatypes::DataType;
++
++    use super::*;
++    use crate::array_decoder::length::tests::{
++        assert_error, malformed_cases, unsigned_literals, Unread,
++    };
++    use crate::array_decoder::Int64ArrayDecoder;
++    use crate::encoding::integer::{get_signed_int_decoder, RleVersion};
++
++    fn field() -> FieldRef {
++        Arc::new(Field::new("item", DataType::Int64, true))
++    }
++
++    #[test]
++    fn malformed_lengths_never_invoke_the_child_decoder() {
++        for case in malformed_cases() {
++            let calls = Arc::new(AtomicUsize::new(0));
++            let mut decoder = ListArrayDecoder {
++                inner: Box::new(Unread(calls.clone())),
++                present: None,
++                lengths: case.decoder(),
++                field: field(),
++            };
++            assert_error(
++                decoder.next_batch(case.count, None).unwrap_err(),
++                case.expected,
++            );
++            assert_eq!(calls.load(Ordering::Relaxed), 0);
++        }
++        let calls = Arc::new(AtomicUsize::new(0));
++        let mut decoder = ListArrayDecoder {
++            inner: Box::new(Unread(calls.clone())),
++            present: None,
++            lengths: Box::new(Unread(calls.clone())),
++            field: field(),
++        };
++        assert!(decoder.next_batch(usize::MAX, None).is_err());
++        assert_eq!(calls.load(Ordering::Relaxed), 0);
++    }
++
++    #[test]
++    fn nested_lists_preserve_parent_nulls_and_small_child_values() {
++        let values = Box::new(Int64ArrayDecoder::new(
++            get_signed_int_decoder(
++                Cursor::new(unsigned_literals(&[14, 16, 18])),
++                RleVersion::V1,
++            ),
++            None,
++        ));
++        let inner = ListArrayDecoder {
++            inner: values,
++            present: None,
++            lengths: get_unsigned_int_decoder(
++                Cursor::new(unsigned_literals(&[2, 0, 1])),
++                RleVersion::V1,
++            ),
++            field: field(),
++        };
++        let mut outer = ListArrayDecoder {
++            inner: Box::new(inner),
++            present: None,
++            lengths: get_unsigned_int_decoder(
++                Cursor::new(unsigned_literals(&[2, 1])),
++                RleVersion::V1,
++            ),
++            field: Arc::new(Field::new("item", DataType::List(field()), true)),
++        };
++        let parent = NullBuffer::from(vec![true, false, true]);
++        let output = outer.next_batch(3, Some(&parent)).unwrap();
++        let output = output.as_any().downcast_ref::<ListArray>().unwrap();
++        assert_eq!(output.value_offsets(), &[0, 2, 2, 3]);
++        assert_eq!(output.nulls(), Some(&parent));
++        let child = output
++            .values()
++            .as_any()
++            .downcast_ref::<ListArray>()
++            .unwrap();
++        assert_eq!(child.value_offsets(), &[0, 2, 2, 3]);
++        assert_eq!(
++            child
++                .values()
++                .as_any()
++                .downcast_ref::<Int64Array>()
++                .unwrap(),
++            &Int64Array::from(vec![7, 8, 9])
++        );
++    }
++}
+diff --git a/src/array_decoder/map.rs b/src/array_decoder/map.rs
+index 8ccd810..6235b2b 100644
+--- a/src/array_decoder/map.rs
++++ b/src/array_decoder/map.rs
+@@ -30,6 +30,7 @@ use crate::error::{ArrowSnafu, Result};
+ use crate::proto::stream::Kind;
+ use crate::stripe::Stripe;
+ 
++use super::length::{check_length_buffer_size, checked_total_length, new_length_buffer};
+ use super::{array_decoder_factory, ArrayBatchDecoder, PresentDecoder};
+ 
+ pub struct MapArrayDecoder {
+@@ -76,20 +77,21 @@ impl ArrayBatchDecoder for MapArrayDecoder {
+         batch_size: usize,
+         parent_present: Option<&NullBuffer>,
+     ) -> Result<ArrayRef> {
++        check_length_buffer_size::<i32>(batch_size)?;
+         let present =
+             derive_present_vec(&mut self.present, parent_present, batch_size).transpose()?;
+ 
+-        let mut lengths = vec![0; batch_size];
++        let mut lengths = new_length_buffer::<i32>(batch_size)?;
+         if let Some(present) = &present {
+             self.lengths.decode_spaced(&mut lengths, present)?;
+         } else {
+             self.lengths.decode(&mut lengths)?;
+         }
+-        let total_length: i64 = lengths.iter().sum();
++        let total_length = checked_total_length(&lengths)?;
+         // Fetch key and value arrays, each with total_length elements
+         // Fetch child array as one Array with total_length elements
+-        let keys_array = self.keys.next_batch(total_length as usize, None)?;
+-        let values_array = self.values.next_batch(total_length as usize, None)?;
++        let keys_array = self.keys.next_batch(total_length, None)?;
++        let values_array = self.values.next_batch(total_length, None)?;
+         // Compose the keys + values array into a StructArray with two entries
+         let entries =
+             StructArray::try_new(self.fields.clone(), vec![keys_array, values_array], None)
+@@ -121,3 +123,93 @@ impl ArrayBatchDecoder for MapArrayDecoder {
+         Ok(())
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use std::io::Cursor;
++    use std::sync::atomic::{AtomicUsize, Ordering};
++
++    use arrow::array::{Array, Int64Array};
++    use arrow::datatypes::DataType;
++
++    use super::*;
++    use crate::array_decoder::length::tests::{
++        assert_error, malformed_cases, unsigned_literals, Unread,
++    };
++    use crate::array_decoder::Int64ArrayDecoder;
++    use crate::encoding::integer::{get_signed_int_decoder, RleVersion};
++
++    fn fields() -> Fields {
++        vec![
++            Field::new("key", DataType::Int64, false),
++            Field::new("value", DataType::Int64, true),
++        ]
++        .into()
++    }
++
++    #[test]
++    fn malformed_lengths_never_invoke_key_or_value_decoders() {
++        for case in malformed_cases() {
++            let calls = Arc::new(AtomicUsize::new(0));
++            let mut decoder = MapArrayDecoder {
++                keys: Box::new(Unread(calls.clone())),
++                values: Box::new(Unread(calls.clone())),
++                present: None,
++                lengths: case.decoder(),
++                fields: fields(),
++            };
++            assert_error(
++                decoder.next_batch(case.count, None).unwrap_err(),
++                case.expected,
++            );
++            assert_eq!(calls.load(Ordering::Relaxed), 0);
++        }
++        let calls = Arc::new(AtomicUsize::new(0));
++        let mut decoder = MapArrayDecoder {
++            keys: Box::new(Unread(calls.clone())),
++            values: Box::new(Unread(calls.clone())),
++            present: None,
++            lengths: Box::new(Unread(calls.clone())),
++            fields: fields(),
++        };
++        assert!(decoder.next_batch(usize::MAX, None).is_err());
++        assert_eq!(calls.load(Ordering::Relaxed), 0);
++    }
++
++    #[test]
++    fn map_lengths_preserve_nulls_empty_maps_and_entries() {
++        let integers = |values: &[u64]| {
++            Box::new(Int64ArrayDecoder::new(
++                get_signed_int_decoder(Cursor::new(unsigned_literals(values)), RleVersion::V1),
++                None,
++            )) as Box<dyn ArrayBatchDecoder>
++        };
++        let mut decoder = MapArrayDecoder {
++            keys: integers(&[2, 4, 6]),
++            values: integers(&[14, 16, 18]),
++            present: None,
++            lengths: get_unsigned_int_decoder(
++                Cursor::new(unsigned_literals(&[2, 0, 1])),
++                RleVersion::V1,
++            ),
++            fields: fields(),
++        };
++        let parent = NullBuffer::from(vec![true, false, true, true]);
++        let output = decoder.next_batch(4, Some(&parent)).unwrap();
++        let output = output.as_any().downcast_ref::<MapArray>().unwrap();
++        assert_eq!(output.value_offsets(), &[0, 2, 2, 2, 3]);
++        assert_eq!(output.nulls(), Some(&parent));
++        assert_eq!(
++            output.keys().as_any().downcast_ref::<Int64Array>().unwrap(),
++            &Int64Array::from(vec![1, 2, 3])
++        );
++        assert_eq!(
++            output
++                .values()
++                .as_any()
++                .downcast_ref::<Int64Array>()
++                .unwrap(),
++            &Int64Array::from(vec![7, 8, 9])
++        );
++    }
++}
+diff --git a/src/array_decoder/mod.rs b/src/array_decoder/mod.rs
+index 6000717..72b51db 100644
+--- a/src/array_decoder/mod.rs
++++ b/src/array_decoder/mod.rs
+@@ -51,6 +51,7 @@ use self::timestamp::{new_timestamp_decoder, new_timestamp_instant_decoder};
+ use self::union::UnionArrayDecoder;
+ 
+ mod decimal;
++mod length;
+ mod list;
+ mod map;
+ mod string;
+diff --git a/src/array_decoder/string.rs b/src/array_decoder/string.rs
+index e2b3443..a1e8796 100644
+--- a/src/array_decoder/string.rs
++++ b/src/array_decoder/string.rs
+@@ -15,7 +15,7 @@
+ // specific language governing permissions and limitations
+ // under the License.
+ 
+-use std::io::Read;
++use std::io::{self, Read};
+ use std::marker::PhantomData;
+ use std::sync::Arc;
+ 
+@@ -23,18 +23,19 @@ use arrow::array::{ArrayRef, DictionaryArray, GenericByteArray, StringArray};
+ use arrow::buffer::{Buffer, NullBuffer, OffsetBuffer};
+ use arrow::compute::kernels::cast;
+ use arrow::datatypes::{ByteArrayType, DataType, GenericBinaryType, GenericStringType};
+-use snafu::{ensure, ResultExt};
++use snafu::ResultExt;
+ 
+ use crate::array_decoder::derive_present_vec;
+ use crate::column::Column;
+ use crate::compression::Decompressor;
+ use crate::encoding::integer::get_unsigned_int_decoder;
+ use crate::encoding::PrimitiveValueDecoder;
+-use crate::error::{ArrowSnafu, IoSnafu, OffsetOverflowSnafu, Result};
++use crate::error::{ArrowSnafu, IoSnafu, Result};
+ use crate::proto::column_encoding::Kind as ColumnEncodingKind;
+ use crate::proto::stream::Kind;
+ use crate::stripe::Stripe;
+ 
++use super::length::{check_length_buffer_size, checked_total_length, new_length_buffer};
+ use super::{ArrayBatchDecoder, Int64ArrayDecoder, PresentDecoder};
+ 
+ // TODO: reduce duplication with string below
+@@ -113,26 +114,23 @@ impl<T: ByteArrayType> GenericByteArrayDecoder<T> {
+         batch_size: usize,
+         parent_present: Option<&NullBuffer>,
+     ) -> Result<GenericByteArray<T>> {
++        check_length_buffer_size::<T::Offset>(batch_size)?;
+         let present =
+             derive_present_vec(&mut self.present, parent_present, batch_size).transpose()?;
+ 
+-        let mut lengths = vec![0; batch_size];
++        let mut lengths = new_length_buffer::<T::Offset>(batch_size)?;
+         if let Some(present) = &present {
+             self.lengths.decode_spaced(&mut lengths, present)?;
+         } else {
+             self.lengths.decode(&mut lengths)?;
+         }
+-        let total_length: i64 = lengths.iter().sum();
+-        ensure!(
+-            total_length <= i32::MAX as i64,
+-            OffsetOverflowSnafu {
+-                total_length,
+-                max_size: i32::MAX,
+-                batch_size,
+-            }
+-        );
++        let total_length = checked_total_length(&lengths)?;
+         // Fetch all data bytes at once
+-        let mut bytes = Vec::with_capacity(total_length as usize);
++        let mut bytes = Vec::new();
++        bytes
++            .try_reserve_exact(total_length)
++            .map_err(|error| io::Error::new(io::ErrorKind::OutOfMemory, error))
++            .context(IoSnafu)?;
+         self.bytes
+             .by_ref()
+             .take(total_length as u64)
+@@ -227,3 +225,83 @@ impl ArrayBatchDecoder for DictionaryStringArrayDecoder {
+         self.indexes.skip_values(n, parent_present)
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use std::io::Cursor;
++    use std::sync::atomic::{AtomicUsize, Ordering};
++
++    use arrow::array::BinaryArray;
++    use bytes::Bytes;
++
++    use super::*;
++    use crate::array_decoder::length::tests::{
++        assert_error, malformed_cases, unsigned_literals, Unread,
++    };
++    use crate::encoding::integer::RleVersion;
++
++    fn malformed<T: ByteArrayType>() {
++        let payload = Bytes::from_static(&[0xde, 0xad, 0xbe, 0xef]);
++        for case in malformed_cases() {
++            let mut decoder = GenericByteArrayDecoder::<T>::new(
++                Box::new(Decompressor::new(payload.clone(), None, vec![])),
++                case.decoder(),
++                None,
++            );
++            assert_error(
++                decoder.next_byte_batch(case.count, None).unwrap_err(),
++                case.expected,
++            );
++            // The actual payload decompressor remains at its original position.
++            let mut remaining = vec![];
++            decoder.bytes.read_to_end(&mut remaining).unwrap();
++            assert_eq!(remaining.as_slice(), payload.as_ref());
++        }
++        let calls = Arc::new(AtomicUsize::new(0));
++        let mut decoder = GenericByteArrayDecoder::<T>::new(
++            Box::new(Decompressor::empty()),
++            Box::new(Unread(calls.clone())),
++            None,
++        );
++        assert!(decoder.next_byte_batch(usize::MAX, None).is_err());
++        assert_eq!(calls.load(Ordering::Relaxed), 0);
++    }
++
++    #[test]
++    fn malformed_string_lengths_leave_payload_unread() {
++        malformed::<GenericStringType<i32>>();
++    }
++
++    #[test]
++    fn malformed_binary_lengths_leave_payload_unread() {
++        malformed::<GenericBinaryType<i32>>();
++    }
++
++    fn valid<T: ByteArrayType>() -> GenericByteArray<T> {
++        let mut decoder = GenericByteArrayDecoder::<T>::new(
++            Box::new(Decompressor::new(Bytes::from_static(b"abc"), None, vec![])),
++            get_unsigned_int_decoder(Cursor::new(unsigned_literals(&[2, 0, 1])), RleVersion::V1),
++            None,
++        );
++        decoder
++            .next_byte_batch(4, Some(&NullBuffer::from(vec![true, false, true, true])))
++            .unwrap()
++    }
++
++    #[test]
++    fn string_and_binary_lengths_preserve_null_and_empty_values() {
++        assert_eq!(
++            valid::<GenericStringType<i32>>(),
++            StringArray::from(vec![Some("ab"), None, Some(""), Some("c")])
++        );
++        assert_eq!(
++            valid::<GenericBinaryType<i32>>(),
++            BinaryArray::from(vec![
++                Some(b"ab".as_slice()),
++                None,
++                Some(b"".as_slice()),
++                Some(b"c".as_slice())
++            ])
++        );
++    }
++}
+diff --git a/src/error.rs b/src/error.rs
+index 29901ff..9abb525 100644
+--- a/src/error.rs
++++ b/src/error.rs
+@@ -83,7 +83,7 @@ pub enum OrcError {
+     },
+ 
+     #[snafu(display(
+-        "String/Binary data size ({} bytes) exceeds maximum offset size ({}) \
++        "Array offset total ({}) exceeds maximum offset size ({}) \
+          with current batch size {}. Please reduce the batch size to avoid offset overflow.",
+         total_length,
+         max_size,

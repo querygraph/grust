@@ -11266,3 +11266,11 @@ tests. Test compile/format failures retained without changing assertions. Fresh
 Spark ten-case/eleven-filter partition evidence and pinned source handoff are
 archived for the subsequent shared binding/preparation units. No ORC registry,
 CLI or full SDP verdict. Documentation gates precede branch advance.
+
+## 2026-10-30T00:34:57.556497+00:00 — DONE checked ORC materialized lengths and vendor
+
+Native 9f23442e7f9e019c0ec3b0a2d6491929967d41e3 and Sail 947f5123b59f71fe87578114855e2f065716ebde pass exact detached gates: 331 native
+(eight ignored), 210 no-default and 189 Sail data-source tests, formatting, strict
+Clippy and exact source/package/license/hash checks. Frozen independent review
+retained. No failed code gates, public ORC registration or SDP runtime result.
+Documentation gates precede advance; skip and dictionary work remain separate.
