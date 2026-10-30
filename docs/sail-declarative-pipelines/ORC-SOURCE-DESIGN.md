@@ -551,3 +551,19 @@ and exercise immutable identity, ranges, both pool directions and stream drop.
 A separate task-preparation unit must still qualify independently decoded groups
 and preserve checkpoint partitioning at that boundary. Public registration,
 semantic schema inference, writer and broader conversion parity remain open.
+
+## Bound skip scratch and require exact skipped payloads
+
+Recorded: 2026-10-30T00:43:23.018521+00:00. [Native `e9690a1eae` and Sail `5cfe24e4f0`](evidence/orc-checked-skips/README.md)
+use fixed PRESENT/LENGTH scratch and checked child/payload skip counts. Aggregate
+work is split before usize overflow without an arbitrary total limit. Successful
+short byte copies fail as UnexpectedEof; original decoder errors survive. Eighteen
+new tests cover real encodings, nulls, truncation and next-value alignment. Exact
+gates pass 349 native tests (eight ignored), 228 no-default and 192 data-source,
+with formatting, strict Clippy and portable package checks.
+
+This resolves the retained skip arithmetic/exact-consumption finding. The next
+incremental dictionary setup keeps actual Arrow limits and LENGTH-before-DATA
+error order while removing declaration-sized scratch. It is still a separate
+unqualified unit. RLE delta and remaining allocation follow-ups stay visible;
+there is no whole-heap or public SDP verdict.

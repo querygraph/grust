@@ -1375,3 +1375,11 @@ skip/dictionary/primitive/RLE work and public-runtime limits remain explicit.
 (173 execution tests), plus formatting/strict Clippy. Both binding failures and
 the independent selector correction are retained. Decoded-source execution is
 covered; full worker preparation/public registry/writer and full SDP remain open.
+
+### ORC bounded skip decoding (2026-10-30T00:43:23.018521+00:00)
+
+[Evidence](evidence/orc-checked-skips/README.md) qualifies native `e9690a1eae`
+and exact Sail vendor `5cfe24e4f0`: 349 native tests (eight ignored),
+228 no-default and 192 data-source, formatting/strict Clippy and package checks.
+Dictionary initialization and other pending reader work remain separate; no
+public CLI or full SDP acceptance count changes.

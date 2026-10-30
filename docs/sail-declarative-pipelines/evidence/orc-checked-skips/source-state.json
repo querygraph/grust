@@ -1,0 +1,171 @@
+{
+  "base": "9f23442e7f9e019c0ec3b0a2d6491929967d41e3",
+  "recorded_at_utc": "2026-10-30T00:35:40.858196+00:00",
+  "scope": "Bounded checked variable-length skips and exact byte consumption; no cargo, builds, gates or commits",
+  "files": [
+    {
+      "path": "src/array_decoder/length.rs",
+      "sha256": "f676f24ad202eaf8a15789b38e0558317538ad2725cd6cec0544300f0c3e4c9a",
+      "size": 5008
+    },
+    {
+      "path": "src/array_decoder/length/tests.rs",
+      "sha256": "cb3a05d0bb4357b7fa5829b2706453ad1d8a56d1d061cfa3419288e07d7c7756",
+      "size": 9129
+    },
+    {
+      "path": "src/array_decoder/list.rs",
+      "sha256": "c46f8a4ee46e2ed872c635c8e3cab7e4f2ab2aef3c9e06c2aad89c185335acc2",
+      "size": 10006
+    },
+    {
+      "path": "src/array_decoder/map.rs",
+      "sha256": "dcd55994e3c63934d6a9110d96325a117b58948cd025dec140928fabb8334e5e",
+      "size": 11246
+    },
+    {
+      "path": "src/array_decoder/mod.rs",
+      "sha256": "9cfeb86f38957f8bf4d236c3b64b7e42b59ef24b224ce2f4332a8ca9e6f39de7",
+      "size": 22858
+    },
+    {
+      "path": "src/array_decoder/present_tests.rs",
+      "sha256": "d7f568735cc7a85a3993aef7be89becd13ce77e14f5e215b48414acac2063182",
+      "size": 10489
+    },
+    {
+      "path": "src/array_decoder/string.rs",
+      "sha256": "f767627788f67d45e56927657c9b157d3b6afb8709eb33ffc12de655cc2a382f",
+      "size": 16787
+    }
+  ],
+  "added_tests": [
+    {
+      "path": "src/array_decoder/length/tests.rs",
+      "name": "skip_lengths_use_bounded_chunks_and_preserve_the_next_length",
+      "line": 206,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/length/tests.rs",
+      "name": "truncated_skip_lengths_fail_before_dependent_work_without_request_sized_scratch",
+      "line": 239,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/length/tests.rs",
+      "name": "skip_totals_split_before_usize_overflow_without_an_arrow_offset_limit",
+      "line": 254,
+      "target_pointer_width": "64"
+    },
+    {
+      "path": "src/array_decoder/length/tests.rs",
+      "name": "individual_skip_length_must_fit_the_child_count_type",
+      "line": 277,
+      "target_pointer_width": "32"
+    },
+    {
+      "path": "src/array_decoder/list.rs",
+      "name": "malformed_skip_lengths_never_invoke_the_list_child",
+      "line": 200,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/list.rs",
+      "name": "list_skips_across_length_chunks_and_parent_nulls_preserve_the_next_value",
+      "line": 218,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/list.rs",
+      "name": "list_skip_propagates_truncated_child_values",
+      "line": 252,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/list.rs",
+      "name": "list_skip_counts_can_exceed_materialized_offsets_and_usize_in_total",
+      "line": 267,
+      "target_pointer_width": "64"
+    },
+    {
+      "path": "src/array_decoder/map.rs",
+      "name": "malformed_skip_lengths_never_invoke_map_keys_or_values",
+      "line": 213,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/map.rs",
+      "name": "map_skips_across_length_chunks_and_parent_nulls_preserve_the_next_entry",
+      "line": 239,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/map.rs",
+      "name": "map_skip_propagates_truncated_keys_and_values",
+      "line": 272,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/map.rs",
+      "name": "map_skips_advance_keys_and_values_for_each_overflow_flush",
+      "line": 290,
+      "target_pointer_width": "64"
+    },
+    {
+      "path": "src/array_decoder/present_tests.rs",
+      "name": "skip_present_counts_bounded_chunks_and_preserves_the_next_bit",
+      "line": 260,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/present_tests.rs",
+      "name": "skip_present_preserves_absent_and_nested_parent_null_semantics",
+      "line": 291,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/string.rs",
+      "name": "malformed_string_and_binary_skip_lengths_leave_payload_unread",
+      "line": 337,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/string.rs",
+      "name": "string_and_binary_skips_require_all_promised_payload_bytes",
+      "line": 361,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/string.rs",
+      "name": "skipped_payload_preserves_the_original_decompressor_error",
+      "line": 367,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/string.rs",
+      "name": "string_and_binary_skips_across_chunks_and_nulls_preserve_the_next_value",
+      "line": 411,
+      "target_pointer_width": "any"
+    },
+    {
+      "path": "src/array_decoder/string.rs",
+      "name": "skip_present_failure_precedes_lengths_and_all_null_parents_read_neither",
+      "line": 423,
+      "target_pointer_width": "any"
+    }
+  ],
+  "independent_review": "Pending; architecture sent policy notes, metadata reviewer currently reviewing separate listing candidate.",
+  "validation": [
+    "Direct rustfmt 1.98.1 --edition 2021 on seven changed files",
+    "git diff --check"
+  ],
+  "untouched": [
+    "Dictionary construction",
+    "Materialized allocation policy",
+    "RLEv2 delta",
+    "Primitive allocation redesign",
+    "Sail/vendor",
+    "Grust"
+  ]
+}

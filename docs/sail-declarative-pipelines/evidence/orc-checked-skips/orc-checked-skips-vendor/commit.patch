@@ -1,0 +1,876 @@
+commit 5cfe24e4f0bd46394efd9af30def9a22504f38e5
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 17:40:44 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 17:40:44 2026 -0700
+
+    build: vendor bounded ORC skip decoding
+
+diff --git a/vendor/orc-rust/.cargo_vcs_info.json b/vendor/orc-rust/.cargo_vcs_info.json
+index 214ca96e5..2f65415d8 100644
+--- a/vendor/orc-rust/.cargo_vcs_info.json
++++ b/vendor/orc-rust/.cargo_vcs_info.json
+@@ -1,6 +1,6 @@
+ {
+   "git": {
+-    "sha1": "9f23442e7f9e019c0ec3b0a2d6491929967d41e3"
++    "sha1": "e9690a1eaefa35963554f44d45b8a54fd0ab0196"
+   },
+   "path_in_vcs": ""
+ }
+\ No newline at end of file
+diff --git a/vendor/orc-rust/SOURCE.json b/vendor/orc-rust/SOURCE.json
+index a1bac0d82..59c450a08 100644
+--- a/vendor/orc-rust/SOURCE.json
++++ b/vendor/orc-rust/SOURCE.json
+@@ -1,6 +1,6 @@
+ {
+   "repository": "https://github.com/datafusion-contrib/orc-rust",
+-  "commit": "9f23442e7f9e019c0ec3b0a2d6491929967d41e3",
++  "commit": "e9690a1eaefa35963554f44d45b8a54fd0ab0196",
+   "source_kind": "Locally patched upstream package; patch revisions have not been published to the upstream repository.",
+   "upstream_tag": "v0.9.0",
+   "upstream_commit": "d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307",
+@@ -60,11 +60,15 @@
+     {
+       "commit": "9f23442e7f9e019c0ec3b0a2d6491929967d41e3",
+       "subject": "fix: validate materialized ORC lengths before allocation"
++    },
++    {
++      "commit": "e9690a1eaefa35963554f44d45b8a54fd0ab0196",
++      "subject": "fix: validate ORC skip counts and exact byte consumption"
+     }
+   ],
+   "package": {
+     "command": "cargo +1.98.1 package --locked --no-verify",
+-    "sha256": "bdb70bce68d9eb30afa6ecade729136c005d9a230e8bced35ae3616769c06518",
++    "sha256": "df909e3bde27b53f3ae06bae3fee5998b2e42ab2da35dbb03154b819f7c63bce",
+     "excluded_files": [
+       "Cargo.lock"
+     ],
+@@ -74,19 +78,19 @@
+     "note": "Cargo-normalized manifest; upstream package omits integration fixtures and benchmarks. Source tests were run in the full detached source checkout."
+   },
+   "files_sha256": {
+-    ".cargo_vcs_info.json": "5336b0cb8ae44e26793e92fbee2c336b97acd5332bf29839f9121b77698c5c05",
++    ".cargo_vcs_info.json": "9fa99ca86b04862a15d7be0396fc95c317a298e6d8b325000770ad3181a267e2",
+     "Cargo.toml": "0a69cbe6449e27e1be0f020c1f0e9393a135b99fa00a115e45a0e7e7b8726385",
+     "Cargo.toml.orig": "58ccc950aa988bb2c70c7850de74c1ac9ad182773452dc9a08a0b25cceeb7874",
+     "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+     "README.md": "88394b7c22866cbaf2b95bbf93659ae9ed2ccfa2bacb57f7b9cb328f26cd815f",
+     "src/array_decoder/decimal.rs": "dc5f37e42304a4ac84d521ab5c0c1823f55a49549f225d5c27995f0bcbcf540d",
+-    "src/array_decoder/length.rs": "25ab424e6629f38718eca856f66fd9717aa9bed7f1926ea3ae32c7022828069f",
+-    "src/array_decoder/length/tests.rs": "78a83fa6ced95bf4f60c38bb8164cec1724016385310b1e5186f05bdd78b513f",
+-    "src/array_decoder/list.rs": "d71e180b22d548d842b530f6616788a9c9d4ffc3de2092a6f4079fecb9e7bd64",
+-    "src/array_decoder/map.rs": "388de0d3c8dfc4d2159af5a46732ce84508eccfc118546db673b6ced25b5ff1e",
+-    "src/array_decoder/mod.rs": "c194bc2a934dac6605be2b48cbd76352434a2012ca2a4f08f7a5eca0f7d33ce2",
+-    "src/array_decoder/present_tests.rs": "149a1a6241c7db44e90777fd2ee62756a393270bece8ff756c034f4f940e7cf7",
+-    "src/array_decoder/string.rs": "4e8a7c1a1568accc6212e863a9a8e6f865bf3e0a1586995907da7ebf9a008aea",
++    "src/array_decoder/length.rs": "f676f24ad202eaf8a15789b38e0558317538ad2725cd6cec0544300f0c3e4c9a",
++    "src/array_decoder/length/tests.rs": "cb3a05d0bb4357b7fa5829b2706453ad1d8a56d1d061cfa3419288e07d7c7756",
++    "src/array_decoder/list.rs": "c46f8a4ee46e2ed872c635c8e3cab7e4f2ab2aef3c9e06c2aad89c185335acc2",
++    "src/array_decoder/map.rs": "dcd55994e3c63934d6a9110d96325a117b58948cd025dec140928fabb8334e5e",
++    "src/array_decoder/mod.rs": "9cfeb86f38957f8bf4d236c3b64b7e42b59ef24b224ce2f4332a8ca9e6f39de7",
++    "src/array_decoder/present_tests.rs": "d7f568735cc7a85a3993aef7be89becd13ce77e14f5e215b48414acac2063182",
++    "src/array_decoder/string.rs": "f767627788f67d45e56927657c9b157d3b6afb8709eb33ffc12de655cc2a382f",
+     "src/array_decoder/struct_decoder.rs": "521c29e4ef19fa36a1c301a6214b69c851496f535b2f0666205e6731b49a97a2",
+     "src/array_decoder/timestamp.rs": "97fa9d02382de00cb16b813fef94e9bc7b0cf92236d5e20ddd90a803be2a5496",
+     "src/array_decoder/union.rs": "461b9b9ab606f34b83e877fabe3eaae1c0ab9c1db15a4af8aa80b9724909f953",
+diff --git a/vendor/orc-rust/src/array_decoder/length.rs b/vendor/orc-rust/src/array_decoder/length.rs
+index b917c7f48..cd011dcb0 100644
+--- a/vendor/orc-rust/src/array_decoder/length.rs
++++ b/vendor/orc-rust/src/array_decoder/length.rs
+@@ -20,8 +20,11 @@ use std::mem::size_of;
+ 
+ use snafu::{ensure, OptionExt, ResultExt};
+ 
++use crate::encoding::PrimitiveValueDecoder;
+ use crate::error::{IoSnafu, OffsetOverflowSnafu, OutOfSpecSnafu, Result};
+ 
++pub(super) const SKIP_BATCH_SIZE: usize = 1024;
++
+ fn check_allocation_size<T>(count: usize) -> Result<()> {
+     let bytes = count.checked_mul(size_of::<T>()).context(OutOfSpecSnafu {
+         msg: "Array buffer byte size overflows usize",
+@@ -93,5 +96,56 @@ pub(super) fn checked_total_length(lengths: &[i64]) -> Result<usize> {
+     })
+ }
+ 
++fn checked_skip_length(length: i64) -> Result<usize> {
++    ensure!(
++        length >= 0,
++        OutOfSpecSnafu {
++            msg: "Decoded array length is negative"
++        }
++    );
++    usize::try_from(length).map_err(|_| {
++        OutOfSpecSnafu {
++            msg: "Decoded array length does not fit usize",
++        }
++        .build()
++    })
++}
++
++/// Decode lengths with bounded scratch, then skip each validated chunk.
++/// Skipping does not construct Arrow offsets: aggregate work may exceed i32,
++/// i64 or usize, so split requests before their usize counts would overflow.
++pub(super) fn skip_lengths(
++    lengths: &mut (dyn PrimitiveValueDecoder<i64> + Send),
++    mut count: usize,
++    mut skip: impl FnMut(usize) -> Result<()>,
++) -> Result<()> {
++    let mut scratch = [0_i64; SKIP_BATCH_SIZE];
++    while count > 0 {
++        let chunk_size = count.min(scratch.len());
++        let chunk = &mut scratch[..chunk_size];
++        lengths.decode(chunk)?;
++        // Reject malformed lengths in this chunk before dependent work.
++        for &length in chunk.iter() {
++            checked_skip_length(length)?;
++        }
++        let mut total = 0_usize;
++        for &length in chunk.iter() {
++            let length = checked_skip_length(length)?;
++            total = match total.checked_add(length) {
++                Some(total) => total,
++                None => {
++                    skip(total)?;
++                    length
++                }
++            };
++        }
++        if total > 0 {
++            skip(total)?;
++        }
++        count -= chunk_size;
++    }
++    Ok(())
++}
++
+ #[cfg(test)]
+ pub(super) mod tests;
+diff --git a/vendor/orc-rust/src/array_decoder/length/tests.rs b/vendor/orc-rust/src/array_decoder/length/tests.rs
+index 12d9de101..7eb3084ba 100644
+--- a/vendor/orc-rust/src/array_decoder/length/tests.rs
++++ b/vendor/orc-rust/src/array_decoder/length/tests.rs
+@@ -17,7 +17,7 @@
+ 
+ use std::io::Cursor;
+ use std::sync::atomic::{AtomicUsize, Ordering};
+-use std::sync::Arc;
++use std::sync::{Arc, Mutex};
+ 
+ use arrow::array::ArrayRef;
+ use arrow::buffer::NullBuffer;
+@@ -107,6 +107,30 @@ pub(crate) fn malformed_cases() -> Vec<Case> {
+     cases
+ }
+ 
++pub(crate) fn negative_cases() -> impl Iterator<Item = Case> {
++    malformed_cases()
++        .into_iter()
++        .filter(|case| matches!(case.expected, ExpectedError::Negative))
++}
++
++pub(crate) fn many_unsigned_literals(values: &[u64]) -> Vec<u8> {
++    values.chunks(128).flat_map(unsigned_literals).collect()
++}
++
++pub(crate) struct Skipped(pub(crate) Arc<Mutex<Vec<usize>>>);
++
++impl ArrayBatchDecoder for Skipped {
++    fn next_batch(&mut self, _size: usize, _parent: Option<&NullBuffer>) -> Result<ArrayRef> {
++        panic!("skip-count tests do not materialize children");
++    }
++
++    fn skip_values(&mut self, n: usize, parent: Option<&NullBuffer>) -> Result<()> {
++        assert!(parent.is_none());
++        self.0.lock().unwrap().push(n);
++        Ok(())
++    }
++}
++
+ pub(crate) fn assert_error(error: OrcError, expected: ExpectedError) {
+     match (error, expected) {
+         (OrcError::OutOfSpec { msg, .. }, ExpectedError::Negative) => {
+@@ -178,3 +202,79 @@ fn intrinsic_boundaries_are_checked_without_allocating_large_buffers() {
+     #[cfg(target_pointer_width = "64")]
+     check_offset_buffer_size::<i32>(i32::MAX as usize + 1).unwrap();
+ }
++
++#[test]
++fn skip_lengths_use_bounded_chunks_and_preserve_the_next_length() {
++    struct BoundedDecoder(Box<dyn PrimitiveValueDecoder<i64> + Send>);
++    impl PrimitiveValueDecoder<i64> for BoundedDecoder {
++        fn decode(&mut self, out: &mut [i64]) -> Result<()> {
++            assert!(out.len() <= SKIP_BATCH_SIZE);
++            self.0.decode(out)
++        }
++
++        fn skip(&mut self, _n: usize) -> Result<()> {
++            panic!("lengths must be decoded and checked");
++        }
++    }
++
++    let count = SKIP_BATCH_SIZE + 3;
++    let mut values = vec![1; count];
++    values.push(7);
++    let mut decoder = BoundedDecoder(get_unsigned_int_decoder(
++        Cursor::new(many_unsigned_literals(&values)),
++        RleVersion::V1,
++    ));
++    let mut skips = vec![];
++    skip_lengths(&mut decoder, count, |n| {
++        skips.push(n);
++        Ok(())
++    })
++    .unwrap();
++    assert_eq!(skips, vec![SKIP_BATCH_SIZE, 3]);
++    let mut next = [0];
++    decoder.decode(&mut next).unwrap();
++    assert_eq!(next, [7]);
++}
++
++#[test]
++fn truncated_skip_lengths_fail_before_dependent_work_without_request_sized_scratch() {
++    for bytes in [vec![], vec![0xff], vec![0xfe, 1]] {
++        let mut decoder = get_unsigned_int_decoder(Cursor::new(bytes), RleVersion::V1);
++        let mut calls = 0;
++        assert!(skip_lengths(decoder.as_mut(), usize::MAX, |_| {
++            calls += 1;
++            Ok(())
++        })
++        .is_err());
++        assert_eq!(calls, 0);
++    }
++}
++
++#[cfg(target_pointer_width = "64")]
++#[test]
++fn skip_totals_split_before_usize_overflow_without_an_arrow_offset_limit() {
++    for (values, expected) in [
++        (vec![i32::MAX as u64, 1], vec![i32::MAX as usize + 1]),
++        (vec![i64::MAX as u64, 1], vec![i64::MAX as usize + 1]),
++        (
++            vec![i64::MAX as u64, i64::MAX as u64, 2],
++            vec![usize::MAX - 1, 2],
++        ),
++    ] {
++        let mut decoder =
++            get_unsigned_int_decoder(Cursor::new(unsigned_literals(&values)), RleVersion::V1);
++        let mut skips = vec![];
++        skip_lengths(decoder.as_mut(), values.len(), |n| {
++            skips.push(n);
++            Ok(())
++        })
++        .unwrap();
++        assert_eq!(skips, expected);
++    }
++}
++
++#[cfg(target_pointer_width = "32")]
++#[test]
++fn individual_skip_length_must_fit_the_child_count_type() {
++    assert!(checked_skip_length(i64::from(u32::MAX) + 1).is_err());
++}
+diff --git a/vendor/orc-rust/src/array_decoder/list.rs b/vendor/orc-rust/src/array_decoder/list.rs
+index 3c014940e..6fe0a8832 100644
+--- a/vendor/orc-rust/src/array_decoder/list.rs
++++ b/vendor/orc-rust/src/array_decoder/list.rs
+@@ -31,7 +31,9 @@ use crate::proto::stream::Kind;
+ use crate::error::{ArrowSnafu, Result};
+ use crate::stripe::Stripe;
+ 
+-use super::length::{check_length_buffer_size, checked_total_length, new_length_buffer};
++use super::length::{
++    check_length_buffer_size, checked_total_length, new_length_buffer, skip_lengths,
++};
+ use super::{array_decoder_factory, ArrayBatchDecoder, PresentDecoder};
+ 
+ pub struct ListArrayDecoder {
+@@ -94,15 +96,9 @@ impl ArrayBatchDecoder for ListArrayDecoder {
+         let non_null_count =
+             skip_present_and_get_non_null_count(&mut self.present, parent_present, n)?;
+ 
+-        // Decode lengths to determine how many child values to skip
+-        let mut lengths = vec![0; non_null_count];
+-        self.lengths.decode(&mut lengths)?;
+-        let total_length: i64 = lengths.iter().sum();
+-
+-        // Skip the child values (children don't have parent_present from list)
+-        self.inner.skip_values(total_length as usize, None)?;
+-
+-        Ok(())
++        skip_lengths(self.lengths.as_mut(), non_null_count, |length| {
++            self.inner.skip_values(length, None)
++        })
+     }
+ }
+ 
+@@ -116,7 +112,8 @@ mod tests {
+ 
+     use super::*;
+     use crate::array_decoder::length::tests::{
+-        assert_error, malformed_cases, unsigned_literals, Unread,
++        assert_error, malformed_cases, many_unsigned_literals, negative_cases, unsigned_literals,
++        Skipped, Unread,
+     };
+     use crate::array_decoder::Int64ArrayDecoder;
+     use crate::encoding::integer::{get_signed_int_decoder, RleVersion};
+@@ -199,4 +196,87 @@ mod tests {
+             &Int64Array::from(vec![7, 8, 9])
+         );
+     }
++
++    #[test]
++    fn malformed_skip_lengths_never_invoke_the_list_child() {
++        for case in negative_cases() {
++            let skips = Arc::default();
++            let mut decoder = ListArrayDecoder {
++                inner: Box::new(Skipped(Arc::clone(&skips))),
++                present: None,
++                lengths: case.decoder(),
++                field: field(),
++            };
++            assert_error(
++                decoder.skip_values(case.count, None).unwrap_err(),
++                case.expected,
++            );
++            assert!(skips.lock().unwrap().is_empty());
++        }
++    }
++
++    #[test]
++    fn list_skips_across_length_chunks_and_parent_nulls_preserve_the_next_value() {
++        let count = super::super::length::SKIP_BATCH_SIZE + 1;
++        let mut lengths = vec![0; count - 1];
++        lengths.extend([2, 1]);
++        let mut decoder = ListArrayDecoder {
++            inner: Box::new(Int64ArrayDecoder::new(
++                get_signed_int_decoder(
++                    Cursor::new(unsigned_literals(&[14, 16, 18])),
++                    RleVersion::V1,
++                ),
++                None,
++            )),
++            present: None,
++            lengths: get_unsigned_int_decoder(
++                Cursor::new(many_unsigned_literals(&lengths)),
++                RleVersion::V1,
++            ),
++            field: field(),
++        };
++        let mut parent = vec![true; count + 1];
++        parent[0] = false;
++        decoder
++            .skip_values(count + 1, Some(&NullBuffer::from(parent)))
++            .unwrap();
++        let next = decoder.next_batch(1, None).unwrap();
++        let next = next.as_any().downcast_ref::<ListArray>().unwrap();
++        assert_eq!(next.value_offsets(), &[0, 1]);
++        assert_eq!(
++            next.values().as_any().downcast_ref::<Int64Array>().unwrap(),
++            &Int64Array::from(vec![9])
++        );
++    }
++
++    #[test]
++    fn list_skip_propagates_truncated_child_values() {
++        let mut decoder = ListArrayDecoder {
++            inner: Box::new(Int64ArrayDecoder::new(
++                get_signed_int_decoder(Cursor::new(unsigned_literals(&[14])), RleVersion::V1),
++                None,
++            )),
++            present: None,
++            lengths: get_unsigned_int_decoder(Cursor::new(unsigned_literals(&[2])), RleVersion::V1),
++            field: field(),
++        };
++        assert!(decoder.skip_values(1, None).is_err());
++    }
++
++    #[cfg(target_pointer_width = "64")]
++    #[test]
++    fn list_skip_counts_can_exceed_materialized_offsets_and_usize_in_total() {
++        let skips = Arc::default();
++        let mut decoder = ListArrayDecoder {
++            inner: Box::new(Skipped(Arc::clone(&skips))),
++            present: None,
++            lengths: get_unsigned_int_decoder(
++                Cursor::new(unsigned_literals(&[i64::MAX as u64, i64::MAX as u64, 2])),
++                RleVersion::V1,
++            ),
++            field: field(),
++        };
++        decoder.skip_values(3, None).unwrap();
++        assert_eq!(*skips.lock().unwrap(), vec![usize::MAX - 1, 2]);
++    }
+ }
+diff --git a/vendor/orc-rust/src/array_decoder/map.rs b/vendor/orc-rust/src/array_decoder/map.rs
+index 6235b2bea..3b023a48c 100644
+--- a/vendor/orc-rust/src/array_decoder/map.rs
++++ b/vendor/orc-rust/src/array_decoder/map.rs
+@@ -30,7 +30,9 @@ use crate::error::{ArrowSnafu, Result};
+ use crate::proto::stream::Kind;
+ use crate::stripe::Stripe;
+ 
+-use super::length::{check_length_buffer_size, checked_total_length, new_length_buffer};
++use super::length::{
++    check_length_buffer_size, checked_total_length, new_length_buffer, skip_lengths,
++};
+ use super::{array_decoder_factory, ArrayBatchDecoder, PresentDecoder};
+ 
+ pub struct MapArrayDecoder {
+@@ -111,16 +113,10 @@ impl ArrayBatchDecoder for MapArrayDecoder {
+         let non_null_count =
+             skip_present_and_get_non_null_count(&mut self.present, parent_present, n)?;
+ 
+-        // Decode lengths to determine how many entries to skip
+-        let mut lengths = vec![0; non_null_count];
+-        self.lengths.decode(&mut lengths)?;
+-        let total_length: i64 = lengths.iter().sum();
+-
+-        // Skip both keys and values (they don't have parent_present from map)
+-        self.keys.skip_values(total_length as usize, None)?;
+-        self.values.skip_values(total_length as usize, None)?;
+-
+-        Ok(())
++        skip_lengths(self.lengths.as_mut(), non_null_count, |length| {
++            self.keys.skip_values(length, None)?;
++            self.values.skip_values(length, None)
++        })
+     }
+ }
+ 
+@@ -134,7 +130,8 @@ mod tests {
+ 
+     use super::*;
+     use crate::array_decoder::length::tests::{
+-        assert_error, malformed_cases, unsigned_literals, Unread,
++        assert_error, malformed_cases, many_unsigned_literals, negative_cases, unsigned_literals,
++        Skipped, Unread,
+     };
+     use crate::array_decoder::Int64ArrayDecoder;
+     use crate::encoding::integer::{get_signed_int_decoder, RleVersion};
+@@ -212,4 +209,100 @@ mod tests {
+             &Int64Array::from(vec![7, 8, 9])
+         );
+     }
++
++    #[test]
++    fn malformed_skip_lengths_never_invoke_map_keys_or_values() {
++        for case in negative_cases() {
++            let skips = Arc::default();
++            let mut decoder = MapArrayDecoder {
++                keys: Box::new(Skipped(Arc::clone(&skips))),
++                values: Box::new(Skipped(Arc::clone(&skips))),
++                present: None,
++                lengths: case.decoder(),
++                fields: fields(),
++            };
++            assert_error(
++                decoder.skip_values(case.count, None).unwrap_err(),
++                case.expected,
++            );
++            assert!(skips.lock().unwrap().is_empty());
++        }
++    }
++
++    fn integers(values: &[u64]) -> Box<dyn ArrayBatchDecoder> {
++        Box::new(Int64ArrayDecoder::new(
++            get_signed_int_decoder(Cursor::new(unsigned_literals(values)), RleVersion::V1),
++            None,
++        ))
++    }
++
++    #[test]
++    fn map_skips_across_length_chunks_and_parent_nulls_preserve_the_next_entry() {
++        let count = super::super::length::SKIP_BATCH_SIZE + 1;
++        let mut lengths = vec![0; count - 1];
++        lengths.extend([2, 1]);
++        let mut decoder = MapArrayDecoder {
++            keys: integers(&[2, 4, 6]),
++            values: integers(&[14, 16, 18]),
++            present: None,
++            lengths: get_unsigned_int_decoder(
++                Cursor::new(many_unsigned_literals(&lengths)),
++                RleVersion::V1,
++            ),
++            fields: fields(),
++        };
++        let mut parent = vec![true; count + 1];
++        parent[0] = false;
++        decoder
++            .skip_values(count + 1, Some(&NullBuffer::from(parent)))
++            .unwrap();
++        let next = decoder.next_batch(1, None).unwrap();
++        let next = next.as_any().downcast_ref::<MapArray>().unwrap();
++        assert_eq!(next.value_offsets(), &[0, 1]);
++        assert_eq!(
++            next.keys().as_any().downcast_ref::<Int64Array>().unwrap(),
++            &Int64Array::from(vec![3])
++        );
++        assert_eq!(
++            next.values().as_any().downcast_ref::<Int64Array>().unwrap(),
++            &Int64Array::from(vec![9])
++        );
++    }
++
++    #[test]
++    fn map_skip_propagates_truncated_keys_and_values() {
++        for (keys, values) in [(vec![2], vec![14, 16]), (vec![2, 4], vec![14])] {
++            let mut decoder = MapArrayDecoder {
++                keys: integers(&keys),
++                values: integers(&values),
++                present: None,
++                lengths: get_unsigned_int_decoder(
++                    Cursor::new(unsigned_literals(&[2])),
++                    RleVersion::V1,
++                ),
++                fields: fields(),
++            };
++            assert!(decoder.skip_values(1, None).is_err());
++        }
++    }
++
++    #[cfg(target_pointer_width = "64")]
++    #[test]
++    fn map_skips_advance_keys_and_values_for_each_overflow_flush() {
++        let keys = Arc::default();
++        let values = Arc::default();
++        let mut decoder = MapArrayDecoder {
++            keys: Box::new(Skipped(Arc::clone(&keys))),
++            values: Box::new(Skipped(Arc::clone(&values))),
++            present: None,
++            lengths: get_unsigned_int_decoder(
++                Cursor::new(unsigned_literals(&[i64::MAX as u64, i64::MAX as u64, 2])),
++                RleVersion::V1,
++            ),
++            fields: fields(),
++        };
++        decoder.skip_values(3, None).unwrap();
++        assert_eq!(*keys.lock().unwrap(), vec![usize::MAX - 1, 2]);
++        assert_eq!(*values.lock().unwrap(), vec![usize::MAX - 1, 2]);
++    }
+ }
+diff --git a/vendor/orc-rust/src/array_decoder/mod.rs b/vendor/orc-rust/src/array_decoder/mod.rs
+index 72b51dbe2..fa5d1cb2f 100644
+--- a/vendor/orc-rust/src/array_decoder/mod.rs
++++ b/vendor/orc-rust/src/array_decoder/mod.rs
+@@ -259,34 +259,24 @@ fn skip_present_and_get_non_null_count(
+     parent_present: Option<&NullBuffer>,
+     n: usize,
+ ) -> Result<usize> {
+-    match (present, parent_present) {
+-        (Some(present), Some(parent_present)) => {
+-            // Parent has nulls, so we need to decode parent present to know how many
+-            // of our present values to skip
+-            let non_null_in_parent = parent_present.len() - parent_present.null_count();
+-
+-            // Skip our present values for non-null parents and count non-nulls
+-            let mut our_present = vec![false; non_null_in_parent];
+-            present.inner.decode(&mut our_present)?;
+-            let our_non_null_count = our_present.iter().filter(|&&v| v).count();
+-
+-            Ok(our_non_null_count)
+-        }
+-        (Some(present), None) => {
+-            // No parent present, skip n values and count non-nulls
+-            let mut present_values = vec![false; n];
+-            present.inner.decode(&mut present_values)?;
+-            Ok(present_values.iter().filter(|&&v| v).count())
+-        }
+-        (None, Some(parent_present)) => {
+-            // No our present stream, all non-null parents have data
+-            Ok(parent_present.len() - parent_present.null_count())
+-        }
+-        (None, None) => {
+-            // No nulls at all, all n values have data
+-            Ok(n)
+-        }
++    let count = parent_present
++        .map(|parent| parent.len() - parent.null_count())
++        .unwrap_or(n);
++    let Some(present) = present else {
++        return Ok(count);
++    };
++    let mut remaining = count;
++    let mut non_null_count = 0;
++    let mut scratch = [false; length::SKIP_BATCH_SIZE];
++    while remaining > 0 {
++        let chunk_size = remaining.min(scratch.len());
++        let chunk = &mut scratch[..chunk_size];
++        present.inner.decode(chunk)?;
++        // The count cannot exceed the original usize-sized request.
++        non_null_count += chunk.iter().filter(|&&value| value).count();
++        remaining -= chunk_size;
+     }
++    Ok(non_null_count)
+ }
+ 
+ pub struct NaiveStripeDecoder {
+diff --git a/vendor/orc-rust/src/array_decoder/present_tests.rs b/vendor/orc-rust/src/array_decoder/present_tests.rs
+index a6827f06c..f83548f78 100644
+--- a/vendor/orc-rust/src/array_decoder/present_tests.rs
++++ b/vendor/orc-rust/src/array_decoder/present_tests.rs
+@@ -256,3 +256,61 @@ fn valid_string_nulls_and_nested_parent_child_nulls_are_preserved() {
+         assert!(actual.nulls().is_none());
+     }
+ }
++
++#[test]
++fn skip_present_counts_bounded_chunks_and_preserves_the_next_bit() {
++    struct BoundedBoolean(BooleanDecoder<Cursor<Vec<u8>>>);
++    impl PrimitiveValueDecoder<bool> for BoundedBoolean {
++        fn decode(&mut self, out: &mut [bool]) -> Result<()> {
++            assert!(out.len() <= length::SKIP_BATCH_SIZE);
++            self.0.decode(out)
++        }
++
++        fn skip(&mut self, _n: usize) -> Result<()> {
++            panic!("PRESENT must be decoded to count non-null values");
++        }
++    }
++
++    // 1,024 alternating bits, followed by true, false, true, then false.
++    let mut bytes = vec![0x80]; // Byte RLE: 128 literal bytes.
++    bytes.extend([0xaa; 128]);
++    bytes.extend([0xff, 0xa0]);
++    let mut present = Some(PresentDecoder {
++        inner: Box::new(BoundedBoolean(BooleanDecoder::new(Cursor::new(bytes)))),
++    });
++    assert_eq!(
++        skip_present_and_get_non_null_count(&mut present, None, 1027).unwrap(),
++        514
++    );
++    assert_eq!(
++        present.as_mut().unwrap().next_buffer(1).unwrap(),
++        NullBuffer::from(vec![false])
++    );
++}
++
++#[test]
++fn skip_present_preserves_absent_and_nested_parent_null_semantics() {
++    let mut absent = None;
++    assert_eq!(
++        skip_present_and_get_non_null_count(&mut absent, None, usize::MAX).unwrap(),
++        usize::MAX
++    );
++    let parent = NullBuffer::from(vec![true, false, true]);
++    assert_eq!(
++        skip_present_and_get_non_null_count(&mut absent, Some(&parent), 3).unwrap(),
++        2
++    );
++
++    let mut present = Some(PresentDecoder {
++        // false, true among the two non-null parents; next value is true.
++        inner: Box::new(BooleanDecoder::new(Cursor::new(vec![0xff, 0x60]))),
++    });
++    assert_eq!(
++        skip_present_and_get_non_null_count(&mut present, Some(&parent), 3).unwrap(),
++        1
++    );
++    assert_eq!(
++        present.as_mut().unwrap().next_buffer(1).unwrap(),
++        NullBuffer::from(vec![true])
++    );
++}
+diff --git a/vendor/orc-rust/src/array_decoder/string.rs b/vendor/orc-rust/src/array_decoder/string.rs
+index a1e87967a..3d655e6fc 100644
+--- a/vendor/orc-rust/src/array_decoder/string.rs
++++ b/vendor/orc-rust/src/array_decoder/string.rs
+@@ -35,7 +35,9 @@ use crate::proto::column_encoding::Kind as ColumnEncodingKind;
+ use crate::proto::stream::Kind;
+ use crate::stripe::Stripe;
+ 
+-use super::length::{check_length_buffer_size, checked_total_length, new_length_buffer};
++use super::length::{
++    check_length_buffer_size, checked_total_length, new_length_buffer, skip_lengths,
++};
+ use super::{ArrayBatchDecoder, Int64ArrayDecoder, PresentDecoder};
+ 
+ // TODO: reduce duplication with string below
+@@ -168,20 +170,25 @@ impl<T: ByteArrayType> ArrayBatchDecoder for GenericByteArrayDecoder<T> {
+         let non_null_count =
+             skip_present_and_get_non_null_count(&mut self.present, parent_present, n)?;
+ 
+-        // Decode lengths to determine how many bytes to skip
+-        let mut lengths = vec![0; non_null_count];
+-        self.lengths.decode(&mut lengths)?;
+-        let total_bytes: i64 = lengths.iter().sum();
+-
+-        // Skip the data bytes
+-        // TODO: can we use the decompressor to skip the bytes?
+-        std::io::copy(
+-            &mut self.bytes.by_ref().take(total_bytes as u64),
+-            &mut std::io::sink(),
+-        )
+-        .context(IoSnafu)?;
+-
+-        Ok(())
++        skip_lengths(self.lengths.as_mut(), non_null_count, |length| {
++            let length = u64::try_from(length).map_err(|_| {
++                crate::error::OutOfSpecSnafu {
++                    msg: "Skipped byte count does not fit u64",
++                }
++                .build()
++            })?;
++            // TODO: can we use the decompressor to skip the bytes?
++            let copied = io::copy(&mut self.bytes.by_ref().take(length), &mut io::sink())
++                .context(IoSnafu)?;
++            if copied != length {
++                return Err(io::Error::new(
++                    io::ErrorKind::UnexpectedEof,
++                    "ORC byte payload ended before all skipped bytes were consumed",
++                ))
++                .context(IoSnafu);
++            }
++            Ok(())
++        })
+     }
+ }
+ 
+@@ -236,9 +243,13 @@ mod tests {
+ 
+     use super::*;
+     use crate::array_decoder::length::tests::{
+-        assert_error, malformed_cases, unsigned_literals, Unread,
++        assert_error, malformed_cases, many_unsigned_literals, negative_cases, unsigned_literals,
++        Unread,
+     };
++    use crate::compression::Compression;
++    use crate::encoding::boolean::BooleanDecoder;
+     use crate::encoding::integer::RleVersion;
++    use crate::error::OrcError;
+ 
+     fn malformed<T: ByteArrayType>() {
+         let payload = Bytes::from_static(&[0xde, 0xad, 0xbe, 0xef]);
+@@ -304,4 +315,129 @@ mod tests {
+             ])
+         );
+     }
++
++    fn malformed_skip<T: ByteArrayType>() {
++        let payload = Bytes::from_static(b"abcd");
++        for case in negative_cases() {
++            let mut decoder = GenericByteArrayDecoder::<T>::new(
++                Box::new(Decompressor::new(payload.clone(), None, vec![])),
++                case.decoder(),
++                None,
++            );
++            assert_error(
++                decoder.skip_values(case.count, None).unwrap_err(),
++                case.expected,
++            );
++            let mut remaining = vec![];
++            decoder.bytes.read_to_end(&mut remaining).unwrap();
++            assert_eq!(remaining.as_slice(), payload.as_ref());
++        }
++    }
++
++    #[test]
++    fn malformed_string_and_binary_skip_lengths_leave_payload_unread() {
++        malformed_skip::<GenericStringType<i32>>();
++        malformed_skip::<GenericBinaryType<i32>>();
++    }
++
++    fn truncated_skip<T: ByteArrayType>() {
++        // The second request exceeds materialized i32 offsets, but must reach
++        // the payload without allocating its declared size or rejecting it.
++        for lengths in [vec![2], vec![i32::MAX as u64, 1]] {
++            let mut decoder = GenericByteArrayDecoder::<T>::new(
++                Box::new(Decompressor::new(Bytes::from_static(b"a"), None, vec![])),
++                get_unsigned_int_decoder(Cursor::new(unsigned_literals(&lengths)), RleVersion::V1),
++                None,
++            );
++            let OrcError::IoError { source, .. } =
++                decoder.skip_values(lengths.len(), None).unwrap_err()
++            else {
++                panic!("expected skipped payload EOF");
++            };
++            assert_eq!(source.kind(), io::ErrorKind::UnexpectedEof);
++        }
++    }
++
++    #[test]
++    fn string_and_binary_skips_require_all_promised_payload_bytes() {
++        truncated_skip::<GenericStringType<i32>>();
++        truncated_skip::<GenericBinaryType<i32>>();
++    }
++
++    #[test]
++    fn skipped_payload_preserves_the_original_decompressor_error() {
++        // An incomplete compression header fails as InvalidData, not the
++        // synthesized UnexpectedEof used for a successful short payload read.
++        let mut decoder = DirectStringArrayDecoder::new(
++            Box::new(Decompressor::new(
++                Bytes::from_static(&[0xff]),
++                Compression::from_proto(crate::proto::CompressionKind::Zlib, None),
++                vec![],
++            )),
++            get_unsigned_int_decoder(Cursor::new(unsigned_literals(&[1])), RleVersion::V1),
++            None,
++        );
++        let OrcError::IoError { source, .. } = decoder.skip_values(1, None).unwrap_err() else {
++            panic!("expected original decompressor I/O error");
++        };
++        assert_eq!(source.kind(), io::ErrorKind::InvalidData);
++        assert!(source
++            .get_ref()
++            .unwrap()
++            .downcast_ref::<OrcError>()
++            .is_some());
++    }
++
++    fn skip_then_read<T: ByteArrayType>() -> GenericByteArray<T> {
++        let count = super::super::length::SKIP_BATCH_SIZE + 1;
++        let mut lengths = vec![0; count - 1];
++        lengths.extend([2, 1]);
++        let mut decoder = GenericByteArrayDecoder::<T>::new(
++            Box::new(Decompressor::new(Bytes::from_static(b"abc"), None, vec![])),
++            get_unsigned_int_decoder(
++                Cursor::new(many_unsigned_literals(&lengths)),
++                RleVersion::V1,
++            ),
++            None,
++        );
++        let mut parent = vec![true; count + 1];
++        parent[0] = false;
++        decoder
++            .skip_values(count + 1, Some(&NullBuffer::from(parent)))
++            .unwrap();
++        decoder.next_byte_batch(1, None).unwrap()
++    }
++
++    #[test]
++    fn string_and_binary_skips_across_chunks_and_nulls_preserve_the_next_value() {
++        assert_eq!(
++            skip_then_read::<GenericStringType<i32>>(),
++            StringArray::from(vec!["c"])
++        );
++        assert_eq!(
++            skip_then_read::<GenericBinaryType<i32>>(),
++            BinaryArray::from(vec![b"c".as_slice()])
++        );
++    }
++
++    #[test]
++    fn skip_present_failure_precedes_lengths_and_all_null_parents_read_neither() {
++        let calls = Arc::new(AtomicUsize::new(0));
++        let mut decoder = DirectStringArrayDecoder::new(
++            Box::new(Decompressor::empty()),
++            Box::new(Unread(calls.clone())),
++            Some(PresentDecoder {
++                inner: Box::new(BooleanDecoder::new(Cursor::new(vec![0xff]))),
++            }),
++        );
++        decoder
++            .skip_values(3, Some(&NullBuffer::from(vec![false; 3])))
++            .unwrap();
++        let OrcError::IoError { source, .. } = decoder.skip_values(usize::MAX, None).unwrap_err()
++        else {
++            panic!("expected PRESENT EOF before LENGTH decoding");
++        };
++        assert_eq!(source.kind(), io::ErrorKind::UnexpectedEof);
++        assert_eq!(calls.load(Ordering::Relaxed), 0);
++    }
+ }

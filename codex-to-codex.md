@@ -11283,3 +11283,11 @@ attempts retained, assertions preserved, explicit-selector regression corrected.
 Codec tests execute retained fixtures with worker-local pools and exact identity.
 Public registration and later task preparation remain separate. No full SDP claim;
 documentation gates precede advance.
+
+## 2026-10-30T00:43:23.018521+00:00 — DONE bounded ORC skip decoding and vendor
+
+Native e9690a1eaefa35963554f44d45b8a54fd0ab0196 and Sail 5cfe24e4f0bd46394efd9af30def9a22504f38e5 pass exact detached gates:
+349 native tests (eight ignored), 228 no-default and 192 data-source, formatting,
+strict Clippy and package verification. Two independent source reviews passed.
+Dictionary proposal retained as pending work, not a runtime result. Documentation
+gates precede advance; full SDP objective remains active.
