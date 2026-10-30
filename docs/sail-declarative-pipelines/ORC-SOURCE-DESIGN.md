@@ -605,3 +605,7 @@ Unicode are not universally qualified. No Sail acceptance count changes.
 ## ORC delta arithmetic at integer extremes
 
 Recorded: 2026-10-30T01:10:24.291589+00:00. [Native `133c0c5ea1` and Sail `c38ef0b235`](evidence/orc-delta-arithmetic/README.md) preserve full-width delta bit patterns with explicit wrapping i64 arithmetic and retain narrow-result checks. Short variable runs fail before payload/output. Eleven new raw-byte tests and two corrected existing controls pass: 368 native (eight ignored), 247 no-default and 201 data-source, plus formatting, strict Clippy and exact package verification. This source-backed Java compatibility choice has no new Java runtime oracle; other integer encodings remain outside the unit.
+
+## Supply captured case policy to inference
+
+Recorded: 2026-10-30T01:12:57.301049+00:00. [Sail `18b1eed311`](evidence/listing-inference-case/README.md) adds the captured read-case flag to ReadFormat inference and forwards it through every shared inference path. Existing formats accept an unused argument without changing behavior. Formatting, strict Clippy and 202 data-source tests pass. ORC can now use the same authoritative policy for inference and scan; its public factory remains a separate unit.

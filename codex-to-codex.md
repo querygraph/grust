@@ -11333,3 +11333,7 @@ links before the documentation commit. No other ORC packet or Fable edits.
 ## 2026-10-30T01:10:24.291589+00:00 — DONE ORC delta arithmetic
 
 Native 133c0c5ea13578bd6905070dee11f0e66750cd9a and Sail c38ef0b235ce898fad88aa26434645780dd82f8e pass exact detached gates: 368 native tests (eight ignored), 247 no-default, 201 data-source, formatting, strict Clippy and source/package verification. Independent source review passed; no failed gates. Full SDP scope remains active; document gates precede advance.
+
+## 2026-10-30T01:12:57.301049+00:00 — DONE listing inference case context
+
+Sail 18b1eed311c3bc6f66758595faf4eadb131af48e passes exact detached formatting, strict Clippy and 202 data-source tests. Eleven scoped files; existing format bodies unchanged. Full SDP scope remains active.

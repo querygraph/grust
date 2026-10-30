@@ -1419,3 +1419,7 @@ with no code or runtime-count change; documentation gates remain parent-owned.
 ### ORC RLEv2 delta arithmetic (2026-10-30T01:10:24.291589+00:00)
 
 [Evidence](evidence/orc-delta-arithmetic/README.md) qualifies native `133c0c5ea1` and Sail `c38ef0b235`: 368 native (eight ignored), 247 no-default, 201 data-source, formatting, strict Clippy and exact package checks pass. No public SDP runtime result.
+
+### Listing inference case context (2026-10-30T01:12:57.301049+00:00)
+
+[Sail `18b1eed311`](evidence/listing-inference-case/README.md) passes 202 data-source tests, formatting and strict Clippy. Captured read policy reaches ordinary, empty-fallback and explicit physical inference independently of SQL identifier normalization. No public runtime verdict.

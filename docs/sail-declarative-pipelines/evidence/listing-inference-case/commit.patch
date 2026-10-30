@@ -1,0 +1,332 @@
+commit 18b1eed311c3bc6f66758595faf4eadb131af48e
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 18:11:20 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 18:11:20 2026 -0700
+
+    refactor: carry read case policy into schema inference
+
+diff --git a/crates/sail-data-source/src/formats/arrow/read.rs b/crates/sail-data-source/src/formats/arrow/read.rs
+index 05544c8d8..40e5c4ec2 100644
+--- a/crates/sail-data-source/src/formats/arrow/read.rs
++++ b/crates/sail-data-source/src/formats/arrow/read.rs
+@@ -56,6 +56,7 @@ impl ReadFormat for ArrowReadFormat {
+         _ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         let _ = self;
+         let mut schemas = vec![];
+diff --git a/crates/sail-data-source/src/formats/avro/read.rs b/crates/sail-data-source/src/formats/avro/read.rs
+index c1b30043e..bfef1ad50 100644
+--- a/crates/sail-data-source/src/formats/avro/read.rs
++++ b/crates/sail-data-source/src/formats/avro/read.rs
+@@ -30,6 +30,7 @@ impl ReadFormat for AvroReadFormat {
+         _ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         let mut schemas = vec![];
+         for group in files {
+diff --git a/crates/sail-data-source/src/formats/binary/read.rs b/crates/sail-data-source/src/formats/binary/read.rs
+index 2b92a2053..24f027e57 100644
+--- a/crates/sail-data-source/src/formats/binary/read.rs
++++ b/crates/sail-data-source/src/formats/binary/read.rs
+@@ -30,6 +30,7 @@ impl ReadFormat for BinaryReadFormat {
+         ctx: &dyn Session,
+         _files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         let tz = Arc::from(
+             ctx.config()
+diff --git a/crates/sail-data-source/src/formats/csv/read.rs b/crates/sail-data-source/src/formats/csv/read.rs
+index 23fe3e894..b4ab9acf9 100644
+--- a/crates/sail-data-source/src/formats/csv/read.rs
++++ b/crates/sail-data-source/src/formats/csv/read.rs
+@@ -49,6 +49,7 @@ impl ReadFormat for CsvReadFormat {
+         ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         let mut options = self.options.clone().into_table_options()?;
+         options.compression = compression;
+diff --git a/crates/sail-data-source/src/formats/json/read.rs b/crates/sail-data-source/src/formats/json/read.rs
+index 3e9a461db..00fb56a39 100644
+--- a/crates/sail-data-source/src/formats/json/read.rs
++++ b/crates/sail-data-source/src/formats/json/read.rs
+@@ -47,6 +47,7 @@ impl ReadFormat for JsonReadFormat {
+         _ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         let mut schemas: Vec<Schema> = vec![];
+         let mut records_to_read = self.options.schema_infer_max_records;
+diff --git a/crates/sail-data-source/src/formats/parquet/read.rs b/crates/sail-data-source/src/formats/parquet/read.rs
+index 015228d23..6a17401f2 100644
+--- a/crates/sail-data-source/src/formats/parquet/read.rs
++++ b/crates/sail-data-source/src/formats/parquet/read.rs
+@@ -113,6 +113,7 @@ impl ReadFormat for ParquetReadFormat {
+         ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         let options = self.options.clone().into_table_options();
+         fail_for_encryption_factory(&options)?;
+diff --git a/crates/sail-data-source/src/formats/text/read.rs b/crates/sail-data-source/src/formats/text/read.rs
+index bac2f57af..ec4685d89 100644
+--- a/crates/sail-data-source/src/formats/text/read.rs
++++ b/crates/sail-data-source/src/formats/text/read.rs
+@@ -40,6 +40,7 @@ impl ReadFormat for TextReadFormat {
+         _ctx: &dyn Session,
+         _files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         Ok(Arc::new(Schema::new(vec![Field::new(
+             "value",
+diff --git a/crates/sail-data-source/src/listing/case_sensitivity_tests.rs b/crates/sail-data-source/src/listing/case_sensitivity_tests.rs
+index 10cc9b9d8..b4e781ea6 100644
+--- a/crates/sail-data-source/src/listing/case_sensitivity_tests.rs
++++ b/crates/sail-data-source/src/listing/case_sensitivity_tests.rs
+@@ -16,7 +16,10 @@ use super::*;
+ use crate::listing::planner::ListingPhysicalPlanner;
+ 
+ #[derive(Debug, Default)]
+-struct ScanObservations(Mutex<Vec<bool>>);
++struct ScanObservations {
++    inference: Mutex<Vec<(bool, bool)>>,
++    scans: Mutex<Vec<bool>>,
++}
+ 
+ #[derive(Debug, Default)]
+ struct CaseFormatFactory;
+@@ -55,10 +58,15 @@ impl ReadFormat for CaseReadFormat {
+ 
+     async fn infer_schema(
+         &self,
+-        _ctx: &dyn Session,
++        ctx: &dyn Session,
+         _files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
++        self.0.inference.lock().unwrap().push((
++            read_case_sensitive,
++            ctx.config_options().sql_parser.enable_ident_normalization,
++        ));
+         Ok(Arc::new(Schema::new(vec![Field::new(
+             "Value",
+             DataType::Int64,
+@@ -67,7 +75,7 @@ impl ReadFormat for CaseReadFormat {
+     }
+ 
+     async fn scan(&self, _ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig> {
+-        self.0.0.lock().unwrap().push(input.read_case_sensitive);
++        self.0.scans.lock().unwrap().push(input.read_case_sensitive);
+         Ok(FileScanConfigBuilder::new(
+             input.object_store_url,
+             Arc::new(JsonSource::new(input.schema)),
+@@ -154,6 +162,60 @@ async fn source_read_case_policy_reaches_the_format_scan() -> Result<()> {
+             .unwrap();
+         assert_eq!(physical.schema().field(0).name(), expected_name);
+     }
+-    assert_eq!(observations.0.lock().unwrap().as_slice(), &[false, true]);
++    assert_eq!(
++        observations.scans.lock().unwrap().as_slice(),
++        &[false, true]
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn inferred_schemas_use_the_source_case_policy_independently_of_sql_normalization()
++-> Result<()> {
++    for normalize_identifiers in [false, true] {
++        for read_case_sensitive in [false, true] {
++            let observations = Arc::new(ScanObservations::default());
++            let mut config = SessionConfig::new().with_extension(observations.clone());
++            config.options_mut().sql_parser.enable_ident_normalization = normalize_identifiers;
++            let context = SessionContext::new_with_config(config);
++            let store = Arc::new(InMemory::new());
++            store
++                .put(
++                    &Path::from("data/part.json"),
++                    Bytes::from_static(b"{\"Value\":1}\n").into(),
++                )
++                .await?;
++            context.register_object_store(&Url::parse("memory://case-policy").unwrap(), store);
++            for schema in [None, Some(Schema::empty())] {
++                // Both ordinary inference and the legacy explicit-empty
++                // fallback must receive this read's captured policy.
++                let source = ListingDataSource::<CaseFormatFactory>::default()
++                    .create_source(
++                        &context.state(),
++                        SourceInfo {
++                            paths: vec!["memory://case-policy/data/".to_string()],
++                            lakehouse_table: None,
++                            schema,
++                            constraints: datafusion_common::Constraints::default(),
++                            partition_by: vec![],
++                            bucket_by: None,
++                            sort_order: vec![],
++                            options: vec![],
++                            read_case_sensitive,
++                        },
++                    )
++                    .await?;
++                assert_eq!(source.schema().field(0).name(), "Value");
++            }
++            assert_eq!(
++                observations.inference.lock().unwrap().as_slice(),
++                &[
++                    (read_case_sensitive, normalize_identifiers),
++                    (read_case_sensitive, normalize_identifiers),
++                ]
++            );
++            assert!(observations.scans.lock().unwrap().is_empty());
++        }
++    }
+     Ok(())
+ }
+diff --git a/crates/sail-data-source/src/listing/explicit_schema_tests.rs b/crates/sail-data-source/src/listing/explicit_schema_tests.rs
+index 5b9aaac29..03fdae7e9 100644
+--- a/crates/sail-data-source/src/listing/explicit_schema_tests.rs
++++ b/crates/sail-data-source/src/listing/explicit_schema_tests.rs
+@@ -15,6 +15,7 @@ use super::*;
+ struct Calls {
+     compression: usize,
+     inference: usize,
++    inference_case_policies: Vec<bool>,
+     prepared: Vec<Schema>,
+     validated: Vec<(Schema, Schema)>,
+ }
+@@ -95,8 +96,13 @@ impl ReadFormat for DefaultReadFormat {
+         _ctx: &dyn Session,
+         _files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+-        self.0.calls.lock().unwrap().inference += 1;
++        {
++            let mut calls = self.0.calls.lock().unwrap();
++            calls.inference += 1;
++            calls.inference_case_policies.push(read_case_sensitive);
++        }
+         if self.0.fail_inference {
+             return plan_err!("test physical inference failure");
+         }
+@@ -140,8 +146,11 @@ impl ReadFormat for PreservingReadFormat {
+         ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         compression: CompressionTypeVariant,
++        read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+-        self.0.infer_schema(ctx, files, compression).await
++        self.0
++            .infer_schema(ctx, files, compression, read_case_sensitive)
++            .await
+     }
+ 
+     async fn prepare_explicit_schema(
+@@ -268,6 +277,10 @@ async fn default_case_policy_and_post_partition_validation_are_unchanged() -> Re
+             let inferred = require_validation || !case_sensitive;
+             assert_eq!(calls.compression, 1);
+             assert_eq!(calls.inference, usize::from(inferred));
++            assert_eq!(
++                calls.inference_case_policies,
++                vec![case_sensitive; usize::from(inferred)]
++            );
+             assert_eq!(calls.validated.len(), usize::from(inferred));
+             if inferred {
+                 // The directory-only p column must be removed before validation.
+@@ -314,6 +327,10 @@ async fn default_inference_errors_remain_optional_only_for_case_reconciliation()
+         }
+         let calls = policy.calls.lock().unwrap();
+         assert_eq!(calls.inference, expected_inference);
++        assert_eq!(
++            calls.inference_case_policies,
++            vec![case_sensitive; expected_inference]
++        );
+         assert!(calls.validated.is_empty());
+     }
+     Ok(())
+diff --git a/crates/sail-data-source/src/listing/inference_selection_tests.rs b/crates/sail-data-source/src/listing/inference_selection_tests.rs
+index 620008dcd..df6ee2ce2 100644
+--- a/crates/sail-data-source/src/listing/inference_selection_tests.rs
++++ b/crates/sail-data-source/src/listing/inference_selection_tests.rs
+@@ -147,6 +147,7 @@ impl ReadFormat for SampleReadFormat {
+         _ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         _compression: CompressionTypeVariant,
++        _read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+         *self.0.schema.lock().unwrap() = files.iter().map(|g| g.objects.clone()).collect();
+         let mut names = BTreeSet::new();
+@@ -194,8 +195,11 @@ impl ReadFormat for AllReadFormat {
+         ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         compression: CompressionTypeVariant,
++        read_case_sensitive: bool,
+     ) -> Result<SchemaRef> {
+-        self.0.infer_schema(ctx, files, compression).await
++        self.0
++            .infer_schema(ctx, files, compression, read_case_sensitive)
++            .await
+     }
+ 
+     async fn scan(&self, ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig> {
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index 70d4a8787..54793bea4 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -68,11 +68,16 @@ pub trait ReadFormat: Debug + Send + Sync + 'static {
+     ) -> Result<CompressionTypeVariant>;
+ 
+     /// Infer the file schema from the given files.
++    ///
++    /// `read_case_sensitive` is the policy captured in [`SourceInfo`] for this
++    /// read. Formats that use it must not derive it from SQL identifier
++    /// normalization or other session settings.
+     async fn infer_schema(
+         &self,
+         ctx: &dyn Session,
+         files: &[ListingFileSample<'_>],
+         compression: CompressionTypeVariant,
++        read_case_sensitive: bool,
+     ) -> Result<SchemaRef>;
+ 
+     /// Prepare a supplied schema before partition columns are separated.
+@@ -94,11 +99,16 @@ pub trait ReadFormat: Debug + Send + Sync + 'static {
+             return Ok(None);
+         }
+         let physical = if self.requires_explicit_schema_validation() {
+-            Some(self.infer_schema(ctx, files, compression).await?)
++            Some(
++                self.infer_schema(ctx, files, compression, read_case_sensitive)
++                    .await?,
++            )
+         } else if read_case_sensitive {
+             None
+         } else {
+-            self.infer_schema(ctx, files, compression).await.ok()
++            self.infer_schema(ctx, files, compression, read_case_sensitive)
++                .await
++                .ok()
+         };
+         // Reconcile names so readers and file statistics that resolve columns
+         // by exact name can find the requested case-insensitive columns.
+@@ -291,7 +301,7 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+             }
+             None => {
+                 let schema = read_format
+-                    .infer_schema(ctx, &inference_files, compression)
++                    .infer_schema(ctx, &inference_files, compression, read_case_sensitive)
+                     .await?;
+                 let schema = rewrite_unsupported_fields(schema);
+ 
