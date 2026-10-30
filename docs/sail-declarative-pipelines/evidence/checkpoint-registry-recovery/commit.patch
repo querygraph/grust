@@ -1,0 +1,547 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 5a487095c..a31c4f136 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -7061,9 +7061,11 @@ dependencies = [
+ name = "sail-cache"
+ version = "0.7.2"
+ dependencies = [
++ "async-trait",
+  "chrono",
+  "datafusion",
+  "datafusion-common",
++ "futures",
+  "log",
+  "moka",
+  "object_store",
+@@ -7071,6 +7073,7 @@ dependencies = [
+  "sail-common-datafusion",
+  "sail-object-store",
+  "thiserror",
++ "tokio",
+ ]
+ 
+ [[package]]
+diff --git a/crates/sail-cache/Cargo.toml b/crates/sail-cache/Cargo.toml
+index 3dda7e76c..5b025b08e 100644
+--- a/crates/sail-cache/Cargo.toml
++++ b/crates/sail-cache/Cargo.toml
+@@ -19,3 +19,8 @@ datafusion-common = { workspace = true }
+ chrono = { workspace = true }
+ log = { workspace = true }
+ moka = { workspace = true }
++
++[dev-dependencies]
++async-trait = { workspace = true }
++futures = { workspace = true }
++tokio = { workspace = true }
+diff --git a/crates/sail-cache/src/remote_checkpoint.rs b/crates/sail-cache/src/remote_checkpoint.rs
+index 2fd9d156b..dc9e165a8 100644
+--- a/crates/sail-cache/src/remote_checkpoint.rs
++++ b/crates/sail-cache/src/remote_checkpoint.rs
+@@ -59,6 +59,8 @@ impl RemoteCheckpointRegistry {
+         }
+     }
+ 
++    /// Resolve a storage path while admission is open. This is not a lease on
++    /// storage effects; callers must separately own and drain those effects.
+     pub fn resolve_relation(
+         &self,
+         runtime_env: &RuntimeEnv,
+@@ -75,15 +77,17 @@ impl RemoteCheckpointRegistry {
+     }
+ 
+     pub fn insert(&self, descriptor: RemoteCheckpointDescriptor) -> Result<()> {
++        let relation_id = descriptor.relation_id.clone();
++        let mut relations = self.relations.write().map_err(|error| {
++            internal_datafusion_err!("checkpoint registry is poisoned: {error}")
++        })?;
++        // Sealing takes this same lock, so an admitted publication either
++        // finishes before the seal or observes the closed registry.
+         if self.closed.load(Ordering::Acquire) {
+             return Err(DataFusionError::Plan(
+                 "checkpoint session is stopping".to_string(),
+             ));
+         }
+-        let relation_id = descriptor.relation_id.clone();
+-        let mut relations = self.relations.write().map_err(|error| {
+-            internal_datafusion_err!("checkpoint registry is poisoned: {error}")
+-        })?;
+         match relations.entry(relation_id.clone()) {
+             Entry::Occupied(_) => {
+                 return Err(internal_datafusion_err!(
+@@ -101,6 +105,9 @@ impl RemoteCheckpointRegistry {
+         let relations = self.relations.read().map_err(|error| {
+             internal_datafusion_err!("checkpoint registry is poisoned: {error}")
+         })?;
++        if self.closed.load(Ordering::Acquire) {
++            return Ok(None);
++        }
+         Ok(relations.get(relation_id).cloned())
+     }
+ 
+@@ -115,29 +122,19 @@ impl RemoteCheckpointRegistry {
+     }
+ 
+     pub async fn cleanup_session(&self, runtime_env: &RuntimeEnv) -> Result<()> {
+-        self.closed.store(true, Ordering::Release);
+-        let storage_cleanup = if self.path.is_some() {
+-            match self.resolve_root(runtime_env) {
+-                Ok(root) => {
+-                    delete_object_store_prefix_objects(
+-                        root.store().as_ref(),
+-                        &self.session_prefix(root.prefix()),
+-                    )
+-                    .await
+-                }
+-                Err(error) => Err(error),
+-            }
+-        } else {
+-            Ok(())
+-        };
+-        let registry_cleanup = self.clear();
+-        match (storage_cleanup, registry_cleanup) {
+-            (Ok(()), Ok(())) => Ok(()),
+-            (Err(error), Ok(())) | (Ok(()), Err(error)) => Err(error),
+-            (Err(storage_error), Err(registry_error)) => Err(internal_datafusion_err!(
+-                "checkpoint storage cleanup failed: {storage_error}; registry cleanup failed: {registry_error}"
+-            )),
++        self.seal()?;
++        if self.path.is_some() {
++            let root = self.resolve_root(runtime_env)?;
++            delete_object_store_prefix_objects(
++                root.store().as_ref(),
++                &self.session_prefix(root.prefix()),
++            )
++            .await?;
+         }
++        // Retain the closed registry's in-memory descriptors if storage cleanup
++        // fails or is canceled. A later explicit cleanup can retry the prefix.
++        // This does not fence writes already admitted to the object store.
++        self.clear()
+     }
+ 
+     fn resolve_root(&self, runtime_env: &RuntimeEnv) -> Result<ResolvedObjectStorePath> {
+@@ -155,10 +152,21 @@ impl RemoteCheckpointRegistry {
+     }
+ 
+     fn clear(&self) -> Result<()> {
+-        let mut relations = self.relations.write().map_err(|error| {
++        let removed = {
++            let mut relations = self.relations.write().map_err(|error| {
++                internal_datafusion_err!("checkpoint registry is poisoned: {error}")
++            })?;
++            std::mem::take(&mut *relations)
++        };
++        drop(removed);
++        Ok(())
++    }
++
++    fn seal(&self) -> Result<()> {
++        let _relations = self.relations.write().map_err(|error| {
+             internal_datafusion_err!("checkpoint registry is poisoned: {error}")
+         })?;
+-        relations.clear();
++        self.closed.store(true, Ordering::Release);
+         Ok(())
+     }
+ }
+@@ -169,6 +177,10 @@ impl SessionExtension for RemoteCheckpointRegistry {
+     }
+ }
+ 
++#[cfg(test)]
++#[path = "remote_checkpoint_tests.rs"]
++mod cleanup_tests;
++
+ #[cfg(test)]
+ #[expect(clippy::expect_used, clippy::unwrap_used)]
+ mod tests {
+diff --git a/crates/sail-cache/src/remote_checkpoint_test_store.rs b/crates/sail-cache/src/remote_checkpoint_test_store.rs
+new file mode 100644
+index 000000000..eb628e1a8
+--- /dev/null
++++ b/crates/sail-cache/src/remote_checkpoint_test_store.rs
+@@ -0,0 +1,155 @@
++//! Minimal forwarding fault store, following the private VacuumStore test pattern.
++
++use std::fmt;
++use std::sync::atomic::{AtomicBool, Ordering};
++use std::sync::{Arc, Mutex};
++
++use futures::stream::BoxStream;
++use futures::{StreamExt, TryStreamExt, stream};
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use object_store::{
++    CopyOptions, GetOptions, GetResult, ListResult, MultipartUpload, ObjectMeta, ObjectStore,
++    ObjectStoreExt, PutMultipartOptions, PutOptions, PutPayload, PutResult,
++};
++use tokio::sync::oneshot;
++
++#[derive(Debug)]
++pub(super) struct DeleteFailure;
++
++impl fmt::Display for DeleteFailure {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "injected checkpoint deletion failure")
++    }
++}
++
++impl std::error::Error for DeleteFailure {}
++
++#[derive(Debug, Default)]
++pub(super) struct ControlledStore {
++    inner: Arc<InMemory>,
++    fail_path: Option<Path>,
++    fail_once: Arc<AtomicBool>,
++    entered: Mutex<Option<oneshot::Sender<()>>>,
++    release: Mutex<Option<oneshot::Receiver<()>>>,
++}
++
++impl ControlledStore {
++    pub(super) fn fail_once(path: Path) -> Self {
++        Self {
++            fail_path: Some(path),
++            fail_once: Arc::new(AtomicBool::new(true)),
++            ..Default::default()
++        }
++    }
++
++    pub(super) fn paused(entered: oneshot::Sender<()>, release: oneshot::Receiver<()>) -> Self {
++        Self {
++            entered: Mutex::new(Some(entered)),
++            release: Mutex::new(Some(release)),
++            ..Default::default()
++        }
++    }
++}
++
++impl fmt::Display for ControlledStore {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "ControlledCheckpointStore")
++    }
++}
++
++#[async_trait::async_trait]
++impl ObjectStore for ControlledStore {
++    async fn put_opts(
++        &self,
++        location: &Path,
++        payload: PutPayload,
++        options: PutOptions,
++    ) -> object_store::Result<PutResult> {
++        self.inner.put_opts(location, payload, options).await
++    }
++
++    async fn put_multipart_opts(
++        &self,
++        location: &Path,
++        options: PutMultipartOptions,
++    ) -> object_store::Result<Box<dyn MultipartUpload>> {
++        self.inner.put_multipart_opts(location, options).await
++    }
++
++    async fn get_opts(
++        &self,
++        location: &Path,
++        options: GetOptions,
++    ) -> object_store::Result<GetResult> {
++        self.inner.get_opts(location, options).await
++    }
++
++    fn delete_stream(
++        &self,
++        locations: BoxStream<'static, object_store::Result<Path>>,
++    ) -> BoxStream<'static, object_store::Result<Path>> {
++        let inner = self.inner.clone();
++        let fail_path = self.fail_path.clone();
++        let fail_once = self.fail_once.clone();
++        let entered = self
++            .entered
++            .lock()
++            .unwrap_or_else(|error| error.into_inner())
++            .take();
++        let release = self
++            .release
++            .lock()
++            .unwrap_or_else(|error| error.into_inner())
++            .take();
++        stream::once(async move {
++            let mut paths = locations.try_collect::<Vec<_>>().await?;
++            paths.sort();
++            if let Some(entered) = entered {
++                let _ = entered.send(());
++            }
++            if let Some(release) = release {
++                release
++                    .await
++                    .map_err(|error| object_store::Error::Generic {
++                        store: "ControlledCheckpointStore",
++                        source: Box::new(error),
++                    })?;
++            }
++            Ok::<_, object_store::Error>(stream::iter(paths).then(move |path| {
++                let inner = inner.clone();
++                let fail =
++                    fail_path.as_ref() == Some(&path) && fail_once.swap(false, Ordering::SeqCst);
++                async move {
++                    if fail {
++                        return Err(object_store::Error::PermissionDenied {
++                            path: path.to_string(),
++                            source: Box::new(DeleteFailure),
++                        });
++                    }
++                    inner.delete(&path).await?;
++                    Ok(path)
++                }
++            }))
++        })
++        .try_flatten()
++        .boxed()
++    }
++
++    fn list(&self, prefix: Option<&Path>) -> BoxStream<'static, object_store::Result<ObjectMeta>> {
++        self.inner.list(prefix)
++    }
++
++    async fn list_with_delimiter(&self, prefix: Option<&Path>) -> object_store::Result<ListResult> {
++        self.inner.list_with_delimiter(prefix).await
++    }
++
++    async fn copy_opts(
++        &self,
++        from: &Path,
++        to: &Path,
++        options: CopyOptions,
++    ) -> object_store::Result<()> {
++        self.inner.copy_opts(from, to, options).await
++    }
++}
+diff --git a/crates/sail-cache/src/remote_checkpoint_tests.rs b/crates/sail-cache/src/remote_checkpoint_tests.rs
+new file mode 100644
+index 000000000..d374e3e66
+--- /dev/null
++++ b/crates/sail-cache/src/remote_checkpoint_tests.rs
+@@ -0,0 +1,221 @@
++//! Registry cleanup tests; these do not establish an object-store effect barrier.
++
++use datafusion::arrow::datatypes::Schema;
++use futures::TryStreamExt;
++use object_store::{ObjectStore, ObjectStoreExt};
++use tokio::sync::oneshot;
++
++use super::*;
++
++#[path = "remote_checkpoint_test_store.rs"]
++mod support;
++use support::{ControlledStore, DeleteFailure};
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++fn descriptor(relation_id: &str) -> Result<RemoteCheckpointDescriptor> {
++    let schema = Arc::new(Schema::empty());
++    Ok(RemoteCheckpointDescriptor {
++        relation_id: relation_id.into(),
++        object_store_url: ObjectStoreUrl::parse("memory://")?,
++        prefix: Path::from("checkpoint/session/relation"),
++        logical_schema: schema.clone(),
++        storage_schema: schema,
++        output_partitioning: Partitioning::UnknownPartitioning(1),
++        output_ordering: None,
++        partitions: vec![],
++    })
++}
++
++fn runtime(store: Arc<ControlledStore>) -> Result<RuntimeEnv> {
++    let runtime = RuntimeEnv::default();
++    runtime.register_object_store(ObjectStoreUrl::parse("memory://")?.as_ref(), store);
++    Ok(runtime)
++}
++
++fn new_registry(session: &str) -> RemoteCheckpointRegistry {
++    RemoteCheckpointRegistry::new(Some("memory:///checkpoint".into()), session.into())
++}
++
++fn retained(
++    registry: &RemoteCheckpointRegistry,
++    relation_id: &str,
++) -> std::result::Result<Option<Arc<RemoteCheckpointDescriptor>>, Box<dyn std::error::Error>> {
++    // Inspect private retained metadata, separately from the public closed view.
++    let relations = registry
++        .relations
++        .try_read()
++        .map_err(|error| error.to_string())?;
++    Ok(relations.get(relation_id).cloned())
++}
++
++async fn paths(store: &ControlledStore) -> object_store::Result<Vec<Path>> {
++    let mut paths = store
++        .list(None)
++        .map_ok(|metadata| metadata.location)
++        .try_collect::<Vec<_>>()
++        .await?;
++    paths.sort();
++    Ok(paths)
++}
++
++fn assert_closed(registry: &RemoteCheckpointRegistry, runtime: &RuntimeEnv) -> TestResult {
++    assert!(registry.get("relation")?.is_none());
++    assert!(matches!(
++        registry.insert(descriptor("late")?),
++        Err(DataFusionError::Plan(message)) if message == "checkpoint session is stopping"
++    ));
++    assert!(matches!(
++        registry.resolve_relation(runtime, "late"),
++        Err(DataFusionError::Plan(message)) if message == "checkpoint session is stopping"
++    ));
++    Ok(())
++}
++
++#[tokio::test]
++async fn partial_delete_failure_retains_descriptor_for_explicit_retry() -> TestResult {
++    let first = Path::from("checkpoint/session/relation/a.parquet");
++    let second = Path::from("checkpoint/session/relation/b.parquet");
++    let outside = Path::from("checkpoint/other/relation/keep.parquet");
++    let store = Arc::new(ControlledStore::fail_once(second.clone()));
++    for path in [&first, &second, &outside] {
++        store.put(path, "checkpoint".into()).await?;
++    }
++    let runtime = runtime(store.clone())?;
++    let registry = new_registry("session");
++    registry.insert(descriptor("relation")?)?;
++    let original = registry.get("relation")?.ok_or("descriptor missing")?;
++
++    let error = registry
++        .cleanup_session(&runtime)
++        .await
++        .err()
++        .ok_or("partial deletion unexpectedly succeeded")?;
++    let DataFusionError::ObjectStore(error) = error else {
++        return Err("storage error type was replaced".into());
++    };
++    let object_store::Error::PermissionDenied { path, source } = error.as_ref() else {
++        return Err("original deletion error was replaced".into());
++    };
++    assert_eq!(path, &second.to_string());
++    assert!(source.downcast_ref::<DeleteFailure>().is_some());
++    assert_eq!(paths(&store).await?, vec![outside.clone(), second.clone()]);
++    // This assertion fails on the unchanged production implementation, which
++    // clears the map even though the second object could not be deleted.
++    let saved = retained(&registry, "relation")?.ok_or("cleanup discarded recovery metadata")?;
++    assert!(Arc::ptr_eq(&original, &saved));
++    assert_closed(&registry, &runtime)?;
++
++    registry.cleanup_session(&runtime).await?;
++    assert_eq!(paths(&store).await?, vec![outside]);
++    assert!(retained(&registry, "relation")?.is_none());
++    assert_closed(&registry, &runtime)?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn paused_deletion_seals_admission_without_holding_the_registry_lock() -> TestResult {
++    let (entered, observed) = oneshot::channel();
++    let (release, pending) = oneshot::channel();
++    let store = Arc::new(ControlledStore::paused(entered, pending));
++    let object = Path::from("checkpoint/session/relation/data.parquet");
++    store.put(&object, "checkpoint".into()).await?;
++    let runtime = runtime(store.clone())?;
++    let registry = new_registry("session");
++    registry.insert(descriptor("relation")?)?;
++    let original = registry.get("relation")?.ok_or("descriptor missing")?;
++
++    let cleanup = registry.cleanup_session(&runtime);
++    tokio::pin!(cleanup);
++    assert!(futures::poll!(cleanup.as_mut()).is_pending());
++    observed.await?;
++    // try_write makes a held lock fail immediately rather than deadlocking this
++    // current-thread runtime. This checks the paused I/O phase, not every
++    // scheduling interleaving of concurrent insert and seal.
++    {
++        let relations = registry
++            .relations
++            .try_write()
++            .map_err(|error| error.to_string())?;
++        let saved = relations
++            .get("relation")
++            .ok_or("descriptor discarded before deletion")?;
++        assert!(Arc::ptr_eq(&original, saved));
++    }
++    assert_closed(&registry, &runtime)?;
++    assert_eq!(paths(&store).await?, vec![object]);
++    release
++        .send(())
++        .map_err(|_| "deletion waiter was dropped")?;
++    cleanup.await?;
++    assert!(paths(&store).await?.is_empty());
++    assert!(retained(&registry, "relation")?.is_none());
++    assert_closed(&registry, &runtime)?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn canceled_cleanup_retains_closed_metadata_for_explicit_retry() -> TestResult {
++    let (entered, observed) = oneshot::channel();
++    let (release, pending) = oneshot::channel();
++    let store = Arc::new(ControlledStore::paused(entered, pending));
++    let object = Path::from("checkpoint/session/relation/data.parquet");
++    store.put(&object, "checkpoint".into()).await?;
++    let runtime = runtime(store.clone())?;
++    let registry = new_registry("session");
++    registry.insert(descriptor("relation")?)?;
++    let original = registry.get("relation")?.ok_or("descriptor missing")?;
++
++    let mut cleanup = Box::pin(registry.cleanup_session(&runtime));
++    assert!(futures::poll!(cleanup.as_mut()).is_pending());
++    observed.await?;
++    drop(cleanup);
++    // Dropping this fake store's pending request drops its gate receiver. This
++    // does not assert that a real provider's mutation stops with its awaiter.
++    assert!(release.send(()).is_err());
++    let saved = retained(&registry, "relation")?.ok_or("cancellation discarded metadata")?;
++    assert!(Arc::ptr_eq(&original, &saved));
++    assert_closed(&registry, &runtime)?;
++    assert_eq!(paths(&store).await?, vec![object]);
++
++    registry.cleanup_session(&runtime).await?;
++    assert!(paths(&store).await?.is_empty());
++    assert!(retained(&registry, "relation")?.is_none());
++    assert_closed(&registry, &runtime)?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn successful_cleanup_is_session_scoped_and_remains_closed() -> TestResult {
++    let store = Arc::new(ControlledStore::default());
++    let removed = Path::from("checkpoint/session/relation/data.parquet");
++    let kept = Path::from("checkpoint/sibling/relation/data.parquet");
++    for path in [&removed, &kept] {
++        store.put(path, "checkpoint".into()).await?;
++    }
++    let runtime = runtime(store.clone())?;
++    let registry = new_registry("session");
++    let sibling = new_registry("sibling");
++    registry.insert(descriptor("relation")?)?;
++    sibling.insert(descriptor("relation")?)?;
++    let original = sibling
++        .get("relation")?
++        .ok_or("sibling descriptor missing")?;
++
++    registry.cleanup_session(&runtime).await?;
++    assert_eq!(paths(&store).await?, vec![kept]);
++    assert!(retained(&registry, "relation")?.is_none());
++    assert_closed(&registry, &runtime)?;
++    assert!(Arc::ptr_eq(
++        &original,
++        &sibling
++            .get("relation")?
++            .ok_or("sibling descriptor discarded")?,
++    ));
++    sibling.insert(descriptor("new")?)?;
++    assert!(sibling.resolve_relation(&runtime, "new").is_ok());
++    // Repeating successful cleanup does not reopen the closed registry.
++    registry.cleanup_session(&runtime).await?;
++    assert_closed(&registry, &runtime)?;
++    Ok(())
++}

@@ -1,0 +1,76 @@
+{
+  "sail_commit": "cba833ae08a4844afcb4e5edef0cc894231d0d82",
+  "base": "ec8e74d57de51149a774cd4f9048d82039704d0c",
+  "packages": [
+    "sail-cache",
+    "sail-physical-plan",
+    "sail-session"
+  ],
+  "started_at": "2026-10-30T06:18:32.055659+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-cache",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-registry-recovery-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-cache",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-registry-recovery-clippy.log",
+      "sha256": "880adb454975a8b1e694efc21e69ca787be2abf0347e8b7f25d0b55bb4196e38"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-cache",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-registry-recovery-rust.log",
+      "sha256": "dda70dd51a12c6fd66048999aeabe89894f4120580e50082bbdeb62bff92f9e3"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T06:20:27.026669+00:00",
+  "outcome": "passed"
+}

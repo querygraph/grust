@@ -1586,3 +1586,18 @@ Session Deleted/RPC acknowledgement still occurs too early. Failed-deletion
 ownership, global shutdown, legacy task/effect joins and cluster acknowledgements
 remain separate required work. These results do not qualify full streaming/CDC,
 public ORC writing or the original Scala SDP suites.
+
+## Checkpoint registry recovery metadata
+
+Recorded 2026-10-30T06:46:19.148655+00:00. [Sail `cba833ae08a4`](evidence/checkpoint-registry-recovery/README.md)
+orders registry seal/publication under one lock, hides closed descriptors and
+retains them until prefix cleanup succeeds. Typed storage failure and explicit
+registry retry are preserved. The partial-deletion regression fails on unchanged
+production source and passes after the fix. All 51 affected library tests,
+4 optimized tests under CPU load, 300 public cases and 67 upstream Python
+executions pass, with formatting and strict Clippy. Exact artifacts, source pins,
+binary hashes and the expected failing control are retained.
+
+This is in-memory metadata recovery. It does not fence outstanding storage effects,
+retain the whole session after failed deletion, add a cleanup retry supervisor or
+qualify session/cluster shutdown. Full ORC writing and streaming/CDC remain open.

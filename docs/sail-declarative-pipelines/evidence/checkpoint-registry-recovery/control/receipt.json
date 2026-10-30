@@ -1,0 +1,27 @@
+{
+  "recorded_at": "2026-10-30T06:21:45.942276+00:00",
+  "base": "ec8e74d57de51149a774cd4f9048d82039704d0c",
+  "fixed_candidate": "cba833ae08a4844afcb4e5edef0cc894231d0d82",
+  "control_commit": "9bbe418025665a87caff3ab6ec27c147c50e5b43",
+  "production_path": "crates/sail-cache/src/remote_checkpoint.rs",
+  "base_production_sha256": "8853b789bab3f11aa5903cbfab79ce6e0eccdcbd110421fb758a2bcbb32e7d52",
+  "control_production_without_test_module_sha256": "8853b789bab3f11aa5903cbfab79ce6e0eccdcbd110421fb758a2bcbb32e7d52",
+  "test_only_module_declaration": "\n#[cfg(test)]\n#[path = \"remote_checkpoint_tests.rs\"]\nmod cleanup_tests;\n",
+  "scope": "Original registry implementation with only test module/dependencies added; expected failure proves lost metadata after partial storage deletion",
+  "command": [
+    "cargo",
+    "+1.98.1",
+    "test",
+    "-p",
+    "sail-cache",
+    "--lib",
+    "--locked",
+    "remote_checkpoint::cleanup_tests::partial_delete_failure_retains_descriptor_for_explicit_retry",
+    "--",
+    "--exact"
+  ],
+  "exit_code": 101,
+  "completed_at": "2026-10-30T06:23:00.983598+00:00",
+  "log_sha256": "4899e64cb0180cfe73dcaea3215f95e07125b6c5bd4d8a3096dd89c97635dea5",
+  "expected_failure_observed": true
+}
