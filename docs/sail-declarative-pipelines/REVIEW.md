@@ -1563,3 +1563,11 @@ passes 99 library tests, formatting and strict Clippy; 12 focused tests
 also pass in an optimized build under CPU load. Exact receipts and limitations
 are retained. This is a lifecycle foundation; local runner/session/cluster
 integration, public ORC writing and full streaming/CDC acceptance remain open.
+
+## Preparation ownership prerequisite
+
+Recorded 2026-10-30T05:35:47.971635+00:00. [Sail `30f943ef91`](evidence/stream-preparation/README.md)
+adds a preparation guard, nonblocking completion inspection and explicit resource
+drainage qualification. All 103 common-datafusion tests and 16 optimized tests
+under CPU load pass, with formatting and strict Clippy. The component is committed
+separately from runner admission, stop results and session deletion changes.
