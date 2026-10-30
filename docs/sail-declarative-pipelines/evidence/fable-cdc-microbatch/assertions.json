@@ -1,0 +1,247 @@
+{
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "cases": [
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandlerSuite.scala:84",
+      "name_expression": "\"Scd1ForeachBatchHandler invalidates rows with null sequencing before merging to aux/target tables.\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::null_sequencing_rows_are_invalid_before_any_merge",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Error identity and parameters ported; the untouched aux/target table assertions need a writer."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandlerSuite.scala:112",
+      "name_expression": "\"Scd1ForeachBatchHandler invalidates rows with a null key column before merging to aux/target\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::null_key_rows_are_counted_without_touching_well_formed_rows",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Same: table assertions need a writer."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandlerSuite.scala:143",
+      "name_expression": "\"Scd1ForeachBatchHandler invalidates rows when any column of a composite key is null\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::composite_key_null_counts_follow_the_configured_key_order",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Same."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandlerSuite.scala:211",
+      "name_expression": "\"Scd1ForeachBatchHandler surfaces the null-sequence error before the null-key error\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::null_sequence_is_reported_before_null_key",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandlerSuite.scala:234",
+      "name_expression": "\"Scd1ForeachBatchHandler validates that the microbatch's sequencing column is orderable\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::a_map_typed_sequencing_column_is_not_orderable",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Error identity and dataType ported; table assertions need a writer."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:68",
+      "name_expression": "\"deduplicateMicrobatch keeps only the row with the largest sequence value per key\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::keeps_only_the_row_with_the_largest_sequence_value_per_key",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:95",
+      "name_expression": "\"deduplicateMicrobatch is no-op if there's a single event for a key\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::is_a_no_op_for_a_single_event_per_key",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:120",
+      "name_expression": "\"deduplicateMicrobatch handles equal sequencing values for the same key\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::equal_sequencing_values_keep_exactly_one_row",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:149",
+      "name_expression": "\"deduplicateMicrobatch ignores rows with null sequencing when a non-null value exists\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::null_sequencing_rows_lose_to_a_non_null_value",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:176",
+      "name_expression": "\"deduplicateMicrobatch returns a null row when all sequencing values for a key are null\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::all_null_sequencing_values_for_a_key_yield_a_null_row",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:205",
+      "name_expression": "\"deduplicateMicrobatch processes multiple keys independently\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::keys_are_processed_independently",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:238",
+      "name_expression": "\"deduplicateMicrobatch carries non-key, non-sequence columns from the winning row\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::non_key_columns_come_from_the_winning_row",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:267",
+      "name_expression": "\"deduplicateMicrobatch carries nested columns correctly from the winning row\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::nested_columns_come_from_the_winning_row",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:296",
+      "name_expression": "\"deduplicateMicrobatch supports composite (multi-column) keys\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::composite_keys_group_independently",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:331",
+      "name_expression": "\"deduplicateMicrobatch supports an arbitrary sequencing expression\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::an_arbitrary_sequencing_expression_is_evaluated_per_row",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:364",
+      "name_expression": "\"deduplicateMicrobatch supports literal-dot column names\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::literal_dot_column_names_survive",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:392",
+      "name_expression": "\"deduplicateMicrobatch fails when a key column collides with the reserved name\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::a_key_column_named_like_the_winning_row_column_fails",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Failure asserted; Spark's AMBIGUOUS_REFERENCE (42704) comes from its analyzer, DataFusion rejects the aggregate's duplicate output column with its own error."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:428",
+      "name_expression": "\"deduplicateMicrobatch preserves the input column names, types, and ordering\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::input_column_names_types_and_order_are_preserved",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessorSuite.scala:456",
+      "name_expression": "\"deduplicateMicrobatch returns an empty DataFrame with preserved schema\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/dedup.rs::an_empty_batch_yields_an_empty_result_with_the_schema_preserved",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    }
+  ],
+  "supplemental": [
+    {
+      "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::a_losing_row_with_a_null_sequence_still_fails_the_batch",
+      "purpose": "validation runs over original rows before any winner selection"
+    },
+    {
+      "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::a_well_formed_batch_passes_and_a_sequencing_expression_is_honored",
+      "purpose": "sequencing is an expression, not a column name"
+    },
+    {
+      "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/microbatch.rs::orderability_follows_order_utils",
+      "purpose": "OrderUtils.isOrderable over Arrow types"
+    }
+  ]
+}
