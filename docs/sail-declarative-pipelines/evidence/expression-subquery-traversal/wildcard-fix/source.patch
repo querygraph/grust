@@ -1,0 +1,179 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+index b80a4f8be..286371514 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+@@ -480,7 +480,6 @@ impl Walker<'_> {
+         match expr {
+             E::Literal(_)
+             | E::UnresolvedAttribute { .. }
+-            | E::UnresolvedStar { .. }
+             | E::UnresolvedRegex { .. }
+             | E::UnresolvedNamedLambdaVariable(_)
+             | E::DefaultColumnValue
+@@ -488,6 +487,14 @@ impl Walker<'_> {
+             | E::UnresolvedDate { .. }
+             | E::UnresolvedTime { .. }
+             | E::UnresolvedTimestamp { .. } => Ok(()),
++            E::UnresolvedStar {
++                wildcard_options, ..
++            } => {
++                for replacement in wildcard_options.replace_columns.iter().flatten() {
++                    self.expr(&replacement.expression, cte_scope)?;
++                }
++                Ok(())
++            }
+             E::UnresolvedFunction(function) => {
+                 self.exprs(&function.arguments, cte_scope)?;
+                 for (_, argument) in &function.named_arguments {
+@@ -847,3 +854,7 @@ impl Walker<'_> {
+ #[cfg(test)]
+ #[path = "binding_tests.rs"]
+ mod tests;
++
++#[cfg(test)]
++#[path = "binding_wildcard_tests.rs"]
++mod wildcard_tests;
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding_wildcard_tests.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding_wildcard_tests.rs
+new file mode 100644
+index 000000000..9289e12d4
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding_wildcard_tests.rs
+@@ -0,0 +1,138 @@
++use std::collections::HashMap;
++use std::sync::Mutex;
++
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::common::DFSchema;
++use datafusion::logical_expr::{EmptyRelation, LogicalPlan};
++use sail_plan::config::PlanConfig;
++use sail_plan::error::{PlanError, PlanResult};
++use sail_plan::resolver::PlanResolver;
++
++use super::*;
++use crate::pipelines::graph::Output;
++use crate::spark::connect::OutputType;
++
++fn read(name: &str) -> spec::QueryPlan {
++    spec::QueryPlan::new(spec::QueryNode::Read {
++        read_type: spec::ReadType::NamedTable(Box::new(spec::ReadNamedTable {
++            name: spec::ObjectName::bare(name),
++            temporal: None,
++            sample: None,
++            options: vec![],
++        })),
++        is_streaming: false,
++    })
++}
++
++fn replacement(query: spec::QueryPlan) -> spec::QueryPlan {
++    spec::QueryPlan::new(spec::QueryNode::Project {
++        input: Some(Box::new(read("events"))),
++        expressions: vec![spec::Expr::UnresolvedStar {
++            target: None,
++            plan_id: None,
++            wildcard_options: spec::WildcardOptions {
++                replace_columns: Some(vec![spec::WildcardReplaceColumn {
++                    expression: Box::new(spec::Expr::ScalarSubquery {
++                        subquery: Box::new(query),
++                    }),
++                    column_name: "id".into(),
++                    as_keyword: true,
++                }]),
++                ..Default::default()
++            },
++        }],
++    })
++}
++
++fn classify(plan: &spec::QueryPlan) -> Result<ReadSet, BindingError> {
++    let graph = GraphDefinition {
++        catalog: "c".into(),
++        database: "d".into(),
++        sql_conf: HashMap::new(),
++        outputs: vec![Output {
++            name: vec!["c".into(), "d".into(), "events".into()],
++            kind: OutputType::Table,
++            definition: Default::default(),
++            schema: None,
++            view: None,
++        }],
++        flows: vec![],
++    };
++    let flow = Flow {
++        name: vec!["result".into()],
++        target: vec!["result".into()],
++        query: plan.clone(),
++        sql_conf: HashMap::new(),
++        catalog: "c".into(),
++        database: "d".into(),
++    };
++    validate_reads(&SessionContext::new(), &graph, &flow, plan, &[], &[], &[])
++}
++
++#[test]
++fn wildcard_replacements_classify_reads_and_helpers() {
++    assert_eq!(
++        classify(&replacement(read("hidden"))),
++        Err(BindingError::UnboundCatalogRead(vec![
++            "c".into(),
++            "d".into(),
++            "hidden".into()
++        ]))
++    );
++    let tail = spec::QueryPlan::new(spec::QueryNode::Tail {
++        input: Box::new(read("events")),
++        limit: spec::Expr::Literal(spec::Literal::Int32 { value: Some(1) }),
++    });
++    assert_eq!(classify(&replacement(tail)), Err(BindingError::Tail));
++    let accepted = classify(&replacement(read("events")));
++    assert!(accepted.is_ok(), "{accepted:?}");
++    assert_eq!(
++        accepted.map(|reads| reads.local),
++        Ok(BTreeSet::from([vec![
++            "c".into(),
++            "d".into(),
++            "events".into()
++        ]]))
++    );
++}
++
++/// Show that this is a real native read site, rather than a synthetic expression
++/// rejected by the resolver before its nested query can be reached.
++#[tokio::test]
++async fn native_wildcard_resolution_loads_the_replacement_subquery()
++-> Result<(), Box<dyn std::error::Error>> {
++    struct RecordingScope {
++        reads: Mutex<Vec<Vec<String>>>,
++        plan: LogicalPlan,
++    }
++    impl RelationScope for RecordingScope {
++        fn resolve(&self, name: &[String]) -> PlanResult<Option<LogicalPlan>> {
++            self.reads
++                .lock()
++                .map_err(|error| PlanError::internal(error.to_string()))?
++                .push(name.to_vec());
++            Ok(Some(self.plan.clone()))
++        }
++    }
++    let scope = RecordingScope {
++        reads: Mutex::default(),
++        plan: LogicalPlan::EmptyRelation(EmptyRelation {
++            produce_one_row: false,
++            schema: Arc::new(DFSchema::try_from(Schema::new(vec![Field::new(
++                "id",
++                DataType::Int64,
++                false,
++            )]))?),
++        }),
++    };
++    let ctx = SessionContext::new();
++    PlanResolver::new(&ctx, Arc::new(PlanConfig::default()))
++        .with_relation_scope(&scope)
++        .resolve_named_plan(spec::Plan::Query(replacement(read("hidden"))))
++        .await?;
++    assert_eq!(
++        scope.reads.into_inner()?,
++        vec![vec!["events".to_string()], vec!["hidden".to_string()]]
++    );
++    Ok(())
++}

@@ -1,0 +1,33 @@
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+    Finished `test` profile [unoptimized] target(s) in 7.44s
+     Running unittests src/lib.rs (target/debug/deps/sail_common-7aa2b13aad9a0702)
+
+running 4 tests
+test spec::subqueries::tests::query_contents_and_plan_id_references_remain_the_callers_responsibility ... ok
+test spec::subqueries::tests::wildcard_replacements_and_window_bounds_are_expression_children ... ok
+test spec::subqueries::tests::expression_lists_preserve_order_repetition_and_query_identity ... FAILED
+test spec::subqueries::tests::first_callback_error_stops_traversal_and_keeps_the_original_error ... FAILED
+
+failures:
+
+---- spec::subqueries::tests::expression_lists_preserve_order_repetition_and_query_identity stdout ----
+
+thread 'spec::subqueries::tests::expression_lists_preserve_order_repetition_and_query_identity' (90389948) panicked at crates/sail-common/src/spec/subquery_tests.rs:58:5:
+assertion failed: std::ptr::eq(seen[0], subquery.as_ref())
+
+---- spec::subqueries::tests::first_callback_error_stops_traversal_and_keeps_the_original_error stdout ----
+
+thread 'spec::subqueries::tests::first_callback_error_stops_traversal_and_keeps_the_original_error' (90389949) panicked at crates/sail-common/src/spec/subquery_tests.rs:75:5:
+assertion `left == right` failed
+  left: [Some(1), Some(2)]
+ right: [Some(9), Some(2)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    spec::subqueries::tests::expression_lists_preserve_order_repetition_and_query_identity
+    spec::subqueries::tests::first_callback_error_stops_traversal_and_keeps_the_original_error
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p sail-common --lib`

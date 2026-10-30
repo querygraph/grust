@@ -1,0 +1,157 @@
+"""Observe public Spark Connect graph configuration phases without selecting expectations."""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import traceback
+from datetime import datetime, timezone
+from pathlib import Path
+
+for key in ('SPARK_REMOTE', 'SPARK_CONNECT_MODE_ENABLED', 'SPARK_LOCAL_REMOTE'):
+    os.environ.pop(key, None)
+os.environ['SPARK_LOCAL_IP'] = '127.0.0.1'
+
+from pyspark.sql import SparkSession
+from pyspark.sql.connect import proto as pb
+from pyspark.pipelines.spark_connect_pipeline import create_dataflow_graph, start_run
+
+KEY = 'spark.sql.caseSensitive'
+SOURCE = Path('/Users/alexy/src/spark-sdp-4.2.1')
+OUTPUT = Path(sys.argv[1])
+ENGINE = sys.argv[2] if len(sys.argv) > 2 else 'spark'
+assert ENGINE in ('spark', 'sail')
+OUTPUT.mkdir(exist_ok=False)
+probe = subprocess.run(['/usr/sbin/lsof', '-nP', '-iTCP:15002', '-sTCP:LISTEN', '-Fp'], capture_output=True, text=True)
+if ENGINE == 'spark':
+    assert probe.returncode == 1 and not probe.stdout, 'reference port already owned'
+
+
+def digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def define(spark, graph: str, name: str, sql: str, conf: dict[str, str], table: bool = False) -> None:
+    output = pb.Command()
+    output.pipeline_command.define_output.CopyFrom(pb.PipelineCommand.DefineOutput(
+        dataflow_graph_id=graph, output_name=name,
+        output_type=pb.OutputType.MATERIALIZED_VIEW if table else pb.OutputType.TEMPORARY_VIEW,
+        table_details=pb.PipelineCommand.DefineOutput.TableDetails(format='parquet') if table else None,
+    ))
+    spark.client.execute_command(output)
+    relation = pb.Relation()
+    relation.sql.query = sql
+    command = pb.Command()
+    command.pipeline_command.define_flow.CopyFrom(pb.PipelineCommand.DefineFlow(
+        dataflow_graph_id=graph, flow_name=name, target_dataset_name=name, sql_conf=conf,
+        relation_flow_details=pb.PipelineCommand.DefineFlow.WriteRelationFlowDetails(relation=relation),
+    ))
+    spark.client.execute_command(command)
+
+
+# Reverse lexical names make SQL encounter order distinguishable from sorted dependency order.
+CASES = [
+    ('cte_shadows_graph', [('z_sensitive', 'SELECT 7 AS foo', {KEY: 'true'}, False)],
+     'WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM z_sensitive', {}),
+    ('cte_case_insensitive_shadow', [('z_sensitive', 'SELECT 7 AS foo', {KEY: 'true'}, False)],
+     'WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM Z_SENSITIVE', {}),
+    ('cte_unused_definition', [
+        ('z_sensitive', 'SELECT 1 AS foo', {KEY: 'true'}, False),
+        ('a_insensitive', 'SELECT 2 AS bar', {KEY: 'false'}, False)],
+     'WITH staged AS (SELECT Foo FROM z_sensitive) SELECT Bar FROM a_insensitive', {}),
+    ('cte_used_definition', [('z_sensitive', 'SELECT 1 AS foo', {KEY: 'true'}, False)],
+     'WITH staged AS (SELECT foo FROM z_sensitive) SELECT Foo FROM staged', {}),
+    ('cte_qualified_bypasses_shadow', [('z_sensitive', 'SELECT 7 AS foo', {KEY: 'true'}, False)],
+     'WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM fusion_cte_qualified_bypasses_shadow.z_sensitive', {}),
+    ('cte_nested_shadow_unused_outer', [('z_sensitive', 'SELECT 7 AS foo', {KEY: 'true'}, False)],
+     'WITH c AS (SELECT foo FROM z_sensitive) SELECT Foo FROM (WITH c AS (SELECT 1 AS foo) SELECT foo FROM c)', {}),
+    ('filter_subquery_before_child', [
+        ('z_sensitive', 'SELECT 1 AS foo', {KEY: 'true'}, False),
+        ('a_insensitive', 'SELECT 2 AS bar', {KEY: 'false'}, False)],
+     'SELECT Bar FROM a_insensitive WHERE EXISTS(SELECT foo FROM z_sensitive)', {}),
+    ('union_left_then_right', [
+        ('z_sensitive', 'SELECT 1 AS foo', {KEY: 'true'}, False),
+        ('a_insensitive', 'SELECT 2 AS foo', {KEY: 'false'}, False)],
+     'SELECT Foo FROM z_sensitive UNION ALL SELECT Foo FROM a_insensitive', {}),
+    ('union_right_then_left', [
+        ('z_sensitive', 'SELECT 1 AS foo', {KEY: 'true'}, False),
+        ('a_insensitive', 'SELECT 2 AS foo', {KEY: 'false'}, False)],
+     'SELECT Foo FROM a_insensitive UNION ALL SELECT Foo FROM z_sensitive', {}),
+    ('defaults_overridden_every_flow', [('z_sensitive', 'SELECT 1 AS foo', {KEY: 'false'}, False)],
+     'SELECT Foo FROM z_sensitive', {KEY: 'false'}),
+    ('defaults_conflict_view_table', [('z_sensitive', 'SELECT 1 AS foo', {KEY: 'true'}, False)],
+     'SELECT foo FROM z_sensitive', {}),
+    ('defaults_same_value', [('z_sensitive', 'SELECT 1 AS foo', {}, False)],
+     'SELECT foo FROM z_sensitive', {}),
+]
+DEFAULTS = {
+    'defaults_overridden_every_flow': {KEY: 'true'},
+    'defaults_conflict_view_table': {KEY: 'false'},
+    'defaults_same_value': {KEY: 'true'},
+}
+
+report = {
+    'engine': ENGINE,
+    'started_at': datetime.now(timezone.utc).isoformat(),
+    'source_commit': subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip(),
+    'harness_sha256': digest(Path(__file__)),
+    'scope': 'Twelve CTE/default public Connect graph observations; source pin and installed runtime are recorded separately; no Scala suite verdict',
+    'cases': [],
+}
+spark = None
+try:
+    spark = (SparkSession.builder.remote('local[2]' if ENGINE == 'spark' else 'sc://localhost:50094').appName('SDP config fusion reference')
+             .config('spark.ui.enabled', 'false')
+             .config('spark.sql.warehouse.dir', (OUTPUT / 'warehouse').as_uri()).getOrCreate())
+    if ENGINE == 'sail':
+        spark.conf.set('spark.sql.warehouse.dir', (OUTPUT / 'warehouse').as_uri())
+    report['catalog'] = spark.catalog.currentCatalog()
+    report['spark_version'] = spark.version
+    assert spark.version == '4.2.1'
+    import pyspark
+    jars = Path(pyspark.__file__).parent / 'jars'
+    report['installed_client_jars'] = {p.name: digest(p) for p in jars.glob('spark-*4.2.1.jar') if any(x in p.name for x in ('pipelines', 'sql_', 'connect_'))}
+    for name, definitions, query, conf in CASES:
+        case = {'name': name, 'definitions': definitions, 'query': query, 'consumer_conf': conf, 'graph_conf': DEFAULTS.get(name, {})}
+        report['cases'].append(case)
+        namespace = 'fusion_' + name
+        try:
+            spark.conf.set(KEY, 'false')
+            spark.sql(f'CREATE DATABASE {namespace}').collect()
+            spark.sql(f'USE {namespace}').collect()
+            spark.sql('CREATE TABLE external_input USING parquet AS SELECT 9 AS foo').collect()
+            graph = create_dataflow_graph(spark, report['catalog'], namespace, DEFAULTS.get(name))
+            for definition in definitions:
+                define(spark, graph, *definition)
+            define(spark, graph, 'result', query, conf, table=True)
+            case['events'] = []
+            try:
+                for event in start_run(spark, graph, None, False, None, False, (OUTPUT/name/'state').as_uri()):
+                    if 'pipeline_event_result' in event:
+                        e = event['pipeline_event_result'].event
+                        case['events'].append({'message': e.message, 'protobuf_text': str(e)})
+                case['run_returned'] = True
+            except Exception as error:
+                case['run_returned'] = False
+                case['run_error'] = str(error)
+                case['run_exception_type'] = type(error).__name__
+            case['result_exists'] = spark.catalog.tableExists('result')
+            if case['result_exists']:
+                case['rows'] = [row.asDict() for row in spark.table('result').collect()]
+            case['session_case_sensitive'] = spark.conf.get(KEY)
+        except Exception:
+            case['probe_error'] = traceback.format_exc()
+        print(json.dumps({k:v for k,v in case.items() if k not in ('events','definitions','run_error')}), flush=True)
+    report['outcome'] = 'observed' if not any('probe_error' in c for c in report['cases']) else 'probe_error'
+    assert report['outcome'] == 'observed', 'probe infrastructure errors; no parity verdict'
+finally:
+    if spark is not None:
+        spark.stop()
+    teardown = subprocess.run(['/usr/sbin/lsof', '-nP', '-iTCP:15002', '-sTCP:LISTEN', '-Fp'], capture_output=True, text=True)
+    if ENGINE == 'spark':
+        report['listener_probe_after_stop'] = {'exit_code': teardown.returncode, 'stdout': teardown.stdout}
+    report['completed_at'] = datetime.now(timezone.utc).isoformat()
+    (OUTPUT / 'observations.json').write_text(json.dumps(report, indent=2) + '\n')
+print('Reference observations recorded', flush=True)

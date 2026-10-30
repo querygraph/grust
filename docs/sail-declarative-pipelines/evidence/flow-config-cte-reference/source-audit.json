@@ -1,0 +1,32 @@
+{
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "files": [
+    {
+      "path": "sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/analysis/CTESubstitution.scala",
+      "sha256": "cd500e2b656ec35932f4132ce36d32e16209a9b208348fb8b320c6d448c4ed33",
+      "lines": [
+        48,
+        139
+      ],
+      "excerpt": " * analysis exception will be thrown later by relation resolving rules.\n *\n * If the query is a SQL command or DML statement (extends `CTEInChildren`),\n * place `WithCTE` into their children.\n */\nobject CTESubstitution extends Rule[LogicalPlan] {\n  def apply(plan: LogicalPlan): LogicalPlan = {\n    if (!plan.containsPattern(UNRESOLVED_WITH)) {\n      return plan\n    }\n\n    def collectCommands(p: LogicalPlan): Seq[LogicalPlan] = p match {\n      case c @ (_: Command | _: ParsedStatement | _: InsertIntoDir) => Seq(c)\n      case u: UnresolvedWith =>\n        collectCommands(u.child) ++ u.cteRelations.flatMap {\n          case (_, relation, _) => collectCommands(relation)\n        }\n      case p => p.children.flatMap(collectCommands)\n    }\n    val commands = collectCommands(plan)\n    val hasRecursiveCTE = plan.collectFirstWithSubqueries {\n      case UnresolvedWith(_, _, true) =>\n        true\n    }.getOrElse(false)\n\n    // If the CTE is recursive we can't inline it as it has a self reference.\n    val forceInline = if (commands.length == 1) {\n      if (conf.getConf(SQLConf.LEGACY_INLINE_CTE_IN_COMMANDS)) {\n        // The legacy behavior always inlines the CTE relations for queries in commands.\n        if (hasRecursiveCTE) {\n          plan.failAnalysis(errorClass = \"RECURSIVE_CTE_WITH_LEGACY_INLINE_FLAG\",\n            messageParameters = Map.empty)\n        }\n        true\n      } else {\n        // If there is only one command and it's `CTEInChildren`, we can resolve\n        // CTE normally and don't need to force inline.\n        !hasRecursiveCTE && !commands.head.isInstanceOf[CTEInChildren]\n      }\n    } else if (commands.length > 1) {\n      // This can happen with the multi-insert statement. We should fall back to\n      // the legacy behavior, unless the CTE is recursive.\n      !hasRecursiveCTE\n    } else {\n      false\n    }\n\n    val cteDefs = ArrayBuffer.empty[CTERelationDef]\n    val (substituted, firstSubstituted) =\n      conf.getConf(LEGACY_CTE_PRECEDENCE_POLICY) match {\n        case LegacyBehaviorPolicy.EXCEPTION =>\n          assertNoNameConflictsInCTE(plan)\n          traverseAndSubstituteCTE(plan, forceInline, Seq.empty, cteDefs, None)\n        case LegacyBehaviorPolicy.LEGACY =>\n          (legacyTraverseAndSubstituteCTE(plan, cteDefs), None)\n        case LegacyBehaviorPolicy.CORRECTED =>\n          traverseAndSubstituteCTE(plan, forceInline, Seq.empty, cteDefs, None)\n    }\n    if (cteDefs.isEmpty) {\n      substituted\n    } else if (substituted eq firstSubstituted.get) {\n      withCTEDefs(substituted, cteDefs.toSeq)\n    } else {\n      var done = false\n      substituted.resolveOperatorsWithPruning(_ => !done) {\n        case p if p eq firstSubstituted.get =>\n          // `firstSubstituted` is the parent of all other CTEs (if any).\n          done = true\n          withCTEDefs(p, cteDefs.toSeq)\n        case p if p.children.count(_.containsPattern(CTE)) > 1 =>\n          // This is the first common parent of all CTEs.\n          done = true\n          withCTEDefs(p, cteDefs.toSeq)\n      }\n    }\n  }\n\n  /**\n   * Spark 3.0 changes the CTE relations resolution, and inner relations take precedence. This is\n   * correct but we need to warn users about this behavior change under EXCEPTION mode, when we see\n   * CTE relations with conflicting names.\n   *\n   * Note that, before Spark 3.0 the parser didn't support CTE in the FROM clause. For example,\n   * `WITH ... SELECT * FROM (WITH ... SELECT ...)` was not supported. We should not fail for this\n   * case, as Spark versions before 3.0 can't run it anyway. The parameter `startOfQuery` is used\n   * to indicate where we can define CTE relations before Spark 3.0, and we should only check\n   * name conflicts when `startOfQuery` is true.\n   */\n  private def assertNoNameConflictsInCTE(\n      plan: LogicalPlan,\n      outerCTERelationNames: Seq[String] = Nil,\n      startOfQuery: Boolean = true): Unit = {"
+    },
+    {
+      "path": "sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/plans/logical/cteOperators.scala",
+      "sha256": "004774912cff2ac0cebae39915a3759ed656e52c1763d9613493eedcde3c51a5",
+      "lines": [
+        239,
+        250
+      ],
+      "excerpt": "case class WithCTE(plan: LogicalPlan, cteDefs: Seq[CTERelationDef]) extends LogicalPlan {\n\n  final override val nodePatterns: Seq[TreePattern] = Seq(CTE)\n\n  override def output: Seq[Attribute] = plan.output\n\n  override def children: Seq[LogicalPlan] = cteDefs :+ plan\n\n  override protected def withNewChildrenInternal(\n      newChildren: IndexedSeq[LogicalPlan]): LogicalPlan = {\n    copy(plan = newChildren.last, cteDefs = newChildren.init.asInstanceOf[Seq[CTERelationDef]])\n  }"
+    },
+    {
+      "path": "sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/plans/QueryPlan.scala",
+      "sha256": "c0e68960c2d68707475adbc0a9b32f883cc3ccd3fdbee47dc63513585c3271e5",
+      "lines": [
+        609,
+        627
+      ],
+      "excerpt": "  def transformDownWithSubqueriesAndPruning(\n      cond: TreePatternBits => Boolean,\n      ruleId: RuleId = UnknownRuleId)\n      (f: PartialFunction[PlanType, PlanType]): PlanType = {\n    val g: PartialFunction[PlanType, PlanType] = new PartialFunction[PlanType, PlanType] {\n      override def isDefinedAt(x: PlanType): Boolean = true\n\n      override def apply(plan: PlanType): PlanType = {\n        val transformed = f.applyOrElse[PlanType, PlanType](plan, identity)\n        transformed transformExpressionsDown {\n          case planExpression: PlanExpression[PlanType @unchecked] =>\n            val newPlan = planExpression.plan.transformDownWithSubqueriesAndPruning(cond, ruleId)(f)\n            planExpression.withNewPlan(newPlan)\n        }\n      }\n    }\n\n    transformDownWithPruning(cond, ruleId)(g)\n  }"
+    }
+  ]
+}

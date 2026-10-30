@@ -1,8 +1,8 @@
 # Flow configuration phases for Spark 4.2.1 parity
 
-Status: reference behavior established for the thirteen cases in the
-[packet](evidence/flow-config-fusion-reference/README.md); native Sail binding seam
-and its full CTE/subquery coverage still require a prototype before activation.
+Status: thirteen-case [Spark/Sail baseline](evidence/flow-config-fusion-reference/README.md)
+and twelve additional [CTE/default reference cases](evidence/flow-config-cte-reference/README.md)
+are established. Native input binding still requires a prototype before activation.
 Sail source is163b2fb52; reference source is617618396. No production config-fusion
 change is selected by this document. The [batch ownership design](BATCH-PROVIDER-MIGRATION-DESIGN.md)
 continues to govern admission, provider lifetime and per-command plan maps.
@@ -65,11 +65,30 @@ semantic analysis. Likewise, the scalar-subquery case reaches conflict validatio
 naively walking FROM left-to-right and then scalar expressions predicts the wrong
 first-pass configuration. Exact Catalyst traversal is part of the design input.
 
+## CTE and binding boundaries
+
+The twelve-case reference packet establishes graph-default overlays, CTE shadowing,
+unused definitions, filter subqueries and union order. For these pure queries,
+CTESubstitution keeps WithCTE: it does not simply inline each reference and discard
+unused definitions. WithCTE visits definitions before its main query, so even an
+unused definition can contribute graph-input settings, trigger a conflict, or
+change which semantic error occurs. Case-insensitive CTE lookup shadows the graph
+under the false default; namespace-qualified access to a bare temporary output in
+this fixture fails table lookup. Do not generalize that result to persisted views.
+Recursive/legacy CTE policies and dynamic identifier binding remain unqualified.
+
+Sail's bounded binder already walks expressions before plan inputs, and contains
+native-aligned eager CTE-definition traversal. Reuse its typed expression descent;
+its set-valued ReadSet does not preserve ordering or repetition. The native CTE
+resolver's exact-case lookup still needs reconciliation with the reference result;
+copying that behavior wholesale would not establish Spark parity. The bounded
+binder's helper refusals are admission policy, not a batch SQL limitation.
+
 ## Sail implementation sequence
 
-1. Keep these exact inputs and observed errors as the differential baseline. Add
-   graph-default overlays, CTE shadowing/unused definitions and relation-bearing
-   scalar expressions before qualifying a general input-binding primitive. Do not
+1. Keep these exact inputs and observed errors as the differential baseline. The
+   added graph-default/CTE/filter/union cases now constrain the primitive; complete
+   recursive/legacy CTE and dynamic-name coverage before claiming general parity. Do not
    replace the ten current mismatches with assertions of Sail's existing behavior.
 2. Prototype a native, request-local binding stage that resolves input relations
    in Spark-compatible order before ordinary semantic expression resolution. Reuse
@@ -97,11 +116,24 @@ refactor. The native binding prototype may need smaller preparatory commits.
 The next design decision is the minimum native seam that can preserve binding
 order across SQL/Connect plans and CTEs while leaving normal callers unchanged.
 
+## Preparatory implementation
+
+[Two units](evidence/expression-subquery-traversal/README.md) are integrated:
+744b16867 classifies subqueries hidden in wildcard replacements, with a native
+resolver witness and unchanged failing control; 7a50f2875 extracts pure typed
+Expr/Window.visit_subqueries into sail-common and reuses it in the bounded binder.
+Ordered/repeated callbacks and first-error identity are tested. This provides the
+expression portion of an input-binding walk; it does not resolve query/CTE scope,
+plan-ID references or providers and does not activate configuration fusion.
+
 ## Review and limits
 
 Fable68a11000 identified the complete post-success merge path. CF-0252 supplied
 public failure-order evidence; Fable2bc290f7/CF-0253 accepted that the final union's
 order independence does not remove first-pass ordering requirements. Both review
-snapshots are included in the packet. The original Scala suites have not been
+snapshots are included in the packet. CF-0259 qualifies the later reference-site
+CTE suggestion with the twelve direct observations; accepted-map reuse for command
+reanalysis remains an optimization requiring binding/phase equivalence evidence.
+The original Scala suites have not been
 executed against Sail; their assertions are reference requirements, not passed
 acceptance. Three of thirteen differential cases currently match and ten differ.
