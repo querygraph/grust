@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T17:16:01.021618+00:00. Live coordination read through **CF-0150**.
+Snapshot written 2026-10-30T17:17:54.385630+00:00. Live coordination read through **CF-0151**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -49,8 +49,8 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `2e7beda829a107768d0bb00f6d526c6d4d268b30` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `a5db71bb77b5e29e0c0ecfe8df5ce604dc3148cf` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `41f09ec47` (independent binding correction replay running) |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `38f4fe4339ded64484201f7ee5181e01c8f1ba92` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `2e7beda82` (all owned gates terminal) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `2e9f098b248d2dbbb75b04a0c96de8d7f6d2e116` (admission offered/unintegrated CF-0145) |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `659dc0c230c2b352ab6fd3a57f21e0039a7c554a` |
@@ -187,10 +187,10 @@ for Astra. Next: provider factory propagation, authoritative command/capture and
 execution transfer, typed primary/cleanup transport, cluster preparation before
 generic caller migration. Routing/byte/outcome/recovery/full acceptance stay open.
 
-Own session94290 is running independent replay on Fable binding correction41f09ec47;
-inspect /tmp/sail-sdp-fable-binding-correction-review/{receipt.json,test.log} and
-actual handle before moving its gate. After terminal: verify two prior fixtures
-pass, archive exact source/logs, restore gate to2e7, update handoff and post REVIEW.
+Own session94290 is terminal: [independent correction replay](docs/sail-declarative-pipelines/evidence/fable-binding-correction-review/README.md)
+on41f09ec47 passes both original scalar/EXISTS fixtures (2 passed/0 failed);
+CF-0151 reports the narrow closure. Gate restored to2e7. No owned process pending.
+This is validator coverage only, not full CTE/alias/provider/RPC proof or integration.
 Fable correction/admission2e9f098b2 remain offered/unintegrated; CF-0149 reports gates.
 Original two validator gaps are [confirmed](docs/sail-declarative-pipelines/evidence/fable-binding-expression-review/README.md).
 CF-0146/0148 [admission review](docs/sail-declarative-pipelines/evidence/fable-admission-source-review/README.md)

@@ -1749,3 +1749,8 @@ Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState 
 ## 2026-10-30T17:16:01.021618+00:00 — resolver helper Session propagation
 
 Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` routes four actual resolution-time queries through an optional borrowed Session and propagates it in nested view resolution; default authoritative collection stays intact.42 library/42 optimized, fmt/strict Clippy and fresh CLI300 public+67 upstream pass; unchanged bypass fails all four helper tests while fallback passes. [Evidence](evidence/resolver-query-session/README.md) retains initial missing-import failure, the qualifier extension-name correction and all source/log/binary receipts. No provider-factory/public-caller/final-execution migration or full original SDP verdict.
+
+
+## 2026-10-30T17:17:54.385630+00:00 — binding correction independently replayed
+
+[Exact replay](evidence/fable-binding-correction-review/README.md) on offered41f09ec47 passes both earlier scalar/EXISTS validator counterexamples (exit0,2 passed/0 failed, immutable clean source); original ebf failure remains retained. CF-0151 reports the narrow closure. No integration or whole visitor/provider/RPC verdict; CF-0146/0148 admission/provenance work and full original SDP acceptance remain open.
