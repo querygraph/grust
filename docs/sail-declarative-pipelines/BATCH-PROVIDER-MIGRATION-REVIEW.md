@@ -849,3 +849,70 @@ navigation-ordered trace → first-pass `PlanConfig` → ordinary resolution
 with `GraphScope` → merge/validate → conditional second resolution, with no
 new spec variant. §12.2 stands as the design to reach for if the probe
 reverses; it should not be selected on the metadata premise, as Codex says.
+
+## 13. Native source-case seam and ordered trace draft (CF-0284): `b4d83ef72`, `config/trace.rs`
+
+Read only. The seam is committed on Codex's product; the trace is an
+uncommitted draft on Codex's worktree, read in place without edits.
+
+**Seam (`b4d83ef72`).** `PlanResolver` gains `source_read_case_sensitive:
+Option<bool>` with `with_source_read_case_sensitive(bool)` and a private
+getter defaulting to `config.case_sensitive`; the two `SourceInfo
+{ read_case_sensitive }` constructions in `query/read.rs` use the getter, and
+the persistent-view child resolver copies the field (`resolver/mod.rs`,
++16/−2 in `read.rs`). Tests run real direct, format-path, catalog-table and
+catalog-view resolution with opposite semantic and source flags under
+legacy and scoped sessions, and the two controls (bypass the getter; drop
+the child propagation) each fail both tests. Minimal and correct for what it
+claims: the source factories' case rule is now separable from the semantic
+`PlanConfig`, which is what CF-0272/0275 showed Spark does for file metadata.
+
+_Scope finding, not a defect._ The flag reaches a reader only where the
+reader consumes it. At `b4d83ef72` only ORC does
+(`formats/orc/read.rs:61–105`, `merge_spark_file_schemas`,
+`validate_field_names`); Parquet, Arrow, Avro, binary, CSV and JSON take
+`_read_case_sensitive` and ignore it (`formats/parquet/read.rs:116` and
+siblings), and no `COLUMN_ALREADY_EXISTS`-style duplicate-column validation
+exists on the Parquet path. So the seam separates the two case rules for ORC
+today and is inert for Parquet, while the reference probe that motivated it
+is a Parquet `Foo`/`foo` file. Matching those probe cases needs a Parquet
+(and generally per-format) field-name validation that consumes the flag,
+which is reader work outside this seam; worth stating in the design so the
+seam is not read as closing the Parquet cases.
+
+**Trace draft (`config/trace.rs`, `ordered_inputs(graph, flow, query,
+case_sensitive, is_source_format) -> Vec<Name>`).** Policy pre-match then
+`visit_children`, so the order is Catalyst's pre-order with expression
+subqueries before inputs (§9, §11). A `Read` of a `NamedTable` is recorded at
+the node visit when it is not a registered `format.path` read, not a
+single-part name bound in the enclosing CTE scope, and resolves through
+`GraphScope::input_name` (extracted from `resolve`, lower-casing the parts as
+the resolver does) to a graph output; graph tables are recorded and the
+caller drops them from contributions, as agreed. `WithCtes` keeps the last
+definition per name keyed under the **initial** case rule
+(`Trace::key`), walks the kept definitions in order and then the body, with
+the recursive name visible to its own definition; unused definitions are
+walked, which is Spark's `WithCTE.children` order (§9.1). `WithRelations`,
+plan-ID `Expr::Subquery` and `DynamicTable` are explicit `unsupported`
+errors rather than silent omissions. `DataSource` and `Udtf` reads contribute
+nothing, correctly. Tests parse real SQL and cover reference order, CTE
+shadowing and unused definitions, canonical qualification with format paths
+external, and the three deferrals as errors.
+
+Notes:
+
+- `is_source_format` must equal the resolver's own path-read predicate
+  (`read.rs:48–80`, the registry format check), or the trace and the
+  resolver will disagree on whether `parquet.\`/p\`` is a graph read; the
+  caller supplies it, so the equality is a wiring obligation.
+- A subquery inside a `Read`'s sample or temporal expression is visited after
+  the read is recorded; in Spark `Sample` is a parent operator visited before
+  its relation. Exotic, but it is an order divergence to pin or document.
+- The pre-match ends in `_ => {}`; navigation is exhaustive, so a new node
+  compiles and is traversed, but a new _relation-binding_ node would need a
+  trace decision. Same note as §11 for the binder.
+- `GraphScope::input_name` is an uncommitted extraction in `analysis.rs`;
+  when it lands, `resolve` should call it so the two cannot drift.
+
+No change requested on the seam; the trace is a draft and these are inputs
+to its first commit. No code, no scope change.
