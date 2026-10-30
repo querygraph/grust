@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T09:24:25.372059+00:00. Live coordination read through **CF-0044**.
+Snapshot written 2026-10-30T09:51:07.981564+00:00. Live coordination read through **CF-0049**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -25,6 +25,12 @@ The previous goal turns made progress: implementation fixes, exact source contro
 independent JVM/Rust parity/counterexample evidence, and concrete design reviews.
 No completion or blocked status is justified by current evidence.
 
+Fable maintains a separate [Fable-owned supplement](/Users/alexy/src/grust-sdp-fable/docs/sail-declarative-pipelines/FABLE-HANDOFF-FABLE.md),
+committed in Grust `524642ad`; recover it with git show if that peer worktree
+is absent. It supplies Fable-side gate scripts/environment and post-CF0044 offers.
+Use actual Git ancestry for integration: original vendor d07a95c2c precedes
+consumer167d577c6 (their order is reversed in that supplement snapshot).
+
 ## First actions after resuming
 
 1. Read applicable AGENTS.md (especially Grust's gate, source/evidence and Sail
@@ -39,7 +45,9 @@ No completion or blocked status is justified by current evidence.
    Preserve independently active checkouts, offered history and failed evidence.
 5. At this snapshot, prioritize CF-0042's offered corrections, CF-0043's prepared
    input findings, and CF-0044's bounded-plan design response. Their exact content
-   is in the live log and the review packet linked below.
+   is in the live log and the review packet linked below. CF-0045/0046 now offer
+   the prepared corrections and detached verdicts; they still need independent
+   review. CF-0048 points to the Fable-owned supplement.
 6. Continue useful independent work rather than waiting on intent or a file.
    Only call a wait verified when you poll an actual live process/session handle.
 
@@ -47,12 +55,12 @@ No completion or blocked status is justified by current evidence.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `34eb270d0041c2fe4b0801afbdda93ad838c51ab` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this handoff: `b9729d854e0316bb0a2cb6c742b0cbc01c060469` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `590fc2f9d3cbd489d430d04af0cce0255a5b2da0` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `0f49affcd9ec30ce7e4d7d37bda77d7fa3775549` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested product candidate `34eb270d00` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
-| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `769914891` |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `88e48c03` |
+| Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `dc8b7eb31` |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `524642ad` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
 | Native ORC work | `/Users/alexy/src/orc-rust-sdp`, `work/sail-orc` | `41304b061d13bc5278e2308c35c9574bc9a03b17` |
@@ -150,14 +158,16 @@ Recent implementation units relevant to the current work:
 | `cba833ae08` | Closed checkpoint descriptors survive failed/canceled storage cleanup; insert/seal share one lock; explicit retry. [Packet](docs/sail-declarative-pipelines/evidence/checkpoint-registry-recovery/README.md) |
 | `36525a06f8` | Characterization: held multipart completion republishes a deleted object after caller cancellation/join. No production behavior change. [Packet](docs/sail-declarative-pipelines/evidence/checkpoint-effect-baseline/README.md) |
 | `34eb270d00` | Preserve commit + cleanup typed errors as Collection/Context, retaining nonretryable unknown-commit classification. [Packet](docs/sail-declarative-pipelines/evidence/checkpoint-typed-errors/README.md) |
+| `590fc2f9d3` | TaskResourceScope.run shares typed completed results with retained supervisor ownership; owned_put.put joins a PUT through lost callers. 107 library + 4 optimized CPU-load tests pass; no dependency change or production routing activation. [Packet](docs/sail-declarative-pipelines/evidence/owned-put/README.md) |
 
-Latest product gate at `34eb270d00`: 15 physical-plan library tests, formatting,
+Latest public runtime gate at `34eb270d00`: 15 physical-plan library tests, formatting,
 strict all-target/all-feature Clippy, a fresh exact-commit CLI, 300 selected public
 cases and 67 upstream Python executions pass. An unchanged-production control
 fails the precise lost-nonretryable-cause assertion. The initial test-style Clippy
 failure is retained. Owned server was stopped; do not assume any current process
 is live from this historical result. No root-owned build/test handle is pending
-at this handoff snapshot; documentation gates are short-lived and must be polled
+at this handoff snapshot; the owned PUT library/release gates are terminal too.
+Documentation gates are short-lived and must be polled
 if a replacement arrives during one.
 
 ## Acceptance accounting and major remaining work
@@ -205,7 +215,8 @@ consumer units during integration rather than blindly cherry-picking that defect
 | `c9a0132cf` unit3 | Bounded deterministic source/intents/progress; cross-run incarnation and zero/stall findings raised. |
 | `6620ee940` unit5 | Prepared-input manifest, canonical row order, receipt/content digests. New blocking review CF-0043, below. |
 | `d38058973` | Opt-in external lowercase replay. Fable reports detached gate and both corpus replays; inspect exact evidence. |
-| `769914891` | Offered C5/global-phase + incarnation-bound progress corrections. Fable reports 124 Rust pipeline / 249 Python pipeline tests in worktree; detached verdict was pending at CF-0042. **Not yet independently reviewed by Codex.** Known schema-merge/missing-source precedence divergence remains disclosed. |
+| `769914891` | Offered C5/global-phase + incarnation-bound progress corrections. Fable reports 124 Rust pipeline / 249 Python pipeline tests and a detached verdict in CF-0045. **Not yet independently reviewed by Codex.** Known schema-merge/missing-source precedence divergence remains disclosed. |
+| `dc8b7eb31` | Offered prepared-input fixes: IPC schema encoding, manifest consistency checks, strict case labels and C4-bound keys at every row count; detached verdict CF-0046. Independent correction/recovery review pending. |
 
 Grust offers: kernel727baa3e; evidence5538854f/aba8ef64 (lowercase),31997f0f
 (CDC validation),275e666b (microbatch),834cae55 (streaming/prepared),8b0bd605
@@ -271,8 +282,11 @@ variable misses writes. A private RuntimeEnvBuilder.from_runtime_env registry
 overlay is the routing direction; preserve underlying resources/cache contents,
 not identity of the newly built CacheManager container.
 
-The typed-error prerequisite is done at34eb270d00. Next implementation units:
-owned PUT, whole multipart lifetime, isolated context/registry routing, checkpoint
+The typed-error prerequisite is done at34eb270d00. The owned PUT component is
+committed at590fc2f9d3: run retains a completed result future in the existing scope,
+shares the original typed error with observer/drain, and invokes no provider for
+sealed or unpolled calls. It is not routed into existing pipeline writes yet.
+Next implementation units: whole multipart lifetime, isolated context/registry routing, checkpoint
 integration, then truthful session deletion/manager shutdown and distributed
 qualification. Keep scope/source/candidate gates granular. Never authorize prefix
 deletion on an unconfirmed stop or timeout, and do not treat cancellation as join.

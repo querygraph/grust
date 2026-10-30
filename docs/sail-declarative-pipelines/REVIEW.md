@@ -1616,3 +1616,7 @@ baseline is preserved separately from the completed cba833ae08a4 registry fix.
 ## Typed checkpoint and cleanup errors
 
 Recorded 2026-10-30T07:31:50.165417+00:00. [Sail `34eb270d00`](evidence/checkpoint-typed-errors/README.md) preserves both original typed causes after a checkpoint failure and compensating-cleanup failure, keeping unknown-commit classification nonretryable. All 15 library tests, formatting, strict Clippy, 300 public cases and 67 upstream executions pass. The unchanged-production control fails the same nonretryable-cause regression. The initial test-style gate failure is retained. Effect ownership, session barriers and full SDP acceptance remain open.
+
+## Retained PUT result ownership
+
+Recorded 2026-10-30T09:51:07.982628+00:00. [Sail `590fc2f9d3`](evidence/owned-put/README.md) adds TaskResourceScope.run and an owned PUT helper using existing admission/join machinery. All107 library tests,4 optimized tests under CPU load, fmt and strict Clippy pass. Lost callers do not abandon the admitted future; typed provider errors are shared with drainage. No dependencies change. Whole multipart lifetime, provider-error qualification, isolated routing and checkpoint/ORC/session integration remain open.

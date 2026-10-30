@@ -1,0 +1,390 @@
+diff --git a/crates/sail-common-datafusion/src/lib.rs b/crates/sail-common-datafusion/src/lib.rs
+index e617b420c..b3009acd8 100644
+--- a/crates/sail-common-datafusion/src/lib.rs
++++ b/crates/sail-common-datafusion/src/lib.rs
+@@ -17,6 +17,7 @@ pub mod logical_expr;
+ pub mod logical_rewriter;
+ pub mod managed_stream;
+ pub mod metadata_aggregate;
++pub mod owned_put;
+ pub mod rename;
+ pub mod scan;
+ pub mod schema;
+diff --git a/crates/sail-common-datafusion/src/owned_put.rs b/crates/sail-common-datafusion/src/owned_put.rs
+new file mode 100644
+index 000000000..4696d54ba
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/owned_put.rs
+@@ -0,0 +1,38 @@
++//! Retained ownership of one completed object-store PUT, before caller loss.
++//!
++//! This component does not qualify multipart cleanup, provider error visibility,
++//! retries, or a session barrier. Its execution owner must retain/drain the scope.
++
++use std::sync::Arc;
++
++use datafusion_common::{DataFusionError, Result};
++use object_store::path::Path;
++use object_store::{ObjectStore, PutOptions, PutPayload, PutResult};
++
++use crate::task_resources::TaskResourceScope;
++
++/// Invoke the provider only after scope admission, then retain its actual future
++/// until completion even if the caller is canceled. Scope cancellation must not
++/// abandon an already-admitted PUT: its completion is joined before clean drain.
++/// Original provider errors are preserved; their commit/replay classification
++/// remains the responsibility of the enclosing effect protocol.
++pub async fn put(
++    resources: &TaskResourceScope,
++    store: Arc<dyn ObjectStore>,
++    location: Path,
++    payload: PutPayload,
++    options: PutOptions,
++) -> Result<PutResult> {
++    resources
++        .run(move |_| async move {
++            store
++                .put_opts(&location, payload, options)
++                .await
++                .map_err(|error| DataFusionError::ObjectStore(Box::new(error)))
++        })
++        .await
++}
++
++#[cfg(test)]
++#[path = "owned_put_tests.rs"]
++mod tests;
+diff --git a/crates/sail-common-datafusion/src/owned_put_test_store.rs b/crates/sail-common-datafusion/src/owned_put_test_store.rs
+new file mode 100644
+index 000000000..9a5cbd94f
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/owned_put_test_store.rs
+@@ -0,0 +1,105 @@
++//! Private forwarding store, using the existing checkpoint-test fixture pattern.
++use std::fmt;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::sync::{Arc, Mutex};
++
++use futures::stream::BoxStream;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use object_store::{
++    CopyOptions, GetOptions, GetResult, ListResult, MultipartUpload, ObjectMeta, ObjectStore,
++    PutMultipartOptions, PutOptions, PutPayload, PutResult,
++};
++use tokio::sync::oneshot;
++
++#[derive(Debug)]
++pub(super) struct PutFailure;
++impl fmt::Display for PutFailure {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "injected PUT failure")
++    }
++}
++impl std::error::Error for PutFailure {}
++
++#[derive(Debug)]
++pub(super) struct HeldStore {
++    pub inner: Arc<InMemory>,
++    pub calls: AtomicUsize,
++    pub fail: bool,
++    pub entered: Mutex<Option<oneshot::Sender<()>>>,
++    pub release: Mutex<Option<oneshot::Receiver<()>>>,
++}
++impl fmt::Display for HeldStore {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "HeldPutStore")
++    }
++}
++#[async_trait::async_trait]
++impl ObjectStore for HeldStore {
++    async fn put_opts(
++        &self,
++        path: &Path,
++        payload: PutPayload,
++        options: PutOptions,
++    ) -> object_store::Result<PutResult> {
++        self.calls.fetch_add(1, Ordering::SeqCst);
++        let entered = self
++            .entered
++            .lock()
++            .unwrap_or_else(|e| e.into_inner())
++            .take();
++        let release = self
++            .release
++            .lock()
++            .unwrap_or_else(|e| e.into_inner())
++            .take();
++        if let Some(entered) = entered {
++            let _ = entered.send(());
++        }
++        if let Some(release) = release {
++            release
++                .await
++                .map_err(|error| object_store::Error::Generic {
++                    store: "HeldPutStore",
++                    source: Box::new(error),
++                })?;
++        }
++        if self.fail {
++            return Err(object_store::Error::PermissionDenied {
++                path: path.to_string(),
++                source: Box::new(PutFailure),
++            });
++        }
++        self.inner.put_opts(path, payload, options).await
++    }
++    async fn put_multipart_opts(
++        &self,
++        path: &Path,
++        options: PutMultipartOptions,
++    ) -> object_store::Result<Box<dyn MultipartUpload>> {
++        self.inner.put_multipart_opts(path, options).await
++    }
++    async fn get_opts(&self, path: &Path, options: GetOptions) -> object_store::Result<GetResult> {
++        self.inner.get_opts(path, options).await
++    }
++    fn delete_stream(
++        &self,
++        paths: BoxStream<'static, object_store::Result<Path>>,
++    ) -> BoxStream<'static, object_store::Result<Path>> {
++        self.inner.delete_stream(paths)
++    }
++    fn list(&self, prefix: Option<&Path>) -> BoxStream<'static, object_store::Result<ObjectMeta>> {
++        self.inner.list(prefix)
++    }
++    async fn list_with_delimiter(&self, prefix: Option<&Path>) -> object_store::Result<ListResult> {
++        self.inner.list_with_delimiter(prefix).await
++    }
++    async fn copy_opts(
++        &self,
++        from: &Path,
++        to: &Path,
++        options: CopyOptions,
++    ) -> object_store::Result<()> {
++        self.inner.copy_opts(from, to, options).await
++    }
++}
+diff --git a/crates/sail-common-datafusion/src/owned_put_tests.rs b/crates/sail-common-datafusion/src/owned_put_tests.rs
+new file mode 100644
+index 000000000..6d9ed6c04
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/owned_put_tests.rs
+@@ -0,0 +1,161 @@
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::sync::{Arc, Mutex};
++use std::time::Duration;
++
++use futures::FutureExt;
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use tokio::runtime::Handle;
++use tokio::sync::oneshot;
++use tokio::time::timeout;
++
++use super::*;
++#[path = "owned_put_test_store.rs"]
++mod store;
++use store::{HeldStore, PutFailure};
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++fn held(fail: bool) -> (Arc<HeldStore>, oneshot::Receiver<()>, oneshot::Sender<()>) {
++    let (entered, wait) = oneshot::channel();
++    let (release, pending) = oneshot::channel();
++    (
++        Arc::new(HeldStore {
++            inner: Arc::new(InMemory::new()),
++            calls: AtomicUsize::new(0),
++            fail,
++            entered: Mutex::new(Some(entered)),
++            release: Mutex::new(Some(pending)),
++        }),
++        wait,
++        release,
++    )
++}
++fn original(error: &DataFusionError) -> Option<&object_store::Error> {
++    match error {
++        DataFusionError::Shared(error) => original(error),
++        DataFusionError::ObjectStore(error) => Some(error),
++        _ => None,
++    }
++}
++#[tokio::test]
++async fn lost_caller_does_not_release_put_ownership_before_drain() -> TestResult {
++    let scope = Arc::new(TaskResourceScope::new(Handle::current()));
++    let (store, entered, release) = held(false);
++    let path = Path::from("checkpoint/session/part");
++    let task = {
++        let scope = scope.clone();
++        let store = store.clone();
++        let path = path.clone();
++        tokio::spawn(async move {
++            put(&scope, store, path, "payload".into(), PutOptions::default()).await
++        })
++    };
++    timeout(Duration::from_secs(5), entered).await??;
++    task.abort();
++    assert!(task.await.is_err_and(|e| e.is_cancelled()));
++    scope.cancel()?;
++    assert!(scope.drain().now_or_never().is_none());
++    assert!(matches!(
++        store.inner.head(&path).await,
++        Err(object_store::Error::NotFound { .. })
++    ));
++    release.send(()).map_err(|_| "provider disappeared")?;
++    let report = timeout(Duration::from_secs(5), scope.drain()).await??;
++    assert!(report.is_clean());
++    assert_eq!(report.registered, 1);
++    assert_eq!(store.inner.get(&path).await?.bytes().await?, "payload");
++    store.inner.delete(&path).await?;
++    assert!(matches!(
++        store.inner.head(&path).await,
++        Err(object_store::Error::NotFound { .. })
++    ));
++    Ok(())
++}
++#[tokio::test]
++async fn provider_error_keeps_the_same_typed_cause_in_observer_and_drain() -> TestResult {
++    for abandoned in [false, true] {
++        let scope = Arc::new(TaskResourceScope::new(Handle::current()));
++        let (store, entered, release) = held(true);
++        let task = {
++            let scope = scope.clone();
++            tokio::spawn(async move {
++                put(
++                    &scope,
++                    store,
++                    Path::from("checkpoint/part"),
++                    "data".into(),
++                    PutOptions::default(),
++                )
++                .await
++            })
++        };
++        timeout(Duration::from_secs(5), entered).await??;
++        let observer = if abandoned {
++            task.abort();
++            assert!(task.await.is_err_and(|e| e.is_cancelled()));
++            None
++        } else {
++            Some(task)
++        };
++        release.send(()).map_err(|_| "provider disappeared")?;
++        let observed = if let Some(task) = observer {
++            Some(task.await?.err().ok_or("expected provider failure")?)
++        } else {
++            None
++        };
++        let report = scope.drain().await?;
++        assert_eq!(report.registered, 1);
++        assert_eq!(report.failures.len(), 1);
++        let Some(object_store::Error::PermissionDenied { source, .. }) =
++            original(&report.failures[0].error)
++        else {
++            return Err("typed provider failure lost".into());
++        };
++        assert!(source.downcast_ref::<PutFailure>().is_some());
++        if let Some(observed) = observed {
++            let DataFusionError::Shared(observed) = observed else {
++                return Err("observer shared cause lost".into());
++            };
++            let DataFusionError::Shared(retained) = &report.failures[0].error else {
++                return Err("shared cause lost".into());
++            };
++            assert!(Arc::ptr_eq(&observed, retained));
++        }
++    }
++    Ok(())
++}
++#[tokio::test]
++async fn sealed_scope_rejects_put_before_provider_invocation() -> TestResult {
++    let scope = TaskResourceScope::new(Handle::current());
++    let (store, _, _) = held(false);
++    scope.seal()?;
++    assert!(
++        put(
++            &scope,
++            store.clone(),
++            Path::from("part"),
++            "data".into(),
++            PutOptions::default()
++        )
++        .await
++        .is_err()
++    );
++    assert_eq!(store.calls.load(Ordering::SeqCst), 0);
++    assert_eq!(scope.drain().await?.registered, 0);
++    Ok(())
++}
++#[tokio::test]
++async fn an_unpolled_put_admits_no_work() -> TestResult {
++    let scope = TaskResourceScope::new(Handle::current());
++    let (store, _, _) = held(false);
++    drop(put(
++        &scope,
++        store.clone(),
++        Path::from("part"),
++        "data".into(),
++        PutOptions::default(),
++    ));
++    assert_eq!(store.calls.load(Ordering::SeqCst), 0);
++    assert_eq!(scope.drain().await?.registered, 0);
++    Ok(())
++}
+diff --git a/crates/sail-common-datafusion/src/task_resources.rs b/crates/sail-common-datafusion/src/task_resources.rs
+index 61732f611..3db12474d 100644
+--- a/crates/sail-common-datafusion/src/task_resources.rs
++++ b/crates/sail-common-datafusion/src/task_resources.rs
+@@ -13,7 +13,7 @@ use datafusion_common::{DataFusionError, Result, internal_datafusion_err};
+ use futures::FutureExt;
+ use futures::future::{BoxFuture, Shared, join_all};
+ use tokio::runtime::Handle;
+-use tokio::sync::watch;
++use tokio::sync::{oneshot, watch};
+ use tokio::task::JoinHandle;
+ 
+ use crate::extension::SessionExtension;
+@@ -155,6 +155,42 @@ impl TaskResourceScope {
+         Ok(id)
+     }
+ 
++    /// Run an admitted supervisor and observe its completed result. Losing the
++    /// observer does not cancel the supervisor; `drain` still joins it. Returned
++    /// factory errors retain the same typed cause in the observer and drain report.
++    ///
++    /// Factories must finish required completion/cleanup before returning. This
++    /// is for completed values, not resource handles requiring async disposal
++    /// when a consumer disappears (such as a newly created multipart upload).
++    /// Task interruption fails the observer; drainage retains the task join failure.
++    pub async fn run<T, F, Fut>(&self, factory: F) -> Result<T>
++    where
++        T: Send + 'static,
++        F: FnOnce(watch::Receiver<bool>) -> Fut + Send + 'static,
++        Fut: Future<Output = Result<T>> + Send + 'static,
++    {
++        let (result, receiver) = oneshot::channel();
++        self.spawn(move |canceled| async move {
++            match factory(canceled).await {
++                Ok(value) => {
++                    let _ = result.send(Ok(value));
++                    Ok(())
++                }
++                Err(error) => {
++                    let error = Arc::new(error);
++                    let _ = result.send(Err(DataFusionError::Shared(error.clone())));
++                    Err(DataFusionError::Shared(error))
++                }
++            }
++        })?;
++        receiver.await.map_err(|error| {
++            DataFusionError::Context(
++                "owned resource result interrupted".into(),
++                Box::new(DataFusionError::External(Box::new(error))),
++            )
++        })?
++    }
++
+     /// Synchronously seal admission and latch cooperative cancellation.
+     /// Later calls cannot reopen admission or undo cancellation.
+     pub fn cancel(&self) -> Result<()> {

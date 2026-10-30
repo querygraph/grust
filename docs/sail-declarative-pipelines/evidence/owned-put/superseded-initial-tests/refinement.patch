@@ -1,0 +1,36 @@
+diff --git a/crates/sail-common-datafusion/src/owned_put_tests.rs b/crates/sail-common-datafusion/src/owned_put_tests.rs
+index 083cf5d16..6d9ed6c04 100644
+--- a/crates/sail-common-datafusion/src/owned_put_tests.rs
++++ b/crates/sail-common-datafusion/src/owned_put_tests.rs
+@@ -112,7 +112,10 @@ async fn provider_error_keeps_the_same_typed_cause_in_observer_and_drain() -> Te
+             return Err("typed provider failure lost".into());
+         };
+         assert!(source.downcast_ref::<PutFailure>().is_some());
+-        if let Some(DataFusionError::Shared(observed)) = observed {
++        if let Some(observed) = observed {
++            let DataFusionError::Shared(observed) = observed else {
++                return Err("observer shared cause lost".into());
++            };
+             let DataFusionError::Shared(retained) = &report.failures[0].error else {
+                 return Err("shared cause lost".into());
+             };
+diff --git a/crates/sail-common-datafusion/src/task_resources.rs b/crates/sail-common-datafusion/src/task_resources.rs
+index 388a75a2f..3db12474d 100644
+--- a/crates/sail-common-datafusion/src/task_resources.rs
++++ b/crates/sail-common-datafusion/src/task_resources.rs
+@@ -156,12 +156,13 @@ impl TaskResourceScope {
+     }
+ 
+     /// Run an admitted supervisor and observe its completed result. Losing the
+-    /// observer does not cancel the supervisor; `drain` still joins it. Errors
+-    /// retain the same typed cause in both the observer and the drain report.
++    /// observer does not cancel the supervisor; `drain` still joins it. Returned
++    /// factory errors retain the same typed cause in the observer and drain report.
+     ///
+     /// Factories must finish required completion/cleanup before returning. This
+     /// is for completed values, not resource handles requiring async disposal
+     /// when a consumer disappears (such as a newly created multipart upload).
++    /// Task interruption fails the observer; drainage retains the task join failure.
+     pub async fn run<T, F, Fut>(&self, factory: F) -> Result<T>
+     where
+         T: Send + 'static,
