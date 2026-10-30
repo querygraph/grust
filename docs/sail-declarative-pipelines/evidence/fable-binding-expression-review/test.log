@@ -1,0 +1,58 @@
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+   Compiling grust-columns v0.1.0 (/Users/alexy/src/sail-sdp-gate/vendor/grust-columns)
+   Compiling sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+   Compiling sail-object-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-object-store)
+   Compiling sail-celeborn v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-celeborn)
+   Compiling sail-catalog v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog)
+   Compiling sail-cache v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-cache)
+   Compiling sail-system-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-system-store)
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-telemetry v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-telemetry)
+   Compiling sail-catalog-memory v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-memory)
+   Compiling sail-catalog-system v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-system)
+   Compiling sail-catalog-unity v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-unity)
+   Compiling sail-catalog-glue v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-glue)
+   Compiling sail-catalog-hms v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-hms)
+   Compiling sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+   Compiling sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+   Compiling sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+   Compiling sail-physical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-optimizer)
+   Compiling sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+   Compiling sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+   Compiling sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+   Compiling sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+   Compiling sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 1m 53s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-f5f12a0d84ea6c20)
+
+running 2 tests
+
+thread 'pipelines::streaming::binding::tests::codex_review_unbound_scalar_subquery_must_be_refused_before_resolution' (89239447) panicked at crates/sail-spark-connect/src/pipelines/streaming/binding.rs:724:9:
+unbound scalar subquery passed: Ok(ReadSet { streaming: {}, local: {}, statics: {} })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'pipelines::streaming::binding::tests::codex_review_unbound_exists_predicate_must_be_refused_before_resolution' (89239446) panicked at crates/sail-spark-connect/src/pipelines/streaming/binding.rs:736:9:
+unbound predicate subquery passed: Ok(ReadSet { streaming: {["c", "d", "clicks"]}, local: {}, statics: {} })
+test pipelines::streaming::binding::tests::codex_review_unbound_scalar_subquery_must_be_refused_before_resolution ... FAILED
+test pipelines::streaming::binding::tests::codex_review_unbound_exists_predicate_must_be_refused_before_resolution ... FAILED
+
+failures:
+
+failures:
+    pipelines::streaming::binding::tests::codex_review_unbound_exists_predicate_must_be_refused_before_resolution
+    pipelines::streaming::binding::tests::codex_review_unbound_scalar_subquery_must_be_refused_before_resolution
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

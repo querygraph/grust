@@ -1,0 +1,33 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+index 885dd1017..02ecd3a7e 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+@@ -711,4 +711,28 @@ mod tests {
+         );
+         Ok(())
+     }
++
++    #[test]
++    fn codex_review_unbound_scalar_subquery_must_be_refused_before_resolution() {
++        let plan = spec::QueryPlan::new(spec::QueryNode::Project {
++            input: None,
++            expressions: vec![spec::Expr::ScalarSubquery {
++                subquery: Box::new(read("missing", false)),
++            }],
++        });
++        let result = validate(plan, &[], &[]);
++        assert!(matches!(result, Err(BindingError::UnboundCatalogRead(_))), "unbound scalar subquery passed: {result:?}");
++    }
++    #[test]
++    fn codex_review_unbound_exists_predicate_must_be_refused_before_resolution() {
++        let plan = spec::QueryPlan::new(spec::QueryNode::Filter {
++            input: Box::new(read("clicks", true)),
++            condition: spec::Expr::Exists {
++                subquery: Box::new(read("missing", false)),
++                negated: false,
++            },
++        });
++        let result = validate(plan, &[source(&["c", "d", "clicks"])], &[]);
++        assert!(matches!(result, Err(BindingError::UnboundCatalogRead(_))), "unbound predicate subquery passed: {result:?}");
++    }
+ }

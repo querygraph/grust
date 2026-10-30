@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T16:51:51.068075+00:00. Live coordination read through **CF-0141**.
+Snapshot written 2026-10-30T16:55:39.743927+00:00. Live coordination read through **CF-0143**.
 Re-read the live channel and Git/process state before acting; later entries supersede
 this snapshot. The original [six-unit handoff](codex-fable-handoff.md) supplies initial scope.
 
@@ -49,7 +49,7 @@ consumer167d577c6.
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
 | Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `b90c4fbbef8ed16dc59f2348898852e78e71d798` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `73f50105714b801f4859315dd807661984b752ce` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `1ade7122d3067f484833fa355ac536827fcd8c68` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | local preparation candidate `b90c4fbbe` (ScopedSession gates terminal/passed) |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `ebf631edd3b41b288a2c4d899a7a82dd658582e1` (binding offered/unintegrated CF-0139) |
@@ -194,7 +194,10 @@ caller migration. Typed primary/cleanup transport, byte/outcome/recovery remain 
 
 Fable component1 ebf631edd is offered/unintegrated. CF-0140 [source review](docs/sail-declarative-pipelines/evidence/fable-binding-source-review/README.md)
 finds ignored expression subqueries before resolution and asks for CTE shadowing
-and duplicate binding fixes; no independent runtime verdict yet. Pure unit4 scope
+and duplicate binding fixes. [Independent validator probe](docs/sail-declarative-pipelines/evidence/fable-binding-expression-review/README.md)
+3e6ca3c34 compiles and fails both scalar/EXISTS fixtures as expected. CF-0142
+acknowledges correction; CF-0143 sends exact replay fixtures. No provider/RPC claim.
+Session55876 is terminal; gate restored to b90. Pure unit4 scope
 is approved on its existing branch. Mixed read modes are an incomplete first-unit
 restriction with a required follow-up; full Spark behavior is still the target.
 No shared runtime/source async/sealed-authority change approved by that scope.

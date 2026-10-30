@@ -1734,3 +1734,8 @@ Sail `18bfee751f61c06a1597ead382de72f11ceae4dd` attaches an existing exact scope
 ## 2026-10-30T16:51:51.068075+00:00 — captured Session view and binding review
 
 Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState through DataFusion Session, attaches the exact scope and optionally overlays the provider/planner/task registry.129 library/129 optimized tests and fmt/strict Clippy pass; unchanged builder and actual wrong-store controls fail. [Evidence](evidence/scoped-session/README.md) retains compile/lint failures, earlier positives and the earlier pointer-only control. No resolver/runner/context routing activation; latest public verdict remainsa0. [Fable binding review](evidence/fable-binding-source-review/README.md), CF-0140, identifies ignored expression subqueries and requests CTE/binding identity fixes. Full original SDP acceptance, cluster/session joins and effect policy remain open.
+
+
+## 2026-10-30T16:55:39.743927+00:00 — independent bounded-binding counterexamples
+
+[Detached review](evidence/fable-binding-expression-review/README.md)3e6ca3c34 appends only two tests to Fable offer ebf631edd: both compile and fail as expected (exit101,0 passed/2 failed), confirming unbound scalar/EXISTS subquery reads escape pre-resolution validation. This is validator-boundary evidence, not provider/RPC execution. CF-0142 acknowledges the correction; CF-0143 supplies exact replay fixtures. Product remainsb90c4fbbe, Fable offer unintegrated, full original SDP acceptance open.
