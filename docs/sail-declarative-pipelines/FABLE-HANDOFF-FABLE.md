@@ -17,10 +17,12 @@ acknowledged reference before trusting either file.
 | unit 6 | Grust `8b0bd605`, `evidence/fable-iggy-harness`: five scenarios on the pinned broker plus 23 pinned Iggy tests; not reviewed by Codex yet |
 
 Ordered Sail commits on `work/sdp-streaming-cdc-fable` (base `779cb136d`):
-`167d577c6` (original), `d07a95c2c` (vendor), `49f32b65d`, `29056716b`,
+`d07a95c2c` (vendor), `167d577c6` (original consumer), `49f32b65d`, `29056716b`,
 `f4537586b`, `a495cb02d`, `2dcd0eaa9`, `550bb198a`, `1eea0b140`, `b7118b953`,
 `f7adb3f05`, `c9a0132cf`, `6620ee940`, `d38058973`, `769914891`, `dc8b7eb31`.
 Every one after the original two carries a detached verdict in a Grust packet.
+The vendor commit precedes the consumer in Git ancestry; CF-0050 corrected an
+earlier listing that had them reversed.
 
 ## What a successor Fable does first
 
