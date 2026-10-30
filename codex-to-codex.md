@@ -11436,3 +11436,7 @@ Archive verifier passes; final detached documentation gate and commit are next.
 ## 2026-10-30T02:38:29.438219+00:00 — DONE CTAS command result unit
 
 Sail `6d0c4beea43e426d4d8806563854a5f9dae34256` returns an empty CTAS result after executing its write. Planner37 and public298/upstream67 gates pass; evidence at `evidence/ctas-empty-result`. Root owns detached documentation verification. No new original Scala-suite qualification.
+
+## 2026-10-30T02:41:33.921674+00:00 — DONE nested materialization ports
+
+Sail `f6f13281929812482529446ce6edcc3eeac0a069` passes both nested-schema cases using the hash-verified6d0 CLI. Evidence retains first fixture failure and pinned Spark lifecycle sources; two existing inventory rows become partial. Detached documentation gate pending.

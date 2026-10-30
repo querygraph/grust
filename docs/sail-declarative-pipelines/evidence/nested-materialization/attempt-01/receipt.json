@@ -1,0 +1,30 @@
+{
+  "commit": "c3313ce7cbe13ff16062c80d4edc692108150239",
+  "started": "2026-10-30T02:39:45.293736+00:00",
+  "checks": [
+    {
+      "name": "pytest",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "python/pysail/tests/spark/pipelines/test_nested_materialization.py",
+        "--junitxml=/tmp/sail-sdp-nested-public/pytest.xml"
+      ],
+      "exit_code": 1,
+      "sha256": "1d081e72f4dc5f8a8793dd3851a26e83bfe7b2767043b2d6bc8f75cddc827399"
+    }
+  ],
+  "reused_cli_from": "6d0c4beea43e426d4d8806563854a5f9dae34256",
+  "changed_paths": [
+    "python/pysail/tests/spark/pipelines/test_nested_materialization.py"
+  ],
+  "cli_sha256": "9761eb1ff7c17422bc663682cb3ff6fbe66f684e739bc18a9fc032476fad56fc",
+  "server_pid": 22241,
+  "outcome": "failed",
+  "error": "Traceback (most recent call last):\n  File \"/tmp/sail-sdp-nested-public.py\", line 37, in <module>\n    run('pytest',[py,'-m','pytest','-q',*nodes,'--junitxml='+str(out/'pytest.xml')],env)\n  File \"/tmp/sail-sdp-nested-public.py\", line 17, in run\n    r['checks'].append({'name':name,'command':command,'exit_code':p.returncode,'sha256':sha(out/(name+'.log'))}); assert p.returncode==0,name\n                                                                                                                         ^^^^^^^^^^^^^^^\nAssertionError: pytest\n",
+  "server_exit": 0,
+  "remaining_owners": [],
+  "finished": "2026-10-30T02:39:51.164059+00:00"
+}

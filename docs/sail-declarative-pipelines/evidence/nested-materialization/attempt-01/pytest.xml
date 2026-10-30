@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.630" timestamp="2026-10-29T19:39:50.195237-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_nested_materialization" name="test_nested_table_schemas_after_two_materializations[arrays-and-maps]" time="0.346"><failure message="pyspark.errors.exceptions.connect.UnknownException: (org.apache.spark.SparkIllegalStateException) [SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH] Spark Connect encountered an illegal state condition. Pipeline execution for graph ID dee2f724-a622-4530-96f2-9d6f367881b8 already exists. Stop the existing execution before starting a new one.">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1175354f0&gt;
+pipeline = ('dee2f724-a622-4530-96f2-9d6f367881b8', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117476600&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x117558360&gt;)
+nested = False
+
+    @pytest.mark.parametrize("nested", [False, True], ids=["arrays-and-maps", "nested-arrays-and-maps"])
+    def test_nested_table_schemas_after_two_materializations(pipeline_spark, pipeline, nested):
+        _, registry, run = pipeline
+        if nested:
+            a_query = "select map(0, map(0, struct('a', 'b'))) m"
+            b_query = "select array(array('a', 'b', 'c'), array('d', 'e', 'f')) arr"
+            c_query = "select * from a join b where m[0][0].col1 = arr[0][0]"
+            a_ddl = "m MAP&lt;int, MAP&lt;int, struct&lt;col1: string, col2: string&gt;&gt;&gt;"
+            b_ddl = "arr ARRAY&lt;ARRAY&lt;string&gt;&gt;"
+        else:
+            a_query = "select map(1, struct('a', 'b')) m"
+            b_query = None
+            c_query = "select * from a join b where map_entries(m)[0].key = arr[0]"
+            a_ddl = "m MAP&lt;int, struct&lt;col1: string, col2: string&gt;&gt;"
+            b_ddl = "arr ARRAY&lt;int&gt;"
+    
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="a")(lambda: pipeline_spark.sql(a_query))
+            if nested:
+                dp.materialized_view(name="b")(lambda: pipeline_spark.sql(b_query))
+            else:
+                dp.materialized_view(name="b")(
+                    lambda: pipeline_spark.createDataFrame([([1, 3, 5],), ([2, 4, 6],)], "arr ARRAY&lt;int&gt;")
+                )
+            dp.materialized_view(name="c")(lambda: pipeline_spark.sql(c_query))
+    
+        run()
+&gt;       run()
+
+python/pysail/tests/spark/pipelines/test_nested_materialization.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x117535850&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[SPARK_CONNECT_ILLEGA...graph ID dee2f724-a622-4530-96f2-9d6f367881b8 already exists. Stop the existing execution before starting a new one."
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnknownException: (org.apache.spark.SparkIllegalStateException) [SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH] Spark Connect encountered an illegal state condition. Pipeline execution for graph ID dee2f724-a622-4530-96f2-9d6f367881b8 already exists. Stop the existing execution before starting a new one.
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnknownException</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_nested_materialization" name="test_nested_table_schemas_after_two_materializations[nested-arrays-and-maps]" time="0.107"><failure message="pyspark.errors.exceptions.connect.UnknownException: (org.apache.spark.SparkIllegalStateException) [SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH] Spark Connect encountered an illegal state condition. Pipeline execution for graph ID 34470dcf-3f10-4d45-b192-1e5ef01a4eb1 already exists. Stop the existing execution before starting a new one.">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11723e5a0&gt;
+pipeline = ('34470dcf-3f10-4d45-b192-1e5ef01a4eb1', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11763dc70&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11770c2c0&gt;)
+nested = True
+
+    @pytest.mark.parametrize("nested", [False, True], ids=["arrays-and-maps", "nested-arrays-and-maps"])
+    def test_nested_table_schemas_after_two_materializations(pipeline_spark, pipeline, nested):
+        _, registry, run = pipeline
+        if nested:
+            a_query = "select map(0, map(0, struct('a', 'b'))) m"
+            b_query = "select array(array('a', 'b', 'c'), array('d', 'e', 'f')) arr"
+            c_query = "select * from a join b where m[0][0].col1 = arr[0][0]"
+            a_ddl = "m MAP&lt;int, MAP&lt;int, struct&lt;col1: string, col2: string&gt;&gt;&gt;"
+            b_ddl = "arr ARRAY&lt;ARRAY&lt;string&gt;&gt;"
+        else:
+            a_query = "select map(1, struct('a', 'b')) m"
+            b_query = None
+            c_query = "select * from a join b where map_entries(m)[0].key = arr[0]"
+            a_ddl = "m MAP&lt;int, struct&lt;col1: string, col2: string&gt;&gt;"
+            b_ddl = "arr ARRAY&lt;int&gt;"
+    
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="a")(lambda: pipeline_spark.sql(a_query))
+            if nested:
+                dp.materialized_view(name="b")(lambda: pipeline_spark.sql(b_query))
+            else:
+                dp.materialized_view(name="b")(
+                    lambda: pipeline_spark.createDataFrame([([1, 3, 5],), ([2, 4, 6],)], "arr ARRAY&lt;int&gt;")
+                )
+            dp.materialized_view(name="c")(lambda: pipeline_spark.sql(c_query))
+    
+        run()
+&gt;       run()
+
+python/pysail/tests/spark/pipelines/test_nested_materialization.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x11723e600&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[SPARK_CONNECT_ILLEGA...graph ID 34470dcf-3f10-4d45-b192-1e5ef01a4eb1 already exists. Stop the existing execution before starting a new one."
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnknownException: (org.apache.spark.SparkIllegalStateException) [SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH] Spark Connect encountered an illegal state condition. Pipeline execution for graph ID 34470dcf-3f10-4d45-b192-1e5ef01a4eb1 already exists. Stop the existing execution before starting a new one.
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnknownException</failure></testcase></testsuite></testsuites>

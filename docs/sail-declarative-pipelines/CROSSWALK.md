@@ -152,3 +152,7 @@ The inventory remains 462 static registrations, 97 audited and 59 partial ports:
 this strengthens an already mapped case and does not establish original Scala
 execution. Four paired Spark 4.2.1 CTE cases support the shared classifier fix;
 277 selected Python and 67 upstream executions pass on the new CLI.
+
+## Repeated nested materialization schema ports
+
+Recorded 2026-10-30T02:41:33.921674+00:00. [Sail `f6f1328192`](evidence/nested-materialization/README.md) passes two partial ports of MaterializeTablesSuite735/780, preserving six exact nested schemas after two catalog-output refreshes. The original internal fixture remains distinct from fresh public Connect graphs; the failed same-graph attempt is retained. The existing462 registrations now include61 partial ports; no original Scala-suite execution is claimed.

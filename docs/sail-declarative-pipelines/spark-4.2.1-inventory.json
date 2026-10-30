@@ -3437,13 +3437,15 @@
       "line": 735,
       "method": "test",
       "name_expression": "\"tables with arrays and maps\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_nested_materialization.py::test_nested_table_schemas_after_two_materializations[arrays-and-maps]"
+      ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "",
-        "remaining_assertions": "MAP of STRUCT, ARRAY and joined output schemas must match after two materializations; dedicated multi-table fixture unported.",
-        "sail_evidence": null,
+        "covered_assertions": "Three original DDL output schemas match after two public MV refreshes of the same catalog tables, with the original nested expressions and typed array input.",
+        "remaining_assertions": "Original internal registerTable/materializeGraph and CatalogV2 column assertions remain unexecuted. Public refreshes require separate Connect graph executions; DataFrame schema assertions do not qualify all internal catalog metadata.",
+        "sail_evidence": "evidence/nested-materialization/public/pytest.xml",
         "scala_suite_executed": false,
         "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
       }
@@ -3454,13 +3456,15 @@
       "line": 780,
       "method": "test",
       "name_expression": "\"tables with nested arrays and maps\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_nested_materialization.py::test_nested_table_schemas_after_two_materializations[nested-arrays-and-maps]"
+      ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "",
-        "remaining_assertions": "Nested MAP/MAP/STRUCT and ARRAY/ARRAY plus joined output exact schemas across two materializations are unported.",
-        "sail_evidence": null,
+        "covered_assertions": "Three original DDL output schemas match after two public MV refreshes of the same catalog tables, with the original nested expressions and typed array input.",
+        "remaining_assertions": "Original internal registerTable/materializeGraph and CatalogV2 column assertions remain unexecuted. Public refreshes require separate Connect graph executions; DataFrame schema assertions do not qualify all internal catalog metadata.",
+        "sail_evidence": "evidence/nested-materialization/public/pytest.xml",
         "scala_suite_executed": false,
         "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
       }
