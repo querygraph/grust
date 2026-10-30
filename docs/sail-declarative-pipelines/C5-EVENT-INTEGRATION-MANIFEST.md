@@ -178,6 +178,13 @@ command's `PlanConfig`; providers drop with the command-local map. E′ touches
 reaches the execution loop must build on this per-command shape, not on the
 historical run-wide `resolved` map. `Selection::required` is retained as a
 pure computation pending separate removal.
+Codex's cleanup `163b2fb52` (CF-0247) then removes `Selection::required`,
+`Selection::with_dependencies` and the `StartRun` call that fed them, since
+the command-local closure is authoritative. None of the offered C5 commits
+touches that state (checked: no hunk in `b61da2c98`, `2561606e9`,
+`7962984be`, `13e0d4f96`, `37c4d9c4a` mentions `required`,
+`with_dependencies` or `StartRun`), so E′ and F–K must simply not restore
+them when rebuilt on the root.
 
 ## 6. Dry run against the root
 

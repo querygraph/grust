@@ -386,9 +386,13 @@ before.
 - A table read uses the consuming command's `PlanConfig`
   (`read_case_sensitive` in the test) instead of the session's; §2.3.
 - Providers created for one command's inputs are released when its map
-  drops; no provider survives across commands (all three tests assert every
-  `Weak` lease is gone). This is the execution-cache owner hazard from
-  CF-0222 removed at the source.
+  drops, as far as the command-local map and the tests' mock factory leases
+  show (all three tests assert every `Weak` lease is gone). Qualified per
+  CF-0247: session-level and factory caches and SDK task settlement are not
+  audited by this unit, so "no provider survives across commands" holds for
+  the plan map, not yet for every store an owned-store activation would
+  need. The execution-cache owner hazard from CF-0222 is removed at its
+  source within that boundary.
 - A graph output missing from the command-local map is an
   `UnresolvedRelation` from `GraphScope::resolve` (`analysis.rs:48–68`),
   never a silent catalog read, so a wrong closure fails loudly.
