@@ -1499,3 +1499,7 @@ Recorded 2026-10-30T02:38:29.438219+00:00. [Sail `6d0c4beea4`](evidence/ctas-emp
 ## Repeated nested materialization schema ports
 
 Recorded 2026-10-30T02:41:33.921674+00:00. [Sail `f6f1328192`](evidence/nested-materialization/README.md) passes two partial ports of MaterializeTablesSuite735/780, preserving six exact nested schemas after two catalog-output refreshes. The original internal fixture remains distinct from fresh public Connect graphs; the failed same-graph attempt is retained. The existing462 registrations now include61 partial ports; no original Scala-suite execution is claimed.
+
+## ORC writer implementation checkpoint
+
+Recorded 2026-10-30T02:45:28.587570+00:00. The [writer checkpoint](ORC-WRITER-DESIGN.md) audits exact native and Sail sink boundaries and defines W0–W7 review units. Builder validation before output is the first settled dependency change. Async abort ownership and actual byte accounting remain explicit design prerequisites for the sink; existing stripe-size estimates and generic upload wrappers do not prove those properties. Source evidence is archived; no new writer runtime or SDP pass is claimed.

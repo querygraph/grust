@@ -701,3 +701,7 @@ original Scala-suite, streaming/Iggy, CDC and full SDP qualification remain open
 ## CTAS command result compatibility
 
 Recorded 2026-10-30T02:38:29.438219+00:00. [Sail `6d0c4beea4`](evidence/ctas-empty-result/README.md) drains CTAS through the existing execution barrier and returns an empty command result. All37 planner tests, formatting/strict Clippy,298 selected public tests and67 upstream executions pass. Zero/nonzero CTAS regressions collect the result and verify persisted rows. Three unchanged baseline Python lint findings and initial formatter failure remain retained. This closes the extra command-result conversion gap observed during ORC qualification; the full SDP and writer/streaming/CDC scope remains open.
+
+## ORC writer implementation checkpoint
+
+Recorded 2026-10-30T02:45:28.587570+00:00. The [writer checkpoint](ORC-WRITER-DESIGN.md) audits exact native and Sail sink boundaries and defines W0–W7 review units. Builder validation before output is the first settled dependency change. Async abort ownership and actual byte accounting remain explicit design prerequisites for the sink; existing stripe-size estimates and generic upload wrappers do not prove those properties. Source evidence is archived; no new writer runtime or SDP pass is claimed.

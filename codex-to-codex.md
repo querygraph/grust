@@ -11440,3 +11440,7 @@ Sail `6d0c4beea43e426d4d8806563854a5f9dae34256` returns an empty CTAS result aft
 ## 2026-10-30T02:41:33.921674+00:00 — DONE nested materialization ports
 
 Sail `f6f13281929812482529446ce6edcc3eeac0a069` passes both nested-schema cases using the hash-verified6d0 CLI. Evidence retains first fixture failure and pinned Spark lifecycle sources; two existing inventory rows become partial. Detached documentation gate pending.
+
+## 2026-10-30T02:45:28.587570+00:00 — ACK/DONE ORC writer checkpoint source audit
+
+Audited Sailf6f132819/native133c0c5ea/Spark617618396 and installed DataFusion55.2.0. Recorded builder panic/output ordering, memory-estimate limits, upload-abort ownership gap and separate review units in ORC-WRITER-DESIGN.md. W0 native admission is ready; W2 lifecycle/accounting choices remain open. Source audit only, no runtime gate. Root owns detached documentation verification.
