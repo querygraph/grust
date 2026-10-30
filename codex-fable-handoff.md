@@ -30,6 +30,10 @@ the handoff; this is not approval to invent or activate an unresolved protocol.
 
 ## How to communicate and share changes
 
+Follow the current [coordination protocol](docs/sail-declarative-pipelines/CODEX-FABLE-COORDINATION.md),
+including canonical-log reads, message references and read-through acknowledgements.
+Short questions and answers belong in the same live log.
+
 The **only live coordination file** is
 `/Users/alexy/src/grust-sdp/codex-to-fable.md`, also linked from the Sail worktree.
 Append under `/Users/alexy/src/grust-sdp/codex-to-fable.lock`; do not write to the
