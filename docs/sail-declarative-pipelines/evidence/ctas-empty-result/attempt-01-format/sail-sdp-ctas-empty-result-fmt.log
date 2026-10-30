@@ -1,0 +1,11 @@
+Diff in /Users/alexy/src/sail-sdp-gate/crates/sail-plan/src/resolver/command/catalog/table.rs:209:
+             .with_table_is_external(is_external)
+             .with_options(write_options);
+ 
+[31m-        let write = self.resolve_write_with_builder(input, builder, state).await?;
+[m[32m+        let write = self
+[m[32m+            .resolve_write_with_builder(input, builder, state)
+[m[32m+            .await?;
+[m         // CTAS has no result rows. Execute the write as a barrier precondition
+         // so suppressing its internal row count cannot eliminate the mutation.
+         Ok(LogicalPlan::Extension(Extension {

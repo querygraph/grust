@@ -1,0 +1,69 @@
+commit 6d0c4beea43e426d4d8806563854a5f9dae34256
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 19:34:32 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 19:34:32 2026 -0700
+
+    fix: return an empty result after executing CTAS
+
+diff --git a/crates/sail-plan/src/resolver/command/catalog/table.rs b/crates/sail-plan/src/resolver/command/catalog/table.rs
+index 4590ec960..8d0edbe3d 100644
+--- a/crates/sail-plan/src/resolver/command/catalog/table.rs
++++ b/crates/sail-plan/src/resolver/command/catalog/table.rs
+@@ -1,4 +1,7 @@
+-use datafusion_expr::LogicalPlan;
++use std::sync::Arc;
++
++use datafusion_common::DFSchema;
++use datafusion_expr::{EmptyRelation, Extension, LogicalPlan};
+ use sail_catalog::command::CatalogCommand;
+ use sail_catalog::manager::CatalogManager;
+ use sail_catalog::provider::{
+@@ -11,6 +14,7 @@ use sail_common_datafusion::catalog::{
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_common_datafusion::rename::logical_plan::rename_logical_plan;
+ use sail_common_datafusion::utils::items::ItemTaker;
++use sail_logical_plan::barrier::BarrierNode;
+ 
+ use crate::error::{PlanError, PlanResult};
+ use crate::resolver::PlanResolver;
+@@ -205,7 +209,20 @@ impl PlanResolver<'_> {
+             .with_table_is_external(is_external)
+             .with_options(write_options);
+ 
+-        self.resolve_write_with_builder(input, builder, state).await
++        let write = self
++            .resolve_write_with_builder(input, builder, state)
++            .await?;
++        // CTAS has no result rows. Execute the write as a barrier precondition
++        // so suppressing its internal row count cannot eliminate the mutation.
++        Ok(LogicalPlan::Extension(Extension {
++            node: Arc::new(BarrierNode::new(
++                vec![Arc::new(write)],
++                Arc::new(LogicalPlan::EmptyRelation(EmptyRelation {
++                    produce_one_row: false,
++                    schema: Arc::new(DFSchema::empty()),
++                })),
++            )),
++        }))
+     }
+ 
+     pub(in super::super) async fn resolve_default_table_location(
+diff --git a/python/pysail/tests/spark/dml/test_write_table.py b/python/pysail/tests/spark/dml/test_write_table.py
+index 1d4868813..64968b9c2 100644
+--- a/python/pysail/tests/spark/dml/test_write_table.py
++++ b/python/pysail/tests/spark/dml/test_write_table.py
+@@ -396,3 +396,13 @@ def test_append_matches_mixed_case_columns_by_name(spark, tmp_path, table_format
+     actual = spark.sql("SELECT * FROM t2").toPandas()
+     expected = pd.DataFrame({"ColumnOne": ["col_one"], "ColumnTwo": ["col_two"]})
+     assert_frame_equal(actual, expected)
++
++
++@pytest.mark.parametrize("row_count", [0, 3])
++def test_ctas_collect_returns_empty_result_after_writing(spark, tmp_path, row_count):
++    location = escape_sql_string_literal(str(tmp_path / "ctas_result"))
++    result = spark.sql(f"CREATE TABLE t2 USING parquet LOCATION '{location}' AS SELECT * FROM RANGE({row_count})")
++    assert result.columns == []
++    assert result.collect() == []
++    assert spark.table("t2").columns == ["id"]
++    assert [row.id for row in spark.table("t2").orderBy("id").collect()] == list(range(row_count))

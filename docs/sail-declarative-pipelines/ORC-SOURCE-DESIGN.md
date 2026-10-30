@@ -697,3 +697,7 @@ UInt64 conversion gap and remains recorded. CREATE-time schema persistence and
 ORC writing remain open. The writer design checkpoint has been announced.
 Canonical coverage stays 462 registrations, 97 reviewed and 59 partial ports;
 original Scala-suite, streaming/Iggy, CDC and full SDP qualification remain open.
+
+## CTAS command result compatibility
+
+Recorded 2026-10-30T02:38:29.438219+00:00. [Sail `6d0c4beea4`](evidence/ctas-empty-result/README.md) drains CTAS through the existing execution barrier and returns an empty command result. All37 planner tests, formatting/strict Clippy,298 selected public tests and67 upstream executions pass. Zero/nonzero CTAS regressions collect the result and verify persisted rows. Three unchanged baseline Python lint findings and initial formatter failure remain retained. This closes the extra command-result conversion gap observed during ORC qualification; the full SDP and writer/streaming/CDC scope remains open.

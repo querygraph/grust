@@ -1,0 +1,1 @@
+Both base and candidate have the same three pre-existing RUF100 unused-noqa findings. No new findings; formatting passes. Initial outside-tree baseline path caused an extra import-sorting diagnostic; corrected comparison supplies the same source filename via stdin for both versions. Original diagnostic outputs retained.
