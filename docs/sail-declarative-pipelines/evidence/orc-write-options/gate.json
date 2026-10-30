@@ -1,0 +1,69 @@
+{
+  "sail_commit": "168be3154b74b514afb95f27f02754b21fc2d2ed",
+  "base": "88a8ecfcb8ca070357ef1d28bba0db08e7d95ed3",
+  "packages": [
+    "sail-data-source",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-30T03:05:16.713158+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-orc-write-options-03-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-orc-write-options-03-clippy.log",
+      "sha256": "f7b37497323f7256e32d7364aedab0fd19cba546c1fd1304b20764efc520fcef"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-orc-write-options-03-rust.log",
+      "sha256": "4315bc532d5406f23f654d5a40f34e0a6f8b179b97d7a7ae4c470ed72e94c481"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T03:06:05.817836+00:00",
+  "outcome": "passed"
+}

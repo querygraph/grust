@@ -1,0 +1,102 @@
+{
+  "route": "Direct SQLConf API in installed Spark4.2.1 JVM classes; no Spark session or Connect server",
+  "source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "source_build_provenance_claim": false,
+  "commands": [
+    [
+      "/Library/Java/JavaVirtualMachines/jdk-20.jdk/Contents/Home/bin/javac",
+      "-cp",
+      "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/*",
+      "/tmp/sail-sdp-orc-write-config-reference/CompressionReference.java"
+    ],
+    [
+      "/Library/Java/JavaVirtualMachines/jdk-20.jdk/Contents/Home/bin/java",
+      "-Xmx256m",
+      "-cp",
+      "/tmp/sail-sdp-orc-write-config-reference:/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/*",
+      "CompressionReference",
+      "enN0ZA==",
+      "WmxJYg==",
+      "IHpzdGQg",
+      "AHpzdGQA",
+      "",
+      "Z3ppcA==",
+      "wqB6c3RkwqA=",
+      "bm9uZQ==",
+      "dW5jb21wcmVzc2Vk",
+      "bHpv",
+      "QlJPVExJ"
+    ]
+  ],
+  "cases": [
+    {
+      "value": "zstd",
+      "outcome": "accepted",
+      "effective": "zstd",
+      "stored": "zstd"
+    },
+    {
+      "value": "ZlIb",
+      "outcome": "accepted",
+      "effective": "zlib",
+      "stored": "ZlIb"
+    },
+    {
+      "value": " zstd ",
+      "outcome": "org.apache.spark.SparkIllegalArgumentException",
+      "effective": "snappy",
+      "stored": "snappy"
+    },
+    {
+      "value": "\u0000zstd\u0000",
+      "outcome": "org.apache.spark.SparkIllegalArgumentException",
+      "effective": "snappy",
+      "stored": "snappy"
+    },
+    {
+      "value": "",
+      "outcome": "org.apache.spark.SparkIllegalArgumentException",
+      "effective": "snappy",
+      "stored": "snappy"
+    },
+    {
+      "value": "gzip",
+      "outcome": "org.apache.spark.SparkIllegalArgumentException",
+      "effective": "snappy",
+      "stored": "snappy"
+    },
+    {
+      "value": "\u00a0zstd\u00a0",
+      "outcome": "org.apache.spark.SparkIllegalArgumentException",
+      "effective": "snappy",
+      "stored": "snappy"
+    },
+    {
+      "value": "none",
+      "outcome": "accepted",
+      "effective": "none",
+      "stored": "none"
+    },
+    {
+      "value": "uncompressed",
+      "outcome": "accepted",
+      "effective": "uncompressed",
+      "stored": "uncompressed"
+    },
+    {
+      "value": "lzo",
+      "outcome": "accepted",
+      "effective": "lzo",
+      "stored": "lzo"
+    },
+    {
+      "value": "BROTLI",
+      "outcome": "accepted",
+      "effective": "brotli",
+      "stored": "BROTLI"
+    }
+  ],
+  "jar_hashes": {
+    "spark-catalyst_2.13-4.2.1.jar": "714752a3b6b9745d3c22a6811f4842f3877fb5aca7c6df88f231cf0fa01c0167"
+  }
+}

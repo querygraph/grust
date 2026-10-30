@@ -1,0 +1,511 @@
+commit 168be3154b74b514afb95f27f02754b21fc2d2ed
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 20:05:16 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 20:05:16 2026 -0700
+
+    feat: capture ORC writer compression options in session snapshots
+
+diff --git a/crates/sail-data-source/build.rs b/crates/sail-data-source/build.rs
+index d6aa665b2..0cfdfb4a5 100644
+--- a/crates/sail-data-source/build.rs
++++ b/crates/sail-data-source/build.rs
+@@ -7,6 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
+     build_data_source_options("Json", "json")?;
+     build_data_source_options("Parquet", "parquet")?;
+     build_data_source_options("Orc", "orc")?;
++    build_data_source_options("OrcCompression", "orc_write")?;
+     build_data_source_options("OrcListing", "orc_listing")?;
+     build_data_source_options("Text", "text")?;
+     build_data_source_options("Socket", "socket")?;
+diff --git a/crates/sail-data-source/data/options/orc_write.yaml b/crates/sail-data-source/data/options/orc_write.yaml
+new file mode 100644
+index 000000000..99a24150f
+--- /dev/null
++++ b/crates/sail-data-source/data/options/orc_write.yaml
+@@ -0,0 +1,32 @@
++# Preserve raw values until codec-key precedence has been applied.
++- key: compression
++  description: Highest-priority ORC block compression option.
++  default:
++    value: ""
++    parser: crate::options::parsers::parse_optional_string
++  supported: true
++  rust_type: "Option<String>"
++  scopes: [write]
++  origins:
++    - type: option
++      keys: [compression]
++      parser: crate::options::parsers::parse_present_string
++    - type: table_property
++      keys: [option.compression]
++      parser: crate::options::parsers::parse_present_string
++
++- key: orc_compress
++  description: ORC compression fallback, below compression but above session defaults.
++  default:
++    value: ""
++    parser: crate::options::parsers::parse_optional_string
++  supported: true
++  rust_type: "Option<String>"
++  scopes: [write]
++  origins:
++    - type: option
++      keys: [orc.compress]
++      parser: crate::options::parsers::parse_present_string
++    - type: table_property
++      keys: [option.orc.compress]
++      parser: crate::options::parsers::parse_present_string
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index 800daf603..d52530e71 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -20,7 +20,7 @@ pub use requested_schema::OrcRequestedSchemaAdapter;
+ pub use schema::infer_schema as infer_orc_schema;
+ pub use source::OrcSource;
+ pub use timezone::OrcJavaTimeZoneConfig;
+-pub use write_options::OrcWriteCompression;
++pub use write_options::{OrcWriteCompression, OrcWriteConfig, OrcWriteSessionDefaults};
+ 
+ #[cfg(test)]
+ mod fixture_tests;
+diff --git a/crates/sail-data-source/src/formats/orc/write_options.rs b/crates/sail-data-source/src/formats/orc/write_options.rs
+index aa1bb59d3..963a84ea9 100644
+--- a/crates/sail-data-source/src/formats/orc/write_options.rs
++++ b/crates/sail-data-source/src/formats/orc/write_options.rs
+@@ -190,3 +190,121 @@ mod tests {
+         Ok(())
+     }
+ }
++
++/// Immutable defaults captured with the session state used to plan a write.
++#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
++pub struct OrcWriteSessionDefaults {
++    pub compression: OrcWriteCompression,
++}
++
++impl sail_common_datafusion::extension::SessionExtension for OrcWriteSessionDefaults {
++    fn name() -> &'static str {
++        "ORC write defaults"
++    }
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct OrcWriteConfig {
++    pub compression: OrcWriteCompression,
++}
++
++impl crate::options::ResolveOptions for OrcWriteConfig {
++    fn resolve(
++        ctx: &dyn datafusion::catalog::Session,
++        layers: Vec<sail_common_datafusion::datasource::OptionLayer>,
++    ) -> DataSourceResult<Self> {
++        use crate::options::{BuildPartialOptions, PartialOptions};
++        let mut partial = crate::options::r#gen::OrcCompressionWritePartialOptions::initialize();
++        for layer in layers {
++            partial.merge(layer.build_partial_options()?);
++        }
++        let raw = partial.finalize()?;
++        let defaults = ctx.config().get_extension::<OrcWriteSessionDefaults>();
++        let fallback = defaults.as_ref().map(|d| d.compression.orc_name());
++        Ok(Self {
++            compression: OrcWriteCompression::resolve(
++                raw.compression.as_deref(),
++                raw.orc_compress.as_deref(),
++                fallback,
++            )?,
++        })
++    }
++}
++
++#[cfg(test)]
++mod layer_tests {
++    use std::sync::Arc;
++
++    use datafusion::prelude::{SessionConfig, SessionContext};
++    use sail_common_datafusion::datasource::OptionLayer;
++
++    use super::*;
++    use crate::options::{ResolveOptions, option_list};
++
++    #[test]
++    fn generated_layers_merge_keys_before_selecting_codec() -> DataSourceResult<()> {
++        let ctx = SessionContext::new();
++        let table = OptionLayer::TablePropertyList {
++            items: vec![("OPTION.COMPRESSION".into(), "snappy".into())],
++        };
++        let config = OrcWriteConfig::resolve(
++            &ctx.state(),
++            vec![table.clone(), option_list(&[("ORC.COMPRESS", "invalid")])],
++        )?;
++        assert_eq!(config.compression, OrcWriteCompression::Snappy);
++        let config = OrcWriteConfig::resolve(
++            &ctx.state(),
++            vec![table, option_list(&[("Compression", "zlib")])],
++        )?;
++        assert_eq!(config.compression, OrcWriteCompression::Zlib);
++        let config = OrcWriteConfig::resolve(
++            &ctx.state(),
++            vec![
++                option_list(&[("orc.compress", "zlib")]),
++                option_list(&[("orc.compress", "lz4")]),
++            ],
++        )?;
++        assert_eq!(config.compression, OrcWriteCompression::Lz4);
++        Ok(())
++    }
++
++    #[test]
++    fn generated_layers_keep_explicit_empty_values_invalid() {
++        let ctx = SessionContext::new();
++        for layers in [
++            vec![option_list(&[
++                ("compression", ""),
++                ("orc.compress", "zstd"),
++            ])],
++            vec![OptionLayer::TablePropertyList {
++                items: vec![("option.orc.compress".into(), "".into())],
++            }],
++        ] {
++            assert!(OrcWriteConfig::resolve(&ctx.state(), layers).is_err());
++        }
++    }
++
++    #[test]
++    fn immutable_state_and_resolved_options_retain_session_defaults() -> DataSourceResult<()> {
++        let ctx = SessionContext::new_with_config(SessionConfig::new().with_extension(Arc::new(
++            OrcWriteSessionDefaults {
++                compression: OrcWriteCompression::Snappy,
++            },
++        )));
++        let old = ctx.state();
++        let captured = OrcWriteConfig::resolve(&old, vec![])?;
++        ctx.state_ref()
++            .write()
++            .config_mut()
++            .set_extension(Arc::new(OrcWriteSessionDefaults {
++                compression: OrcWriteCompression::Lz4,
++            }));
++        assert_eq!(
++            OrcWriteConfig::resolve(&ctx.state(), vec![])?.compression,
++            OrcWriteCompression::Lz4
++        );
++        assert_eq!(OrcWriteConfig::resolve(&old, vec![])?, captured);
++        assert_eq!(captured.compression, OrcWriteCompression::Snappy);
++        Ok(())
++    }
++}
+diff --git a/crates/sail-data-source/src/options/mod.rs b/crates/sail-data-source/src/options/mod.rs
+index 4dc5f1b4a..5aeb8e5c2 100644
+--- a/crates/sail-data-source/src/options/mod.rs
++++ b/crates/sail-data-source/src/options/mod.rs
+@@ -11,6 +11,7 @@ pub mod r#gen {
+     include!(concat!(env!("OUT_DIR"), "/options/console.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/parquet.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/orc.rs"));
++    include!(concat!(env!("OUT_DIR"), "/options/orc_write.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/orc_listing.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/csv.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/json.rs"));
+diff --git a/crates/sail-data-source/src/options/parsers.rs b/crates/sail-data-source/src/options/parsers.rs
+index 6d8a70eab..2ca2f188c 100644
+--- a/crates/sail-data-source/src/options/parsers.rs
++++ b/crates/sail-data-source/src/options/parsers.rs
+@@ -208,3 +208,8 @@ pub fn parse_optional_u64(key: &str, value: &str) -> DataSourceResult<Option<u64
+             cause: None,
+         })
+ }
++
++/// Preserve an explicitly supplied string, including empty option values.
++pub fn parse_present_string(_key: &str, value: &str) -> DataSourceResult<Option<String>> {
++    Ok(Some(value.to_string()))
++}
+diff --git a/crates/sail-spark-connect/src/config.rs b/crates/sail-spark-connect/src/config.rs
+index b53049c02..c3d2f3495 100644
+--- a/crates/sail-spark-connect/src/config.rs
++++ b/crates/sail-spark-connect/src/config.rs
+@@ -13,7 +13,7 @@ use crate::spark::config::{
+ use crate::spark::connect;
+ 
+ mod orc;
+-pub(crate) use orc::affects_orc_read_config;
++pub(crate) use orc::affects_orc_config;
+ 
+ #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd)]
+ pub struct ConfigKeyValue {
+@@ -153,6 +153,9 @@ impl SparkRuntimeConfig {
+         if key == SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA {
+             orc::parse_merge_schema(&value)?;
+         }
++        if key == orc::ORC_COMPRESSION {
++            orc::parse_write_compression(&value)?;
++        }
+         // Spark limits this setting to Int32; Sail accepts positive Int64 counts,
+         // matching its partitioning hints. Plan conversion checks the usize limit.
+         if key == SparkConfigKey::SPARK_SQL_SHUFFLE_PARTITIONS {
+diff --git a/crates/sail-spark-connect/src/config/orc.rs b/crates/sail-spark-connect/src/config/orc.rs
+index 2f3234115..fcfe292d6 100644
+--- a/crates/sail-spark-connect/src/config/orc.rs
++++ b/crates/sail-spark-connect/src/config/orc.rs
+@@ -1,18 +1,23 @@
+-use sail_data_source::formats::orc::{OrcListingSessionDefaults, OrcReadSessionModes};
++use sail_data_source::formats::orc::{
++    OrcListingSessionDefaults, OrcReadSessionModes, OrcWriteCompression, OrcWriteSessionDefaults,
++};
+ use sail_data_source::options::parsers::parse_spark_bool;
+ 
+ use super::SparkRuntimeConfig;
+ use crate::error::{SparkError, SparkResult};
+ use crate::spark::config::SparkConfigKey;
+ 
++pub(crate) const ORC_COMPRESSION: &str = "spark.sql.orc.compression.codec";
++
+ const FORCE_POSITIONAL_EVOLUTION: &str = "orc.force.positional.evolution";
+ 
+-pub(crate) fn affects_orc_read_config(key: &str) -> bool {
++pub(crate) fn affects_orc_config(key: &str) -> bool {
+     matches!(
+         key,
+         SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA
+             | SparkConfigKey::SPARK_SQL_ORC_IMPL
+             | FORCE_POSITIONAL_EVOLUTION
++            | ORC_COMPRESSION
+     )
+ }
+ 
+@@ -55,3 +60,20 @@ impl SparkRuntimeConfig {
+         Ok(OrcListingSessionDefaults { merge_schema })
+     }
+ }
++
++pub(super) fn parse_write_compression(value: &str) -> SparkResult<OrcWriteCompression> {
++    OrcWriteCompression::resolve(None, None, Some(value))
++        .map_err(|error| SparkError::invalid(error.to_string()))
++}
++
++impl SparkRuntimeConfig {
++    pub(crate) fn orc_write_defaults(&self) -> SparkResult<OrcWriteSessionDefaults> {
++        Ok(OrcWriteSessionDefaults {
++            compression: self
++                .get_option(ORC_COMPRESSION)
++                .map(parse_write_compression)
++                .transpose()?
++                .unwrap_or_default(),
++        })
++    }
++}
+diff --git a/crates/sail-spark-connect/src/service/config_manager.rs b/crates/sail-spark-connect/src/service/config_manager.rs
+index 93225fa06..f7e0fac9c 100644
+--- a/crates/sail-spark-connect/src/service/config_manager.rs
++++ b/crates/sail-spark-connect/src/service/config_manager.rs
+@@ -11,7 +11,7 @@ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_plan::resolver::PlanResolver;
+ use sail_sql_analyzer::parser::parse_native_config_value;
+ 
+-use crate::config::{ConfigKeyValue, affects_orc_read_config};
++use crate::config::{ConfigKeyValue, affects_orc_config};
+ use crate::error::{SparkError, SparkResult};
+ use crate::service::time_zone::is_valid_time_zone;
+ use crate::session::SparkSession;
+@@ -189,9 +189,9 @@ pub(crate) fn handle_config_set(
+         let key = SparkConfigKey::SPARK_SQL_SESSION_TIME_ZONE.to_string();
+         kv.iter().any(|pair| pair.key == key)
+     };
+-    let sets_orc_config = kv.iter().any(|pair| affects_orc_read_config(&pair.key));
++    let sets_orc_config = kv.iter().any(|pair| affects_orc_config(&pair.key));
+     if sets_orc_config {
+-        update_orc_read_config(ctx, &spark, || spark.set_config(kv))?;
++        update_orc_config(ctx, &spark, || spark.set_config(kv))?;
+     } else {
+         spark.set_config(kv)?;
+     }
+@@ -276,9 +276,9 @@ pub(crate) fn handle_config_unset(
+         let key = SparkConfigKey::SPARK_SQL_SESSION_TIME_ZONE.to_string();
+         keys.iter().any(|k| k == &key)
+     };
+-    let unsets_orc_config = keys.iter().any(|key| affects_orc_read_config(key));
++    let unsets_orc_config = keys.iter().any(|key| affects_orc_config(key));
+     if unsets_orc_config {
+-        update_orc_read_config(ctx, &spark, || spark.unset_config(keys))?;
++        update_orc_config(ctx, &spark, || spark.unset_config(keys))?;
+     } else {
+         spark.unset_config(keys)?;
+     }
+@@ -302,7 +302,7 @@ pub(crate) fn handle_config_unset(
+     })
+ }
+ 
+-fn update_orc_read_config(
++fn update_orc_config(
+     ctx: &SessionContext,
+     spark: &SparkSession,
+     update: impl FnOnce() -> SparkResult<()>,
+@@ -312,10 +312,11 @@ fn update_orc_read_config(
+     let state_ref = ctx.state_ref();
+     let mut state = state_ref.write();
+     let result = update();
+-    let config = spark.orc_read_config();
+-    if let Ok((defaults, modes)) = &config {
++    let config = spark.orc_config();
++    if let Ok((defaults, modes, write_defaults)) = &config {
+         state.config_mut().set_extension(Arc::new(*defaults));
+         state.config_mut().set_extension(Arc::new(modes.clone()));
++        state.config_mut().set_extension(Arc::new(*write_defaults));
+     }
+     // A multi-key request may have changed ORC before a later entry failed.
+     // Refresh the snapshot in that case and preserve the original error.
+diff --git a/crates/sail-spark-connect/src/session.rs b/crates/sail-spark-connect/src/session.rs
+index 903a537a1..f8161f81c 100644
+--- a/crates/sail-spark-connect/src/session.rs
++++ b/crates/sail-spark-connect/src/session.rs
+@@ -7,7 +7,9 @@ use datafusion::execution::SendableRecordBatchStream;
+ use datafusion::logical_expr::StringifiedPlan;
+ use sail_common::utils::datetime::get_system_timezone;
+ use sail_common_datafusion::extension::SessionExtension;
+-use sail_data_source::formats::orc::{OrcListingSessionDefaults, OrcReadSessionModes};
++use sail_data_source::formats::orc::{
++    OrcListingSessionDefaults, OrcReadSessionModes, OrcWriteSessionDefaults,
++};
+ use sail_plan::config::PlanConfig;
+ 
+ use crate::config::{ConfigKeyValue, SparkRuntimeConfig};
+@@ -89,13 +91,18 @@ impl SparkSession {
+         Ok(Arc::new(config))
+     }
+ 
+-    pub(crate) fn orc_read_config(
++    pub(crate) fn orc_config(
+         &self,
+-    ) -> SparkResult<(OrcListingSessionDefaults, OrcReadSessionModes)> {
++    ) -> SparkResult<(
++        OrcListingSessionDefaults,
++        OrcReadSessionModes,
++        OrcWriteSessionDefaults,
++    )> {
+         let state = self.state.lock()?;
+         Ok((
+             state.config.orc_listing_defaults()?,
+             state.config.orc_read_modes(),
++            state.config.orc_write_defaults()?,
+         ))
+     }
+ 
+diff --git a/crates/sail-spark-connect/src/session_manager.rs b/crates/sail-spark-connect/src/session_manager.rs
+index 2838ef865..1d4e493d0 100644
+--- a/crates/sail-spark-connect/src/session_manager.rs
++++ b/crates/sail-spark-connect/src/session_manager.rs
+@@ -89,12 +89,13 @@ fn spark_session_config(mut config: SessionConfig, spark: SparkSession) -> Resul
+             .session_timezone
+             .to_string(),
+     );
+-    let (orc_defaults, orc_modes) = spark
+-        .orc_read_config()
++    let (orc_defaults, orc_modes, orc_write_defaults) = spark
++        .orc_config()
+         .map_err(|e| internal_datafusion_err!("{e}"))?;
+     Ok(config
+         .with_extension(Arc::new(orc_defaults))
+         .with_extension(Arc::new(orc_modes))
++        .with_extension(Arc::new(orc_write_defaults))
+         .with_extension(Arc::new(spark)))
+ }
+ 
+diff --git a/crates/sail-spark-connect/src/session_manager/orc_options_tests.rs b/crates/sail-spark-connect/src/session_manager/orc_options_tests.rs
+index 1a0fae94c..3f29cc706 100644
+--- a/crates/sail-spark-connect/src/session_manager/orc_options_tests.rs
++++ b/crates/sail-spark-connect/src/session_manager/orc_options_tests.rs
+@@ -49,7 +49,7 @@ fn resolved(state: &SessionState) -> TestResult<OrcListingReadOptions> {
+ fn assert_effective(ctx: &SessionContext, expected: bool) -> TestResult {
+     assert_eq!(
+         ctx.extension::<SparkSession>()?
+-            .orc_read_config()?
++            .orc_config()?
+             .0
+             .merge_schema,
+         expected
+@@ -176,3 +176,85 @@ fn later_invalid_merge_value_keeps_the_earlier_partial_update() -> TestResult {
+     assert_effective(&ctx, false)?;
+     Ok(())
+ }
++
++const COMPRESSION: &str = "spark.sql.orc.compression.codec";
++
++fn write_compression(
++    state: &SessionState,
++) -> TestResult<sail_data_source::formats::orc::OrcWriteCompression> {
++    Ok(sail_data_source::formats::orc::OrcWriteConfig::resolve(state, vec![])?.compression)
++}
++
++#[test]
++fn write_defaults_follow_creation_set_unset_and_preserve_snapshots() -> TestResult {
++    use sail_data_source::formats::orc::OrcWriteCompression as Codec;
++    let spark = spark_session()?;
++    spark.set_config(vec![pair(COMPRESSION, "snappy").into()])?;
++    let ctx = SessionContext::new_with_config(spark_session_config(SessionConfig::new(), spark)?);
++    let old = ctx.state();
++    assert_eq!(write_compression(&old)?, Codec::Snappy);
++    handle_config_set(&ctx, vec![pair(COMPRESSION, "ZlIb")])?;
++    let enabled = ctx.state();
++    assert_eq!(write_compression(&enabled)?, Codec::Zlib);
++    handle_config_unset(&ctx, vec![COMPRESSION.into()])?;
++    assert_eq!(write_compression(&ctx.state())?, Codec::Zstd);
++    assert_eq!(write_compression(&old)?, Codec::Snappy);
++    assert_eq!(write_compression(&enabled)?, Codec::Zlib);
++    Ok(())
++}
++
++#[test]
++fn invalid_write_defaults_do_not_mutate_either_configuration() -> TestResult {
++    use sail_data_source::formats::orc::OrcWriteCompression as Codec;
++    let ctx = context()?;
++    handle_config_set(&ctx, vec![pair(COMPRESSION, "lz4")])?;
++    for value in ["", "gzip", " zstd ", "\0zstd\0", "\u{a0}zstd\u{a0}"] {
++        assert!(handle_config_set(&ctx, vec![pair(COMPRESSION, value)]).is_err());
++        assert_eq!(write_compression(&ctx.state())?, Codec::Lz4);
++        assert_eq!(
++            ctx.extension::<SparkSession>()?
++                .get_config(vec![COMPRESSION.into()])?[0]
++                .value
++                .as_deref(),
++            Some("lz4")
++        );
++    }
++    // Spark recognizes these even though Sail's encoder capability check rejects them.
++    for value in ["lzo", "brotli"] {
++        handle_config_set(&ctx, vec![pair(COMPRESSION, value)])?;
++        assert!(
++            write_compression(&ctx.state())?
++                .native_compression()
++                .is_err()
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn partial_write_config_updates_refresh_without_replacing_original_error() -> TestResult {
++    use sail_data_source::formats::orc::OrcWriteCompression as Codec;
++    for orc_first in [true, false] {
++        let ctx = context()?;
++        let write = pair(COMPRESSION, "snappy");
++        let invalid = pair(SHUFFLE, "0");
++        let pairs = if orc_first {
++            vec![write, invalid]
++        } else {
++            vec![invalid, write]
++        };
++        let error = handle_config_set(&ctx, pairs)
++            .err()
++            .ok_or("expected configuration failure")?;
++        assert!(error.to_string().contains("positive"));
++        assert_eq!(
++            write_compression(&ctx.state())?,
++            if orc_first {
++                Codec::Snappy
++            } else {
++                Codec::Zstd
++            }
++        );
++    }
++    Ok(())
++}

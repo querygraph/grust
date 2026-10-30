@@ -1511,3 +1511,7 @@ Recorded 2026-10-30T02:50:57.640372+00:00. [Native `41304b061d` and Sail `ce68e7
 ## Writer compression selection foundation
 
 Recorded 2026-10-30T02:56:38.637466+00:00. [Sail `88a8ecfcb8`](evidence/orc-write-compression/README.md) adds source-qualified codec naming, selection-before-validation and native capability checks. Four new tests verify precedence, invalid/unsupported distinctions and actual ORC footer codec kinds. All228 data-source tests and formatting/strict Clippy pass. This completes the codec component of W3; generated layers, session snapshot wiring and sink activation remain open. No new public SDP count is claimed.
+
+## Generated writer options and immutable defaults
+
+Recorded 2026-10-30T03:07:43.744292+00:00. [Sail `168be3154b`](evidence/orc-write-options/README.md) adds generated raw option layers and immutable write defaults captured atomically with read configuration. All231 data-source/73 Connect tests, formatting and strict Clippy pass under an explicit Spark4.2.1 Python environment. Eleven direct SQLConf cases confirm untrimmed string validation and rejected-value nonmutation. Earlier compile/fallback failures and same-binary control remain retained. Semantic preflight, graph/flow override application, sink/codec and public writer activation remain open.

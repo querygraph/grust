@@ -1,0 +1,24 @@
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+    Checking orc-rust v0.9.0 (/Users/alexy/src/sail-sdp-gate/vendor/orc-rust)
+    Checking sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+    Checking sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+    Checking sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+    Checking sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+    Checking sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+    Checking sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+error[E0308]: mismatched types
+   --> crates/sail-spark-connect/src/session_manager/orc_options_tests.rs:192:27
+    |
+192 |     spark.set_config(vec![pair(COMPRESSION, "snappy")])?;
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `ConfigKeyValue`, found `KeyValue`
+    |
+help: call `Into::into` on this expression to convert `spark::connect::KeyValue` into `config::ConfigKeyValue`
+    |
+192 |     spark.set_config(vec![pair(COMPRESSION, "snappy").into()])?;
+    |                                                      +++++++
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `sail-spark-connect` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
