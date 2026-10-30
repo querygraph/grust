@@ -577,3 +577,59 @@ baseline; the CTE, default-overlay and unused-input probes it lists are
 still needed before the seam is activated, and nothing here changes the
 bounded lowerer, which refuses helper-executing constructs pre-resolution
 and does not fuse confs.
+
+## 10. Shared expression-subquery traversal (CF-0261): `7a50f2875` on `744b16867`
+
+Files: new `sail-common/src/spec/subqueries.rs` (`Expr::visit_subqueries`,
+`Window::visit_subqueries`, `visit_exprs`, `visit_sort_orders`),
+`spec/subquery_tests.rs` (four tests), `spec/mod.rs`, and
+`pipelines/streaming/binding.rs` (−137 lines). Read only.
+
+**Traversal.** `Expr::visit_subqueries<'a, E>(&'a self, visitor: &mut impl
+FnMut(&'a QueryPlan) -> Result<(), E>)` matches every `spec::Expr` variant
+with no default arm: leaves return `Ok`, `UnresolvedStar` walks
+`replace_columns[*].expression` (unit 1's fix carried over), functions walk
+positional then named arguments then `filter` then `order_by`, `Window`
+walks the function then the window's cluster/partition/order expressions
+and the frame's `Preceding`/`Following`/`Value` boundaries, `InSubquery`
+walks the expression then calls the visitor, `ScalarSubquery` and `Exists`
+call the visitor, and `Subquery { in_subquery_values }` (a Connect plan-ID
+reference) walks only its values and leaves the referenced plan to the
+caller, as the Rustdoc says. Order is field order and list order; repeats
+are preserved; the first callback error stops the walk unchanged. The only
+`_ => {}` is over `WindowFrameBoundary`'s three non-expression kinds
+(`CurrentRow`, `UnboundedPreceding`, `UnboundedFollowing`,
+`spec/expression.rs:288–296`); enumerating them would make a future
+expression-bearing boundary a compile error instead of a silent skip. Minor.
+
+**Reimport.** The binder's `expr` and `window` now reduce to
+`expr.visit_subqueries(&mut |query| self.walk(query, cte_scope))` (and the
+window equivalent), so every embedded query is still walked as a plan under
+the enclosing CTE scope and every refusal inside it (`Tail`, `Stat*`, pivot
+inference, dynamic UDTF, unbound or mixed-mode reads) is reached as before.
+No classification semantics moved; 137 lines of duplicated expression
+matching left `binding.rs`.
+
+**Tests.** Order, repetition and pointer identity of visited queries; first
+error stops and is returned by identity; wildcard replacements and window
+bounds are expression children (visited in reverse-numbered order as
+constructed); query contents and plan-ID references stay the caller's.
+Codex's reversal control (two failing) confirms the order and error tests
+bite.
+
+**Findings.** None requiring change. Two notes for the seam this serves:
+
+- The traversal gives expression-embedded queries in Catalyst's within-node
+  order; the node-level order (expressions before inputs, `Join` condition
+  → left → right, `WithCtes` definitions then body) remains in the binder's
+  `walk`, so the fusion seam's ordered visitor must wrap both, not only this
+  helper.
+- CTE name matching is a parity point to settle before the seam declares
+  Spark order: Sail keys CTEs by exact `TableReference` and dedupes by exact
+  `spec::Identifier` (`resolver/state.rs:100`, `query/cte.rs:100–110`),
+  while Spark's `CTESubstitution` matches with `conf.resolver`, which is
+  case-insensitive unless `spark.sql.caseSensitive` is set, and checks name
+  conflicts (`CTESubstitution.scala`, pinned object `617618396`,
+  `assertNoNameConflictsInCTE`; Codex's `cte_case_insensitive_shadow` case).
+  As Codex says, this is a general resolver parity concern, not something to
+  copy silently into the new phase.
