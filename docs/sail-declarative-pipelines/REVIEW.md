@@ -1620,3 +1620,12 @@ Recorded 2026-10-30T07:31:50.165417+00:00. [Sail `34eb270d00`](evidence/checkpoi
 ## Retained PUT result ownership
 
 Recorded 2026-10-30T09:51:07.982628+00:00. [Sail `590fc2f9d3`](evidence/owned-put/README.md) adds TaskResourceScope.run and an owned PUT helper using existing admission/join machinery. All107 library tests,4 optimized tests under CPU load, fmt and strict Clippy pass. Lost callers do not abandon the admitted future; typed provider errors are shared with drainage. No dependencies change. Whole multipart lifetime, provider-error qualification, isolated routing and checkpoint/ORC/session integration remain open.
+
+
+## 2026-10-30T10:22:52.972054+00:00 — ROOT lowercase common integration
+
+Sail `cae618d7ff4661cb126333ad109f275b32bcad4b` imports the independently reviewed
+Fable common helper. All24 common library tests, fmt/strict Clippy and68,588 JVM
+corpus cases pass; missing/malformed explicit corpus controls fail as expected.
+[Exact component evidence](evidence/root-lowercase-integration/README.md). No CDC
+caller, streaming activation or dependency change; original-suite acceptance remains open.

@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-30T10:19:51.277027+00:00. Live coordination read through **CF-0054**.
+Snapshot written 2026-10-30T10:22:52.971406+00:00. Live coordination read through **CF-0056**.
 This is a living replacement-agent handoff, not a completion report. Re-read the
 live channel and Git/process state before acting; later entries supersede this
 snapshot. The original [six-unit handoff](codex-fable-handoff.md) remains useful
@@ -15,8 +15,8 @@ Do not redefine success as the currently passing helper or public selection.
 
 Substantial batch/SQL/catalog/ORC-read work and execution-ownership foundations
 are committed in Codex's Sail branch. Streaming/CDC components are offered in a
-parallel Fable branch; **none of that offered branch has been integrated into
-Codex's implementation branch yet**. Public ORC writing, complete session/cluster
+parallel Fable branch; **the common ROOT lowercase helper is integrated, while offered streaming/CDC
+modules remain unintegrated**. Public ORC writing, complete session/cluster
 cleanup, durable streaming/CDC effects and full original Scala-suite acceptance
 remain incomplete. Existing execution still rejects incremental/sink pipelines
 before writes. Keep that guard until the effect path is qualified.
@@ -44,10 +44,10 @@ consumer167d577c6.
    Then post a scoped ACK using the generated read-through reference.
 4. Inspect HEAD/status in every worktree you will touch; fetch the repositories.
    Preserve independently active checkouts, offered history and failed evidence.
-5. Current next work: integrate only the independently accepted JDK ROOT lowercase
-   utility as a small common-layer unit; no files have been imported yet. The
-   concrete recipe is below. Fable's CF-0054 source-contract proposal awaits an
-   explicit scoped response. Review C5/progress corrections separately. C0 remains
+5. The ROOT lowercase common utility is integrated at cae618d7f with its full
+   common gate and independent corpus replay. Fable has move-only lower source-
+   contract extraction approval in CF-0056; async API changes remain separate.
+   Review C5/progress corrections separately. C0 remains
    a user-notified Astra design checkpoint; do not select its authority implicitly.
 6. Continue useful independent work rather than waiting on intent or a file.
    Only call a wait verified when you poll an actual live process/session handle.
@@ -56,9 +56,9 @@ consumer167d577c6.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `590fc2f9d3cbd489d430d04af0cce0255a5b2da0` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `70b74065e51fd4efad977c36616a9ec571ff3c7c` |
-| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `590fc2f9d3` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `cae618d7ff4661cb126333ad109f275b32bcad4b` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e299c15557960e83d1bca4bce1877b481ffd851d` |
+| Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | last tested component candidate `cae618d7f` |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `71e4a94d910c7afa978eaf1cc98beccb5df92051` |
 | Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | `a0e5644b8e8e3ab90feeaafe7ac39c2993186b7b` |
@@ -193,7 +193,7 @@ and distributed effect joins, manager/transport shutdown, durable streaming cont
 Iggy integration, CDC preparation/effects/recovery and MERGE. Do not hide these
 behind a fail-closed guard or an unsupported result and call the goal achieved.
 
-## Offered Fable code: not integrated
+## Fable offers and integration state
 
 Fable's starting Sail base is `779cb136d988c759a381ea1ace6c2e7649e3dbbc`.
 Original offers: Grust1493d8a36 (columns kernel), Saild07a95c2c (vendor) and
@@ -208,7 +208,7 @@ consumer units during integration rather than blindly cherry-picking that defect
 | `29056716b` C3 | Sink rejection removed from graph validation; source phase correction accepted. |
 | `f4537586b` C2 | Original ROOT lowercase model. Rejected: 1,332 mismatches in 39,215 independent contexts. Preserve failed evidence. |
 | `a495cb02d` C4 | Caller-resolver kernel and Scala map-order adapter. 23,050 independent queries / 771 schemas match; 16 kernel tests, Clippy/fmt and exact vendor hashes pass. |
-| `2dcd0eaa9` | Corrected JDK word-break iterator. 68,588 independent contexts match, including all earlier failures; combined 23,050 lookups also match. Component blocker resolved; combined integration still pending. |
+| `2dcd0eaa9` | Corrected JDK word-break iterator. 68,588 independent contexts match, including all earlier failures; combined 23,050 lookups also match. Common helper integrated atcae618d7f; CDC consumers still pending. |
 | `550bb198a` C5 | First phase correction; rejected as incomplete global analysis-before-validation ordering. |
 | `1eea0b140` C6 | Construction-test rename, real PySpark-produced wire fixture, opt-in lookup replay. Full source/evidence review pending. |
 | `b7118b953` unit2a | Original-row validation before dedup; pure DataFusion component. Initial source reading performed, independent reference/edge review not finished. |
@@ -278,23 +278,23 @@ error conversion; Iggy SDK stays in its later adapter. Existing streaming::sourc
 StreamSource emits flow-event plans and has no bounded frontier/range contract;
 leave it intact.
 
-**Pending response, not approval:** Codex intends to authorize a move-only extraction
-and review async/error API changes separately. The current error model cannot
-represent transport/auth/provider uncertainty and describe is infallible. A network
-API needs typed provider errors with preserved causes and nonblocking calls. No
-actual scope approval has been appended yet; do not treat this handoff or a progress
-commentary as authorizing unit4/shared-runtime implementation.
+**CF-0056 scope approval:** Fable may implement the move-only extraction, preserving
+current method shapes and leaving existing StreamSource unchanged. No new dependency,
+SDK, feature activation or unit4 runtime changes. Async conversion is a separate
+proposal: the current error model cannot represent transport/auth/provider uncertainty
+and describe is infallible. Require preserved typed provider causes and nonblocking
+calls. Review the exact offered source and detached combined gate before integration.
 
-Next Codex code unit (planned, not started): take only root_lowercase.rs,
-root_lowercase_tables.rs and root_lowercase_oracle.json from immutable Sail71e4a94d9
-into sail-common/src/utils, adding a declaration to the existing mod.rs. Split tests
-into root_lowercase_tests.rs if useful for readability, preserving behavior and oracle
-path. Do not overwrite the existing mod.rs, import CDC callers or refactor unrelated
-string utilities. Preserve Fable provenance in the commit. No dependency/lock change
-is expected. Read optional_external_jvm_corpus's exact format before converting the
-68,588-case independent cases.json/java.stdout packet under fable-c2-corrected-review.
-Run that replay plus full common library/fmt/strict Clippy on an immutable detached
-candidate, then conditionally advance. This is not streaming/CDC activation.
+**Completed common unit:** Sail `cae618d7ff4661cb126333ad109f275b32bcad4b` imports
+root_lowercase.rs, tables and oracle from immutable71e4a94d9, adds its module declaration,
+and splits tests into root_lowercase_tests.rs. Production/table/oracle bytes match the
+offer; malformed/missing explicitly supplied corpora now fail. All24 common library
+tests, fmt, strict Clippy and a separate68,588-case replay pass; negative controls
+exit101 as expected. [Evidence](docs/sail-declarative-pipelines/evidence/root-lowercase-integration/README.md).
+No dependency/lock change or CDC caller. The full offered stack is still unintegrated.
+Next integration work: independently review C5/progress and assemble independently
+buildable vendor/definition/validation/dedup units, without removing execution guards
+or selecting C0. Continue whole multipart ownership work in the coordinator lane.
 
 ## Runtime and ORC work Codex must continue
 

@@ -1,0 +1,71 @@
+{
+  "sail_commit": "cae618d7ff4661cb126333ad109f275b32bcad4b",
+  "offered_source": "71e4a94d910c7afa978eaf1cc98beccb5df92051",
+  "started_at": "2026-10-30T10:22:08.730401+00:00",
+  "checks": [
+    {
+      "name": "valid-corpus",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common",
+        "--lib",
+        "--locked",
+        "optional_external_jvm_corpus_replays_against_the_helper",
+        "--",
+        "--nocapture"
+      ],
+      "corpus": "/tmp/sail-sdp-root-lowercase-integration-corpus.json",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "log": "/tmp/sail-sdp-root-lowercase-integration-extra/valid-corpus.log",
+      "sha256": "35fa184e5db7593ba0e2e248046796f9e3a53faf051759f951019e2009c476b2"
+    },
+    {
+      "name": "malformed-corpus",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common",
+        "--lib",
+        "--locked",
+        "optional_external_jvm_corpus_replays_against_the_helper",
+        "--",
+        "--nocapture"
+      ],
+      "corpus": "/tmp/sail-sdp-root-lowercase-integration-extra/malformed.json",
+      "expected_exit": 101,
+      "actual_exit": 101,
+      "log": "/tmp/sail-sdp-root-lowercase-integration-extra/malformed-corpus.log",
+      "sha256": "fdf6c6ff4925deb94ff81ec563d52251d84baf029051c69c1ac430931b5f3c92"
+    },
+    {
+      "name": "missing-corpus",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common",
+        "--lib",
+        "--locked",
+        "optional_external_jvm_corpus_replays_against_the_helper",
+        "--",
+        "--nocapture"
+      ],
+      "corpus": "/tmp/sail-sdp-root-lowercase-integration-extra/absent.json",
+      "expected_exit": 101,
+      "actual_exit": 101,
+      "log": "/tmp/sail-sdp-root-lowercase-integration-extra/missing-corpus.log",
+      "sha256": "f4ff4d197ff9ab6c9409a9b89912fdb580e7375a3f319095783144156c42288a"
+    }
+  ],
+  "corpus_sha256": "7d861e2652d1dc5925c2a1127e610a7a8e76bfcd54014fd94f2ff77a93726fc2",
+  "scope": "Exact common utility integration; no CDC caller or full SDP runtime claim",
+  "outcome": "passed",
+  "finished_at": "2026-10-30T10:22:11.136937+00:00"
+}
