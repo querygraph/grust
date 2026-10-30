@@ -1,0 +1,249 @@
+diff --git a/docs/sail-declarative-pipelines/CODEX-FABLE-COORDINATION.md b/docs/sail-declarative-pipelines/CODEX-FABLE-COORDINATION.md
+index 31f36c65..eaf4ddf4 100644
+--- a/docs/sail-declarative-pipelines/CODEX-FABLE-COORDINATION.md
++++ b/docs/sail-declarative-pipelines/CODEX-FABLE-COORDINATION.md
+@@ -82,6 +82,20 @@ fsyncs the append, then prints the allocated ID. Existing invocations remain val
+   --reply-to CF-0001 --seen-through CF-0001
+ ```
+ 
++Read with the same helper instead of a tail. `--since REFERENCE` prints every
++entry after the named one, verbatim and in order, from one snapshot taken under
++a shared lock, and changes nothing; an unknown reference is an error. Its last
++stderr line, `read-through: REFERENCE`, names the final entry in that snapshot
++and is the only value to cite as the next `Seen-Through`: an entry appended
++after the snapshot is not covered by it. Resume from the reference your last
++entry acknowledged. This exists because one agent read the last thirty lines
++after appending and missed an hour of review entries above them.
++
++```sh
++/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python \
++  /Users/alexy/src/grust-sdp/scripts/sdp-coordination-append.py --since CF-0001
++```
++
+ Use real existing references in place of the example. Repeat `--reply-to` for
+ multiple threads. Both agents may propose protocol improvements as a DECISION or
+ QUESTION entry. Codex commits snapshots of this canonical log; Fable continues
+diff --git a/scripts/sdp-coordination-append-tests.py b/scripts/sdp-coordination-append-tests.py
+index 98c4f680..23845805 100644
+--- a/scripts/sdp-coordination-append-tests.py
++++ b/scripts/sdp-coordination-append-tests.py
+@@ -1,6 +1,6 @@
+ """Isolated tests for the SDP append helper; never append to the canonical log."""
+ 
+-from contextlib import redirect_stdout
++from contextlib import redirect_stderr, redirect_stdout
+ from datetime import datetime, timezone
+ import fcntl
+ import importlib.util
+@@ -199,5 +199,95 @@ class AppendTests(unittest.TestCase):
+                 process.communicate(timeout=15)
+ 
+ 
++class ReadSinceTests(unittest.TestCase):
++    def setUp(self) -> None:
++        self.directory = TemporaryDirectory(prefix="sdp-coordination-read-test-")
++        self.addCleanup(self.directory.cleanup)
++        self.root = Path(self.directory.name)
++        self.log = self.root / "coordination.md"
++        self.log.write_text(LEGACY_ENTRY, encoding="utf-8")
++        self.first = APPENDER.append_message(self.log, "Codex", "first body\n")
++        self.second = APPENDER.append_message(
++            self.log, "Fable", "  second λ body  ", reply_to=(self.first,), seen_through=self.first
++        )
++
++    def test_entries_after_a_reference_are_returned_verbatim_and_in_order(self) -> None:
++        text = self.log.read_text(encoding="utf-8")
++        from_legacy, boundary = APPENDER.read_since(self.log, f"legacy:{LEGACY_TIMESTAMP}")
++        self.assertEqual(boundary, self.second)
++        self.assertTrue(text.endswith(from_legacy))
++        self.assertEqual([m["id"] for m in APPENDER.ENTRY_HEADER.finditer(from_legacy)], [self.first, self.second])
++        self.assertTrue(from_legacy.startswith("## "))
++        from_first, boundary = APPENDER.read_since(self.log, self.first)
++        self.assertEqual(boundary, self.second)
++        self.assertTrue(from_legacy.endswith(from_first))
++        self.assertIn(f"Message-ID: {self.second}\nReply-To: {self.first}\n", from_first)
++        self.assertTrue(from_first.endswith("  second λ body  \n"))
++        self.assertNotIn("first body", from_first)
++        self.assertEqual(APPENDER.read_since(self.log, self.second), ("", self.second))
++        # The boundary names the snapshot that was read, so a later append is outside it.
++        third = APPENDER.append_message(self.log, "Codex", "third")
++        self.assertEqual(APPENDER.read_since(self.log, self.second)[1], third)
++        self.assertEqual(APPENDER.read_since(self.log, self.first)[1], third)
++
++    def test_unknown_reference_is_rejected_and_nothing_is_written(self) -> None:
++        original = self.log.read_bytes()
++        for reference in ("CF-0003", "legacy:2026-10-30T03:45:11.972763Z", "", "CF-1"):
++            with (
++                self.subTest(reference=reference),
++                self.assertRaisesRegex(ValueError, "unknown coordination reference"),
++            ):
++                APPENDER.read_since(self.log, reference)
++        self.assertEqual(self.log.read_bytes(), original)
++
++    def test_reader_preserves_crlf_body_bytes(self) -> None:
++        body = "  third λ body\r\nsecond line\r\n"
++        third = APPENDER.append_message(self.log, "Codex", body)
++        original = self.log.read_bytes()
++        text, boundary = APPENDER.read_since(self.log, self.second)
++        self.assertEqual(boundary, third)
++        self.assertTrue(text.endswith(body))
++        self.assertTrue(original.endswith(text.encode("utf-8")))
++        self.assertEqual(self.log.read_bytes(), original)
++
++    def test_reader_accepts_timestamp_aliases_accepted_by_append(self) -> None:
++        entries = list(APPENDER.ENTRY_HEADER.finditer(self.log.read_text(encoding="utf-8")))
++        first_alias = f"legacy:{entries[-2]['timestamp']}"
++        last_alias = f"legacy:{entries[-1]['timestamp']}"
++        self.assertEqual(APPENDER.read_since(self.log, first_alias), APPENDER.read_since(self.log, self.first))
++        self.assertEqual(APPENDER.read_since(self.log, last_alias), ("", self.second))
++
++    def test_cli_since_prints_entries_without_appending_and_rejects_append_options(self) -> None:
++        original = self.log.read_bytes()
++        output = StringIO()
++        errors = StringIO()
++        argv = [str(SCRIPT), "--since", self.first]
++        with (
++            patch.object(APPENDER, "CANONICAL_LOG", self.log),
++            patch.object(sys, "argv", argv),
++            redirect_stdout(output),
++            redirect_stderr(errors),
++        ):
++            APPENDER.main()
++        self.assertEqual(output.getvalue(), APPENDER.read_since(self.log, self.first)[0])
++        self.assertEqual(errors.getvalue(), f"read-through: {self.second}\n")
++        self.assertEqual(self.log.read_bytes(), original)
++        for extra in (["--author", "Fable"], ["--seen-through", self.first], ["--seen-through", ""]):
++            with (
++                self.subTest(extra=extra),
++                patch.object(APPENDER, "CANONICAL_LOG", self.log),
++                patch.object(sys, "argv", argv + extra),
++                self.assertRaises(SystemExit),
++            ):
++                APPENDER.main()
++        with (
++            patch.object(APPENDER, "CANONICAL_LOG", self.log),
++            patch.object(sys, "argv", [str(SCRIPT)]),
++            self.assertRaises(SystemExit),
++        ):
++            APPENDER.main()
++        self.assertEqual(self.log.read_bytes(), original)
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/scripts/sdp-coordination-append.py b/scripts/sdp-coordination-append.py
+index 49796418..9f11ba91 100644
+--- a/scripts/sdp-coordination-append.py
++++ b/scripts/sdp-coordination-append.py
+@@ -1,4 +1,9 @@
+-"""Append to the one shared SDP coordination log under its persistent lockfile."""
++"""Append to, or read from, the one shared SDP coordination log under its persistent lockfile.
++
++Append: --author X --body-file F [--reply-to REF ...] [--seen-through REF].
++Read:   --since REF prints every entry after REF, so a reader resumes from the last
++acknowledged point instead of from an arbitrary tail.
++"""
+ 
+ import argparse
+ from collections.abc import Sequence
+@@ -7,6 +12,7 @@ import fcntl
+ import os
+ from pathlib import Path
+ import re
++import sys
+ 
+ 
+ CANONICAL_LOG = Path("/Users/alexy/src/grust-sdp/codex-to-fable.md")
+@@ -18,6 +24,43 @@ ENTRY_HEADER = re.compile(
+ )
+ 
+ 
++def entry_reference(entry: re.Match[str]) -> str | None:
++    """The reference other entries may cite: the Message-ID, else the legacy timestamp."""
++    try:
++        datetime.fromisoformat(entry["timestamp"])
++    except ValueError:
++        return None
++    return entry["id"] or f"legacy:{entry['timestamp']}"
++
++
++def entries_after(history: str, reference: str) -> tuple[str, str]:
++    """Every entry appended after the one carrying `reference`, verbatim and in order,
++    with the reference of the last entry returned: the boundary a reader may cite as
++    Seen-Through. Nothing new returns empty text and the entry's preferred reference."""
++    entries = list(ENTRY_HEADER.finditer(history))
++    for index, entry in enumerate(entries):
++        preferred = entry_reference(entry)
++        if preferred is not None and reference in (preferred, f"legacy:{entry['timestamp']}"):
++            later = [candidate for candidate in entries[index + 1 :] if entry_reference(candidate) is not None]
++            if not later:
++                return "", preferred
++            boundary = entry_reference(later[-1])
++            if boundary is None:  # unreachable after the filter above; keeps the type honest
++                raise ValueError("coordination entry without a usable reference")
++            return history[later[0].start() :], boundary
++    raise ValueError(f"unknown coordination reference: {reference}")
++
++
++def read_since(log: Path, reference: str) -> tuple[str, str]:
++    """Read one consistent snapshot under a shared lock; an append in progress is never seen.
++    The boundary refers to that snapshot only, so an entry appended afterwards is not covered."""
++    with log.with_suffix(".lock").open("a+") as lock:
++        fcntl.flock(lock.fileno(), fcntl.LOCK_SH)
++        with log.open(encoding="utf-8", newline="") as source:
++            history = source.read()
++    return entries_after(history, reference)
++
++
+ def append_message(
+     log: Path,
+     author: str,
+@@ -40,12 +83,9 @@ def append_message(
+         references: set[str] = set()
+         last_id = 0
+         for entry in ENTRY_HEADER.finditer(history):
+-            timestamp = entry["timestamp"]
+-            try:
+-                datetime.fromisoformat(timestamp)
+-            except ValueError:
++            if entry_reference(entry) is None:
+                 continue
+-            references.add(f"legacy:{timestamp}")
++            references.add(f"legacy:{entry['timestamp']}")
+             if message_id := entry["id"]:
+                 references.add(message_id)
+                 last_id = max(last_id, int(message_id.removeprefix("CF-")))
+@@ -73,12 +113,30 @@ def append_message(
+ 
+ 
+ def main() -> None:
+-    parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument("--author", required=True, choices=AUTHORS)
+-    parser.add_argument("--body-file", type=Path, required=True)
++    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
++    parser.add_argument("--author", choices=AUTHORS)
++    parser.add_argument("--body-file", type=Path)
+     parser.add_argument("--reply-to", action="append", default=[], metavar="REFERENCE")
+     parser.add_argument("--seen-through", metavar="REFERENCE")
++    parser.add_argument(
++        "--since",
++        metavar="REFERENCE",
++        help="print every entry after REFERENCE instead of appending (log unchanged); "
++        "stderr reports read-through: the last reference printed, to cite as Seen-Through",
++    )
+     args = parser.parse_args()
++    if args.since is not None:
++        if args.author is not None or args.body_file is not None or args.reply_to or args.seen_through is not None:
++            parser.error("--since reads the log and takes no append options")
++        try:
++            entries, boundary = read_since(CANONICAL_LOG, args.since)
++        except ValueError as error:
++            parser.error(str(error))
++        print(entries, end="", flush=True)
++        print(f"read-through: {boundary}", file=sys.stderr)
++        return
++    if args.author is None or args.body_file is None:
++        parser.error("appending requires --author and --body-file")
+     with args.body_file.open(encoding="utf-8", newline="") as source:
+         body = source.read()
+     try:
