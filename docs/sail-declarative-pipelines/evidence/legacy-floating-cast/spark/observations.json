@@ -1,0 +1,3090 @@
+{
+  "started_at": "2026-10-31T07:52:50.544616+00:00",
+  "script_sha256": "0e2841bccb6961fcde7872bcfdcb08ab8225f45a594db846f1514625f973a516",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "cases": [
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS FLOAT) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"FLOAT\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS FLOAT) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "''",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"FLOAT\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1.5",
+      "query": "SELECT CAST('1.5' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": " -0.0 ",
+      "query": "SELECT CAST(' -0.0 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "nan",
+      "query": "SELECT CAST('nan' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "Inf",
+      "query": "SELECT CAST('Inf' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "-Infinity",
+      "query": "SELECT CAST('-Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1e1000",
+      "query": "SELECT CAST('1e1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1e-1000",
+      "query": "SELECT CAST('1e-1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": " 3.5 ",
+      "query": "SELECT CAST(' 3.5 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "+Infinity",
+      "query": "SELECT CAST('+Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1_0",
+      "query": "SELECT CAST('1_0' AS FLOAT) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'1_0'",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"FLOAT\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "null",
+      "query": "SELECT CAST('null' AS FLOAT) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'null'",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"FLOAT\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1.5",
+      "query": "SELECT TRY_CAST('1.5' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": " -0.0 ",
+      "query": "SELECT TRY_CAST(' -0.0 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "nan",
+      "query": "SELECT TRY_CAST('nan' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "Inf",
+      "query": "SELECT TRY_CAST('Inf' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "-Infinity",
+      "query": "SELECT TRY_CAST('-Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1e1000",
+      "query": "SELECT TRY_CAST('1e1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1e-1000",
+      "query": "SELECT TRY_CAST('1e-1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": " 3.5 ",
+      "query": "SELECT TRY_CAST(' 3.5 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "+Infinity",
+      "query": "SELECT TRY_CAST('+Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1_0",
+      "query": "SELECT TRY_CAST('1_0' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "null",
+      "query": "SELECT TRY_CAST('null' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS DOUBLE) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"DOUBLE\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS DOUBLE) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "''",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"DOUBLE\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1.5",
+      "query": "SELECT CAST('1.5' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": " -0.0 ",
+      "query": "SELECT CAST(' -0.0 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "nan",
+      "query": "SELECT CAST('nan' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "Inf",
+      "query": "SELECT CAST('Inf' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "-Infinity",
+      "query": "SELECT CAST('-Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1e1000",
+      "query": "SELECT CAST('1e1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1e-1000",
+      "query": "SELECT CAST('1e-1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": " 3.5 ",
+      "query": "SELECT CAST(' 3.5 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "+Infinity",
+      "query": "SELECT CAST('+Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1_0",
+      "query": "SELECT CAST('1_0' AS DOUBLE) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'1_0'",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"DOUBLE\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "null",
+      "query": "SELECT CAST('null' AS DOUBLE) AS value",
+      "returned": false,
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'null'",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"DOUBLE\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1.5",
+      "query": "SELECT TRY_CAST('1.5' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": " -0.0 ",
+      "query": "SELECT TRY_CAST(' -0.0 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "nan",
+      "query": "SELECT TRY_CAST('nan' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "Inf",
+      "query": "SELECT TRY_CAST('Inf' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "-Infinity",
+      "query": "SELECT TRY_CAST('-Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1e1000",
+      "query": "SELECT TRY_CAST('1e1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1e-1000",
+      "query": "SELECT TRY_CAST('1e-1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": " 3.5 ",
+      "query": "SELECT TRY_CAST(' 3.5 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "+Infinity",
+      "query": "SELECT TRY_CAST('+Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1_0",
+      "query": "SELECT TRY_CAST('1_0' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "null",
+      "query": "SELECT TRY_CAST('null' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1.5",
+      "query": "SELECT CAST('1.5' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": " -0.0 ",
+      "query": "SELECT CAST(' -0.0 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "nan",
+      "query": "SELECT CAST('nan' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "Inf",
+      "query": "SELECT CAST('Inf' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "-Infinity",
+      "query": "SELECT CAST('-Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1e1000",
+      "query": "SELECT CAST('1e1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1e-1000",
+      "query": "SELECT CAST('1e-1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": " 3.5 ",
+      "query": "SELECT CAST(' 3.5 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "+Infinity",
+      "query": "SELECT CAST('+Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "1_0",
+      "query": "SELECT CAST('1_0' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": false,
+      "source": "null",
+      "query": "SELECT CAST('null' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1.5",
+      "query": "SELECT TRY_CAST('1.5' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": " -0.0 ",
+      "query": "SELECT TRY_CAST(' -0.0 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "nan",
+      "query": "SELECT TRY_CAST('nan' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "Inf",
+      "query": "SELECT TRY_CAST('Inf' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "-Infinity",
+      "query": "SELECT TRY_CAST('-Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1e1000",
+      "query": "SELECT TRY_CAST('1e1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1e-1000",
+      "query": "SELECT TRY_CAST('1e-1000' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": " 3.5 ",
+      "query": "SELECT TRY_CAST(' 3.5 ' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "+Infinity",
+      "query": "SELECT TRY_CAST('+Infinity' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "1_0",
+      "query": "SELECT TRY_CAST('1_0' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "FLOAT",
+      "is_try": true,
+      "source": "null",
+      "query": "SELECT TRY_CAST('null' AS FLOAT) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "float",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1.5",
+      "query": "SELECT CAST('1.5' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": " -0.0 ",
+      "query": "SELECT CAST(' -0.0 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "nan",
+      "query": "SELECT CAST('nan' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "Inf",
+      "query": "SELECT CAST('Inf' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "-Infinity",
+      "query": "SELECT CAST('-Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1e1000",
+      "query": "SELECT CAST('1e1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1e-1000",
+      "query": "SELECT CAST('1e-1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": " 3.5 ",
+      "query": "SELECT CAST(' 3.5 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "+Infinity",
+      "query": "SELECT CAST('+Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "1_0",
+      "query": "SELECT CAST('1_0' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": false,
+      "source": "null",
+      "query": "SELECT CAST('null' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1.5",
+      "query": "SELECT TRY_CAST('1.5' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.8000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": " -0.0 ",
+      "query": "SELECT TRY_CAST(' -0.0 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "nan",
+      "query": "SELECT TRY_CAST('nan' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "NaN"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "Inf",
+      "query": "SELECT TRY_CAST('Inf' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "-Infinity",
+      "query": "SELECT TRY_CAST('-Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "-Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1e1000",
+      "query": "SELECT TRY_CAST('1e1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1e-1000",
+      "query": "SELECT TRY_CAST('1e-1000' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x0.0p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+0"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.0000000000000p+2"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": " 3.5 ",
+      "query": "SELECT TRY_CAST(' 3.5 ' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "0x1.c000000000000p+1"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "+Infinity",
+      "query": "SELECT TRY_CAST('+Infinity' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        "+Infinity"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "1_0",
+      "query": "SELECT TRY_CAST('1_0' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "is_try": true,
+      "source": "null",
+      "query": "SELECT TRY_CAST('null' AS DOUBLE) AS value",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    }
+  ],
+  "spark_version": "4.2.1",
+  "completed_at": "2026-10-31T07:53:02.121161+00:00",
+  "remaining_listener_pids": ""
+}

@@ -233,3 +233,29 @@ Fix general Sail casts with qualified invalid-input/rounding/overflow/error/wire
 semantics before activation. Runtime error replay cannot repair optimizer errors.
 Fable acknowledged read-only validator/wire/design review atCF-0374; its new
 verdict is pending. Existing provider/streaming/CDC boundaries remain unchanged.
+
+
+## Legacy floating cast prerequisite (CF-0376–0377)
+
+Sail63f5bd3b3f0f8bd9b23607161d5988df853a738c routes legacy string-to-float
+casts through existing TryCast semantics. [Evidence](evidence/legacy-floating-cast/README.md)
+qualifies117 plan libraries, unchanged0/3 production control and fresh300 public
+plus67 upstream; native resolved conditional bad casts with rightNULL/right0
+now returnNULL rather than fail during optimization. ANSI/wire/evaluator policy
+and arithmetic lowering are unchanged. Spark/public136 retains16 suffix/hex
+behavior gaps and20 ANSI nullability mismatches; no full cast parity is claimed.
+ANSI decimals still need conditional/folding semantics before SQL activation.
+No production replay mode/classifier/default or provider/streaming effect changed.
+
+
+Fable reviewbdd5962d (CF-0377, acknowledgedCF-0379) accepts407/04/036.
+It correctly bounds the earlier NULL-divisor oracle to VALUES/local relations:
+Spark parent-first folding and conditional branches can skip invalid casts,
+while an invalid foldable child under a nonfoldable real-source division can
+fail during planning. Exact source/phase behavior remains required; a lenient
+runtime result is not final Spark parity. The current legacy floating correction
+is valid in either case because Spark legacy invalid casts returnNULL.
+Replay list direction remains unresolved: missed data errors can select a wrong
+row, but pure value semantics alone do not prove repeated system failures are
+safe. Audit each admitted native body's reachable raw error vocabulary before
+choosing a classifier/default. No replay activation is implied by this review.
