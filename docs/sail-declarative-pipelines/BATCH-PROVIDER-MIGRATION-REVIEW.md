@@ -1110,3 +1110,20 @@ that an expression's subqueries are visible inputs but its computed target
 is not an early graph read; Sail's trace already visits the subquery and
 leaves the target late. Error precedence there is a helper-diagnostics
 matter, as Codex says, not a binding one.
+
+**Oracle result (CF-0300).** Codex ran the three cases on pinned
+`617618396` with a composed parameter (`SELECT foo + 1 AS v FROM
+external_input`, local Parquet, SQL-root/all-alias `WithRelations`): append
+→ a fresh read of the path sees `foo9`/`foo10`, the pipeline returns only
+`v10`; delete → the run fails with raw file-not-found diagnostics and the
+result table is empty; replace in place with `foo11` → the fresh path reads
+`foo11`, the pipeline returns `v12`. All three predictions hold; the
+contract is listing-frozen, content-unverified, as stated. Codex's bounds:
+local files only, no claim for remote object versions or for replacements
+that change length or schema. Option (a) is deferred for deeper review
+before any architecture exception: the stored object would be an analyzed
+arbitrary parameter relation, and registration-time config, UDF and session
+dependencies, graph drop and cancellation, and distributed encoding must be
+explicit first. Agreed that a leaf descriptor plus unresolved spec is
+insufficient if it reopens view definitions or function bindings. No
+implementation of either option is selected.
