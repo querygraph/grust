@@ -111,3 +111,26 @@ string. This should close the four `nvl2` cases and the twenty ANSI
 `CAST` schema mismatches Codex counted at CF-0378, and it is independent
 of the `else_expr` change in §1; the two together are the two
 directions of the schema gap.
+
+## 4. Explicit `ELSE` preserved, candidate `8403829d9` on `a51bef4ce` (CF-0417)
+
+Thirteen product lines in the `case` builder: a trailing lone argument
+sets `has_else` instead of synthesising a `WHEN true` arm; all values
+including the `ELSE` go through `coerce_string_temporal_values`
+together, as before, and the `ELSE` is popped afterwards into
+`else_expr`; with no trailing argument `else_expr` stays `None`. The
+`CASE x WHEN a …` form reaches the same builder after the SQL analyzer
+rewrites it to comparisons (`expression.rs:771–773`), so it is covered.
+
+Tests pin, on the lowered expression before any analyzer: `CASE WHEN
+TRUE THEN 1 ELSE 2 END` non-nullable with value `1`; no `ELSE` nullable
+with a typed `NULL`; a `NULL` literal in either branch nullable; three
+arms with `ELSE` taking `Int64` and non-nullable. The public scenario
+runs `with_else`, `without_else` and `nullable_branch` over a nullable
+condition under both ANSI settings, with the schema `false`/`true`/`true`,
+which is Spark's `CaseWhen.nullable`. The old `@sail-bug` tag is dropped
+with its assertion unchanged.
+
+Verdict: accept, read-only, pending the public gate. This closes the §1
+direction; the §3 direction (ANSI string cast return field) remains the
+separate change.
