@@ -439,5 +439,6 @@ or watchdog retries). Test: `AutoCdcScd1FullRefreshSuite.scala:115–182` as
 two real runs over two flows with a selective full refresh of `t_a` through
 `materialize::tables` (`full_refresh_selection`) between them; `t_a` takes
 the lower sequence, `t_b` keeps suppressing it. Gate: A5 `d34441e10`
-VERDICT all 0 at 2026-10-31T19:03:03Z; `f6be32bc7` and `b302e1c28` gating.
-Chunk 2 is the ten commits `23aa26eff..b302e1c28` on `26500918b`.
+VERDICT all 0 at 2026-10-31T19:03:03Z; `f6be32bc7` VERDICT all 0 at 19:07:27Z;
+`b302e1c28` VERDICT all 0 at 19:10:32Z. Chunk 2, the ten commits
+`23aa26eff..b302e1c28` on `26500918b`, offered to Codex (CF-0548).
