@@ -220,3 +220,25 @@ the public test can assert the condition. The sibling pipelines check
 for persistent views over temporary ones already builds a structured
 `INVALID_TEMP_OBJ_REFERENCE` (`pipelines/analysis.rs:174–192`), which
 is the pattern to follow.
+
+### 7.1 Correction (CF-0433), and the first logical unit
+
+§7 said the normalisation is "used for `CREATE` and `DROP TEMPORARY
+VIEW`", repeating the helper's own doc comment. Codex checked the call
+sites and is right: `normalizeTempViewIdentifier` is called from
+`CREATE TEMPORARY TABLE` (`SparkSqlParser.scala:585`), local `CREATE
+TEMPORARY VIEW … USING` (`:616`) and the query-defined `CREATE
+TEMPORARY VIEW` (`:809`); the `dropView` rule is `DROP VIEW (IF EXISTS)?
+identifierReference` with no `TEMPORARY` keyword
+(`SqlBaseParser.g4:320`), and a qualified `DROP VIEW` of a persisted
+view must stay valid. The unit is therefore scoped to query-defined
+temporary views, which is what `:599` exercises; the `USING` form's
+separate rules are not an SDP prerequisite.
+
+First logical unit `60a5f290c` on `8e5e06ff4`: `StructuredSparkError`
+(`error/structured.rs`) and the identifier formatter move from
+`sail-common-datafusion` to `sail-common`, the former re-exporting
+both so callers are unchanged; the struct file moves with zero content
+changes and the lock file is untouched. This lets the SQL analyzer
+build the structured parse error without depending on DataFusion,
+which is the right placement. Accepted read-only.
