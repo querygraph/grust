@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="9" time="1.841" timestamp="2026-10-31T13:26:52.391863-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-first]" time="1.233"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x11608f2e0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x116067c50&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio0')
+declared = False, read = False, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-last]" time="0.077"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x11611f1a0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1160de7b0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio1')
+declared = False, read = False, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-none]" time="0.081"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x11613cd60&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1160ddb80&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio2')
+declared = False, read = True, missing = 'none'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-first]" time="0.058"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x11613ec00&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x116148800&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio3')
+declared = False, read = True, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-last]" time="0.056"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x116154040&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x116165220&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio4')
+declared = False, read = True, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-first]" time="0.061"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x116156f20&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x116166120&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio5')
+declared = True, read = False, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-last]" time="0.051"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1161a47c0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1161a8ef0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio6')
+declared = True, read = False, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-first]" time="0.063"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1161a6ac0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1161b5610&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio7')
+declared = True, read = True, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-last]" time="0.057"><failure message="AssertionError: assert None == {}&#10; +  where None = getMessageParameters()&#10; +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters&#10; +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1161c0860&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1161b61e0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-427/test_virtual_schema_acquisitio8')
+declared = True, read = True, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+&gt;       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = &lt;ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:39: AssertionError</failure></testcase></testsuite></testsuites>
