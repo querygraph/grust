@@ -1,0 +1,170 @@
+..........................................F.............F............... [ 24%]
+........................................................................ [ 48%]
+..............................................FF........................ [ 72%]
+........................................................................ [ 96%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+___________ test_sql_streaming_reads_cannot_back_materialized_views ____________
+
+fixturefunc = <function run_pipeline_with_error at 0x110e059e0>
+request = <FixtureRequest for <Function test_sql_streaming_reads_cannot_back_materialized_views>>
+kwargs = {'condition': 'STREAMING_RELATION_FOR_MATERIALIZED_VIEW', 'pipeline': ('9e85fe46-9e29-48b7-b1b7-e9d35af685e8', <pyspar...tGraphElementRegistry object at 0x11852c4d0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x118507b00>)}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = 'STREAMING_RELATION_FOR_MATERIALIZED_VIEW'
+pipeline = ('9e85fe46-9e29-48b7-b1b7-e9d35af685e8', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11852c4d0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x118507b00>)
+
+    @when(parsers.parse("the pipeline fails with {condition}"), target_fixture="pipeline_error")
+    def run_pipeline_with_error(condition, pipeline):
+        _, _, run = pipeline
+>       with pytest.raises(AnalysisException, match=condition) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'STREAMING_RELATION_FOR_MATERIALIZED_VIEW'
+E         Actual message: 'Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: source'
+
+python/pysail/testing/spark/steps/pipelines.py:47: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-31 18:35:01: Starting pipeline analysis
+___________ test_persistent_views_cannot_have_streaming_definitions ____________
+
+fixturefunc = <function run_pipeline_with_error at 0x110e059e0>
+request = <FixtureRequest for <Function test_persistent_views_cannot_have_streaming_definitions>>
+kwargs = {'condition': 'STREAMING_RELATION_FOR_PERSISTED_VIEW', 'pipeline': ('e01ce91a-8a4c-49e5-ae42-0f7aa395c59d', <pyspark.p...tGraphElementRegistry object at 0x117fe77a0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1185c0cc0>)}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = 'STREAMING_RELATION_FOR_PERSISTED_VIEW'
+pipeline = ('e01ce91a-8a4c-49e5-ae42-0f7aa395c59d', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117fe77a0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1185c0cc0>)
+
+    @when(parsers.parse("the pipeline fails with {condition}"), target_fixture="pipeline_error")
+    def run_pipeline_with_error(condition, pipeline):
+        _, _, run = pipeline
+>       with pytest.raises(AnalysisException, match=condition) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'STREAMING_RELATION_FOR_PERSISTED_VIEW'
+E         Actual message: 'Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: source'
+
+python/pysail/testing/spark/steps/pipelines.py:47: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-31 18:35:01: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[3-False] _______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1196938f0>
+pipeline = ('10a38026-be2f-4c8e-b53a-3ffa8eb645c7', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1196a4650>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1196a0860>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-386/test_protocol_dataset_without_4')
+kind = 3, dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[MULTIPLE_QUERIES_FOR_VIEW] `output``with.dot`').getCondition
+E        +      where AnalysisException('[MULTIPLE_QUERIES_FOR_VIEW] `output``with.dot`') = <ExceptionInfo AnalysisException('[MULTIPLE_QUERIES_FOR_VIEW] `output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-31 18:35:06: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[3-True] ________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1196a7680>
+pipeline = ('ca666a36-a8d9-4c9c-8af7-7825195107a8', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1196a6e10>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1196a2f20>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-386/test_protocol_dataset_without_5')
+kind = 3, dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[MULTIPLE_QUERIES_FOR_VIEW] `output``with.dot`').getCondition
+E        +      where AnalysisException('[MULTIPLE_QUERIES_FOR_VIEW] `output``with.dot`') = <ExceptionInfo AnalysisException('[MULTIPLE_QUERIES_FOR_VIEW] `output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-31 18:35:06: Starting pipeline analysis
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 73 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 73 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_features.py::test_sql_streaming_reads_cannot_back_materialized_views
+FAILED python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_cannot_have_streaming_definitions
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[3-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[3-True]
+4 failed, 296 passed, 172 warnings in 12.04s
