@@ -3288,15 +3288,17 @@
       "line": 402,
       "method": "test",
       "name_expression": "\"specifying partition column with existing partitioned table\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "crates/sail-spark-connect/src/pipelines/materialize/tests/partitions.rs::changed_or_omitted_partition_keeps_typed_cause_and_existing_transform"
+      ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "",
-        "remaining_assertions": "Same partition preserves transform and column order; omitted partition rejects without mutating schema/transform. Unported.",
-        "sail_evidence": null,
+        "covered_assertions": "Changed/omitted partition has structured AnalysisException cause condition CANNOT_UPDATE_PARTITION_COLUMNS and retains identity(x); parameters/state/codec additionally checked.",
+        "remaining_assertions": "Outer TableMaterializationException, query origin, and original ScalaTest/JVM fixture execution against Sail remain unported. Initial and same-partition success checks, catalog-reordered exact y,x schema, and exact post-error schema checks remain unported; only the omitted-partition rejection and retained transform are covered.",
+        "sail_evidence": "evidence/materialization-partition-errors/native/rust.log",
         "scala_suite_executed": false,
-        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+        "entry_point": "Private Sail tables(schema map), unchanged Table kind, native query schemas; pre-existing partitioned table seeded via MV metadata. Spark DatasetManager reference uses original helper and SQL-created table."
       }
     },
     {
@@ -3305,15 +3307,17 @@
       "line": 467,
       "method": "test",
       "name_expression": "\"specifying partition column different from existing partitioned table\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "crates/sail-spark-connect/src/pipelines/materialize/tests/partitions.rs::changed_or_omitted_partition_keeps_typed_cause_and_existing_transform"
+      ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "",
-        "remaining_assertions": "Changed partition rejects with structured condition and retains original identity transform. Unported.",
-        "sail_evidence": null,
+        "covered_assertions": "Changed/omitted partition has structured AnalysisException cause condition CANNOT_UPDATE_PARTITION_COLUMNS and retains identity(x); parameters/state/codec additionally checked.",
+        "remaining_assertions": "Outer TableMaterializationException, query origin, and original ScalaTest/JVM fixture execution against Sail remain unported.",
+        "sail_evidence": "evidence/materialization-partition-errors/native/rust.log",
         "scala_suite_executed": false,
-        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+        "entry_point": "Private Sail tables(schema map), unchanged Table kind, native query schemas; pre-existing partitioned table seeded via MV metadata. Spark DatasetManager reference uses original helper and SQL-created table."
       }
     },
     {
@@ -3581,15 +3585,17 @@
       "line": 1050,
       "method": "test",
       "name_expression": "\"partition and cluster columns together should fail\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "crates/sail-spark-connect/src/pipelines/materialize/tests/partitions.rs::partition_and_cluster_conflict_keeps_typed_cause_before_creation"
+      ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "",
-        "remaining_assertions": "Partition plus cluster rejects with wrapped AnalysisException and exact structured condition; production guard exists but its assertion port is absent.",
-        "sail_evidence": null,
+        "covered_assertions": "Partition+cluster rejection has structured AnalysisException cause with exact condition; state/empty parameters/codec/absent target additionally checked.",
+        "remaining_assertions": "Outer TableMaterializationException, query origin, and original ScalaTest/JVM fixture execution against Sail remain unported.",
+        "sail_evidence": "evidence/materialization-partition-errors/native/rust.log",
         "scala_suite_executed": false,
-        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+        "entry_point": "Private Sail tables(schema map), unchanged Table kind, native query schemas; pre-existing partitioned table seeded via MV metadata. Spark DatasetManager reference uses original helper and SQL-created table."
       }
     },
     {

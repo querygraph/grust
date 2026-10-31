@@ -1,0 +1,46 @@
+{
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "checks": [
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java",
+        "-cp",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/*",
+        "scala.tools.nsc.Main",
+        "-usejavacp",
+        "-d",
+        "/tmp/sail-sdp-partition-errors-oracle/classes",
+        "/tmp/sail-sdp-partition-errors-oracle/TestGraphRegistrationContext.scala",
+        "/tmp/sail-sdp-partition-errors-oracle/PartitionErrorsOracle.scala"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-partition-errors-oracle/check-0.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/jar",
+        "cf",
+        "/tmp/sail-sdp-partition-errors-oracle/oracle.jar",
+        "-C",
+        "/tmp/sail-sdp-partition-errors-oracle/classes",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-partition-errors-oracle/check-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/bin/spark-submit",
+        "--class",
+        "org.apache.spark.sql.pipelines.graph.PartitionErrorsOracle",
+        "/tmp/sail-sdp-partition-errors-oracle/oracle.jar",
+        "/tmp/sail-sdp-partition-errors-oracle/data"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-partition-errors-oracle/check-2.log",
+      "sha256": "1e7428ac329a290c3b3efd71b8a7a8cbf9b24f7c05a920ec2c74704307d6daad"
+    }
+  ]
+}

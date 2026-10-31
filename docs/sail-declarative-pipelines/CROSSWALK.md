@@ -8,11 +8,11 @@ is fully qualified by executing the original Scala suite against Sail.
 | Suite | Reviewed | Partial ports | Unmapped |
 | --- | ---: | ---: | ---: |
 | ViewSuite | 11 | 7 | 4 |
-| MaterializeTablesSuite | 27 | 12 | 15 |
+| MaterializeTablesSuite | 27 | 15 | 12 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
 | SqlPipelineSuite | 38 | 32 | 6 |
-| Total | 97 | 65 | 32 |
+| Total | 97 | 68 | 29 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -176,6 +176,17 @@ metadata seam, preserving streaming Table kinds and batch function schemas.
 Spark production DatasetManager passes the same catalog assertions using the
 original registration helper; no original ScalaTest suite was executed against
 Sail. Native189, production-only control1pass/3fail, fresh public300+67 pass.
-Current canonical total:65 partial/397 unmapped,97 reviewed/462 static sites.
+At that increment:65 partial/397 unmapped,97 reviewed/462 static sites.
 Streaming execution, full-reset owned cleanup and remaining metadata contract
 coverage are still open; see the [design](METADATA-TABLE-MATERIALIZATION-DESIGN.md).
+
+## Metadata partition diagnostics
+
+[Sail604a91f8d evidence](evidence/materialization-partition-errors/README.md)
+adds partial ports of MaterializeTablesSuite:467/:1050 and the rejection portion
+of :402. Native structured diagnostics and Connect ErrorInfo retain class,
+condition, SQL state and parameters; catalog transform/target-state assertions
+pass. :402 success/schema assertions, JVM outer materialization wrapper and
+origins remain open. Exact native191, unchanged control0/2, Spark3 cases and fresh
+public300+67 pass; original ScalaTest execution against Sail is still false.
+Current canonical total:68 partial/394 unmapped,97 reviewed/462 static sites.

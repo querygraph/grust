@@ -34,7 +34,7 @@ relabeling outputs or entering public execution. No new catalog API, executor,
 public protocol, or Grust dependency is necessary for this change.
 
 `execution::execute` continues rejecting any Table/Sink graph **before** calling
-this materializer. A native test can invoke the private metadata helper with an
+this materializer. A native test can invoke the private metadata helper with
 resolved Table schemas; this does not authorize a public execution bypass. Tests
 also call the public execution implementation on a mixed MV/Table graph and
 assert neither catalog target is created. The guard fixture supplies resolved
@@ -93,3 +93,15 @@ boundary, with per-table failure attribution still open. Spark ordinary refresh
 reference also passes existing-left comments/order, property update and retained
 rows. Spark uses its default session catalog; Sail native tests use memory
 catalog plus real Parquet data. LakeCat alter parity is not inferred from either.
+
+## Structured partition diagnostic increment
+
+Sail604a91f8d preserves structured AnalysisException data for changed/omitted
+partitions and partition+cluster conflict, including canonical template bodies
+and Connect ErrorInfo. [Evidence](evidence/materialization-partition-errors/README.md)
+records native191, unchanged control0/2, fresh public300+67, and three production
+Spark reference cases. This covers the underlying error data; the outer
+TableMaterializationException, query origins and original JVM integration remain
+open. :402 success/schema portions remain unported. Next ordinary batch port is
+:42 exact basic metadata refresh/comment removal. Notify the user before opening
+a substantial wrapper/origin or full-reset/CDC cleanup design phase.

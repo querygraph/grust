@@ -1,0 +1,49 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: function `partition_and_cluster` is never used
+ --> crates/sail-spark-connect/src/pipelines/materialize/errors.rs:8:15
+  |
+8 | pub(super) fn partition_and_cluster() -> SparkError {
+  |               ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `partition_change` is never used
+  --> crates/sail-spark-connect/src/pipelines/materialize/errors.rs:19:15
+   |
+19 | pub(super) fn partition_change(
+   |               ^^^^^^^^^^^^^^^^
+
+warning: function `transform` is never used
+  --> crates/sail-spark-connect/src/pipelines/materialize/errors.rs:56:4
+   |
+56 | fn transform(field: &CatalogPartitionField) -> String {
+   |    ^^^^^^^^^
+
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 4 warnings
+    Finished `test` profile [unoptimized] target(s) in 24.71s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-c2295be7729d71ef)
+
+running 2 tests
+test pipelines::materialize::tests::partitions::partition_and_cluster_conflict_keeps_typed_cause_before_creation ... FAILED
+test pipelines::materialize::tests::partitions::changed_or_omitted_partition_keeps_typed_cause_and_existing_transform ... FAILED
+
+failures:
+
+---- pipelines::materialize::tests::partitions::partition_and_cluster_conflict_keeps_typed_cause_before_creation stdout ----
+Error: "materialization cause lost structured Spark diagnostic"
+
+---- pipelines::materialize::tests::partitions::changed_or_omitted_partition_keeps_typed_cause_and_existing_transform stdout ----
+Error: "materialization cause lost structured Spark diagnostic"
+
+
+failures:
+    pipelines::materialize::tests::partitions::changed_or_omitted_partition_keeps_typed_cause_and_existing_transform
+    pipelines::materialize::tests::partitions::partition_and_cluster_conflict_keeps_typed_cause_before_creation
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 189 filtered out; finished in 0.12s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

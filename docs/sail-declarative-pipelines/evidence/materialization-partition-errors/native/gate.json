@@ -1,0 +1,70 @@
+{
+  "sail_commit": "604a91f8d65076d142866095c5cd62999319c20d",
+  "base": "a9eecf5f539115ceb2b604d26d72b058cf9c435d",
+  "packages": [
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T12:13:31.680265+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-metadata-partition-errors-02-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-metadata-partition-errors-02-clippy.log",
+      "sha256": "1aa036c70e8bbcd53632b79ef45f2acd9f009fb1b84002805f64ae8e62ff32d5"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-metadata-partition-errors-02-rust.log",
+      "sha256": "6bb49fba6c4b5637fdb139a34ea1c967409a9763b718dcb10abec317bae23568"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "environment_overrides": {
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_DEV_INCREMENTAL": "false",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "PYTHONPATH": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "/Users/alexy/src/sail-pipelines-proposal/.venv"
+  },
+  "recorded_at": "2026-10-31T12:14:48.804869+00:00",
+  "outcome": "passed"
+}
