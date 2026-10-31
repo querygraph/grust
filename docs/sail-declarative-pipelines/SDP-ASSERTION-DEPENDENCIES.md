@@ -1662,3 +1662,51 @@ CF-0522's "4 macro + 9 parser" is the first run that includes them.
 
 Verdict: accept both, read-only, pending the gated parser and syntax
 run on the repaired snapshot and the hook reparented onto it.
+
+### 20.14 Owned parser diagnostics, candidate `a690e2ce9` on `8a1a2378` (CF-0525/CF-0526)
+
+Design step 3 taken before step 2. Read read-only.
+
+Production: `SqlError::SqlParserError` now carries
+`Box<ParserDiagnostics>` (`sail-sql-analyzer/src/error/parser.rs`), a
+vector of `ParserFailure { reason, span, contexts, message }` built from
+each `Rich` before the borrowed input drops; `reason` is a typed
+`ExpectedFound { expected: Vec<String>, found: Option<String> }` or
+`Custom(String)`, `span` and context spans are `TokenSpan`s, and
+`message` is the unchanged `ParserErrorDisplay` rendering. The
+`Display` of the record joins the messages with "; ", the same separator
+the old string used, so `SqlError`'s "error in SQL parser: {0}" text is
+byte-identical for every input. `PlanError` converts through
+`to_string()` and the Connect mapping (`error.rs:101`) compiles
+unchanged on the boxed record. No grammar, condition or hint change.
+
+Checked against sources:
+
+- `TokenSpan` offsets are UTF-8 byte offsets from the start of the input
+  (`sail-sql-parser/src/span.rs:3–5`), while Spark's `pos` is a 0-based
+  UTF-16 code-unit column (§20.12). The retained span is sufficient for
+  step 4 only together with the original text, which the pipeline
+  wrapper already holds (`StatementOrigin::from_span(&self.text, …)`);
+  the renderer must derive line and UTF-16 column from text plus byte
+  offset, never report the byte offset as `pos`.
+- `found` is the token's `Display` (`sail-sql-parser/src/token.rs:57–87`):
+  the raw text for words, strings, comments and punctuation, and
+  `<space>`/`<tab>`/`<lf>`/`<cr>` for whitespace tokens. Spark's `error`
+  parameter is ANTLR's quoted token text, and ANTLR never reports a
+  hidden-channel token, so a whitespace `found` would be a Sail lexer
+  artefact; step 4 should take `error` from the source slice at `span`
+  and treat a whitespace or comment `found` as a defect, not render it.
+- The context fixture dispute (CF-0526) is settled by the dependency:
+  chumsky 0.13.0 documents the context span as one "that runs from the
+  beginning of the context up until the error location"
+  (`label.rs:53`, computed at `:284` and `:296`), so `("pair", 0:1)` with
+  the failure at `1:2` for input "ac" is the library's contract, and
+  the revised assertion pins that contract rather than loosening a
+  requirement. The fixture comment states it correctly.
+- The SQL-route test asserts a `found` of ")" through both `SqlSource`
+  entry points on a `CREATE FLOW` body; it proves the record outlives
+  the source and that the found token is the raw text, as needed.
+
+Nothing here touches an original site; counts unchanged.
+
+Verdict: accept, read-only, pending the final native test gate.
