@@ -378,3 +378,78 @@ is now the right flag for the division builders to read; the scalar path still
 raises `DivideByZero` for `IDENTIFIER(1 div 0)`), and the five names from
 `FOLDABILITY-FUNCTION-TABLE.md` (`assert_true`, `raise_error`, `json_tuple`,
 `window`, `window_time`).
+
+## 8. `SET CATALOG` oracle: two policies, observed on Spark 4.2.1 (CF-0316)
+
+CF-0316 said catalog-level oracles were being prepared for `typeof(raise_error(..))`
+and friends. Spark's source predicts the shape, and a local run confirms it.
+Scripts, raw output and the environment line are under
+`evidence/set-catalog-oracle/` (local Spark 4.2.1 from the pinned venv, JDK 17,
+`local[1]`, ANSI on unless stated).
+
+**Why there are two policies.** `SET CATALOG expression` (`SqlBaseParser.g4:234`)
+becomes `SetCatalogCommand(expr)`; `ResolveSetCatalogCommand` turns a bare
+attribute into a literal and leaves every other expression for "later rules"
+(`ResolveSetCatalogCommand.scala:28–41`). The command's `run` calls
+`IdentifierResolution.evalIdentifierExpr` on `catalogNameExpr`
+(`SetCatalogCommand.scala:44–55`), and `run` happens through
+`QueryExecution.runCommand` → `qe.executedPlan` → `optimizedPlan`
+(`QueryExecution.scala`), with the planner taking the `RunnableCommand` from
+the optimized plan (`SparkStrategies.scala:909`). So a bare `SET CATALOG`
+expression is checked for determinism at analysis (`CheckAnalysis.scala:1032`,
+`INVALID_NON_DETERMINISTIC_EXPRESSIONS`), then optimized (`ReplaceCurrentLike`,
+`ReplaceExpressions`, `ConstantFolding`, `SimplifyConditionals`), and only then
+evaluated under the identifier rule. `SET CATALOG IDENTIFIER(expr)` instead
+evaluates `expr` during analysis in `ResolveIdentifierClause`, before any
+optimizer rule. The same expression therefore gets different answers.
+
+| Expression                                                        | bare `SET CATALOG e`                                                  | `SET CATALOG IDENTIFIER(e)`                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------- |
+| `current_catalog()`                                               | accepted (replaced by the optimizer)                                  | `NOT_CONSTANT`                               |
+| `concat(current_catalog(), '')`                                   | accepted                                                              | `NOT_CONSTANT`                               |
+| `CASE WHEN false THEN current_catalog() ELSE 'spark_catalog' END` | accepted (branch simplified away)                                     | `NOT_CONSTANT`                               |
+| `current_user()`                                                  | accepted, then `CATALOG_NOT_FOUND` `alexy`                            | (not probed; same rule as `current_catalog`) |
+| `current_timezone()`                                              | accepted, then `PARSE_SYNTAX_ERROR` on the zone string                | `NOT_CONSTANT`                               |
+| `typeof(current_catalog())`                                       | `CATALOG_NOT_FOUND` `string`                                          | `CATALOG_NOT_FOUND` `string`                 |
+| `typeof(raise_error('x'))`                                        | `CATALOG_NOT_FOUND` `void`                                            | (foldable by the same rule)                  |
+| `typeof(rand())`                                                  | `INVALID_NON_DETERMINISTIC_EXPRESSIONS`                               | `CATALOG_NOT_FOUND` `double`                 |
+| `rand()`, `uuid()`                                                | `INVALID_NON_DETERMINISTIC_EXPRESSIONS`                               | `NOT_CONSTANT`                               |
+| `raise_error('x')`, `CAST(raise_error('x') AS STRING)`            | `NOT_CONSTANT`                                                        | `NOT_CONSTANT`                               |
+| `assert_true(true)`                                               | `WRONG_TYPE`, expression rendered `NULL` (`void`)                     | `NOT_CONSTANT`                               |
+| `assert_true(false)`                                              | `NOT_CONSTANT`, rendered as the `raise_error` replacement             | `NOT_CONSTANT`                               |
+| `1 DIV 0` (ANSI)                                                  | `DIVIDE_BY_ZERO` (folded by the optimizer)                            | `WRONG_TYPE` `bigint`                        |
+| `CAST(1 DIV 0 AS STRING)` (ANSI)                                  | `DIVIDE_BY_ZERO`                                                      | `DIVIDE_BY_ZERO`                             |
+| `1 DIV 0` (non-ANSI)                                              | `WRONG_TYPE`, rendered `CAST(NULL AS BIGINT)`                         | `WRONG_TYPE`, rendered unfolded              |
+| `CAST(1 DIV 0 AS STRING)` (non-ANSI)                              | `NOT_A_CONSTANT_STRING.NULL`                                          | `NOT_A_CONSTANT_STRING.NULL`                 |
+| `explode(array('a'))`                                             | `UNSUPPORTED_GENERATOR.OUTSIDE_SELECT`                                | `NOT_CONSTANT`                               |
+| `(SELECT 'spark_catalog')`                                        | `INTERNAL_ERROR` unresolved operator                                  | `INTERNAL_ERROR` unresolved operator         |
+| `element_at(transform(array('spark_catalog'), x -> x), 1)`        | `NOT_CONSTANT`                                                        | (same rule)                                  |
+| `date_format(current_date(), 'yyyy')`, `version()`                | accepted, then `PARSE_SYNTAX_ERROR` on `2026` / `4.2`                 | (same evaluation, same parse failure)        |
+| `NULL`, `1`, `CAST(NULL AS STRING)`, `'a.b'`                      | `WRONG_TYPE` `void` / `WRONG_TYPE` `int` / `NULL` / `MULTI_PART_NAME` | identical                                    |
+
+**What this means for Sail's catalog path.** `resolve_catalog_name`
+(`constant.rs:22–74`) unwraps `IdentifierClause` and applies one policy to
+both forms, the eager `require_foldable` one. Against the bare form the
+existing test `catalog_validation_preserves_foldability_type_and_null_priority`
+(`constant/tests.rs:122–170`) pins `NOT_CONSTANT` for the seven current-like
+functions, for `typeof(rand())` and for `explode(..)`, and `WRONG_TYPE` for
+`1 / 0`, `1 DIV 0`, `1 % 0`; Spark accepts the first seven, reports
+`INVALID_NON_DETERMINISTIC_EXPRESSIONS` and `UNSUPPORTED_GENERATOR` for the
+next two, and `DIVIDE_BY_ZERO` under ANSI for the divisions. Those rows match
+Spark's `IDENTIFIER(..)` form instead (except `1 DIV 0`, which is `WRONG_TYPE`
+there and so matches). The CF-0316 caution is therefore right in a stronger
+form: the catalog path is not "the identifier rule with a determinism check",
+it is "determinism check, then optimizer, then the identifier rule", and only
+its `IDENTIFIER(..)` form is the identifier rule. For F3 that gives the
+answers directly: `typeof(raise_error(..))` and `typeof(assert_true(..))` are
+foldable in both forms (`void`), and `assert_true(true)` bare is `WRONG_TYPE`
+because the optimizer simplifies it to `NULL` first.
+
+Recommendation, discussion only: keep `IdentifierClause` on the catalog path
+under the identifier policy (eager flag, constant context, marker), and give
+the bare form its own sequence: resolve without the eager flag and without the
+marker, reject any non-`Immutable` function as `INVALID_NON_DETERMINISTIC_EXPRESSIONS`
+(Spark's `deterministic`, so `Stable` clock functions are allowed and
+`typeof(rand())` is rejected as a whole), simplify, then apply the type, null
+and parse checks on the folded literal. The division row then falls out of
+simplification under the session's ANSI mode, which is what the probe shows.
