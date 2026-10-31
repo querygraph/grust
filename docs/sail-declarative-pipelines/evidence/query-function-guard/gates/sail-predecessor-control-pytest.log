@@ -1,0 +1,339 @@
+FFFFFFFFFFFFFFFFFFFFFF......................FFFFFFFF.......FF            [100%]
+=================================== FAILURES ===================================
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[SET CATALOG some_catalog-SetCatalogCommand-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:87: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    build_graph(pipeline_spark, wrap(f'spark.sql("{sql}")'))
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:51: in build_graph
+    exec(body, scope)  # noqa: S102 - the port of Spark's buildGraph runs its snippet
+    ^^^^^^^^^^^^^^^^^
+<string>:3: in <module>
+    ???
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: in _handle_rpc_error
+    raise convert_exception(
+E   pyspark.errors.exceptions.connect.SparkException: [CATALOG_NOT_FOUND] The catalog `some_catalog` not found. Consider to set the SQL config "spark.sql.catalog.some_catalog" to a catalog plugin.
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[SET CATALOG some_catalog-SetCatalogCommand-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:87: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    build_graph(pipeline_spark, wrap(f'spark.sql("{sql}")'))
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:51: in build_graph
+    exec(body, scope)  # noqa: S102 - the port of Spark's buildGraph runs its snippet
+    ^^^^^^^^^^^^^^^^^
+<string>:2: in <module>
+    ???
+.venv/lib/python3.12/site-packages/pyspark/pipelines/api.py:289: in outer
+    registry.register_flow(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:117: in register_flow
+    df = flow.func()
+         ^^^^^^^^^^^
+<string>:5: in mv
+    ???
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: in _handle_rpc_error
+    raise convert_exception(
+E   pyspark.errors.exceptions.connect.SparkException: [CATALOG_NOT_FOUND] The catalog `some_catalog` not found. Consider to set the SQL config "spark.sql.catalog.some_catalog" to a catalog plugin.
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[USE SCHEMA some_schema-SetNamespaceCommand-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('Database not found: some_schema').getCondition
+E    +      where AnalysisException('Database not found: some_schema') = <ExceptionInfo AnalysisException('Database not found: some_schema') tblen=9>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[USE SCHEMA some_schema-SetNamespaceCommand-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('Database not found: some_schema').getCondition
+E    +      where AnalysisException('Database not found: some_schema') = <ExceptionInfo AnalysisException('Database not found: some_schema') tblen=12>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[SET `test_conf` = `true`-SetCommand-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:86: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[SET `test_conf` = `true`-SetCommand-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:86: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE TABLE some_table (id INT)-CreateTable-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:86: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE TABLE some_table (id INT)-CreateTable-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:86: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE VIEW some_view AS SELECT * FROM some_table-CreateView-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: some_table').getCondition
+E    +      where AnalysisException('Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: some_table') = <ExceptionInfo AnalysisException('Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: some_table') tblen=9>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE VIEW some_view AS SELECT * FROM some_table-CreateView-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: some_table').getCondition
+E    +      where AnalysisException('Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: some_table') = <ExceptionInfo AnalysisException('Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: some_table') tblen=12>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[INSERT INTO some_table VALUES (1)-InsertIntoStatement-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('[TABLE_OR_VIEW_NOT_FOUND] The table or view `some_table` cannot be found').getCondition
+E    +      where AnalysisException('[TABLE_OR_VIEW_NOT_FOUND] The table or view `some_table` cannot be found') = <ExceptionInfo AnalysisException('[TABLE_OR_VIEW_NOT_FOUND] The table or view `some_table` cannot be found') tblen=9>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[INSERT INTO some_table VALUES (1)-InsertIntoStatement-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('[TABLE_OR_VIEW_NOT_FOUND] The table or view `some_table` cannot be found').getCondition
+E    +      where AnalysisException('[TABLE_OR_VIEW_NOT_FOUND] The table or view `some_table` cannot be found') = <ExceptionInfo AnalysisException('[TABLE_OR_VIEW_NOT_FOUND] The table or view `some_table` cannot be found') tblen=12>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[ALTER TABLE some_table RENAME TO some_new_table-RenameTable-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('Table not found: some_table').getCondition
+E    +      where AnalysisException('Table not found: some_table') = <ExceptionInfo AnalysisException('Table not found: some_table') tblen=9>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[ALTER TABLE some_table RENAME TO some_new_table-RenameTable-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('Table not found: some_table').getCondition
+E    +      where AnalysisException('Table not found: some_table') = <ExceptionInfo AnalysisException('Table not found: some_table') tblen=12>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE NAMESPACE some_namespace-CreateNamespace-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:86: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE NAMESPACE some_namespace-CreateNamespace-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:86: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[DROP VIEW some_view-DropView-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('View not found: some_view').getCondition
+E    +      where AnalysisException('View not found: some_view') = <ExceptionInfo AnalysisException('View not found: some_view') tblen=9>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[DROP VIEW some_view-DropView-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:88: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    assert error.value.getCondition() == BLOCKED_SQL
+E   AssertionError: assert None == 'UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND'
+E    +  where None = getCondition()
+E    +    where getCondition = AnalysisException('View not found: some_view').getCondition
+E    +      where AnalysisException('View not found: some_view') = <ExceptionInfo AnalysisException('View not found: some_view') tblen=12>.value
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE MATERIALIZED VIEW some_view AS SELECT * FROM some_table-CreateMaterializedViewAsSelect-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:87: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    build_graph(pipeline_spark, wrap(f'spark.sql("{sql}")'))
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:51: in build_graph
+    exec(body, scope)  # noqa: S102 - the port of Spark's buildGraph runs its snippet
+    ^^^^^^^^^^^^^^^^^
+<string>:3: in <module>
+    ???
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: in _handle_rpc_error
+    raise convert_exception(
+E   pyspark.errors.exceptions.connect.UnsupportedOperationException: [UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE MATERIALIZED VIEW some_view AS SELECT * FROM some_table-CreateMaterializedViewAsSelect-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:87: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    build_graph(pipeline_spark, wrap(f'spark.sql("{sql}")'))
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:51: in build_graph
+    exec(body, scope)  # noqa: S102 - the port of Spark's buildGraph runs its snippet
+    ^^^^^^^^^^^^^^^^^
+<string>:2: in <module>
+    ???
+.venv/lib/python3.12/site-packages/pyspark/pipelines/api.py:289: in outer
+    registry.register_flow(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:117: in register_flow
+    df = flow.func()
+         ^^^^^^^^^^^
+<string>:5: in mv
+    ???
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: in _handle_rpc_error
+    raise convert_exception(
+E   pyspark.errors.exceptions.connect.UnsupportedOperationException: [UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE STREAMING TABLE some_table AS SELECT * FROM some_table-CreateStreamingTableAsSelect-at_definition] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:87: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    build_graph(pipeline_spark, wrap(f'spark.sql("{sql}")'))
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:51: in build_graph
+    exec(body, scope)  # noqa: S102 - the port of Spark's buildGraph runs its snippet
+    ^^^^^^^^^^^^^^^^^
+<string>:3: in <module>
+    ???
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: in _handle_rpc_error
+    raise convert_exception(
+E   pyspark.errors.exceptions.connect.UnsupportedOperationException: [UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.
+_ test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE STREAMING TABLE some_table AS SELECT * FROM some_table-CreateStreamingTableAsSelect-in_function] _
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:87: in test_unsupported_sql_is_blocked_with_or_without_a_flow
+    build_graph(pipeline_spark, wrap(f'spark.sql("{sql}")'))
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:51: in build_graph
+    exec(body, scope)  # noqa: S102 - the port of Spark's buildGraph runs its snippet
+    ^^^^^^^^^^^^^^^^^
+<string>:2: in <module>
+    ???
+.venv/lib/python3.12/site-packages/pyspark/pipelines/api.py:289: in outer
+    registry.register_flow(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:117: in register_flow
+    df = flow.func()
+         ^^^^^^^^^^^
+<string>:5: in mv
+    ???
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: in _handle_rpc_error
+    raise convert_exception(
+E   pyspark.errors.exceptions.connect.UnsupportedOperationException: [UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.
+________________________ test_blocked_sql_has_no_effect ________________________
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:109: in test_blocked_sql_has_no_effect
+    with pytest.raises(AnalysisException):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_______ test_eager_work_inside_a_query_function_is_blocked[df.collect()] _______
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:116: in test_eager_work_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+________ test_eager_work_inside_a_query_function_is_blocked[df.first()] ________
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:116: in test_eager_work_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+________ test_eager_work_inside_a_query_function_is_blocked[df.head(0)] ________
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:116: in test_eager_work_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+______ test_eager_work_inside_a_query_function_is_blocked[df.toPandas()] _______
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:116: in test_eager_work_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+________ test_eager_work_inside_a_query_function_is_blocked[df.schema] _________
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:116: in test_eager_work_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+______ test_eager_work_inside_a_query_function_is_blocked[df.isStreaming] ______
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:116: in test_eager_work_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_______ test_eager_work_inside_a_query_function_is_blocked[df.isLocal()] _______
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:116: in test_eager_work_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_____________ test_eager_write_inside_a_query_function_is_blocked ______________
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:133: in test_eager_write_inside_a_query_function_is_blocked
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+_______________ test_a_flow_name_is_what_marks_a_query_function ________________
+python/pysail/tests/spark/pipelines/test_query_function_guard.py:144: in test_a_flow_name_is_what_marks_a_query_function
+    with pytest.raises(AnalysisException) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AnalysisException
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[SET CATALOG some_catalog-SetCatalogCommand-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[SET CATALOG some_catalog-SetCatalogCommand-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[USE SCHEMA some_schema-SetNamespaceCommand-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[USE SCHEMA some_schema-SetNamespaceCommand-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[SET `test_conf` = `true`-SetCommand-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[SET `test_conf` = `true`-SetCommand-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE TABLE some_table (id INT)-CreateTable-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE TABLE some_table (id INT)-CreateTable-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE VIEW some_view AS SELECT * FROM some_table-CreateView-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE VIEW some_view AS SELECT * FROM some_table-CreateView-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[INSERT INTO some_table VALUES (1)-InsertIntoStatement-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[INSERT INTO some_table VALUES (1)-InsertIntoStatement-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[ALTER TABLE some_table RENAME TO some_new_table-RenameTable-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[ALTER TABLE some_table RENAME TO some_new_table-RenameTable-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE NAMESPACE some_namespace-CreateNamespace-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE NAMESPACE some_namespace-CreateNamespace-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[DROP VIEW some_view-DropView-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[DROP VIEW some_view-DropView-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE MATERIALIZED VIEW some_view AS SELECT * FROM some_table-CreateMaterializedViewAsSelect-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE MATERIALIZED VIEW some_view AS SELECT * FROM some_table-CreateMaterializedViewAsSelect-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE STREAMING TABLE some_table AS SELECT * FROM some_table-CreateStreamingTableAsSelect-at_definition]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_unsupported_sql_is_blocked_with_or_without_a_flow[CREATE STREAMING TABLE some_table AS SELECT * FROM some_table-CreateStreamingTableAsSelect-in_function]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_blocked_sql_has_no_effect
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_work_inside_a_query_function_is_blocked[df.collect()]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_work_inside_a_query_function_is_blocked[df.first()]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_work_inside_a_query_function_is_blocked[df.head(0)]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_work_inside_a_query_function_is_blocked[df.toPandas()]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_work_inside_a_query_function_is_blocked[df.schema]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_work_inside_a_query_function_is_blocked[df.isStreaming]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_work_inside_a_query_function_is_blocked[df.isLocal()]
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_eager_write_inside_a_query_function_is_blocked
+FAILED python/pysail/tests/spark/pipelines/test_query_function_guard.py::test_a_flow_name_is_what_marks_a_query_function
+32 failed, 29 passed in 2.53s

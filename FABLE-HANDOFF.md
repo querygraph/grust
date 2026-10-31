@@ -160,7 +160,9 @@ Accepted source is **7a32efd2a62e3668a64e21e87c3f9dc0938e1912** (parent ba0d692c
 
 Also accepted: **15272ec0a17070b3a9694992cc4a94ba98f572ce** (parent 7a32efd2a), analyzed view streamingness and both view read-mode errors; [evidence](docs/sail-declarative-pipelines/evidence/view-read-modes/README.md). 125+237 native, 300+67, 92 of 92 new public on Sail; 19 of 34 fail on the 7a32 binary. Its known limits are listed there.
 
-Next unit: the general public analyze/execute guard in pipeline query functions (ATTEMPT_ANALYSIS_IN_PIPELINE_QUERY_FUNCTION), which the earlier 44 Spark failures show exists and Sail has not been shown to implement. Follow-up: named_struct reports literal fields nullable while struct() does not.
+Also accepted: **dea8e10fb4c6ff4c258cd747e2a4b14b2c960daa** (parent 15272ec0a), the server-side definition guard; [evidence](docs/sail-declarative-pipelines/evidence/query-function-guard/README.md). 125+245 native, 300+67, 61 on Spark and Sail, 535 of 535 in the pipelines directory; 32 of 61 fail on the 15272 binary. **The frozen harness now lives in evidence/query-function-guard/harness**, because two test fixtures migrated; the earlier copy no longer matches the tree. Query functions cannot pass a DDL string schema, which is an analysis RPC.
+
+Follow-ups: named_struct reports literal fields nullable while struct() does not; SHOW CREATE TABLE is unimplemented in Sail's parser.
 
 ## Opus stopping checkpoint and next implementation (read-mode API accepted, CF-0563)
 
