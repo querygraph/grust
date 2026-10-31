@@ -1,0 +1,51 @@
+{
+  "sail_commit": "d9438bcf3de706017a1e63890ae3b30b29a1eeb0",
+  "base": "0d0064b6e6106a0f817926ff8a46965017248275",
+  "packages": [
+    "sail-plan",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-30T23:31:16.194367+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-source-read-case-fixed-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "log": "/tmp/sail-sdp-source-read-case-fixed-clippy.log",
+      "sha256": "46041d33575b8e64809fdc104f453ced0fe226a9a01ef79f95174c33448c8907"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T23:31:29.057023+00:00"
+}

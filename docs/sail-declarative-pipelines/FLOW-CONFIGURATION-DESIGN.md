@@ -1,16 +1,22 @@
 # Flow configuration phases for Spark 4.2.1 parity
 
-Status: [native phase design](NATIVE-INPUT-BINDING-DESIGN.md) selects an ordered graph-view
-trace through the existing resolver as the next prototype; no opaque provider slot
-is selected. The [external metadata oracle](evidence/flow-config-external-read-reference/README.md)
-separates private semantic settings from run-session Parquet metadata settings.
-The thirteen-case [Spark/Sail baseline](evidence/flow-config-fusion-reference/README.md)
-and twelve additional [CTE/default reference cases](evidence/flow-config-cte-reference/README.md)
-are established. Native input binding still requires a prototype before activation.
-Baseline Sail source is163b2fb52; reference source is617618396. Preparatory
-query-navigation work is now0d0064b6e; it does not change those parity results. No production config-fusion
-change is selected by this document. The [batch ownership design](BATCH-PROVIDER-MIGRATION-DESIGN.md)
-continues to govern admission, provider lifetime and per-command plan maps.
+Status: the selected implementation uses an ordered graph-input trace with the
+existing resolver. Native source-case separation (`b4d83ef72`), pure raw-map
+arithmetic (`349771bd9`) and input tracing (`fa78d067c`) are integrated separately.
+Runtime activation `1bc9d1562` carries accepted settings through analysis
+and per-command reanalysis; inspect its [exact gates and limitations](evidence/flow-config-runtime/README.md).
+No opaque provider slot or captured physical-preparation activation is included.
+
+The identical thirteen public probes now match eight error-condition/success-row
+outcomes, against the historical three-of-thirteen
+[baseline](evidence/flow-config-fusion-reference/README.md). Five generic native
+unresolved-column errors still differ from Spark's structured condition. The
+[twelve CTE/default oracles](evidence/flow-config-cte-reference/README.md) and
+[metadata oracle](evidence/flow-config-external-read-reference/README.md) remain
+requirements, not claims of full Sail parity. Original Scala-suite execution,
+configured dynamic/opaque-reference binding and per-format metadata support remain.
+The [batch ownership design](BATCH-PROVIDER-MIGRATION-DESIGN.md) continues to govern
+admission, provider lifetime and per-command plan maps.
 
 ## Required behavior
 
@@ -94,7 +100,7 @@ binder's helper refusals are admission policy, not a batch SQL limitation.
 1. Keep these exact inputs and observed errors as the differential baseline. The
    added graph-default/CTE/filter/union cases now constrain the primitive; complete
    recursive/legacy CTE and dynamic-name coverage before claiming general parity. Do not
-   replace the ten current mismatches with assertions of Sail's existing behavior.
+   replace outstanding mismatches with assertions of Sail's existing behavior.
 2. Prototype an ordered graph-view configuration trace before ordinary native
    semantic expression resolution, using existing GraphScope and PlanResolver. Reuse
    Sail's parsing, CTE namespace and catalog/view resolution rules. Preserve plan
@@ -142,4 +148,4 @@ CTE suggestion with the twelve direct observations; accepted-map reuse for comma
 reanalysis remains an optimization requiring binding/phase equivalence evidence.
 The original Scala suites have not been
 executed against Sail; their assertions are reference requirements, not passed
-acceptance. Three of thirteen differential cases currently match and ten differ.
+acceptance. Eight of thirteen public differential outcomes match at the integrated runtime commit; five structured unresolved-column conditions still differ.

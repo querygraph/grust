@@ -1,12 +1,24 @@
 # Native input binding for flow configuration analysis
 
-Status: the next prototype uses an ordered graph-view read trace with the existing
-PlanResolver/GraphScope. A new opaque provider-binding representation is deferred.
-The [configuration phases](FLOW-CONFIGURATION-DESIGN.md) and thirteen-case baseline
-remain the target. The [external-file oracle](evidence/flow-config-external-read-reference/README.md)
-does not establish per-occurrence metadata configuration: Parquet checks here
-follow run-session settings, independently of the private semantic settings.
-No production configuration fusion has been activated.
+Status: the ordered graph-input trace is integrated at `fa78d067c`. Runtime
+activation `1bc9d1562` uses the existing PlanResolver/GraphScope;
+its passing final gates and branch advancement are recorded in the
+[runtime packet](evidence/flow-config-runtime/README.md). No opaque provider-binding
+representation was introduced. The thirteen public configuration probes improve
+from three matching outcomes to eight; five structured unresolved-column errors
+remain different. This is not general binding parity or original Scala acceptance.
+
+The [external-file oracle](evidence/flow-config-external-read-reference/README.md)
+separates run-session metadata settings from private semantic settings. The native
+source-case override is integrated at `b4d83ef72`, including stored-view propagation.
+ORC consumes this flag; Parquet and other formats still require separate support.
+The seam alone does not close the Parquet duplicate-column oracle.
+
+With no declared settings on any graph view, native resolution remains available
+for dynamic identifiers and Connect relation references. Configured dynamic names,
+WithRelations/plan-ID references, recursive/legacy CTE equivalence, and binding
+changes across command reanalysis remain unfinished. Complete these requirements;
+the explicit trace refusals are temporary implementation boundaries.
 
 ## Problem and required boundary
 

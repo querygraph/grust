@@ -1,0 +1,875 @@
+commit 1bc9d15620dd4c85ac3f09ff8ec90d5b92a4292e
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 17:14:15 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 17:14:15 2026 -0700
+
+    Apply inherited view settings and validate successful flow configuration merges
+
+diff --git a/crates/sail-spark-connect/src/pipelines/analysis.rs b/crates/sail-spark-connect/src/pipelines/analysis.rs
+index 5cdaa17ea..4f2391d97 100644
+--- a/crates/sail-spark-connect/src/pipelines/analysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/analysis.rs
+@@ -6,11 +6,9 @@ use datafusion::common::DFSchema;
+ use datafusion::logical_expr::{EmptyRelation, LogicalPlan};
+ use datafusion::prelude::SessionContext;
+ use sail_catalog::provider::CreateViewOptions;
+-use sail_common::spec;
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_common_datafusion::rename::logical_plan::rename_logical_plan;
+ use sail_plan::error::{PlanError, PlanResult};
+-use sail_plan::resolver::PlanResolver;
+ use sail_plan::resolver::scope::RelationScope;
+ 
+ use super::graph::{Flow, GraphDefinition, Name, analysis, quoted};
+@@ -100,6 +98,7 @@ pub(super) struct AnalyzedGraph {
+     pub dependencies: BTreeMap<Name, BTreeSet<Name>>,
+     pub schemas: BTreeMap<Name, SchemaRef>,
+     pub publications: BTreeMap<Name, CreateViewOptions>,
++    pub accepted_confs: BTreeMap<Name, HashMap<String, String>>,
+ }
+ 
+ pub(super) async fn analyze(
+@@ -112,6 +111,9 @@ pub(super) async fn analyze(
+     let mut order = vec![];
+     let mut dependencies = BTreeMap::new();
+     let mut publications = BTreeMap::new();
++    let mut accepted_confs = BTreeMap::new();
++    let base = HashMap::new();
++    let source_case_sensitive = spark.plan_config()?.case_sensitive;
+     while order.len() < graph.outputs.len() {
+         let before = order.len();
+         for output in &graph.outputs {
+@@ -122,31 +124,22 @@ pub(super) async fn analyze(
+             let mut plans = vec![];
+             let mut pending = false;
+             for flow in graph.flows.iter().filter(|x| x.target == output.name) {
+-                let scope = GraphScope {
++                let context = super::config::resolve::FlowContext {
++                    ctx,
+                     graph,
+                     resolved: &resolved,
+-                    reads: Mutex::default(),
+-                    flow,
++                    accepted: &accepted_confs,
++                    base: &base,
++                    source_case_sensitive,
+                 };
+-                let config = spark.plan_config_with_overrides(flow.sql_conf.clone())?;
+-                let resolver = PlanResolver::new(ctx, config).with_relation_scope(&scope);
+-                let result = match &output.view {
+-                    Some(definition) => resolver
+-                        .resolve_view_publication(definition.clone())
+-                        .await
+-                        .map(|(plan, options)| {
++                match context.resolve(flow, output.view.as_ref()).await? {
++                    super::config::resolve::FlowResolution::Resolved(result) => {
++                        inputs.extend(result.reads);
++                        accepted_confs.insert(flow.name.clone(), result.accepted);
++                        if let Some(options) = result.publication {
+                             publications.insert(output.name.clone(), options);
+-                            plan
+-                        }),
+-                    None => {
+-                        resolver
+-                            .resolve_named_plan(spec::Plan::Query(flow.query.clone()))
+-                            .await
+-                    }
+-                };
+-                inputs.extend(scope.reads.into_inner()?);
+-                match result {
+-                    Ok(plan) => {
++                        }
++                        let plan = result.plan;
+                         let plan = if let Some(fields) = plan.fields {
+                             rename_logical_plan(plan.plan, &fields)?
+                         } else {
+@@ -154,11 +147,11 @@ pub(super) async fn analyze(
+                         };
+                         plans.push(plan);
+                     }
+-                    Err(PlanError::UnresolvedRelation(_)) => {
++                    super::config::resolve::FlowResolution::Pending(reads) => {
++                        inputs.extend(reads);
+                         pending = true;
+                         break;
+                     }
+-                    Err(error) => return Err(error.into()),
+                 }
+             }
+             dependencies.insert(output.name.clone(), inputs);
+@@ -234,6 +227,7 @@ pub(super) async fn analyze(
+             .map(|(name, plan)| (name, Arc::new(plan.schema().as_arrow().clone())))
+             .collect(),
+         publications,
++        accepted_confs,
+     })
+ }
+ 
+diff --git a/crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs b/crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs
+index df43673e9..eb6f9da2f 100644
+--- a/crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs
+@@ -11,6 +11,7 @@ use datafusion::common::{Result, internal_datafusion_err};
+ use datafusion::datasource::{MemTable, TableProvider, provider_as_source};
+ use datafusion::logical_expr::{Expr, LogicalPlan, TableSource, TableType};
+ use datafusion::physical_plan::ExecutionPlan;
++use sail_common::spec;
+ use sail_common_datafusion::datasource::{DataSource, DataSourceRegistry, SinkInfo, SourceInfo};
+ 
+ use super::*;
+diff --git a/crates/sail-spark-connect/src/pipelines/config/mod.rs b/crates/sail-spark-connect/src/pipelines/config/mod.rs
+index 77e7265e7..f4b549af3 100644
+--- a/crates/sail-spark-connect/src/pipelines/config/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/config/mod.rs
+@@ -1,5 +1,13 @@
+-//! Raw flow-configuration arithmetic and ordered graph-input discovery.
+-//! Resolver-side activation is kept in a separate unit.
++//! Flow configuration phases for declarative pipelines.
++//!
++//! `merge` is pure std-only string-map arithmetic. `trace` discovers ordered
++//! graph inputs; `resolve` invokes the native planner and performs the
++//! success-only merge and conditional second call. Provider ownership and
++//! final command execution remain the callers' responsibility.
+ 
+ pub mod merge;
++pub(super) mod resolve;
+ mod trace;
++
++#[cfg(test)]
++mod runtime_tests;
+diff --git a/crates/sail-spark-connect/src/pipelines/config/resolve.rs b/crates/sail-spark-connect/src/pipelines/config/resolve.rs
+new file mode 100644
+index 000000000..7afcfaf52
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/config/resolve.rs
+@@ -0,0 +1,217 @@
++//! The two analysis calls of a flow, with success-only configuration validation.
++use std::collections::{BTreeMap, BTreeSet, HashMap};
++
++use datafusion::logical_expr::LogicalPlan;
++use datafusion::prelude::SessionContext;
++use sail_catalog::provider::CreateViewOptions;
++use sail_common::spec;
++use sail_common_datafusion::datasource::DataSourceRegistry;
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_plan::error::{PlanError, PlanResult};
++use sail_plan::resolver::PlanResolver;
++use sail_plan::resolver::plan::NamedPlan;
++
++use super::merge::{ConfMap, ViewContribution, first_pass_map, merge};
++use crate::error::{SparkResult, StructuredSparkError};
++use crate::pipelines::analysis::GraphScope;
++use crate::pipelines::graph::{Flow, GraphDefinition, Name};
++use crate::session::SparkSession;
++use crate::spark::connect::OutputType;
++
++pub(in crate::pipelines) struct ResolvedFlow {
++    pub plan: NamedPlan,
++    pub publication: Option<CreateViewOptions>,
++    pub accepted: ConfMap,
++    pub reads: BTreeSet<Name>,
++}
++pub(in crate::pipelines) enum FlowResolution {
++    Resolved(Box<ResolvedFlow>),
++    Pending(BTreeSet<Name>),
++}
++struct Call {
++    result: Option<(NamedPlan, Option<CreateViewOptions>)>,
++    reads: BTreeSet<Name>,
++}
++
++fn contributions<'a>(
++    graph: &GraphDefinition,
++    accepted: &'a BTreeMap<Name, ConfMap>,
++    names: impl IntoIterator<Item = &'a Name>,
++) -> PlanResult<Option<Vec<(String, &'a ConfMap)>>> {
++    let mut views = vec![];
++    for name in names {
++        let output = graph
++            .outputs
++            .iter()
++            .find(|output| &output.name == name)
++            .ok_or_else(|| PlanError::internal("graph input output missing"))?;
++        if output.kind != OutputType::TemporaryView && output.view.is_none() {
++            continue;
++        }
++        let flow = graph
++            .flows
++            .iter()
++            .find(|flow| &flow.target == name)
++            .ok_or_else(|| PlanError::internal("graph view flow missing"))?;
++        let Some(conf) = accepted.get(&flow.name) else {
++            return Ok(None);
++        };
++        views.push((flow.name.join("."), conf));
++    }
++    Ok(Some(views))
++}
++fn overlay(base: &ConfMap, overrides: &ConfMap) -> ConfMap {
++    let mut values = base.clone();
++    values.extend(overrides.clone());
++    values
++}
++
++pub(in crate::pipelines) struct FlowContext<'a> {
++    pub ctx: &'a SessionContext,
++    pub graph: &'a GraphDefinition,
++    pub resolved: &'a BTreeMap<Name, LogicalPlan>,
++    pub accepted: &'a BTreeMap<Name, ConfMap>,
++    pub base: &'a ConfMap,
++    pub source_case_sensitive: bool,
++}
++impl FlowContext<'_> {
++    async fn call(
++        &self,
++        flow: &Flow,
++        view: Option<&spec::ViewDefinition>,
++        conf: &ConfMap,
++    ) -> SparkResult<Call> {
++        let spark = self.ctx.extension::<SparkSession>()?;
++        let initial = spark.plan_config_with_overrides(overlay(self.base, conf))?;
++        let registry = self.ctx.extension::<DataSourceRegistry>().ok();
++        // With no declared view settings anywhere in the graph, every accepted
++        // view map is empty as well. Native resolution alone then gives the exact
++        // inputs; there is no inherited setting to collect before resolving SQL.
++        // Keep native query forms available even when the configuration trace
++        // does not yet support them. Table settings do not cross this boundary.
++        let has_view_settings = self.graph.flows.iter().any(|flow| {
++            !flow.sql_conf.is_empty()
++                && self.graph.outputs.iter().any(|output| {
++                    output.name == flow.target
++                        && (output.kind == OutputType::TemporaryView || output.view.is_some())
++                })
++        });
++        let ordered = if has_view_settings {
++            super::trace::ordered_inputs(
++                self.graph,
++                flow,
++                &flow.query,
++                initial.case_sensitive,
++                |format| {
++                    registry
++                        .as_ref()
++                        .is_some_and(|registry| registry.get_data_source(format).is_ok())
++                },
++            )?
++        } else {
++            vec![]
++        };
++        let mut reads = ordered.iter().cloned().collect::<BTreeSet<_>>();
++        let Some(views) = contributions(self.graph, self.accepted, ordered.iter())? else {
++            return Ok(Call {
++                result: None,
++                reads,
++            });
++        };
++        let semantic = first_pass_map(
++            conf,
++            views.iter().map(|(name, conf)| ViewContribution {
++                flow_name: name,
++                accepted: conf,
++            }),
++        );
++        let config = spark.plan_config_with_overrides(overlay(self.base, &semantic))?;
++        let scope = GraphScope::new(self.graph, self.resolved, flow);
++        let resolver = PlanResolver::new(self.ctx, config)
++            .with_relation_scope(&scope)
++            .with_source_read_case_sensitive(self.source_case_sensitive);
++        let result = match view {
++            Some(view) => resolver
++                .resolve_view_publication(view.clone())
++                .await
++                .map(|(plan, options)| (plan, Some(options))),
++            None => resolver
++                .resolve_named_plan(spec::Plan::Query(flow.query.clone()))
++                .await
++                .map(|plan| (plan, None)),
++        };
++        let actual = scope.reads.into_inner()?;
++        match result {
++            Ok(plan) => Ok(Call {
++                result: Some(plan),
++                reads: actual,
++            }),
++            Err(PlanError::UnresolvedRelation(_)) => {
++                reads.extend(actual);
++                Ok(Call {
++                    result: None,
++                    reads,
++                })
++            }
++            Err(error) => Err(error.into()),
++        }
++    }
++
++    /// `base` is the run-session setting overlay (empty at initial graph analysis,
++    /// accepted command settings at command reanalysis). It is not a declared-flow
++    /// contribution to conflict checking. Provider metadata has its own case flag.
++    pub(in crate::pipelines) async fn resolve(
++        &self,
++        flow: &Flow,
++        view: Option<&spec::ViewDefinition>,
++    ) -> SparkResult<FlowResolution> {
++        let first = self.call(flow, view, &flow.sql_conf).await?;
++        let Some((plan, publication)) = first.result else {
++            return Ok(FlowResolution::Pending(first.reads));
++        };
++        let Some(views) = contributions(self.graph, self.accepted, first.reads.iter())? else {
++            return Ok(FlowResolution::Pending(first.reads));
++        };
++        let display = flow.name.join(".");
++        let merged = merge(
++            &display,
++            &display,
++            &flow.sql_conf,
++            views.iter().map(|(name, conf)| ViewContribution {
++                flow_name: name,
++                accepted: conf,
++            }),
++        )
++        .map_err(|error| {
++            Box::new(StructuredSparkError {
++                class: "org.apache.spark.sql.AnalysisException".into(),
++                condition: "DUPLICATE_FLOW_SQL_CONF".into(),
++                sql_state: "42710".into(),
++                message: error.to_string(),
++                parameters: HashMap::from([
++                    ("key".into(), error.key),
++                    ("datasetName".into(), error.dataset_name),
++                    ("flowName1".into(), error.flow_name1),
++                    ("flowName2".into(), error.flow_name2),
++                ]),
++            })
++        })?;
++        let (plan, publication, reads) = if merged.changed {
++            // The second call's raw configuration is the accepted union. Spark does
++            // not run the merge a third time if that call binds a different input.
++            let second = self.call(flow, view, &merged.map).await?;
++            let Some((plan, publication)) = second.result else {
++                return Ok(FlowResolution::Pending(second.reads));
++            };
++            (plan, publication, second.reads)
++        } else {
++            (plan, publication, first.reads)
++        };
++        Ok(FlowResolution::Resolved(Box::new(ResolvedFlow {
++            plan,
++            publication,
++            reads,
++            accepted: merged.map,
++        })))
++    }
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs b/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
+new file mode 100644
+index 000000000..7c03d93e8
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
+@@ -0,0 +1,271 @@
++use std::collections::HashMap;
++
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++
++use crate::error::{SparkError, SparkResult};
++use crate::pipelines::analysis::{self, AnalyzedGraph};
++use crate::pipelines::graph::{GraphDefinition, PipelineGraph};
++use crate::pipelines::{catalog_preparation_tests, sql};
++use crate::session::SparkSession;
++use crate::spark::connect::pipeline_command as pc;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++const CASE: &str = "spark.sql.caseSensitive";
++
++#[tokio::test]
++async fn unconfigured_views_preserve_native_dynamic_identifier_resolution() -> TestResult {
++    let ctx = catalog_preparation_tests::context()?;
++    let mut graph = definition("CREATE TEMPORARY VIEW a AS SELECT 1 AS foo; CREATE MATERIALIZED VIEW target AS SELECT foo FROM IDENTIFIER('a')").await?;
++    // A table's own settings are not inherited by its consumers.
++    set(&mut graph, "target", "pipelines.test.table_only", "value")?;
++    let analyzed = analysis::analyze(&ctx, &graph).await?;
++    assert_eq!(
++        accepted(&graph, &analyzed, "target")?["pipelines.test.table_only"],
++        "value"
++    );
++    assert!(accepted(&graph, &analyzed, "a")?.is_empty());
++    Ok(())
++}
++
++#[tokio::test]
++async fn unconfigured_views_preserve_native_parameter_relation_resolution() -> TestResult {
++    use sail_common::spec;
++
++    let ctx = catalog_preparation_tests::context()?;
++    let mut graph = definition("CREATE TEMPORARY VIEW a AS SELECT 1 AS foo; CREATE MATERIALIZED VIEW target AS SELECT foo FROM a").await?;
++    let root = definition("CREATE MATERIALIZED VIEW target AS SELECT foo FROM param")
++        .await?
++        .flows
++        .into_iter()
++        .next()
++        .ok_or("root missing")?
++        .query;
++    let flow = graph
++        .flows
++        .iter_mut()
++        .find(|flow| flow.target.last().is_some_and(|name| name == "target"))
++        .ok_or("flow missing")?;
++    let mut reference = spec::QueryPlan::new(spec::QueryNode::SubqueryAlias {
++        input: Box::new(flow.query.clone()),
++        alias: "param".into(),
++        qualifier: vec![],
++    });
++    reference.plan_id = Some(42);
++    flow.query = spec::QueryPlan::new(spec::QueryNode::WithRelations {
++        root: Box::new(root),
++        references: vec![reference],
++    });
++    let analyzed = analysis::analyze(&ctx, &graph).await?;
++    assert!(accepted(&graph, &analyzed, "target")?.is_empty());
++    Ok(())
++}
++
++async fn definition(query: &str) -> SparkResult<GraphDefinition> {
++    let mut graph = PipelineGraph::new("test_catalog".into(), "test_db".into(), Default::default());
++    sql::prepare(
++        pc::DefineSqlGraphElements {
++            sql_text: Some(query.into()),
++            ..Default::default()
++        },
++        |_| async { Err(SparkError::internal("no catalog expressions in fixture")) },
++    )
++    .await?
++    .commit(&mut graph)?;
++    Ok(graph.definition)
++}
++fn set(graph: &mut GraphDefinition, target: &str, key: &str, value: &str) -> TestResult {
++    graph
++        .flows
++        .iter_mut()
++        .find(|flow| flow.target.last().is_some_and(|name| name == target))
++        .ok_or("flow missing")?
++        .sql_conf
++        .insert(key.into(), value.into());
++    Ok(())
++}
++fn accepted<'a>(
++    graph: &GraphDefinition,
++    analyzed: &'a AnalyzedGraph,
++    target: &str,
++) -> Result<&'a HashMap<String, String>, Box<dyn std::error::Error>> {
++    let flow = graph
++        .flows
++        .iter()
++        .find(|flow| flow.target.last().is_some_and(|name| name == target))
++        .ok_or("flow missing")?;
++    analyzed
++        .accepted_confs
++        .get(&flow.name)
++        .ok_or_else(|| "accepted map missing".into())
++}
++
++#[tokio::test]
++async fn first_semantic_failure_precedes_conflict_and_reversed_reads_change_the_error() -> TestResult
++{
++    let ctx = catalog_preparation_tests::context()?;
++    for (query, conflict) in [
++        ("SELECT Foo FROM z_sensitive CROSS JOIN a_insensitive", true),
++        (
++            "SELECT Foo FROM a_insensitive CROSS JOIN z_sensitive",
++            false,
++        ),
++        (
++            "SELECT z1.Foo FROM z_sensitive z1 CROSS JOIN a_insensitive CROSS JOIN z_sensitive z2",
++            false,
++        ),
++        (
++            "SELECT Foo FROM (SELECT Foo FROM z_sensitive) q CROSS JOIN a_insensitive",
++            true,
++        ),
++        (
++            "SELECT Bar, (SELECT foo FROM z_sensitive) AS nested FROM a_insensitive",
++            true,
++        ),
++    ] {
++        let mut graph = definition(&format!("CREATE TEMPORARY VIEW z_sensitive AS SELECT 1 AS foo; CREATE TEMPORARY VIEW a_insensitive AS SELECT 2 AS bar; CREATE MATERIALIZED VIEW target AS {query}")).await?;
++        set(&mut graph, "z_sensitive", CASE, "true")?;
++        set(&mut graph, "a_insensitive", CASE, "false")?;
++        let error = analysis::analyze(&ctx, &graph)
++            .await
++            .err()
++            .ok_or("invalid graph accepted")?;
++        if conflict {
++            let SparkError::Structured(error) = error else {
++                return Err(format!("wrong conflict error: {error}").into());
++            };
++            assert_eq!(error.condition, "DUPLICATE_FLOW_SQL_CONF");
++            assert_eq!(error.sql_state, "42710");
++            assert_eq!(error.parameters["key"], CASE);
++            assert_eq!(error.parameters["flowName1"], "a_insensitive");
++            assert_eq!(error.parameters["flowName2"], "z_sensitive");
++        } else {
++            assert!(matches!(error, SparkError::AnalysisError(_)), "{error}");
++            assert!(
++                error.to_string().contains("cannot resolve attribute"),
++                "{error}"
++            );
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn accepted_maps_are_transitive_through_views_but_stop_at_tables() -> TestResult {
++    let ctx = catalog_preparation_tests::context()?;
++    let mut graph = definition("CREATE TEMPORARY VIEW a AS SELECT 1 AS foo; CREATE TEMPORARY VIEW b AS SELECT foo FROM a; CREATE MATERIALIZED VIEW barrier AS SELECT foo FROM b; CREATE TEMPORARY VIEW c AS SELECT 2 AS bar; CREATE MATERIALIZED VIEW target AS SELECT foo, bar FROM barrier CROSS JOIN c").await?;
++    for target in ["a", "b", "barrier", "c", "target"] {
++        set(
++            &mut graph,
++            target,
++            &format!("pipelines.test.{target}"),
++            target,
++        )?;
++    }
++    let analyzed = analysis::analyze(&ctx, &graph).await?;
++    for (target, expected) in [
++        ("b", vec!["a", "b"]),
++        ("barrier", vec!["a", "b", "barrier"]),
++        ("target", vec!["c", "target"]),
++    ] {
++        let map = accepted(&graph, &analyzed, target)?;
++        assert_eq!(map.len(), expected.len());
++        for key in expected {
++            assert_eq!(map[&format!("pipelines.test.{key}")], key);
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn equal_values_and_conditional_reanalysis_preserve_the_run_session() -> TestResult {
++    let ctx = catalog_preparation_tests::context()?;
++    let mut graph = definition("CREATE TEMPORARY VIEW a AS SELECT 1 AS foo; CREATE MATERIALIZED VIEW target AS SELECT Foo FROM a").await?;
++    set(&mut graph, "a", CASE, "false")?;
++    let analyzed = analysis::analyze(&ctx, &graph).await?;
++    assert_eq!(accepted(&graph, &analyzed, "target")?[CASE], "false");
++    assert!(
++        graph
++            .flows
++            .iter()
++            .find(|flow| flow.target.last().is_some_and(|name| name == "target"))
++            .ok_or("target missing")?
++            .sql_conf
++            .is_empty()
++    );
++    assert!(
++        !ctx.extension::<SparkSession>()?
++            .plan_config()?
++            .case_sensitive
++    );
++    set(&mut graph, "target", CASE, "false")?;
++    let same = analysis::analyze(&ctx, &graph).await?;
++    assert_eq!(
++        accepted(&graph, &same, "target")?,
++        accepted(&graph, &analyzed, "target")?
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn changed_union_repeats_native_analysis_but_an_unchanged_union_does_not() -> TestResult {
++    use std::sync::Arc;
++    use std::sync::atomic::{AtomicUsize, Ordering};
++
++    use datafusion::arrow::datatypes::{DataType, Field, Schema};
++    use datafusion::datasource::{MemTable, provider_as_source};
++    use sail_common_datafusion::datasource::{
++        DataSource, DataSourceRegistry, SinkInfo, SourceInfo,
++    };
++    struct Counter(Arc<AtomicUsize>);
++    #[tonic::async_trait]
++    impl DataSource for Counter {
++        fn name(&self) -> &str {
++            "call_probe"
++        }
++        async fn create_source(
++            &self,
++            _: &dyn datafusion::catalog::Session,
++            _: SourceInfo,
++        ) -> datafusion::common::Result<Arc<dyn datafusion::logical_expr::TableSource>> {
++            self.0.fetch_add(1, Ordering::SeqCst);
++            Ok(provider_as_source(Arc::new(MemTable::try_new(
++                Arc::new(Schema::new(vec![Field::new("id", DataType::Int64, false)])),
++                vec![vec![]],
++            )?)))
++        }
++        async fn create_writer(
++            &self,
++            _: &dyn datafusion::catalog::Session,
++            _: SinkInfo,
++        ) -> datafusion::common::Result<datafusion::logical_expr::LogicalPlan> {
++            datafusion::common::internal_err!("read-only counter")
++        }
++    }
++    let ctx = catalog_preparation_tests::context()?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let registry = DataSourceRegistry::new();
++    registry.register_data_source(Arc::new(Counter(calls.clone())))?;
++    ctx.state_ref()
++        .write()
++        .config_mut()
++        .set_extension(Arc::new(registry));
++    let mut graph = definition("CREATE TEMPORARY VIEW a AS SELECT 1 AS foo; CREATE MATERIALIZED VIEW target AS SELECT foo FROM a CROSS JOIN call_probe.input").await?;
++    let key = "pipelines.test.inherited";
++    set(&mut graph, "a", key, "value")?;
++    let analyzed = analysis::analyze(&ctx, &graph).await?;
++    assert_eq!(accepted(&graph, &analyzed, "target")?[key], "value");
++    assert_eq!(
++        calls.load(Ordering::SeqCst),
++        2,
++        "changed raw map must perform a new native analysis call"
++    );
++    calls.store(0, Ordering::SeqCst);
++    set(&mut graph, "target", key, "value")?;
++    analysis::analyze(&ctx, &graph).await?;
++    assert_eq!(
++        calls.load(Ordering::SeqCst),
++        1,
++        "equal accepted/declared maps need only the first call"
++    );
++    Ok(())
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/execution.rs b/crates/sail-spark-connect/src/pipelines/execution.rs
+index 539c5b050..f3e0bae99 100644
+--- a/crates/sail-spark-connect/src/pipelines/execution.rs
++++ b/crates/sail-spark-connect/src/pipelines/execution.rs
+@@ -53,9 +53,20 @@ pub(super) async fn execute(
+             .iter()
+             .find(|x| &x.target == name)
+             .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", name.join(".")))?;
+-        let config = spark.plan_config_with_overrides(flow.sql_conf.clone())?;
+-        let resolved =
+-            super::reanalysis::resolve_inputs(ctx, graph, &analyzed, name, config.clone()).await?;
++        let accepted = analyzed
++            .accepted_confs
++            .get(&flow.name)
++            .ok_or_else(|| SparkError::internal("accepted flow configuration missing"))?;
++        let config = spark.plan_config_with_overrides(accepted.clone())?;
++        let resolved = super::reanalysis::resolve_inputs(
++            ctx,
++            graph,
++            &analyzed,
++            name,
++            config.clone(),
++            accepted,
++        )
++        .await?;
+         let scope = GraphScope::new(graph, &resolved, flow);
+         run_command(ctx, config, table_write_command(output, flow), Some(&scope)).await?;
+     }
+diff --git a/crates/sail-spark-connect/src/pipelines/mod.rs b/crates/sail-spark-connect/src/pipelines/mod.rs
+index 63c2341e4..cf3f609f6 100644
+--- a/crates/sail-spark-connect/src/pipelines/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/mod.rs
+@@ -1,13 +1,4 @@
+ mod analysis;
+-// Pure flow-configuration arithmetic; wired by the resolver-side unit, so the
+-// expectation below is fulfilled until then and fails the build once it is wired.
+-#[cfg_attr(
+-    not(test),
+-    expect(
+-        dead_code,
+-        reason = "consumed by the first-pass/merge resolver wiring, a separate unit"
+-    )
+-)]
+ mod config;
+ mod execution;
+ mod graph;
+diff --git a/crates/sail-spark-connect/src/pipelines/reanalysis.rs b/crates/sail-spark-connect/src/pipelines/reanalysis.rs
+index 78a64dc13..6c341d650 100644
+--- a/crates/sail-spark-connect/src/pipelines/reanalysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/reanalysis.rs
+@@ -5,15 +5,13 @@ use std::sync::Arc;
+ use datafusion::logical_expr::LogicalPlan;
+ use datafusion::prelude::SessionContext;
+ use sail_common::spec;
+-use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_common_datafusion::rename::logical_plan::rename_logical_plan;
+ use sail_plan::config::PlanConfig;
+ use sail_plan::resolver::PlanResolver;
+ 
+-use super::analysis::{AnalyzedGraph, GraphScope};
++use super::analysis::AnalyzedGraph;
+ use super::graph::{GraphDefinition, Name, analysis, quoted};
+ use crate::error::{SparkError, SparkResult};
+-use crate::session::SparkSession;
+ use crate::spark::connect::OutputType;
+ 
+ /// Local views are definitions; tables are materialization boundaries. External
+@@ -55,19 +53,20 @@ fn inputs(
+ }
+ 
+ /// The returned provider plans belong to this command only. This does not admit
+-/// an owner, pin a backend version, or implement upstream configuration fusion.
+-/// View bodies keep their existing flow config; committed reads use the caller's
+-/// command config. Later ownership activation must pass its captured Session too.
++/// an owner or pin a backend version. Views re-run flow analysis under the
++/// accepted command base; committed reads use that command's metadata config.
++/// Later ownership activation must pass its captured Session too.
+ pub(super) async fn resolve_inputs(
+     ctx: &SessionContext,
+     graph: &GraphDefinition,
+     analyzed: &AnalyzedGraph,
+     target: &Name,
+     command_config: Arc<PlanConfig>,
++    command_conf: &super::config::merge::ConfMap,
+ ) -> SparkResult<BTreeMap<Name, LogicalPlan>> {
+     let required = inputs(graph, analyzed, target)?;
+-    let spark = ctx.extension::<SparkSession>()?;
+     let mut resolved = BTreeMap::new();
++    let mut accepted = BTreeMap::new();
+     for name in analyzed
+         .order
+         .iter()
+@@ -78,39 +77,43 @@ pub(super) async fn resolve_inputs(
+             .iter()
+             .find(|output| &output.name == name)
+             .ok_or_else(|| SparkError::internal("analyzed input output missing"))?;
+-        let (query, config, flow) =
+-            if output.kind == OutputType::TemporaryView || output.view.is_some() {
+-                let flow = graph
+-                    .flows
+-                    .iter()
+-                    .find(|flow| &flow.target == name)
+-                    .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", quoted(name)))?;
+-                (
+-                    flow.query.clone(),
+-                    spark.plan_config_with_overrides(flow.sql_conf.clone())?,
+-                    Some(flow),
+-                )
+-            } else {
+-                let query = spec::QueryPlan::new(spec::QueryNode::Read {
+-                    read_type: spec::ReadType::NamedTable(Box::new(spec::ReadNamedTable {
+-                        name: name.clone().into(),
+-                        temporal: None,
+-                        sample: None,
+-                        options: vec![],
+-                    })),
+-                    is_streaming: false,
+-                });
+-                (query, command_config.clone(), None)
++        let named = if output.kind == OutputType::TemporaryView || output.view.is_some() {
++            let flow = graph
++                .flows
++                .iter()
++                .find(|flow| &flow.target == name)
++                .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", quoted(name)))?;
++            let context = super::config::resolve::FlowContext {
++                ctx,
++                graph,
++                resolved: &resolved,
++                accepted: &accepted,
++                base: command_conf,
++                source_case_sensitive: command_config.case_sensitive,
+             };
+-        let resolver = PlanResolver::new(ctx, config);
+-        let scope = flow.map(|flow| GraphScope::new(graph, &resolved, flow));
+-        let resolver = match &scope {
+-            Some(scope) => resolver.with_relation_scope(scope),
+-            None => resolver,
++            match context.resolve(flow, None).await? {
++                super::config::resolve::FlowResolution::Resolved(result) => {
++                    accepted.insert(flow.name.clone(), result.accepted);
++                    result.plan
++                }
++                super::config::resolve::FlowResolution::Pending(_) => {
++                    return Err(SparkError::internal("command view inputs did not resolve"));
++                }
++            }
++        } else {
++            let query = spec::QueryPlan::new(spec::QueryNode::Read {
++                read_type: spec::ReadType::NamedTable(Box::new(spec::ReadNamedTable {
++                    name: name.clone().into(),
++                    temporal: None,
++                    sample: None,
++                    options: vec![],
++                })),
++                is_streaming: false,
++            });
++            PlanResolver::new(ctx, command_config.clone())
++                .resolve_named_plan(spec::Plan::Query(query))
++                .await?
+         };
+-        let named = resolver
+-            .resolve_named_plan(spec::Plan::Query(query))
+-            .await?;
+         let plan = match named.fields {
+             Some(fields) => rename_logical_plan(named.plan, &fields)?,
+             None => named.plan,
+diff --git a/crates/sail-spark-connect/src/pipelines/reanalysis/tests.rs b/crates/sail-spark-connect/src/pipelines/reanalysis/tests.rs
+index 88cd3af8b..886ca7e02 100644
+--- a/crates/sail-spark-connect/src/pipelines/reanalysis/tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/reanalysis/tests.rs
+@@ -1,3 +1,4 @@
++use std::collections::HashMap;
+ use std::sync::{Mutex, Weak};
+ 
+ use datafusion::arrow::datatypes::{DataType, Field, Schema, SchemaRef};
+@@ -11,10 +12,12 @@ use sail_catalog::provider::{
+     CreateDatabaseOptions, CreateTableColumnOptions, CreateTableMode, CreateTableOptions,
+ };
+ use sail_common_datafusion::datasource::{DataSource, DataSourceRegistry, SinkInfo, SourceInfo};
++use sail_common_datafusion::extension::SessionExtensionAccessor;
+ 
+ use super::*;
+ use crate::pipelines::graph::PipelineGraph;
+ use crate::pipelines::{analysis, catalog_preparation_tests, sql};
++use crate::session::SparkSession;
+ use crate::spark::connect::pipeline_command as pc;
+ 
+ type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+@@ -152,6 +155,7 @@ async fn separate_commands_reresolve_views_and_release_each_provider() -> TestRe
+             &analyzed,
+             &target,
+             ctx.extension::<SparkSession>()?.plan_config()?,
++            &HashMap::new(),
+         )
+         .await?;
+         assert_eq!(resolved.len(), 1);
+@@ -195,8 +199,15 @@ async fn table_stops_reanalysis_and_uses_the_consuming_command_configuration() -
+         .clone();
+     assert!(!config.case_sensitive);
+     config.case_sensitive = true;
+-    let resolved =
+-        resolve_inputs(&ctx, &graph, &analyzed, &name("target"), Arc::new(config)).await?;
++    let resolved = resolve_inputs(
++        &ctx,
++        &graph,
++        &analyzed,
++        &name("target"),
++        Arc::new(config),
++        &HashMap::new(),
++    )
++    .await?;
+     assert_eq!(resolved.len(), 1);
+     assert!(resolved.contains_key(&name("barrier")));
+     let calls = events(&trace)?;
+@@ -232,7 +243,7 @@ async fn graph_persisted_view_uses_its_definition_namespace_without_catalog_publ
+         .await?;
+     table(&ctx, &["test_catalog", "view_db", "backing"], "namespace").await?;
+     table(&ctx, &["backing"], "wrong-namespace").await?;
+-    let graph = definition("USE view_db; SET spark.sql.caseSensitive=true; CREATE VIEW p AS SELECT id FROM backing; USE test_db; SET spark.sql.caseSensitive=false; CREATE MATERIALIZED VIEW target AS SELECT id FROM view_db.p").await?;
++    let graph = definition("USE view_db; SET spark.sql.caseSensitive=true; CREATE VIEW p AS SELECT id FROM backing; USE test_db; SET spark.sql.caseSensitive=true; CREATE MATERIALIZED VIEW target AS SELECT id FROM view_db.p").await?;
+     let analyzed = analysis::analyze(&ctx, &graph).await?;
+     let baseline = events(&trace)?.len();
+     let resolved = resolve_inputs(
+@@ -240,7 +251,9 @@ async fn graph_persisted_view_uses_its_definition_namespace_without_catalog_publ
+         &graph,
+         &analyzed,
+         &name("target"),
+-        ctx.extension::<SparkSession>()?.plan_config()?,
++        ctx.extension::<SparkSession>()?
++            .plan_config_with_overrides(analyzed.accepted_confs[&name("target")].clone())?,
++        &analyzed.accepted_confs[&name("target")],
+     )
+     .await?;
+     assert!(resolved.contains_key(&vec!["test_catalog".into(), "view_db".into(), "p".into()]));

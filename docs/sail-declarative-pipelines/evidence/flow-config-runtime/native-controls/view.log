@@ -1,0 +1,38 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 24.61s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 2 tests
+test resolver::query::session_tests::read_case::read_case_override_preserves_scoped_session_including_view_children ... FAILED
+test resolver::query::session_tests::read_case::read_case_override_preserves_legacy_session_and_semantic_resolution ... FAILED
+
+failures:
+
+---- resolver::query::session_tests::read_case::read_case_override_preserves_scoped_session_including_view_children stdout ----
+
+thread 'resolver::query::session_tests::read_case::read_case_override_preserves_scoped_session_including_view_children' (90578467) panicked at crates/sail-plan/src/resolver/query/read_case_tests.rs:149:17:
+assertion `left == right` failed
+  left: [false]
+ right: [true]
+
+---- resolver::query::session_tests::read_case::read_case_override_preserves_legacy_session_and_semantic_resolution stdout ----
+
+thread 'resolver::query::session_tests::read_case::read_case_override_preserves_legacy_session_and_semantic_resolution' (90578466) panicked at crates/sail-plan/src/resolver/query/read_case_tests.rs:149:17:
+assertion `left == right` failed
+  left: [false]
+ right: [true]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    resolver::query::session_tests::read_case::read_case_override_preserves_legacy_session_and_semantic_resolution
+    resolver::query::session_tests::read_case::read_case_override_preserves_scoped_session_including_view_children
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 86 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

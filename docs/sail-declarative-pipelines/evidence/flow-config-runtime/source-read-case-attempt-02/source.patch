@@ -1,0 +1,261 @@
+commit d9438bcf3de706017a1e63890ae3b30b29a1eeb0
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 16:31:15 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 16:31:15 2026 -0700
+
+    Separate query source schema case matching from semantic column resolution
+
+diff --git a/crates/sail-plan/src/resolver/mod.rs b/crates/sail-plan/src/resolver/mod.rs
+index e9699992d..18e2d8a9d 100644
+--- a/crates/sail-plan/src/resolver/mod.rs
++++ b/crates/sail-plan/src/resolver/mod.rs
+@@ -28,6 +28,7 @@ mod time_tests;
+ pub struct PlanResolver<'a> {
+     ctx: &'a SessionContext,
+     config: Arc<PlanConfig>,
++    source_read_case_sensitive: Option<bool>,
+     relation_scope: Option<&'a dyn scope::RelationScope>,
+     query_session: Option<session::QuerySession<'a>>,
+ }
+@@ -37,11 +38,26 @@ impl<'a> PlanResolver<'a> {
+         Self {
+             ctx,
+             config,
++            source_read_case_sensitive: None,
+             relation_scope: None,
+             query_session: None,
+         }
+     }
+ 
++    /// Override case matching passed to query source factories independently of
++    /// semantic column resolution. Ordinary callers inherit `PlanConfig`.
++    /// The caller chooses the metadata phase; this does not mutate the Session,
++    /// change source options or override write/row-operation schema matching.
++    pub fn with_source_read_case_sensitive(mut self, case_sensitive: bool) -> Self {
++        self.source_read_case_sensitive = Some(case_sensitive);
++        self
++    }
++
++    fn source_read_case_sensitive(&self) -> bool {
++        self.source_read_case_sensitive
++            .unwrap_or(self.config.case_sensitive)
++    }
++
+     /// Resolve request-local relations without registering them in a catalog.
+     pub fn with_relation_scope(mut self, scope: &'a dyn scope::RelationScope) -> Self {
+         self.relation_scope = Some(scope);
+diff --git a/crates/sail-plan/src/resolver/query/read.rs b/crates/sail-plan/src/resolver/query/read.rs
+index 98fc76cfc..2a1fa1686 100644
+--- a/crates/sail-plan/src/resolver/query/read.rs
++++ b/crates/sail-plan/src/resolver/query/read.rs
+@@ -245,7 +245,7 @@ impl PlanResolver<'_> {
+                             items: temporal_options,
+                         },
+                     ],
+-                    read_case_sensitive: self.config.case_sensitive,
++                    read_case_sensitive: self.source_read_case_sensitive(),
+                 };
+                 let table_source = match lake_relation {
+                     Some((relation_provider, relation)) => {
+@@ -362,6 +362,7 @@ impl PlanResolver<'_> {
+                     let mut resolver = PlanResolver::new(self.ctx, self.config.clone())
+                         .with_relation_scope(&scope);
+                     resolver.query_session = self.query_session;
++                    resolver.source_read_case_sensitive = self.source_read_case_sensitive;
+                     resolver.resolve_query_plan(query_plan, state).await?
+                 }
+                 None => self.resolve_query_plan(query_plan, state).await?,
+@@ -628,7 +629,7 @@ impl PlanResolver<'_> {
+             options: vec![OptionLayer::OptionList {
+                 items: options.into_iter().collect(),
+             }],
+-            read_case_sensitive: self.config.case_sensitive,
++            read_case_sensitive: self.source_read_case_sensitive(),
+         };
+         let registry = self.ctx.extension::<DataSourceRegistry>()?;
+         let table_source = registry
+diff --git a/crates/sail-plan/src/resolver/query/read_case_tests.rs b/crates/sail-plan/src/resolver/query/read_case_tests.rs
+new file mode 100644
+index 000000000..a648063a9
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/read_case_tests.rs
+@@ -0,0 +1,167 @@
++use std::sync::Mutex;
++
++use datafusion_expr::TableSource;
++use sail_catalog::provider::{CreateTableMode, CreateTableOptions, CreateViewOptions};
++use sail_common_datafusion::datasource::{DataSource, SinkInfo, SourceInfo};
++
++use super::*;
++
++struct CaseSource {
++    seen: Arc<Mutex<Vec<bool>>>,
++    partitions: usize,
++}
++#[tonic::async_trait]
++impl DataSource for CaseSource {
++    fn name(&self) -> &str {
++        "case_probe"
++    }
++    async fn create_source(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<Arc<dyn TableSource>> {
++        assert_eq!(session.config().target_partitions(), self.partitions);
++        self.seen
++            .lock()
++            .map_err(|e| datafusion_common::DataFusionError::Internal(e.to_string()))?
++            .push(info.read_case_sensitive);
++        Ok(provider_as_source(Arc::new(MemTable::try_new(
++            Arc::new(Schema::new(vec![Field::new("foo", DataType::Int64, false)])),
++            vec![vec![]],
++        )?)))
++    }
++    async fn create_writer(&self, _: &dyn Session, _: SinkInfo) -> Result<LogicalPlan> {
++        datafusion_common::internal_err!("read-only case probe")
++    }
++}
++fn query(route: usize) -> spec::QueryPlan {
++    let read_type = if route == 0 {
++        spec::ReadType::DataSource(Box::new(spec::ReadDataSource {
++            format: Some("case_probe".into()),
++            schema: None,
++            options: vec![],
++            paths: vec!["input".into()],
++            predicates: vec![],
++        }))
++    } else {
++        spec::ReadType::NamedTable(Box::new(spec::ReadNamedTable {
++            name: if route == 1 {
++                vec!["case_probe", "input"].into()
++            } else {
++                spec::ObjectName::bare(if route == 2 { "stored" } else { "v" })
++            },
++            temporal: None,
++            sample: None,
++            options: vec![],
++        }))
++    };
++    spec::QueryPlan::new(spec::QueryNode::Project {
++        input: Some(Box::new(spec::QueryPlan::new(spec::QueryNode::Read {
++            read_type,
++            is_streaming: false,
++        }))),
++        expressions: vec![spec::Expr::UnresolvedAttribute {
++            name: spec::ObjectName::bare("Foo"),
++            plan_id: None,
++            is_metadata_column: false,
++        }],
++    })
++}
++async fn case(scoped: bool) -> TestResult {
++    let fixture = Fixture::new().await?;
++    let seen = Arc::new(Mutex::new(vec![]));
++    fixture
++        .ctx
++        .extension::<DataSourceRegistry>()?
++        .register_data_source(Arc::new(CaseSource {
++            seen: seen.clone(),
++            partitions: if scoped { 7 } else { 9 },
++        }))?;
++    fixture
++        .ctx
++        .extension::<CatalogManager>()?
++        .create_table(
++            &["stored"],
++            CreateTableOptions {
++                columns: vec![],
++                comment: None,
++                constraints: vec![],
++                location: Some("input".into()),
++                format: "case_probe".into(),
++                partition_by: vec![],
++                sort_by: vec![],
++                bucket_by: None,
++                mode: CreateTableMode::Create,
++                properties: vec![],
++                is_external: true,
++                is_write_precondition: false,
++            },
++        )
++        .await?;
++    fixture
++        .ctx
++        .extension::<CatalogManager>()?
++        .create_view(
++            &["v"],
++            CreateViewOptions {
++                definition: "SELECT Foo FROM case_probe.input".into(),
++                columns: vec![],
++                if_not_exists: false,
++                replace: false,
++                comment: None,
++                properties: vec![
++                    ("view.catalogAndNamespace.numParts".into(), "2".into()),
++                    ("view.catalogAndNamespace.part.0".into(), "catalog".into()),
++                    ("view.catalogAndNamespace.part.1".into(), "db".into()),
++                ],
++            },
++        )
++        .await?;
++    for semantic in [false, true] {
++        for override_read in [false, true] {
++            for route in 0..4 {
++                seen.lock()?.clear();
++                let mut resolver = PlanResolver::new(
++                    &fixture.ctx,
++                    Arc::new(PlanConfig {
++                        case_sensitive: semantic,
++                        ..Default::default()
++                    }),
++                );
++                if scoped {
++                    resolver = resolver.with_scoped_query_session(&fixture.session);
++                }
++                if override_read {
++                    // Last setter wins, while the semantic flag stays independent.
++                    resolver = resolver
++                        .with_source_read_case_sensitive(semantic)
++                        .with_source_read_case_sensitive(!semantic);
++                }
++                let outcome = resolver
++                    .resolve_named_plan(spec::Plan::Query(query(route)))
++                    .await
++                    .map(|_| ());
++                assert_eq!(
++                    outcome.is_ok(),
++                    !semantic,
++                    "semantic={semantic}, override={override_read}, route={route}: {outcome:?}"
++                );
++                assert_eq!(
++                    *seen.lock()?,
++                    [if override_read { !semantic } else { semantic }]
++                );
++            }
++        }
++    }
++    assert_eq!(fixture.calls.load(Ordering::SeqCst), 0);
++    assert_eq!(fixture.resources.drain().await?.registered, 0);
++    Ok(())
++}
++#[tokio::test]
++async fn read_case_override_preserves_legacy_session_and_semantic_resolution() -> TestResult {
++    case(false).await
++}
++#[tokio::test]
++async fn read_case_override_preserves_scoped_session_including_view_children() -> TestResult {
++    case(true).await
++}
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index 487b25ad0..4895a3b15 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -345,3 +345,6 @@ mod generated_analyzer;
+ 
+ #[path = "view_publication_tests.rs"]
+ mod view_publication;
++
++#[path = "read_case_tests.rs"]
++mod read_case;
