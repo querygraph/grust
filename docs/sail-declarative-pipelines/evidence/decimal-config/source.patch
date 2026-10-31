@@ -1,0 +1,383 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index aa02f3f2a..5bd418708 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -7925,6 +7925,7 @@ dependencies = [
+  "sail-common-datafusion",
+  "sail-data-source",
+  "sail-execution",
++ "sail-function",
+  "sail-plan",
+  "sail-python-udf",
+  "sail-session",
+diff --git a/crates/sail-plan/src/config.rs b/crates/sail-plan/src/config.rs
+index 2ebd39eeb..2a03fcd25 100644
+--- a/crates/sail-plan/src/config.rs
++++ b/crates/sail-plan/src/config.rs
+@@ -48,6 +48,9 @@ pub struct PlanConfig {
+     pub default_warehouse_directory: String,
+     pub session_user_id: String,
+     pub ansi_mode: bool,
++    /// Whether parsed decimals may retain a negative scale, including inputs
++    /// with more than 38 integral digits before a cast to a positive scale.
++    pub legacy_allow_negative_scale_of_decimal: bool,
+     /// Whether legacy non-ANSI ordering comparisons cast date/timestamp values to strings.
+     pub legacy_type_coercion_datetime_to_string: bool,
+     /// Whether size/cardinality return -1 for null input when ANSI mode is disabled.
+@@ -113,6 +116,7 @@ impl Default for PlanConfig {
+             default_warehouse_directory: "spark-warehouse".to_string(),
+             session_user_id: "".to_string(),
+             ansi_mode: true,
++            legacy_allow_negative_scale_of_decimal: false,
+             legacy_type_coercion_datetime_to_string: false,
+             legacy_size_of_null: true,
+             store_assignment_policy: StoreAssignmentPolicy::Ansi,
+diff --git a/crates/sail-spark-connect/Cargo.toml b/crates/sail-spark-connect/Cargo.toml
+index ce20c036a..bbc7c678b 100644
+--- a/crates/sail-spark-connect/Cargo.toml
++++ b/crates/sail-spark-connect/Cargo.toml
+@@ -48,6 +48,7 @@ pyo3 = { workspace = true }
+ 
+ [dev-dependencies]
+ sail-catalog-memory = { path = "../sail-catalog-memory" }
++sail-function = { path = "../sail-function" }
+ sail-telemetry = { path = "../sail-telemetry" }
+ 
+ [build-dependencies]
+diff --git a/crates/sail-spark-connect/src/config.rs b/crates/sail-spark-connect/src/config.rs
+index c3d2f3495..6fd1628ef 100644
+--- a/crates/sail-spark-connect/src/config.rs
++++ b/crates/sail-spark-connect/src/config.rs
+@@ -12,7 +12,11 @@ use crate::spark::config::{
+ };
+ use crate::spark::connect;
+ 
++mod boolean;
+ mod orc;
++
++#[cfg(test)]
++mod decimal_tests;
+ pub(crate) use orc::affects_orc_config;
+ 
+ #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd)]
+@@ -150,6 +154,9 @@ impl SparkRuntimeConfig {
+         // TODO: Investigate how spark.wap.branch and spark.wap.id should reach
+         // Iceberg write planning for validation at the format boundary.
+         self.validate_removed_key(key.as_str(), value.as_str())?;
++        if key == SparkConfigKey::SPARK_SQL_LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL {
++            boolean::parse_config_bool(&key, &value)?;
++        }
+         if key == SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA {
+             orc::parse_merge_schema(&value)?;
+         }
+@@ -329,6 +336,19 @@ impl TryFrom<&SparkRuntimeConfig> for PlanConfig {
+             output.ansi_mode = value;
+         }
+ 
++        if let Some(value) = config
++            .get_option(SparkConfigKey::SPARK_SQL_LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL)
++            .map(|value| {
++                boolean::parse_config_bool(
++                    SparkConfigKey::SPARK_SQL_LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL,
++                    value,
++                )
++            })
++            .transpose()?
++        {
++            output.legacy_allow_negative_scale_of_decimal = value;
++        }
++
+         if let Some(value) = config
+             .get_option(SparkConfigKey::SPARK_SQL_LEGACY_TYPE_COERCION_DATETIME_TO_STRING_ENABLED)
+             .map(|x| x.trim().to_lowercase().parse::<bool>())
+diff --git a/crates/sail-spark-connect/src/config/boolean.rs b/crates/sail-spark-connect/src/config/boolean.rs
+new file mode 100644
+index 000000000..f0cf87605
+--- /dev/null
++++ b/crates/sail-spark-connect/src/config/boolean.rs
+@@ -0,0 +1,25 @@
++use std::collections::HashMap;
++
++use sail_data_source::error::DataSourceResult;
++use sail_data_source::options::parsers::parse_spark_bool;
++
++use crate::error::{SparkError, SparkResult, StructuredSparkError};
++
++/// SQLConf uses Java String.trim before Scala's strict boolean parser.
++pub(super) fn parse_sql_bool(key: &str, value: &str) -> DataSourceResult<bool> {
++    parse_spark_bool(key, value.trim_matches(|c| c <= '\u{20}'))
++}
++
++pub(super) fn parse_config_bool(key: &str, value: &str) -> SparkResult<bool> {
++    parse_sql_bool(key, value).map_err(|_| SparkError::Structured(Box::new(StructuredSparkError {
++        class: "org.apache.spark.SparkIllegalArgumentException".into(),
++        condition: "INVALID_CONF_VALUE.TYPE_MISMATCH".into(),
++        sql_state: "22022".into(),
++        message: format!("The value '{value}' in the config \"{key}\" is invalid. It should be a/an 'boolean' value."),
++        parameters: HashMap::from([
++            ("confName".into(), key.into()),
++            ("confValue".into(), value.into()),
++            ("confType".into(), "boolean".into()),
++        ]),
++    })))
++}
+diff --git a/crates/sail-spark-connect/src/config/decimal_tests.rs b/crates/sail-spark-connect/src/config/decimal_tests.rs
+new file mode 100644
+index 000000000..a82158e43
+--- /dev/null
++++ b/crates/sail-spark-connect/src/config/decimal_tests.rs
+@@ -0,0 +1,204 @@
++use std::time::Duration;
++
++use datafusion::arrow::datatypes::{DataType, Field};
++use datafusion::common::ScalarValue;
++use datafusion::common::config::ConfigOptions;
++use datafusion::logical_expr::{ColumnarValue, ScalarFunctionArgs, ScalarUDFImpl};
++use sail_common_datafusion::error::{
++    CommonErrorCause, PythonErrorCause, PythonErrorCauseExtractor,
++};
++use sail_function::scalar::spark_string_to_decimal::SparkStringToDecimal;
++use tonic_types::StatusExt;
++
++use super::*;
++use crate::session::{SparkSession, SparkSessionOptions};
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++const KEY: &str = SparkConfigKey::SPARK_SQL_LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL;
++const ANSI: &str = SparkConfigKey::SPARK_SQL_ANSI_ENABLED;
++
++fn session() -> SparkResult<SparkSession> {
++    pyo3::Python::initialize();
++    SparkSession::try_new(
++        "decimal-config".into(),
++        "test-user".into(),
++        SparkSessionOptions {
++            execution_heartbeat_interval: Duration::from_secs(1),
++        },
++    )
++}
++fn set(spark: &SparkSession, key: &str, value: &str) -> SparkResult<()> {
++    spark.set_config(vec![ConfigKeyValue {
++        key: key.into(),
++        value: Some(value.into()),
++    }])
++}
++fn assert_invalid(error: SparkError, value: &str) -> TestResult {
++    let status: tonic::Status = error.into();
++    let details = status.get_error_details();
++    let info = details
++        .error_info()
++        .ok_or("missing config error metadata")?;
++    assert_eq!(
++        info.reason,
++        "org.apache.spark.SparkIllegalArgumentException"
++    );
++    assert_eq!(
++        info.metadata["errorClass"],
++        "INVALID_CONF_VALUE.TYPE_MISMATCH"
++    );
++    assert_eq!(info.metadata["sqlState"], "22022");
++    assert_eq!(
++        serde_json::from_str::<HashMap<String, String>>(&info.metadata["messageParameters"])?,
++        HashMap::from([
++            ("confName".into(), KEY.into()),
++            ("confValue".into(), value.into()),
++            ("confType".into(), "boolean".into()),
++        ])
++    );
++    assert_eq!(
++        serde_json::from_str::<Vec<String>>(&info.metadata["classes"])?,
++        [
++            "org.apache.spark.SparkIllegalArgumentException",
++            "java.lang.IllegalArgumentException",
++            "java.lang.RuntimeException",
++            "java.lang.Exception",
++            "java.lang.Throwable",
++            "java.lang.Object",
++        ]
++    );
++    Ok(())
++}
++
++#[test]
++fn decimal_policy_uses_spark_42_defaults_and_java_boolean_syntax() -> TestResult {
++    // Pin metadata explicitly; these expectations must not silently use the
++    // Rust test process's best-effort PySpark-version fallback.
++    let mut runtime = SparkRuntimeConfig {
++        entries: &SPARK_CONFIG_V4_2,
++        config: HashMap::new(),
++    };
++    assert!(!PlanConfig::default().legacy_allow_negative_scale_of_decimal);
++    assert!(!PlanConfig::try_from(&runtime)?.legacy_allow_negative_scale_of_decimal);
++    for (value, expected) in [
++        ("true", true),
++        ("false", false),
++        (" TrUe\t", true),
++        ("\0true\0", true),
++        ("falſe", false),
++        ("FALſE", false),
++    ] {
++        runtime.set(KEY.into(), value.into())?;
++        assert_eq!(runtime.get(KEY)?, Some(value));
++        assert_eq!(
++            PlanConfig::try_from(&runtime)?.legacy_allow_negative_scale_of_decimal,
++            expected
++        );
++    }
++    runtime.unset(KEY)?;
++    assert!(!PlanConfig::try_from(&runtime)?.legacy_allow_negative_scale_of_decimal);
++    Ok(())
++}
++
++struct NoPython;
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++fn range_result(config: &PlanConfig) -> Result<String, Box<dyn std::error::Error>> {
++    // This is the callable component consuming the actual captured settings;
++    // SQL resolver routing is intentionally a separate unit.
++    let function = SparkStringToDecimal::try_new(
++        5,
++        2,
++        config.ansi_mode,
++        config.legacy_allow_negative_scale_of_decimal,
++    )?;
++    let result = function.invoke_with_args(ScalarFunctionArgs {
++        args: vec![ColumnarValue::Scalar(ScalarValue::Utf8(Some(
++            "1e39".into(),
++        )))],
++        arg_fields: vec![Arc::new(Field::new("source", DataType::Utf8, false))],
++        number_rows: 1,
++        return_field: Arc::new(Field::new("result", DataType::Decimal128(5, 2), true)),
++        config_options: Arc::new(ConfigOptions::default()),
++    });
++    match result {
++        Ok(ColumnarValue::Scalar(ScalarValue::Decimal128(None, 5, 2))) => Ok("NULL".into()),
++        Err(error) => {
++            let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error)
++            else {
++                return Err(format!("unstructured range error: {error}").into());
++            };
++            Ok(error.condition)
++        }
++        result => Err(format!("unexpected decimal result: {result:?}").into()),
++    }
++}
++
++#[test]
++fn decimal_session_and_override_snapshots_keep_independent_semantics() -> TestResult {
++    let spark = session()?;
++    set(&spark, ANSI, "true")?;
++    let initial = spark.plan_config()?;
++    set(&spark, KEY, "true")?;
++    let allowed = spark.plan_config()?;
++    let overridden = spark.plan_config_with_overrides([(KEY.into(), "false".into())])?;
++    assert_eq!(range_result(&initial)?, "NUMERIC_OUT_OF_SUPPORTED_RANGE");
++    assert_eq!(
++        range_result(&allowed)?,
++        "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION"
++    );
++    assert_eq!(range_result(&overridden)?, "NUMERIC_OUT_OF_SUPPORTED_RANGE");
++    assert_eq!(
++        range_result(spark.plan_config()?.as_ref())?,
++        "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION"
++    );
++    let null_on_error = spark.plan_config_with_overrides([(ANSI.into(), "false".into())])?;
++    assert_eq!(range_result(&null_on_error)?, "NULL");
++    spark.unset_config(vec![KEY.into()])?;
++    assert_eq!(
++        range_result(spark.plan_config()?.as_ref())?,
++        "NUMERIC_OUT_OF_SUPPORTED_RANGE"
++    );
++    assert_eq!(
++        range_result(&allowed)?,
++        "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION"
++    );
++    let allow_override = spark.plan_config_with_overrides([(KEY.into(), "true".into())])?;
++    assert_eq!(
++        range_result(&allow_override)?,
++        "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION"
++    );
++    assert!(!spark.plan_config()?.legacy_allow_negative_scale_of_decimal);
++    assert_eq!(allowed.session_user_id, "test-user");
++    Ok(())
++}
++
++#[test]
++fn invalid_decimal_set_and_override_preserve_prior_session_value() -> TestResult {
++    let spark = session()?;
++    set(&spark, KEY, "true")?;
++    for value in ["1", "0", "yes", "", "\u{a0}true\u{a0}", "truſe"] {
++        let error = set(&spark, KEY, value)
++            .err()
++            .ok_or("invalid SET accepted")?;
++        assert_invalid(error, value)?;
++        assert!(spark.plan_config()?.legacy_allow_negative_scale_of_decimal);
++        assert_eq!(
++            spark
++                .get_config(vec![KEY.into()])?
++                .first()
++                .and_then(|v| v.value.as_deref()),
++            Some("true")
++        );
++        let error = spark
++            .plan_config_with_overrides([(KEY.into(), value.into())])
++            .err()
++            .ok_or("invalid override accepted")?;
++        assert_invalid(error, value)?;
++        assert!(spark.plan_config()?.legacy_allow_negative_scale_of_decimal);
++    }
++    Ok(())
++}
+diff --git a/crates/sail-spark-connect/src/config/orc.rs b/crates/sail-spark-connect/src/config/orc.rs
+index fcfe292d6..a7e4382b3 100644
+--- a/crates/sail-spark-connect/src/config/orc.rs
++++ b/crates/sail-spark-connect/src/config/orc.rs
+@@ -1,7 +1,6 @@
+ use sail_data_source::formats::orc::{
+     OrcListingSessionDefaults, OrcReadSessionModes, OrcWriteCompression, OrcWriteSessionDefaults,
+ };
+-use sail_data_source::options::parsers::parse_spark_bool;
+ 
+ use super::SparkRuntimeConfig;
+ use crate::error::{SparkError, SparkResult};
+@@ -24,16 +23,14 @@ pub(crate) fn affects_orc_config(key: &str) -> bool {
+ pub(super) fn parse_merge_schema(value: &str) -> SparkResult<bool> {
+     // SQLConf applies Java String.trim (only characters <= U+0020) before
+     // Scala's strict boolean parser. Operation options do not trim.
+-    parse_spark_bool(
+-        SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA,
+-        value.trim_matches(|character| character <= '\u{20}'),
++    super::boolean::parse_sql_bool(SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA, value).map_err(
++        |_| {
++            SparkError::invalid(format!(
++                "{} must be a boolean: {value}",
++                SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA
++            ))
++        },
+     )
+-    .map_err(|_| {
+-        SparkError::invalid(format!(
+-            "{} must be a boolean: {value}",
+-            SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA
+-        ))
+-    })
+ }
+ 
+ impl SparkRuntimeConfig {
+diff --git a/crates/sail-spark-connect/src/error.rs b/crates/sail-spark-connect/src/error.rs
+index fb9ea7cc2..be69503a1 100644
+--- a/crates/sail-spark-connect/src/error.rs
++++ b/crates/sail-spark-connect/src/error.rs
+@@ -358,6 +358,9 @@ fn spark_status(class: &str, message: &str, mut metadata: HashMap<String, String
+         "org.apache.spark.SparkArithmeticException" => format!(
+             "[\"{class}\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
+         ),
++        "org.apache.spark.SparkIllegalArgumentException" => format!(
++            "[\"{class}\",\"java.lang.IllegalArgumentException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
++        ),
+         _ => format!("[\"{class}\"]"),
+     };
+     metadata.insert("classes".into(), classes);

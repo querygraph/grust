@@ -1,0 +1,13 @@
+diff --git a/crates/sail-spark-connect/src/config.rs b/crates/sail-spark-connect/src/config.rs
+index 6fd1628ef..4dec2704f 100644
+--- a/crates/sail-spark-connect/src/config.rs
++++ b/crates/sail-spark-connect/src/config.rs
+@@ -154,7 +154,7 @@ impl SparkRuntimeConfig {
+         // TODO: Investigate how spark.wap.branch and spark.wap.id should reach
+         // Iceberg write planning for validation at the format boundary.
+         self.validate_removed_key(key.as_str(), value.as_str())?;
+-        if key == SparkConfigKey::SPARK_SQL_LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL {
++        if false && key == SparkConfigKey::SPARK_SQL_LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL {
+             boolean::parse_config_bool(&key, &value)?;
+         }
+         if key == SparkConfigKey::SPARK_SQL_ORC_MERGE_SCHEMA {

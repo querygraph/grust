@@ -17,7 +17,9 @@ assert not git('status','--porcelain')
 assert subprocess.run(['git','-C',str(root),'symbolic-ref','-q','HEAD'],capture_output=True).returncode == 1
 assert shutil.disk_usage(root).free > 2*1024**3, 'Free at least 2GiB before compilation'
 env = {**os.environ, 'CARGO_PROFILE_DEV_DEBUG':'0', 'CARGO_PROFILE_DEV_INCREMENTAL':'false',
-       'CARGO_INCREMENTAL':'0','PYO3_PYTHON':'/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python'}
+       'CARGO_INCREMENTAL':'0','PYO3_PYTHON':'/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python',
+       'PYTHONPATH':'/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages',
+       'VIRTUAL_ENV':'/Users/alexy/src/sail-pipelines-proposal/.venv'}
 flags = [item for package in packages for item in ['-p',package]]
 commands = [
     ('fmt',['cargo','+nightly','fmt',*flags,'--','--check']),
@@ -25,7 +27,8 @@ commands = [
     ('rust',['cargo','+1.98.1','test',*flags,'--lib','--locked']),
 ]
 receipt = {'sail_commit': candidate['commit'], 'base':candidate['base'], 'packages':packages,
-           'started_at':datetime.now(timezone.utc).isoformat(), 'checks':[], 'scope':'Rust library gates only; no public CLI or SDP runtime verdict'}
+           'started_at':datetime.now(timezone.utc).isoformat(), 'checks':[], 'scope':'Rust library gates only; no public CLI or SDP runtime verdict',
+           'environment_overrides':{k:env[k] for k in ['CARGO_PROFILE_DEV_DEBUG','CARGO_PROFILE_DEV_INCREMENTAL','CARGO_INCREMENTAL','PYO3_PYTHON','PYTHONPATH','VIRTUAL_ENV']}}
 for name,command in commands:
     assert git('rev-parse','HEAD') == candidate['commit']
     log = Path('/tmp/sail-sdp-'+label+'-'+name+'.log')

@@ -19,8 +19,10 @@ with the candidate and conditionally advances the branch. When selecting the
 canonical log, take its persistent flock separately around prepare and advance,
 never around long gates. A concurrent append requires a refreshed candidate/gate.
 
-The scripts retain their historical /tmp candidate/receipt paths. Keep explicit
-PYO3_PYTHON, PYTHONPATH and VIRTUAL_ENV in the calling environment for Spark4.2.1
-Rust tests: library-gates.py sets PYO3_PYTHON but does not supply the other two.
+The scripts retain their historical /tmp candidate/receipt paths. library-gates.py pins and records PYO3_PYTHON, PYTHONPATH and VIRTUAL_ENV for
+the Python3.12/PySpark4.2.1 workspace. PYO3_PYTHON alone selects the build
+interpreter without adding its virtualenv modules to embedded Python. The
+decimal-config packet retains the omitted-environment failure, env-only control
+and successful same-source full gate that establish why all three are needed.
 See the root FABLE-HANDOFF.md for current roles, pins, commands and limits.
 SNAPSHOT.json hashes all other files in this directory.

@@ -335,3 +335,28 @@ activation. Negative target refusal remains resolver-owned, while input range
 policy is captured and now travels in the worker payload. No folding/planner-seat,
 fast-path mode/default/classifier or provider/streaming authority was selected by
 the wire unit. The source-dependent failure baseline remains required.
+
+
+## Generic decimal config capture (CF-0394–0399)
+
+Sail226b0c1cfc9ac72dadc3ec8a81667f7acc3aacec captures
+legacy_allow_negative_scale_of_decimal in PlanConfig and validates its SET before
+mutation. [Qualification](evidence/decimal-config/README.md):117plan+183Connect,
+formatting/strictClippy, four unchanged0/1 controls, fresh300 public+67 upstream,
+and exact Spark/Sail config12 comparison (raw strings, rollback, exception type,
+condition/state/parameters). Snapshot/override tests feed the callable caster and
+preserve independent old semantics across SET/UNSET. Fabled527d8ed accepts.
+
+Shared Java-trim/strict-boolean extraction retains ORC's existing error mapping.
+The new key carries INVALID_CONF_VALUE.TYPE_MISMATCH/22022 and the complete
+SparkIllegalArgumentException hierarchy. Other older boolean paths remain a
+separate parity item. The only dependency change is a dev-only test edge.
+
+An initial test borrow fix and omitted-environment native failure are retained.
+The env-only same-binary control and full same-source pass show the latter cause;
+the operational helper now supplies all three pinned Python environment values.
+Source/gate and CLI are qualified226; no new scalar SQL routing, negative-target
+guard or folding rule is enabled. The next part of the already user-flagged
+checkpoint is exact source/conditional folding and target-type policy before
+resolver activation. Prior source/phase and decimal conformance failures remain
+required; config/transport parity alone does not establish their resolution.

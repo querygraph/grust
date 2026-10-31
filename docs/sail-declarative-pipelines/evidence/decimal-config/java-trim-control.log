@@ -1,0 +1,24 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 23.75s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-c2295be7729d71ef)
+
+running 1 test
+test config::decimal_tests::decimal_policy_uses_spark_42_defaults_and_java_boolean_syntax ... FAILED
+
+failures:
+
+---- config::decimal_tests::decimal_policy_uses_spark_42_defaults_and_java_boolean_syntax stdout ----
+Error: Structured(StructuredSparkError { class: "org.apache.spark.SparkIllegalArgumentException", condition: "INVALID_CONF_VALUE.TYPE_MISMATCH", sql_state: "22022", message: "The value '\0true\0' in the config \"spark.sql.legacy.allowNegativeScaleOfDecimal\" is invalid. It should be a/an 'boolean' value.", parameters: {"confType": "boolean", "confName": "spark.sql.legacy.allowNegativeScaleOfDecimal", "confValue": "\0true\0"} })
+
+
+failures:
+    config::decimal_tests::decimal_policy_uses_spark_42_defaults_and_java_boolean_syntax
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 182 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

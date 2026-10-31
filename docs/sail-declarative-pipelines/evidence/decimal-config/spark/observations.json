@@ -1,0 +1,132 @@
+{
+  "started_at": "2026-10-31T09:15:52.210942+00:00",
+  "script_sha256": "089b527887eddd1ca64904204dfa57c1a6e1676424ec726ec3d78f2958fa265c",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "cases": [
+    {
+      "value": "true",
+      "before": "true",
+      "accepted": true,
+      "after": "true"
+    },
+    {
+      "value": "false",
+      "before": "true",
+      "accepted": true,
+      "after": "false"
+    },
+    {
+      "value": " TrUe\t",
+      "before": "true",
+      "accepted": true,
+      "after": " TrUe\t"
+    },
+    {
+      "value": "\u0000true\u0000",
+      "before": "true",
+      "accepted": true,
+      "after": "\u0000true\u0000"
+    },
+    {
+      "value": "fal\u017fe",
+      "before": "true",
+      "accepted": true,
+      "after": "fal\u017fe"
+    },
+    {
+      "value": "FAL\u017fE",
+      "before": "true",
+      "accepted": true,
+      "after": "FAL\u017fE"
+    },
+    {
+      "value": "1",
+      "before": "true",
+      "accepted": false,
+      "exception_type": "IllegalArgumentException",
+      "condition": "INVALID_CONF_VALUE.TYPE_MISMATCH",
+      "sql_state": "22022",
+      "parameters": {
+        "confValue": "1",
+        "confName": "spark.sql.legacy.allowNegativeScaleOfDecimal",
+        "confType": "boolean"
+      },
+      "after": "true"
+    },
+    {
+      "value": "0",
+      "before": "true",
+      "accepted": false,
+      "exception_type": "IllegalArgumentException",
+      "condition": "INVALID_CONF_VALUE.TYPE_MISMATCH",
+      "sql_state": "22022",
+      "parameters": {
+        "confValue": "0",
+        "confName": "spark.sql.legacy.allowNegativeScaleOfDecimal",
+        "confType": "boolean"
+      },
+      "after": "true"
+    },
+    {
+      "value": "yes",
+      "before": "true",
+      "accepted": false,
+      "exception_type": "IllegalArgumentException",
+      "condition": "INVALID_CONF_VALUE.TYPE_MISMATCH",
+      "sql_state": "22022",
+      "parameters": {
+        "confValue": "yes",
+        "confName": "spark.sql.legacy.allowNegativeScaleOfDecimal",
+        "confType": "boolean"
+      },
+      "after": "true"
+    },
+    {
+      "value": "",
+      "before": "true",
+      "accepted": false,
+      "exception_type": "IllegalArgumentException",
+      "condition": "INVALID_CONF_VALUE.TYPE_MISMATCH",
+      "sql_state": "22022",
+      "parameters": {
+        "confValue": "",
+        "confName": "spark.sql.legacy.allowNegativeScaleOfDecimal",
+        "confType": "boolean"
+      },
+      "after": "true"
+    },
+    {
+      "value": "\u00a0true\u00a0",
+      "before": "true",
+      "accepted": false,
+      "exception_type": "IllegalArgumentException",
+      "condition": "INVALID_CONF_VALUE.TYPE_MISMATCH",
+      "sql_state": "22022",
+      "parameters": {
+        "confValue": "\u00a0true\u00a0",
+        "confName": "spark.sql.legacy.allowNegativeScaleOfDecimal",
+        "confType": "boolean"
+      },
+      "after": "true"
+    },
+    {
+      "value": "tru\u017fe",
+      "before": "true",
+      "accepted": false,
+      "exception_type": "IllegalArgumentException",
+      "condition": "INVALID_CONF_VALUE.TYPE_MISMATCH",
+      "sql_state": "22022",
+      "parameters": {
+        "confValue": "tru\u017fe",
+        "confName": "spark.sql.legacy.allowNegativeScaleOfDecimal",
+        "confType": "boolean"
+      },
+      "after": "true"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "default": "false",
+  "after_unset": "false",
+  "completed_at": "2026-10-31T09:15:57.943044+00:00",
+  "remaining_listener_pids": ""
+}
