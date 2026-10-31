@@ -790,3 +790,29 @@ CF-0332 requires.
   Sail's `set_default_catalog` runs in `CatalogCommandExec` at the same stage,
   and the SDP commit sets the graph catalog without an existence check, like
   `context.setCurrentCatalog` (§9.3). No analysis-time check should be added.
+
+### 10.4 Candidate `55c237c48` (CF-0334)
+
+Read against its diff on `4761d0064`. The planner is untouched; the typed
+error becomes Spark's diagnostic at one site, the `SetCurrentCatalog` arm of
+`CatalogCommandExec`'s error map (`sail-physical-plan/catalog_command.rs`),
+through a shared `catalog_not_found_error(name) -> DataFusionError::External(StructuredSparkError)`
+beside `quote_sql_identifier` (`common-datafusion/error/catalog.rs`). That is
+the §10.3 shape: one constructor, explicit-load site only, generic
+`From<CatalogError>` unchanged, `CommitStateUnknown` unchanged. A malformed
+raw name surfaces `quote_sql_identifier`'s own error, which is also Spark's
+behaviour, since `toSQLId(String)` parses the name with
+`parseAttributeName` before quoting and raises
+`INVALID_ATTRIBUTE_NAME_SYNTAX` from inside the error factory.
+
+Class handling differs from §10.3's suggestion and is the better bounded
+choice: no new field on `StructuredSparkError`, the hierarchy is derived from
+the class string inside `spark_status`, which is where the class becomes
+transport and is also how Spark derives it (`allClasses(st.getClass)`); the
+five-class list is measured from Spark's own Connect output, not inferred
+from PySpark's mapping; other classes keep the single-element list. A
+generic hierarchy representation can come later if a second class needs it.
+The tests pin reason, `errorClass`, `sqlState`, the five classes, quoted
+`catalogName` for plain, dotted, quoted, non-ASCII and empty names, the
+`config` parameter, the message, and the same through a
+`DataFusionError::Shared(Context(..))` wrapper. No change requested.
