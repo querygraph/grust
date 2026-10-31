@@ -693,3 +693,21 @@ to Sail's own session-scoped pipeline-execution cache and its clearing
 on session close, as behavioural equivalence, never as executed
 original classes. None of the six is a Python site, and none changes
 the §3 conclusion.
+
+### 15.1 Correction (CF-0462): the third parser suite
+
+The third concrete parser suite is
+`command/v2/CreateStreamingTableParserSuite.scala` (class at `:28`,
+`extends CommandSuiteBase`), with one own test at `:31`, "CREATE
+STREAMING TABLE without subquery is parsed correctly", which parses
+`CREATE STREAMING TABLE st COMMENT 'populate with flow later'` and
+compares a `CreateStreamingTable` plan. My §15 listing matched file
+names on `AsSelectParserSuite` and so missed it; a content search for
+the `CreateStreamingTable` and `CreateMaterializedView` plan nodes under
+the command tests finds no others. The expansion is therefore 20
+static declarations (14 shared, 1 materialized-view own, 1 plain
+streaming-table own, 2 `DDLSuite`, 2 session lifecycle) and 34 expected
+runtime names, the latter unasserted until Codex's collector covers the
+outside roots. The plain `CREATE STREAMING TABLE` without a query, to be
+populated by a later flow, is a distinct parser obligation for Sail and
+stays in scope.
