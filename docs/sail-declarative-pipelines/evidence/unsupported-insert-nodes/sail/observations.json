@@ -1,0 +1,300 @@
+{
+  "started_at": "2026-10-31T17:34:20.006979+00:00",
+  "mode": "sail",
+  "script_sha256": "d020bf687f405c8a7e0b617c0c9e68105fdaf70451e94cfde85fe89543b5e001",
+  "cases": [
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "overwrite-ifne",
+      "sql": "INSERT OVERWRITE output IF NOT EXISTS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'IF'",
+        "hint": ""
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'IF'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "overwrite-ifne-by-name",
+      "sql": "INSERT OVERWRITE output IF NOT EXISTS BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'IF'",
+        "hint": ""
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'IF'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-overwrite-ifne",
+      "sql": "CREATE FLOW f AS INSERT OVERWRITE output IF NOT EXISTS BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'IF'"
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'IF'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-query",
+      "sql": "CREATE FLOW f AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'SELECT'"
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'SELECT'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-with",
+      "sql": "CREATE FLOW f AS WITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'WITH'"
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-ddl",
+      "sql": "CREATE FLOW f AS CREATE TABLE output AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'CREATE'"
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'CREATE'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-explain",
+      "sql": "CREATE FLOW f AS EXPLAIN INSERT INTO output BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'EXPLAIN'",
+        "hint": ""
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'EXPLAIN'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-nested",
+      "sql": "CREATE FLOW f AS CREATE FLOW g AS INSERT INTO output BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'CREATE'",
+        "hint": ""
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'CREATE'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "ordinary-with",
+      "sql": "WITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nWITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s\n",
+        "message": "Unsupported plan UnresolvedWith parsed from SQL query"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan UnresolvedWith parsed from SQL query\n\nOffending query:\nWITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-query-with",
+      "sql": "CREATE FLOW f AS INSERT INTO output BY NAME WITH s AS (SELECT 1) SELECT * FROM s",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "accepted",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "overwrite-partition-ifne",
+      "sql": "INSERT OVERWRITE output PARTITION(p=1) IF NOT EXISTS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nINSERT OVERWRITE output PARTITION(p=1) IF NOT EXISTS SELECT 1\n",
+        "message": "Unsupported plan InsertIntoStatement parsed from SQL query",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan InsertIntoStatement parsed from SQL query\n\nOffending query:\nINSERT OVERWRITE output PARTITION(p=1) IF NOT EXISTS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-identity-first",
+      "sql": "CREATE FLOW a.f AS INSERT OVERWRITE output IF NOT EXISTS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'IF'",
+        "hint": ""
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'IF'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-directory-using",
+      "sql": "CREATE FLOW f AS INSERT OVERWRITE DIRECTORY '/tmp/sdp-grammar-unwritten' USING parquet SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "Unable flow type. Only INSERT INTO flows are supported.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE DIRECTORY '/tmp/sdp-grammar-unwritten' USING parquet SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unable flow type. Only INSERT INTO flows are supported.\n\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE DIRECTORY '/tmp/sdp-grammar-unwritten' USING parquet SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-directory-hive",
+      "sql": "CREATE FLOW f AS INSERT OVERWRITE LOCAL DIRECTORY '/tmp/sdp-grammar-unwritten' STORED AS PARQUET SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unable flow type. Only INSERT INTO flows are supported.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE LOCAL DIRECTORY '/tmp/sdp-grammar-unwritten' STORED AS PARQUET SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unable flow type. Only INSERT INTO flows are supported.\n\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE LOCAL DIRECTORY '/tmp/sdp-grammar-unwritten' STORED AS PARQUET SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-replace-where",
+      "sql": "CREATE FLOW f AS INSERT INTO output BY NAME REPLACE WHERE true SELECT 1 AS id",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'REPLACE'"
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'REPLACE'.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW-GRAMMAR",
+      "label": "flow-replace-using",
+      "sql": "CREATE FLOW f AS INSERT INTO output REPLACE USING (id) SELECT 1 AS id",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'USING'",
+        "hint": ""
+      },
+      "message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'USING'.",
+      "contains_filename": false,
+      "table_exists": false
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "0cc165ab3c1edc19cd9fe98955415fabcf5469b1",
+  "cli_sha256": "8ccf74ede27e362930336d7f651f78c0aea85cfa704d0c20a48cd1fbc8ba008d",
+  "version": "4.2.1",
+  "test_sha256": "4c319f3901802d002ac8c0e09c9bcf12d1c9a5c6f19eb7d55bc0a0b84034761e",
+  "pytest_exit_code": 0,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T17:34:24.007624+00:00",
+  "remaining_listeners": []
+}
