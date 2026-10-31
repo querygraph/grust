@@ -1473,3 +1473,50 @@ rediscovered:
 Verdict: accept, read-only, pending the native gate, the public
 selection migration (297 retained hashes plus three new IDs) and the
 paired Spark run of the 14 public cases.
+
+### 20.11.1 Correction: "Unable flow type" is reachable from SQL
+
+§20.11 said the handler's "Unable flow type. Only INSERT INTO flows are
+supported." (`SqlGraphRegistrationContext.scala:425`) is reachable only
+from the protocol path. That was read off the grammar line alone and is
+wrong. `createPipelineInsertIntoFlow` takes the whole `insertInto` rule
+(`SqlBaseParser.g4:420`, `:589–597`), and `withInsertInto`
+(`AstBuilder.scala:931–1030`) builds three plan shapes from it:
+`InsertIntoStatement` for the table, overwrite-table and both `REPLACE`
+alternatives (the `REPLACE` forms carry `replaceCriteriaOpt`,
+`statements.scala:258`), and `InsertIntoDir` for the two `OVERWRITE
+DIRECTORY` alternatives. Probe 15 (`evidence/set-catalog-oracle/probe15_*`,
+pyspark 4.2.1) confirms the parse boundary: `CREATE FLOW f AS SELECT 1`
+and a `WITH`-led insert are `PARSE_SYNTAX_ERROR`; `CREATE FLOW f AS
+INSERT OVERWRITE DIRECTORY … SELECT 1` parses and reaches the direct
+execution rejection; `REPLACE WHERE` parses and reaches analysis; a
+`WITH` inside the query (`INSERT INTO output BY NAME WITH c AS … SELECT`)
+is legal.
+
+Consequences for the registration path, from source:
+
+- `INSERT OVERWRITE DIRECTORY` inside a pipeline SQL file reaches
+  `CreateFlowHandler` as `InsertIntoDir`, matches neither
+  `InsertIntoStatement` nor `UnresolvedInsert`, and yields the wrapped
+  "Unable flow type. Only INSERT INTO flows are supported." So that
+  string is reachable from SQL and belongs to the producer set; Sail's
+  AST has `InsertOverwriteDirectory` as a separate statement, so its
+  let-else fallback fires today with the combined message instead.
+- `INSERT INTO t BY NAME REPLACE WHERE … SELECT` and `REPLACE USING`
+  reach `validateInsertIntoFlow` as `InsertIntoStatement` with `byName`
+  true and no partition, columns or overwrite; none of the five checks
+  reads `replaceCriteriaOpt`, so Spark registers the flow and the replace
+  criteria are dropped. Sail parses these as `InsertIntoAndReplace`, a
+  different variant, so the fallback rejects them. This is a
+  registers-versus-rejects divergence, not a message difference, and it
+  is source-derived: no registration run of the `REPLACE` form was made.
+- The `WITH`-led flow body stays a parse error in Spark and an AST-level
+  acceptance in Sail, as §20.11 said.
+
+No original site asserts any of these shapes (the §20.11 grep for the
+"Unable flow type" string hit only the producer file). The residual
+list for the parser-grammar unit is therefore: partition-less
+`OVERWRITE IF NOT EXISTS` and `WITH`-led bodies become parse errors;
+`OVERWRITE DIRECTORY` bodies produce the wrapped "Unable flow type"
+message; `REPLACE` bodies either register as Spark does or are pinned
+as a named deviation, which is a design decision, not a port.
