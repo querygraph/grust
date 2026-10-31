@@ -1,0 +1,239 @@
+{
+  "started_at": "2026-10-31T20:44:38.394968+00:00",
+  "mode": "sail",
+  "script_sha256": "69b53b4a19b16074716b40d9aeee1468f5479d255428ca6640fd2967441a7c7b",
+  "runtime_commit": "46742817fece7d2679d3947194cb0e4459289abf",
+  "cli_sha256": "0a4bcc9ccbeae287170eda5f15f1f0cb808467903e461c218a9698341c74b644",
+  "version": "4.2.1",
+  "namespace": "sail.default",
+  "cases": [
+    {
+      "declared": false,
+      "read": false,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "SparkException",
+      "condition": "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE",
+      "sql_state": "42825",
+      "parameters": {
+        "left": "\"INT\"",
+        "right": "\"STRING\""
+      },
+      "message": "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": false,
+      "read": false,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": false,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.consumer'.\nError: [UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "consumer",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.consumer'.\nError: [UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.consumer, sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "consumer, late",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged;CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.consumer'.\nError: [UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: [CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.consumer, sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "consumer, late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "SparkException",
+      "condition": "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE",
+      "sql_state": "42825",
+      "parameters": {
+        "left": "\"INT\"",
+        "right": "\"STRING\""
+      },
+      "message": "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "SparkException",
+      "condition": "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE",
+      "sql_state": "42825",
+      "parameters": {
+        "left": "\"INT\"",
+        "right": "\"STRING\""
+      },
+      "message": "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged;CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis",
+        "Failed to resolve flow: 'sail.default.late'.\nError: Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    }
+  ],
+  "probe_completed": true,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T20:44:40.443086+00:00",
+  "remaining_listeners": []
+}
