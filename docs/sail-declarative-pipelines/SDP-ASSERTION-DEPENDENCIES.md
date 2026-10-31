@@ -1520,3 +1520,101 @@ list for the parser-grammar unit is therefore: partition-less
 `OVERWRITE DIRECTORY` bodies produce the wrapped "Unable flow type"
 message; `REPLACE` bodies either register as Spark does or are pinned
 as a named deviation, which is a design decision, not a port.
+
+### 20.11.2 Correction: `REPLACE` bodies do not register
+
+§20.11.1 inferred from `validateInsertIntoFlow` alone that `INSERT INTO t
+BY NAME REPLACE WHERE …` registers with its criteria dropped. Codex ran
+the vectors (CF-0519) and the inference was wrong on two counts, both
+visible in source I had not read: `withInsertInto` passes
+`overwrite = true` for every `REPLACE` alternative (`AstBuilder.scala:975,
+:995, :1007`), and `createInsertIntoStatement` (`:1146–1171`) routes a
+static target through `UnresolvedInsert.toInsertPlan`
+(`statements.scala:207–220`), which turns `REPLACE WHERE` into
+`OverwriteByExpression` and leaves `REPLACE USING` as an
+`InsertIntoStatement` with `overwrite` set. In `CreateFlowHandler` the
+first therefore matches neither `InsertIntoStatement` nor
+`UnresolvedInsert` and yields "Unable flow type. Only INSERT INTO flows
+are supported."; the second reaches the policy chain and fails at the
+third arm, "INSERT OVERWRITE flows not supported.". Codex's four extra
+Spark 4.2.1 vectors show exactly that, plus "Unable flow type" for both
+`OVERWRITE DIRECTORY` forms. Nothing registers; there is no
+drop-criteria behaviour to port and no named deviation to design.
+
+What stands from §20.11.1: the parse boundary (probe 15) and the SQL
+reachability of "Unable flow type". The lesson is the one already in
+this file: a plan-shape claim about Spark needs the builder read to the
+plan constructor, not to the grammar rule, or an executed vector. Codex
+ran the vector; I had labelled the claim source-derived but should have
+run it.
+
+### 20.12 Design read: `SQL-SYNTAX-DIAGNOSTICS-DESIGN.md` (CF-0518)
+
+A user-notified checkpoint; the user was notified. Read read-only
+against the pin and the Sail tree at `4fca6f3d4`.
+
+Claims checked and confirmed:
+
+- `TreeParser` rejects a `parser` attribute at the enum-variant level
+  (`sail-sql-macro/src/tree/parser.rs:174`, documented at `lib.rs:73`),
+  and a field's `function` receives only the dependency parsers and the
+  options (`parser.rs:93–94`), never an earlier field's value. So the
+  grammar cannot today couple `IF NOT EXISTS` to `OVERWRITE` plus a
+  partition clause, or restrict a `CREATE FLOW` body, without the
+  variant-level hook the design proposes. The default expansion of the
+  hook must stay byte-for-byte the current one; that is testable by
+  expanding an unchanged variant before and after.
+- `SqlError::parser` formats the `Rich` errors into `SqlParserError(String)`
+  at once (`sail-sql-analyzer/src/error.rs:51–60`) and Connect maps that
+  to `InvalidArgument` (`sail-spark-connect/src/error.rs:101`). The
+  design's refusal to recover metadata from that string is right.
+- The twelve vectors verify (`verify.py` pins condition, state, `error`
+  and empty `hint` per case); the two ordinary statements submitted to
+  the registration API produce the `:170` "Unsupported plan <nodeName>
+  parsed from SQL query" wrapper, which the design correctly refuses to
+  treat as execution evidence.
+
+Pins the implementation will need, from the pin, so step 4 does not
+rediscover them:
+
+- Template: `PARSE_SYNTAX_ERROR` is "Syntax error at or near
+  <error><hint>." (`error-conditions.json:5931–5936`), SQLSTATE 42601.
+- `error` is ANTLR's token display through `SparkParserErrorStrategy`
+  (`:67–72`): the token text in single quotes, with `'<EOF>'` replaced by
+  "end of input". `hint` is empty for input-mismatch and
+  no-viable-alternative (`:75–88`), ": extra input <token>" for an
+  unwanted token (`:91–100`), ": missing <expected-set>" for a missing
+  token (`:103–110`). The listener fallback uses the raw ANTLR message as
+  `error` with an empty hint (`parsers.scala:160–168`). All twelve
+  vectors are the empty-hint class; the design is right to keep the
+  other two explicit until tested.
+- Message: `ParseException.getMessage` (`parsers.scala:231–256`) is
+  "\n" + message, then either the query-context summaries, or
+  " (line L, pos P)\n" followed by "\n== SQL ==\n", the lines above,
+  P dashes and "^^^", and the lines below. `P` is ANTLR's
+  `charPositionInLine` (`:153–157`), a 0-based UTF-16 code-unit offset,
+  not a byte or scalar offset; a non-BMP character before the token
+  shifts it by two. The recorded messages show this shape with the
+  SQLSTATE suffix inserted by the client renderer.
+- `withCommand` (`:259–268`) rewrites a `PARSE_SYNTAX_ERROR` on an empty
+  command to `PARSE_EMPTY_STATEMENT` with no parameters; the pipeline
+  path parses each split statement, so an empty statement between
+  semicolons is in scope for the same boundary.
+- Spark parses a `CREATE FLOW` statement completely before any name
+  policy (the `flow-identity-first` vector: a multipart flow name with a
+  bad body gives the syntax error, not `MULTIPART_FLOW_NAME_NOT_SUPPORTED`),
+  which is the §20.8 premise again.
+
+Two comments on the sequence, not objections:
+
+- Step 2's Flow-body helper should admit the full `insertInto` rule as
+  Spark does, including the `REPLACE` and `OVERWRITE DIRECTORY` forms,
+  and leave their rejection to the handler layer with the strings of
+  §20.11.2; the design already says "audit … rather than silently
+  narrowing", and the four new vectors fix the expected strings.
+- Chumsky reports the furthest failure with an expected set, which is
+  not ANTLR's recovery model; the `error` token will agree with Spark
+  for the first-token cases in the packet, but the empty `hint` must be
+  asserted per vector, not assumed from the class.
+
+No inventory effect; no original site asserts any of the sixteen shapes.
