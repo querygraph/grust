@@ -866,3 +866,54 @@ earlier failed candidate asserted target-row preservation
 cross-engine, which Spark fails for the reason above; removing that
 cross-engine assertion and keeping it Sail-only is the correct
 resolution, not a weakening.
+
+## 18. Pipeline dataset clause validation, candidate `7d7c3640f` on `f9982230d` (CF-0474)
+
+Spark validates a `CREATE MATERIALIZED VIEW` / `CREATE STREAMING TABLE`
+statement in `SparkSqlParser.visitCreatePipelineDataset`
+(`SparkSqlParser.scala:1521–1600`) in a fixed order before building the
+plan: bucket spec, then `OPTIONS`, then `STORED AS`, then Hive SerDe
+row format, then `LOCATION`, each raising
+`QueryParsingErrors.operationNotAllowedError` (`_LEGACY_ERROR_TEMP_0035`,
+message template "Operation not allowed: <message>.", no SQLSTATE,
+`error-conditions.json:9030–9034`, `QueryParsingErrors.scala:512–516`)
+as a `ParseException` with the single `message` parameter; and for the
+materialized view only, a missing query raises "Unable to find query for
+CREATE MATERIALIZED VIEW statement." (`:1596–1599`). The base suite
+asserts condition and exact `message` parameter for Location, STORED
+AS, SerDe, Bucket and Options under both syntaxes (`:89–104`,
+`:131–162`, `:197–226`); the materialized-view suite asserts the
+missing-query message (`CreateMaterializedViewAsSelectParserSuite.scala:28–34`);
+the plain `CREATE STREAMING TABLE … COMMENT …` without a query must
+parse (§15.1).
+
+The candidate (nine paths): a shared `pipeline/dataset.rs::validate`
+called from both the direct-SQL lowering, ahead of the §17
+direct-execution rejection, and the registration lowering, ahead of the
+generic table lowering. Its `if … else if` chain is Spark's order,
+independent of clause order in the statement, with the five message
+texts verbatim and the materialized-view-only missing-query case; the
+error is the structured `ParseException` with the legacy condition, the
+`message` parameter, an empty SQLSTATE and the templated body. The
+Connect codec now omits `sqlState` from `ErrorInfo` when the structured
+state is empty instead of sending an empty string, which is what
+Spark's client sees for a template without a state (PySpark
+`getSqlState()` is `None`), with a transport regression for it.
+
+Tests: native, both syntaxes and both lowering routes for all five
+clauses with exact parameter and body, and the same clause on an
+ordinary `CREATE TABLE` still lowering to its command; missing query
+rejected on both routes for the view and the no-query streaming table
+still lowering to an empty declaration with its comment; precedence
+with three forbidden clauses in two orders resolving to the bucket
+message. Public: the five clauses under both syntaxes with condition,
+exact parameter and `None` SQLSTATE, and the missing-query message.
+Codex's paired oracle found Spark raising exactly these on all eleven
+cases and the parent Sail returning the §17 rejection instead, which
+the new ordering before that rejection fixes.
+
+Verdict: accept, read-only, pending the native gate. On landing,
+`CreatePipelineDatasetAsSelectParserSuiteBase:89`, `:131`, `:145`,
+`:197`, `:212` and the materialized-view suite's `:31` can move to
+partial by equivalence under both syntaxes. Column constraints (`:105`)
+and collation (`:253`) remain open, as Codex says.
