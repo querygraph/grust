@@ -566,3 +566,25 @@ publicly qualified `604a91f8d`, and the candidate changes no product
 code, so no fresh-build claim attaches. If the native gate exposes a
 product gap in the comment-removal branch, that is the separate
 reviewable chunk Codex already anticipates.
+
+### 13.1 Expanded candidate `807d66b15`: `:236–262` ("schema matches existing table schema")
+
+The expansion adds one test and no product change. The original
+creates `test_db.t2(x INT)` with SQL, asserts the single nullable `INT`
+column, materializes a streaming table `t2` (the `registerTable`
+default) fed by a batch `1, 2, 3` flow, and asserts the same column
+again. The port creates the table through Sail's SQL parser, command
+resolver and runner, asserts the column before, materializes `CREATE
+STREAMING TABLE t2 AS SELECT 1 … UNION ALL …` through the private
+seam, and asserts the same nullable `Int32` column with no comment,
+default, generation or identity after, plus zero rows. The inferred
+non-nullable `Int32` becomes nullable by `asNullable`, the
+streaming-table merge keeps the existing field, and the result is an
+unchanged schema; Codex is right that this is an unchanged-schema
+assertion, as in the original, not evidence of a mutation. Both
+inventory sites were already partial, so the counts do not move; the
+ports improve what "partial" covers without inventing sites.
+
+Verdict: accept, read-only, pending the native gates; no fresh public
+run is needed since only `cfg(test)` paths change on the publicly
+qualified `604a91f8d`.
