@@ -1,0 +1,14 @@
+    Checking sail-sql-parser v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-parser)
+error[E0282]: type annotations needed for `(_, _)`
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:58:26
+   |
+58 |     #[parser(function = |(left, right), _| left.then(right).map(|(a, b)| Self::Pair(a, b)))]
+   |                          ^^^^^^^^^^^^^     ---- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type, where the placeholders `_` are specified
+   |
+58 |     #[parser(function = |(left, right): (_, _), _| left.then(right).map(|(a, b)| Self::Pair(a, b)))]
+   |                                       ++++++++
+
+For more information about this error, try `rustc --explain E0282`.
+error: could not compile `sail-sql-parser` (lib test) due to 1 previous error

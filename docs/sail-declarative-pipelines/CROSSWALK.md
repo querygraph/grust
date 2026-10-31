@@ -254,3 +254,11 @@ target resolution.254 native,300+67 public,paired15,12 vectors and two controls
 pass. Three local BDD expectations corrected against Spark with SQL inputs
 unchanged;297 selected IDs retained plus three explicitly mapped replacements.
 Shared support only:486sites/116reviewed/87partial/399unmapped unchanged.
+
+
+[Generic parser hook8a1a2378b](evidence/variant-parser-hook/README.md) enables
+coupled INSERT grammar while preserving existing AST fields.65 native+syntax,
+fmt/strictClippy/two controls qualify the generic increment; no production SQL
+consumer/public rerun or inventory promotion. Separate062dc4136 repairs an
+existing syntax snapshot with baseline/candidate generation equality proof.
+Counts486/116/87/399 and original reference142 stay unchanged.

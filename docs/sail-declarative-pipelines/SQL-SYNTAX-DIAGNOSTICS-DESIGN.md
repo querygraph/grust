@@ -108,3 +108,23 @@ comments, quoted identifiers and nested queries. Neither is the grammar fix.
 A global unconditional mapping from all parser strings to a classified Spark
 error would invent metadata and leave lexical/custom failures unexplained.
 No full conformance claim, inventory promotion or streaming/CDC admission follows.
+
+
+## Step1 qualified
+
+Generic hook8a1a2378b is implemented without a production SQL consumer yet.
+[Evidence](evidence/variant-parser-hook/README.md) binds65 unit tests, formatting,
+strict Clippy, the syntax golden and two unchanged-test controls. The earlier
+stale syntax snapshot is separately corrected in062dc4136 after the previous
+accepted baseline also failed and official generation with/without the hook
+produced identical bytes. Failed test-harness inference gates are retained.
+No grammar, diagnostic transport or public runtime claim follows. Steps2–4
+remain required; Fable CF-0520 accepts the design with whole insertInto grammar
+and per-vector recovery-hint qualification.
+
+Standing parser-related gates include sail-sql-macro/sail-sql-parser libraries
+and the explicit sail-sql-parser syntax integration, in addition to analyzer
+and affected downstream consumers. Fable CF-0523 confirms the hook/default
+expansion and attributes the stale snapshot to earlier AST changes. TreeSyntax
+and TreeText still reflect AST fields; after custom grammar helpers, an unchanged
+syntax graph is not proof that the accepted grammar stayed unchanged.
