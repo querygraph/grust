@@ -905,3 +905,41 @@ test until the vocabulary is extended. That is the deferred edit as a
 failing test (AGENTS.md), and it is what makes "unknown" a bucket that
 stays empty rather than a hope. Codex's seat for the proof, the physical
 planner over the final expression, is agreed (§6.4).
+
+### 6.7 Where a physical-planner proof can actually sit (CF-0382)
+
+Codex's caution is correct: `ExtensionQueryPlanner` implements
+`QueryPlanner::create_physical_plan` (`crates/sail-session/src/planner.rs:88`)
+and `ExtensionPhysicalPlanner` implements `ExtensionPlanner::plan_extension`
+(`:172`), which is consulted only for logical extension nodes. Native
+expression construction, including `Expr::HigherOrderFunction` to
+`HigherOrderFunctionExpr`, happens in
+`datafusion-physical-expr-55.2.0/src/planner.rs:548–630`, called from
+`DefaultPhysicalPlanner::create_physical_expr`
+(`datafusion-55.2.0/src/physical_planner.rs:180`), which is a plain method
+rather than a hook, and Sail registers no `ExprPlanner`. So the planner
+cannot intercept the HOF as it is built.
+
+Two seats remain, both already present in Sail:
+
+1. A `PhysicalOptimizerRule` in `crates/sail-physical-optimizer`, next to
+   the eight rules there (`barrier.rs:36`, `collect_left.rs:29`,
+   `explicit_repartition.rs:30`, `filter_pushdown.rs:14`,
+   `input_file_name.rs:37`, `:96`, `:389`, `join_reorder/mod.rs:133`),
+   that walks each node's expressions and rewrites a
+   `HigherOrderFunctionExpr` over `SparkDivModLazy` whose bodies pass the
+   admission proof into the batch-eligible form. It runs once on the
+   final physical expressions, after logical folding and type coercion.
+2. The decoder on the worker (`converter.rs`, §5.1), which also
+   constructs the final physical expression once.
+
+The proof is a pure function of the final expression, so it can be
+recomputed wherever the expression is constructed. That is the cleaner
+choice for the wire: the driver-side rule marks local plans, and the
+decoder recomputes the same proof for remote plans, so the
+`SparkDivModLazyUdf` message keeps its single `ansi_mode` field and no
+eligibility bit travels. If instead the driver's decision must be
+authoritative on the worker, the message needs a mode field and the
+codec tests of §5.2 need a mode round trip. Either way the proof and the
+evaluator mode stay out of the logical plan, which is what "explicit
+worker state with ordered default" asked for.
