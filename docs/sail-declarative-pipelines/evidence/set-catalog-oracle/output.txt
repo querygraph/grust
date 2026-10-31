@@ -145,3 +145,32 @@ PROBE SELECT coalesce(2, 1 / 0) => [(2.0,)]
 PROBE SELECT typeof(1 / 0) => [('double',)]
 PROBE SELECT try_divide(1, 0), try_mod(1, 0) => [(None, None)]
 PROBE SELECT CAST(1 / 0 AS STRING) => [(None,)]
+=== probe9_signed_zero_divisor date=2026-10-31T04:58:00Z classic-mode
+=== ansi=true
+PROBE SELECT 1.0 / -0.0 => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1 / CAST(-0.0 AS DOUBLE) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1 / CAST(-0.0 AS FLOAT) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1.0 % -0.0 => ArithmeticException REMAINDER_BY_ZERO: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary s
+PROBE SELECT CAST(1 AS FLOAT) % CAST(-0.0 AS FLOAT) => ArithmeticException REMAINDER_BY_ZERO: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary s
+PROBE SELECT 1 DIV CAST(-0.0 AS DOUBLE) => AnalysisException DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES: [DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES] Cannot resolve "(1 div CAST(0.0 AS DOUBLE))" due to data type mismatch: the lef
+PROBE SELECT pmod(1.0, -0.0) => ArithmeticException REMAINDER_BY_ZERO: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary s
+PROBE SELECT 1 / CAST(-0.00 AS DECIMAL(3,2)) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT CAST(-0.0 AS DOUBLE) = 0.0, nullif(CAST(-0.0 AS DOUBLE), 0.0) => [(True, None)]
+PROBE SELECT x / y FROM VALUES (CAST(1 AS DOUBLE), CAST(-0.0 AS DOUBLE)) AS t(x, y) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1.0 / CAST('NaN' AS DOUBLE), 1.0 % CAST('NaN' AS DOUBLE) => [(nan, nan)]
+PROBE SELECT typeof(1 / CAST(-0.0 AS FLOAT)) => [('double',)]
+PROBE SELECT -0.0 / 1.0, CAST(-0.0 AS DOUBLE) / 1 => [(Decimal('0.000000'), 0.0)]
+=== ansi=false
+PROBE SELECT 1.0 / -0.0 => [(None,)]
+PROBE SELECT 1 / CAST(-0.0 AS DOUBLE) => [(None,)]
+PROBE SELECT 1 / CAST(-0.0 AS FLOAT) => [(None,)]
+PROBE SELECT 1.0 % -0.0 => [(None,)]
+PROBE SELECT CAST(1 AS FLOAT) % CAST(-0.0 AS FLOAT) => [(None,)]
+PROBE SELECT 1 DIV CAST(-0.0 AS DOUBLE) => AnalysisException DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES: [DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES] Cannot resolve "(1 div CAST(0.0 AS DOUBLE))" due to data type mismatch: the lef
+PROBE SELECT pmod(1.0, -0.0) => [(None,)]
+PROBE SELECT 1 / CAST(-0.00 AS DECIMAL(3,2)) => [(None,)]
+PROBE SELECT CAST(-0.0 AS DOUBLE) = 0.0, nullif(CAST(-0.0 AS DOUBLE), 0.0) => [(True, None)]
+PROBE SELECT x / y FROM VALUES (CAST(1 AS DOUBLE), CAST(-0.0 AS DOUBLE)) AS t(x, y) => [(None,)]
+PROBE SELECT 1.0 / CAST('NaN' AS DOUBLE), 1.0 % CAST('NaN' AS DOUBLE) => [(nan, nan)]
+PROBE SELECT typeof(1 / CAST(-0.0 AS FLOAT)) => [('double',)]
+PROBE SELECT -0.0 / 1.0, CAST(-0.0 AS DOUBLE) / 1 => [(Decimal('0.000000'), 0.0)]

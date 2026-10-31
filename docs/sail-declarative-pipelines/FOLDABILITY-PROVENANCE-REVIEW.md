@@ -950,3 +950,45 @@ Sail's typing. Both are a larger design, which Codex will flag to the user
 first. The `(NULL, 0)` and volatile-null rows belong in the oracle as known
 failures until then; `pmod` gets its own probe since its builder is typed
 separately.
+
+### 11.5 Signed zero, and the divisor guard's own duplication (CF-0341)
+
+CF-0341: removing the eager paths exposed that `nullif(divisor, 0)` misses
+`-0.0`, because DataFusion's float equality is total-order. Candidate
+`a49082801` widens the ANSI predicate to `abs(CAST(divisor AS DOUBLE)) = 0.0`
+and uses nested `NULLIF` for `+0`/`-0` outside ANSI, with the typed
+`SparkZeroDivisionError` UDF (two kinds, `Immutable` nullary, structured
+`SparkArithmeticException` with the six-class hierarchy) replacing
+`raise_error`, as §11.3 asked.
+
+Probe 9 (`probe9_signed_zero_divisor.py`, appended to the oracle output)
+confirms the subject: in Spark `-0.0` is zero for double, float and decimal
+divisors (`DIVIDE_BY_ZERO`/`REMAINDER_BY_ZERO` under ANSI, `NULL` outside,
+for `/`, `%` and `pmod`), a `NaN` divisor is not zero (`NaN` result in both
+modes), `CAST(-0.0 AS DOUBLE) = 0.0` is `true` and `nullif(-0.0, 0.0)` is
+`NULL`, and `1 DIV CAST(-0.0 AS DOUBLE)` is `DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES`
+(integral division does not accept doubles). Two consequences:
+
+- **The ANSI guard duplicates the divisor.** `make_safe_divisor` keeps the
+  shape `CASE WHEN <predicate over divisor.clone()> THEN error() ELSE divisor END`
+  (`math.rs`, the ANSI arm); the single-occurrence property CF-0341 claims
+  holds for the non-ANSI nested `NULLIF` only. For a volatile divisor that can
+  be zero (`1 / CAST(rand() < 0.5 AS INT)`), the predicate and the else branch
+  see different draws, so a row can raise when its divisor was not zero, or
+  reach Arrow's own division by zero (reported as `java.lang.ArithmeticException`
+  "divide by zero", not the typed class) when it was. This is the same
+  cardinality argument CF-0339 made against duplicating the dividend, and it
+  applies to the existing guard, not only to the candidate. The
+  duplication-free form is a unary guard UDF over the divisor alone,
+  `dividend / spark_zero_divisor(divisor)`: it evaluates the divisor once,
+  returns it unchanged when non-zero, returns `NULL` for a `NULL` divisor,
+  and raises the typed error (ANSI) or returns `NULL` (non-ANSI) for `±0`,
+  checking numerically inside the kernel so total-order equality and `f16`
+  never enter. It keeps the native arithmetic kernel and the result type,
+  removes the `CASE`, serves `pmod` unchanged, and makes the class
+  consistent on every zero-divisor path. The dividend's nullness stays the
+  separate gap of §11.4, since the guard does not see it.
+- **Signed-zero equality is a generic gap.** Spark's `=` treats `-0.0` and
+  `0.0` as equal while DataFusion's does not; `predicate.rs:404` already
+  normalises `IN` sets for this, so `SELECT CAST(-0.0 AS DOUBLE) = 0.0` is
+  worth a row in the generic oracle, outside this unit.
