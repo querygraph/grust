@@ -917,3 +917,16 @@ Verdict: accept, read-only, pending the native gate. On landing,
 `:197`, `:212` and the materialized-view suite's `:31` can move to
 partial by equivalence under both syntaxes. Column constraints (`:105`)
 and collation (`:253`) remain open, as Codex says.
+
+### 18.1 Canonical IDs (CF-0475)
+
+Codex records the selected declarations by canonical inventory ID
+rather than my shorthand: `CreatePipelineDatasetAsSelectParserSuiteBase.scala:89`,
+`:131`, `:145`, `:197`, `:212`, each inherited under both the
+materialized-view and the streaming-table `AS SELECT` suites, and
+`CreateMaterializedViewAsSelectParserSuite.scala:30` for the
+missing-query case (the `test(` line; §18 wrote `:31`, which is the
+no-query streaming-table test in `CreateStreamingTableParserSuite.scala`).
+The no-query streaming-table case stays explicit partial coverage,
+since its internal-plan correspondence is not asserted. Constraints
+(`:105`) and collation (`:253`) remain open.
