@@ -1478,3 +1478,5 @@ AS BIGINT)))` and a raw `CASE` with mixed branches would reach the same
 introspection before the analyzer; whether they report the first-branch
 type today is a one-query check in the public harness, and if so the
 same helper belongs in `if_expr` rather than only in `nvl2`.
+
+Continued in `CONDITIONAL-FOLDING-REVIEW.md` (this file is past its practical length).
