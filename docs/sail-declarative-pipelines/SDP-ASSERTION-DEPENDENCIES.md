@@ -242,3 +242,49 @@ both so callers are unchanged; the struct file moves with zero content
 changes and the lock file is untouched. This lets the SQL analyzer
 build the structured parse error without depending on DataFusion,
 which is the right placement. Accepted read-only.
+
+## 8. `:599` behaviour unit, candidate `db650c40e` on `60a5f290c` (CF-0435)
+
+Ten paths; product changes are small and in the right places:
+
+- `SqlError::Structured(Box<StructuredSparkError>)` is added to the SQL
+  analyzer's error type, and the `PlanError` and `SparkError`
+  conversions pass it through unchanged, so a structured parser error
+  reaches Connect with its class, condition, state and parameters
+  whether it travels directly or through planning (asserted both ways
+  in `error/structured/tests.rs`).
+- `statement/temporary_view.rs::normalize_query_name` is
+  `normalizeTempViewIdentifier` for the query-defined form: one part
+  accepted; two parts when the first is `session`; three when they are
+  `system.session`; the comparison is Sail's existing
+  `spark_case_insensitive_name_eq`, which the tests exercise with the
+  long s and dotted and dotless I (`seſſıon`, `ſyſtem`.`SESSİON`), the
+  folds Java's `equalsIgnoreCase` performs. Anything else raises the
+  structured `ParseException` with `INVALID_TEMP_OBJ_QUALIFIER`, SQLSTATE
+  `42602`, `objectType = "VIEW"`, and `objectName`/`qualifier` formatted
+  by the shared `quote_sql_identifier`.
+- Two quirks are reproduced from Codex's fresh Spark baseline, and both
+  follow from the pin: Spark's `toSQLId(String)` re-parses the name
+  through the attribute-name parser, so a last part containing a dot
+  renders as two quoted parts (`` `a.b`.`c.d` `` gives objectName
+  `` `c`.`d` ``) and a part containing an unbalanced backtick raises
+  `INVALID_ATTRIBUTE_NAME_SYNTAX` (`error-conditions.json:3345–3350`,
+  SQLSTATE `42601`), which the parser re-raises as a `ParseException`
+  with the same fields; `quote_in_parser` reproduces that reclassing
+  without duplicating the parser.
+- `CREATE … USING` keeps its previous path and `CREATE VIEW db.v` /
+  `DROP VIEW db.v` are asserted unchanged, matching §7.1.
+- The pipelines SQL preparation passes a structured parser error through
+  as an evaluation failure instead of wrapping it as a registration
+  analysis string, and the draft is discarded whole (an earlier valid
+  materialized view in the same file leaves no output or flow), which
+  is what `processSqlFile` raising does.
+- Public test for both the direct SQL and the pipeline API: the
+  original `:599` rejection with condition, state and the three
+  parameters, and the `session` / `system.session` / mixed-case / long-s
+  normalisations resolving to `v`, with the pipeline form confirming
+  the temporary view is not persisted.
+
+Verdict: accept, read-only, pending the native gates and the paired
+public baseline. After it lands, `:599–615` can move to partial with
+the Scala flag retained, on the same terms as `:562`.
