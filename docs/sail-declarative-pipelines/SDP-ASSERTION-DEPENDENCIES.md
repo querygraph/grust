@@ -818,3 +818,51 @@ and the flow condition. Codex's caution stands: the flow parser tests
 accept multipart names and an `INSERT` subquery at the AST level, and
 pipeline registration's own restrictions on them are a separate
 contract that must not be weakened to satisfy parser observations.
+
+### 17.2 Why Spark's rejected `CREATE FLOW` still runs its `INSERT` (CF-0470), and candidate `c50ef2253`
+
+Codex observed on Spark 4.2.1 that after `CREATE FLOW f AS INSERT INTO
+table2 SELECT * FROM table1` is rejected, `table2` holds `[[1],[2]]`:
+the nested insert ran. The cause is in the pin, and it is structural:
+
+1. The rejection lives in physical planning, not analysis: the
+   `Pipelines` strategy throws for `CreateFlowCommand`,
+   `CreateMaterializedViewAsSelect` and `CreateStreamingTableAsSelect`
+   (`SparkStrategies.scala:892–904`).
+2. `CreateFlowCommand(name, flowOperation, comment)` is a `BinaryCommand`
+   whose right child is the flow operation (`v2Commands.scala:2295–2306`;
+   `BinaryCommand extends Command`, `Command.scala:43`).
+3. `spark.sql` executes commands eagerly: `eagerlyExecuteCommands`
+   matches the root `Command` and runs it with
+   `CommandExecutionMode.NON_ROOT` (`QueryExecution.scala:270–277`), and
+   in that mode `commandExecuted` is
+   `analyzed.mapChildren(eagerlyExecuteCommands)` (`:231–236`): the
+   root's command children are executed first, so the resolved
+   `INSERT` writes `table2`. Only then is the root planned and the
+   strategy throws.
+
+For the dataset forms the child is a query, not a command, so nothing
+executes before the throw, which is why those `DDLSuite` cases create
+no table while the flow case writes. The original `DDLSuite:2544–2554`
+asserts only condition, state and empty parameters; it does not assert
+the insert's effect either way.
+
+Candidate `c50ef2253` on `25173ed90` (five paths, replacing the failed
+`8536dee17`, retained): `Statement::CreatePipelineFlow` now returns the
+structured `SparkUnsupportedOperationException` with
+`UNSUPPORTED_FEATURE.CREATE_FLOW_QUERY_EXECUTION`, SQLSTATE `0A000`, empty
+parameters and the template message, while the pipeline registration
+path still lowers the same statement to a `Flow`; the public test ports
+exactly the original's assertions with `table1`/`table2` pre-created;
+and Sail's rejection-before-write is kept as a separate Sail-only policy
+regression (`test_direct_execution_policy.py`) asserting both tables
+unchanged. That split is right: the original contract is the
+diagnostic, Spark's write-then-throw is a side effect no original site
+asserts and not one to reproduce, and Sail's standing
+rejection-before-effects contract is stated as Sail's own.
+
+Verdict: accept, read-only, pending the native and public gates. The
+earlier failed candidate asserted target-row preservation
+cross-engine, which Spark fails for the reason above; removing that
+cross-engine assertion and keeping it Sail-only is the correct
+resolution, not a weakening.
