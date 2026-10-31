@@ -433,3 +433,42 @@ hold while writing it:
   rows) so the unit proves the regression it exists to prevent does not
   occur, and `SET CATALOG IDENTIFIER(CAST(1 / 1 AS STRING))` for the wrapped
   catalog form.
+
+### 3.3 Staged converter, candidate `29fb36c79` (CF-0363)
+
+The old converter called `lambda_parameters(0, ..)` once and rejected
+`Partial`; the three-lambda evaluator is `Partial` until both thunk bodies
+are typed, so it could not be decoded. The candidate loops: call
+`lambda_parameters(step, value_or_lambda)`, decode every lambda that has
+parameter fields with `extend_lambda_schema` (fields renamed to the
+parameter names, the same as the reference's `field.renamed(name)`), record
+each body's `return_field` as that lambda's output, and build the
+`HigherOrderFunctionExpr` on `Complete`. Compared line by line with
+DataFusion's logical-side loop (`datafusion-expr/higher_order_function.rs:1240–1340`),
+which is the semantics the physical side must mirror:
+
+| Aspect                                | Reference loop                                                   | Candidate                                                 | Verdict                        |
+| ------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------ |
+| `Partial` entry `Some(fields)`        | resolve body with fields, set the lambda's output field          | same, by re-decoding the body                             | match                          |
+| `Partial` entry `None`                | leave the lambda's current field _unchanged_                     | **clears** it: `decoded_values[i] = None`, `Lambda(None)` | diverges; mirror the reference |
+| `Partial` length ≠ number of lambdas  | error                                                            | shorter → error; longer → extra sets ignored              | mirror: exact count            |
+| `Complete` length ≠ number of lambdas | error                                                            | shorter → error at construction; longer → ignored         | mirror: exact count            |
+| declared params > provided fields     | error                                                            | error                                                     | match                          |
+| duplicate parameter names             | error (`all_unique`)                                             | error via `LambdaExpr::try_new` (`lambda.rs:65–68`)       | match                          |
+| iteration bound                       | steps `0..=limit`, error when `step > limit` (`limit + 1` calls) | `for step in 0..limit` (`limit` calls)                    | off by one; mirror             |
+| output field of a resolved lambda     | `to_field` of the variable-resolved body                         | `body.return_field(&extended schema)`                     | match                          |
+| single-step UDFs                      | `Complete` at step 0                                             | one decode pass, identical to the previous converter      | match                          |
+
+The one semantic divergence is the clearing. In the reference, `None` in a
+`Partial` means "nothing new for this lambda this step", and a UDF may
+return `None` for a lambda it already typed; the candidate would drop that
+lambda's decoded body and field, and either fail with "missing decoded
+higher-order argument" at `Complete` or never complete. `SparkDivModLazy`
+happens to return `Some` for both thunks at every step, so the tests pass,
+but the converter is generic and the next UDF may not. Keep the previous
+field when `None` arrives, as the reference does. The two length checks and
+the bound are consistency items; a UDF that needs exactly `limit + 1` calls
+would decode logically and fail physically today. No evaluation happens in
+the loop, as CF-0363 says, and the generic `CASE` nullability boundary is
+untouched. With the clearing fixed and the counts mirrored, no further
+change.
