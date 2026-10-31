@@ -246,3 +246,11 @@ and three unchanged-test controls pass. One stale Sail golden output corrected
 through the official generator; all32 inputs/Spark exceptions unchanged. This is
 shared support, with no new original-site promotion:486/116/87/399 unchanged.
 Broader parse origins/order and individual valid Flow-policy messages remain open.
+
+
+[Flow INSERT-policy 4fca6f3d4](evidence/flow-insert-policy/README.md) qualifies
+distinct partition/column/overwrite/by-name producers and their precedence over
+target resolution.254 native,300+67 public,paired15,12 vectors and two controls
+pass. Three local BDD expectations corrected against Spark with SQL inputs
+unchanged;297 selected IDs retained plus three explicitly mapped replacements.
+Shared support only:486sites/116reviewed/87partial/399unmapped unchanged.

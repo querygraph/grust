@@ -1,0 +1,229 @@
+{
+  "started_at": "2026-10-31T16:30:07.127121+00:00",
+  "mode": "sail",
+  "script_sha256": "4e0a0faa9ffa13ec6ab158805533b19a4436de2d31a68816af0a8e3649f42762",
+  "cases": [
+    {
+      "kind": "INSERT-POLICY",
+      "label": "positional",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:2",
+        "message": "Only INSERT INTO by name flows supported.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO output SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported.\n\nOffending query:\nCREATE FLOW f AS INSERT INTO output SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "overwrite",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "INSERT OVERWRITE flows not supported.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output BY NAME SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:2"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] INSERT OVERWRITE flows not supported.\n\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output BY NAME SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "columns",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output(a) SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:2",
+        "message": "Column schema may not be specified for flow target.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO output(a) SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Column schema may not be specified for flow target.\n\nOffending query:\nCREATE FLOW f AS INSERT INTO output(a) SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "partition",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output PARTITION (p) BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Partition spec may not be specified for flow target.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO output PARTITION (p) BY NAME SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:2"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Partition spec may not be specified for flow target.\n\nOffending query:\nCREATE FLOW f AS INSERT INTO output PARTITION (p) BY NAME SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "if-not-exists",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output IF NOT EXISTS BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_STATEMENT_OR_CLAUSE",
+      "sql_state": "42601",
+      "parameters": {
+        "operation": "INSERT INTO ... IF NOT EXISTS"
+      },
+      "message": "[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: INSERT INTO ... IF NOT EXISTS is not valid.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "partition-columns",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output PARTITION (p) (a) SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:2",
+        "message": "Partition spec may not be specified for flow target.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO output PARTITION (p) (a) SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Partition spec may not be specified for flow target.\n\nOffending query:\nCREATE FLOW f AS INSERT INTO output PARTITION (p) (a) SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "overwrite-columns",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output(a) SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Column schema may not be specified for flow target.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output(a) SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:2"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Column schema may not be specified for flow target.\n\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output(a) SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "partition-overwrite",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output PARTITION (p) BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output PARTITION (p) BY NAME SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:2",
+        "message": "Partition spec may not be specified for flow target."
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Partition spec may not be specified for flow target.\n\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output PARTITION (p) BY NAME SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "if-not-exists-positional",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output IF NOT EXISTS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_STATEMENT_OR_CLAUSE",
+      "sql_state": "42601",
+      "parameters": {
+        "operation": "INSERT INTO ... IF NOT EXISTS"
+      },
+      "message": "[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: INSERT INTO ... IF NOT EXISTS is not valid.",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "overwrite-positional",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:2",
+        "message": "INSERT OVERWRITE flows not supported."
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] INSERT OVERWRITE flows not supported.\n\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE output SELECT 1\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "valid",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "accepted",
+      "contains_filename": false,
+      "table_exists": false
+    },
+    {
+      "kind": "INSERT-POLICY",
+      "label": "name-first",
+      "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW a.f AS INSERT OVERWRITE output BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "MULTIPART_FLOW_NAME_NOT_SUPPORTED",
+      "sql_state": "0A000",
+      "parameters": {
+        "flowName": "a.f"
+      },
+      "message": "[MULTIPART_FLOW_NAME_NOT_SUPPORTED] Flow with multipart name 'a.f' is not supported.",
+      "contains_filename": false,
+      "table_exists": false
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "4fca6f3d4982e2639061094ededdd12a50f8ad1c",
+  "cli_sha256": "bec9240b339ccc791261c357dc1528077a9c5aebc45577e6e7fc0b69d3ddfbc8",
+  "version": "4.2.1",
+  "test_sha256": "c0454bcd39308f756a40a62828f1c9983980f9646af7491f851df891501f62de",
+  "pytest_exit_code": 0,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T16:30:10.528740+00:00",
+  "remaining_listeners": []
+}

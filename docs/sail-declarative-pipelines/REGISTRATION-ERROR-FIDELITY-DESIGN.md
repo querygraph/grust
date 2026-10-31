@@ -155,3 +155,19 @@ among32 cases, preserving all inputs and recorded Spark exceptions. No original
 inventory site is promoted. Query contexts and general mixed-parser-error
 ordering remain unqualified. Valid Flow-policy producers are the next unit;
 streaming/CDC and public effect admission remain separate required work.
+
+
+## Flow INSERT producers qualified
+
+Commit 4fca6f3d4 applies partition→columns→overwrite→by-name validation after
+Flow-name checks and before target-name resolution. It reuses AnalysisError and
+the existing registration wrapper, with no new effects or public APIs. Shared
+INTO IF NOT EXISTS validation remains earlier; overwrite IF NOT EXISTS reaches
+the partition guard. [Evidence](evidence/flow-insert-policy/README.md) binds254
+native tests, formatting/strict Clippy, fresh300+67 public, paired15,12 endpoint
+vectors and two unchanged-test controls. Exact metadata checks cover the same
+three BDD inputs whose formerly combined message expectation is now corrected.
+The selection explicitly migrates those three IDs and retains297 others/all
+other source hashes. No original Spark assertion changes or inventory promotion.
+Non-INSERT/CTE-wrapped operations, broader parser contexts/order, batch effect
+qualification and streaming/CDC remain required work.
