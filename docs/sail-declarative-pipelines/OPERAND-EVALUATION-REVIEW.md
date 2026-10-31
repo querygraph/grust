@@ -380,3 +380,56 @@ review, as CF-0359 says. Remaining prerequisites before lowering are
 unchanged: identifier constant validation and folding (§2.2 item 2),
 operation fields and fresh names, nested/extracted/window contexts, CSE
 cost, and optimized representative measurements.
+
+## 3. Codec unit `f8ba01b87` and the scoped constant-validation design (CF-0361)
+
+### 3.1 Codec, read against its diff on `c1befda7a`
+
+Five paths. `physical.proto` appends `SparkDivModLazyUdf div_mod_lazy = 13`
+to the `HigherOrderUdf` oneof with one field, `bool ansi_mode = 1`;
+`decode.rs` constructs `SparkDivModLazy::new(ansi_mode)`; `encode.rs`
+downcasts and writes the mode; the lambda bodies, parameter names and
+captures go through the unchanged `RemotePhysicalProtoConverter`
+(`LambdaExprNode.params`, `LambdaVariable` by index and field,
+`extend_lambda_schema` laying captures before parameters). The three tests
+round-trip through `try_encode_physical_expr`/`try_decode_physical_expr`
+and _execute_ original and decoded: both modes × both kinds with the unary
+guard in the operation body (structured `22012` errors with the right
+condition under ANSI, `NULL` outside), an operation that uses only its right
+parameter plus a captured column at a non-prefix offset, and a one-row batch
+whose left thunk would raise but is skipped because the right is `NULL`
+(both modes) or zero (legacy). Wire semantics: an absent or zero `ansi_mode`
+decodes to legacy, the non-raising mode, which is the safe default for a
+missing field; a worker older than tag 13 rejects the unknown oneof variant
+rather than guessing. No change requested.
+
+### 3.2 The scoped visitor for `require_constant_expression`
+
+The design in CF-0361 is the right shape and matches §2.2 item 2. Points to
+hold while writing it:
+
+- **Scope by name, as DataFusion does.** `Lambda.params` is `Vec<String>`
+  and `LambdaVariable` carries `name` and an optional `field`
+  (`datafusion-expr/expr.rs:1472–1477,519–522`), so the visitor's stack holds
+  parameter names pushed on entering each of the three `Lambda` arguments
+  and popped on exit; a `LambdaVariable` is admitted only if its name is on
+  the stack, inner names shadow outer, and the thunks' dummy parameter counts
+  as bound even though no body references it. Anything else that was
+  non-constant stays non-constant: a free `LambdaVariable`, a `Column`, a
+  `HigherOrderFunction` whose `inner()` is not `SparkDivModLazy`, a `Lambda`
+  not in argument position of that HOF.
+- **Bodies keep the existing tests.** Inside the bodies the same variant
+  allow-list and the same `Volatile`/async scalar rejection apply, so
+  provenance (`mark_non_foldable`) and type-only behaviour are unchanged;
+  the unary guard and the typed error function are `Immutable` and pass,
+  and the evaluation error they raise surfaces from `LiteralEvaluator`
+  exactly where Spark raises `DIVIDE_BY_ZERO` from `eval()`.
+- **Order of checks is preserved.** `IDENTIFIER(1 DIV 0)` must still be
+  `WRONG_TYPE` before any evaluation: `Expr::HigherOrderFunction::to_field`
+  resolves the result field through `lambda_parameters` and the operation
+  body, so `get_type` yields `bigint` without evaluating, as today.
+- **Fixtures named in CF-0361 are the right set**; add
+  `IDENTIFIER(CAST(4 / 2 AS STRING))` end to end (today's §11 arithmetic
+  rows) so the unit proves the regression it exists to prevent does not
+  occur, and `SET CATALOG IDENTIFIER(CAST(1 / 1 AS STRING))` for the wrapped
+  catalog form.
