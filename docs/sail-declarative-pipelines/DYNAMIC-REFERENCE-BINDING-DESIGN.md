@@ -403,3 +403,43 @@ improves6→8, metadata3→5. All earlier positive cases remain positive and20 p
 observations are unchanged. Bare public/directive phase checks, intrinsic function
 annotations, ordinary arithmetic lowering, fallback resolution/frozen bindings and
 full original Scala SDP acceptance remain required work. No flow run or data write.
+
+## Arithmetic lowering and the next evaluation checkpoint
+
+Committeda49082801e79a6a9cea545186fecb7171d54a4b5 removes all three eager zero
+paths and the arithmetic-deferral exception. The existing guard uses two typed
+internal error kinds with the existing StandardUdf envelope; generic raise_error
+is unchanged. The transport preserves the native arithmetic class and measured
+six-class hierarchy. A real signed-zero regression from the first public run is
+fixed with a widened abs predicate for ANSI and nested typed NULLIF outside ANSI;
+the non-ANSI divisor appears once and the result type stays intact.
+
+[Arithmetic evidence](evidence/deferred-arithmetic/README.md) qualifies909 Rust
+libraries/fmt/strictClippy, unchanged eager1pass/2fail and codec0/1 controls, its own
+fresh300+67 public run and4 parameter tests. Core40 improves17→40 outcomes and
+metadata/raw field comparisons; all33 successful schemas match. Earlier48 stays33,
+14 arithmetic improves8→10, metadata5→7;20 provenance observations are unchanged.
+The initial import/envelope fixture failures and d53's298/300 signed-zero failure
+are retained rather than relabeled. Source55's catalog behavior remains intact.
+
+5a1142bcd90b97385314610f1342e1a9a4879690 corrects only the cfg(test) fixture:
+floating signed-zero checks use / and %, while integer DIV is covered separately.
+Spark rejects floating DIV; the separate two-row conformance check still fails in
+both ANSI modes. The106-plan/fmt/Clippy fixture gate is pinned to5a, public/runtime
+proof to production-identical a490. No public verdict on5a itself is claimed.
+
+Runtime semantics remain required work. The12-case NULL/volatile/window/pmod probe
+retains six ANSI failures and its check exits1. A deterministic volatile-divisor
+Rust test, appended only on unadvanced20832708b, fails0/1: six calls where one is
+required and a typed error despite an initial nonzero divisor. Its original fixture
+returned the error before measuring; the corrected fixture asserts the count first.
+This is observed across optimization/execution, not proof of a single physical
+stage cause. The current ANSI CASE also contains two divisor references.
+
+The next substantial design checkpoint, announced to the user, is operand evaluation
+order/cardinality. A unary divisor guard can preserve native kernels and remove
+syntactic divisor duplication; NULL-dividend/right-first behavior and domain checks
+need further design. Arbitrary dividend duplication was rejected because volatile
+expressions are excluded from CSE; no window deviation is an acceptable final
+state. Query origins/full diagnostic summaries, bare catalog phases, intrinsic
+annotations and full original Scala SDP acceptance remain unqualified.

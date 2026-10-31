@@ -1,0 +1,548 @@
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 6d6669c48..e24ea3470 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -225,6 +225,7 @@ use sail_function::scalar::math::spark_try_mult::SparkTryMult;
+ use sail_function::scalar::math::spark_try_subtract::SparkTrySubtract;
+ use sail_function::scalar::math::spark_unhex::SparkUnHex;
+ use sail_function::scalar::math::spark_uniform::SparkUniform;
++use sail_function::scalar::math::zero_division::{SparkZeroDivisionError, ZeroDivisionKind};
+ use sail_function::scalar::misc::hll_sketch::{HllSketchEstimateFunction, HllUnionFunction};
+ use sail_function::scalar::misc::raise_error::RaiseError;
+ use sail_function::scalar::misc::spark_aes::{
+@@ -3941,6 +3942,12 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+             "multi_expr" => Ok(Arc::new(ScalarUDF::from(MultiExpr::new()))),
+             "normalize_float_keys" => Ok(Arc::new(ScalarUDF::from(NormalizeFloatKeys::new()))),
+             "raise_error" => Ok(Arc::new(ScalarUDF::from(RaiseError::new()))),
++            "spark_divide_by_zero" => Ok(Arc::new(ScalarUDF::from(SparkZeroDivisionError::new(
++                ZeroDivisionKind::Divide,
++            )))),
++            "spark_remainder_by_zero" => Ok(Arc::new(ScalarUDF::from(
++                SparkZeroDivisionError::new(ZeroDivisionKind::Remainder),
++            ))),
+             "random_poisson" => Ok(Arc::new(ScalarUDF::from(RandPoisson::new()))),
+             "randn" => Ok(Arc::new(ScalarUDF::from(Randn::new()))),
+             "spark_cast_to_variant" => Ok(Arc::new(ScalarUDF::from(SparkCastToVariant::new()))),
+@@ -4170,6 +4177,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+             || node_inner.is::<RepeatFunc>()
+             || node_inner.is::<ParseUrl>()
+             || node_inner.is::<RaiseError>()
++            || node_inner.is::<SparkZeroDivisionError>()
+             || node_inner.is::<Randn>()
+             || node_inner.is::<Random>()
+             || node_inner.is::<RandPoisson>()
+@@ -9329,3 +9337,7 @@ mod file_scan_identity_tests;
+ 
+ #[cfg(test)]
+ mod orc_tests;
++
++#[cfg(test)]
++#[path = "codec/zero_division_tests.rs"]
++mod zero_division_tests;
+diff --git a/crates/sail-execution/src/proto/codec/zero_division_tests.rs b/crates/sail-execution/src/proto/codec/zero_division_tests.rs
+new file mode 100644
+index 000000000..7124cc83e
+--- /dev/null
++++ b/crates/sail-execution/src/proto/codec/zero_division_tests.rs
+@@ -0,0 +1,67 @@
++use datafusion::common::config::ConfigOptions;
++use datafusion::logical_expr::{ScalarFunctionArgs, Volatility};
++use sail_common_datafusion::error::{
++    CommonErrorCause, PythonErrorCause, PythonErrorCauseExtractor,
++};
++
++use super::*;
++
++struct NoPython;
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++
++#[test]
++fn zero_division_codec_preserves_kind_type_and_structured_failure() -> Result<()> {
++    for (kind, name, condition) in [
++        (
++            ZeroDivisionKind::Divide,
++            "spark_divide_by_zero",
++            "DIVIDE_BY_ZERO",
++        ),
++        (
++            ZeroDivisionKind::Remainder,
++            "spark_remainder_by_zero",
++            "REMAINDER_BY_ZERO",
++        ),
++    ] {
++        let original = ScalarUDF::from(SparkZeroDivisionError::new(kind));
++        let mut bytes = vec![];
++        RemoteExecutionCodec.try_encode_udf(&original, &mut bytes)?;
++        // Stateless Sail functions still use the existing StandardUdf envelope.
++        let definition = ExtendedScalarUdf::decode(bytes.as_slice())
++            .map_err(|error| plan_datafusion_err!("invalid standard definition: {error}"))?;
++        assert!(matches!(
++            definition.udf_kind,
++            Some(UdfKind::Standard(r#gen::StandardUdf {}))
++        ));
++        let decoded = RemoteExecutionCodec.try_decode_udf(original.name(), &bytes)?;
++        assert!(decoded.inner().is::<SparkZeroDivisionError>());
++        assert_eq!(decoded.name(), name);
++        assert_eq!(decoded.signature().volatility, Volatility::Immutable);
++        assert_eq!(decoded.return_type(&[])?, DataType::Null);
++        let result = decoded.invoke_with_args(ScalarFunctionArgs {
++            args: vec![],
++            arg_fields: vec![],
++            number_rows: 1,
++            return_field: Arc::new(Field::new("error", DataType::Null, true)),
++            config_options: Arc::new(ConfigOptions::default()),
++        });
++        let error = result
++            .err()
++            .ok_or_else(|| plan_datafusion_err!("decoded arithmetic error succeeded"))?;
++        let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error) else {
++            return plan_err!("arithmetic error lost its structured cause: {error}");
++        };
++        assert_eq!(error.class, "org.apache.spark.SparkArithmeticException");
++        assert_eq!(error.condition, condition);
++        assert_eq!(error.sql_state, "22012");
++        assert_eq!(
++            error.parameters.get("config").map(String::as_str),
++            Some("\"spark.sql.ansi.enabled\"")
++        );
++    }
++    Ok(())
++}
+diff --git a/crates/sail-function/src/scalar/math/mod.rs b/crates/sail-function/src/scalar/math/mod.rs
+index 456429233..8ebaa66b7 100644
+--- a/crates/sail-function/src/scalar/math/mod.rs
++++ b/crates/sail-function/src/scalar/math/mod.rs
+@@ -21,3 +21,4 @@ pub mod spark_unhex;
+ pub mod spark_uniform;
+ mod utils;
+ pub mod xorshift;
++pub mod zero_division;
+diff --git a/crates/sail-function/src/scalar/math/zero_division.rs b/crates/sail-function/src/scalar/math/zero_division.rs
+new file mode 100644
+index 000000000..580fbd6aa
+--- /dev/null
++++ b/crates/sail-function/src/scalar/math/zero_division.rs
+@@ -0,0 +1,75 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use datafusion::arrow::datatypes::{DataType, Field, FieldRef};
++use datafusion_common::{DataFusionError, Result};
++use datafusion_expr::{
++    ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDFImpl, Signature, Volatility,
++};
++use sail_common_datafusion::error::StructuredSparkError;
++
++use crate::error::invalid_arg_count_exec_err;
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
++pub enum ZeroDivisionKind {
++    Divide,
++    Remainder,
++}
++
++/// An internal error branch evaluated only when a numeric divisor is zero.
++/// A NULL result type lets the surrounding CASE retain the divisor's type.
++#[derive(Debug, PartialEq, Eq, Hash)]
++pub struct SparkZeroDivisionError {
++    kind: ZeroDivisionKind,
++    signature: Signature,
++}
++
++impl SparkZeroDivisionError {
++    pub fn new(kind: ZeroDivisionKind) -> Self {
++        Self {
++            kind,
++            signature: Signature::nullary(Volatility::Immutable),
++        }
++    }
++}
++
++impl ScalarUDFImpl for SparkZeroDivisionError {
++    fn name(&self) -> &str {
++        match self.kind {
++            ZeroDivisionKind::Divide => "spark_divide_by_zero",
++            ZeroDivisionKind::Remainder => "spark_remainder_by_zero",
++        }
++    }
++    fn signature(&self) -> &Signature {
++        &self.signature
++    }
++    fn return_type(&self, _: &[DataType]) -> Result<DataType> {
++        Ok(DataType::Null)
++    }
++    fn return_field_from_args(&self, _: ReturnFieldArgs) -> Result<FieldRef> {
++        Ok(Arc::new(Field::new(self.name(), DataType::Null, true)))
++    }
++    fn invoke_with_args(&self, args: ScalarFunctionArgs) -> Result<ColumnarValue> {
++        if !args.args.is_empty() {
++            return Err(invalid_arg_count_exec_err(
++                self.name(),
++                (0, 0),
++                args.args.len(),
++            ));
++        }
++        let (condition, operation, fallback) = match self.kind {
++            ZeroDivisionKind::Divide => ("DIVIDE_BY_ZERO", "Division", "try_divide"),
++            ZeroDivisionKind::Remainder => ("REMAINDER_BY_ZERO", "Remainder", "try_mod"),
++        };
++        let config = "\"spark.sql.ansi.enabled\"";
++        Err(DataFusionError::External(Box::new(StructuredSparkError {
++            class: "org.apache.spark.SparkArithmeticException".into(),
++            condition: condition.into(),
++            sql_state: "22012".into(),
++            message: format!(
++                "{operation} by zero. Use `{fallback}` to tolerate divisor being 0 and return NULL instead. If necessary set {config} to \"false\" to bypass this error."
++            ),
++            parameters: HashMap::from([("config".into(), config.into())]),
++        })))
++    }
++}
+diff --git a/crates/sail-plan/src/function/constant_context.rs b/crates/sail-plan/src/function/constant_context.rs
+index cdea0d596..873d67882 100644
+--- a/crates/sail-plan/src/function/constant_context.rs
++++ b/crates/sail-plan/src/function/constant_context.rs
+@@ -14,12 +14,4 @@ impl ConstantContext {
+             Self::Identifier => true,
+         }
+     }
+-
+-    /// Validate the identifier's type before evaluating constant arithmetic.
+-    pub(crate) fn defer_arithmetic_evaluation(self) -> bool {
+-        match self {
+-            Self::Ordinary => false,
+-            Self::Identifier => true,
+-        }
+-    }
+ }
+diff --git a/crates/sail-plan/src/function/scalar/math.rs b/crates/sail-plan/src/function/scalar/math.rs
+index b0adb9dce..86709c95c 100644
+--- a/crates/sail-plan/src/function/scalar/math.rs
++++ b/crates/sail-plan/src/function/scalar/math.rs
+@@ -1,14 +1,12 @@
+ use std::sync::Arc;
+ 
+-use datafusion::arrow::datatypes::{DataType, IntervalUnit, TimeUnit, i256};
+-use datafusion::arrow::error::ArrowError;
++use datafusion::arrow::datatypes::{DataType, IntervalUnit, TimeUnit};
+ use datafusion::functions::expr_fn;
+ use datafusion_common::{DFSchemaRef, ScalarValue};
+ use datafusion_expr::{
+     BinaryExpr, Expr, ExprSchemable, Operator, ScalarUDF, cast, expr, lit, try_cast, when,
+ };
+ use datafusion_spark::function::math::expr_fn as math_fn;
+-use half::f16;
+ use sail_common_datafusion::utils::items::ItemTaker;
+ use sail_function::error::generic_exec_err;
+ use sail_function::scalar::datetime::negate_duration::NegateDuration;
+@@ -34,7 +32,7 @@ use sail_function::scalar::math::spark_try_mult::SparkTryMult;
+ use sail_function::scalar::math::spark_try_subtract::SparkTrySubtract;
+ use sail_function::scalar::math::spark_unhex::SparkUnHex;
+ use sail_function::scalar::math::spark_uniform::SparkUniform;
+-use sail_function::scalar::misc::raise_error::RaiseError;
++use sail_function::scalar::math::zero_division::{SparkZeroDivisionError, ZeroDivisionKind};
+ use sail_function::scalar::spark_to_string::{SparkToLargeUtf8, SparkToUtf8, SparkToUtf8View};
+ 
+ use crate::error::{PlanError, PlanResult};
+@@ -272,56 +270,10 @@ fn spark_multiply(input: ScalarFunctionInput) -> PlanResult<Expr> {
+     })
+ }
+ 
+-/// Check if an expression represents a zero literal value.
+-/// Handles both direct literals and CAST expressions wrapping literals.
+-fn is_zero_literal(expr: &Expr) -> bool {
+-    // Helper to check if a ScalarValue is zero
+-    fn is_scalar_zero(scalar: &ScalarValue) -> bool {
+-        match scalar {
+-            ScalarValue::Int8(Some(0))
+-            | ScalarValue::Int16(Some(0))
+-            | ScalarValue::Int32(Some(0))
+-            | ScalarValue::Int64(Some(0))
+-            | ScalarValue::UInt8(Some(0))
+-            | ScalarValue::UInt16(Some(0))
+-            | ScalarValue::UInt32(Some(0))
+-            | ScalarValue::UInt64(Some(0))
+-            | ScalarValue::Decimal128(Some(0), _, _) => true,
+-            ScalarValue::Float32(Some(v)) if *v == 0.0 => true,
+-            ScalarValue::Float64(Some(v)) if *v == 0.0 => true,
+-            ScalarValue::Float16(Some(f)) if *f == f16::from_f32(0.0) => true,
+-            ScalarValue::Decimal256(Some(v), _, _) if *v == i256::ZERO => true,
+-            _ => false,
+-        }
+-    }
+-
+-    match expr {
+-        // Direct literal
+-        Expr::Literal(scalar, _) => is_scalar_zero(scalar),
+-        // CAST(literal AS type) - unwrap the cast and check the inner literal
+-        Expr::Cast(cast_expr) => {
+-            if let Expr::Literal(scalar, _) = cast_expr.expr.as_ref() {
+-                is_scalar_zero(scalar)
+-            } else {
+-                false
+-            }
+-        }
+-        // TryCast is similar to Cast
+-        Expr::TryCast(try_cast_expr) => {
+-            if let Expr::Literal(scalar, _) = try_cast_expr.expr.as_ref() {
+-                is_scalar_zero(scalar)
+-            } else {
+-                false
+-            }
+-        }
+-        _ => false,
+-    }
+-}
+-
+ /// Returns a guarded divisor expression that handles division by zero at runtime.
+ ///
+ /// In non-ANSI mode: returns `nullif(divisor, 0)` — evaluates to NULL when divisor is zero.
+-/// In ANSI mode: returns `CASE WHEN divisor = 0 THEN raise_error(msg) ELSE divisor END`.
++/// In ANSI mode: returns a CASE with a typed arithmetic error branch when the divisor is zero.
+ ///
+ /// This wraps the divisor itself (not the entire division expression) to avoid
+ /// duplicating complex divisor expressions (e.g., window functions) in the plan.
+@@ -329,7 +281,7 @@ fn make_safe_divisor(
+     divisor: Expr,
+     divisor_type: &DataType,
+     ansi_mode: bool,
+-    error_message: &str,
++    kind: ZeroDivisionKind,
+ ) -> Expr {
+     // Skip wrapping for Interval/Duration types (cannot be compared to lit(0)).
+     if matches!(divisor_type, DataType::Interval(_) | DataType::Duration(_)) {
+@@ -338,10 +290,7 @@ fn make_safe_divisor(
+ 
+     if ansi_mode {
+         let zero_check = divisor.clone().eq(lit(0));
+-        let raise = Expr::ScalarFunction(expr::ScalarFunction {
+-            func: Arc::new(ScalarUDF::from(RaiseError::new())),
+-            args: vec![lit(error_message)],
+-        });
++        let raise = ScalarUDF::from(SparkZeroDivisionError::new(kind)).call(vec![]);
+         Expr::Case(expr::Case {
+             expr: None,
+             when_then_expr: vec![(Box::new(zero_check), Box::new(raise))],
+@@ -373,20 +322,6 @@ fn spark_divide(input: ScalarFunctionInput) -> PlanResult<Expr> {
+ 
+     let (dividend, divisor) = arguments.two()?;
+ 
+-    // Constant-name resolution must validate the result type before evaluation.
+-    // Ordinary queries keep the existing literal-zero fast path.
+-    if !function_context
+-        .constant_context
+-        .defer_arithmetic_evaluation()
+-        && is_zero_literal(&divisor)
+-    {
+-        if function_context.plan_config.ansi_mode {
+-            return Err(PlanError::ArrowError(ArrowError::DivideByZero));
+-        } else {
+-            return Ok(Expr::Literal(ScalarValue::Null, None));
+-        }
+-    }
+-
+     let ansi_mode = function_context.plan_config.ansi_mode;
+     let dividend_type = dividend.get_type(function_context.schema);
+     let divisor_type = divisor.get_type(function_context.schema);
+@@ -397,7 +332,7 @@ fn spark_divide(input: ScalarFunctionInput) -> PlanResult<Expr> {
+         divisor,
+         &effective_divisor_type,
+         ansi_mode,
+-        "Division by zero",
++        ZeroDivisionKind::Divide,
+     );
+ 
+     let div_expr = match (&dividend_type, &divisor_type) {
+@@ -444,19 +379,6 @@ fn spark_div(input: ScalarFunctionInput) -> PlanResult<Expr> {
+ 
+     let (dividend, divisor) = arguments.two()?;
+ 
+-    // Constant-name resolution defers evaluation until after type validation.
+-    if !function_context
+-        .constant_context
+-        .defer_arithmetic_evaluation()
+-        && is_zero_literal(&divisor)
+-    {
+-        if function_context.plan_config.ansi_mode {
+-            return Err(PlanError::ArrowError(ArrowError::DivideByZero));
+-        } else {
+-            return Ok(Expr::Literal(ScalarValue::Null, None));
+-        }
+-    }
+-
+     let ansi_mode = function_context.plan_config.ansi_mode;
+     let dividend_type = dividend.get_type(function_context.schema);
+     let divisor_type = divisor.get_type(function_context.schema);
+@@ -467,7 +389,7 @@ fn spark_div(input: ScalarFunctionInput) -> PlanResult<Expr> {
+         divisor,
+         &effective_divisor_type,
+         ansi_mode,
+-        "Division by zero",
++        ZeroDivisionKind::Divide,
+     );
+ 
+     let div_expr = match (&dividend_type, &divisor_type) {
+@@ -628,7 +550,7 @@ fn spark_sqrt(arg: Expr) -> Expr {
+ ///
+ /// In ANSI mode: raises error for integral/decimal modulo by zero.
+ /// In non-ANSI mode: returns NULL for modulo by zero.
+-/// Float/double modulo by zero returns NaN (IEEE 754).
++/// Float/double zero divisors follow the same ANSI policy as integral types.
+ fn spark_modulo(input: ScalarFunctionInput) -> PlanResult<Expr> {
+     let ScalarFunctionInput {
+         arguments,
+@@ -637,21 +559,6 @@ fn spark_modulo(input: ScalarFunctionInput) -> PlanResult<Expr> {
+ 
+     let (dividend, divisor) = arguments.two()?;
+ 
+-    // Constant-name resolution defers evaluation until after type validation.
+-    if !function_context
+-        .constant_context
+-        .defer_arithmetic_evaluation()
+-        && is_zero_literal(&divisor)
+-    {
+-        if function_context.plan_config.ansi_mode {
+-            return Err(PlanError::ArrowError(ArrowError::ArithmeticOverflow(
+-                "Remainder by zero".to_string(),
+-            )));
+-        } else {
+-            return Ok(Expr::Literal(ScalarValue::Null, None));
+-        }
+-    }
+-
+     let ansi_mode = function_context.plan_config.ansi_mode;
+     let divisor_type = divisor.get_type(function_context.schema);
+ 
+@@ -661,7 +568,7 @@ fn spark_modulo(input: ScalarFunctionInput) -> PlanResult<Expr> {
+         divisor,
+         &effective_divisor_type,
+         ansi_mode,
+-        "Remainder by zero",
++        ZeroDivisionKind::Remainder,
+     );
+ 
+     Ok(Expr::BinaryExpr(BinaryExpr {
+diff --git a/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs b/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
+index 5b34ac826..b06ce7daf 100644
+--- a/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
++++ b/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
+@@ -1,7 +1,6 @@
+ use std::sync::Arc;
+ 
+-use arrow::error::ArrowError;
+-use datafusion_common::DFSchema;
++use datafusion_common::{DFSchema, ScalarValue};
+ 
+ use super::tests::{context, expression};
+ use super::*;
+@@ -56,14 +55,86 @@ async fn constant_type_validation_precedes_arithmetic_and_restores_ordinary_poli
+         let plan = sail_sql_analyzer::statement::from_ast_statement(
+             sail_sql_analyzer::parser::parse_one_statement("SELECT 1 DIV 0")?,
+         )?;
+-        let ordinary = resolver.resolve_named_plan(plan).await;
++        // Lowering succeeds; an actually evaluated zero divisor still fails in ANSI.
++        let ordinary = resolver.resolve_named_plan(plan).await?;
++        let result = async {
++            ctx.execute_logical_plan(ordinary.plan)
++                .await?
++                .collect()
++                .await
++        }
++        .await;
+         if ansi_mode {
+-            assert!(matches!(
+-                ordinary,
+-                Err(PlanError::ArrowError(ArrowError::DivideByZero))
+-            ));
++            let error = result.err().ok_or("ANSI zero division was accepted")?;
++            assert!(error.to_string().contains("DIVIDE_BY_ZERO"), "{error}");
+         } else {
+-            assert!(ordinary.is_ok());
++            let batches = result?;
++            assert_eq!(
++                batches.iter().map(|batch| batch.num_rows()).sum::<usize>(),
++                1
++            );
++            assert_eq!(
++                ScalarValue::try_from_array(batches[0].column(0), 0)?,
++                ScalarValue::Int64(None)
++            );
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn ordinary_lowering_preserves_type_only_parents_and_dead_arithmetic() -> TestResult {
++    let ctx = context()?;
++    for ansi_mode in [true, false] {
++        let resolver = PlanResolver::new(
++            &ctx,
++            Arc::new(PlanConfig {
++                ansi_mode,
++                ..Default::default()
++            }),
++        );
++        for (sql, expected) in [
++            (
++                "SELECT typeof(1 DIV 0)",
++                ScalarValue::Utf8(Some("bigint".into())),
++            ),
++            (
++                "SELECT typeof(1 / 0)",
++                ScalarValue::Utf8(Some("double".into())),
++            ),
++            (
++                "SELECT typeof(1 % 0)",
++                ScalarValue::Utf8(Some("int".into())),
++            ),
++            (
++                "SELECT typeof(CAST(1 DIV 0 AS STRING))",
++                ScalarValue::Utf8(Some("string".into())),
++            ),
++            (
++                "SELECT CASE WHEN false THEN 1 DIV 0 ELSE 7 END",
++                ScalarValue::Int64(Some(7)),
++            ),
++            ("SELECT coalesce(7, 1 DIV 0)", ScalarValue::Int64(Some(7))),
++            (
++                "SELECT CAST(NULL AS BIGINT) DIV 0",
++                ScalarValue::Int64(None),
++            ),
++        ] {
++            let plan = sail_sql_analyzer::statement::from_ast_statement(
++                sail_sql_analyzer::parser::parse_one_statement(sql)?,
++            )?;
++            let plan = resolver.resolve_named_plan(plan).await?;
++            let batches = ctx.execute_logical_plan(plan.plan).await?.collect().await?;
++            assert_eq!(
++                batches.iter().map(|batch| batch.num_rows()).sum::<usize>(),
++                1,
++                "ansi={ansi_mode}: {sql}"
++            );
++            assert_eq!(
++                ScalarValue::try_from_array(batches[0].column(0), 0)?,
++                expected,
++                "ansi={ansi_mode}: {sql}"
++            );
+         }
+     }
+     Ok(())
+diff --git a/crates/sail-spark-connect/src/error.rs b/crates/sail-spark-connect/src/error.rs
+index 1a6b8e179..fb9ea7cc2 100644
+--- a/crates/sail-spark-connect/src/error.rs
++++ b/crates/sail-spark-connect/src/error.rs
+@@ -355,6 +355,9 @@ fn spark_status(class: &str, message: &str, mut metadata: HashMap<String, String
+         "org.apache.spark.sql.connector.catalog.CatalogNotFoundException" => format!(
+             "[\"{class}\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
+         ),
++        "org.apache.spark.SparkArithmeticException" => format!(
++            "[\"{class}\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
++        ),
+         _ => format!("[\"{class}\"]"),
+     };
+     metadata.insert("classes".into(), classes);

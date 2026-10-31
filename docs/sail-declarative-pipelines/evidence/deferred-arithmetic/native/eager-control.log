@@ -1,0 +1,32 @@
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 28.64s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 3 tests
+test resolver::identifier::arithmetic_tests::ordinary_lowering_preserves_type_only_parents_and_dead_arithmetic ... FAILED
+test resolver::identifier::arithmetic_tests::constant_type_validation_precedes_arithmetic_and_restores_ordinary_policy ... FAILED
+test resolver::identifier::arithmetic_tests::floating_signed_zero_divisors_preserve_ansi_policy_and_result_types ... ok
+
+failures:
+
+---- resolver::identifier::arithmetic_tests::ordinary_lowering_preserves_type_only_parents_and_dead_arithmetic stdout ----
+Error: ArrowError(DivideByZero)
+
+---- resolver::identifier::arithmetic_tests::constant_type_validation_precedes_arithmetic_and_restores_ordinary_policy stdout ----
+Error: ArrowError(DivideByZero)
+
+
+failures:
+    resolver::identifier::arithmetic_tests::constant_type_validation_precedes_arithmetic_and_restores_ordinary_policy
+    resolver::identifier::arithmetic_tests::ordinary_lowering_preserves_type_only_parents_and_dead_arithmetic
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 103 filtered out; finished in 0.11s
+
+error: test failed, to rerun pass `-p sail-plan --lib`
