@@ -1618,3 +1618,47 @@ Two comments on the sequence, not objections:
   asserted per vector, not assumed from the class.
 
 No inventory effect; no original site asserts any of the sixteen shapes.
+
+### 20.13 TreeParser variant hook `29d41f794` and golden repair `062dc4136` (CF-0521/CF-0522)
+
+Both on `4fca6f3d4`, read read-only.
+
+The hook (`sail-sql-macro/src/tree/parser.rs:173–186`): a variant with
+`#[parser(function = expr)]` expands to `{ let f = expr; f(args.clone(),
+options) }`, the same shape as a field hook, and must return the enum;
+any `parser` attribute on that variant's fields is rejected with the
+existing "unexpected `parser` attribute argument" error, so a hook
+cannot silently shadow a field hook. The default path is the unchanged
+`derive_fields` call, and every other variant-level attribute still
+fails through `expect_empty` exactly as before, so the default
+expansion is unchanged in form and in its errors. Tests cover the
+boxed five-variant path, tuple dependencies, option forwarding, a unit
+variant, defaults remaining choices (spans asserted), and the
+attribute rejections. One observation for step 2, not a defect here:
+`TreeSyntax` and `TreeText` are untouched, so a custom-parsed variant's
+syntax descriptor still describes its field layout. When the INSERT and
+Flow-body helpers land, `syntax.json` will keep showing the permissive
+sequences for those variants; that absence of change must be read as a
+known limit of the graph, not as "no grammar change".
+
+The golden repair: `syntax.json` had been stale since the first pipeline
+AST commit. Every added or removed node name in the diff is attributed:
+`CreatePipelineDataset`, `Keyword(Flow|Materialized|Streaming|Stream)`,
+the MATERIALIZED VIEW/STREAMING TABLE choice and the `STREAM(…)` operand
+choice come from `2ffbbdb1d`; `Option(DatabaseKeyword)` from
+`f52d4f7d8`; the removed `Either(Identifier, StringLiteral)` from
+`992f5bcbf`, which turned `SetCatalog.name` into an `Expr`. None comes
+from the macro change, consistent with Codex's byte-identical
+generations at `4fca6f3d4` and `29d41f794`. Inputs and oracle fields are
+untouched; the commit is golden-only.
+
+Gate-coverage finding, more important than the repair: the native gate
+sets reported since `2ffbbdb1d` (analyzer plus Connect) never ran the
+`sail-sql-parser` integration test, so no earlier "native N pass"
+verdict covered that crate, and the stale snapshot went unnoticed
+through four AST commits. The parser crate's tests, including the
+`syntax.json` test, belong in the standing native set from here on;
+CF-0522's "4 macro + 9 parser" is the first run that includes them.
+
+Verdict: accept both, read-only, pending the gated parser and syntax
+run on the repaired snapshot and the hook reparented onto it.
