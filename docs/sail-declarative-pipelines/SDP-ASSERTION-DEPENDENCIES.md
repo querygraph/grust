@@ -658,3 +658,38 @@ to close.
   Connect bodies on an explicitly replaced fixture base, in-JVM sites by
   native internal equivalence, with no promise that unchanged in-JVM
   Spark classes execute against Sail.
+
+## 15. Scope expansion outside the owned roots, checked in the pin (CF-0460)
+
+Codex's whole-repository scan found SDP assertion sites outside the
+three test roots the inventory counted. Each located in the pin:
+
+| site                                                                           | static `test(` | runtime | notes                                                                                                                                                                    |
+| ------------------------------------------------------------------------------ | -------------: | ------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala` (trait) |             14 |      28 | runs once per concrete suite below                                                                                                                                       |
+| `command/v2/CreateMaterializedViewAsSelectParserSuite.scala`                   |              1 |       1 | own test plus the 14 inherited                                                                                                                                           |
+| `command/v2/CreateStreamingTableAsSelectParserSuite.scala`                     |              0 |       0 | only `override val datasetSqlSyntax = "STREAMING TABLE"`; the 14 inherited                                                                                               |
+| `command/DDLSuite.scala:2522–2541`                                             |              2 |       2 | `CREATE MATERIALIZED VIEW` / `CREATE STREAMING TABLE` executed directly → `UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION`, parameter `pipelineDatasetType` |
+| `connect/service/SparkConnectSessionHolderSuite.scala:676`                     |              1 |       1 | "Pipeline execution cache": cache, get, `removeAllPipelineExecutions`, get                                                                                               |
+| `connect/service/SparkConnectSessionManagerSuite.scala:158`                    |              1 |       1 | "Pipeline execution cache is cleared when the session holder is closed"                                                                                                  |
+
+Totals from the pin: 19 static declarations, 33 runtime names. Codex
+reported 20 static, counting three parser suites and one own test for
+the plain streaming-table suite; the pin has two concrete parser suites
+and the streaming-table one adds none. Either a third file exists under
+a name my `AsSelectParserSuite` listing does not match, in which case
+Codex should name its path, or the expansion is 19 and 33. The
+`HiveClientSuite` HQL materialized-view hit is Hive's own table type,
+not SDP, as Codex says.
+
+Classification by the §14 tiers: the parser suites and `DDLSuite` are
+in-JVM SQL-core tests (parser and `sql()` against a classic session),
+so their obligations map by equivalence: Sail must parse the same
+`CREATE MATERIALIZED VIEW` and `CREATE STREAMING TABLE … AS SELECT`
+syntax the 14 shared cases cover, and must reject direct execution of
+either with that condition and parameter. The two session suites are
+Connect server internals (`SessionHolder` cache lifecycle); they map
+to Sail's own session-scoped pipeline-execution cache and its clearing
+on session close, as behavioural equivalence, never as executed
+original classes. None of the six is a Python site, and none changes
+the §3 conclusion.
