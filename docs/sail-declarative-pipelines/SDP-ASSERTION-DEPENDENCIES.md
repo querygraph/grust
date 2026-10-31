@@ -288,3 +288,87 @@ Ten paths; product changes are small and in the right places:
 Verdict: accept, read-only, pending the native gates and the paired
 public baseline. After it lands, `:599–615` can move to partial with
 the Scala flag retained, on the same terms as `:562`.
+
+## 9. Metadata-only materialization: Spark's contract and Sail's seam (CF-0438 checkpoint)
+
+**The two fixtures.** `MaterializeTablesSuite.scala:125–161` ("multiple")
+registers two tables through `registerTable`, whose default is
+`isStreamingTable = true` (`TestGraphRegistrationContext.scala:45–72`),
+each fed by a batch DataFrame flow, calls `materializeGraph`, and
+asserts the catalog columns `x INT` and `y STRING`, nullable.
+`:374–399` ("partition columns with user schema") registers one such
+table with a specified two-column schema and `partitionCols = x2`, and
+asserts the columns and `partitioning == Seq(identity("x2"))`. Neither
+runs a flow; both assert what `DatasetManager.materializeDatasets` left
+in the catalog.
+
+**Spark's contract** (`DatasetManager.scala:75–112`, `:246–350`), for
+every table in the refresh set regardless of kind:
+
+1. `outputSchema = specifiedSchema.getOrElse(inferredSchema.asNullable)`;
+   properties merged by `resolveTableProperties`; partitioning is the
+   identity transform of each partition column; clustering separately;
+   both together is `SPECIFY_CLUSTER_BY_WITH_PARTITIONED_BY_IS_NOT_ALLOWED`.
+2. If the table exists: its partitioning must equal the requested
+   transforms (`CANNOT_UPDATE_PARTITION_COLUMNS`); `TRUNCATE` only when
+   full refresh or not a streaming table; full refresh also drops the
+   AutoCDC auxiliary table; then `alterTable` with the column diff
+   against `mergeSchemas(existing, output)` for a streaming table on a
+   normal refresh and against `outputSchema` otherwise, plus
+   `setProperty` for every merged property.
+3. Else `createTable(identifier, TableInfo{properties, columns,
+partitions})`.
+4. The table is returned with `normalizedPath` from `PROP_LOCATION`.
+
+The kind only changes step 2's truncate and merge branches. Step 1,
+step 3 and the assertions the two fixtures make are kind-independent,
+which is why the fixtures can use streaming tables without ever
+running a streaming flow.
+
+**Sail's seam** at `db650c40e`, `sail-spark-connect/src/pipelines`:
+
+- `materialize::tables` (`materialize.rs:21–`) is Spark's step 1
+  through 3 for materialized views: reserved-property checks for
+  `comment` and `provider`, the cluster-versus-partition rule
+  (clustering itself unsupported), columns from the analyzed schema
+  through `schema::table_columns`, which applies `asNullable` to an
+  inferred schema and keeps a specified one (`schema.rs:94–134`), the
+  identity-only partition match with `CANNOT_UPDATE_PARTITION_COLUMNS`,
+  `TRUNCATE`, the column type, nullability, comment, add and drop
+  changes, and the create path with identity partitioning and the
+  default provider. `schema_merge.rs` already implements
+  `SchemaMergingUtils` for the streaming-table merge branch.
+- It skips every output that is not `OutputType::MaterializedView`
+  (`materialize.rs:32–36`), so a streaming table's metadata is never
+  materialized, and `execution::execute` rejects any graph containing
+  `OutputType::Table` or `Sink` before materialization runs
+  (`execution.rs:28–34`, "incremental pipeline execution").
+
+So the two fixtures depend on exactly two things in Sail: letting
+`materialize::tables` handle `OutputType::Table` with Spark's two
+streaming-table branches (no `TRUNCATE` unless full refresh; `merge`
+instead of replace on a normal refresh, using `schema_merge.rs`), and
+ordering that step before the execution guard rather than after it.
+The guard itself stays where it is: it protects flow execution, which
+these fixtures never reach, and Codex is right that it is not an oracle
+failure to disable.
+
+**Entry point.** Spark's helper is `materializeGraph(graph, storageRoot)`
+in the pipelines test utilities, which calls
+`DatasetManager.materializeDatasets` directly and then reads the
+catalog. There is no public Connect command that materializes without
+running (a dry `StartRun` analyses only), so the faithful mapping is
+native: a test in the pipelines module constructing the
+`GraphDefinition` and `AnalyzedGraph` for two table outputs with batch
+flows, calling `materialize::tables` (`pub(super)`), and asserting the
+Sail catalog's columns and partitioning. A public materialized-view
+variant can exist as a labelled partial check, but, as Codex says, it
+is not the original table-kind contract and must not be counted as
+closing these sites. Both runs, Spark's `materializeGraph` and Sail's
+native call, are needed before either site moves from unmapped.
+
+**Assertion details to carry into the test**: `x` and `y` are
+nullable because of `asNullable` on an inferred schema from
+non-nullable DataFrames (Sail's `nullable_fields` does the same);
+`partitioning` is compared as identity transforms in order; the
+specified schema is used verbatim, not made nullable.
