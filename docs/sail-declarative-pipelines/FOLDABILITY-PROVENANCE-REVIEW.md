@@ -703,3 +703,90 @@ errors, but if a structured parse error with the `ParseException` class
 string (`error.rs:278`) is ever produced here, the equality test would miss
 it. A small set of analysis classes, or a predicate on the error type, would
 close that in advance.
+
+## 10. `CATALOG_NOT_FOUND`: ownership and class handling (CF-0332)
+
+Read only, Sail `4761d0064`, Spark `617618396`, PySpark 4.2.1 from the pinned
+venv. Codex's candidate: one shared Spark formatter in
+`sail-common-datafusion` used where the typed
+`CatalogError::NotFound(CatalogObject::Catalog, name)` is flattened today,
+and a transport question about the class hierarchy.
+
+### 10.1 What Spark emits, and where
+
+`QueryExecutionErrors.catalogNotFoundError(name)` builds
+`CatalogNotFoundException("CATALOG_NOT_FOUND", catalogName = toSQLId(name),
+config = toSQLConf("spark.sql.catalog.<name>"))`; the class extends
+`SparkException` directly (`CatalogNotFoundException.scala:24–28`), SQLSTATE
+`42P08`, message "The catalog `x` not found. Consider to set the SQL config
+"spark.sql.catalog.x" to a catalog plugin." The Connect server sends the whole
+superclass chain in the `classes` metadata (`ErrorUtils.scala:49,221–222`),
+and PySpark's `convert_exception` walks that list in order and returns the
+first class it knows (`pyspark/errors/exceptions/connect.py:189–210`);
+`CatalogNotFoundException` is not in `EXCEPTION_CLASS_MAPPING`, so the chain
+resolves to `SparkException` (`:492`), with `errorClass`, `sqlState` and
+`messageParameters` carried alongside. That is the observed Python type.
+
+Where it is raised matters for ownership (probe 7,
+`probe7_missing_catalog_sites.py`, appended to
+`evidence/set-catalog-oracle/output.txt`):
+
+| Site                                                            | Spark 4.2.1                                                    |
+| --------------------------------------------------------------- | -------------------------------------------------------------- |
+| `SET CATALOG missing`                                           | `CatalogNotFoundException` `CATALOG_NOT_FOUND`                 |
+| `spark.catalog.setCurrentCatalog("missing")`                    | `CatalogNotFoundException` `CATALOG_NOT_FOUND`                 |
+| `SELECT * FROM missing.db.t`, `CREATE TABLE missing.db.t`       | `AnalysisException` `REQUIRES_SINGLE_PART_NAMESPACE`           |
+| `SHOW NAMESPACES IN missing`, `USE missing.db`                  | `AnalysisException` `SCHEMA_NOT_FOUND` (under `spark_catalog`) |
+| `SHOW TABLES IN missing.db`, `catalog.listTables("missing.db")` | `AnalysisException` `_LEGACY_ERROR_TEMP_1126`                  |
+
+`CATALOG_NOT_FOUND` is raised only where a catalog is loaded by explicit
+name with no fallback (`CatalogManager.setCurrentCatalog` → `Catalogs.load`);
+every identifier-resolution site catches it and falls back to the current
+catalog, reporting a namespace or table error instead. The conversion must
+therefore live at the explicit-load sites, not in a generic mapping of every
+`NotFound(Catalog)`.
+
+### 10.2 Sail today
+
+The typed error is flattened independently twice: at the planner,
+`From<CatalogError> for PlanError` maps every `NotFound` to
+`PlanError::AnalysisError(e.to_string())` (`sail-plan/error.rs:98`, Display
+"Catalog not found: x"), class `AnalysisException`; at execution,
+`CatalogCommandExec` maps everything but `CommitStateUnknown` to
+`exec_datafusion_err!("{e}")` (`sail-physical-plan/catalog_command.rs:112–115`).
+`SET CATALOG` and the Catalog API reach the second; the first serves
+identifier resolution as well, which is exactly the fallback class Spark does
+not report as `CATALOG_NOT_FOUND`. Changing the generic `From` would mis-class
+those sites; leaving it alone keeps "generic catalog behaviour unchanged" as
+CF-0332 requires.
+
+### 10.3 Recommendation, discussion only
+
+- **One constructor, not a formatter.** `StructuredSparkError` already is the
+  shared Spark representation (`common-datafusion/error/structured.rs:9–15`),
+  and both boundaries already carry it: the planner through
+  `PlanError::Structured` (as `unresolved.rs` and `ambiguous.rs` do), and
+  execution through `DataFusionError::External(Box<StructuredSparkError>)`,
+  which `CommonErrorCause::build` downcasts first (`common-datafusion/error.rs:135–136`).
+  So the unit needs a `catalog_not_found(name) -> StructuredSparkError`
+  constructor beside `quote_sql_identifier` (crate placement as Codex chose;
+  `sail-common-datafusion` already sees `CommitStateUnknownError`), applied
+  at the explicit-load sites only: the `SetCurrentCatalog` arm of
+  `CatalogCommandExec`'s error map and whatever planner path loads a catalog
+  by name for the Catalog API. No string formatting at a boundary, no change
+  to `From<CatalogError>`, nothing provider-specific.
+- **Class handling.** Do not substitute `org.apache.spark.SparkException` as
+  the class; keep `org.apache.spark.sql.connector.catalog.CatalogNotFoundException`
+  and send the hierarchy, as Spark does. Sail's codec emits a single-element
+  `classes` list (`spark-connect/error.rs:354`), under which PySpark would
+  return `UnknownException` for the true class. The smallest faithful change
+  is an optional `classes: Vec<String>` on `StructuredSparkError`, most
+  specific first and defaulting to `[class]`, emitted by `into_status`
+  (`error/structured.rs:6–19`); existing producers are unaffected, and the
+  new constructor passes `[CatalogNotFoundException, SparkException]`
+  (Spark also lists `Exception`, `Throwable`, `Object`, which PySpark never
+  matches; include them only if a byte-identical `classes` string is a target).
+- **Stage.** Spark raises this at execution of the command, after analysis;
+  Sail's `set_default_catalog` runs in `CatalogCommandExec` at the same stage,
+  and the SDP commit sets the graph catalog without an existence check, like
+  `context.setCurrentCatalog` (§9.3). No analysis-time check should be added.
