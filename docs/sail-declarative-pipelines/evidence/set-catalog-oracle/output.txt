@@ -71,3 +71,14 @@ PROBE SET CATALOG concat(det_identity('spark_'), 'catalog') => None: An error oc
 PROBE SET CATALOG IDENTIFIER(concat(det_identity('spark_'), 'catalog')) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat(det_identity(spark_), 'catalog') used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministi
 PROBE SELECT IDENTIFIER(det_identity('x')) FROM (SELECT 1 AS x) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression det_identity(x) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(
 PROBE SELECT IDENTIFIER(typeof(det_identity('x'))) FROM (SELECT 1 AS string) => ACCEPTED; current_catalog=spark_catalog
+=== probe5_typeof_arithmetic_select date=2026-10-31T03:50:59Z ansi=true
+PROBE SELECT typeof(1 DIV 0) => [('bigint',)]
+PROBE SELECT typeof(1 / 0) => [('double',)]
+PROBE SELECT typeof(1 % 0) => [('int',)]
+PROBE SELECT typeof(CAST(1 DIV 0 AS STRING)) => [('string',)]
+PROBE SELECT typeof(raise_error('x')) => [('void',)]
+PROBE SELECT typeof(assert_true(false)) => [('void',)]
+PROBE SELECT 1 DIV 0 => DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to "false" to
+PROBE SELECT typeof(1 DIV 0) FROM VALUES (1), (2) AS t(x) => [('bigint',), ('bigint',)]
+PROBE SELECT typeof(x DIV 0) FROM VALUES (1) AS t(x) => [('bigint',)]
+PROBE SELECT IDENTIFIER(typeof(1 DIV 0)) FROM (SELECT 1 AS bigint) => [(1,)]

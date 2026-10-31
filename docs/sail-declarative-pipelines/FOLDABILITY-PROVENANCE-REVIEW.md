@@ -606,3 +606,37 @@ already produces). The directive variant keeps the `Identifier` decisions
 and adds the two CheckAnalysis-first classes (§9.1). Keeping each as a
 `match` on the enum, as this unit does, is what makes the third variant
 unable to inherit a wrong default.
+
+### 9.5 Correction: arithmetic must stay deferred under every type-only parent (CF-0324)
+
+CF-0324's three-phase oracle (`evidence/catalog-command-phases`, 32 cases)
+shows public bare `SET CATALOG typeof(1 DIV 0)` reaching `CATALOG_NOT_FOUND`
+`bigint`, not `DIVIDE_BY_ZERO`: Spark's `ConstantFolding` folds the foldable
+`TypeOf` parent before its child is ever evaluated. §9.4's statement that
+`defer_arithmetic_evaluation` is `false` for the public-bare variant was
+therefore wrong and is withdrawn; the division must survive lowering until
+the type-only parent has consumed it, in that variant as in `Identifier`.
+
+The same holds outside catalog commands. Probe 5
+(`probe5_typeof_arithmetic_select.py`, appended to
+`evidence/set-catalog-oracle/output.txt`, ANSI on):
+
+| Query                                                           | Spark 4.2.1      |
+| --------------------------------------------------------------- | ---------------- |
+| `SELECT typeof(1 DIV 0)`, also over a two-row `VALUES` input    | `bigint`         |
+| `SELECT typeof(1 / 0)`, `SELECT typeof(1 % 0)`                  | `double`, `int`  |
+| `SELECT typeof(CAST(1 DIV 0 AS STRING))`                        | `string`         |
+| `SELECT typeof(raise_error('x'))`, `typeof(assert_true(false))` | `void`           |
+| `SELECT 1 DIV 0`                                                | `DIVIDE_BY_ZERO` |
+| `SELECT IDENTIFIER(typeof(1 DIV 0)) FROM (SELECT 1 AS bigint)`  | `1`              |
+
+Sail's `Ordinary` policy takes the literal-zero fast path at lowering
+(`function/scalar/math.rs`, ANSI → `DivideByZero` during resolution), so
+`SELECT typeof(1 DIV 0)` fails in Sail where Spark returns `bigint`. That is a
+general parity gap of the fast path, not of any catalog policy: lowering-time
+evaluation pre-empts every type-only parent. The invariant that fixes all
+four contexts at once is "lowering never evaluates"; the ANSI error then
+arises where Spark raises it, in simplification or execution, and `typeof`
+discards its child first in every policy. Whether the fast path can simply go,
+or must be kept for a plan-shape reason, is for Codex to weigh; the probe
+rows above are the oracle for either choice.
