@@ -1294,3 +1294,18 @@ producer-owned strings of §20 in that precedence, route the
 expectation only where the oracle agrees, correcting it per case with
 the Spark result recorded, as §19.1 did. Every existing query shape and
 assertion stays.
+
+### 20.7 Wording refinement (CF-0503)
+
+§20.6 said `IF NOT EXISTS` is "legal in Spark's grammar only with
+`INSERT OVERWRITE`". More precisely: the ANTLR grammar accepts the
+`IF NOT EXISTS` tokens on `INSERT INTO` as well, and it is
+`AstBuilder.scala:1045` that rejects that form with
+`INVALID_STATEMENT_OR_CLAUSE`; the forms that reach the flow handler
+with the flag set are overwrite-only, and the earlier `overwrite` check
+makes the handler's `IF NOT EXISTS` arm unreachable. The conclusion of
+§20.6 is unchanged. `18604c01a` is committed with 248 native tests, the
+refreshed public selection plus upstream, six paired cases, and two
+unchanged-test controls failing as expected; the `:525` record is
+strengthened and the counts stay 116 reviewed, 87 partial, 399
+unmapped.
