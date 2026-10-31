@@ -930,3 +930,23 @@ generic execution class, not `SparkArithmeticException`.
   path, and PySpark's type stays `ArithmeticException` through the
   hierarchy. That is the argument for doing F2 in the same unit as F1 rather
   than after it.
+
+### 11.4 Correction to F3: duplication is unsound for volatile dividends (CF-0339)
+
+CF-0339 rejects the `dividend IS NOT NULL` guard as a fix, and is right: the
+duplicate is only removable by `CommonSubexprEliminate` for deterministic
+expressions, and a volatile, nullable dividend (any expression over `rand()`
+that can yield `NULL`) would then be evaluated twice, once in the guard and
+once in the division, so the guard could see a non-null value while the
+division sees `NULL`, or the reverse, changing whether the row raises.
+That is a change of evaluation cardinality, which Spark never makes: its
+`DivModLike.eval` evaluates each operand once. The F3 mismatch therefore
+stays an accepted runtime gap in the lowering unit (whose scope is the error
+stage and the typed class), and its closure needs either operand
+materialization (evaluate the dividend into a column once, then guard and
+divide over that column, with the extraction and ownership rules Sail uses
+for window and aggregate operands) or a whole-operation kernel that keeps
+Sail's typing. Both are a larger design, which Codex will flag to the user
+first. The `(NULL, 0)` and volatile-null rows belong in the oracle as known
+failures until then; `pmod` gets its own probe since its builder is typed
+separately.
