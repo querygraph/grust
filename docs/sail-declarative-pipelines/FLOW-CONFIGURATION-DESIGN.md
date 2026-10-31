@@ -28,6 +28,12 @@ broader per-format support remain.
 The [batch ownership design](BATCH-PROVIDER-MIGRATION-DESIGN.md) continues to govern
 admission, provider lifetime and per-command plan maps.
 
+[Dynamic/reference binding](DYNAMIC-REFERENCE-BINDING-DESIGN.md) is now in its
+announced design phase. Literal strings normalize before graph binding at
+`ccb6fb212`; expanded runtime outcomes match10/13, with computed forms still open.
+SQL parameter references freeze external input identity at registration, so fresh
+name lookup on every run is not an equivalent implementation.
+
 ## Required behavior
 
 Pipeline defaults are overlaid by explicit flow settings at registration.

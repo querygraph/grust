@@ -1,0 +1,31 @@
+diff --git a/crates/sail-sql-analyzer/src/query.rs b/crates/sail-sql-analyzer/src/query.rs
+index b67d1ad85..6231be016 100644
+--- a/crates/sail-sql-analyzer/src/query.rs
++++ b/crates/sail-sql-analyzer/src/query.rs
+@@ -605,23 +605,9 @@ fn from_ast_table_factor(table: TableFactor) -> SqlResult<spec::QueryPlan> {
+             alias,
+         } => {
+             let sample = sample.map(|s| from_ast_table_sample(*s)).transpose()?;
+-            // Spark's AstBuilder materializes non-null string literals here;
+-            // foldable expressions such as CONCAT remain late-bound identifiers.
+-            let read_type = match from_ast_expression(expr)? {
+-                spec::Expr::Literal(spec::Literal::Utf8 { value: Some(name) }) => {
+-                    spec::ReadType::NamedTable(Box::new(spec::ReadNamedTable {
+-                        name: from_ast_object_name(crate::parser::parse_object_name(&name)?)?,
+-                        temporal: None,
+-                        sample,
+-                        options: Default::default(),
+-                    }))
+-                }
+-                name => spec::ReadType::DynamicTable(Box::new(spec::ReadDynamicTable {
+-                    name,
+-                    sample,
+-                    options: Default::default(),
+-                })),
+-            };
++            let read_type = spec::ReadType::DynamicTable(Box::new(spec::ReadDynamicTable {
++                name: from_ast_expression(expr)?, sample: None, options: Default::default(),
++            }));
+             let plan = spec::QueryPlan::new(spec::QueryNode::Read {
+                 is_streaming: false,
+                 read_type,

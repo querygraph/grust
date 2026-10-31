@@ -1,0 +1,100 @@
+{
+  "started_at": "2026-10-31T01:31:09.227138+00:00",
+  "harness_sha256": "d478645bc5a8b1ad160703e6aa18bcba7bb31dc5b816fa5fc9286101ad7600cb",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "Spark only, public protobuf registration versus run phases; not Sail or Scala acceptance",
+  "cases": [
+    {
+      "name": "scalar_used",
+      "relation_base64": "ygJfCkYaRAoTEhEKDwoNYV9pbnNlbnNpdGl2ZRoSMhAKBxIFCgNCYXISBXZhbHVlGhkyFwoHqgEECCoQARIMc2NhbGFyX3ZhbHVlEhUKAhAqEg8KDQoLel9zZW5zaXRpdmU=",
+      "registered": true,
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.relref_0.result': 'spark.sql.caseSensitive' is defined by both 'a_insensitive' and 'z_sensitive' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:69)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "result_exists": false
+    },
+    {
+      "name": "scalar_nested",
+      "relation_base64": "ygJoCk8aTQoTEhEKDwoNYV9pbnNlbnNpdGl2ZRoSMhAKBxIFCgNCYXISBXZhbHVlGiIyIAoQGg4KA2FicxIHqgEECCoQARIMc2NhbGFyX3ZhbHVlEhUKAhAqEg8KDQoLel9zZW5zaXRpdmU=",
+      "registered": true,
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.relref_1.result': 'spark.sql.caseSensitive' is defined by both 'a_insensitive' and 'z_sensitive' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:69)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "result_exists": false
+    },
+    {
+      "name": "scalar_unused",
+      "relation_base64": "ygJECisaKQoTEhEKDwoNYV9pbnNlbnNpdGl2ZRoSMhAKBxIFCgNCYXISBXZhbHVlEhUKAhAqEg8KDQoLel9zZW5zaXRpdmU=",
+      "registered": true,
+      "events": [
+        "Flow spark_catalog.relref_2.result is QUEUED.",
+        "Flow spark_catalog.relref_2.result is PLANNING.",
+        "Flow spark_catalog.relref_2.result is STARTING.",
+        "Flow spark_catalog.relref_2.result is RUNNING.",
+        "Flow spark_catalog.relref_2.result has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "value": 2
+        }
+      ]
+    },
+    {
+      "name": "unused_alias",
+      "relation_base64": "ygJVCisaKQoTEhEKDwoNYV9pbnNlbnNpdGl2ZRoSMhAKBxIFCgNCYXISBXZhbHVlEiYKAhAqggEfChUKAhAqEg8KDQoLel9zZW5zaXRpdmUSBnVudXNlZA==",
+      "registered": true,
+      "events": [
+        "Flow spark_catalog.relref_3.result is QUEUED.",
+        "Flow spark_catalog.relref_3.result is PLANNING.",
+        "Flow spark_catalog.relref_3.result is STARTING.",
+        "Flow spark_catalog.relref_3.result is RUNNING.",
+        "Flow spark_catalog.relref_3.result has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "value": 2
+        }
+      ]
+    },
+    {
+      "name": "parameter_local",
+      "relation_base64": "ygJCChlSFwoVU0VMRUNUIEZvbyBGUk9NIHBhcmFtEiUKAhAqggEeChUKAhAqEg8KDQoLel9zZW5zaXRpdmUSBXBhcmFt",
+      "registered": false,
+      "registration_error": "[TABLE_OR_VIEW_NOT_FOUND] The table or view `z_sensitive` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`relref_4`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01;\n'UnresolvedRelation [z_sensitive], [], false\n\n\nJVM stacktrace:\norg.apache.spark.sql.catalyst.ExtendedAnalysisException\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.tableOrViewNotFoundWithSearchPath(QueryCompilationErrors.scala:977)\n\tat org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.tableNotFound(package.scala:94)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2(CheckAnalysis.scala:412)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2$adapted(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:277)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0$(CheckAnalysis.scala:330)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis0(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:319)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:306)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$resolveInFixedPoint$1(HybridAnalyzer.scala:275)\n\tat scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.resolveInFixedPoint(HybridAnalyzer.scala:275)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.$anonfun$apply$1(HybridAnalyzer.scala:82)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.withTrackedAnalyzerBridgeState(HybridAnalyzer.scala:117)\n\tat org.apache.spark.sql.catalyst.analysis.resolver.HybridAnalyzer.apply(HybridAnalyzer.scala:75)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runAnalysis$1(Analyzer.scala:398)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$2(Analyzer.scala:403)\n\tat org.apache.spark.sql.internal.SQLConf$.withExistingConf(SQLConf.scala:171)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.runWithSessionConf(Analyzer.scala:430)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:403)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:423)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:403)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$2(QueryExecution.scala:216)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyAnalyzed$1(QueryExecution.scala:216)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:228)\n\tat org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:167)\n\tat org.apache.spark.sql.classic.Dataset$.$anonfun$ofRows$1(Dataset.scala:114)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.classic.Dataset$.ofRows(Dataset.scala:112)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$executeSQLWithRefs$1(SparkConnectPlanner.scala:3169)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$executeSQLWithRefs$1$adapted(SparkConnectPlanner.scala:3167)\n\tat scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)\n\tat scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)\n\tat scala.collection.AbstractIterable.foreach(Iterable.scala:936)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.executeSQLWithRefs(SparkConnectPlanner.scala:3167)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformSqlWithRefs(SparkConnectPlanner.scala:414)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformWithRelations(SparkConnectPlanner.scala:4434)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$transformRelation$1(SparkConnectPlanner.scala:171)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$usePlanCache$4(SessionHolder.scala:634)\n\tat scala.Option.getOrElse(Option.scala:201)\n\tat org.apache.spark.sql.connect.service.SessionHolder.usePlanCache(SessionHolder.scala:633)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:146)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.transformRelation(SparkConnectPlanner.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.$anonfun$handlePipelineCommand$1(SparkConnectPlanner.scala:2960)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineFlow(PipelinesHandler.scala:392)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:114)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "registration_condition": "TABLE_OR_VIEW_NOT_FOUND",
+      "registration_state": "42P01"
+    },
+    {
+      "name": "parameter_external",
+      "relation_base64": "ygJFChlSFwoVU0VMRUNUIEZvbyBGUk9NIHBhcmFtEigKAhAqggEhChgKAhAqEhIKEAoOZXh0ZXJuYWxfaW5wdXQSBXBhcmFt",
+      "registered": true,
+      "events": [
+        "Flow spark_catalog.relref_5.result is QUEUED.",
+        "Flow spark_catalog.relref_5.result is PLANNING.",
+        "Flow spark_catalog.relref_5.result is STARTING.",
+        "Flow spark_catalog.relref_5.result is RUNNING.",
+        "Flow spark_catalog.relref_5.result has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 9
+        }
+      ]
+    }
+  ],
+  "spark_version": "4.2.1",
+  "listener_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T01:31:24.291831+00:00"
+}

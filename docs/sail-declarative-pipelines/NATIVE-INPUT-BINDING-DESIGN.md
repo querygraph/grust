@@ -27,6 +27,13 @@ WithRelations/plan-ID references, recursive/legacy CTE equivalence, and binding
 changes across command reanalysis remain unfinished. Complete these requirements;
 the explicit trace refusals are temporary implementation boundaries.
 
+The [dynamic/reference design checkpoint](DYNAMIC-REFERENCE-BINDING-DESIGN.md) is
+active. General literal normalization at `ccb6fb212` makes static IDENTIFIER strings
+visible to the existing trace; computed names remain distinct. New protocol oracles
+show used-only generic refs and eager SQL parameters with frozen input identity.
+Computed policy and the SQL-parameter binding lifetime remain design work; no new
+opaque representation or graph provider export is selected.
+
 ## Problem and required boundary
 
 Spark substitutes input relations before semantic analysis. Sail's normal
