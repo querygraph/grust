@@ -89,3 +89,21 @@ first.
 - B0 done: `write.rs` seals the reconciled rows once (MemTable scan published
   as the view); structural test plus a tied-events case; 316 pipelines tests
   pass. Commit on the CDC branch after `4fc62deed`.
+- B0 gated: `28515224e` passed every gate step at 2026-10-31T20:42:28Z.
+- B1 done: `crates/sail-sdp-control` at `2d4174d0c`, gated with no regression
+  at 2026-10-31T20:45:19Z. The gate script does not cover the new crate, so its
+  fmt, strict clippy and 22 tests ran separately; one test is ignored until the
+  adapter exists.
+- Writing B1 against the design corrected five first-draft errors of mine:
+  completion took a caller-supplied cursor; a crash mid-reset could not resume;
+  reset handed out no token and did not rebind recreated identities; the
+  prepared digest was recorded outside the fence; a finished intent could be
+  sealed back into the slot. A retry under a new request id could also replace
+  a receipt.
+- The first B1 tests passed but left eight of seventeen mutated guards
+  undetected. One guard was dead and was removed. Direct tests now fail for
+  all sixteen remaining mutations.
+- Finding 3 resolved: Turso 0.7.2 builds in the Sail workspace, and the probe
+  in `evidence/turso-control-probe/` shows the guard-row property under race
+  and process kill, with a negative control. Power loss, shared-file access
+  and restore remain unqualified. The adapter can live in the workspace.
