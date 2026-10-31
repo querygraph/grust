@@ -1309,3 +1309,41 @@ refreshed public selection plus upstream, six paired cases, and two
 unchanged-test controls failing as expected; the `:525` record is
 strengthened and the counts stay 116 reviewed, 87 partial, 399
 unmapped.
+
+### 20.8 Shared `INSERT` parser validation design (CF-0504), read against the pin
+
+Codex's design for the first `INSERT` unit: a private, pure
+`validate_insert_modes(&Statement)` that rejects `INSERT INTO … IF NOT
+EXISTS` as the typed `ParseException` `INVALID_STATEMENT_OR_CLAUSE`,
+SQLSTATE `42601`, with the `operation` parameter, recursing only into
+the statement-bearing variants (`CreatePipelineFlow`, `Explain`);
+applied to every parsed AST right after `SqlSource` parsing on both
+parsing entry points, before any file preparation; and called again
+from ordinary and pipeline AST lowering for constructed-AST consumers.
+Valid `INSERT OVERWRITE … IF NOT EXISTS` stays permitted by this rule;
+the flow policies stay separate. Two premises, both in the pin:
+
+- Spark parses the whole file before registering anything:
+  `splitSqlTextBySemicolon` returns a `List[String]`
+  (`SqlGraphRegistrationContext.scala:617–618`) and
+  `splitSqlFileIntoQueries` maps `parsePlan` over it strictly
+  (`:645–648`) before `processSqlFile`'s `foreach` registers
+  (`:114–122`), so a parse error in a later statement is raised before
+  an earlier statement's registration error. Validating every AST
+  after parsing and before preparation reproduces that precedence.
+- `visitInsertIntoTable` rejects `IF NOT EXISTS` unconditionally for
+  the `INTO` form (`AstBuilder.scala:1044–1046`), so the rule inspects
+  only the insert mode and leaves dataset desugaring alone.
+
+The placement in Sail's shared SQL layer rather than the pipeline layer
+is forced by a Sail gap Codex found: ordinary `InsertInto` currently
+lowers `IF NOT EXISTS` into a command flag, so direct SQL accepts a
+statement Spark's parser rejects; the shared rule corrects direct SQL
+and pipeline files together. No new AST, source or error shape, no
+blanket validation policy, no synthetic file wrapper; query-context
+origin completion stays unqualified. Nothing to challenge; the
+candidate's review will check the operation text (`INSERT INTO ... IF
+NOT EXISTS`, upper case), precedence of this parse error over an
+earlier statement's flow-name or registration error within one file,
+the direct-SQL path, and that `INSERT OVERWRITE … IF NOT EXISTS` still
+parses.
