@@ -742,3 +742,46 @@ inventory extension first, then remaining reference profiles, then a
 first client-facing adapter on a batch case, then native ports driven by
 actual failing obligations) is the one I would choose. Nothing to
 challenge.
+
+## 17. `DDLSuite:2522–2541` direct-execution rejection, candidate `25173ed90` on `807d66b15` (CF-0466)
+
+Codex verified the gap on the actual parent CLI: direct `CREATE
+MATERIALIZED VIEW … AS SELECT` and `CREATE STREAMING TABLE … AS SELECT`
+were rejected with an unstructured "pipeline declarations require a
+pipeline registration context". Spark raises
+`QueryCompilationErrors.unsupportedCreatePipelineDatasetQueryExecutionError`
+(`QueryCompilationErrors.scala:4394–4400`): a
+`SparkUnsupportedOperationException`, which `extends
+UnsupportedOperationException with SparkThrowable`
+(`SparkException.scala:277–283`), condition
+`UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION`, parameter
+`pipelineDatasetType`, SQLSTATE `0A000` from the parent class
+(`error-conditions.json:7905–7999`, `:8338`), message "The feature is
+not supported: Direct execution of a CREATE ... <pipelineDatasetType>
+query. To create a pipeline dataset, create and execute a pipeline with
+a SQL file containing your query attached in the pipeline definition."
+PySpark maps `java.lang.UnsupportedOperationException` to its
+`UnsupportedOperationException` (`connect.py:485`).
+
+The candidate's seven paths: `statement.rs` routes
+`Statement::CreatePipelineDataset` to a new
+`pipeline::direct_dataset_execution_error(streaming)` that builds the
+structured error with exactly those fields, with the message's two
+template parts joined by the single space Spark uses for a parent and
+sub-condition; `CreatePipelineFlow` keeps its previous unstructured
+rejection, which no original site asserts; `error.rs` adds the class
+chain `SparkUnsupportedOperationException → UnsupportedOperationException
+→ RuntimeException → Exception → Throwable → Object`. Native tests pin
+class, condition, state and parameter for both kinds, prove the
+pipeline registration lowering still produces a `Dataset` with the
+right `streaming` flag and query for the same SQL, prove an ordinary
+`CREATE TABLE … AS SELECT` still lowers to its command, and check the
+full `ErrorInfo` through `tonic::Status`. The public test raises
+`UnsupportedOperationException` with condition, state and parameter for
+both kinds and asserts the table does not exist before or after, which
+is `DDLSuite`'s two assertions plus the no-effect check.
+
+Verdict: accept, read-only, pending the native gates and the paired
+public run. On landing, the two `DDLSuite` sites of §15 can move to
+partial by equivalence; no execution, registration or effect path
+changes.
