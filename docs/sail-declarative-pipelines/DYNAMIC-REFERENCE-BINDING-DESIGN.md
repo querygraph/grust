@@ -169,3 +169,51 @@ failure, while Spark reports NOT_A_CONSTANT_STRING.NOT_CONSTANT for both. Fix
 helper validation/diagnostic ordering while preserving parameter substitution,
 private configuration and expression-input tracing. Full metadata parity and full
 original Scala acceptance are not established by these selected probes.
+
+## Constant-validation phase boundary
+
+The expanded public SQL oracle now covers34 cases, with separate7-case runtime
+replacement observations. Table identifiers reject subqueries before semantic
+column/table analysis, while scalar identifiers first resolve their expressions:
+a missing scalar-subquery column remains UNRESOLVED_COLUMN. Table arguments that
+remain unresolved, including bare missing columns, produce NOT_CONSTANT. For
+resolved constants, foldability precedes type validation, then evaluation and null
+validation. Preserve parameter substitution before guarded constant checks.
+
+Builtin typeof is a runtime replacement: its argument's resolved type can become
+a literal even if the discarded expression contains rand(). A blanket volatile
+walk over the raw spec would reject valid inputs. The native refinement uses the
+existing request-local ConfigScope, with a table-identifier context that preserves
+early subquery refusal while allowing builtin typeof to resolve its discarded
+arguments without the eager foldability requirement. A registered function named
+typeof retains ordinary UDF rules. Catalog constant expressions retain their own
+context; Spark SET CATALOG typeof(rand()) fails INVALID_NON_DETERMINISTIC_EXPRESSIONS,
+not the table-identifier condition. Sail's earlier catalog condition remains an
+open mismatch, not permission to admit the command.
+
+The [constant-validation packet](evidence/identifier-constant-validation/README.md)
+keeps initial28, expanded30 and final34 inputs, the unchanged parameter tests, the
+initial constructor compile failure and the unadvanced candidate whose7-case
+probe exposed a false rejection of a valid type replacement. Behavioral conditions
+and full structured condition/state/parameters are reported separately. The two
+SDP helper probes require the right condition, but that alone does not qualify
+ordinary SQL diagnostic metadata.
+
+Scalar dead-current_catalog still exposes non-foldable provenance erased during
+lowering. The later function-foldability design must preserve that provenance
+without rejecting valid typeof replacements or changing semantic error precedence.
+Fable's Grust3faece7a review also corrects the renderer boundary: IdentifierResolution
+uses a resolved/coerced expression (DIV operands include casts), whereas the
+CheckAnalysis table error uses the unresolved expression. One unresolved-spec
+renderer cannot cover both. Existing display helpers describe column names rather
+than Catalyst expr.sql; positional parameter names need real source offsets, not
+fabricated ordinals. These remain explicit design and implementation requirements.
+
+The native unit is now committed at15fd1888c3a474a361afe46d235d52051738229c after
+exact97+177 libraries, formatting/strict Clippy, four unchanged2-pass/1-fail controls,
+fresh300+67 public and4 existing parameter tests. Earlier dynamic13/13 and namespace3/3
+remain matching; SDP helper conditions improve0/2→2/2. The broader34-case oracle
+matches28 behaviors and11 complete metadata sets; replacement7 matches6 behaviors.
+Remaining primary differences are string division-by-zero diagnostics, four unbound
+parameter routes and scalar dead-current_catalog. Counts retain every observation;
+they do not establish full identifier metadata, frozen bindings or Scala acceptance.

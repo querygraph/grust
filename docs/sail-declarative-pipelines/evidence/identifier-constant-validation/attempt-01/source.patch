@@ -1,0 +1,438 @@
+diff --git a/crates/sail-plan/src/resolver/expression/misc.rs b/crates/sail-plan/src/resolver/expression/misc.rs
+index 1f8683df1..2a23fc715 100644
+--- a/crates/sail-plan/src/resolver/expression/misc.rs
++++ b/crates/sail-plan/src/resolver/expression/misc.rs
+@@ -11,7 +11,6 @@ use datafusion_functions::expr_fn as datafusion_fn;
+ use datafusion_functions_nested::expr_fn::{array_element, array_length, map_extract};
+ use sail_common::spec::{self, DEFAULT_COLUMN_VALUE_PLACEHOLDER_ID};
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
+-use sail_common_datafusion::literal::LiteralEvaluator;
+ use sail_common_datafusion::session::plan::PlanService;
+ use sail_common_datafusion::utils::items::ItemTaker;
+ use sail_function::scalar::drop_struct_field::DropStructField;
+@@ -67,17 +66,17 @@ impl PlanResolver<'_> {
+         state: &PlanResolverState,
+     ) -> PlanResult<NamedExpr> {
+         let name = placeholder.clone();
+-        let field = placeholder.get(1..).and_then(|key| {
+-            state
+-                .get_param_value(key)
+-                .or_else(|| {
+-                    key.parse::<usize>()
+-                        .ok()
+-                        .and_then(|index| index.checked_sub(1))
+-                        .and_then(|index| state.get_positional_param_value(index))
+-                })
+-                .map(|value| Arc::new(Field::new("", value.data_type(), true)))
+-        });
++        let value = state.get_placeholder_value(&placeholder);
++        if state.config().require_foldable {
++            let value = value.ok_or_else(|| {
++                PlanError::invalid("IDENTIFIER expression contains an unbound SQL parameter")
++            })?;
++            return Ok(NamedExpr::new(
++                vec![name],
++                expr::Expr::Literal(value.clone(), None),
++            ));
++        }
++        let field = value.map(|value| Arc::new(Field::new("", value.data_type(), true)));
+         let expr = expr::Expr::Placeholder(expr::Placeholder::new_with_field(placeholder, field));
+         Ok(NamedExpr::new(vec![name], expr))
+     }
+@@ -104,63 +103,6 @@ impl PlanResolver<'_> {
+         self.resolve_expression_attribute(object_name, None, false, schema, state)
+     }
+ 
+-    /// Evaluates a resolved DataFusion expression as an identifier string.
+-    ///
+-    /// Named parameter placeholders (e.g. `:col`) are substituted from the
+-    /// current parameter scope in `state` before constant-folding, which
+-    /// allows expressions like `IDENTIFIER(:col)` or
+-    /// `IDENTIFIER(:tab || '.' || :col)` to work inside parameterized SQL.
+-    pub(in super::super) fn evaluate_identifier_expr(
+-        &self,
+-        expr: expr::Expr,
+-        state: &PlanResolverState,
+-    ) -> PlanResult<String> {
+-        use datafusion_common::tree_node::{Transformed, TreeNode};
+-        let expr = expr
+-            .transform(|e| {
+-                if let expr::Expr::Placeholder(expr::Placeholder { id, .. }) = &e {
+-                    if id.is_empty() {
+-                        return Ok(Transformed::no(e));
+-                    }
+-                    // Strip the leading prefix character (e.g. ':' or '$') from the
+-                    // placeholder id to get the param key, mirroring DataFusion's own
+-                    // `get_placeholders_with_values` which does `id[1..]`.
+-                    let key = &id[1..];
+-                    // Try named parameter.
+-                    if let Some(scalar) = state.get_param_value(key) {
+-                        return Ok(Transformed::yes(expr::Expr::Literal(scalar.clone(), None)));
+-                    }
+-                    // Try positional parameter (key is a 1-based integer index).
+-                    if let Ok(index) = key.parse::<usize>()
+-                        && index > 0
+-                        && let Some(scalar) = state.get_positional_param_value(index - 1)
+-                    {
+-                        return Ok(Transformed::yes(expr::Expr::Literal(scalar.clone(), None)));
+-                    }
+-                }
+-                Ok(Transformed::no(e))
+-            })
+-            .map_err(|e| {
+-                PlanError::invalid(format!("IDENTIFIER placeholder substitution failed: {e}"))
+-            })?
+-            .data;
+-        let evaluator = LiteralEvaluator::new();
+-        // Any placeholder that was not substituted above (e.g. because it had no
+-        // matching parameter) will cause the evaluation to fail here, since the
+-        // LiteralEvaluator cannot constant-fold an unresolved placeholder expression.
+-        let scalar = evaluator.evaluate(&expr).map_err(|e| {
+-            PlanError::invalid(format!("IDENTIFIER expression must be a constant: {e}"))
+-        })?;
+-        match scalar {
+-            ScalarValue::Utf8(Some(s))
+-            | ScalarValue::LargeUtf8(Some(s))
+-            | ScalarValue::Utf8View(Some(s)) => Ok(s),
+-            _ => Err(PlanError::invalid(
+-                "IDENTIFIER expression must evaluate to a string",
+-            )),
+-        }
+-    }
+-
+     pub(super) async fn resolve_expression_table(
+         &self,
+         expr: spec::Expr,
+diff --git a/crates/sail-plan/src/resolver/identifier.rs b/crates/sail-plan/src/resolver/identifier.rs
+new file mode 100644
+index 000000000..e648cf5c2
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/identifier.rs
+@@ -0,0 +1,88 @@
++use std::sync::Arc;
++
++use arrow::datatypes::DataType;
++use datafusion::optimizer::simplify_expressions::ExprSimplifier;
++use datafusion_common::tree_node::{Transformed, TreeNode};
++use datafusion_common::{DFSchema, ScalarValue};
++use datafusion_expr::simplify::SimplifyContextBuilder;
++use datafusion_expr::{Expr, ExprSchemable};
++use sail_common::spec;
++use sail_common_datafusion::literal::LiteralEvaluator;
++
++use crate::error::{PlanError, PlanResult};
++use crate::resolver::PlanResolver;
++use crate::resolver::state::PlanResolverState;
++
++impl PlanResolver<'_> {
++    /// A table identifier's subqueries are not analyzed before foldability is
++    /// checked. Scalar IDENTIFIER keeps its ordinary expression resolution first.
++    pub(super) async fn resolve_table_identifier_expr(
++        &self,
++        expression: spec::Expr,
++        state: &mut PlanResolverState,
++    ) -> PlanResult<String> {
++        let mut scope = state.enter_config_scope();
++        scope.state().config_mut().require_foldable = true;
++        let resolved = self
++            .resolve_expression(expression, &Arc::new(DFSchema::empty()), scope.state())
++            .await?;
++        self.evaluate_identifier_expr(resolved, scope.state())
++    }
++
++    /// Substitute bound SQL parameters, then validate before constant folding
++    /// can remove a non-foldable child or evaluate a wrongly typed expression.
++    pub(super) fn evaluate_identifier_expr(
++        &self,
++        expression: Expr,
++        state: &PlanResolverState,
++    ) -> PlanResult<String> {
++        let expression = expression
++            .transform(|expr| {
++                if let Expr::Placeholder(placeholder) = &expr {
++                    let value = state
++                        .get_placeholder_value(&placeholder.id)
++                        .ok_or_else(|| {
++                            datafusion_common::plan_datafusion_err!(
++                                "IDENTIFIER expression contains an unbound SQL parameter"
++                            )
++                        })?;
++                    return Ok(Transformed::yes(Expr::Literal(value.clone(), None)));
++                }
++                Ok(Transformed::no(expr))
++            })?
++            .data;
++        Self::require_constant_expression(&expression)?;
++        let schema = Arc::new(DFSchema::empty());
++        let simplifier = ExprSimplifier::new(
++            SimplifyContextBuilder::default()
++                .with_schema(schema.clone())
++                .with_current_time()
++                .build(),
++        );
++        let expression = simplifier.coerce(expression, &schema)?;
++        if !matches!(
++            expression.get_type(schema.as_ref())?,
++            DataType::Utf8 | DataType::LargeUtf8 | DataType::Utf8View
++        ) {
++            return Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.WRONG_TYPE] IDENTIFIER expression must have STRING type",
++            ));
++        }
++        let expression = simplifier.simplify(expression)?;
++        let scalar = LiteralEvaluator::new().evaluate(&expression)?;
++        match scalar {
++            ScalarValue::Utf8(Some(value))
++            | ScalarValue::LargeUtf8(Some(value))
++            | ScalarValue::Utf8View(Some(value)) => Ok(value),
++            _ if scalar.is_null() => Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.NULL] IDENTIFIER expression must not be NULL",
++            )),
++            _ => Err(PlanError::internal(
++                "STRING identifier evaluation produced a non-string scalar",
++            )),
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-plan/src/resolver/identifier/tests.rs b/crates/sail-plan/src/resolver/identifier/tests.rs
+new file mode 100644
+index 000000000..5a92e493f
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/identifier/tests.rs
+@@ -0,0 +1,184 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use datafusion::execution::SessionStateBuilder;
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_common::ScalarValue;
++use sail_catalog::manager::{CatalogManager, CatalogManagerOptions};
++use sail_catalog::provider::{CatalogProvider, CreateViewOptions};
++use sail_catalog_memory::MemoryCatalogProvider;
++use sail_common::spec;
++use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::datasource::DataSourceRegistry;
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_common_datafusion::session::plan::PlanService;
++
++use super::*;
++use crate::catalog::SparkCatalogObjectDisplay;
++use crate::config::PlanConfig;
++use crate::formatter::SparkPlanFormatter;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
++    let provider = MemoryCatalogProvider::new("catalog".into(), vec!["db"].try_into()?, None);
++    let manager = CatalogManager::try_new(CatalogManagerOptions {
++        catalogs: HashMap::from([(
++            "catalog".into(),
++            Arc::new(provider) as Arc<dyn CatalogProvider>,
++        )]),
++        default_catalog: "catalog".into(),
++        default_database: vec!["db".into()],
++        global_temporary_database: vec!["global_temp".into()],
++    })?;
++    let config = SessionConfig::new()
++        .with_extension(Arc::new(manager))
++        .with_extension(Arc::new(DataSourceRegistry::new()))
++        .with_extension(Arc::new(PlanService::new(
++            Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
++            Box::new(SparkPlanFormatter),
++        )));
++    Ok(SessionContext::new_with_state(
++        SessionStateBuilder::new().with_config(config).build(),
++    ))
++}
++fn expression(sql: &str) -> PlanResult<spec::Expr> {
++    Ok(sail_sql_analyzer::expression::from_ast_expression(
++        sail_sql_analyzer::parser::parse_expression(sql)?,
++    )?)
++}
++
++#[tokio::test]
++async fn table_validation_precedes_subquery_analysis_type_evaluation_and_folding() -> TestResult {
++    let ctx = context()?;
++    let resolver = PlanResolver::new(&ctx, Arc::new(PlanConfig::default()));
++    let mut state = PlanResolverState::new();
++    state.config_mut().arrow_allow_large_var_types = true;
++    for (sql, condition) in [
++        ("(SELECT missing FROM absent)", "NOT_CONSTANT"),
++        (
++            "CAST((SELECT missing FROM absent) AS STRING)",
++            "NOT_CONSTANT",
++        ),
++        ("rand()", "NOT_CONSTANT"),
++        ("CAST(rand() AS STRING)", "NOT_CONSTANT"),
++        (
++            "CASE WHEN false THEN CAST(rand() AS STRING) ELSE 'input' END",
++            "NOT_CONSTANT",
++        ),
++        ("1 DIV 0", "WRONG_TYPE"),
++        ("NULL", "WRONG_TYPE"),
++        ("CAST(NULL AS STRING)", "NULL"),
++    ] {
++        let error = resolver
++            .resolve_table_identifier_expr(expression(sql)?, &mut state)
++            .await
++            .err()
++            .ok_or("invalid identifier was accepted")?;
++        assert!(
++            error
++                .to_string()
++                .contains(&format!("NOT_A_CONSTANT_STRING.{condition}")),
++            "{sql}: {error}"
++        );
++        assert!(!state.config().require_foldable);
++        assert!(state.config().arrow_allow_large_var_types);
++    }
++    assert_eq!(
++        resolver
++            .resolve_table_identifier_expr(expression("concat('in', 'put')")?, &mut state)
++            .await?,
++        "input"
++    );
++    assert!(!state.config().require_foldable);
++    Ok(())
++}
++
++#[tokio::test]
++async fn parameter_bindings_survive_guarded_table_and_scalar_evaluation() -> TestResult {
++    let ctx = context()?;
++    let resolver = PlanResolver::new(&ctx, Arc::new(PlanConfig::default()));
++    let mut state = PlanResolverState::new();
++    let mut params = state.enter_param_values_scope(
++        HashMap::from([
++            ("tab".into(), ScalarValue::Utf8(Some("input".into()))),
++            ("prefix".into(), ScalarValue::Utf8(Some("in".into()))),
++        ]),
++        vec![ScalarValue::Utf8(Some("input".into()))],
++    );
++    for expr in [
++        expression(":tab")?,
++        expression(":prefix || 'put'")?,
++        spec::Expr::Placeholder("$1".into()),
++    ] {
++        assert_eq!(
++            resolver
++                .resolve_table_identifier_expr(expr, params.state())
++                .await?,
++            "input"
++        );
++        assert!(!params.state().config().require_foldable);
++    }
++    assert_eq!(
++        resolver.evaluate_identifier_expr(
++            Expr::Placeholder(datafusion_expr::expr::Placeholder::new("$1")),
++            params.state()
++        )?,
++        "input"
++    );
++    assert!(
++        resolver
++            .resolve_table_identifier_expr(expression(":missing")?, params.state())
++            .await
++            .is_err()
++    );
++    assert!(!params.state().config().require_foldable);
++    assert!(params.state().get_param_value("tab").is_some());
++    drop(params);
++    assert!(state.get_param_value("tab").is_none());
++    assert!(state.get_positional_param_value(0).is_none());
++    Ok(())
++}
++
++#[tokio::test]
++async fn scalar_identifier_preserves_column_and_subquery_analysis_precedence() -> TestResult {
++    let ctx = context()?;
++    ctx.extension::<CatalogManager>()?
++        .create_view(
++            &["input"],
++            CreateViewOptions {
++                definition: "SELECT 9 AS foo".into(),
++                columns: vec![],
++                if_not_exists: false,
++                replace: false,
++                comment: None,
++                properties: vec![],
++            },
++        )
++        .await?;
++    let resolver = PlanResolver::new(&ctx, Arc::new(PlanConfig::default()));
++    for (expr, condition) in [
++        ("foo", "NOT_A_CONSTANT_STRING.NOT_CONSTANT"),
++        ("missing", "UNRESOLVED_COLUMN.WITH_SUGGESTION"),
++        (
++            "(SELECT foo FROM input)",
++            "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
++        ),
++        (
++            "(SELECT missing FROM input)",
++            "UNRESOLVED_COLUMN.WITH_SUGGESTION",
++        ),
++    ] {
++        let sql = format!("SELECT IDENTIFIER({expr}) FROM input");
++        let plan = sail_sql_analyzer::statement::from_ast_statement(
++            sail_sql_analyzer::parser::parse_one_statement(&sql)?,
++        )?;
++        let error = resolver
++            .resolve_named_plan(plan)
++            .await
++            .err()
++            .ok_or("nonconstant scalar was accepted")?;
++        assert!(error.to_string().contains(condition), "{sql}: {error}");
++    }
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/mod.rs b/crates/sail-plan/src/resolver/mod.rs
+index 18e2d8a9d..aed492e92 100644
+--- a/crates/sail-plan/src/resolver/mod.rs
++++ b/crates/sail-plan/src/resolver/mod.rs
+@@ -12,6 +12,7 @@ mod constraint;
+ mod data_type;
+ mod expression;
+ mod function;
++mod identifier;
+ mod lakehouse;
+ mod literal;
+ pub mod plan;
+diff --git a/crates/sail-plan/src/resolver/query/read.rs b/crates/sail-plan/src/resolver/query/read.rs
+index f991e4b4c..d63ac5b81 100644
+--- a/crates/sail-plan/src/resolver/query/read.rs
++++ b/crates/sail-plan/src/resolver/query/read.rs
+@@ -335,9 +335,7 @@ impl PlanResolver<'_> {
+             sample,
+             options,
+         } = table;
+-        let schema = Arc::new(DFSchema::empty());
+-        let resolved = self.resolve_expression(name, &schema, state).await?;
+-        let name_str = self.evaluate_identifier_expr(resolved, state)?;
++        let name_str = self.resolve_table_identifier_expr(name, state).await?;
+         let name = sail_sql_analyzer::expression::from_ast_object_name(
+             sail_sql_analyzer::parser::parse_object_name(&name_str)?,
+         )?;
+diff --git a/crates/sail-plan/src/resolver/state.rs b/crates/sail-plan/src/resolver/state.rs
+index 31f0e813b..10b65e6cc 100644
+--- a/crates/sail-plan/src/resolver/state.rs
++++ b/crates/sail-plan/src/resolver/state.rs
+@@ -476,6 +476,17 @@ impl PlanResolverState {
+         self.positional_param_values.get(index)
+     }
+ 
++    /// Look up the existing named or one-based positional placeholder binding.
++    pub fn get_placeholder_value(&self, placeholder: &str) -> Option<&ScalarValue> {
++        let key = placeholder.get(1..)?;
++        self.get_param_value(key).or_else(|| {
++            key.parse::<usize>()
++                .ok()
++                .and_then(|index| index.checked_sub(1))
++                .and_then(|index| self.get_positional_param_value(index))
++        })
++    }
++
+     /// Enters a scope where the given lambda function parameters are in scope.
+     /// The frame is popped when the scope is dropped.
+     pub fn enter_lambda_scope(
