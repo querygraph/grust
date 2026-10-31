@@ -268,3 +268,64 @@ argument. Fable's87f423c0 function-property survey is a review checklist; indivi
 context oracles and Sail's ownership/phase boundaries still determine implementation.
 The five additional annotations, complete diagnostics/origins, function lookup,
 frozen bindings and streaming durability remain separate required work.
+
+## Catalog policy implementation sequence (active)
+
+Committed f0a232af259fa2bf33c089d5439ffb45fa78061e replaces the internal boolean
+with `ConstantContext`, initially
+Ordinary/Identifier, without activating bare-catalog execution. Its separate
+foldability-retention and arithmetic-deferral decisions make the phase distinction
+explicit without changing ordinary query planning or identifier error priority.
+No additional public setting or function lookup order is introduced.
+
+Bare-catalog activation must follow these constraints, derived from the pinned
+Spark rules and Fable's 025fe2a8/198f6076 probes:
+
+1. Finish semantic resolution before whole-expression determinism checks. Preserve
+   children of type-only functions until that check; a lowered string literal
+   cannot expose the nondeterministic argument it replaced. Artificial Volatile
+   provenance markers must not themselves count as original nondeterminism.
+2. Distinguish current-like replacement from intrinsic non-foldability. Replacing
+   current_catalog/current_database/current_user does not authorize folding
+   registered UDFs, higher-order functions or raise_error. Select the actual
+   function before assigning its properties; the existing function-path gap stays
+   visible. Nested IDENTIFIER retains its analyzer-time validation.
+3. After determinism checking, discard deferred type-only children before general
+   simplification can evaluate raise_error or arithmetic underneath them. For bare
+   commands, optimization/evaluation precedes the command's type check. The
+   existing IDENTIFIER type-before-evaluation path remains separate.
+4. Keep SDP directive evaluation separate from public command execution. Fable's
+   fb208427 review found a third policy in Spark's pinned
+   `sql/pipelines/.../SqlGraphRegistrationContext.scala:541–562`: the handler
+   calls `analyzer.executeAndCheck`, then `getCatalogName`, without optimization.
+   Root verified that source path. Its bare directive therefore needs
+   CheckAnalysis before the identifier rule, while wrapped IDENTIFIER resolves
+   earlier during analysis. Current-like functions remain non-foldable in bare
+   directives. The focused32-case public/directive probe confirms these phase distinctions.
+   The earlier namespace-overlay proposal was unnecessary: directive expressions
+   are analyzed against the Session, not the file's virtual namespace. Preserve
+   the existing callback, commit-time clone/recheck, sequential directive state,
+   and live-session evaluation of current_* inside flow queries.
+
+The representation for deferred type-only nodes is still to be implemented and
+qualified. Bare deterministic Python-UDF and subquery INTERNAL_ERROR observations
+remain Spark outcomes in the comparison; a Sail NOT_CONSTANT response does not
+count as matching them. Before activation, compare bare and wrapped forms,
+ANSI on/off, dead branches, deterministic/nondeterministic UDFs, type-only parents
+and SDP directive registration using fresh exact-source CLIs.
+
+This refactor passed101+177 Rust tests, fmt/strict Clippy, fresh300+67 public
+executions, four parameter tests and unchanged14+20 focused outcomes/metadata;
+see [the policy packet](evidence/constant-name-policy/README.md). The behavior
+activation and full original Scala acceptance remain incomplete.
+
+[Catalog phase oracle](evidence/catalog-command-phases/README.md): the same eight
+expressions, bare/wrapped in public/directive contexts, confirm all three phases
+on Spark4.2.1. Sailf0a232af2 matches13/32 behaviors and2 metadata sets; all19
+differences remain recorded. Both sessions keep their namespace, graphs are
+dropped, owned servers stop and no flow runs or writes occur.
+
+Public bare typeof(1 DIV 0) reaches bigint catalog lookup in the oracle. Bare
+policy therefore must defer lowering-time arithmetic too: discard type-only
+children before evaluation, then evaluate raw1DIV0 before the command type check.
+Reusing the ordinary eager-zero path globally would violate this priority.
