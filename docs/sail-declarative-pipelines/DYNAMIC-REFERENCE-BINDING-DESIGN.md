@@ -482,3 +482,11 @@ invoke_with_args. Existing projection rewrites cover only one expression context
 Further selection must preserve cardinality/order across filters, joins, sorts,
 windows and workers; it must not duplicate volatile operands or erase coercion.
 The original Scala suites remain unqualified; full goal stays active.
+
+
+The continued checkpoint adds only the ordered component at Sailc1befda7a:
+402 function libraries/fmt/strictClippy and unchanged right-first0/1 control pass.
+No lowering/codec activation or new public verdict is claimed. See the focused
+[operand design](OPERAND-EVALUATION-DESIGN.md) and
+[component packet](evidence/ordered-divmod-component/README.md) for Spark error
+order, CSE/capture fixtures, cost diagnostic and required fast-path/constant work.

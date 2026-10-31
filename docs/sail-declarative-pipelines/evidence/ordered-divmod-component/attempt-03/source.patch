@@ -1,0 +1,493 @@
+diff --git a/crates/sail-function/src/scalar/math/div_mod_lazy.rs b/crates/sail-function/src/scalar/math/div_mod_lazy.rs
+new file mode 100644
+index 000000000..81b2ef099
+--- /dev/null
++++ b/crates/sail-function/src/scalar/math/div_mod_lazy.rs
+@@ -0,0 +1,146 @@
++use std::sync::Arc;
++
++use datafusion::arrow::array::{Array, ArrayRef, new_empty_array, new_null_array};
++use datafusion::arrow::compute::{concat, take_arrays};
++use datafusion::arrow::datatypes::{DataType, Field, FieldRef};
++use datafusion_common::{Result, exec_err, plan_err};
++use datafusion_expr::{
++    ColumnarValue, HigherOrderFunctionArgs, HigherOrderReturnFieldArgs, HigherOrderSignature,
++    HigherOrderUDFImpl, LambdaParametersProgress, ValueOrLambda, Volatility,
++};
++
++use crate::functions_nested_utils::evaluate_lambda_rows;
++use crate::scalar::math::divisor::numeric_zero_mask;
++
++/// Internal DivModLike control flow: right thunk, left thunk, operation(left, right).
++///
++/// The operation lambda retains native arithmetic and its coercion. The thunks
++/// run once per reached row, right first. No failing batch is evaluated again.
++/// This component is not registered as a public SQL function.
++#[derive(Debug, PartialEq, Eq, Hash)]
++pub struct SparkDivModLazy {
++    signature: HigherOrderSignature,
++    ansi_mode: bool,
++}
++
++impl SparkDivModLazy {
++    pub fn new(ansi_mode: bool) -> Self {
++        Self {
++            signature: HigherOrderSignature::exact(
++                vec![ValueOrLambda::Lambda(()); 3],
++                Volatility::Immutable,
++            ),
++            ansi_mode,
++        }
++    }
++
++    pub fn ansi_mode(&self) -> bool {
++        self.ansi_mode
++    }
++}
++
++impl HigherOrderUDFImpl for SparkDivModLazy {
++    fn name(&self) -> &str {
++        "spark_divmod_lazy"
++    }
++
++    fn signature(&self) -> &HigherOrderSignature {
++        &self.signature
++    }
++
++    fn lambda_parameters(
++        &self,
++        _step: usize,
++        fields: &[ValueOrLambda<FieldRef, Option<FieldRef>>],
++    ) -> Result<LambdaParametersProgress> {
++        let [right, left, _operation] = lambda_args(fields)?;
++        let dummy = Arc::new(Field::new("", DataType::Null, true));
++        if let (Some(right), Some(left)) = (right, left) {
++            validate_divisor_type(right.data_type())?;
++            Ok(LambdaParametersProgress::Complete(vec![
++                vec![Arc::clone(&dummy)],
++                vec![dummy],
++                vec![Arc::clone(left), Arc::clone(right)],
++            ]))
++        } else {
++            Ok(LambdaParametersProgress::Partial(vec![
++                Some(vec![Arc::clone(&dummy)]),
++                Some(vec![dummy]),
++                None,
++            ]))
++        }
++    }
++
++    fn return_field_from_args(&self, args: HigherOrderReturnFieldArgs) -> Result<FieldRef> {
++        let [right, _left, operation] = lambda_args(args.arg_fields)?;
++        validate_divisor_type(right.data_type())?;
++        Ok(Arc::new(operation.as_ref().clone().with_nullable(true)))
++    }
++
++    fn short_circuits(&self) -> bool {
++        true
++    }
++
++    fn coerce_value_types(&self, arg_types: &[DataType]) -> Result<Vec<DataType>> {
++        if !arg_types.is_empty() {
++            return plan_err!("spark_divmod_lazy accepts only lambda arguments");
++        }
++        Ok(vec![])
++    }
++
++    fn invoke_with_args(&self, args: HigherOrderFunctionArgs) -> Result<ColumnarValue> {
++        let [right, left, operation] = lambda_args(&args.args)?;
++        let [right_field, _left_field, _operation_field] = lambda_args(&args.arg_fields)?;
++        validate_divisor_type(right_field.data_type())?;
++        let mut chunks = Vec::<ArrayRef>::with_capacity(args.number_rows);
++        for row in 0..args.number_rows {
++            let row = u64::try_from(row)
++                .map_err(|_| datafusion_common::exec_datafusion_err!("row index exceeds u64"))?;
++            let right_value = evaluate_lambda_rows(right, &[row])?;
++            if right_value.is_null(0)
++                || (!self.ansi_mode && numeric_zero_mask(&right_value)?.true_count() != 0)
++            {
++                chunks.push(new_null_array(args.return_type(), 1));
++                continue;
++            }
++            let left_value = evaluate_lambda_rows(left, &[row])?;
++            if left_value.is_null(0) {
++                chunks.push(new_null_array(args.return_type(), 1));
++                continue;
++            }
++            let left_arg = || Ok(Arc::clone(&left_value));
++            let right_arg = || Ok(Arc::clone(&right_value));
++            let indices = datafusion::arrow::array::UInt64Array::from(vec![row]);
++            let value = operation
++                .evaluate(&[&left_arg, &right_arg], |arrays| {
++                    Ok(take_arrays(arrays, &indices, None)?)
++                })?
++                .into_array(1)?;
++            chunks.push(value);
++        }
++        if chunks.is_empty() {
++            return Ok(ColumnarValue::Array(new_empty_array(args.return_type())));
++        }
++        let arrays = chunks.iter().map(|a| a.as_ref()).collect::<Vec<_>>();
++        Ok(ColumnarValue::Array(concat(&arrays)?))
++    }
++}
++
++fn lambda_args<V, L>(args: &[ValueOrLambda<V, L>]) -> Result<[&L; 3]> {
++    match args {
++        [
++            ValueOrLambda::Lambda(right),
++            ValueOrLambda::Lambda(left),
++            ValueOrLambda::Lambda(operation),
++        ] => Ok([right, left, operation]),
++        _ => exec_err!("spark_divmod_lazy expects exactly three lambda arguments"),
++    }
++}
++
++fn validate_divisor_type(data_type: &DataType) -> Result<()> {
++    if data_type.is_numeric() || data_type == &DataType::Null {
++        Ok(())
++    } else {
++        plan_err!("spark_divmod_lazy expects a numeric or NULL divisor, got {data_type}")
++    }
++}
+diff --git a/crates/sail-function/src/scalar/math/div_mod_lazy_tests.rs b/crates/sail-function/src/scalar/math/div_mod_lazy_tests.rs
+new file mode 100644
+index 000000000..1ead9d9bf
+--- /dev/null
++++ b/crates/sail-function/src/scalar/math/div_mod_lazy_tests.rs
+@@ -0,0 +1,272 @@
++use std::sync::{Arc, Mutex};
++
++use datafusion::arrow::array::{Array, ArrayRef, Float64Array, Int32Array};
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::execution::context::SessionContext;
++use datafusion::logical_expr::execution_props::ExecutionProps;
++use datafusion::logical_expr::expr::{HigherOrderFunction, LambdaVariable};
++use datafusion::logical_expr::physical_planning_context::PhysicalPlanningContext;
++use datafusion::physical_expr::{PhysicalExpr, create_physical_expr};
++use datafusion_common::{DFSchema, Result, ScalarValue, exec_datafusion_err};
++use datafusion_expr::{
++    ColumnarValue, Expr, HigherOrderReturnFieldArgs, HigherOrderUDF, HigherOrderUDFImpl, ScalarUDF,
++    ValueOrLambda, Volatility, col, create_udf, lambda, lit,
++};
++
++use super::div_mod_lazy::SparkDivModLazy;
++use super::divisor::SafeNumericDivisor;
++use super::zero_division::{SparkZeroDivisionError, ZeroDivisionKind};
++
++type Trace = Arc<Mutex<Vec<String>>>;
++
++fn variable(name: &str, data_type: DataType) -> Expr {
++    Expr::LambdaVariable(LambdaVariable::new(
++        name.to_owned(),
++        Some(Arc::new(Field::new(name, data_type, true))),
++    ))
++}
++
++fn logical(left: Expr, right: Expr, operation: Expr, ansi: bool) -> Expr {
++    Expr::HigherOrderFunction(HigherOrderFunction::new(
++        Arc::new(HigherOrderUDF::new_from_impl(SparkDivModLazy::new(ansi))),
++        vec![
++            lambda(["unused_r"], right),
++            lambda(["unused_l"], left),
++            lambda(["l", "r"], operation),
++        ],
++    ))
++}
++
++fn physical(expression: &Expr, schema: &Schema) -> Result<Arc<dyn PhysicalExpr>> {
++    create_physical_expr(
++        expression,
++        &DFSchema::try_from(schema.clone())?,
++        &ExecutionProps::new(),
++        &PhysicalPlanningContext::default(),
++    )
++}
++
++fn record(trace: &Trace, value: String) -> Result<()> {
++    trace
++        .lock()
++        .map_err(|_| exec_datafusion_err!("trace lock poisoned"))?
++        .push(value);
++    Ok(())
++}
++
++fn observed_column(side: &'static str, trace: Trace, fail_row: Option<i32>) -> Expr {
++    create_udf(
++        side,
++        vec![DataType::Int32, DataType::Int32],
++        DataType::Int32,
++        Volatility::Volatile,
++        Arc::new(move |args| {
++            let row = args[1].to_array(1)?;
++            let row = row
++                .as_any()
++                .downcast_ref::<Int32Array>()
++                .ok_or_else(|| exec_datafusion_err!("expected row id"))?
++                .value(0);
++            record(&trace, format!("{side}{row}"))?;
++            if fail_row == Some(row) {
++                return Err(exec_datafusion_err!("{side} failed on row {row}"));
++            }
++            Ok(args[0].clone())
++        }),
++    )
++    .call(vec![col(side), col("id")])
++}
++
++fn observed_operation(trace: Trace) -> Expr {
++    create_udf(
++        "operation",
++        vec![DataType::Int32; 2],
++        DataType::Int32,
++        Volatility::Volatile,
++        Arc::new(move |args| {
++            record(&trace, "operation".to_owned())?;
++            let values = ColumnarValue::values_to_arrays(args)?;
++            let left = values[0]
++                .as_any()
++                .downcast_ref::<Int32Array>()
++                .ok_or_else(|| exec_datafusion_err!("expected left"))?
++                .value(0);
++            let right = values[1]
++                .as_any()
++                .downcast_ref::<Int32Array>()
++                .ok_or_else(|| exec_datafusion_err!("expected right"))?
++                .value(0);
++            if right == 0 {
++                return Err(ZeroDivisionKind::Divide.error());
++            }
++            Ok(ColumnarValue::Scalar(ScalarValue::Int32(Some(
++                left / right,
++            ))))
++        }),
++    )
++    .call(vec![
++        variable("l", DataType::Int32),
++        variable("r", DataType::Int32),
++    ])
++}
++
++fn batch(left: Vec<Option<i32>>, right: Vec<Option<i32>>) -> Result<RecordBatch> {
++    let n = i32::try_from(left.len()).map_err(|_| exec_datafusion_err!("test row count"))?;
++    RecordBatch::try_from_iter(vec![
++        ("l", Arc::new(Int32Array::from(left)) as ArrayRef),
++        ("r", Arc::new(Int32Array::from(right)) as ArrayRef),
++        (
++            "id",
++            Arc::new(Int32Array::from_iter_values(0..n)) as ArrayRef,
++        ),
++    ])
++    .map_err(Into::into)
++}
++
++#[test]
++fn right_first_null_zero_skip_and_no_replay() -> Result<()> {
++    let input = batch(
++        vec![Some(9), None, Some(5), Some(8), None],
++        vec![None, Some(0), Some(0), Some(2), Some(4)],
++    )?;
++    for ansi in [true, false] {
++        let trace = Trace::default();
++        let expr = logical(
++            observed_column("l", Arc::clone(&trace), None),
++            observed_column("r", Arc::clone(&trace), None),
++            observed_operation(Arc::clone(&trace)),
++            ansi,
++        );
++        let result = physical(&expr, input.schema().as_ref())?.evaluate(&input);
++        if ansi {
++            assert!(result.is_err());
++            assert_eq!(
++                *trace
++                    .lock()
++                    .map_err(|_| exec_datafusion_err!("trace lock"))?,
++                ["r0", "r1", "l1", "r2", "l2", "operation"]
++            );
++        } else {
++            let values = result?.into_array(5)?;
++            assert_eq!(
++                values.as_any().downcast_ref::<Int32Array>(),
++                Some(&Int32Array::from(vec![None, None, None, Some(4), None]))
++            );
++            assert_eq!(
++                *trace
++                    .lock()
++                    .map_err(|_| exec_datafusion_err!("trace lock"))?,
++                ["r0", "r1", "r2", "r3", "l3", "operation", "r4", "l4"]
++            );
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn stops_at_first_row_error_before_later_right_operand() -> Result<()> {
++    let input = batch(vec![Some(8), Some(9)], vec![Some(2), Some(3)])?;
++    let trace = Trace::default();
++    let expr = logical(
++        observed_column("l", Arc::clone(&trace), Some(0)),
++        observed_column("r", Arc::clone(&trace), Some(1)),
++        observed_operation(Arc::clone(&trace)),
++        true,
++    );
++    let error = physical(&expr, input.schema().as_ref())?
++        .evaluate(&input)
++        .err()
++        .ok_or_else(|| exec_datafusion_err!("expected left failure"))?;
++    assert!(error.to_string().contains("l failed on row 0"), "{error}");
++    assert_eq!(
++        *trace
++            .lock()
++            .map_err(|_| exec_datafusion_err!("trace lock"))?,
++        ["r0", "l0"]
++    );
++    Ok(())
++}
++
++#[test]
++fn floating_zeros_nan_infinity_and_empty_batch() -> Result<()> {
++    let input = RecordBatch::try_from_iter(vec![(
++        "r",
++        Arc::new(Float64Array::from(vec![
++            None,
++            Some(0.0),
++            Some(-0.0),
++            Some(2.0),
++            Some(f64::NAN),
++            Some(f64::INFINITY),
++        ])) as ArrayRef,
++    )])?;
++    let operation = ScalarUDF::from(SafeNumericDivisor::new(ZeroDivisionKind::Divide, false))
++        .call(vec![variable("r", DataType::Float64)]);
++    let expr = logical(lit(1), col("r"), operation, false);
++    let physical = physical(&expr, input.schema().as_ref())?;
++    let result = physical.evaluate(&input)?.into_array(6)?;
++    let result = result
++        .as_any()
++        .downcast_ref::<Float64Array>()
++        .ok_or_else(|| exec_datafusion_err!("expected float result"))?;
++    assert!((0..3).all(|i| result.is_null(i)));
++    assert_eq!(result.value(3), 2.0);
++    assert!(result.value(4).is_nan());
++    assert_eq!(result.value(5), f64::INFINITY);
++    let empty = physical.evaluate(&input.slice(0, 0))?.into_array(0)?;
++    assert_eq!(empty.data_type(), &DataType::Float64);
++    assert_eq!(empty.len(), 0);
++    Ok(())
++}
++
++#[test]
++fn result_field_metadata_and_divisor_admission() -> Result<()> {
++    let field = Arc::new(
++        Field::new("operation", DataType::Int32, false).with_metadata(
++            std::collections::HashMap::from([("owner".to_owned(), "native".to_owned())]),
++        ),
++    );
++    let args = [
++        ValueOrLambda::Lambda(Arc::new(Field::new("right", DataType::Int32, false))),
++        ValueOrLambda::Lambda(Arc::clone(&field)),
++        ValueOrLambda::Lambda(Arc::clone(&field)),
++    ];
++    let udf = SparkDivModLazy::new(true);
++    let result = udf.return_field_from_args(HigherOrderReturnFieldArgs {
++        arg_fields: &args,
++        scalar_arguments: &[None, None, None],
++    })?;
++    assert_eq!(result.as_ref(), &field.as_ref().clone().with_nullable(true));
++    assert!(udf.short_circuits());
++    assert!(udf.ansi_mode());
++    let invalid = logical(lit(1), lit("0"), lit(1), true);
++    assert!(physical(&invalid, &Schema::empty()).is_err());
++    Ok(())
++}
++
++#[tokio::test]
++async fn optimizer_keeps_conditional_failure_and_captured_operation() -> Result<()> {
++    let ctx = SessionContext::new();
++    let error = ScalarUDF::from(SparkZeroDivisionError::new(ZeroDivisionKind::Divide)).call(vec![]);
++    let skipped = logical(error, lit(ScalarValue::Int32(None)), lit(7), true);
++    let result = ctx
++        .read_batch(batch(vec![Some(1)], vec![Some(2)])?)?
++        .select(vec![skipped])?
++        .collect()
++        .await?;
++    assert!(result[0].column(0).is_null(0));
++    let input = batch(vec![Some(3), Some(4)], vec![Some(2), Some(3)])?;
++    let expr = logical(
++        col("l"),
++        col("r"),
++        variable("r", DataType::Int32) + col("id"),
++        true,
++    );
++    let result = ctx.read_batch(input)?.select(vec![expr])?.collect().await?;
++    assert_eq!(
++        result[0].column(0).as_any().downcast_ref::<Int32Array>(),
++        Some(&Int32Array::from(vec![2, 4]))
++    );
++    Ok(())
++}
+diff --git a/crates/sail-function/src/scalar/math/divisor.rs b/crates/sail-function/src/scalar/math/divisor.rs
+index d137b2925..de1817959 100644
+--- a/crates/sail-function/src/scalar/math/divisor.rs
++++ b/crates/sail-function/src/scalar/math/divisor.rs
+@@ -1,5 +1,6 @@
+ use std::sync::Arc;
+ 
++use datafusion::arrow::array::{ArrayRef, BooleanArray};
+ use datafusion::arrow::compute::kernels::cmp::eq;
+ use datafusion::arrow::compute::{nullif, or};
+ use datafusion::arrow::datatypes::{DataType, FieldRef};
+@@ -86,15 +87,7 @@ impl ScalarUDFImpl for SafeNumericDivisor {
+             return Ok(input.clone());
+         }
+         let array = input.to_array(1)?;
+-        let zero = ScalarValue::new_zero(&data_type)?;
+-        let mut zeros = eq(&array, &zero.to_scalar()?)?;
+-        if data_type.is_floating() {
+-            // Arrow total-order equality distinguishes the two signs of zero.
+-            zeros = or(
+-                &zeros,
+-                &eq(&array, &zero.arithmetic_negate()?.to_scalar()?)?,
+-            )?;
+-        }
++        let zeros = numeric_zero_mask(&array)?;
+         if zeros.true_count() == 0 {
+             return Ok(input.clone());
+         }
+@@ -109,3 +102,18 @@ impl ScalarUDFImpl for SafeNumericDivisor {
+         }
+     }
+ }
++
++/// Numeric value equality with zero, including both floating-point signs.
++pub(crate) fn numeric_zero_mask(array: &ArrayRef) -> Result<BooleanArray> {
++    let zero = ScalarValue::new_zero(array.data_type())?;
++    let zeros = eq(array, &zero.to_scalar()?)?;
++    if array.data_type().is_floating() {
++        // Arrow total-order equality distinguishes the two signs of zero.
++        Ok(or(
++            &zeros,
++            &eq(array, &zero.arithmetic_negate()?.to_scalar()?)?,
++        )?)
++    } else {
++        Ok(zeros)
++    }
++}
+diff --git a/crates/sail-function/src/scalar/math/mod.rs b/crates/sail-function/src/scalar/math/mod.rs
+index 832f085f5..4b3d8ade9 100644
+--- a/crates/sail-function/src/scalar/math/mod.rs
++++ b/crates/sail-function/src/scalar/math/mod.rs
+@@ -1,3 +1,4 @@
++pub mod div_mod_lazy;
+ pub mod divisor;
+ pub mod java_random;
+ pub mod rand_poisson;
+@@ -26,3 +27,6 @@ pub mod zero_division;
+ 
+ #[cfg(test)]
+ mod divisor_tests;
++
++#[cfg(test)]
++mod div_mod_lazy_tests;
