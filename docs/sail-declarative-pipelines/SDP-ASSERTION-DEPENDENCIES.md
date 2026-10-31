@@ -1041,3 +1041,66 @@ those scopes is the single `sql.feature` regex replacement, with the
 previous and current feature hashes and every newly bound path
 recorded. Spark's 22 strengthened public cases passed. No original
 Spark source or assertion changed.
+
+## 20. Registration error fidelity design, read against the pin (CF-0487); correction to §19
+
+**Correction.** §19 point 2 suggested that Sail's registration-level
+failures "should become" the structured
+`PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR`. They already are:
+`pipelines/sql.rs:167–179` builds that condition with `offendingQuery`
+("\nOffending query:\n<sql>\n") and `codeLocation` ("Query defined at
+<file>:<line>") from the original statement span, and Codex's
+twelve-case `DefineSqlGraphElements` baseline shows both fields match
+Spark on every wrapper case tried, including Unicode, embedded
+semicolons, comments and a second statement. The remaining gaps are
+per-producer wording and raw-versus-wrapper classification, which is
+what the design addresses.
+
+**The design** (`REGISTRATION-ERROR-FIDELITY-DESIGN.md`, Codex's working
+tree) tabulates nine producers against Spark's contract. Checked in the
+pin:
+
+- The registration-level messages Spark wraps are fixed strings in the
+  handlers: "Unsupported plan <nodeName> parsed from SQL query"
+  (`SqlGraphRegistrationContext.scala:170`); the flow policies "Unable
+  flow type. Only INSERT INTO flows are supported." (`:425`), "Unable
+  to resolve target dataset name for INSERT INTO flow" (`:463`),
+  "Partition spec may not be specified for flow target." (`:481`),
+  "Column schema may not be specified for flow target." (`:487`),
+  "INSERT OVERWRITE flows not supported." (`:493`), "IF NOT EXISTS not
+  supported for flows." (`:499`), "Only INSERT INTO by name flows
+  supported." (`:505`); the catalog expression wrapper (`:556`); and the
+  partition helper's "Invalid partitioning transform (<other>)"
+  (`:573`), "Only single column based partitioning is supported."
+  (`:581`), "Multipart partition identifier not allowed." (`:587`).
+  Each is a separate producer-owned message, which matches the design's
+  insistence on separate units with exact wording rather than one
+  generic string.
+- The multipart flow name is the one case that is raw, not wrapped:
+  `CreateFlowHandler.handle` throws `new AnalysisException(
+"MULTIPART_FLOW_NAME_NOT_SUPPORTED", flowName)` (`:404–410`),
+  template "Flow with multipart name '<flowName>' is not supported.",
+  SQLSTATE `0A000` (`error-conditions.json:5400–5405`), and it does so
+  before the `flowOperation match` that applies the `INSERT` policies
+  (`:418` onward). `SqlPipelineSuite:580–597` intercepts exactly that
+  `AnalysisException` by message. The design's first unit (a shared
+  constructor for condition, class, state, template and the single
+  unquoted `flowName`, applied in SQL normalisation before the `INSERT`
+  policy and query lowering, and reused by the protocol name guard with
+  its implicit-flow exception kept) is that contract and that order.
+- Parser acceptance of multipart flow names stays (the
+  `CreateFlowCommandSuite` cases of §19 remain valid), since this is a
+  registration policy, not a grammar rule; the direct-execution guard
+  keeps its own `CREATE_FLOW_QUERY_EXECUTION` condition (§17.2).
+- "Preserve typed errors from `register_statement` through
+  `PreparedSql.commit` rather than stringify and re-wrap" is the same
+  rule the §19.1 fix applied to parse errors, extended to typed
+  registration errors; catalog-analysis wrapping stays explicit in its
+  producer, evaluation and parse failures stay raw.
+
+Verdict on the design: consistent with the pin, nothing to challenge.
+The first unit's review will check the constructor's four fields and
+the unquoted, case-preserved `flowName`, the check order against a
+flow that is both multipart and `INSERT OVERWRITE`, the protocol route
+and its implicit-flow exception, no publication on failure, and the
+original `:580` input on both engines.
