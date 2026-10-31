@@ -293,3 +293,27 @@ test-port verdict is recorded when it lands. Chunk 1 (catalog fix + A1)
 offered to Codex for inspection and gating (CF-0542). Codex owns the
 finding O1 fix in `analysis.rs` (CF-0541) and keeps the seven strict xfails
 as known integration failures, not a conformance claim.
+
+### Unit A4b: the two merges as MERGE INTO commands
+
+`autocdc/merge.rs`: `auxiliary_merge` and `target_merge` build
+`spec::MergeInto` values over a reconciled microbatch registered as a
+temporary view (`sail-catalog` `TemporaryViewManager` holds a
+`LogicalPlan`; the write unit registers it with `replace`). Clause order,
+conditions and assignments follow `Scd1BatchProcessor.scala:250–380`
+exactly: auxiliary merge on the keys with update-metadata, delete-tombstone
+and insert-tombstone clauses; target merge with delete, update-non-keys and
+insert-all-columns clauses, the key exclusion under the session resolver.
+Spark qualifies target columns by the quoted table identifier; Sail's
+resolver takes aliases, so the auxiliary table is aliased `auxiliaryTable`
+and the destination `destination`, with Spark's `reducedMicrobatch` and
+`microbatch` source aliases. Three structural tests (`tests/merge.rs`)
+pin sources, aliases, join keys, clause order, conditions and assignments;
+execution needs a row-level target (Delta/Iceberg through
+`sail-plan/src/resolver/command/merge.rs`) and belongs to the write unit's
+activation tests. Commit `ffad1d382` on `ef9472065`; 281 pipelines tests,
+strict Clippy and fmt clean.
+
+Gate: `9dcb9ed08` (test port) VERDICT all 0, pytest 338, at
+2026-10-31T18:19:40Z; sail-catalog strict Clippy and 20 tests at that head.
+A4a/A4b gate running on the rebased shas.
