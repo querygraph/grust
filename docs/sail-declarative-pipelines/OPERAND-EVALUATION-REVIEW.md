@@ -943,3 +943,105 @@ authoritative on the worker, the message needs a mode field and the
 codec tests of §5.2 need a mode round trip. Either way the proof and the
 evaluator mode stay out of the logical plan, which is what "explicit
 worker state with ordered default" asked for.
+
+### 6.8 String-to-decimal cast: the contract, pinned, and the candidate UDF challenged (CF-0384)
+
+Spark's rule, from the pin (`sql/api/src/main/scala/org/apache/spark/sql/types/Decimal.scala`):
+
+- Parse: Java `trim` (code points at or below U+0020, so NBSP stays and
+  fails), then `new java.math.BigDecimal(s)` (`:645–649`): optional sign,
+  digits with an optional point, optional `e`/`E` exponent with sign, any
+  Unicode `Nd` digit accepted through `Character.digit`, no suffixes, no
+  hex, no `NaN`/`inf`. Failure is `NumberFormatException`.
+- Zero fits every decimal type whatever its exponent (`:661–668`);
+  otherwise more than 38 integral digits (`precision - scale`, computed in
+  `Long`, `:641–642`) is the unsupported range (`:669–672`): `null` for
+  legacy and `TRY_CAST`, `NUMERIC_OUT_OF_SUPPORTED_RANGE` (22003,
+  `SparkArithmeticException`, parameter = the original string) under ANSI
+  (`:686–699`).
+- Then `changePrecision(p, s)` with `HALF_UP` (`:352–353`), with Spark's
+  own bounded shortcut: when the scale change exceeds 38 the result is
+  decided from the integral-digit count without `setScale` (`:460–472`),
+  which is the "no exponent-sized allocation" requirement already in
+  Spark. Overflow is `null` for legacy and `TRY_CAST`,
+  `NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION` (22003,
+  `SparkArithmeticException`, parameter = the parsed value in plain form,
+  e.g. `1000` for `'1e3'`) under ANSI (`Cast.scala:1081–1092`,
+  `:1107–1115`).
+- Malformed input under ANSI is `CAST_INVALID_INPUT` (22018,
+  `NumberFormatException`), the same factory the primitive UDF already
+  carries (`spark_ansi_string_cast.rs:61–84`).
+- Nullability: a non-`TRY` cast from `STRING` is nullable in every mode
+  (`Cast.scala:630–631`, `forceNullable` `:433`), `TRY_CAST` too. The
+  UDF's return field is therefore `nullable = true` always; the "ANSI CAST
+  nullability mismatches" Codex counted should be checked against that
+  rule before being treated as Sail defects.
+
+Arrow's parser, which the current `Expr::Cast`/`TryCast` path uses,
+cannot be bent to this: `parse_string_to_decimal_native`
+(`arrow-cast-59.2.0/src/cast/decimal.rs:534–600`) uses Rust `str::trim`
+(Unicode whitespace, so it strips NBSP), splits on `.` only, requires an
+ASCII digit first, has no exponent, rounds `HALF_UP` only on the
+fractional overflow, and reports precision overflow as `None` under
+`safe` or a single `CastError` otherwise (`:649–672`). Codex's "differs
+in ASCII/trim/exponent/range" is confirmed, and so is the consequence
+that today's `TRY_CAST('1e3' AS DECIMAL(38,10))` is `NULL` in Sail and
+`1000` in Spark, which makes "one UDF reused by ANSI, legacy and
+`TRY_CAST`" the right shape rather than a convenience.
+
+Challenges to the candidate `SparkStringToDecimal`:
+
+1. Two modes, not three. Probe 13's legacy `CAST` and `TRY_CAST` decimal
+   columns are identical in every cell, and the source agrees (`null` on
+   both failure kinds in both). One `fail_on_error: bool` plus
+   `(precision, scale)` is the whole constructor and the whole wire
+   message.
+2. Grammar in one bounded pass over the bytes: sign, `Nd` digits (a
+   table of `Nd` block starts, each a run of ten, is about sixty-five
+   entries; `char::to_digit` is ASCII only), at most one point, optional
+   exponent parsed into `i64` with saturation; count significant digits
+   after stripping leading zeros and compute integral digits in `i64`
+   before touching an `i128`/`i256`. Apply the zero shortcut and the
+   38-integral-digit check first, then rescale with `HALF_UP` into
+   `i256` and check the target precision. No `BigDecimal`-sized
+   allocation exists on any path.
+3. Three typed factories, one shared. Extract `invalid_input` from the
+   primitive UDF into a common factory parameterised by the SQL target
+   name (`DECIMAL(p,s)`), and add the two 22003 factories; their classes
+   and parameters are fixed by probe 13's messages (§6.3).
+4. Negative scale is a type question, not the UDF's: Spark rejects it
+   unless a legacy conf allows it (`Decimal.createUnsafe` calls
+   `checkNegativeScale`, `:705–706`), and Arrow permits `i8` scales, so
+   the resolver must refuse a negative-scale target before constructing
+   the UDF.
+5. Array and scalar: implement once over `StringArrayType` for the three
+   string layouts, as Arrow does, with the scalar case as a one-element
+   array; no metadata is involved.
+6. Worker footprint is the same five paths as the primitive cast: one
+   proto message with `precision`, `scale`, `fail_on_error`
+   (`physical.proto:297`, `:1369` for the precedent), the decode arm
+   (`codec.rs:3868–3878`), the encode arm (`:4491`), and a round-trip
+   test module.
+7. Folding stays a separate unit. As a UDF the cast is preserved by
+   `ConstEvaluator` on failure (§6.2), which gives constant-context and
+   conditional laziness; the eager parity Spark shows over a real source
+   is the folding-policy rule, as Codex says.
+
+### 6.9 Physical seat, continued (CF-0384)
+
+Codex is right that `ExecutionPlan::apply_expressions` is a read-only
+visitor (`datafusion-physical-plan-55.2.0/src/execution_plan.rs:326–352`)
+and that no `with_new_expressions` exists in that crate, so a physical
+rule must rebuild each node type it rewrites (`ProjectionExec::try_new`,
+`FilterExec`, the projection pushed into `DataSourceExec`, and so on) and
+leave every other node ordered. That makes the physical rule the more
+expensive seat. The alternative Codex named is cheaper: rewrite the final
+optimized logical plan inside `ExtensionQueryPlanner::create_physical_plan`
+(`sail-session/src/planner.rs:88`) before delegating to the default
+planner. It is one pass over logical expressions with post-optimization
+types, needs no per-node enumeration, and makes one decision that then
+travels inside the HOF's UDF value. The price is a mode field in
+`SparkDivModLazyUdf` and a mode round trip in the §5.2 tests, which is
+small, and it removes the duplicate-predicate drift Codex worries about,
+since the worker never re-derives anything. Recommend that seat with the
+wire field; keep decoder recomputation only if the wire must stay frozen.
