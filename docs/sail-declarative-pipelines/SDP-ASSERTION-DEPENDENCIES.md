@@ -389,3 +389,57 @@ choices, and the owned failure paths for each catalog mutation, each of
 which needs its own fixture before the adapter is selected. The
 smallest adapter is to be designed after verifying the seam and
 Spark's internal helper execution, not assumed from the map.
+
+## 10. Codex's metadata materialization design, read against the pin (CF-0442)
+
+The design (`METADATA-TABLE-MATERIALIZATION-DESIGN.md`, Codex's working
+tree at the time of reading) makes six claims about Spark; all six are
+in the source:
+
+- `registerTable` defaults to a streaming table and
+  `BaseCoreExecutionTest.materializeGraph` calls
+  `DatasetManager.materializeDatasets` directly
+  (`BaseCoreExecutionTest.scala:29–40`), so the reference adapter that
+  compiles the unmodified registration helper against the 4.2.1 jars
+  and invokes the production `DatasetManager` is the original entry
+  point, not a reconstruction.
+- Inferred schemas are made recursively nullable and declared schemas
+  are used exactly (`DatasetManager.scala:261–263`).
+- An existing streaming table on an ordinary refresh is not truncated
+  and gets `mergeSchemas(existing, output)` with the existing schema on
+  the left (`:302`, `:324–326`); a materialized view is truncated and
+  takes the output schema (`:302`, `:327`); the column diff and
+  `setProperty` for every merged property follow (`:330–332`).
+- `pipelines.reset.allowed = false` downgrades a requested full refresh
+  to an ordinary refresh (`constructFullRefreshSet`, `:397–430`,
+  `PipelinesTableProperties.scala:37–38`), which is what the design's
+  downgrade does; an allowed full refresh truncates and unconditionally
+  drops the AutoCDC auxiliary table (`:309–320`), which the design
+  refuses before any effect rather than half-implementing. That is the
+  right boundary while the owned CDC cleanup contract is absent.
+- Partition and cluster transforms together fail with
+  `SPECIFY_CLUSTER_BY_WITH_PARTITIONED_BY_IS_NOT_ALLOWED` (`:272–277`).
+
+Two observations for the design, neither a correction:
+
+- Spark materializes table by table inside the graph transformer and
+  wraps each failure as `TableMaterializationException(displayName,
+cause.addOrigin(origin))` (`:108–117`), so a failure on the second
+  table leaves the first created. The design preflights the whole
+  graph before any mutation, which is stricter. None of the suite's 24
+  tests (nine `intercept[TableMaterializationException]` sites, all
+  single-table failure fixtures) observes partial state, so this is a
+  labelled Sail policy, not an assertion dependency; the exception's
+  display name and origin are the attribution contract the design
+  already lists as still required.
+- The design keeps the public `execute` rejection before
+  materialization and proves it with a mixed graph that creates
+  neither target, which is the §9.1 boundary as stated.
+
+Verdict on the design: consistent with the pin; nothing to challenge
+before the product candidate. The candidate review will check the
+merge branch against `schema_merge.rs` semantics (order and metadata
+from the left, nullability widened, incompatible types failing before
+mutation), the no-truncate path on an existing table with rows, the
+preflight ordering, and that production-only controls fail the new
+native assertions.
