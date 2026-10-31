@@ -134,3 +134,53 @@ with its assertion unchanged.
 Verdict: accept, read-only, pending the public gate. This closes the §1
 direction; the §3 direction (ANSI string cast return field) remains the
 separate change.
+
+## 5. Qualifier to §1: Spark's `CaseWhen.nullable` has a literal-true cut, and DataFusion runs a reachability analysis (CF-0419)
+
+§1 quoted Spark's rule in its general form. The full rule
+(`conditionalExpressions.scala:191–201`) is: if any branch condition is
+the literal `TRUE`, nullability is decided by the branches before it
+and the value of that branch only, dropping later arms and the `ELSE`;
+otherwise any nullable branch or a nullable or missing `ELSE`. Branch
+conditions that are the literal `FALSE` are not dropped. Spark reports
+the schema of the analyzed plan (`Dataset.scala:536–538`), so
+`SimplifyConditionals`, which later removes literal-true tails and
+literal-false arms (`optimizer/expressions.scala:630–650`), never
+changes what the client sees.
+
+DataFusion's logical rule (`datafusion-expr-55.2.0/src/expr_schema.rs:315–360`)
+is different in kind: for each nullable `THEN` it asks
+`predicate_bounds::evaluate_bounds` whether the `WHEN` can be true, and
+drops the branch if it cannot; then the `ELSE`, or `true` if absent.
+The physical rule (§1) does the same with constant evaluation. The two
+cases Codex measured follow directly:
+
+| expression                                          | Spark   | Sail/DataFusion | why                                                            |
+| --------------------------------------------------- | ------- | --------------- | -------------------------------------------------------------- |
+| `CASE WHEN TRUE THEN 1 ELSE CAST(NULL AS INT) END`  | `false` | `true`          | Spark cuts at the literal `TRUE`; DataFusion counts the `ELSE` |
+| `CASE WHEN FALSE THEN CAST(NULL AS INT) ELSE 2 END` | `true`  | `false`         | Spark counts the `FALSE` arm; DataFusion proves it unreachable |
+
+Neither is fixable by the §4 lowering alone, and the production fix
+there stands. The two differ in what parity would cost:
+
+- The literal-`TRUE` case can be matched structurally at lowering:
+  when a `WHEN` condition is the literal `TRUE`, drop the later arms
+  and make that branch the `ELSE`. Spark's optimizer performs the same
+  rewrite later, so values are unchanged, and DataFusion's rule on the
+  truncated form reduces to Spark's (earlier nullable arms, or the new
+  `ELSE`), except where DataFusion also proves an earlier nullable arm
+  unreachable, which is the second case again.
+- The literal-`FALSE` case cannot be matched by shaping the expression:
+  DataFusion will always prove `WHEN FALSE` unreachable. Matching it
+  means Sail asserting Spark's nullability over DataFusion's analysis,
+  for instance by computing the Spark nullability at lowering and
+  carrying it where the Connect schema is rendered, or by an identity
+  wrapper whose return field states it. Both are the "conditional-field
+  parity work" Codex names, and the second obstructs DataFusion's
+  `CASE` optimisations, so the first is the one to design if the SDP
+  suites' schema comparisons require it.
+
+Codex's fixture correction (literal-`FALSE` with a selected `NULL`
+`ELSE`) tests a nullable `ELSE` without asserting the cut, which is the
+right narrowing. §3 remains a separate direction and is to be measured
+separately, as Codex says.
