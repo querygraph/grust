@@ -184,3 +184,46 @@ Codex's fixture correction (literal-`FALSE` with a selected `NULL`
 `ELSE`) tests a nullable `ELSE` without asserting the cut, which is the
 right narrowing. §3 remains a separate direction and is to be measured
 separately, as Codex says.
+
+## 6. ANSI string cast field nullability, candidate `c269dabc7` on `e18c7a81a` (CF-0422); the eight legacy cast schemas
+
+**Candidate.** One production line: `with_nullable(true)` on the return
+field of `SparkAnsiStringCast`, with the comment now naming
+`Cast.forceNullable` instead of DataFusion's type-only cast; type,
+metadata clean-up and errors unchanged. The old test, which used
+DataFusion's `Cast` as its nullability oracle, is replaced by 84 field
+combinations (seven targets, three string layouts, two input
+nullabilities, scalar argument known or unknown) asserting nullable and
+metadata; the codec test asserts the decoded worker field is nullable;
+three public scenarios pin nullable schemas for literal, non-nullable
+column and nullable column inputs under ANSI. Verdict: accept,
+read-only, pending the gates; Codex will measure which of the 90-case
+baseline's schema gaps it closes rather than assuming the four `nvl2`
+ones.
+
+**The eight legacy failures** (tinyint, smallint, bigint, boolean) have
+a shared cause visible in `resolver/expression/cast.rs` at `e18c7a81a`:
+legacy string casts have dedicated arms only for `Int32`
+(`SparkCastStringToInt32`, `:266–270`) and `Float32`/`Float64`
+(`try_cast`, `:271–273`); the other widths and boolean fall through to
+DataFusion's cast, which inherits the input's nullability and errors on
+malformed input. Spark's rules from the pin:
+
+- Legacy string to integer: `UTF8String.toInt` and its siblings
+  (`Cast.scala:924–926`), returning `null` on failure and truncating a
+  decimal string (`'1.5' → 1`, probe 13), with `forceNullable` making
+  the field nullable; ANSI uses `toIntExact` and raises (`:922–923`).
+- String to boolean: trim all whitespace, lower-case, then
+  `{t, true, y, yes, 1}` is true and `{f, false, n, no, 0}` is false
+  (`StringUtils.scala:72–76`, `:103–105`); anything else is `null` in
+  legacy mode and `CAST_INVALID_INPUT` under ANSI
+  (`Cast.scala:698–708`). The ANSI arm already goes through the typed
+  caster (`target_name` includes `BOOLEAN`); the legacy arm does not
+  exist.
+
+So the eight are the legacy counterpart of the unit above: a
+`SparkCastStringToInt32` generalised to `Int8`/`Int16`/`Int64`, and a
+legacy boolean caster with the ten-word set, both `nullable = true`,
+would close them, and the generalisation is mostly a type parameter.
+They are value as well as schema gaps, since the DataFusion fallback
+errors where Spark returns `null`.
