@@ -1133,3 +1133,58 @@ an empty condition meaning "absent", with the Connect codec omitting
 absent `errorClass`, `sqlState` and parameters while a classified error
 with no parameters still sends `{}`. That is the transport detail the
 observed boundary requires, not an activation.
+
+### 20.2 Raw multipart flow error, candidate `c864386cc` on `14eb7766f` (CF-0491)
+
+Thirteen paths. Product:
+
+- `sail-common/error/pipeline.rs`: `multipart_flow_name_error(name)`
+  builds `AnalysisException`, `MULTIPART_FLOW_NAME_NOT_SUPPORTED`, SQLSTATE
+  `0A000`, template "Flow with multipart name '<name>' is not
+  supported." and the single `flowName` parameter;
+  `pipeline_identifier_arity_error(parts)` returns `None` for one to
+  three parts and otherwise `java.lang.UnsupportedOperationException`
+  with empty condition, state and parameters and the message "4+ part
+  table identifier <a.b.c.d> is not supported.", which is
+  `IdentifierHelper.toTableIdentifier` (`GraphIdentifierManager.scala:262–276`).
+- `StructuredSparkError`'s `Display` prints the `[condition]` prefix
+  only when a condition exists, and the Connect codec omits `errorClass`
+  and `sqlState` when empty and omits `messageParameters` only when the
+  condition is empty and there are none, so a classified error with no
+  parameters still sends `{}` (§20.1).
+- SQL normalisation (`sail-sql-analyzer/pipeline.rs`): parse the name,
+  arity check, multipart policy with `parts.join(".")`, which is
+  `TableIdentifier.unquotedString` (`` `D.b`.`F``Q` `` → `D.b.F`Q`),
+  then the `INSERT` shape, then the target's arity. That is the handler's
+  order: `toTableIdentifier(cf.name)` before `isSinglePartIdentifier`
+  (`SqlGraphRegistrationContext.scala:400–407`), the `flowOperation`
+  match after, the target's `toTableIdentifier` at `:461`.
+- Protocol (`pipelines/graph.rs::define_flow`): parse without
+  lower-casing, arity check, then the multipart policy on the raw
+  `flow_name` string with the implicit-flow exemption when the raw name
+  equals the raw target, then the target's arity, and only then the
+  ASCII lower-casing for graph keys, factored out without changing it
+  (`PipelinesHandler.scala:344–352`).
+- `PreparedSql.commit` passes structured `register_statement` errors
+  through as evaluation failures and keeps the registration wrapper for
+  untyped ones, the §19.1 rule extended as the design said.
+
+Tests: native, the original `:580` input through SQL with the draft
+discarded; a typed commit error not re-wrapped with the statement
+origin or file; protocol raw spelling and the implicit-flow acceptance
+of `Cat.Db.F` into key `cat.db.f`; arity preceding named and implicit
+rules for name, target and implicit cases; analyzer-level spelling for
+three names across `INSERT INTO`, `INSERT OVERWRITE` and `PARTITION`
+operations, proving name precedence over the `INSERT` policy; arity for
+name and target; a quoted dot remaining one component while multipart
+syntax still parses; and the codec omitting all three keys and the
+prefix for the unclassified error. Public, 21 cases on both engines:
+spelling per API for three names, arity with `None` condition, state
+and parameters and no `[]` in the message, the quoted dot, the implicit
+exemption, precedence over three `INSERT` forms, and the original
+`:580` with both external-table fixtures and the file name absent.
+
+Verdict: accept, read-only, pending the native gate (279 expected) and
+the Spark public probe. On landing, `SqlPipelineSuite:580` moves to
+partial, and the design's remaining producers follow as separate
+units.
