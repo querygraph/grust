@@ -1048,3 +1048,65 @@ remote_checkpoint.rs:45–50`: session id, `closed`, `relations` by id,
 - Dropping the graph must drop the frozen descriptions; a restart loses
   them, as the checkpoint registry's comment already states for its own
   case, and Spark's registered flow plans are equally process-local.
+
+### 14.6 Follow-up (CF-0298): predicted oracle, composite parameters, ownership
+
+**What the original-location oracle should show, from source.**
+`DataSource.resolveRelation` (`DataSource.scala:365–443`) creates the
+`InMemoryFileIndex` when the relation is created (`createInMemoryFileIndex`,
+`:437`, `:596–598`) and wraps it in `HadoopFsRelation` (`:443`); that index
+lives in the analyzed plan and is never refreshed by `FlowAnalysis`. So:
+
+- _Add_ a file to the original directory after registration: invisible;
+  the frozen listing does not contain it.
+- _Delete_ a listed file: the scan fails with `FileNotFoundException` at
+  read time (`FileScanRDD.scala:252–278`) unless
+  `spark.sql.files.ignoreMissingFiles` is set, which defaults to `false`
+  (`SQLConf.scala:2767`); not a silent skip.
+- _Replace_ a listed file's contents in place: Spark reads the new bytes
+  using the listed path and the **frozen length** (`PartitionedFile.length`
+  from the index); with an unchanged length it reads the new contents, with
+  a changed length the read is undefined (truncated or failing footer
+  reads). There is no identity check.
+
+Hence Spark's contract for a parameter is "frozen listing with frozen
+sizes, contents unverified". A Sail description that carries `e_tag` and
+`version` (as `FileScanIdentity` does) _can_ enforce identity, but doing so
+by default would turn Spark's replace case from "reads new contents" into an
+error, which is the semantic change Codex warns about. Recommendation:
+record `e_tag`/`version` in the description for diagnostics and future
+opt-in enforcement, and enforce only listing and length by default. If the
+oracle contradicts any of the three predictions, this section is wrong and
+the oracle wins.
+
+**Parameters are arbitrary query relations.** Spark freezes the whole
+analyzed parameter plan (joins, filters, aliases) with every leaf relation
+resolved. Two Sail options: (a) store the registration-time resolved plan
+with each file leaf's provider replaced by a fixed-listing provider built
+from the description, owned by the graph registry; (b) store the parameter's
+spec and re-resolve it at each command with leaves bound to the frozen
+descriptions. (b) diverges from Spark whenever a non-file leaf changes
+between registration and run (a redefined catalog view, altered table
+metadata), because Spark's analyzed plan froze those too, and it must run
+under the registration namespace (the namespace oracle shows literal reads
+keep the graph-capture namespace, which `GraphScope::qualify` already
+derives from `flow.catalog`/`flow.database`, while computed reads follow
+the live session). (a) is the Spark-equivalent one; it does keep a resolved
+plan with providers, so it must be stated as an explicit, graph-owned
+exception to "no analyzed provider exports", scoped to SQL-with-references
+parameters, rather than slipped in. Either way the leaf descriptions are
+plain data and sail-common stays provider-free.
+
+**Registration I/O ownership.** Deriving the description lists files and
+reads Delta or Iceberg logs under the registering request; that is helper
+I/O before any plan and belongs in a preparation scope like the other
+pre-planning work (capture review §1, §6): admitted, cancellable, drained,
+with the registry entry written only on success and nothing retained on
+cancellation or failure.
+
+**Expression-subquery `IDENTIFIER`.** The `NOT_A_CONSTANT_STRING
+.NOT_CONSTANT` failures before column analysis confirm the design's note
+that an expression's subqueries are visible inputs but its computed target
+is not an early graph read; Sail's trace already visits the subquery and
+leaves the target late. Error precedence there is a helper-diagnostics
+matter, as Codex says, not a binding one.
