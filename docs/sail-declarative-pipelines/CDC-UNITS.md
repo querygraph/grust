@@ -505,6 +505,12 @@ scenarios turned into adapter assertions (frontier, retention gap fails
 closed, recreation changes incarnation, exact range), then one SCD1 run
 (`run_flow`) with the adapter as the source.
 
+### Unit A6: the fork shares no history with the SDP root
+
+Checked 2026-10-31: `sail-iggy-sdp-review` at `5816b9b` and the SDP root have no
+merge base, so the adapter cannot arrive by merging either way. It needs a
+port, which is a decision for the operator (see the handoff row).
+
 ### Unit A6 blocked in the SDP workspace: finding D1
 
 Adding the pinned `iggy` SDK (`153fdf466`) as a dependency of a new

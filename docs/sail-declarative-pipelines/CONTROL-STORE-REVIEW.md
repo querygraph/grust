@@ -151,3 +151,14 @@ first.
   - The fence is checked only in the session process; a worker without the
     extension refuses, so fenced commits run in local mode.
   - B6 (admission in `execution::execute`) and the Iggy adapter remain.
+- B6 done: `2eae921c5` on `work/sdp-cdc-on-root`, the chain merged onto the batch
+  root `dea8e10fb`. `execution::execute` admits graphs whose every output is an
+  SCD1 AutoCDC table over a registered bounded source. Gate passed at
+  2026-10-31T22:50Z. The Delta Python suite shows 4 failures and 12 errors, the
+  identical set on `28515224e`, before any shared-path change. Their cause was
+  not investigated.
+- Limits B6 added: no production `BoundedSource` exists, so no public pipeline
+  reaches this path yet. A full refresh of an admitted graph is refused. Only
+  missing tables are materialized, because materializing an existing table
+  commits outside the authority, so an enrolled table's schema cannot change.
+  A remote warehouse is refused.
