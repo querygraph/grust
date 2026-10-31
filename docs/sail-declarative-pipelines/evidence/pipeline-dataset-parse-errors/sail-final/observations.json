@@ -1,0 +1,159 @@
+{
+  "started_at": "2026-10-31T14:28:28.123775+00:00",
+  "mode": "sail",
+  "script_sha256": "1dd3a2b2de0dca56b0b88b64b5889e808235e79849e8880fdfd96c058fd7aba9",
+  "cases": [
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "location",
+      "sql": "CREATE MATERIALIZED VIEW table1 LOCATION 'dbfs:/path/to/table' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Specifying location is not supported for CREATE MATERIALIZED VIEW statements. The storage location for a pipeline dataset is managed by the pipeline itself."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Specifying location is not supported for CREATE MATERIALIZED VIEW statements. The storage location for a pipeline dataset is managed by the pipeline itself.."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "stored",
+      "sql": "CREATE MATERIALIZED VIEW table1 STORED AS TEXTFILE AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "The STORED AS syntax is not supported for CREATE MATERIALIZED VIEW statements. Consider using the Data Source based USING clause instead."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: The STORED AS syntax is not supported for CREATE MATERIALIZED VIEW statements. Consider using the Data Source based USING clause instead.."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "serde",
+      "sql": "CREATE MATERIALIZED VIEW table1 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Hive SerDe format options are not supported for CREATE MATERIALIZED VIEW statements."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Hive SerDe format options are not supported for CREATE MATERIALIZED VIEW statements.."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "bucket",
+      "sql": "CREATE MATERIALIZED VIEW table1 CLUSTERED BY (a) INTO 5 BUCKETS AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Bucketing is not supported for CREATE MATERIALIZED VIEW statements. Please remove any bucket spec specified in the statement."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Bucketing is not supported for CREATE MATERIALIZED VIEW statements. Please remove any bucket spec specified in the statement.."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "options",
+      "sql": "CREATE MATERIALIZED VIEW table1 OPTIONS ('key' = 'value') AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Options are not supported for CREATE MATERIALIZED VIEW statements. Please remove any OPTIONS lists specified in the statement."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Options are not supported for CREATE MATERIALIZED VIEW statements. Please remove any OPTIONS lists specified in the statement.."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "location",
+      "sql": "CREATE STREAMING TABLE table1 LOCATION 'dbfs:/path/to/table' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Specifying location is not supported for CREATE STREAMING TABLE statements. The storage location for a pipeline dataset is managed by the pipeline itself."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Specifying location is not supported for CREATE STREAMING TABLE statements. The storage location for a pipeline dataset is managed by the pipeline itself.."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "stored",
+      "sql": "CREATE STREAMING TABLE table1 STORED AS TEXTFILE AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "The STORED AS syntax is not supported for CREATE STREAMING TABLE statements. Consider using the Data Source based USING clause instead."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: The STORED AS syntax is not supported for CREATE STREAMING TABLE statements. Consider using the Data Source based USING clause instead.."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "serde",
+      "sql": "CREATE STREAMING TABLE table1 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Hive SerDe format options are not supported for CREATE STREAMING TABLE statements."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Hive SerDe format options are not supported for CREATE STREAMING TABLE statements.."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "bucket",
+      "sql": "CREATE STREAMING TABLE table1 CLUSTERED BY (a) INTO 5 BUCKETS AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Bucketing is not supported for CREATE STREAMING TABLE statements. Please remove any bucket spec specified in the statement."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Bucketing is not supported for CREATE STREAMING TABLE statements. Please remove any bucket spec specified in the statement.."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "options",
+      "sql": "CREATE STREAMING TABLE table1 OPTIONS ('key' = 'value') AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Options are not supported for CREATE STREAMING TABLE statements. Please remove any OPTIONS lists specified in the statement."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Options are not supported for CREATE STREAMING TABLE statements. Please remove any OPTIONS lists specified in the statement.."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "missing-query",
+      "sql": "CREATE MATERIALIZED VIEW table",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "_LEGACY_ERROR_TEMP_0035",
+      "sql_state": null,
+      "parameters": {
+        "message": "Unable to find query for CREATE MATERIALIZED VIEW statement."
+      },
+      "message": "[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Unable to find query for CREATE MATERIALIZED VIEW statement.."
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d",
+  "cli_sha256": "470362d64c70954ffac2860f904274dc5a01957eb028a0cabcec34e0a9050b3f",
+  "version": "4.2.1",
+  "test_sha256": "adce8c4b7f51aec4e533cd8608902f651c4f0bb577f29ad804d8f888fe25be38",
+  "pytest_exit_code": 0,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T14:28:31.510571+00:00",
+  "remaining_listeners": []
+}

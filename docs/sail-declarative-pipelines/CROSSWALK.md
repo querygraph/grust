@@ -2,7 +2,7 @@
 
 The reconciled inventory has486 static Scala test registration call sites, including
 helpers and parameter declarations. It is not an expanded runtime denominator.
-Assertion review currently covers100 registrations;386 remain unaudited. None
+Assertion review currently covers116 registrations;370 remain unaudited. None
 is a full Sail conformance verdict; the [execution design](ORIGINAL-SUITE-EXECUTION-DESIGN.md)
 requires route-specific evidence preserving all original assertions.
 
@@ -14,7 +14,11 @@ requires route-specific evidence preserving all original assertions.
 | PipelinesHandlerSuite | 2 | 0 | 2 |
 | SqlPipelineSuite | 38 | 32 | 6 |
 | DDLSuite (both inherited reference profiles) | 3 | 3 | 0 |
-| Total | 100 | 71 | 29 |
+| CreatePipelineDatasetAsSelectParserSuiteBase | 11 | 11 | 0 |
+| CreateFlowCommandSuite | 3 | 3 | 0 |
+| CreateMaterializedViewAsSelectParserSuite | 1 | 1 | 0 |
+| CreateStreamingTableParserSuite | 1 | 1 | 0 |
+| Total | 116 | 87 | 29 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -217,3 +221,11 @@ Next: extend collection/inventory, map full fixtures/assertions and implement th
 ## Current parser/DDL/lifecycle expansion
 
 Canonical scope now includes all24 identified extra declarations:486 sites,100 reviewed,71 partial and415 unmapped. [Expanded reference evidence](evidence/expanded-original-suite-reference/README.md) binds56 source files and595 scoped names;99 original Spark reference executions pass, with no Sail promotion. [Direct declaration diagnostics](evidence/direct-pipeline-execution/README.md) adds partial public ports of DDLSuite2522/2533/2544. Both inherited reference profiles execute, while Sail profile/internal equivalence remains open. Spark's Flow rejection has an observed INSERT effect; row preservation is a separate Sail policy, not an original diagnostic assertion. Earlier count snapshots below are historical.
+
+## Accepted positive parser ports and pending rejection regression
+
+[Test-only19b7e9c05](evidence/pipeline-parser-positive/README.md) adds nine partial assertion ports (six dataset declarations × both syntaxes; three Flow declarations), with40 analyzer tests and strict Clippy/fmt passing. Canonical accounting is486sites109reviewed80partial406unmapped; earlier snapshots are historical. The [separate clause-rejection candidate7d7](evidence/pipeline-dataset-parse-errors/README.md) is **not accepted**:262native and Spark11 pass, but fresh Sail regression fails299/1 because typed pipeline registration loses the SQL filename. Its five forbidden-clause/MV-query/ST-empty sites remain unmapped. User notified of the wrapper/origin design checkpoint; the frozen assertion remains intact.
+
+## Accepted parser restrictions after endpoint-oracle correction
+
+[14eb7766f](evidence/pipeline-dataset-parse-errors/README.md) is accepted:271native/fmt/Clippy,300+67 public,22 diagnostic cases on each engine and both unchanged-test controls pass their intended verdicts. Seven further partial sites bring canonical totals to486sites116reviewed87partial399unmapped. The initial299/1 failure preserved the old Sail filename expectation; actual DefineSqlGraphElements probes show Spark parser errors carry no filename. Exactly that BDD regex is corrected, with stronger typed assertions added; no original Spark assertion is changed. The public harness now binds23 previously omitted BDD/helper inputs while retaining all300 IDs and old hashes. Registration-level wrapper/origin design is still separate and unstarted. Earlier pending-candidate notes are historical.

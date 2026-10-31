@@ -5,3 +5,5 @@ Exact tool ebc097027434ab0f053651a90b4e916fe50e3b99 discovers 43 nonempty suites
 The static inventory identifies 486 declarations (24 beyond the legacy 462); inheritance and parameters explain why declaration and runtime counts differ. Shared suites retain their complete registration but execute only fixed SDP declarations. Hive SlowHiveTest tags are retained and executed. The initial no-tags postcheck was incorrect; its failed gate and controller remain alongside the corrected gate. No original test was changed or skipped.
 
 Raw output hashes, tool/source/runtime bindings, XML and logs are preserved. Binary JARs and generated JVM temporary files are excluded. The two lifecycle receipts are separate from the original 97-execution controller.
+
+Historical canonical counters are verified against immutable documentation snapshot e14f64dcdc5ddebcac628706237177037b64ecf2. The original verifier and manifest are retained before this dependency binding; reference assertions and original counts remain unchanged.

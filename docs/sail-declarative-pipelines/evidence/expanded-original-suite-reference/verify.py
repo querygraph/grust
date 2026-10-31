@@ -44,9 +44,11 @@ for name, count in summary['counts'].items():
 assert sum(summary['counts'].values()) == 99
 print('PASS expanded Spark reference: 56 bindings,595 names,99 executions; no Sail acceptance')
 D = E.parent.parent
-current = json.loads((D / 'spark-4.2.1-inventory.json').read_text())
+# This packet's counters describe its immutable qualification snapshot.
+SNAPSHOT = 'e14f64dcdc5ddebcac628706237177037b64ecf2'
+current = json.loads(subprocess.check_output(['git', '-C', R, 'show', SNAPSHOT + ':docs/sail-declarative-pipelines/spark-4.2.1-inventory.json']))
 legacy = json.loads(subprocess.check_output(['git', '-C', R, 'show', '3806b1bc58cf466c5146ca0f6829a3632701aaec:docs/sail-declarative-pipelines/spark-4.2.1-inventory.json']))
-expansion = json.loads((D / 'spark-4.2.1-scope-expansion.json').read_text())
+expansion = json.loads(subprocess.check_output(['git', '-C', R, 'show', SNAPSHOT + ':docs/sail-declarative-pipelines/spark-4.2.1-scope-expansion.json']))
 old = {c['id']: c for c in legacy['cases']}
 new = {c['id']: c for c in current['cases']}
 assert len(new) == 486 and len(current['source_sha256']) == 56

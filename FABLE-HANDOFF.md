@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-31T14:04:43.576054+00:00. Live coordination read through **CF-0473**.
+Snapshot written 2026-10-31T14:33:11.956519+00:00. Live coordination read through **CF-0486**.
 Re-read live channel/Git/process state; later entries supersede this snapshot. [Initial scope](codex-fable-handoff.md).
 
 ## Goal and current truth
@@ -36,8 +36,8 @@ provides peer gate/environment and offers. Original vendor d07a95c2c precedes co
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `f9982230d4efb6d8f03108b8d14fea30cee83da2` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `ebc097027434ab0f053651a90b4e916fe50e3b99` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `14eb7766f7efc3c39b1df0df396d13cd9551dc7d` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `e14f64dcdc5ddebcac628706237177037b64ecf2` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
@@ -146,13 +146,13 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest native/public-qualified runtime is **c50ef22530a42a48aac330252a4d14ab239527e6** (225 native,300 selected+67 upstream); source HEAD **f9982230d4efb6d8f03108b8d14fea30cee83da2** changes only the inventory generator, qualified separately.
+Latest fully native/public-qualified source/runtime is **14eb7766f7efc3c39b1df0df396d13cd9551dc7d** (271 native,300 selected+67 upstream,22 diagnostic cases on each engine). Prior test-only19b7 adds9 native parser cases; historical7d7 failed only an old Sail expectation contradicted by the oracle.
 300 selected public +67 upstream Python executions; inspect the [numeric divisor packet](docs/sail-declarative-pipelines/evidence/numeric-divisor-guard/README.md)
 for historical arithmetic qualification and basic-metadata-refresh packet below for test-source/inherited runtime proof. These selections are not original Scala acceptance.
 
-## Current implementation and immediate next work (CF-0473)
+## Current implementation and immediate next work (CF-0486)
 
-Sail HEAD **f9982230d4efb6d8f03108b8d14fea30cee83da2** is clean. [Direct declaration diagnostics](docs/sail-declarative-pipelines/evidence/direct-pipeline-execution/README.md): dataset25173ed90 and Flowc50ef2253 preserve Spark type/condition/SQLSTATE/parameters;225 native,300+67 public,3 paired diagnostic tests and separate Sail-only no-insert policy pass. Production-only unchanged-test controls fail as expected. Failed candidate8536 added a row-parity assumption that Spark fails: isolated schema shows target[[2]]→[[1],[2]] despite Flow rejection. Preserve that counterexample; original DDLSuite asserts diagnostics only, no cause or row-effect parity claim. [Expanded reference](docs/sail-declarative-pipelines/evidence/expanded-original-suite-reference/README.md) tool ebc097027 registers43 nonempty suites595 scoped names,56 source bindings;99 actual Spark reference executions pass, including2 lifecycle cases. Shared DDLSuite3 runs in both in-memory/Hive profiles; SlowHiveTest tags retained/executed. Initial abstract-target/no-tags failures preserved. Canonical inventory is reconciled to486 declarations (legacy462+24),100reviewed,71partial415unmapped; reference passes never promote Sail sites. Historical substrate verifier now binds its original20/462 counters to immutable3806 snapshot, retaining old verifier/manifest. Next map parser original assertions and source/grid callers, then implement missing batch contracts. Wrapper/origin, normalized paths, backend coverage, events/handlers, full-reset cleanup, stream/Iggy/CDC remain. Notify before substantial new design; public Table/Sink guard stays before effects, no E′/F–K authority or new Fable source assignment. No owned product/reference jobs live at snapshot; revalidate. Full conformance remains incomplete.
+Sail HEAD **14eb7766f7efc3c39b1df0df396d13cd9551dc7d** is clean. [Positive parser packet](docs/sail-declarative-pipelines/evidence/pipeline-parser-positive/README.md)19b7 preserves9 declarations (datasetbase32/77/119/163/174/185×both syntaxes, Flow35/46/58),40analyzer/fmt/Clippy; native configured STRING/metadata/privilege correspondence stays partial. [Clause parser packet](docs/sail-declarative-pipelines/evidence/pipeline-dataset-parse-errors/README.md)14eb adds7 partial sites: base89/131/145/197/212×both syntaxes,MVmissingquery30,STempty31; shared validation precedes both lowering routes, codec omits absent SQLSTATE.271native/fmt/strictClippy, fresh300+67,22 direct/registration tests perengine pass; production-only validation1fbd893a4/state7dcf5e227 controls fail unchanged0/1. Historical7d7 at `/Users/alexy/src/sail-sdp-dataset-clauses`, `work/sdp-dataset-clause-diagnostics`, stays committed/clean:262native/Spark11 but oldpublic299/1 expected location.sql. Fableef05747b/40c6967d and actual11-case DefineSqlGraphElements probes show raw ParseException/exactparams/None state/no filename/no table on both engines; my proposed parse-file wrapper requirement was wrong and withdrawn. Exactly one old Sail BDD regex aligned to the oracle, publication assertion retained; no original Spark assertion changed. Refreshed [public harness](docs/sail-declarative-pipelines/evidence/pipeline-dataset-parse-errors/public-harness/README.md) keeps300IDs/all old hashes and newly binds23 previously omitted BDD/helper inputs; use its run.py or `/tmp/sail-sdp-dataset-clauses-public-harness/run.py` for later gates. Canonical486sites116reviewed87partial399unmapped. Expanded scope's5 unmapped: constraints105/querytext227/collation253/lifecycle2; owned-root batch work also remains. Reference99Spark/595names43nonempty/56sources unchanged, historical counters bounde14 snapshot. User notified before registration-level wrapper/origin design for Astra; that phase is still unstarted, no parser wrapper needed. Next missing parser contracts and batch error/lifecycle work; no public Table/Sink/streaming/CDC activation or E′/F–K authority/source assignment. No owned jobs live at snapshot; revalidate. Full goal remains incomplete.
 [Review units](docs/sail-declarative-pipelines/evidence/flow-config-runtime/README.md): b4d source-case seam (88+151; two 0/2 controls),349 pure maps (88+166),fa78 trace (88+170),1bc runtime. Native dynamic/parameter-relation regression fixtures fail0/2 without the no-view-settings path; pass unchanged in the integrated source. Earlier query/expression packets retain their exact historical gates. No captured public Session activation.
 [General missing-column units](docs/sail-declarative-pipelines/evidence/unresolved-column-errors/README.md): abad typed PlanError→existing Connect codec (88+176);7b native diagnostics (91+176), unchanged control2 helper pass/1 native fail. Two retained initial gates failed solely on three old golden error strings; official fixture generation changed no inputs/outcomes.
 [Shared schemas/file sources](docs/sail-declarative-pipelines/evidence/parquet-column-validation/README.md):52d extracts Spark-compatible validation, old column_change path reexported, actual JVM12-case oracle;005 validates captured policy and fixes inferred partition shadowing. Exact643/646 library gates; disabling checks fails0/3 unchanged tests. Retains239/1 initial data-source failure, intermediate pass and probe directory-name collision. Public read replay uses original Spark file bytes. Follow-up95 closes the two ambiguity diagnostics; full reader matching/merge policy remains open.
@@ -246,11 +246,11 @@ Mock plan-map leases do not qualify SDK/session/factory caches. C5 E′ must pre
 ## Acceptance accounting and major remaining work
 
 The canonical [inventory](docs/sail-declarative-pipelines/spark-4.2.1-inventory.json)
-currently has **486 reconciled declaration sites**, **100 assertion-reviewed**,
-**71 partial-behavioral-port**, **415 unmapped**. These are not expanded runtime
+currently has **486 reconciled declaration sites**, **116 assertion-reviewed**,
+**87 partial-behavioral-port**, **399 unmapped**. These are not expanded runtime
 counts; none is a full Sail conformance verdict.24 additional declarations are reconciled.
 [CROSSWALK.md](docs/sail-declarative-pipelines/CROSSWALK.md) supplies assertion
-context; its reviewed-suite table is reconciled to the canonical JSON at71 partial.
+context; its reviewed-suite table is reconciled to the canonical JSON at87 partial.
 New Fable component crosswalks do not automatically change the canonical inventory.
 
 67 upstream Python executions represent 63 unique IDs (an inherited remote-mode

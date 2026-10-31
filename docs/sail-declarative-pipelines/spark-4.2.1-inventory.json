@@ -1139,8 +1139,19 @@
       "line": 32,
       "method": "test",
       "name_expression": "\"Column definitions are correctly parsed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset_positive::dataset_column_definitions_preserve_types_nullability_comments_and_defaults"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "All original loop inputs and syntax/SQL-normalization comparisons under both dataset syntaxes.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:77",
@@ -1148,8 +1159,19 @@
       "line": 77,
       "method": "test",
       "name_expression": "\"Partitioning is correctly parsed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset_positive::dataset_partitioning_preserves_identity_column_and_empty_forms"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "All original loop inputs and syntax/SQL-normalization comparisons under both dataset syntaxes.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:89",
@@ -1157,8 +1179,19 @@
       "line": 89,
       "method": "test",
       "name_expression": "\"Location is unsupported\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes",
+        "python/pysail/tests/spark/pipelines/test_dataset_parse_errors.py::test_pipeline_dataset_rejects_table_storage_clauses"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-dataset-parse-errors",
+        "covered_assertions": "Original parser-rejection inputs, class/condition/exact message parameter through both dataset syntaxes and direct/registration routes, absent SQLSTATE; missing-query text preserved. No-query ST preserves its empty definition and comment.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Complete Spark-internal plan/context correspondence and collation representation remain open.",
+        "sail_evidence": "evidence/pipeline-dataset-parse-errors/sail-final/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:105",
@@ -1175,8 +1208,19 @@
       "line": 119,
       "method": "test",
       "name_expression": "\"Comment is correctly parsed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset_positive::dataset_comments_preserve_both_present_and_absent_forms"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "All original loop inputs and syntax/SQL-normalization comparisons under both dataset syntaxes.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:131",
@@ -1184,8 +1228,19 @@
       "line": 131,
       "method": "test",
       "name_expression": "\"STORED AS syntax is unsupported\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes",
+        "python/pysail/tests/spark/pipelines/test_dataset_parse_errors.py::test_pipeline_dataset_rejects_table_storage_clauses"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-dataset-parse-errors",
+        "covered_assertions": "Original parser-rejection inputs, class/condition/exact message parameter through both dataset syntaxes and direct/registration routes, absent SQLSTATE; missing-query text preserved. No-query ST preserves its empty definition and comment.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Complete Spark-internal plan/context correspondence and collation representation remain open.",
+        "sail_evidence": "evidence/pipeline-dataset-parse-errors/sail-final/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:145",
@@ -1193,8 +1248,19 @@
       "line": 145,
       "method": "test",
       "name_expression": "\"SerDe information is unsupported\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes",
+        "python/pysail/tests/spark/pipelines/test_dataset_parse_errors.py::test_pipeline_dataset_rejects_table_storage_clauses"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-dataset-parse-errors",
+        "covered_assertions": "Original parser-rejection inputs, class/condition/exact message parameter through both dataset syntaxes and direct/registration routes, absent SQLSTATE; missing-query text preserved. No-query ST preserves its empty definition and comment.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Complete Spark-internal plan/context correspondence and collation representation remain open.",
+        "sail_evidence": "evidence/pipeline-dataset-parse-errors/sail-final/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:163",
@@ -1202,8 +1268,19 @@
       "line": 163,
       "method": "test",
       "name_expression": "\"USING clause is parsed correctly\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset_positive::dataset_provider_preserves_using_and_default_forms"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "All original loop inputs and syntax/SQL-normalization comparisons under both dataset syntaxes.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:174",
@@ -1211,8 +1288,19 @@
       "line": 174,
       "method": "test",
       "name_expression": "\"IF NOT EXISTS parses correctly\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset_positive::dataset_create_mode_preserves_if_not_exists"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "All original loop inputs and syntax/SQL-normalization comparisons under both dataset syntaxes.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:185",
@@ -1220,8 +1308,19 @@
       "line": 185,
       "method": "test",
       "name_expression": "\"Table properties parse correctly\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset_positive::dataset_properties_preserve_boolean_string_and_numeric_values"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "All original loop inputs and syntax/SQL-normalization comparisons under both dataset syntaxes.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:197",
@@ -1229,8 +1328,19 @@
       "line": 197,
       "method": "test",
       "name_expression": "\"Bucket spec is unsupported\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes",
+        "python/pysail/tests/spark/pipelines/test_dataset_parse_errors.py::test_pipeline_dataset_rejects_table_storage_clauses"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-dataset-parse-errors",
+        "covered_assertions": "Original parser-rejection inputs, class/condition/exact message parameter through both dataset syntaxes and direct/registration routes, absent SQLSTATE; missing-query text preserved. No-query ST preserves its empty definition and comment.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Complete Spark-internal plan/context correspondence and collation representation remain open.",
+        "sail_evidence": "evidence/pipeline-dataset-parse-errors/sail-final/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:212",
@@ -1238,8 +1348,19 @@
       "line": 212,
       "method": "test",
       "name_expression": "\"Options is unsupported\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes",
+        "python/pysail/tests/spark/pipelines/test_dataset_parse_errors.py::test_pipeline_dataset_rejects_table_storage_clauses"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-dataset-parse-errors",
+        "covered_assertions": "Original parser-rejection inputs, class/condition/exact message parameter through both dataset syntaxes and direct/registration routes, absent SQLSTATE; missing-query text preserved. No-query ST preserves its empty definition and comment.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Complete Spark-internal plan/context correspondence and collation representation remain open.",
+        "sail_evidence": "evidence/pipeline-dataset-parse-errors/sail-final/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala:227",
@@ -1322,8 +1443,19 @@
       "line": 35,
       "method": "test",
       "name_expression": "\"comment is correctly parsed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::flow_parser::flow_parser_preserves_optional_comment"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "Original loop inputs and comment, multipart name, or INSERT child syntax comparisons.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala:46",
@@ -1331,8 +1463,19 @@
       "line": 46,
       "method": "test",
       "name_expression": "\"multipart flow names are correctly parsed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::flow_parser::flow_parser_preserves_all_multipart_name_components"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "Original loop inputs and comment, multipart name, or INSERT child syntax comparisons.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala:58",
@@ -1340,8 +1483,19 @@
       "line": 58,
       "method": "test",
       "name_expression": "\"INSERT subquery is correctly parsed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::flow_parser::flow_parser_preserves_insert_overwrite_dynamic_partition_and_by_name_query"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-parser-positive",
+        "covered_assertions": "Original loop inputs and comment, multipart name, or INSERT child syntax comparisons.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Native representations use configured string storage and omit Spark column metadata / resolved write privilege annotations; complete engine-internal correspondence remains open.",
+        "sail_evidence": "evidence/pipeline-parser-positive/sail-sdp-pipeline-parser-positive-01-rust.log",
+        "scala_suite_executed": false,
+        "test_commit": "19b7e9c0527a1c48790909d7d0631b194f4fddb7",
+        "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateMaterializedViewAsSelectParserSuite.scala:30",
@@ -1349,8 +1503,19 @@
       "line": 30,
       "method": "test",
       "name_expression": "\"Cannot create materialized view without subquery\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset::missing_materialized_view_query_is_a_parse_error_but_streaming_table_can_be_empty",
+        "python/pysail/tests/spark/pipelines/test_dataset_parse_errors.py::test_materialized_view_requires_query"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-dataset-parse-errors",
+        "covered_assertions": "Original parser-rejection inputs, class/condition/exact message parameter through both dataset syntaxes and direct/registration routes, absent SQLSTATE; missing-query text preserved. No-query ST preserves its empty definition and comment.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Complete Spark-internal plan/context correspondence and collation representation remain open.",
+        "sail_evidence": "evidence/pipeline-dataset-parse-errors/sail-final/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d"
+      }
     },
     {
       "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateStreamingTableParserSuite.scala:31",
@@ -1358,8 +1523,18 @@
       "line": 31,
       "method": "test",
       "name_expression": "\"CREATE STREAMING TABLE without subquery is parsed correctly\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "sail_sql_analyzer::pipeline::tests::dataset::missing_materialized_view_query_is_a_parse_error_but_streaming_table_can_be_empty"
+      ],
+      "coverage_review": {
+        "phase": "pipeline-dataset-parse-errors",
+        "covered_assertions": "Original no-query streaming declaration preserves identifier, empty columns/partition/properties/options, provider/location/serde absence, comment, external/constraints and create mode at normalization.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail. Complete Spark-internal plan/context correspondence and collation representation remain open.",
+        "sail_evidence": "evidence/pipeline-dataset-parse-errors/native-final/sail-sdp-pipeline-dataset-clauses-02-rust.log",
+        "scala_suite_executed": false,
+        "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d"
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/analysis/ReadOptionsPropagationOnAnalysisSuite.scala:112",
