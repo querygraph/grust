@@ -1,0 +1,190 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 24.72s
+     Running unittests src/lib.rs (target/debug/deps/sail_logical_optimizer-cf61d5d93d8daf41)
+
+running 52 tests
+test tests::default_analyzer_rules_skip_datafusion_type_coercion ... ok
+test scalar_subquery_keys::projection::tests::schema_and_nested_metadata_survive_without_extra_keys ... ok
+test type_coercion::test::agg_function_invalid_input_avg ... ok
+test scalar_subquery_keys::projection::tests::same_name_in_different_tables_uses_cached_fields ... ok
+test scalar_subquery_keys::projection::tests::colliding_names_fall_back ... ok
+test type_coercion::test::agg_udaf_invalid_input ... ok
+test scalar_subquery_keys::projection::tests::keys_inherit_functional_dependencies ... ok
+test scalar_subquery_keys::projection::tests::raw_and_cast_keys_match_projection_schema ... ok
+test scalar_iterator_udf::tests::iterator_prunes_unused_columns_through_nested_calls ... ok
+test type_coercion::test::agg_udaf ... ok
+test type_coercion::test::between_case ... ok
+test type_coercion::test::between_null ... ok
+test type_coercion::test::between_infer_cheap_type ... ok
+test type_coercion::test::binary_op_date32_eq_ts ... ok
+test type_coercion::test::array_element_preserves_parquet_list_field_name ... ok
+test type_coercion::test::binary_op_date32_op_interval ... ok
+test type_coercion::test::agg_function_case ... ok
+test type_coercion::test::in_subquery_cast_expr ... ok
+test type_coercion::test::in_subquery_cast_all ... ok
+test type_coercion::test::in_subquery_cast_subquery ... ok
+test type_coercion::test::concat_for_type_coercion ... ok
+test type_coercion::test::negative_expr_wrapped_by_is_null_errors ... ok
+test type_coercion::test::merge_into_resolves_and_coerces_target_and_source_columns ... ok
+test type_coercion::test::inlist_case ... ok
+test type_coercion::test::interval_plus_timestamp ... ok
+test type_coercion::test::nested_timestamp_comparison_converts_in_session_time_zone ... ok
+test type_coercion::test::scalar_function ... ok
+test type_coercion::test::is_bool_for_type_coercion ... ok
+test type_coercion::test::scalar_udf ... ok
+test type_coercion::test::scalar_udf_invalid_input ... ok
+test type_coercion::test::coerce_binaryview_output ... ok
+test type_coercion::test::like_for_type_coercion ... ok
+test type_coercion::test::nested_case ... ok
+test type_coercion::test::tes_case_when_list ... ok
+test type_coercion::test::coerce_utf8view_output ... ok
+test type_coercion::test::scalar_udf_in_grouping_set ... ok
+test type_coercion::test::simple_case ... ok
+test type_coercion::test::test_type_coercion_rewrite ... ok
+test type_coercion::test::test_map_with_diff_name ... ok
+test type_coercion::test::test_case_expression_coercion ... ok
+test type_coercion::test::test_then_else_list ... ok
+test type_coercion::test::timestamp_comparison_with_constant_out_of_wall_clock_range_keeps_cast ... ok
+test type_coercion::test::untyped_limit_parameter_remains_inferable_after_coercion ... ignored
+test type_coercion::test::timestamp_comparison_with_constant_uses_wall_clock ... ok
+test type_coercion::test::test_coerce_union ... ok
+test type_coercion::test::timestamp_subtract_timestamp ... ok
+test type_coercion::test::timestamp_date_comparison_uses_session_day_start ... ok
+test type_coercion::test::similar_to_for_type_coercion ... ok
+test type_coercion::test::timestamp_set_comparison_uses_session_timezone ... ok
+test type_coercion::test::unknown_for_type_coercion ... ok
+test type_coercion::test::timestamp_subtraction_uses_session_wall_clock ... ok
+test type_coercion::test::timestamp_subtraction_uses_session_timezone ... ok
+
+test result: ok. 51 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-214d9911b82f51fe)
+
+running 119 tests
+test formatter::tests::test_time_data_type_to_string ... ok
+test formatter::tests::test_csv_function_to_string_omits_options ... ok
+test function::tests::spark_compatible_arrow_fixed_offset_matrix ... ok
+test function::aggregate::tests::string_sum_uses_mode_specific_cast_for_all_string_types ... ok
+test resolver::command::catalog::view::publication::tests::explicit_view_columns_preserve_types_nullability_and_comments_without_resolving_names ... ok
+test resolver::command::catalog::view::publication::tests::inferred_name_failure_retains_original_variant ... ok
+test resolver::command::catalog::view::publication::tests::inferred_view_columns_use_user_names_without_copying_input_comments ... ok
+test formatter::tests::test_literal_to_string ... ok
+test resolver::command::catalog::view::publication::tests::publication_namespace_replaces_reserved_entries_and_preserves_other_properties_in_order ... ok
+test resolver::command::catalog::view::publication::tests::view_column_count_error_precedes_name_resolution ... ok
+test function::aggregate::tests::ansi_string_sum_masks_filter_before_cast_and_preserves_clauses ... ok
+test function::window::tests::string_sum_window_reuses_mode_specific_coercion_and_window_spec ... ok
+test function::scalar::conditional::tests::nvl2_skips_bad_branches_and_evaluates_test_once ... ok
+test function::scalar::conditional::tests::nvl2_test_type_does_not_participate_in_branch_coercion ... ok
+test function::scalar::array::tests::test_slice ... ok
+test resolver::constant::tests::constant_mode_does_not_leak_into_ordinary_resolution ... ok
+test resolver::constant::tests::non_foldable_annotation_prevents_builder_invocation ... ok
+test resolver::constant::tests::constant_mode_rejects_registered_functions_before_invocation ... ok
+test explain::tests::explain_stops_after_contextual_physical_errors_without_replay ... ok
+test resolver::constant::tests::catalog_time_expressions_use_query_scoped_simplification ... ok
+test resolver::constant::tests::subqueries_are_rejected_before_requiring_session_extensions ... ok
+test resolver::constant::tests::catalog_scalar_errors_follow_the_selected_ansi_mode ... ok
+test resolver::constant::tests::catalog_expression_command_emits_the_existing_catalog_operation ... ok
+test resolver::constant::validation_tests::immutable_async_functions_remain_nonconstant_inside_each_scope ... ok
+test resolver::constant::validation_tests::lambda_bindings_end_at_each_body_and_argument ... ok
+test resolver::constant::tests::wrapped_catalog_type_only_udf_never_invokes_the_function ... ok
+test explain::tests::explain_preserves_initial_variants_and_runs_context_rules_once ... ok
+test resolver::constant::validation_tests::only_exact_evaluator_and_direct_argument_shapes_are_admitted ... ok
+test resolver::constant::validation_tests::volatile_and_provenance_descendants_reject_without_invocation ... ok
+test resolver::constant::validation_tests::eligible_expressions_preserve_type_null_and_error_evaluation_phases ... ok
+test resolver::constant::validation_tests::internal_constants_validate_then_evaluate_with_existing_literal_path ... ok
+test resolver::constant::validation_tests::nested_evaluators_shadow_names_and_preserve_outer_bindings ... ok
+test resolver::constant::tests::wrapped_catalog_identifier_preserves_scalar_missing_column_precedence ... ok
+test resolver::expression::cast::tests::ansi_string_cast_preserves_nested_cast_rename_decisions ... ok
+test resolver::expression::tests::test_st_geogfromwkb_returns_geography_metadata ... ok
+test resolver::expression::tests::test_resolve_expression_with_name ... ok
+test resolver::expression::tests::test_st_geomfromwkb_returns_geometry_metadata ... ok
+test resolver::expression::unresolved::tests::edit_distance_uses_utf16_units ... ok
+test resolver::constant::tests::catalog_names_use_shared_expression_and_identifier_resolution ... ok
+test resolver::expression::unresolved::tests::shared_namespace_stripping_respects_requested_qualification ... ok
+test resolver::constant::tests::catalog_validation_preserves_foldability_type_and_null_priority ... ok
+test explain::tests::explain_repairs_join_distribution_before_executable_validation ... ok
+test resolver::constant::tests::wrapped_catalog_type_only_arguments_use_analyzer_identifier_policy ... ok
+test resolver::expression::cast::tests::floating::legacy_floating_string_columns_return_null_for_malformed_values ... ok
+test resolver::identifier::arithmetic_tests::volatile_numeric_divisor_is_evaluated_once ... ok
+test resolver::expression::cast::tests::floating::ansi_floating_cast_errors_and_explicit_try_cast_are_preserved ... ok
+test resolver::identifier::arithmetic_tests::constant_type_validation_precedes_arithmetic_and_restores_ordinary_policy ... ok
+test resolver::expression::unresolved::tests::native_sql_matches_spark_421_missing_column_parameters ... ok
+test resolver::identifier::tests::parameter_bindings_survive_guarded_table_and_scalar_evaluation ... ok
+test resolver::identifier::provenance_tests::identifier_constant_context_restores_parameters_and_state_after_errors ... ok
+test resolver::expression::ambiguous::tests::native_ambiguity_matches_actual_spark_421_diagnostics_and_identity ... ok
+test resolver::identifier::provenance_tests::registered_function_keeps_udf_rules_without_executing_the_function ... ok
+test resolver::query::session_tests::absent_query_session_keeps_legacy_collection_path ... ok
+test resolver::expression::cast::tests::floating::legacy_floating_literal_and_conditional_casts_survive_optimization ... ok
+test resolver::query::session_tests::delta_metadata::delta_path_metadata_keeps_legacy_authority ... ok
+test resolver::query::session_tests::delta_metadata::delta_catalog_metadata_keeps_legacy_authority ... ok
+test resolver::query::session_tests::delta_metadata::delta_catalog_metadata_uses_selected_session ... ok
+test resolver::query::session_tests::delta_metadata::delta_path_metadata_uses_selected_session ... ok
+test resolver::query::session_tests::crosstab_distinct_values_use_supplied_session ... ok
+test resolver::query::session_tests::factories::source_factory_without_view_keeps_authoritative_session ... ok
+test resolver::query::session_tests::factories::format_path_factory_gets_captured_session ... ok
+test resolver::query::session_tests::factories::source_factory_gets_captured_session_before_physical_planning ... ok
+test resolver::query::session_tests::factories::native_table_function_lookup_stays_authoritative_but_factory_gets_view ... ok
+test resolver::identifier::tests::scalar_identifier_preserves_column_and_subquery_analysis_precedence ... ok
+test resolver::identifier::tests::table_validation_precedes_subquery_analysis_type_evaluation_and_folding ... ok
+test resolver::identifier::arithmetic_tests::ordinary_lowering_preserves_type_only_parents_and_dead_arithmetic ... ok
+test resolver::query::session_tests::lake_metadata::row_target_metadata_without_view_keeps_authority ... ok
+test resolver::query::session_tests::lake_metadata::row_target_metadata_uses_selected_session ... ok
+test resolver::query::session_tests::lake_metadata::catalog_properties_without_view_keep_authority ... ok
+test resolver::query::session_tests::lake_metadata::catalog_properties_use_selected_session ... ok
+test resolver::query::session_tests::lake_metadata::path_properties_without_view_keep_authority ... ok
+test resolver::query::session_tests::lake_metadata::path_properties_use_selected_session ... ok
+test resolver::query::session_tests::procedures::catalog_procedure_keeps_legacy_authority ... ok
+test resolver::query::session_tests::generated_analyzer::generated_column_validation_keeps_generic_session_native_authority ... ok
+test resolver::query::session_tests::procedures::catalog_procedure_uses_selected_session ... ok
+test resolver::query::session_tests::generated_analyzer::generated_column_validation_uses_typed_captured_analyzer ... ok
+test resolver::query::session_tests::procedures::predicate_procedure_keeps_legacy_authority ... ok
+test resolver::query::session_tests::late_bound_scope::default_scope_keeps_computed_binding_and_cte_precedence ... ok
+test resolver::query::session_tests::procedures::predicate_procedure_uses_selected_session ... ok
+test resolver::query::session_tests::procedures::predicate_procedure_uses_typed_captured_native_analyzer ... ok
+test resolver::query::session_tests::row_factories::delete_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::pivot_inference_uses_supplied_session ... ok
+test resolver::query::session_tests::row_factories::merge_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::truncate_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::delete_factory_uses_selected_session ... ok
+test resolver::query::session_tests::row_factories::merge_factory_uses_selected_session ... ok
+test resolver::query::session_tests::row_factories::truncate_factory_uses_selected_session ... ok
+test resolver::query::session_tests::row_factories::update_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::read_case::read_case_override_preserves_legacy_session_and_semantic_resolution ... ok
+test resolver::query::session_tests::view_publication::view_publication_matches_native_explicit_columns_and_metadata ... ok
+test resolver::query::session_tests::read_case::read_case_override_preserves_scoped_session_including_view_children ... ok
+test resolver::query::session_tests::view_publication::view_publication_matches_native_inferred_columns_and_metadata ... ok
+test resolver::query::session_tests::row_factories::update_factory_uses_selected_session ... ok
+test resolver::session::analyzer_tests::generic_session_and_absent_session_keep_authoritative_native_analysis ... ok
+test resolver::query::session_tests::view_publication::view_publication_rejects_bad_column_count_without_publishing ... ok
+test resolver::query::session_tests::late_bound_scope::late_target_opt_out_preserves_native_ctes_and_view_namespace ... ok
+test resolver::session::analyzer_tests::typed_native_analyzer_is_captured_and_optimizer_free ... ok
+test resolver::query::session_tests::writers::writer_factory_without_view_preserves_authority ... ok
+test resolver::session::analyzer_tests::last_session_setter_selects_native_analysis_mode ... ok
+test resolver::session::analyzer_tests::typed_native_analyzer_retains_typed_failure ... ok
+test resolver::query::session_tests::writers::writer_factory_uses_selected_session_before_execution ... ok
+test resolver::query::session_tests::writers::empty_catalog_schema_and_writer_share_selected_session ... ok
+test resolver::query::session_tests::time_travel_scalar_uses_supplied_session ... ok
+test resolver::time_tests::casts::spark_time_cast_rejects_metadata_on_non_nanosecond_storage ... ok
+test resolver::query::session_tests::tail_count_uses_supplied_session ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_name_uses_declared_precision ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_changes_map_keys_without_truncating_identity_values ... ok
+test resolver::time_tests::spark_time_list_literals_preserve_metadata_and_nanoseconds ... ok
+test resolver::identifier::arithmetic_tests::floating_signed_zero_divisors_preserve_ansi_policy_and_result_types ... ok
+test resolver::time_tests::casts::spark_time_casts_replace_precision_and_clear_annotations_when_casting_away ... ok
+test resolver::time_tests::spark_time_resolver_validates_semantic_precision_and_preserves_raw_types ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_precedes_struct_rename_and_other_leaf_casts ... ok
+test resolver::time_tests::spark_time_nested_typed_nulls_preserve_element_fields ... ok
+test resolver::time_tests::spark_time_typed_null_and_alias_preserve_precision ... ok
+test resolver::time_tests::casts::spark_time_cast_string_column_preserves_fraction_at_every_precision ... ok
+test resolver::identifier::provenance_tests::scalar_session_functions_keep_nonfoldable_provenance_and_semantic_error_priority ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_preserves_null_lists_structs_and_elements ... ok
+test resolver::time_tests::casts::spark_time_cast_column_preserves_legacy_source_units ... ok
+test resolver::time_tests::casts::spark_time_cast_column_preserves_identity_and_truncates_changed_precision ... ok
+
+test result: ok. 119 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+

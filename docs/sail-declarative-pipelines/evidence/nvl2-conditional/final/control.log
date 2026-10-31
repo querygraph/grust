@@ -1,0 +1,34 @@
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 27.09s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 2 tests
+test function::scalar::conditional::tests::nvl2_skips_bad_branches_and_evaluates_test_once ... FAILED
+test function::scalar::conditional::tests::nvl2_test_type_does_not_participate_in_branch_coercion ... FAILED
+
+failures:
+
+---- function::scalar::conditional::tests::nvl2_skips_bad_branches_and_evaluates_test_once stdout ----
+Error: ArrowError(CastError("Cannot cast string 'bad' to value of Int32 type"), Some(""))
+
+---- function::scalar::conditional::tests::nvl2_test_type_does_not_participate_in_branch_coercion stdout ----
+
+thread 'function::scalar::conditional::tests::nvl2_test_type_does_not_participate_in_branch_coercion' (92231176) panicked at crates/sail-plan/src/function/scalar/conditional/tests.rs:55:9:
+assertion failed: matches!(lowered, Expr::Case(_))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    function::scalar::conditional::tests::nvl2_skips_bad_branches_and_evaluates_test_once
+    function::scalar::conditional::tests::nvl2_test_type_does_not_participate_in_branch_coercion
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

@@ -360,3 +360,85 @@ guard or folding rule is enabled. The next part of the already user-flagged
 checkpoint is exact source/conditional folding and target-type policy before
 resolver activation. Prior source/phase and decimal conformance failures remain
 required; config/transport parity alone does not establish their resolution.
+
+
+## Folding implementation boundary and conditional normalization (CF-0400–0401)
+
+Spark pin617618396087429b5627a86ce933bb0f5d6645cb implements the generic
+folding recursion in catalyst/optimizer/expressions.scala: parent-first whole
+foldable subtrees, lenient recursion into every child of non-foldable
+ConditionalExpression, and eager failures elsewhere. The four concrete kinds
+are If, CaseWhen, Coalesce and NaNvl. And/Or are outside that set. Failed
+conditional folds carry FAILED_TO_EVALUATE to prevent retries. ConvertToLocalRelation
+runs in an earlier batch; its row-wise projection evaluation explains why VALUES
+can skip casts that fail while planning the corresponding real-source query.
+These are separate required behaviors, not a single lenient optimizer policy.
+Fabledec11b85 section6.14 is checked against that source.
+
+Sail represents IF/CASE as Expr::Case and Coalesce as the concrete DataFusion
+CoalesceFunc. Spark Nvl2 is RuntimeReplaceable with replacement
+If(IsNotNull(expr1),expr2,expr3) (nullExpressions.scala:271–282). Sail's ordinary
+NVL2 path instead passed all three arguments to DataFusion NVL2Func, whose
+coerce_types includes the tested argument in the result common type; its
+simplify callback rewrites to CASE only later. A fresh Spark16/parent226 CLI16
+probe demonstrates wrong string results and rejection of array/boolean tests.
+The next source unit normalizes NVL2 through the existing IF builder and the
+analyzer's shared CASE coercion helper, retaining the date/timestamp conversion.
+An initial candidate passed native119/public300+67 yet failed the existing NVL2
+common-type feature: CASE types are inspected before the analyzer runs. The
+revised unit must therefore coerce branches during lowering, with type tests
+before analysis and public typeof checks. Preserve that failed candidate and
+its4pass/1fail feature result. This is a directly exercised prerequisite for
+matching conditional folding and type coercion.
+
+DataFusion55.2 ExprSimplifier runs private ConstEvaluator before its private
+algebraic Simplifier in every cycle. There is no public API to disable only
+constant evaluation. ConstEvaluator preserves most failed folds but propagates
+Cast/TryCast over literal failures; neither policy implements Spark's recursion.
+Replacing Sail's default SimplifyExpressions rule alone would leave direct
+ExprSimplifier users: Sail constant/identifier/window resolution, session timestamp,
+Delta/Iceberg predicate conversion; DataFusion decorrelation and UDF preimage
+simplification also call it. A replacement design must account for those callers,
+existing algebraic rewrites, type/field metadata, and deferred-failure persistence
+across optimizer passes. Merely prepending an eager pass does not protect a
+failed raw Cast beneath a conditional from a later DataFusion pass.
+
+NaNvl needs an execution audit before activation too: DataFusion's concrete
+NanvlFunc (functions/math/nanvl.rs) evaluates two ordinary arguments, whereas
+Spark's eval reads the right only when the non-null left is NaN. A conditional
+classification alone cannot establish lazy value/error semantics. Do not use
+function names or generic short_circuits flags as the Spark conditional set.
+No new folding rule, masking wrapper, dependency fork, scalar routing or replay
+mode is selected by this checkpoint. Required next work is the replacement
+mechanism and executable real-source/local-relation phase tests; the existing
+source/phase and decimal SQL failures remain required.
+
+Fable1388873f/257368dc proposes retaining DataFusion optimization after a Spark
+folding pre-pass. This is viable only with an inventory proving every fallible
+raw Cast/TryCast reachable in a deferred context eliminated or nonthrowing,
+including implicit coercions, non-string casts and nested/extension types.
+Typed string UDF routing alone is insufficient. Coercion must precede that
+pass. CF-0408 corrects the claim that VALUES needs no treatment: the eager
+pre-pass itself would raise the bad cast over VALUES(NULL), losing the already
+verified skipped result, unless equivalent row-wise local evaluation occurs
+first. Keep source identity, phase and row-order cases in acceptance. No phase
+requirement is waived by observing that later ordinary execution is lazy.
+
+
+## Qualified NVL2 prerequisite and next shared coercion unit (CF-0410)
+
+Sail982877d859bed7b7e82662d6873a6b7f88eb04a3 is committed and
+[qualified](evidence/nvl2-conditional/README.md):119plan+51optimizer pass with
+one existing ignored, formatting/strictClippy, unchanged control0/2, fresh
+public300+upstream67, all6 NVL2 feature scenarios. Spark16/final16 matches every
+row and12schemas, versus parent2rows/1schema. Four cast/CASE nullability gaps
+remain. Fable92bce2d3 accepts the revised lowering; the final source only fixes
+an adjacent documentation-comment placement and is independently gated.
+
+The same packet retains a fresh8-case Spark/final-CLI follow-up: typeof of
+ordinary IF or CASE with Int32/Int64 or Int32/decimal branches reports int in
+Sail and bigint/decimal(11,1) in Spark, both ANSI settings. The next separate
+human-reviewable source unit should apply the shared coercion before those
+expressions expose their type, then remove the NVL2-specific wrapper if redundant.
+Native tests must inspect types before analysis; public typeof and temporal
+cases must pass. This inherited gap is not declared fixed by the NVL2 unit.

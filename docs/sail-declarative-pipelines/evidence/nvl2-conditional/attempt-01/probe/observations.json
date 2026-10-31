@@ -1,0 +1,345 @@
+{
+  "started_at": "2026-10-31T09:56:07.593310+00:00",
+  "mode": "sail",
+  "script_sha256": "ed8cdfe9b803c177e9a9d9fef1e9fa0ae5b8a78cb376609332a988a2634dc8df",
+  "cases": [
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(CAST(NULL AS STRING), 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(array(1), 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(TRUE, 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', 1, CAST(2 AS BIGINT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', 1, CAST('bad' AS INT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(NULL, CAST('bad' AS INT), 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', CAST(1 AS DECIMAL(5,2)), CAST(2 AS DECIMAL(7,3)))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.000"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(CAST(NULL AS STRING), 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(array(1), 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(TRUE, 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', 1, CAST(2 AS BIGINT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', 1, CAST('bad' AS INT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(NULL, CAST('bad' AS INT), 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', CAST(1 AS DECIMAL(5,2)), CAST(2 AS DECIMAL(7,3)))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.000"
+        ]
+      ]
+    }
+  ],
+  "commit": "e5605fd3a4b1cf61c8ff72cc4f4f1fe0eadff303",
+  "cli_sha256": "2e0e71619fc0b2b076cb6cbd0da6959c9dffc62b9afcdec9660232f1ae030fe5",
+  "server_pid": 93547,
+  "version": "4.2.1",
+  "feature_command": [
+    "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "python/pysail/tests/spark/function/test_features.py",
+    "-k",
+    "nvl2 or tested_argument_does_not_affect",
+    "--junitxml=/tmp/sail-sdp-nvl2-final/features.xml"
+  ],
+  "feature_exit_code": 1,
+  "server_exit_code": 0,
+  "remaining_listeners": [],
+  "completed_at": "2026-10-31T09:56:16.274044+00:00"
+}

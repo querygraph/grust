@@ -1,0 +1,282 @@
+{
+  "started_at": "2026-10-31T09:51:29.328307+00:00",
+  "mode": "sail",
+  "script_sha256": "cdad91d8389aa5e692e87b603ca74c2a42db839a0913410f149548c045653870",
+  "cases": [
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(CAST(NULL AS STRING), 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "2"
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(array(1), 1, 2)",
+      "error_type": "AnalysisException",
+      "message": "Execution error: Function 'nvl2' user-defined coercion failed with: Internal error: Coercion from List(non-null Int32) to Int32 failed..\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues. No function matches the given name and argument types 'nvl2(List(non-null Int32), Int32, Int32)'. You might need to add explicit type casts.\n\tCandidate functions:\n\tnvl2(UserDefined)",
+      "condition": null
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(TRUE, 1, 2)",
+      "error_type": "AnalysisException",
+      "message": "Execution error: Function 'nvl2' user-defined coercion failed with: Internal error: Coercion from Boolean to Int32 failed..\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues. No function matches the given name and argument types 'nvl2(Boolean, Int32, Int32)'. You might need to add explicit type casts.\n\tCandidate functions:\n\tnvl2(UserDefined)",
+      "condition": null
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', 1, CAST(2 AS BIGINT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', 1, CAST('bad' AS INT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2(NULL, CAST('bad' AS INT), 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "nvl2('sentinel', CAST(1 AS DECIMAL(5,2)), CAST(2 AS DECIMAL(7,3)))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.00"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(CAST(NULL AS STRING), 1, 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "2"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(array(1), 1, 2)",
+      "error_type": "AnalysisException",
+      "message": "Execution error: Function 'nvl2' user-defined coercion failed with: Internal error: Coercion from List(non-null Int32) to Int32 failed..\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues. No function matches the given name and argument types 'nvl2(List(non-null Int32), Int32, Int32)'. You might need to add explicit type casts.\n\tCandidate functions:\n\tnvl2(UserDefined)",
+      "condition": null
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(TRUE, 1, 2)",
+      "error_type": "AnalysisException",
+      "message": "Execution error: Function 'nvl2' user-defined coercion failed with: Internal error: Coercion from Boolean to Int32 failed..\nThis issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues. No function matches the given name and argument types 'nvl2(Boolean, Int32, Int32)'. You might need to add explicit type casts.\n\tCandidate functions:\n\tnvl2(UserDefined)",
+      "condition": null
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', 1, CAST(2 AS BIGINT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', 1, CAST('bad' AS INT))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2(NULL, CAST('bad' AS INT), 2)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "nvl2('sentinel', CAST(1 AS DECIMAL(5,2)), CAST(2 AS DECIMAL(7,3)))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.00"
+        ]
+      ]
+    }
+  ],
+  "commit": "226b0c1cfc9ac72dadc3ec8a81667f7acc3aacec",
+  "cli_sha256": "a30b4f2ac732c4653fc7f47c7c5e86dd947358001e6d37ccb895e9ef20488d0b",
+  "server_pid": 91321,
+  "version": "4.2.1",
+  "server_exit_code": 0,
+  "remaining_listeners": [],
+  "completed_at": "2026-10-31T09:51:30.824664+00:00"
+}
