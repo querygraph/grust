@@ -1,0 +1,1135 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="9" failures="0" skipped="0" tests="9" time="0.888" timestamp="2026-10-31T03:46:39.287337-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_sql_namespace" name="test_catalog_scope_is_local_to_sql_file[explicit-namespace]" time="0.196"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_catalog_scope_is_local_to0')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119a96b10&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_sql_namespace" name="test_catalog_scope_is_local_to_sql_file[use-after-set]" time="0.026"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_catalog_scope_is_local_to1')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119aa8e30&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_sql_namespace" name="test_catalog_scope_is_local_to_sql_file[file-reset]" time="0.026"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_catalog_scope_is_local_to2')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119aa84d0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_sql_namespace" name="test_catalog_scope_is_local_to_sql_file[private-view]" time="0.022"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_catalog_scope_is_local_to3')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119bc8e30&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_sql_namespace" name="test_multipart_outputs_across_two_namespaces" time="0.031"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_multipart_outputs_across_0')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119bcb0e0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[batch]" time="0.030"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_stream_of_batch_cte_batch0')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c0ea50&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[sequential]" time="0.026"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_stream_of_batch_cte_seque0')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c0d5e0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[shadowing]" time="0.022"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_stream_of_batch_cte_shado0')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c24d10&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_cte_stream" name="test_stream_of_batch_cte[scope-restoration]" time="0.029"><error message="failed on setup with &quot;pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: &quot;spark.sql.warehouse.dir&quot;. SQLSTATE: 46110&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.AnalysisException&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)&#10;&#09;at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)&#10;&#09;at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)&#10;&#09;at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)&#10;&#09;at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)&#10;&#09;at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)&#10;&#09;at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)&#10;&#09;at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)&#10;&#09;at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)&#10;&#09;at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)&#10;&#09;at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)&#10;&#09;at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)&#10;&#09;at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)&#10;&#09;at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)&#10;&#09;at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)&#10;&#09;at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)&#10;&#09;at java.lang.Thread.run(Thread.java:833)&quot;">remote = 'sc://localhost:15002'
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-330/test_stream_of_batch_cte_scope0')
+
+    @pytest.fixture
+    def pipeline_spark(remote, tmp_path):
+        # A separate session keeps pipeline catalogs, registrations, and SQL defaults
+        # isolated between scenarios without changing the shared Spark test fixture.
+        with spark_session_factory(remote) as sessions:
+            session = sessions.create()
+&gt;           session.conf.set("spark.sql.warehouse.dir", (tmp_path / "warehouse").as_uri())
+
+python/pysail/tests/spark/pipelines/conftest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:43: in set
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c276b0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[CANNOT_MODIFY_STATIC_CONFIG...MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.AnalysisException
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError(CompilationErrors.scala:138)
+E                   	at org.apache.spark.sql.errors.CompilationErrors.cannotModifyValueOfStaticConfigError$(CompilationErrors.scala:135)
+E                   	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:53)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:117)
+E                   	at org.apache.spark.sql.classic.RuntimeConfig.set(RuntimeConfig.scala:41)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$handleSet$1(SparkConnectConfigHandler.scala:88)
+E                   	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+E                   	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+E                   	at scala.collection.AbstractIterator.foreach(Iterator.scala:1313)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handleSet(SparkConnectConfigHandler.scala:85)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1(SparkConnectConfigHandler.scala:57)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.$anonfun$doHandle$1$adapted(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.doHandle(SparkConnectConfigHandler.scala:49)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+E                   	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+E                   	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+E                   	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+E                   	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+E                   	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+E                   	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+E                   	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+E                   	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+E                   	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+E                   	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+E                   	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+E                   	at java.lang.Thread.run(Thread.java:833)
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</error></testcase></testsuite></testsuites>

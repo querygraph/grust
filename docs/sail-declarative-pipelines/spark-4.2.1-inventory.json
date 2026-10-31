@@ -4099,13 +4099,16 @@
       "line": 562,
       "method": "test",
       "name_expression": "\"Multipart table names supported\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_namespace.py::test_multipart_outputs_across_two_namespaces"
+      ],
       "coverage_review": {
         "phase": "batch-catalog",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Two distinct database-qualified pipeline outputs depend on each other; both read Row(1). Exact original two-database assertions unported.",
-        "scala_suite_executed": false
+        "covered_assertions": "Both original CREATE MATERIALIZED VIEW statements register in one SQL file, with two database-qualified outputs and their cross-namespace dependency. The pipeline runs and each qualified output returns Row(1), unchanged on Spark 4.2.1 and Sail through public Connect. Graph/table/database cleanup is asserted; unique namespace names adapt fixture isolation.",
+        "remaining_assertions": "Original internal Scala suite has not executed against Sail. The public Connect fixture substitutes unique namespace names and handles the static Spark startup warehouse explicitly.",
+        "scala_suite_executed": false,
+        "sail_evidence": "evidence/original-multipart/gate.json"
       }
     },
     {

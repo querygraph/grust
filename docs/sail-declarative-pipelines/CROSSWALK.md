@@ -8,11 +8,11 @@ is fully qualified by executing the original Scala suite against Sail.
 | Suite | Reviewed | Partial ports | Unmapped |
 | --- | ---: | ---: | ---: |
 | ViewSuite | 11 | 7 | 4 |
-| MaterializeTablesSuite | 27 | 8 | 19 |
+| MaterializeTablesSuite | 27 | 10 | 17 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 38 | 30 | 8 |
-| Total | 97 | 59 | 38 |
+| SqlPipelineSuite | 38 | 31 | 7 |
+| Total | 97 | 62 | 35 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -59,8 +59,13 @@ parameter when no cause exists. These belong to the pending Astra
 ## SQL pipeline assertions
 
 All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
-30 partial ports and 8 unmapped. This is not a complete Scala-suite verdict.
+31 partial ports and 7 unmapped. This is not a complete Scala-suite verdict.
 The reviewed groups include:
+
+- [Multipart outputs](evidence/original-multipart/README.md): SqlPipelineSuite:562's
+  two namespace-qualified materialized views register together; both return Row(1)
+  on Spark 4.2.1 and Sail. Owned graph/table/database cleanup passes. The current
+  memory/memory catalog runner also rechecks the five already-covered :634 answers.
 
 - Basic batch cases: static dataset, escaped names, a four-view dependency chain,
   aggregation and a private-view join. Hyphen resolution matches the original

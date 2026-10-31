@@ -483,15 +483,15 @@ before decimal SQL routing. All prior source/phase, original Scala-suite and
 streaming/CDC acceptance requirements remain active.
 
 
-## Original SDP acceptance priority (CF-0424–0426)
+## Original SDP acceptance priority (CF-0424–0431)
 
 The [batch checkpoint](BATCH-ACCEPTANCE-PRIORITY-CHECKPOINT.md) records the
-original assertion dependencies and next notified design phase. Fabled3d18043
+original assertion dependencies and active batch acceptance progress. Fabled3d18043
 and coordinator source inspection distinguish actual SDP requirements from these
 broader Sail expression regressions. Add no further general SQL prerequisite
 without an original assertion dependency; preserve every discovered failure.
 [ANSI field d99](evidence/ansi-nullability/README.md) is qualified:776 native,
 300public+67upstream,21 features, complete79/90 versus64/90; one older NVL2
 schema closes, eleven remain in that matrix. Source-aware folding and schema
-work remain general backlog. Next probe the original catalog/directive fixture
-and establish direct batch/mixed-suite acceptance; the full SDP goal is unchanged.
+work remain general backlog. CF-0431 corrects existing catalog-fixture coverage
+and pairs the original two-namespace assertions; next inspect temporary qualifiers.
