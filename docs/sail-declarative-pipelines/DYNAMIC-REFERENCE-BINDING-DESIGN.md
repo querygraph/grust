@@ -443,3 +443,40 @@ need further design. Arbitrary dividend duplication was rejected because volatil
 expressions are excluded from CSE; no window deviation is an acceptable final
 state. Query origins/full diagnostic summaries, bare catalog phases, intrinsic
 annotations and full original Scala SDP acceptance remain unqualified.
+
+
+## Numeric operand evaluation checkpoint (CF-0344–0350)
+
+The user-notified checkpoint is active. Sail b857dabb74da0484b781c096f9a9cd6a78daaa5c
+adds a type-preserving unary numeric/Null divisor guard, retaining native kernels
+and the existing name-keyed StandardUdf codec. It closes syntactic divisor
+repetition and avoids arithmetic CASE predicate pre-evaluation. Nonnumeric
+fallbacks and intervals/durations retain their previous lowering. The
+[numeric divisor packet](evidence/numeric-divisor-guard/README.md) records913 Rust,
+strict Clippy/fmt, two unchanged failing controls, fresh300+67 public executions,
+all40 core outcomes/metadata/raw fields and33 successful schemas. Legacy decimal
+remainder also improves two schemas from decimal(10,2) to Spark decimal(5,2).
+
+Own backtraces and Fable's independent phase probe establish a distinct dependency
+issue: DataFusion55.2.0 CaseExpr::nullable evaluates predicates on a dummy batch
+without volatility checking. Stable callback counts: plain1, abs1, explicit
+CASE6; guarded division7 before and1 after. Lowering/frame construction calls0.
+The generic CASE defect remains required work; no registry source was modified.
+
+The extra22 decimal/CASE/string probes preserve all parent rows/errors. Apart
+from the two remainder schema improvements, schemas remain identical. Decimal /
+precision, CASE result nullability and string arithmetic domains remain wrong;
+Spark rejects the two string-literal arithmetic queries under both modes, so a
+blanket string-to-double fallback is not justified. Fable's2b6c00cb review and
+fresh Spark/parent diagnostics are retained. Initial Decimal JSON recorder
+failures on both engines are preserved separately from engine outcomes.
+
+Six runtime NULL-input/volatile/window/pmod cases and two floating DIV domain
+cases still fail. Spark DivModLike evaluates right first and can skip left for
+null/legacy-zero divisors. A unary UDF alone cannot provide that contract.
+DataFusion ScalarUDFImpl::short_circuits/conditional_arguments annotate optimizer
+behavior; ScalarFunctionExpr::evaluate still evaluates every argument before
+invoke_with_args. Existing projection rewrites cover only one expression context.
+Further selection must preserve cardinality/order across filters, joins, sorts,
+windows and workers; it must not duplicate volatile operands or erase coercion.
+The original Scala suites remain unqualified; full goal stays active.

@@ -1,0 +1,626 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T05:42:22.007829+00:00",
+  "harness_sha256": "c39f86aeadd72ce51633f546ba0d0a545495f9ab197b92b656138194416affc2",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "22 decimal/CASE/string ANSI/legacy SQL probes with raw Connect metadata; no data writes or full Scala-suite verdict",
+  "cases": [
+    {
+      "name": "ansi_decimal_divide",
+      "ansi_mode": true,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(2.30 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          "3.095652"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_decimal_div",
+      "ansi_mode": true,
+      "query": "SELECT a DIV b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(2.30 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          3
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_decimal_mod",
+      "ansi_mode": true,
+      "query": "SELECT a % b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(2.30 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          "0.22"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_decimal_zero_divide",
+      "ansi_mode": true,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(0 AS DECIMAL(5,2))) AS v(a,b)",
+      "returned": false,
+      "error": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "DIVIDE_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "errorClass": "DIVIDE_BY_ZERO",
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "22012"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_decimal_zero_mod",
+      "ansi_mode": true,
+      "query": "SELECT a % b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(0 AS DECIMAL(5,2))) AS v(a,b)",
+      "returned": false,
+      "error": "[REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "REMAINDER_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "errorClass": "REMAINDER_BY_ZERO",
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "22012"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_decimal_null_divisor",
+      "ansi_mode": true,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(NULL AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_decimal_wide",
+      "ansi_mode": true,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(123456789012345678901.12 AS DECIMAL(30,2)), CAST(3.00 AS DECIMAL(10,2))) AS v(a,b)",
+      "rows": [
+        [
+          "41152263004115226300.373333"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(36,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_case_input",
+      "ansi_mode": true,
+      "query": "SELECT CASE WHEN 7 / id > 0 THEN 1 ELSE 0 END AS value FROM VALUES (2) AS v(id)",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_case_zero",
+      "ansi_mode": true,
+      "query": "SELECT CASE WHEN 1 / 0 > 0 THEN 1 ELSE 0 END AS value",
+      "returned": false,
+      "error": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "DIVIDE_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "errorClass": "DIVIDE_BY_ZERO",
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "22012"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_string_zero",
+      "ansi_mode": true,
+      "query": "SELECT '1' / '0' AS value",
+      "returned": false,
+      "error": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "DIVIDE_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "errorClass": "DIVIDE_BY_ZERO",
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "22012"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_string_nonzero",
+      "ansi_mode": true,
+      "query": "SELECT '7' / '2' AS value",
+      "rows": [
+        [
+          3.5
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_decimal_divide",
+      "ansi_mode": false,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(2.30 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          "3.095652"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_decimal_div",
+      "ansi_mode": false,
+      "query": "SELECT a DIV b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(2.30 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          3
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_decimal_mod",
+      "ansi_mode": false,
+      "query": "SELECT a % b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(2.30 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          "0.22"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(10,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_decimal_zero_divide",
+      "ansi_mode": false,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(0 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_decimal_zero_mod",
+      "ansi_mode": false,
+      "query": "SELECT a % b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(0 AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(10,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_decimal_null_divisor",
+      "ansi_mode": false,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(7.12 AS DECIMAL(10,2)), CAST(NULL AS DECIMAL(5,2))) AS v(a,b)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_decimal_wide",
+      "ansi_mode": false,
+      "query": "SELECT a / b AS value FROM VALUES (CAST(123456789012345678901.12 AS DECIMAL(30,2)), CAST(3.00 AS DECIMAL(10,2))) AS v(a,b)",
+      "rows": [
+        [
+          "41152263004115226300.373333"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(36,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_case_input",
+      "ansi_mode": false,
+      "query": "SELECT CASE WHEN 7 / id > 0 THEN 1 ELSE 0 END AS value FROM VALUES (2) AS v(id)",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_case_zero",
+      "ansi_mode": false,
+      "query": "SELECT CASE WHEN 1 / 0 > 0 THEN 1 ELSE 0 END AS value",
+      "rows": [
+        [
+          0
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_string_zero",
+      "ansi_mode": false,
+      "query": "SELECT '1' / '0' AS value",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_string_nonzero",
+      "ansi_mode": false,
+      "query": "SELECT '7' / '2' AS value",
+      "rows": [
+        [
+          3.5
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    }
+  ],
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "session_namespace": [
+    "sail",
+    "default"
+  ],
+  "listener_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T05:42:22.847944+00:00"
+}
