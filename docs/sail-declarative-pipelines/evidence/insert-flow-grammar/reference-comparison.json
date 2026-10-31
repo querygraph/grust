@@ -1,0 +1,406 @@
+[
+  {
+    "label": "overwrite-ifne",
+    "sql": "INSERT OVERWRITE output IF NOT EXISTS SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'IF'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'IF'",
+        "hint": ""
+      }
+    }
+  },
+  {
+    "label": "overwrite-ifne-by-name",
+    "sql": "INSERT OVERWRITE output IF NOT EXISTS BY NAME SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'IF'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'IF'",
+        "hint": ""
+      }
+    }
+  },
+  {
+    "label": "flow-overwrite-ifne",
+    "sql": "CREATE FLOW f AS INSERT OVERWRITE output IF NOT EXISTS BY NAME SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'IF'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'IF'"
+      }
+    }
+  },
+  {
+    "label": "flow-query",
+    "sql": "CREATE FLOW f AS SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'SELECT'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'SELECT'",
+        "hint": ""
+      }
+    }
+  },
+  {
+    "label": "flow-with",
+    "sql": "CREATE FLOW f AS WITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'WITH'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'WITH'"
+      }
+    }
+  },
+  {
+    "label": "flow-ddl",
+    "sql": "CREATE FLOW f AS CREATE TABLE output AS SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'CREATE'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'CREATE'"
+      }
+    }
+  },
+  {
+    "label": "flow-explain",
+    "sql": "CREATE FLOW f AS EXPLAIN INSERT INTO output BY NAME SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'EXPLAIN'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'EXPLAIN'",
+        "hint": ""
+      }
+    }
+  },
+  {
+    "label": "flow-nested",
+    "sql": "CREATE FLOW f AS CREATE FLOW g AS INSERT INTO output BY NAME SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'CREATE'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'CREATE'"
+      }
+    }
+  },
+  {
+    "label": "ordinary-with",
+    "sql": "WITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s",
+    "matched": false,
+    "spark": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unsupported plan UnresolvedWith parsed from SQL query",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nWITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s\n"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "not supported: SQL statement in pipeline definitions",
+        "offendingQuery": "\nOffending query:\nWITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1"
+      }
+    }
+  },
+  {
+    "label": "flow-query-with",
+    "sql": "CREATE FLOW f AS INSERT INTO output BY NAME WITH s AS (SELECT 1) SELECT * FROM s",
+    "matched": true,
+    "spark": {
+      "outcome": "accepted",
+      "error_type": null,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    "sail": {
+      "outcome": "accepted",
+      "error_type": null,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    }
+  },
+  {
+    "label": "overwrite-partition-ifne",
+    "sql": "INSERT OVERWRITE output PARTITION(p=1) IF NOT EXISTS SELECT 1",
+    "matched": false,
+    "spark": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unsupported plan InsertIntoStatement parsed from SQL query",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nINSERT OVERWRITE output PARTITION(p=1) IF NOT EXISTS SELECT 1\n"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nINSERT OVERWRITE output PARTITION(p=1) IF NOT EXISTS SELECT 1\n",
+        "message": "not supported: SQL statement in pipeline definitions",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1"
+      }
+    }
+  },
+  {
+    "label": "flow-identity-first",
+    "sql": "CREATE FLOW a.f AS INSERT OVERWRITE output IF NOT EXISTS SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'IF'"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "error": "'IF'",
+        "hint": ""
+      }
+    }
+  },
+  {
+    "label": "flow-directory-using",
+    "sql": "CREATE FLOW f AS INSERT OVERWRITE DIRECTORY '/tmp/sdp-grammar-unwritten' USING parquet SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unable flow type. Only INSERT INTO flows are supported.",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE DIRECTORY '/tmp/sdp-grammar-unwritten' USING parquet SELECT 1\n"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unable flow type. Only INSERT INTO flows are supported.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE DIRECTORY '/tmp/sdp-grammar-unwritten' USING parquet SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1"
+      }
+    }
+  },
+  {
+    "label": "flow-directory-hive",
+    "sql": "CREATE FLOW f AS INSERT OVERWRITE LOCAL DIRECTORY '/tmp/sdp-grammar-unwritten' STORED AS PARQUET SELECT 1",
+    "matched": true,
+    "spark": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unable flow type. Only INSERT INTO flows are supported.",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE LOCAL DIRECTORY '/tmp/sdp-grammar-unwritten' STORED AS PARQUET SELECT 1\n"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unable flow type. Only INSERT INTO flows are supported.",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE LOCAL DIRECTORY '/tmp/sdp-grammar-unwritten' STORED AS PARQUET SELECT 1\n"
+      }
+    }
+  },
+  {
+    "label": "flow-replace-where",
+    "sql": "CREATE FLOW f AS INSERT INTO output BY NAME REPLACE WHERE true SELECT 1 AS id",
+    "matched": false,
+    "spark": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unable flow type. Only INSERT INTO flows are supported.",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO output BY NAME REPLACE WHERE true SELECT 1 AS id\n"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'REPLACE'"
+      }
+    }
+  },
+  {
+    "label": "flow-replace-using",
+    "sql": "CREATE FLOW f AS INSERT INTO output REPLACE USING (id) SELECT 1 AS id",
+    "matched": false,
+    "spark": {
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "INSERT OVERWRITE flows not supported.",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO output REPLACE USING (id) SELECT 1 AS id\n"
+      }
+    },
+    "sail": {
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "PARSE_SYNTAX_ERROR",
+      "sql_state": "42601",
+      "parameters": {
+        "hint": "",
+        "error": "'USING'"
+      }
+    }
+  }
+]

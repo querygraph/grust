@@ -151,3 +151,16 @@ one-based line and zero-based UTF16 column, and obtain error-token text from
 the matching source slice. Token Display uses placeholders for whitespace;
 hidden trivia must not become a reported ANTLR-style error token. Retention
 alone does not supply source text or qualify those renderer requirements.
+
+
+## Grammar and source-backed metadata increment qualified
+
+Commitd598f4da8 has400 native+syntax,fmt/strictClippy,300+67 public,paired24
+and four controls. [The packet](evidence/insert-flow-grammar/README.md) retains
+all failed gates and audited133-message golden delta; no inputs/Spark exceptions
+or outcomes changed. Source-backed mismatches propagate through both conversions;
+a typed EndOfInput expectation conservatively excludes trailing-token recovery.
+Full16-vector replay matches12: two ordinary unsupported-node names and two
+REPLACE forms remain explicit backlog, alongside recovery hints, empty statements,
+lexical errors, full UTF16 query summaries and mixed-error order. No full SDP
+or original-site promotion. Fable independently owns CDC implementation.

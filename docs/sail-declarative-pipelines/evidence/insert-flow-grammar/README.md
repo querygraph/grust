@@ -1,0 +1,9 @@
+# INSERT/Flow grammar and source-backed syntax errors
+
+The increment preserves the existing AST fields while coupling OVERWRITE IF NOT EXISTS to PARTITION and requiring an INSERT token at the start of a Flow body. Query-level WITH and existing directory/REPLACE WHERE syntax remain accepted by the parser. Unsupported Flow nodes use Spark's exact registration message. Source-backed ExpectedFound failures can become raw ParseException/PARSE_SYNTAX_ERROR/42601 through direct and PlanError conversion; the original SQL is owned only on failure. Source slices must match the found token; custom/unsourced/hidden-trivia failures retain legacy behavior.
+
+Rendering is conservative: an empty expected set or typed RichPattern::EndOfInput expectation does not claim an empty recovery hint. In particular, a trailing token after a complete statement still lacks Spark's extra-input metadata and stays a required conformance gap. Missing-token recovery hints, PARSE_EMPTY_STATEMENT42617, lexical failures and full query summaries/UTF16 origins remain incomplete. The paired tests qualify the exact24 cases, not every malformed statement.
+
+Native400/fmt/strictClippy/syntax, fresh300+67, paired24 and four production-only controls are bound by the receipts and verifier. The earlier compile failure and two golden gate failures are retained. Official generation changes133 existing failure messages in28 files, preserving all input/recorded Spark exception fields, every successful output and all outcomes. These updated failure messages do not make formerly unsupported Spark-valid SQL supported.
+
+The full16-vector registration replay is retained alongside a per-vector comparison. Remaining unsupported-node/REPLACE mismatches are explicit; no original inventory site is promoted. CDC work is independently owned by Fable. No streaming/CDC/public effect admission or full SDP acceptance follows from this batch increment.

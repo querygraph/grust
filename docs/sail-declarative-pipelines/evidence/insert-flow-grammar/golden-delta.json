@@ -1,0 +1,1705 @@
+[
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/function/string.json",
+    "cases": 205,
+    "changed": [
+      {
+        "index": 2,
+        "input": {
+          "query": "SELECT COLLATION('Spark SQL' collate UTF8_LCASE);",
+          "result": [
+            "SYSTEM.BUILTIN.UTF8_LCASE"
+          ],
+          "schema": {
+            "type": "struct",
+            "fields": [
+              {
+                "name": "collation(collate(Spark SQL, UTF8_LCASE))",
+                "nullable": false,
+                "type": "string",
+                "metadata": {}
+              }
+            ]
+          }
+        },
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found collate at 29:36 expected string, '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', 'RESPECT', 'IGNORE', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'collate'."
+        }
+      }
+    ],
+    "before_sha256": "9ccaac3fe306625643e0efa4d31ae00aa8060d9292dd1672da27ec55ffa08a88",
+    "after_sha256": "6364032916175f262ca8b91d7c99101415d080e46c595d5adf0aa3c46cacd468"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_alter_table.json",
+    "cases": 77,
+    "changed": [
+      {
+        "index": 28,
+        "input": "ALTER TABLE t DEFAULT COLLATION sr",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found DEFAULT at 14:21 expected '.', 'CREATE', 'REPLACE', 'DROP', 'SET', 'ADD', 'WRITE', 'RENAME', 'PARTITION', 'ALTER', 'CHANGE', 'UNSET', or 'RECOVER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'DEFAULT'."
+        }
+      },
+      {
+        "index": 29,
+        "input": "ALTER TABLE t DEFAULT COLLATION sr_ci_ai",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found DEFAULT at 14:21 expected '.', 'CREATE', 'REPLACE', 'DROP', 'SET', 'ADD', 'WRITE', 'RENAME', 'PARTITION', 'ALTER', 'CHANGE', 'UNSET', or 'RECOVER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'DEFAULT'."
+        }
+      },
+      {
+        "index": 30,
+        "input": "ALTER TABLE t DEFAULT COLLATION unicode",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found DEFAULT at 14:21 expected '.', 'CREATE', 'REPLACE', 'DROP', 'SET', 'ADD', 'WRITE', 'RENAME', 'PARTITION', 'ALTER', 'CHANGE', 'UNSET', or 'RECOVER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'DEFAULT'."
+        }
+      },
+      {
+        "index": 31,
+        "input": "ALTER TABLE t DEFAULT COLLATION unicode_ci",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found DEFAULT at 14:21 expected '.', 'CREATE', 'REPLACE', 'DROP', 'SET', 'ADD', 'WRITE', 'RENAME', 'PARTITION', 'ALTER', 'CHANGE', 'UNSET', or 'RECOVER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'DEFAULT'."
+        }
+      },
+      {
+        "index": 32,
+        "input": "ALTER TABLE t DEFAULT COLLATION unicode_ci_rtrim",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found DEFAULT at 14:21 expected '.', 'CREATE', 'REPLACE', 'DROP', 'SET', 'ADD', 'WRITE', 'RENAME', 'PARTITION', 'ALTER', 'CHANGE', 'UNSET', or 'RECOVER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'DEFAULT'."
+        }
+      },
+      {
+        "index": 33,
+        "input": "ALTER TABLE t DEFAULT COLLATION utf8_binary",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found DEFAULT at 14:21 expected '.', 'CREATE', 'REPLACE', 'DROP', 'SET', 'ADD', 'WRITE', 'RENAME', 'PARTITION', 'ALTER', 'CHANGE', 'UNSET', or 'RECOVER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'DEFAULT'."
+        }
+      },
+      {
+        "index": 34,
+        "input": "ALTER TABLE t DEFAULT COLLATION utf8_lcase",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found DEFAULT at 14:21 expected '.', 'CREATE', 'REPLACE', 'DROP', 'SET', 'ADD', 'WRITE', 'RENAME', 'PARTITION', 'ALTER', 'CHANGE', 'UNSET', or 'RECOVER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'DEFAULT'."
+        }
+      },
+      {
+        "index": 38,
+        "input": "ALTER TABLE t1 ALTER COLUMN a.b.c SET DEFAULT ",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near end of input. SQLSTATE: 42601 (line 1, pos 46)\n\n== SQL ==\nALTER TABLE t1 ALTER COLUMN a.b.c SET DEFAULT \n----------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found end of input expected expression"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near end of input."
+        }
+      },
+      {
+        "index": 55,
+        "input": "ALTER TABLE table_name ALTER COLUMN a.b.c TYPE bad_type",
+        "exception": "\n[UNSUPPORTED_DATATYPE] Unsupported data type \"BAD_TYPE\". SQLSTATE: 0A000\n== SQL (line 1, position 48) ==\n...le_name ALTER COLUMN a.b.c TYPE bad_type\n                                   ^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found bad_type at 47:55 expected data type"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'bad_type'."
+        }
+      },
+      {
+        "index": 63,
+        "input": "ALTER TABLE table_name CHANGE COLUMN a.b.c c INT",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found c at 43:44 expected '.', 'TYPE', 'COMMENT', 'SET', 'DROP', 'FIRST', or 'AFTER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'c'."
+        }
+      },
+      {
+        "index": 64,
+        "input": "ALTER TABLE table_name CHANGE COLUMN a.b.c c INT AFTER other_col",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found c at 43:44 expected '.', 'TYPE', 'COMMENT', 'SET', 'DROP', 'FIRST', or 'AFTER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'c'."
+        }
+      },
+      {
+        "index": 65,
+        "input": "ALTER TABLE table_name CHANGE COLUMN a.b.c c INT COMMENT 'new_comment'",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found c at 43:44 expected '.', 'TYPE', 'COMMENT', 'SET', 'DROP', 'FIRST', or 'AFTER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'c'."
+        }
+      },
+      {
+        "index": 66,
+        "input": "ALTER TABLE table_name CHANGE COLUMN a.b.c new_name INT",
+        "exception": "\nRenaming column is not supported in Hive-style ALTER COLUMN, please run RENAME COLUMN instead.\n== SQL (line 1, position 1) ==\nALTER TABLE table_name CHANGE COLUMN a.b.c new_name INT\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found new_name at 43:51 expected '.', 'TYPE', 'COMMENT', 'SET', 'DROP', 'FIRST', or 'AFTER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'new_name'."
+        }
+      },
+      {
+        "index": 67,
+        "input": "ALTER TABLE table_name PARTITION (a='1') CHANGE COLUMN a.b.c c INT",
+        "exception": "\n[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: ALTER TABLE ... PARTITION ... CHANGE COLUMN is not valid. SQLSTATE: 42601\n== SQL (line 1, position 1) ==\nALTER TABLE table_name PARTITION (a='1') CHANGE COLUMN a.b.c c INT\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found CHANGE at 41:47 expected 'RENAME', or 'SET'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'CHANGE'."
+        }
+      },
+      {
+        "index": 68,
+        "input": "ALTER TABLE table_name PARTITION (a='1') REPLACE COLUMNS (x string)",
+        "exception": "\n[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: ALTER TABLE ... PARTITION ... REPLACE COLUMNS is not valid. SQLSTATE: 42601\n== SQL (line 1, position 1) ==\nALTER TABLE table_name PARTITION (a='1') REPLACE COLUMNS (x string)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found REPLACE at 41:48 expected 'RENAME', or 'SET'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'REPLACE'."
+        }
+      }
+    ],
+    "before_sha256": "394b0b352cb3d7efa89b8b9eeb025c23e9ec0e92f86f3e4d9ff3423141b77f07",
+    "after_sha256": "fc4f28dd5676e9e6b197088b82daf2d2deee41c0b8223ab149ed86160b45d860"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_alter_view.json",
+    "cases": 6,
+    "changed": [
+      {
+        "index": 0,
+        "input": "ALTER VIEW a.b.c ADD IF NOT EXISTS PARTITION\n(dt='2008-08-08', country='us') PARTITION\n(dt='2009-09-09', country='uk')",
+        "exception": "\n[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: ALTER VIEW ... ADD PARTITION is not valid. SQLSTATE: 42601\n== SQL (line 1, position 1) ==\nALTER VIEW a.b.c ADD IF NOT EXISTS PARTITION\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(dt='2008-08-08', country='us') PARTITION\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(dt='2009-09-09', country='uk')\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found ADD at 17:20 expected '.', 'RENAME', 'SET', 'UNSET', 'AS', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'ADD'."
+        }
+      }
+    ],
+    "before_sha256": "5f5591e0b4461d1852e54eb686350709813a3b3ea8a4a4e6087aaedd6505197a",
+    "after_sha256": "784a8ba104cda250e041d928477bc94360e361a41e7101c52b380683fe35e2c1"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_analyze_table.json",
+    "cases": 23,
+    "changed": [
+      {
+        "index": 2,
+        "input": "ANALYZE TABLE a.b.c COMPUTE STATISTICS FOR ALL",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near end of input: missing 'COLUMNS'. SQLSTATE: 42601 (line 1, pos 46)\n\n== SQL ==\nANALYZE TABLE a.b.c COMPUTE STATISTICS FOR ALL\n----------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found end of input expected 'COLUMNS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near end of input."
+        }
+      },
+      {
+        "index": 4,
+        "input": "ANALYZE TABLE a.b.c COMPUTE STATISTICS FOR COLUMNS",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near end of input. SQLSTATE: 42601 (line 1, pos 50)\n\n== SQL ==\nANALYZE TABLE a.b.c COMPUTE STATISTICS FOR COLUMNS\n--------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found end of input expected identifier"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near end of input."
+        }
+      }
+    ],
+    "before_sha256": "f70c1cbc472a8281472689b6a3ebab614b32f8ff4fdcd5d2da817ab1a33f401e",
+    "after_sha256": "10bf10be67a6e215fc49b05e640af8c9bbabce1481fc514db27b39a9bcbb59e5"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_create_index.json",
+    "cases": 3,
+    "changed": [
+      {
+        "index": 0,
+        "input": "CREATE index IF NOT EXISTS i1 ON TABLE a.b.c USING BTREE (col1 OPTIONS ('k1'='v1'), col2 OPTIONS ('k2'='v2')) ",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found index at 7:12 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'index'."
+        }
+      },
+      {
+        "index": 1,
+        "input": "CREATE index i1 ON a.b.c (col1 OPTIONS ('k1'='v1'), col2 OPTIONS ('k2'='v2')) OPTIONS ('k3'='v3', 'k4'='v4')",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found index at 7:12 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'index'."
+        }
+      },
+      {
+        "index": 2,
+        "input": "CREATE index i1 ON a.b.c USING BTREE (col1)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found index at 7:12 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'index'."
+        }
+      }
+    ],
+    "before_sha256": "e1050bfc07f096ffc2368c469769b0ecd9038ee0f4cded7c14cbb92096cf1ba1",
+    "after_sha256": "bab65b4fc2d426b8f03c7b98502a15b63bcfc49ff07e30bdc08ed695fc6509e4"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_create_table.json",
+    "cases": 105,
+    "changed": [
+      {
+        "index": 21,
+        "input": "CREATE TABLE my_tab (id bigint, p1 string)\nSTORED BY 'handler'",
+        "exception": "\n[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: STORED BY is not valid. SQLSTATE: 42601\n== SQL (line 2, position 1) ==\nSTORED BY 'handler'\n^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found BY at 50:52 expected 'AS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'BY'."
+        }
+      },
+      {
+        "index": 30,
+        "input": "CREATE TABLE my_tab(a INT, b INT GENERATED ALWAYS AS ()) USING PARQUET",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near ')'. SQLSTATE: 42601 (line 1, pos 54)\n\n== SQL ==\nCREATE TABLE my_tab(a INT, b INT GENERATED ALWAYS AS ()) USING PARQUET\n------------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 54:55 expected expression"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      },
+      {
+        "index": 32,
+        "input": "CREATE TABLE my_tab(a INT, b INT GENERATED ALWAYS AS a + 1) USING PARQUET",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'a'. SQLSTATE: 42601 (line 1, pos 53)\n\n== SQL ==\nCREATE TABLE my_tab(a INT, b INT GENERATED ALWAYS AS a + 1) USING PARQUET\n-----------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found a at 53:54 expected 'IDENTITY', or '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'a'."
+        }
+      },
+      {
+        "index": 56,
+        "input": "CREATE TABLE my_tab(a: INT COMMENT 'test', b: STRING) USING parquet",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near ':'. SQLSTATE: 42601 (line 1, pos 21)\n\n== SQL ==\nCREATE TABLE my_tab(a: INT COMMENT 'test', b: STRING) USING parquet\n---------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found : at 21:22 expected data type"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ':'."
+        }
+      },
+      {
+        "index": 97,
+        "input": "CREATE TABLE testcat.my_tab(id BIGINT GENERATED ALWAYS AS 1 GENERATED ALWAYS AS IDENTITY, val INT) USING foo",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near '1'. SQLSTATE: 42601 (line 1, pos 58)\n\n== SQL ==\nCREATE TABLE testcat.my_tab(id BIGINT GENERATED ALWAYS AS 1 GENERATED ALWAYS AS IDENTITY, val INT) USING foo\n----------------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found 1 at 58:59 expected 'IDENTITY', or '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '1'."
+        }
+      }
+    ],
+    "before_sha256": "1b631c7139cf15e53254705ba50614ab36ebca6ec595a3afc4c72e4968cb566b",
+    "after_sha256": "cfd3d28585eb15294bc9ceda508d0b6ea75688eea1c9482b98e509e24d2a1899"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_drop_index.json",
+    "cases": 2,
+    "changed": [
+      {
+        "index": 0,
+        "input": "DROP index IF EXISTS i1 ON a.b.c",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found index at 5:10 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', 'TABLE', 'VIEW', 'TEMP', 'TEMPORARY', 'FUNCTION', or 'FUNCTIONS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'index'."
+        }
+      },
+      {
+        "index": 1,
+        "input": "DROP index i1 ON a.b.c",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found index at 5:10 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', 'TABLE', 'VIEW', 'TEMP', 'TEMPORARY', 'FUNCTION', or 'FUNCTIONS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'index'."
+        }
+      }
+    ],
+    "before_sha256": "3d4d02973713a8bec32f15f4054a4ad94a7e73cb92e0bef6cba6f2a3315e65a0",
+    "after_sha256": "40a21e24a55b318399b04f7f76c3bbf8395788a058d5379dffede59c349fbc53"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_insert_into.json",
+    "cases": 32,
+    "changed": [
+      {
+        "index": 2,
+        "input": "INSERT INTO TABLE t1 BY NAME (c1,c2) SELECT * FROM tmp_view",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'c1'. SQLSTATE: 42601 (line 1, pos 30)\n\n== SQL ==\nINSERT INTO TABLE t1 BY NAME (c1,c2) SELECT * FROM tmp_view\n------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found c1 at 30:32 expected query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'c1'."
+        }
+      },
+      {
+        "index": 17,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t\nREPLACE ON (t.a = s.b)\n(SELECT * FROM source) AS s",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 18,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t\nREPLACE USING (col1, col2)\n(SELECT * FROM source) AS s",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 19,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t BY NAME REPLACE ON t.col1 = col2 SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 20,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t BY NAME REPLACE USING (col1, col2) SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 21,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t BY NAME REPLACE WHERE a > 5 SELECT * FROM source",
+        "exception": "\n[INSERT_REPLACE_WHERE_TABLE_ALIAS_NOT_ALLOWED] Table alias is not allowed with INSERT INTO ... REPLACE WHERE because the WHERE condition is evaluated against the target table directly.\nUse INSERT INTO ... REPLACE ON if you need to reference the target table via an alias. SQLSTATE: 42000\n== SQL (line 1, position 1) ==\nINSERT INTO testcat.ns1.ns2.tbl AS t BY NAME REPLACE WHERE a > 5 SELECT * FROM source\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 22,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t REPLACE ON t.a = s.a AND t.b = s.b (SELECT * FROM source) AS s",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 23,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t REPLACE ON t.col1 = col2 SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 24,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t REPLACE USING (col1, col2) SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 25,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t REPLACE USING (id) SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 26,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl AS t REPLACE WHERE a > 5 SELECT * FROM source",
+        "exception": "\n[INSERT_REPLACE_WHERE_TABLE_ALIAS_NOT_ALLOWED] Table alias is not allowed with INSERT INTO ... REPLACE WHERE because the WHERE condition is evaluated against the target table directly.\nUse INSERT INTO ... REPLACE ON if you need to reference the target table via an alias. SQLSTATE: 42000\n== SQL (line 1, position 1) ==\nINSERT INTO testcat.ns1.ns2.tbl AS t REPLACE WHERE a > 5 SELECT * FROM source\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found AS at 32:34 expected '.', 'REPLACE', 'PARTITION', 'IF', 'BY', '(', or query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 27,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl BY NAME REPLACE WHERE a > 5 SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found REPLACE at 40:47 expected query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'REPLACE'."
+        }
+      },
+      {
+        "index": 29,
+        "input": "INSERT INTO testcat.ns1.ns2.tbl REPLACE ON col1 = col2 SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found ON at 40:42 expected 'WHERE'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'ON'."
+        }
+      }
+    ],
+    "before_sha256": "e82196c374e4fb8cd3a6a0e87bc748892bd3c344f8d061fe421998f402debae0",
+    "after_sha256": "03515736ff388d213d85c8cdca68cb91d00eecbc492e9ae4484bb0d166c1b725"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_merge_into.json",
+    "cases": 16,
+    "changed": [
+      {
+        "index": 7,
+        "input": "\nMERGE INTO testcat1.ns1.ns2.tbl AS target\nUSING testcat2.ns1.ns2.tbl AS source\nON target.col1 = source.col1\nWHEN NOT MATCHED BY SOURCE THEN UPDATE *\n      ",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near '*'. SQLSTATE: 42601 (line 5, pos 39)\n\n== SQL ==\n\nMERGE INTO testcat1.ns1.ns2.tbl AS target\nUSING testcat2.ns1.ns2.tbl AS source\nON target.col1 = source.col1\nWHEN NOT MATCHED BY SOURCE THEN UPDATE *\n---------------------------------------^^^\n      \n",
+        "before": {
+          "failure": "invalid argument: found * at 148:149 expected 'SET'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '*'."
+        }
+      }
+    ],
+    "before_sha256": "c02ae2ccca2364e92d8c95de132e6dea52abec8f320c926fd01a597a360940b9",
+    "after_sha256": "297a15004dc91867058bbd48b9532cabef859efe91858389bfb8132d034eb2fb"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_misc.json",
+    "cases": 20,
+    "changed": [
+      {
+        "index": 5,
+        "input": "INSERT WITH SCHEMA EVOLUTION INTO testcat.ns1.ns2.tbl (a, b)SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 6,
+        "input": "INSERT WITH SCHEMA EVOLUTION INTO testcat.ns1.ns2.tbl AS t BY NAME REPLACE ON t.col1 = col2 SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 7,
+        "input": "INSERT WITH SCHEMA EVOLUTION INTO testcat.ns1.ns2.tbl AS t REPLACE ON t.col1 = col2 SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 8,
+        "input": "INSERT WITH SCHEMA EVOLUTION INTO testcat.ns1.ns2.tbl BY NAME REPLACE USING (col1) SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 9,
+        "input": "INSERT WITH SCHEMA EVOLUTION INTO testcat.ns1.ns2.tbl BY NAME SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 10,
+        "input": "INSERT WITH SCHEMA EVOLUTION INTO testcat.ns1.ns2.tbl REPLACE USING (col1) SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 11,
+        "input": "INSERT WITH SCHEMA EVOLUTION INTO testcat.ns1.ns2.tbl SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 12,
+        "input": "INSERT WITH SCHEMA EVOLUTION OVERWRITE testcat.ns1.ns2.tbl (a, b)SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 13,
+        "input": "INSERT WITH SCHEMA EVOLUTION OVERWRITE testcat.ns1.ns2.tbl BY NAME SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      },
+      {
+        "index": 14,
+        "input": "INSERT WITH SCHEMA EVOLUTION OVERWRITE testcat.ns1.ns2.tbl SELECT * FROM source",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found WITH at 7:11 expected 'OVERWRITE', or 'INTO'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'WITH'."
+        }
+      }
+    ],
+    "before_sha256": "7ebd0f0780be601d7a2735ca89a1866667f39043d7a628adff66bf501ea80e80",
+    "after_sha256": "4390e53fba1308435eb5de0e5a56b5630c9acbc1bf8f04949eceb491d6e441ba"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/ddl_replace_table.json",
+    "cases": 84,
+    "changed": [
+      {
+        "index": 18,
+        "input": "REPLACE TABLE my_tab (id bigint, p1 string)\nSTORED BY 'handler'",
+        "exception": "\n[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: STORED BY is not valid. SQLSTATE: 42601\n== SQL (line 2, position 1) ==\nSTORED BY 'handler'\n^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found BY at 51:53 expected 'AS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'BY'."
+        }
+      }
+    ],
+    "before_sha256": "7d1f7967b0863312e0c5012b980cbbfba051aaa9d1ec49a31dbc76fd79ffea41",
+    "after_sha256": "ab1906decb0aefd96f42b9c91d11530a23601f4bc95110bb709135199b922d3b"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_alter_table.json",
+    "cases": 2,
+    "changed": [
+      {
+        "index": 0,
+        "input": "\nALTER TABLE t\nCHANGE COLUMN\ntest-col TYPE BIGINT\n        ",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier test-col is invalid and must be back quoted as: `test-col`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 4, pos 4)\n\n== SQL ==\n\nALTER TABLE t\nCHANGE COLUMN\ntest-col TYPE BIGINT\n----^^^\n        \n",
+        "before": {
+          "failure": "invalid argument: found - at 33:34 expected '.', 'TYPE', 'COMMENT', 'SET', 'DROP', 'FIRST', or 'AFTER'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      }
+    ],
+    "before_sha256": "4eaf61b985e04baee09737721ddd2a848e07a6e2ce1d5484d21e850cd08717c3",
+    "after_sha256": "97928b92f7bbdda98876dcda5c69aa8a02d5f54c98197d39bffeafca2cd8f777"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_analyze_table.json",
+    "cases": 1,
+    "changed": [
+      {
+        "index": 0,
+        "input": "ANALYZE TABLE test-table PARTITION (part1)",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier test-table is invalid and must be back quoted as: `test-table`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 18)\n\n== SQL ==\nANALYZE TABLE test-table PARTITION (part1)\n------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found - at 18:19 expected '.', 'PARTITION', or 'COMPUTE'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      }
+    ],
+    "before_sha256": "a76692be07f1e0c54479acd3d8b2ea78921c73b0aff0f3a1629d11f6c09dabb5",
+    "after_sha256": "bf3f3160d9695d592b007072ccb714b3b4961ef6f391fd5fcda0ad717946bcea"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_create_table.json",
+    "cases": 6,
+    "changed": [
+      {
+        "index": 3,
+        "input": "CREATE TABLE t(c1 INT ! NULL)",
+        "exception": "\n[SYNTAX_DISCONTINUED.BANG_EQUALS_NOT] Support of the clause or keyword: ! has been discontinued in this context. The '!' keyword is only supported as an alias for the prefix operator 'NOT'.\nUse the 'NOT' keyword instead for infix clauses such as `NOT LIKE`, `NOT IN`, `NOT BETWEEN`, etc.\nTo re-enable the '!' keyword, set \"spark.sql.legacy.bangEqualsNot\" to \"true\". SQLSTATE: 42601\n== SQL (line 1, position 23) ==\nCREATE TABLE t(c1 INT ! NULL)\n                      ^\n",
+        "before": {
+          "failure": "invalid argument: found ! at 22:23 expected 'NOT', 'DEFAULT', 'GENERATED', 'COMMENT', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '!'."
+        }
+      },
+      {
+        "index": 4,
+        "input": "CREATE TABLE t(c1 struct<test-test INT, c2 INT>)",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier test-test is invalid and must be back quoted as: `test-test`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 29)\n\n== SQL ==\nCREATE TABLE t(c1 struct<test-test INT, c2 INT>)\n-----------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found - at 29:30 expected ':', or data type"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      },
+      {
+        "index": 5,
+        "input": "CREATE TABLE test (attri-bute INT)",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier attri-bute is invalid and must be back quoted as: `attri-bute`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 24)\n\n== SQL ==\nCREATE TABLE test (attri-bute INT)\n------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found - at 24:25 expected data type"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      }
+    ],
+    "before_sha256": "8400cbd7643da7d23f8b0bac0a01489d29c6b31989a0f58adf1dedd27f904a7a",
+    "after_sha256": "416a1faceba6bc8adc63a60c974a4b0fa990ffe0858ed471c982f9728e7ff47b"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_join.json",
+    "cases": 2,
+    "changed": [
+      {
+        "index": 0,
+        "input": "\nSELECT a, b\nFROM t1 JOIN t2\nUSING (a, b, at-tr)\n        ",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier at-tr is invalid and must be back quoted as: `at-tr`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 4, pos 15)\n\n== SQL ==\n\nSELECT a, b\nFROM t1 JOIN t2\nUSING (a, b, at-tr)\n---------------^^^\n        \n",
+        "before": {
+          "failure": "invalid argument: found - at 44:45 expected ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      }
+    ],
+    "before_sha256": "ceb0396a84b28b28c6d87905c866f3f62f4c13bd548d9ebe2f798c418b25b75b",
+    "after_sha256": "6f3318714a92f78fedb91d2e4c11cc43914bcb1e298194f8feebfb8f3a86b345"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_misc.json",
+    "cases": 14,
+    "changed": [
+      {
+        "index": 0,
+        "input": "\nALTER DATABASE my-database\nSET DBPROPERTIES ('p1'='v1')",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier my-database is invalid and must be back quoted as: `my-database`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 2, pos 17)\n\n== SQL ==\n\nALTER DATABASE my-database\n-----------------^^^\nSET DBPROPERTIES ('p1'='v1')\n",
+        "before": {
+          "failure": "invalid argument: found - at 18:19 expected '.', or 'SET'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      },
+      {
+        "index": 3,
+        "input": "CREATE FUNCTION test-func as org.test.func",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier test-func is invalid and must be back quoted as: `test-func`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 20)\n\n== SQL ==\nCREATE FUNCTION test-func as org.test.func\n--------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found FUNCTION at 7:15 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'FUNCTION'."
+        }
+      },
+      {
+        "index": 8,
+        "input": "SHOW TABLE EXTENDED IN hyphen-db LIKE \"str\"",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier hyphen-db is invalid and must be back quoted as: `hyphen-db`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 29)\n\n== SQL ==\nSHOW TABLE EXTENDED IN hyphen-db LIKE \"str\"\n-----------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found - at 29:30 expected '.', or 'LIKE'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      }
+    ],
+    "before_sha256": "9da57de4783d75764029f54eee56dd3e98fa431199cdcca77931babafe9caefc",
+    "after_sha256": "409a0dc195a18bb44ee168b3c1362848727c319586f3493dc05bfce9542409cb"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_order_by.json",
+    "cases": 5,
+    "changed": [
+      {
+        "index": 0,
+        "input": "\nSELECT * FROM tab\nWINDOW hyphen-window AS\n  (PARTITION BY a, b ORDER BY c rows BETWEEN 1 PRECEDING AND 1 FOLLOWING)\n        ",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier hyphen-window is invalid and must be back quoted as: `hyphen-window`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 3, pos 13)\n\n== SQL ==\n\nSELECT * FROM tab\nWINDOW hyphen-window AS\n-------------^^^\n  (PARTITION BY a, b ORDER BY c rows BETWEEN 1 PRECEDING AND 1 FOLLOWING)\n        \n",
+        "before": {
+          "failure": "invalid argument: found - at 32:33 expected 'AS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      }
+    ],
+    "before_sha256": "c19e4badf04cc622a00e313fc8f7424249ac69db73f2c70641642eb9ab1b6682",
+    "after_sha256": "76302b011cada2c708d472d44903b22b30fec68cba186215697de037ebcc651f"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_select.json",
+    "cases": 15,
+    "changed": [
+      {
+        "index": 0,
+        "input": "\nSELECT * FROM (\n  SELECT year, course, earnings FROM courseSales\n)\nPIVOT (\n  sum(earnings)\n  FOR test-test IN ('dotNET', 'Java')\n);\n        ",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier test-test is invalid and must be back quoted as: `test-test`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 7, pos 10)\n\n== SQL ==\n\nSELECT * FROM (\n  SELECT year, course, earnings FROM courseSales\n)\nPIVOT (\n  sum(earnings)\n  FOR test-test IN ('dotNET', 'Java')\n----------^^^\n);\n        \n",
+        "before": {
+          "failure": "invalid argument: found test at 98:102 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'test'."
+        }
+      },
+      {
+        "index": 7,
+        "input": "SELECT 1 IS ! NULL",
+        "exception": "\n[SYNTAX_DISCONTINUED.BANG_EQUALS_NOT] Support of the clause or keyword: ! has been discontinued in this context. The '!' keyword is only supported as an alias for the prefix operator 'NOT'.\nUse the 'NOT' keyword instead for infix clauses such as `NOT LIKE`, `NOT IN`, `NOT BETWEEN`, etc.\nTo re-enable the '!' keyword, set \"spark.sql.legacy.bangEqualsNot\" to \"true\". SQLSTATE: 42601\n== SQL (line 1, position 13) ==\nSELECT 1 IS ! NULL\n            ^\n",
+        "before": {
+          "failure": "invalid argument: found ! at 12:13 expected 'NOT', 'FALSE', 'TRUE', 'UNKNOWN', 'NULL', or 'DISTINCT'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '!'."
+        }
+      },
+      {
+        "index": 13,
+        "input": "SELECT cast('a' as Varchar)",
+        "exception": "\n[DATATYPE_MISSING_SIZE] DataType \"VARCHAR\" requires a length parameter, for example \"VARCHAR\"(10). Please specify the length. SQLSTATE: 42K01\n== SQL (line 1, position 20) ==\nSELECT cast('a' as Varchar)\n                   ^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 26:27 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      },
+      {
+        "index": 14,
+        "input": "SELECT cast(1 as badtype)",
+        "exception": "\n[UNSUPPORTED_DATATYPE] Unsupported data type \"BADTYPE\". SQLSTATE: 0A000\n== SQL (line 1, position 18) ==\nSELECT cast(1 as badtype)\n                 ^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found badtype at 17:24 expected data type"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'badtype'."
+        }
+      }
+    ],
+    "before_sha256": "6c94810cd073060e83aef18efd83d85f92b7265b9f96517fe496186e91050d6b",
+    "after_sha256": "b8d26c12b28a4c4480b6faa6916c5510024ae16f61782fdd44c3730e9a0b3091"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/error_with.json",
+    "cases": 1,
+    "changed": [
+      {
+        "index": 0,
+        "input": "WITH a-b AS (SELECT 1 FROM s) SELECT * FROM s;",
+        "exception": "\n[INVALID_IDENTIFIER] The unquoted identifier a-b is invalid and must be back quoted as: `a-b`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 6)\n\n== SQL ==\nWITH a-b AS (SELECT 1 FROM s) SELECT * FROM s;\n------^^^\n",
+        "before": {
+          "failure": "invalid argument: found - at 6:7 expected '(', or 'AS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near '-'."
+        }
+      }
+    ],
+    "before_sha256": "2884f76e43e5c8af86846db615b9396a119da7e95c83339a4df5fa199fe1e992",
+    "after_sha256": "168372cadba04700002dbf267c3c1c2ee532e505d71844418cea16b0694bab6c"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_alter_view.json",
+    "cases": 2,
+    "changed": [
+      {
+        "index": 0,
+        "input": "ALTER VIEW testView AS FROM jt\nINSERT INTO tbl1 SELECT * WHERE jt.id < 5\nINSERT INTO tbl2 SELECT * WHERE jt.id > 4",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'INSERT'. SQLSTATE: 42601 (line 2, pos 0)\n\n== SQL ==\nALTER VIEW testView AS FROM jt\nINSERT INTO tbl1 SELECT * WHERE jt.id < 5\n^^^\nINSERT INTO tbl2 SELECT * WHERE jt.id > 4\n",
+        "before": {
+          "failure": "invalid argument: found FROM at 23:27 expected query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'FROM'."
+        }
+      },
+      {
+        "index": 1,
+        "input": "ALTER VIEW testView AS INSERT INTO jt VALUES(1, 1)",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'INSERT'. SQLSTATE: 42601 (line 1, pos 23)\n\n== SQL ==\nALTER VIEW testView AS INSERT INTO jt VALUES(1, 1)\n-----------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found INSERT at 23:29 expected query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'INSERT'."
+        }
+      }
+    ],
+    "before_sha256": "0cedd4884577b6dd3053283442f2b45cbeb318ed4d1bf8c145328988322182e1",
+    "after_sha256": "21f324b3f77df3daa2005159a1f805447c0e98d7958d1bcce39e76a164e1c89b"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_create_view.json",
+    "cases": 2,
+    "changed": [
+      {
+        "index": 0,
+        "input": "CREATE VIEW testView AS FROM jt\nINSERT INTO tbl1 SELECT * WHERE jt.id < 5\nINSERT INTO tbl2 SELECT * WHERE jt.id > 4",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'INSERT'. SQLSTATE: 42601 (line 2, pos 0)\n\n== SQL ==\nCREATE VIEW testView AS FROM jt\nINSERT INTO tbl1 SELECT * WHERE jt.id < 5\n^^^\nINSERT INTO tbl2 SELECT * WHERE jt.id > 4\n",
+        "before": {
+          "failure": "invalid argument: found FROM at 24:28 expected query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'FROM'."
+        }
+      },
+      {
+        "index": 1,
+        "input": "CREATE VIEW testView AS INSERT INTO jt VALUES(1, 1)",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'INSERT'. SQLSTATE: 42601 (line 1, pos 24)\n\n== SQL ==\nCREATE VIEW testView AS INSERT INTO jt VALUES(1, 1)\n------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found INSERT at 24:30 expected query"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'INSERT'."
+        }
+      }
+    ],
+    "before_sha256": "c43d8b25e04b90fe2de384011b1915450fb9242e46630ff0274b3083b0042895",
+    "after_sha256": "c98a47b23a700c30afadf081fcb7012ebaac28eee206691d4a1a933e01c3f83b"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_explain.json",
+    "cases": 2,
+    "changed": [
+      {
+        "index": 1,
+        "input": "EXPLAIN logical SELECT 1",
+        "exception": "\n[INVALID_SQL_SYNTAX.UNSUPPORTED_SQL_STATEMENT] Invalid SQL syntax: Unsupported SQL statement: EXPLAIN logical SELECT 1. SQLSTATE: 42000\n== SQL (line 1, position 1) ==\nEXPLAIN logical SELECT 1\n^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found logical at 8:15 expected 'EXTENDED', 'CODEGEN', 'COST', 'FORMATTED', 'ANALYZE', 'VERBOSE', or statement"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'logical'."
+        }
+      }
+    ],
+    "before_sha256": "ee51f1964bf9ea02b344f614794d4e5d20600824a4c732f8c53b306cf5f3ed7a",
+    "after_sha256": "97e65feeb223b08a09711ace6f687a8bdd6e2240077f541cf0cbd918775b7c58"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_group_by.json",
+    "cases": 11,
+    "changed": [
+      {
+        "index": 0,
+        "input": "SELECT a, b, count(distinct a, distinct b) as c FROM d GROUP BY a, b",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'b': extra input 'b'. SQLSTATE: 42601 (line 1, pos 40)\n\n== SQL ==\nSELECT a, b, count(distinct a, distinct b) as c FROM d GROUP BY a, b\n----------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found b at 40:41 expected '->', '.', '(', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', '=>', ',', 'RESPECT', 'IGNORE', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'b'."
+        }
+      }
+    ],
+    "before_sha256": "bf3b6f211366671aac0f8336bc2c66c2dc8672f503c400246dfe0194e2759008",
+    "after_sha256": "3513ca95e9b66648bf09af94af0f3af794700df55dcea68f235aea3d5f4c9ad6"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_hint.json",
+    "cases": 28,
+    "changed": [
+      {
+        "index": 7,
+        "input": "SELECT /*+ HINT() */ * FROM t",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near ')'. SQLSTATE: 42601 (line 1, pos 16)\n\n== SQL ==\nSELECT /*+ HINT() */ * FROM t\n----------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 16:17 expected expression"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      },
+      {
+        "index": 15,
+        "input": "SELECT /*+ INDEX(a b c) */ * from default.t",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'b'. SQLSTATE: 42601 (line 1, pos 19)\n\n== SQL ==\nSELECT /*+ INDEX(a b c) */ * from default.t\n-------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found b at 19:20 expected '->', '.', '(', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'b'."
+        }
+      }
+    ],
+    "before_sha256": "af3c6497bb1ef92bc18d0b77ab61a7158fc4e0e4cd950c1701287e722f66ce28",
+    "after_sha256": "bfdb23446459628c82168594fa973903e3d66e88c9eee66c8d3746cc83cf519c"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_misc.json",
+    "cases": 29,
+    "changed": [
+      {
+        "index": 10,
+        "input": "-- single comment\\\nwith line continuity\nSELECT * FROM a",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found continuity at 29:39 expected '(', or 'AS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'continuity'."
+        }
+      }
+    ],
+    "before_sha256": "9bddf06ef3a7b7be57f4a0055aa8656ba251722632268e623caa9a9e743e75cc",
+    "after_sha256": "06a19d6df409803d587391696759612eabcaf989347090facc04410408a82172"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_order_by.json",
+    "cases": 31,
+    "changed": [
+      {
+        "index": 6,
+        "input": "select * from my_tvf(arg1 => table(1) order by col1)",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'order'. SQLSTATE: 42601 (line 1, pos 38)\n\n== SQL ==\nselect * from my_tvf(arg1 => table(1) order by col1)\n--------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found order at 38:43 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'order'."
+        }
+      },
+      {
+        "index": 7,
+        "input": "select * from my_tvf(arg1 => table(select col1, col2, col3 from v2) distribute by (col1, col2) order by (col2 asc, col3 desc))",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found distribute at 68:78 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'distribute'."
+        }
+      },
+      {
+        "index": 8,
+        "input": "select * from my_tvf(arg1 => table(select col1, col2, col3 from v2) distribute by col1, col2 order by col2 asc, col3 desc)",
+        "exception": "\nThe table function call includes a table argument with an invalid partitioning/ordering specification: the PARTITION BY clause included multiple expressions without parentheses surrounding them; please add parentheses around these expressions and then retry the query again.\n== SQL (line 1, position 30) ==\nselect * from my_tvf(arg1 => table(select col1, col2, col3 from v2) distribute by col1, col2 order by col2 asc, col3 desc)\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found distribute at 68:78 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'distribute'."
+        }
+      },
+      {
+        "index": 9,
+        "input": "select * from my_tvf(arg1 => table(select col1, col2, col3 from v2) partition by (col1, col2) order by (col2 asc, col3 desc))",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found partition at 68:77 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      },
+      {
+        "index": 10,
+        "input": "select * from my_tvf(arg1 => table(select col1, col2, col3 from v2) partition by col1, col2 order by col2 asc, col3 desc)",
+        "exception": "\nThe table function call includes a table argument with an invalid partitioning/ordering specification: the PARTITION BY clause included multiple expressions without parentheses surrounding them; please add parentheses around these expressions and then retry the query again.\n== SQL (line 1, position 30) ==\nselect * from my_tvf(arg1 => table(select col1, col2, col3 from v2) partition by col1, col2 order by col2 asc, col3 desc)\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found partition at 68:77 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      },
+      {
+        "index": 11,
+        "input": "select * from my_tvf(arg1 => table(v1) distribute by (col1, col2) order by (col2 asc, col3 desc))",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found distribute at 39:49 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'distribute'."
+        }
+      },
+      {
+        "index": 12,
+        "input": "select * from my_tvf(arg1 => table(v1) distribute by (col1, col2) sort by (col2 asc, col3 desc))",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found distribute at 39:49 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'distribute'."
+        }
+      },
+      {
+        "index": 13,
+        "input": "select * from my_tvf(arg1 => table(v1) distribute by col1 order by col2 asc)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found distribute at 39:49 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'distribute'."
+        }
+      },
+      {
+        "index": 14,
+        "input": "select * from my_tvf(arg1 => table(v1) distribute by col1 sort by col2 asc)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found distribute at 39:49 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'distribute'."
+        }
+      },
+      {
+        "index": 15,
+        "input": "select * from my_tvf(arg1 => table(v1) partition by (col1, col2) order by (col2 asc, col3 desc))",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found partition at 39:48 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      },
+      {
+        "index": 16,
+        "input": "select * from my_tvf(arg1 => table(v1) partition by (col1, col2) sort by (col2 asc, col3 desc))",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found partition at 39:48 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      },
+      {
+        "index": 17,
+        "input": "select * from my_tvf(arg1 => table(v1) partition by col1 order by col2 asc)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found partition at 39:48 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      },
+      {
+        "index": 18,
+        "input": "select * from my_tvf(arg1 => table(v1) partition by col1 sort by col2 asc)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found partition at 39:48 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      }
+    ],
+    "before_sha256": "cc822e3dab7b018598b62d9d999bc45aa15efc78e4faa33163b6a632413bbf0b",
+    "after_sha256": "66296621ae455ae41d7a95c766136db4c019839d66781a27cfba4daf3ba900cf"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/plan_select.json",
+    "cases": 187,
+    "changed": [
+      {
+        "index": 11,
+        "input": "\nSELECT key, time\nFROM\n(\n    SELECT key, time\n    FROM\n    testData\n    WATERMARK timestamp_seconds(ts) AS time DELAY OF INTERVAL 10 seconds\n)\nAS tbl\nWHERE key = 'a'\n",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found timestamp_seconds at 82:99 expected '(', 'NATURAL', 'INNER', 'CROSS', 'OUTER', 'SEMI', 'ANTI', 'LEFT', 'RIGHT', 'FULL', 'JOIN', ',', 'LATERAL', 'WHERE', 'GROUP', 'HAVING', 'INTERSECT', 'UNION', 'EXCEPT', 'MINUS', 'WINDOW', 'ORDER', 'SORT', 'CLUSTER', 'DISTRIBUTE', 'LIMIT', 'OFFSET', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'timestamp_seconds'."
+        }
+      },
+      {
+        "index": 12,
+        "input": "SELECT * FROM (INSERT INTO BAR VALUES (2))",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'BAR': missing ')'. SQLSTATE: 42601 (line 1, pos 27)\n\n== SQL ==\nSELECT * FROM (INSERT INTO BAR VALUES (2))\n---------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found INTO at 22:26 expected '.', '(', 'FOR', 'SYSTEM_VERSION', 'VERSION', 'SYSTEM_TIME', 'TIMESTAMP', 'TABLESAMPLE', 'PIVOT', 'UNPIVOT', 'AS', identifier, 'NATURAL', 'INNER', 'CROSS', 'OUTER', 'SEMI', 'ANTI', 'LEFT', 'RIGHT', 'FULL', 'JOIN', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'INTO'."
+        }
+      },
+      {
+        "index": 13,
+        "input": "SELECT * FROM (SELECT * FROM t CHANGES FROM VERSION 1 TO VERSION 5) sub",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found FROM at 39:43 expected '(', 'NATURAL', 'INNER', 'CROSS', 'OUTER', 'SEMI', 'ANTI', 'LEFT', 'RIGHT', 'FULL', 'JOIN', ',', 'LATERAL', 'WHERE', 'GROUP', 'HAVING', 'INTERSECT', 'UNION', 'EXCEPT', 'MINUS', 'WINDOW', 'ORDER', 'SORT', 'CLUSTER', 'DISTRIBUTE', 'LIMIT', 'OFFSET', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'FROM'."
+        }
+      },
+      {
+        "index": 14,
+        "input": "SELECT * FROM (SELECT * FROM t TABLESAMPLE SYSTEM (50 PERCENT)) sub",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found SYSTEM at 43:49 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'SYSTEM'."
+        }
+      },
+      {
+        "index": 16,
+        "input": "SELECT * FROM S WHERE C1 IN (INSERT INTO T VALUES (2))",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'INTO'. SQLSTATE: 42601 (line 1, pos 36)\n\n== SQL ==\nSELECT * FROM S WHERE C1 IN (INSERT INTO T VALUES (2))\n------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found INTO at 36:40 expected '->', '.', '(', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'INTO'."
+        }
+      },
+      {
+        "index": 59,
+        "input": "SELECT * FROM bernoulli TABLESAMPLE BERNOULLI (10 PERCENT) AS x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found BERNOULLI at 36:45 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'BERNOULLI'."
+        }
+      },
+      {
+        "index": 62,
+        "input": "SELECT * FROM mydb.system TABLESAMPLE SYSTEM (10 PERCENT) AS x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found SYSTEM at 38:44 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'SYSTEM'."
+        }
+      },
+      {
+        "index": 63,
+        "input": "SELECT * FROM parquet_t0 TABLESAMPLE(300M) s",
+        "exception": "\nTABLESAMPLE(byteLengthLiteral) is not supported.\n== SQL (line 1, position 26) ==\nSELECT * FROM parquet_t0 TABLESAMPLE(300M) s\n                         ^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 41:42 expected '->', '.', '(', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', 'PERCENT', or 'ROWS'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      },
+      {
+        "index": 64,
+        "input": "SELECT * FROM parquet_t0 TABLESAMPLE(BUCKET 3 OUT OF 32 ON rand()) s",
+        "exception": "\nTABLESAMPLE(BUCKET x OUT OF y ON function) is not supported.\n== SQL (line 1, position 26) ==\nSELECT * FROM parquet_t0 TABLESAMPLE(BUCKET 3 OUT OF 32 ON rand()) s\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found ON at 56:58 expected ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'ON'."
+        }
+      },
+      {
+        "index": 67,
+        "input": "SELECT * FROM system TABLESAMPLE BERNOULLI (10 PERCENT) AS x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found BERNOULLI at 33:42 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'BERNOULLI'."
+        }
+      },
+      {
+        "index": 68,
+        "input": "SELECT * FROM system TABLESAMPLE SYSTEM (10 PERCENT) AS x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found SYSTEM at 33:39 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'SYSTEM'."
+        }
+      },
+      {
+        "index": 104,
+        "input": "select * from (from a select * select *)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found select at 22:28 expected '(', 'NATURAL', 'INNER', 'CROSS', 'OUTER', 'SEMI', 'ANTI', 'LEFT', 'RIGHT', 'FULL', 'JOIN', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'select'."
+        }
+      },
+      {
+        "index": 117,
+        "input": "select * from my_tvf(arg1 => table(1) partition by col1 with single partition)",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'. SQLSTATE: 42601 (line 1, pos 38)\n\n== SQL ==\nselect * from my_tvf(arg1 => table(1) partition by col1 with single partition)\n--------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found partition at 38:47 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      },
+      {
+        "index": 118,
+        "input": "select * from my_tvf(arg1 => table(v1) distribute by col1)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found distribute at 39:49 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'distribute'."
+        }
+      },
+      {
+        "index": 119,
+        "input": "select * from my_tvf(arg1 => table(v1) partition by col1)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found partition at 39:48 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'partition'."
+        }
+      },
+      {
+        "index": 120,
+        "input": "select * from my_tvf(arg1 => table(v1) with single partition)",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found with at 39:43 expected '.', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'with'."
+        }
+      },
+      {
+        "index": 129,
+        "input": "select * from t TABLESAMPLE BERNOULLI (43 PERCENT) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found BERNOULLI at 28:37 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'BERNOULLI'."
+        }
+      },
+      {
+        "index": 130,
+        "input": "select * from t TABLESAMPLE SYSTEM (43 PERCENT) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found SYSTEM at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'SYSTEM'."
+        }
+      },
+      {
+        "index": 131,
+        "input": "select * from t TabLeSaMpLe SyStEm (43 PeRcEnT) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found SyStEm at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'SyStEm'."
+        }
+      },
+      {
+        "index": 138,
+        "input": "select * from t tablesample bernoulli (43 percent) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found bernoulli at 28:37 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'bernoulli'."
+        }
+      },
+      {
+        "index": 139,
+        "input": "select * from t tablesample bernoulli (43 percent) repeatable (123) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found bernoulli at 28:37 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'bernoulli'."
+        }
+      },
+      {
+        "index": 140,
+        "input": "select * from t tablesample system (-10 percent) as x",
+        "exception": "\nSampling fraction (-0.1) must be on interval [0, 1].\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (-10 percent) as x\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 141,
+        "input": "select * from t tablesample system (0 percent) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 142,
+        "input": "select * from t tablesample system (0.1 percent) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 143,
+        "input": "select * from t tablesample system (100 percent) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 144,
+        "input": "select * from t tablesample system (100 rows)",
+        "exception": "\n[UNSUPPORTED_FEATURE.TABLESAMPLE_SYSTEM_SAMPLE_METHOD] The feature is not supported: TABLESAMPLE SYSTEM does not support ROWS sampling. Only PERCENT sampling is supported. SQLSTATE: 0A000\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (100 rows)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 145,
+        "input": "select * from t tablesample system (150 percent) as x",
+        "exception": "\nSampling fraction (1.5) must be on interval [0, 1].\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (150 percent) as x\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 146,
+        "input": "select * from t tablesample system (300M)",
+        "exception": "\n[UNSUPPORTED_FEATURE.TABLESAMPLE_SYSTEM_SAMPLE_METHOD] The feature is not supported: TABLESAMPLE SYSTEM does not support BYTES sampling. Only PERCENT sampling is supported. SQLSTATE: 0A000\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (300M)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 147,
+        "input": "select * from t tablesample system (43 percent) as x",
+        "exception": null,
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 148,
+        "input": "select * from t tablesample system (43 percent) repeatable (123)",
+        "exception": "\n[UNSUPPORTED_FEATURE.TABLESAMPLE_SYSTEM_REPEATABLE] The feature is not supported: TABLESAMPLE SYSTEM does not support the REPEATABLE clause. Use TABLESAMPLE BERNOULLI for repeatable sampling with a seed. SQLSTATE: 0A000\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (43 percent) repeatable (123)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 149,
+        "input": "select * from t tablesample system (bucket 3 out of 32 on rand())",
+        "exception": "\n[UNSUPPORTED_FEATURE.TABLESAMPLE_SYSTEM_SAMPLE_METHOD] The feature is not supported: TABLESAMPLE SYSTEM does not support BUCKET sampling. Only PERCENT sampling is supported. SQLSTATE: 0A000\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (bucket 3 out of 32 on rand())\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 150,
+        "input": "select * from t tablesample system (bucket 4 out of 10 on x)",
+        "exception": "\n[UNSUPPORTED_FEATURE.TABLESAMPLE_SYSTEM_SAMPLE_METHOD] The feature is not supported: TABLESAMPLE SYSTEM does not support BUCKET sampling. Only PERCENT sampling is supported. SQLSTATE: 0A000\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (bucket 4 out of 10 on x)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 151,
+        "input": "select * from t tablesample system (bucket 4 out of 10)",
+        "exception": "\n[UNSUPPORTED_FEATURE.TABLESAMPLE_SYSTEM_SAMPLE_METHOD] The feature is not supported: TABLESAMPLE SYSTEM does not support BUCKET sampling. Only PERCENT sampling is supported. SQLSTATE: 0A000\n== SQL (line 1, position 17) ==\nselect * from t tablesample system (bucket 4 out of 10)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found system at 28:34 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'system'."
+        }
+      },
+      {
+        "index": 156,
+        "input": "select * from t tablesample(bucket 4 out of 10 on x) as x",
+        "exception": "\nTABLESAMPLE(BUCKET x OUT OF y ON colname) is not supported.\n== SQL (line 1, position 17) ==\nselect * from t tablesample(bucket 4 out of 10 on x) as x\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+        "before": {
+          "failure": "invalid argument: found on at 47:49 expected ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'on'."
+        }
+      },
+      {
+        "index": 183,
+        "input": "select ltrim(both 'S' from 'SS abc S'",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'from'. SQLSTATE: 42601 (line 1, pos 22)\n\n== SQL ==\nselect ltrim(both 'S' from 'SS abc S'\n----------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found 'S' at 18:21 expected '->', '.', '(', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', '=>', ',', 'RESPECT', 'IGNORE', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ''S''."
+        }
+      },
+      {
+        "index": 185,
+        "input": "select rtrim(trailing 'S' from 'SS abc S'",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'from'. SQLSTATE: 42601 (line 1, pos 26)\n\n== SQL ==\nselect rtrim(trailing 'S' from 'SS abc S'\n--------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found 'S' at 22:25 expected '->', '.', '(', '[', '::', 'ESCAPE', 'IS', 'NOT', 'IN', '*', '/', '%', 'DIV', '+', '-', '||', '>>>', '>>', '<<', '&', '^', '|', '!=', '!>', '!<', '==', '=', '>=', '>', '<=>', '<=', '<>', '<', 'BETWEEN', 'LIKE', 'ILIKE', 'RLIKE', 'REGEXP', 'SIMILAR', 'AND', 'OR', '=>', ',', 'RESPECT', 'IGNORE', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ''S''."
+        }
+      }
+    ],
+    "before_sha256": "f619af518cbd73507e4bc7f11d68bc40bb7039b288ab632faa291e1cadf55079",
+    "after_sha256": "112d37be09bc1498e165e0d92e4ea3068952641c66196147a715be060b6059fc"
+  },
+  {
+    "path": "crates/sail-spark-connect/tests/gold_data/plan/unpivot_select.json",
+    "cases": 20,
+    "changed": [
+      {
+        "index": 0,
+        "input": "SELECT * FROM t UNPIVOT (() FOR col in ((a, b), (c, d)))",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near ')'. SQLSTATE: 42601 (line 1, pos 26)\n\n== SQL ==\nSELECT * FROM t UNPIVOT (() FOR col in ((a, b), (c, d)))\n--------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 26:27 expected identifier"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      },
+      {
+        "index": 1,
+        "input": "SELECT * FROM t UNPIVOT ((val1, val2) FOR col in (()))",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near ')'. SQLSTATE: 42601 (line 1, pos 51)\n\n== SQL ==\nSELECT * FROM t UNPIVOT ((val1, val2) FOR col in (()))\n---------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 51:52 expected identifier"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      },
+      {
+        "index": 2,
+        "input": "SELECT * FROM t UNPIVOT ((val1, val2) FOR col in ((a A, b), (c, d)))",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'A': extra input 'A'. SQLSTATE: 42601 (line 1, pos 53)\n\n== SQL ==\nSELECT * FROM t UNPIVOT ((val1, val2) FOR col in ((a A, b), (c, d)))\n-----------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found A at 53:54 expected ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'A'."
+        }
+      },
+      {
+        "index": 3,
+        "input": "SELECT * FROM t UNPIVOT ((val1, val2) FOR col in ((a AS A, b), (c, d)))",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'. SQLSTATE: 42601 (line 1, pos 53)\n\n== SQL ==\nSELECT * FROM t UNPIVOT ((val1, val2) FOR col in ((a AS A, b), (c, d)))\n-----------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found AS at 53:55 expected ',', or ')'"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'AS'."
+        }
+      },
+      {
+        "index": 7,
+        "input": "SELECT * FROM t UNPIVOT ((val1, val2) FOR col in ())",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near ')'. SQLSTATE: 42601 (line 1, pos 50)\n\n== SQL ==\nSELECT * FROM t UNPIVOT ((val1, val2) FOR col in ())\n--------------------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 50:51 expected '('"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      },
+      {
+        "index": 8,
+        "input": "SELECT * FROM t UNPIVOT (val FOR col in ())",
+        "exception": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near ')'. SQLSTATE: 42601 (line 1, pos 41)\n\n== SQL ==\nSELECT * FROM t UNPIVOT (val FOR col in ())\n-----------------------------------------^^^\n",
+        "before": {
+          "failure": "invalid argument: found ) at 41:42 expected identifier"
+        },
+        "after": {
+          "failure": "[PARSE_SYNTAX_ERROR] Syntax error at or near ')'."
+        }
+      }
+    ],
+    "before_sha256": "6ebca8941985ecd1b01642abf277ebb1bd765351f4bd61489cd64ff8a213e4f7",
+    "after_sha256": "8d0f2a336f7548fc6eed31cf5b4f3f8935b0ca57217818ded4c52656870f9c51"
+  }
+]
