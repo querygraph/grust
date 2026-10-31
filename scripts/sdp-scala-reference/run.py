@@ -18,7 +18,15 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from artifacts import SPARK_PIN, Binding, bind_sources, digest, load_manifest, prepare
+from artifacts import (
+    SPARK_PIN,
+    Binding,
+    bind_sources,
+    digest,
+    load_manifest,
+    load_scope,
+    prepare,
+)
 
 BUNDLE = Path(__file__).resolve().parent
 LOGGER = logging.getLogger(__name__)
@@ -111,16 +119,21 @@ def main() -> int:
             BUNDLE / "artifacts.py",
             BUNDLE / "EnumerateSuites.scala",
             BUNDLE / "artifacts.json",
+            BUNDLE / "scope.json",
         )
     }
     try:
         manifest = load_manifest(BUNDLE / "artifacts.json")
+        scopes = load_scope(BUNDLE / "scope.json")
+        extra_sources = {path for scope in scopes for path in scope.source_files}
         for name in ("spark_source", "spark_home", "java_home", "python", "cache"):
             setattr(args, name, getattr(args, name).resolve())
         if args.timeout <= 0:
             raise ValueError("Timeout must be positive")
         prepare(args.cache, manifest)
-        receipt.bindings = bind_sources(args.spark_source, args.cache, manifest)
+        receipt.bindings = bind_sources(
+            args.spark_source, args.cache, manifest, extra_sources
+        )
         runtime = sorted((args.spark_home / "jars").glob("spark-*.jar"))
         if not (args.spark_home / "jars/spark-core_2.13-4.2.1.jar").is_file():
             raise ValueError("Expected a Spark 4.2.1 runtime")
@@ -202,10 +215,11 @@ def main() -> int:
                     "org.apache.spark.sql.pipelines.conformance.EnumerateSuites",
                     str(jar),
                     str(args.output / "suites.json"),
+                    str(BUNDLE / "scope.json"),
                 ]
                 + [
                     str(args.cache / f"spark-{module}_2.13-4.2.1-tests.jar")
-                    for module in ("pipelines", "connect", "hive")
+                    for module in ("pipelines", "connect", "hive", "sql")
                 ],
                 "register",
             )
@@ -253,6 +267,15 @@ def main() -> int:
                     str(args.cache / "scalatest-app_2.13-3.2.19.jar"),
                     "-s",
                     args.suite,
+                    *[
+                        value
+                        for name in (
+                            matches[0]["testNames"]
+                            if matches[0]["selection"] == "named"
+                            else []
+                        )
+                        for value in ("-t", name)
+                    ],
                     "-o",
                     "-u",
                     str(args.output / "xml"),
@@ -282,7 +305,9 @@ def main() -> int:
         prepare(args.cache, manifest)
         if receipt.runtime_sha256 != {path.name: digest(path) for path in runtime}:
             raise RuntimeError("Runtime artifacts changed during execution")
-        if receipt.bindings != bind_sources(args.spark_source, args.cache, manifest):
+        if receipt.bindings != bind_sources(
+            args.spark_source, args.cache, manifest, extra_sources
+        ):
             raise RuntimeError("Source bindings changed during execution")
         receipt.outcome = "passed"
     except Exception as error:

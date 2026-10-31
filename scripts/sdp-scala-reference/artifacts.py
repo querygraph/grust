@@ -35,6 +35,24 @@ class Binding:
     source_artifact: str
 
 
+@dataclass(frozen=True, slots=True)
+class ScopedSuite:
+    class_name: str
+    source_files: tuple[str, ...]
+    test_names: tuple[str, ...] | None
+
+
+def load_scope(path: Path) -> list[ScopedSuite]:
+    return [
+        ScopedSuite(
+            entry["className"],
+            tuple(entry["sourceFiles"]),
+            None if entry["testNames"] is None else tuple(entry["testNames"]),
+        )
+        for entry in json.loads(path.read_text())
+    ]
+
+
 def digest(path: Path) -> str:
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
@@ -71,7 +89,9 @@ def prepare(cache: Path, manifest: list[Artifact]) -> None:
             raise ValueError(f"Cached artifact differs from pin: {path}")
 
 
-def bind_sources(source: Path, cache: Path, manifest: list[Artifact]) -> list[Binding]:
+def bind_sources(
+    source: Path, cache: Path, manifest: list[Artifact], extra_sources: set[str]
+) -> list[Binding]:
     if git(source, "rev-parse", "HEAD").decode().strip() != SPARK_PIN:
         raise ValueError("Spark source checkout must remain at the source pin")
     expected = {
@@ -83,15 +103,16 @@ def bind_sources(source: Path, cache: Path, manifest: list[Artifact]) -> list[Bi
         .splitlines()
         if path.endswith(".scala")
     }
+    expected.update(extra_sources)
     bindings = []
     for entry in manifest:
         if not entry.source_prefix:
             continue
         with zipfile.ZipFile(cache / entry.filename) as jar:
             for name in jar.namelist():
-                if not name.endswith(".scala") or "/pipelines/" not in name:
-                    continue
                 path = entry.source_prefix + name
+                if not name.endswith(".scala") or path not in expected:
+                    continue
                 data = jar.read(name)
                 if data != git(source, "show", f"{SPARK_PIN}:{path}"):
                     raise ValueError(f"Published source differs from pin: {path}")
