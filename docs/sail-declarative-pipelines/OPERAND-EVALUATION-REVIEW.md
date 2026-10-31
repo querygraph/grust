@@ -1344,3 +1344,42 @@ non-foldable, where DataFusion's leniency is the behaviour wanted. The
 Sail-owned call sites above (constant contexts first) can call the same
 rule directly. That is one rule and the existing cast UDFs; nothing in
 DataFusion needs patching.
+
+### 6.16 `nvl2` accepted; `NaNvl` is the next lazy conditional (CF-0403)
+
+`e5605fd3a` is accepted as read in §6.15 (three paths; the Spark
+replacement verbatim; the production-only revert control fails the new
+tests). Codex's `NaNvl` observation is in the pin: `NaNvl.eval` returns
+`null` for a null left, the left itself when it is not `NaN`, and
+evaluates the right only otherwise (`nullExpressions.scala:368–378`),
+with `alwaysEvaluatedInputs = left` and `branchGroups = Seq(children)`
+(`:361`, `:367`), so `right` is a conditional branch for folding (§6.14)
+and for execution. Sail lowers `nanvl` to `expr_fn::nanvl`
+(`function/scalar/conditional.rs:282`), DataFusion's `NanvlFunc`, an
+`Immutable` scalar (`datafusion-functions-55.2.0/src/math/nanvl.rs:58`,
+`:97`) whose two arguments DataFusion evaluates before invocation. A
+failing right (an ANSI division by zero or a malformed cast) therefore
+errors in Sail on rows where Spark never evaluates it, and a failing
+foldable right is folded eagerly where Spark leaves it.
+
+Two shapes fix it, and only one is correct for a volatile left:
+
+- `CASE WHEN l IS NULL THEN NULL WHEN NOT isnan(l) THEN l ELSE r END`
+  gives per-row laziness for `r` (DataFusion's `CaseExpr` evaluates each
+  branch on its selected rows) and places `r` in a conditional branch for
+  the folding rule, but it names `l` three times, and DataFusion
+  evaluates a volatile `l` once per occurrence (§2.6's CSE fixture),
+  where Spark evaluates `left` exactly once.
+- The ordered component already built for division (§2, §5):
+  `SparkDivModLazy` is "evaluate the first thunk once, decide per row
+  from its value, evaluate the second thunk only on the selected rows,
+  then the operation". `NaNvl` is that shape with the predicate "is a
+  non-null `NaN`" instead of "is a non-null non-zero divisor" and the
+  operation returning the chosen value. Generalising the component's
+  predicate, or adding a sibling with the same three-lambda contract,
+  gives `NaNvl` single evaluation of the left, laziness of the right,
+  and the §6.6 vocabulary for free.
+
+Codex's "classification alone will not fix it" is therefore right, and
+so is the implication for the admitted-body list: `nanvl` as lowered
+today is not a lazy conditional and must not be treated as one.
