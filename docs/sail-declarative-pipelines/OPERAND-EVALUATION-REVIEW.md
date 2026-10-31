@@ -847,3 +847,61 @@ the result is `TryCast`, `ConstEvaluator` folds a malformed literal to
 `NULL` at plan time, which is also what Spark's `ConstantFolding` does for
 a legacy cast (`hasNoSideEffect`, §6.2), so the literal and conditional
 tests pass for the same reason on both engines.
+
+### 6.6 Error vocabulary of the admitted bodies: the three-way model, audited (CF-0379)
+
+Codex's objection to §6.1 is fair on one point: "a replayed system error
+only costs a re-run" was asserted from value determinism, which says
+nothing about allocation, cancellation or ownership. Rather than argue it,
+audit what the admitted bodies can return. The proposed native set is
+`SafeNumericDivisor`, `SparkZeroDivisionError`, `SparkAnsiStringCast`,
+`SparkDiv`/`SparkPmod`, `RaiseError`, and the DataFusion `BinaryExpr`,
+`CastExpr`, `CaseExpr`, literal and column nodes they are built from.
+
+- No cancellation point and no memory-pool reservation exists inside
+  synchronous scalar evaluation. In `datafusion-physical-expr-55.2.0` the
+  only files that mention `async`, `tokio`, `MemoryReservation`,
+  `try_grow` or `ResourcesExhausted` are `async_scalar_function.rs`
+  (excluded by admission) and `expressions/dynamic_filters/mod.rs` (not a
+  body). So `ExecutionJoin`, `ResourcesExhausted` and
+  `CommitStateUnknown` cannot originate from an admitted body; they can
+  only wrap the whole task, outside the evaluation the fast path
+  classifies. Allocation failure in Rust aborts the process and is not an
+  error value at all.
+- Arrow numeric kernels return `ArrowError::DivideByZero`
+  (`arrow-arith-59.2.0/src/numeric.rs:342`), `ArithmeticOverflow`
+  (`arithmetic.rs:124`, `numeric.rs:636`), `ComputeError` and
+  `InvalidArgumentError` (`numeric.rs:172`, `:265`, `:456–506`).
+- `CastExpr` on strings returns `ArrowError::CastError`
+  (`arrow-cast-59.2.0/src/cast/string.rs:109`, `:422`) and `ParseError`.
+- `SafeNumericDivisor` and `SparkZeroDivisionError` return
+  `DataFusionError::External(StructuredSparkError)` (`divisor.rs:95`,
+  `zero_division.rs:60`, `:71`); `SparkAnsiStringCast` maps a root
+  `ArrowError::CastError` to `External(StructuredSparkError)`
+  `CAST_INVALID_INPUT` (`spark_ansi_string_cast.rs:61–68`, `:112–113`,
+  `:172–173`); `RaiseError` returns `DataFusionError::Execution(message)`
+  (`misc/raise_error.rs:39`, `:75`).
+- Everything else the DataFusion nodes can return is `Internal` from
+  invariant checks (`expressions/binary.rs:286`, `:406`, `:446`, `:462`;
+  `expressions/case.rs:408–1370`) and one `exec_err` for a malformed CASE
+  (`case.rs:668`).
+
+So for the admitted set the three buckets are: known data = the list
+above; known system = empty by construction; unknown = `Internal` and
+whatever a future edit adds. The §6.1 deny-list and Codex's allow-list
+then prescribe the same behaviour on every error these bodies can
+produce, and the disagreement reduces to the unknown bucket, where the
+batch error should be kept: an `Internal` invariant breach is not
+row-attributable, so the wrong-row concern does not apply to it. The
+synthetic `opaque_source` and `collection_mixed` shapes cannot be
+produced by an admitted body; admission excludes the UDFs that could
+produce them.
+
+Reconciled rule: replay if and only if the raw error is in the known-data
+vocabulary; keep the batch error otherwise; and pin the vocabulary with a
+test that, for each admitted body, enumerates the error constructors it
+can reach, so that adding a body or an error path to a body fails the
+test until the vocabulary is extended. That is the deferred edit as a
+failing test (AGENTS.md), and it is what makes "unknown" a bucket that
+stays empty rather than a hope. Codex's seat for the proof, the physical
+planner over the final expression, is agreed (§6.4).
