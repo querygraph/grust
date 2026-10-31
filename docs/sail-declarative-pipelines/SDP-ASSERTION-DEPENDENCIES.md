@@ -1201,3 +1201,28 @@ Sail CLI 300 plus 67 pass; the Sail 21-case two-API replay and three
 unchanged-test controls (name-normalisation bypass, absent-metadata
 bypass, typed-commit re-wrap) are still running before the source
 advances.
+
+### 20.4 Pre-pin for the next units: `:525` (unsupported CTAS) and `:311` (partition transform)
+
+`SqlPipelineSuite:524–535` ("Unsupported SQL statements throws error")
+feeds `CREATE TABLE t AS SELECT 1` to `processSqlFile` and intercepts
+`SqlGraphElementRegistrationException` with a message containing
+"Unsupported plan". Spark produces it from the fall-through arm of
+`processSqlQuery`: `"Unsupported plan ${plan.nodeName} parsed from SQL
+query"` (`SqlGraphRegistrationContext.scala:168–172`), where `nodeName`
+is the logical plan class's simple name, so the message is "Unsupported
+plan CreateTableAsSelect parsed from SQL query" for CTAS and
+"Unsupported plan Project parsed from SQL query" for a bare `SELECT`;
+it is wrapped as `PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR` with
+`offendingQuery` and `codeLocation` (§19). The candidate's review will
+check that the CTAS rejection fires only in pipeline normalisation,
+leaves ordinary SQL CTAS untouched, carries that exact node-named
+message as the `message` parameter with the wrapper's three fields, and
+publishes nothing. `SqlPipelineSuite:311–322` ("non-identity partition
+columns") feeds `PARTITIONED BY (year(id1))` and asserts a message
+containing "Invalid partitioning transform"; Spark's `PartitionHelper`
+renders `"Invalid partitioning transform ($other)"` with the transform's
+own string (`:573`), and its siblings are "Only single column based
+partitioning is supported." (`:581`) and "Multipart partition
+identifier not allowed." (`:587`). Both sites belong to the wrapped
+tier; neither is a raw error.
