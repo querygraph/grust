@@ -1,0 +1,57 @@
+
+#[tokio::test]
+async fn resolved_sail_conditional_cast_optimizer_probe() -> TestResult {
+    use datafusion::arrow::array::{Array, ArrayRef, Int32Array};
+    use datafusion::arrow::datatypes::{Field, Schema};
+    use datafusion::arrow::record_batch::RecordBatch;
+    use datafusion_expr::expr::HigherOrderFunction;
+    use datafusion_expr::{Expr, HigherOrderUDF, col, lambda};
+    use sail_function::scalar::math::div_mod_lazy::SparkDivModLazy;
+    for ansi in [true,false] {
+        let original=context()?;
+        let ctx=SessionContext::new_with_state(SessionStateBuilder::new_from_existing(original.state())
+            .with_analyzer_rules(sail_logical_optimizer::default_analyzer_rules())
+            .with_optimizer_rules(sail_logical_optimizer::default_optimizer_rules()).build());
+        let resolver=PlanResolver::new(&ctx,Arc::new(PlanConfig{ansi_mode:ansi,..Default::default()}));
+        for target in ["INT","DOUBLE","DECIMAL(5,2)","DECIMAL(38,10)"] {
+            for zero in [false,true] {
+                for representation in ["resolved_sql","internal_literal","internal_column"] {
+                    let right_sql=if zero {"0"} else {"CAST(NULL AS INT)"};
+                    let sql=format!("SELECT CAST('bad' AS {target}) / d AS value FROM VALUES ({right_sql}) AS v(d)");
+                    let mut stage="start";let mut left_debug=String::new();
+                    let outcome:std::result::Result<_,Box<dyn std::error::Error>>=async {
+                        let frame=if representation=="resolved_sql" {
+                            stage="resolve_named_plan";
+                            let statement=sail_sql_analyzer::statement::from_ast_statement(sail_sql_analyzer::parser::parse_one_statement(&sql)?)?;
+                            let named=resolver.resolve_named_plan(statement).await?;
+                            stage="execute_logical_plan";
+                            ctx.execute_logical_plan(named.plan).await?
+                        } else {
+                            stage="resolve_cast";
+                            let left=resolver.resolve_expression(expression(&format!("CAST('bad' AS {target})"))?,&Arc::new(DFSchema::empty()),&mut PlanResolverState::new()).await?;
+                            left_debug=format!("{left:?}");
+                            let right=if representation=="internal_column" {col("d")} else {lit(ScalarValue::Int32(if zero {Some(0)} else {None}))};
+                            let internal=Expr::HigherOrderFunction(HigherOrderFunction::new(
+                                Arc::new(HigherOrderUDF::new_from_impl(SparkDivModLazy::new(ansi))),
+                                vec![lambda(["unused_r"],right),lambda(["unused_l"],left),lambda(["lv","rv"],lit(7))]));
+                            let input=RecordBatch::try_new(Arc::new(Schema::new(vec![Field::new("d",DataType::Int32,true)])),vec![Arc::new(Int32Array::from(vec![if zero {Some(0)} else {None}])) as ArrayRef])?;
+                            stage="select";
+                            ctx.read_batch(input)?.select(vec![internal.alias("value")])?
+                        };
+                        stage="collect";let batches=frame.collect().await?;
+                        let count=batches.iter().map(RecordBatch::num_rows).sum::<usize>();
+                        let null=batches.iter().all(|b| b.column(0).null_count()==b.num_rows());
+                        let types=batches.iter().map(|b|b.column(0).data_type().to_string()).collect::<Vec<_>>();
+                        Ok((count,null,types))
+                    }.await;
+                    let record=match outcome {
+                        Ok((rows,all_null,types))=>serde_json::json!({"ansi":ansi,"target":target,"zero":zero,"representation":representation,"query":sql,"stage":stage,"returned":true,"rows":rows,"all_null":all_null,"types":types,"left_debug":left_debug}),
+                        Err(error)=>serde_json::json!({"ansi":ansi,"target":target,"zero":zero,"representation":representation,"query":sql,"stage":stage,"returned":false,"error":error.to_string(),"left_debug":left_debug}),
+                    };
+                    eprintln!("OPTIMIZER_CASE {}",serde_json::to_string(&record)?);
+                }
+            }
+        }
+    }
+    Ok(())
+}

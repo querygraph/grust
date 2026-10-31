@@ -208,3 +208,28 @@ resource/I/O/cancellation identity; no catch-and-replay shortcut is selected.
 Fable's CF-0370 read-only review request for this exact unit is pending as of
 CF-0371; incorporate further review before activation. Full original goal remains
 active and unqualified by these native component gates.
+
+
+## Fast-path checkpoint evidence (CF-0372–0375)
+
+The [checkpoint packet](evidence/operand-fastpath-design/README.md) retains the
+optimized prototypes, actual Sail optimizer observations, Spark oracle and raw
+error controls. Product4070 remains unchanged. Avoid all-active take/scatter;
+18 Int32 mask cases pass, but batched first-error selection still differs from
+the ordered reference. Shared-host tiny-kernel ratios are diagnostic only.
+
+Replay requires two independent proofs: explicitly admitted deterministic native
+bodies, and admissible raw data errors. CommonErrorCause collapses resource/join
+errors into Execution and cannot supply the latter proof. Unknown wrappers must
+not become replayable by source-chain peeling. Unknown/custom/async/volatile
+bodies remain ordered. No classifier/mode/default/worker flag has been selected.
+
+Actual Sail optimizer probes establish an earlier prerequisite: ANSI decimal
+and legacy DOUBLE casts can throw during simplification even inside a skipped
+internal thunk. Spark rightNULL returnsNULL for every tested target/mode. Keep
+the twenty required conformance failures visible; native internal literal7
+operations prove conditional behavior only, not new arithmetic/schema parity.
+Fix general Sail casts with qualified invalid-input/rounding/overflow/error/wire
+semantics before activation. Runtime error replay cannot repair optimizer errors.
+Fable acknowledged read-only validator/wire/design review atCF-0374; its new
+verdict is pending. Existing provider/streaming/CDC boundaries remain unchanged.

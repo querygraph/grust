@@ -1,0 +1,45 @@
+diff --git a/crates/sail-function/src/scalar/math/div_mod_lazy_tests.rs b/crates/sail-function/src/scalar/math/div_mod_lazy_tests.rs
+index bb9cbd64b..f4ffc0afe 100644
+--- a/crates/sail-function/src/scalar/math/div_mod_lazy_tests.rs
++++ b/crates/sail-function/src/scalar/math/div_mod_lazy_tests.rs
+@@ -316,37 +316,9 @@ async fn identical_calls_keep_separate_volatile_thunk_evaluations() -> Result<()
+ }
+ 
+ // Prototype only: a data-error test, never standalone permission to replay a body.
+-fn native_data_error_policy_probe(error: &(dyn std::error::Error + 'static)) -> bool {
+-    use datafusion_common::DataFusionError as D;
+-    use datafusion::arrow::error::ArrowError as A;
+-    use sail_common_datafusion::error::StructuredSparkError;
+-    let mut pending=vec![error];
+-    while let Some(error)=pending.pop() {
+-        if let Some(error)=error.downcast_ref::<D>() {
+-            match error {
+-                D::Context(_,inner)|D::Diagnostic(_,inner)=>pending.push(inner.as_ref()),
+-                D::Shared(inner)=>pending.push(inner.as_ref()),
+-                D::Collection(items) if !items.is_empty()=>pending.extend(items.iter().map(|x|x as &(dyn std::error::Error+'static))),
+-                D::External(inner)=>pending.push(inner.as_ref()),
+-                D::ArrowError(inner,_)=>pending.push(inner.as_ref()),
+-                D::Execution(_)=>{},
+-                _=>return false,
+-            }
+-        } else if let Some(error)=error.downcast_ref::<A>() {
+-            match error {
+-                A::DivideByZero|A::ArithmeticOverflow(_)|A::CastError(_)|A::ParseError(_)|A::ComputeError(_)|A::InvalidArgumentError(_)=>{},
+-                A::ExternalError(inner)=>pending.push(inner.as_ref()),
+-                _=>return false,
+-            }
+-        } else if let Some(error)=error.downcast_ref::<StructuredSparkError>() {
+-            match (error.class.as_str(),error.condition.as_str(),error.sql_state.as_str()) {
+-                ("org.apache.spark.SparkArithmeticException","DIVIDE_BY_ZERO"|"REMAINDER_BY_ZERO","22012")=>{},
+-                ("java.lang.NumberFormatException"|"org.apache.spark.SparkRuntimeException","CAST_INVALID_INPUT","22018")=>{},
+-                _=>return false,
+-            }
+-        } else {return false}
+-    }
+-    true
++fn native_data_error_policy_probe(error: &(dyn std::error::Error+'static))->bool {
++    use sail_common_datafusion::error::CommonErrorCause;
++    matches!(CommonErrorCause::new::<ReplayNoPython>(error),CommonErrorCause::Execution(_)|CommonErrorCause::Structured(_)|CommonErrorCause::ArrowCast(_)|CommonErrorCause::ArrowParse(_)|CommonErrorCause::ArrowCompute(_)|CommonErrorCause::ArrowDivideByZero(_)|CommonErrorCause::ArrowArithmeticOverflow(_)|CommonErrorCause::InvalidArgument(_))
+ }
+ 
+ #[derive(Debug)]

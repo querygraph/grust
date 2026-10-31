@@ -1,0 +1,620 @@
+{
+  "cases": [
+    {
+      "ansi": true,
+      "target": "INT",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "INT",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Int32, sql_target: \"INT\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "INT",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Int32, sql_target: \"INT\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "INT",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "INT",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Int32, sql_target: \"INT\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "INT",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Int32, sql_target: \"INT\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "DOUBLE",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DOUBLE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "DOUBLE",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Float64, sql_target: \"DOUBLE\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "DOUBLE",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Float64, sql_target: \"DOUBLE\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "DOUBLE",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DOUBLE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "DOUBLE",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DOUBLE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Float64, sql_target: \"DOUBLE\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "DOUBLE",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "External error: [CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DOUBLE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkAnsiStringCast { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None }, target_type: Float64, sql_target: \"DOUBLE\" } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": ""
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Decimal128(38, 10) type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "INT",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Float64"
+      ],
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "INT",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkCastStringToInt32 { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None } } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": false,
+      "target": "INT",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkCastStringToInt32 { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None } } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": false,
+      "target": "INT",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Float64"
+      ],
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "INT",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkCastStringToInt32 { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None } } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": false,
+      "target": "INT",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "ScalarFunction(ScalarFunction { func: ScalarUDF { inner: SparkCastStringToInt32 { signature: Signature { type_signature: Uniform(1, [Utf8, LargeUtf8, Utf8View]), volatility: Immutable, parameter_names: None } } }, args: [Literal(Utf8(\"bad\"), None)] })"
+    },
+    {
+      "ansi": false,
+      "target": "DOUBLE",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Float64 type",
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "DOUBLE",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Float64 type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Float64, nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DOUBLE",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Float64 type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Float64, nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DOUBLE",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Float64 type",
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "DOUBLE",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Float64 type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Float64, nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DOUBLE",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": false,
+      "error": "Optimizer rule 'simplify_expressions' failed\ncaused by\nArrow error: Cast error: Cannot cast string 'bad' to value of Float64 type",
+      "left_debug": "Cast(Cast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Float64, nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Decimal128(9, 6)"
+      ],
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Decimal128(9, 6)"
+      ],
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(5, 2), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Decimal128(38, 14)"
+      ],
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "representation": "resolved_sql",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Decimal128(38, 14)"
+      ],
+      "left_debug": ""
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "representation": "internal_literal",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "representation": "internal_column",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "stage": "collect",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "types": [
+        "Int32"
+      ],
+      "left_debug": "TryCast(TryCast { expr: Literal(Utf8(\"bad\"), None), field: Field { name: \"\", data_type: Decimal128(38, 10), nullable: true } })"
+    }
+  ]
+}
