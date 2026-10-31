@@ -484,9 +484,10 @@ windows and workers; it must not duplicate volatile operands or erase coercion.
 The original Scala suites remain unqualified; full goal stays active.
 
 
-The continued checkpoint adds only the ordered component at Sailc1befda7a:
-402 function libraries/fmt/strictClippy and unchanged right-first0/1 control pass.
-No lowering/codec activation or new public verdict is claimed. See the focused
-[operand design](OPERAND-EVALUATION-DESIGN.md) and
-[component packet](evidence/ordered-divmod-component/README.md) for Spark error
-order, CSE/capture fixtures, cost diagnostic and required fast-path/constant work.
+The continued checkpoint adds ordered componentc1befda7a (402 function libraries),
+staged decoder04f1e8cc7 (235 execution libraries) and wire036dc6dde (239), all
+with exact fmt/strictClippy and unchanged causal controls. SQL lowering remains
+unactivated. See [operand design](OPERAND-EVALUATION-DESIGN.md),
+[component evidence](evidence/ordered-divmod-component/README.md) and
+[codec evidence](evidence/ordered-divmod-codec/README.md) for remaining constant,
+folding, nested/extracted operands, performance and fast-path requirements.

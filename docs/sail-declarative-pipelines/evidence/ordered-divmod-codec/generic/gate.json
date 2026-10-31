@@ -1,0 +1,62 @@
+{
+  "sail_commit": "04f1e8cc79e73932829dd6130a67b280792ebfe9",
+  "base": "c1befda7a8f29937c9bbc32d3f516379732e9eae",
+  "packages": [
+    "sail-execution"
+  ],
+  "started_at": "2026-10-31T06:26:22.573073+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-execution",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-staged-lambda-decoder-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-staged-lambda-decoder-clippy.log",
+      "sha256": "4550f7c28bae456fe3a467e7536b50a34e5f81a4cf120b63d403cc4cf67e9986"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-execution",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-staged-lambda-decoder-rust.log",
+      "sha256": "80fe77615e219c8b65c88e7f73ef9bf33e28f4b6e5160eb477af36c63e48718d"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-31T06:27:11.320175+00:00",
+  "outcome": "passed"
+}

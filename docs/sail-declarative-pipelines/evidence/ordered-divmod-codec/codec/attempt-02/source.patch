@@ -1,0 +1,281 @@
+diff --git a/crates/sail-execution/proto/sail/plan/physical.proto b/crates/sail-execution/proto/sail/plan/physical.proto
+index efdc98172..f1bcfe2c2 100644
+--- a/crates/sail-execution/proto/sail/plan/physical.proto
++++ b/crates/sail-execution/proto/sail/plan/physical.proto
+@@ -192,9 +192,14 @@ message HigherOrderUdf {
+     SparkRegexpInstrUdf regexp_instr = 10;
+     SparkTransformValuesUdf transform_values = 11;
+     SparkTransformKeysUdf transform_keys = 12;
++    SparkDivModLazyUdf div_mod_lazy = 13;
+   }
+ }
+ 
++message SparkDivModLazyUdf {
++  bool ansi_mode = 1;
++}
++
+ message SparkArrayAggregateUdf {
+   bool element_first = 1;
+ }
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 366e2a7a0..d3c88d862 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -9356,3 +9356,7 @@ mod orc_tests;
+ #[cfg(test)]
+ #[path = "codec/zero_division_tests.rs"]
+ mod zero_division_tests;
++
++#[cfg(test)]
++#[path = "codec/div_mod_lazy_tests.rs"]
++mod div_mod_lazy_tests;
+diff --git a/crates/sail-execution/src/proto/codec/div_mod_lazy_tests.rs b/crates/sail-execution/src/proto/codec/div_mod_lazy_tests.rs
+new file mode 100644
+index 000000000..b6f0acd30
+--- /dev/null
++++ b/crates/sail-execution/src/proto/codec/div_mod_lazy_tests.rs
+@@ -0,0 +1,199 @@
++use datafusion::arrow::array::{Array, ArrayRef, Int32Array, RecordBatch};
++use datafusion::arrow::datatypes::{FieldRef, Schema};
++use datafusion::common::DFSchema;
++use datafusion::logical_expr::execution_props::ExecutionProps;
++use datafusion::logical_expr::expr::{HigherOrderFunction, LambdaVariable};
++use datafusion::logical_expr::physical_planning_context::PhysicalPlanningContext;
++use datafusion::logical_expr::{Expr, HigherOrderUDF, col, lambda, lit};
++use datafusion::physical_expr::{HigherOrderFunctionExpr, create_physical_expr};
++use sail_common_datafusion::error::{
++    CommonErrorCause, PythonErrorCause, PythonErrorCauseExtractor,
++};
++use sail_function::scalar::math::div_mod_lazy::SparkDivModLazy;
++
++use super::*;
++
++struct NoPython;
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++
++fn parameter(name: &str, field: &FieldRef) -> Expr {
++    Expr::LambdaVariable(LambdaVariable::new(
++        name.to_owned(),
++        Some(Arc::new(field.as_ref().clone().with_name(name))),
++    ))
++}
++
++fn expression(left: Expr, right: Expr, operation: Expr, ansi: bool) -> Expr {
++    Expr::HigherOrderFunction(HigherOrderFunction::new(
++        Arc::new(HigherOrderUDF::new_from_impl(SparkDivModLazy::new(ansi))),
++        vec![
++            lambda(["unused_right"], right),
++            lambda(["unused_left"], left),
++            lambda(["_left_value", "_right_value"], operation),
++        ],
++    ))
++}
++
++fn schema() -> Arc<Schema> {
++    Arc::new(Schema::new(vec![
++        Field::new("left", DataType::Int32, true),
++        Field::new("right", DataType::Int32, true),
++        Field::new("offset", DataType::Int32, true),
++    ]))
++}
++
++fn round_trip(
++    logical: &Expr,
++    schema: &Schema,
++) -> Result<(Arc<dyn PhysicalExpr>, Arc<dyn PhysicalExpr>)> {
++    let original = create_physical_expr(
++        logical,
++        &DFSchema::try_from(schema.clone())?,
++        &ExecutionProps::new(),
++        &PhysicalPlanningContext::default(),
++    )?;
++    let bytes = try_encode_physical_expr(&RemoteExecutionCodec, &original)?;
++    let decoded = try_decode_physical_expr(
++        &TaskContext::default(),
++        &RemoteExecutionCodec,
++        &bytes,
++        schema,
++    )?;
++    Ok((original, decoded))
++}
++
++#[test]
++fn div_mod_lazy_codec_preserves_modes_bindings_and_structured_errors() -> Result<()> {
++    let schema = schema();
++    for ansi in [true, false] {
++        for (kind, condition) in [
++            (ZeroDivisionKind::Divide, "DIVIDE_BY_ZERO"),
++            (ZeroDivisionKind::Remainder, "REMAINDER_BY_ZERO"),
++        ] {
++            let left = parameter("_left_value", &schema.fields()[0]);
++            let right = ScalarUDF::from(SafeNumericDivisor::new(kind, ansi))
++                .call(vec![parameter("_right_value", &schema.fields()[1])]);
++            let operation = match kind {
++                ZeroDivisionKind::Divide => left / right,
++                ZeroDivisionKind::Remainder => left % right,
++            };
++            let logical = expression(col("left"), col("right"), operation, ansi);
++            let (original, decoded) = round_trip(&logical, schema.as_ref())?;
++            let batch = RecordBatch::try_new(
++                Arc::clone(&schema),
++                vec![
++                    Arc::new(Int32Array::from(vec![None, Some(8), Some(8)])),
++                    Arc::new(Int32Array::from(vec![Some(0), Some(2), None])),
++                    Arc::new(Int32Array::from(vec![10, 20, 30])),
++                ],
++            )?;
++            let value = if kind == ZeroDivisionKind::Divide {
++                4
++            } else {
++                0
++            };
++            let expected = Int32Array::from(vec![None, Some(value), None]);
++            for physical in [&original, &decoded] {
++                let values = physical.evaluate(&batch)?.into_array(3)?;
++                assert_eq!(
++                    values.as_any().downcast_ref::<Int32Array>(),
++                    Some(&expected)
++                );
++                let zero = RecordBatch::try_new(
++                    Arc::clone(&schema),
++                    vec![
++                        Arc::new(Int32Array::from(vec![8])),
++                        Arc::new(Int32Array::from(vec![0])),
++                        Arc::new(Int32Array::from(vec![10])),
++                    ],
++                )?;
++                let result = physical.evaluate(&zero);
++                if ansi {
++                    let error = result
++                        .err()
++                        .ok_or_else(|| plan_datafusion_err!("ANSI operation accepted zero"))?;
++                    let CommonErrorCause::Structured(error) =
++                        CommonErrorCause::new::<NoPython>(&error)
++                    else {
++                        return plan_err!("round trip lost typed error: {error}");
++                    };
++                    assert_eq!(error.condition, condition);
++                    assert_eq!(error.sql_state, "22012");
++                } else {
++                    assert!(result?.into_array(1)?.is_null(0));
++                }
++            }
++            let hof = decoded
++                .downcast_ref::<HigherOrderFunctionExpr>()
++                .ok_or_else(|| plan_datafusion_err!("decoded expression lost higher-order node"))?;
++            let inner = hof.fun().inner().as_ref() as &dyn std::any::Any;
++            let implementation = inner
++                .downcast_ref::<SparkDivModLazy>()
++                .ok_or_else(|| plan_datafusion_err!("decoded wrong higher-order implementation"))?;
++            assert_eq!(implementation.ansi_mode(), ansi);
++            let definition = crate::proto::encode::try_encode_higher_order_udf(hof)?;
++            assert!(matches!(definition.higher_order_udf_kind,
++                Some(r#gen::higher_order_udf::HigherOrderUdfKind::DivModLazy(r#gen::SparkDivModLazyUdf { ansi_mode })) if ansi_mode == ansi));
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn div_mod_lazy_codec_preserves_operation_captures_and_nonprefix_parameter() -> Result<()> {
++    let schema = schema();
++    let operation = parameter("_right_value", &schema.fields()[1]) + col("offset");
++    let logical = expression(col("left"), col("right"), operation, true);
++    let (original, decoded) = round_trip(&logical, schema.as_ref())?;
++    let batch = RecordBatch::try_new(
++        schema,
++        vec![
++            Arc::new(Int32Array::from(vec![Some(8), None, Some(8)])) as ArrayRef,
++            Arc::new(Int32Array::from(vec![4, 5, 6])),
++            Arc::new(Int32Array::from(vec![10, 20, 30])),
++        ],
++    )?;
++    for physical in [&original, &decoded] {
++        assert_eq!(
++            physical
++                .evaluate(&batch)?
++                .into_array(3)?
++                .as_any()
++                .downcast_ref::<Int32Array>(),
++            Some(&Int32Array::from(vec![Some(14), None, Some(36)]))
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn div_mod_lazy_codec_keeps_failing_left_thunk_skipped() -> Result<()> {
++    let schema = schema();
++    let left = ScalarUDF::from(SparkZeroDivisionError::new(ZeroDivisionKind::Divide)).call(vec![]);
++    for ansi in [true, false] {
++        for right in [ScalarValue::Int32(None), ScalarValue::Int32(Some(0))] {
++            if ansi && right == ScalarValue::Int32(Some(0)) {
++                continue;
++            }
++            let logical = expression(left.clone(), lit(right), lit(7), ansi);
++            let (original, decoded) = round_trip(&logical, schema.as_ref())?;
++            // Use one row: empty input would make the skip assertion vacuous.
++            let batch = RecordBatch::try_new(
++                Arc::clone(&schema),
++                vec![
++                    Arc::new(Int32Array::from(vec![1])) as ArrayRef,
++                    Arc::new(Int32Array::from(vec![2])),
++                    Arc::new(Int32Array::from(vec![3])),
++                ],
++            )?;
++            for physical in [&original, &decoded] {
++                assert!(physical.evaluate(&batch)?.into_array(1)?.is_null(0));
++            }
++        }
++    }
++    Ok(())
++}
+diff --git a/crates/sail-execution/src/proto/decode.rs b/crates/sail-execution/src/proto/decode.rs
+index ccc9197f2..dd5d93d19 100644
+--- a/crates/sail-execution/src/proto/decode.rs
++++ b/crates/sail-execution/src/proto/decode.rs
+@@ -27,6 +27,7 @@ use sail_function::scalar::datetime::convert_tz::{ConvertTz, ConvertTzLazy};
+ use sail_function::scalar::map::spark_map_filter::SparkMapFilter;
+ use sail_function::scalar::map::spark_transform_keys::SparkTransformKeys;
+ use sail_function::scalar::map::spark_transform_values::SparkTransformValues;
++use sail_function::scalar::math::div_mod_lazy::SparkDivModLazy;
+ use sail_function::scalar::string::spark_regexp_instr::SparkRegexpInstr;
+ 
+ use crate::plan::r#gen;
+@@ -183,6 +184,9 @@ pub(super) fn try_decode_higher_order_udf(
+         .cloned()
+         .ok_or_else(|| plan_datafusion_err!("missing higher-order function UDF"))?;
+     Ok(match udf_kind {
++        HigherOrderUdfKind::DivModLazy(r#gen::SparkDivModLazyUdf { ansi_mode }) => Arc::new(
++            HigherOrderUDF::new_from_impl(SparkDivModLazy::new(ansi_mode)),
++        ),
+         HigherOrderUdfKind::MapFilter(r#gen::SparkMapFilterUdf {}) => {
+             Arc::new(HigherOrderUDF::new_from_impl(SparkMapFilter::new()))
+         }
+diff --git a/crates/sail-execution/src/proto/encode.rs b/crates/sail-execution/src/proto/encode.rs
+index b86a7bbb4..f2fbe9737 100644
+--- a/crates/sail-execution/src/proto/encode.rs
++++ b/crates/sail-execution/src/proto/encode.rs
+@@ -24,6 +24,7 @@ use sail_function::scalar::datetime::convert_tz::ConvertTzLazy;
+ use sail_function::scalar::map::spark_map_filter::SparkMapFilter;
+ use sail_function::scalar::map::spark_transform_keys::SparkTransformKeys;
+ use sail_function::scalar::map::spark_transform_values::SparkTransformValues;
++use sail_function::scalar::math::div_mod_lazy::SparkDivModLazy;
+ use sail_function::scalar::string::spark_regexp_instr::SparkRegexpInstr;
+ use sail_physical_plan::data_source::RemoteDataSourceExec;
+ 
+@@ -198,6 +199,10 @@ pub(super) fn try_encode_higher_order_udf(
+             null_short_circuit: convert_tz.null_short_circuit(),
+             ..Default::default()
+         })
++    } else if let Some(div_mod) = udf_inner.downcast_ref::<SparkDivModLazy>() {
++        HigherOrderUdfKind::DivModLazy(r#gen::SparkDivModLazyUdf {
++            ansi_mode: div_mod.ansi_mode(),
++        })
+     } else if let Some(regexp_instr) = udf_inner.downcast_ref::<SparkRegexpInstr>() {
+         HigherOrderUdfKind::RegexpInstr(r#gen::SparkRegexpInstrUdf {
+             ansi_mode: regexp_instr.ansi_mode(),

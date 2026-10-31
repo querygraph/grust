@@ -139,3 +139,41 @@ internal bound variables before lowering; do not admit arbitrary user lambdas as
 identifier constants. Operation parameters need fresh names against input field
 names as well as enclosing lambda variables; the initial fixture collision is
 retained as evidence for this requirement.
+
+
+## Worker representation and staged decoder (CF-0360–0368)
+
+Two separate source units follow the component. Generic04f1e8cc7 adds staged
+physical lambda decoding and five native fixtures (235 execution libraries,
+fmt/strictClippy, unchanged retention/limit/prefix0/1 controls). Wire036dc6dde
+adds HigherOrderUdf tag13 with ANSI mode and four full-tree round-trip fixtures
+(239 execution libraries, fmt/strictClippy, unchanged mode0/1 control). Bodies,
+captured columns and parameter fields use the existing lambda converter. Error
+class/condition/22012/config, null/zero skips, only-right parameters, operation
+captures and malformed arities are tested by executing decoded trees. See the
+[codec evidence](evidence/ordered-divmod-codec/README.md).
+
+The converter previously rejected Partial before decoding any lambda. Staged
+resolution retains prior fields on None, includes steps0..=signature limit,
+rejects nonconvergence and malformed fields/arity, and infers known bodies only
+when another resolution pass is needed. Complete may have optional trailing
+sets, matching the existing physical constructor; Partial is exact like the
+logical resolver. A real physical-constructor fixture proves the distinction.
+This does not close the dependency CASE nullable/predicate evaluation issue.
+
+SQL lowering, constant checks and evaluation policy are still unchanged. The
+next validation unit needs lexical parameter scopes: admit only the exact
+SparkDivModLazy implementation's three direct lambda arguments, walk every body
+under the existing scalar variant/volatility/async rules, and pop each argument's
+names before visiting its sibling. Internal bound variables are constant only
+inside their scope; free variables, columns, other HOFs and arbitrary lambdas
+remain rejected. Nested internal evaluators/shadowing need fixtures. Existing
+LiteralEvaluator remains the evaluation path. End-to-end IDENTIFIER arithmetic
+and wrapped SET CATALOG fixtures must actually use new lowering at activation;
+passing old-lowering examples now would not prove this new validator seam.
+
+Fable d5b1d8cc/5a5ff593/a683b52d reviewed the wire and staged API. Native tests
+caught the initial converter assumption, then review caught retention/bound
+semantics not covered by the initial integrated234 checks. All failed drafts
+and passing unadvanced checkpoints are retained. No fast-path flag, blanket
+lambda allowance, replay policy or provider/streaming effect is introduced.

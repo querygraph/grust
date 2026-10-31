@@ -1,0 +1,62 @@
+{
+  "sail_commit": "29fb36c79884be87b31bb1d33c6f575bc305e125",
+  "base": "c1befda7a8f29937c9bbc32d3f516379732e9eae",
+  "packages": [
+    "sail-execution"
+  ],
+  "started_at": "2026-10-31T06:14:48.631973+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-execution",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-lazy-divmod-codec-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-lazy-divmod-codec-clippy.log",
+      "sha256": "2bfce7effa0e36daa627cf94777650c7845756be21c68fe2b33a053cf32c9209"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-execution",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-lazy-divmod-codec-rust.log",
+      "sha256": "d99707c53a7fb581c40795277d6d46f89b461b326d2c8a0edc87da0786a42fe8"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-31T06:15:40.521587+00:00",
+  "outcome": "passed"
+}

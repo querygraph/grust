@@ -1,0 +1,356 @@
+diff --git a/crates/sail-execution/src/proto/converter.rs b/crates/sail-execution/src/proto/converter.rs
+index 5dbc2e4ed..a43167aa6 100644
+--- a/crates/sail-execution/src/proto/converter.rs
++++ b/crates/sail-execution/src/proto/converter.rs
+@@ -6,7 +6,7 @@ use std::sync::Arc;
+ use datafusion::arrow::datatypes::{FieldRef, Schema};
+ use datafusion::common::{Result, plan_datafusion_err, plan_err};
+ use datafusion::logical_expr::physical_planning_context::ScalarSubqueryResults;
+-use datafusion::logical_expr::{LambdaParametersProgress, ValueOrLambda};
++use datafusion::logical_expr::{HigherOrderUDF, LambdaParametersProgress, ValueOrLambda};
+ use datafusion::physical_expr::expressions::{LambdaExpr, LambdaVariable};
+ use datafusion::physical_expr::{HigherOrderFunctionExpr, PhysicalExpr};
+ use datafusion::physical_plan::ExecutionPlan;
+@@ -253,6 +253,22 @@ impl RemotePhysicalProtoConverter {
+             .udf
+             .ok_or_else(|| plan_datafusion_err!("missing higher-order function UDF"))?;
+         let fun = try_decode_higher_order_udf(&udf)?;
++        let args = self.decode_higher_order_args(fun.as_ref(), inputs, input_schema, ctx)?;
++        Ok(Arc::new(HigherOrderFunctionExpr::try_new_with_schema(
++            fun,
++            args,
++            input_schema,
++            Arc::clone(ctx.task_ctx().session_config().options()),
++        )?))
++    }
++
++    fn decode_higher_order_args(
++        &self,
++        fun: &HigherOrderUDF,
++        inputs: &[PhysicalExprNode],
++        input_schema: &Schema,
++        ctx: &PhysicalPlanDecodeContext<'_>,
++    ) -> Result<Vec<Arc<dyn PhysicalExpr>>> {
+         let mut decoded_values = Vec::with_capacity(inputs.len());
+         let mut value_or_lambda = Vec::with_capacity(inputs.len());
+ 
+@@ -267,41 +283,77 @@ impl RemotePhysicalProtoConverter {
+             }
+         }
+ 
+-        let param_sets = match fun.lambda_parameters(0, &value_or_lambda)? {
+-            LambdaParametersProgress::Complete(params) => params,
+-            LambdaParametersProgress::Partial(_) => {
+-                return plan_err!("`{}` returned partial lambda parameters", fun.name());
+-            }
+-        };
+-
+-        let mut lambda_index = 0usize;
+-        let args = inputs
++        // Some lambda parameter types depend on the output fields of earlier
++        // lambdas. Decode known bodies first, then resolve dependent parameters.
++        // The UDF signature owns the same iteration limit used by DataFusion.
++        let num_lambdas = value_or_lambda
+             .iter()
+-            .enumerate()
+-            .map(|(index, input)| {
++            .filter(|arg| matches!(arg, ValueOrLambda::Lambda(_)))
++            .count();
++        for step in 0..=fun.signature().lambda_parameters_max_iterations {
++            let (complete, param_sets) = match fun.lambda_parameters(step, &value_or_lambda)? {
++                LambdaParametersProgress::Complete(params) => {
++                    (true, params.into_iter().map(Some).collect::<Vec<_>>())
++                }
++                LambdaParametersProgress::Partial(params) => (false, params),
++            };
++            // Partial results align with the present lambdas. Complete results
++            // may include unused trailing parameter sets for optional lambdas,
++            // as HigherOrderFunctionExpr permits (and this decoder did before).
++            if (!complete && param_sets.len() != num_lambdas)
++                || (complete && param_sets.len() < num_lambdas)
++            {
++                return plan_err!(
++                    "`{}` returned {} parameter sets for {num_lambdas} lambdas",
++                    fun.name(),
++                    param_sets.len()
++                );
++            }
++            let mut lambda_index = 0usize;
++            for (index, input) in inputs.iter().enumerate() {
+                 if let Some((params, body)) = lambda_proto_parts(input)? {
+                     let fields = param_sets.get(lambda_index).ok_or_else(|| {
+                         plan_datafusion_err!("missing lambda parameter fields for `{}`", fun.name())
+                     })?;
+                     lambda_index += 1;
+-
++                    let Some(fields) = fields else {
++                        // None means no new information; retain any prior field/body.
++                        continue;
++                    };
++                    if params.len() > fields.len() {
++                        return plan_err!(
++                            "`{}` lambda declares {} parameters but only {} are available",
++                            fun.name(),
++                            params.len(),
++                            fields.len()
++                        );
++                    }
+                     let schema = extend_lambda_schema(input_schema, &params, fields);
+                     let body = self.proto_to_physical_expr(body, &schema, ctx)?;
+-                    Ok(Arc::new(LambdaExpr::try_new(params, body)?) as Arc<dyn PhysicalExpr>)
+-                } else {
+-                    decoded_values[index].clone().ok_or_else(|| {
+-                        plan_datafusion_err!("missing decoded higher-order argument")
+-                    })
++                    if !complete {
++                        value_or_lambda[index] =
++                            ValueOrLambda::Lambda(Some(body.return_field(&schema)?));
++                    }
++                    decoded_values[index] =
++                        Some(Arc::new(LambdaExpr::try_new(params, body)?) as Arc<dyn PhysicalExpr>);
+                 }
+-            })
+-            .collect::<Result<Vec<_>>>()?;
+-
+-        Ok(Arc::new(HigherOrderFunctionExpr::try_new_with_schema(
+-            fun,
+-            args,
+-            input_schema,
+-            Arc::clone(ctx.task_ctx().session_config().options()),
+-        )?))
++            }
++            if complete {
++                let args = decoded_values
++                    .into_iter()
++                    .map(|arg| {
++                        arg.ok_or_else(|| {
++                            plan_datafusion_err!("missing decoded higher-order argument")
++                        })
++                    })
++                    .collect::<Result<Vec<_>>>()?;
++                return Ok(args);
++            }
++        }
++        plan_err!(
++            "`{}` exceeded its lambda parameter resolution limit",
++            fun.name()
++        )
+     }
+ }
+ 
+@@ -359,3 +411,7 @@ fn extend_lambda_schema(base: &Schema, params: &[String], fields: &[FieldRef]) -
+     }
+     Schema::new_with_metadata(output, base.metadata().clone())
+ }
++
++#[cfg(test)]
++#[path = "converter/staged_lambda_tests.rs"]
++mod staged_lambda_tests;
+diff --git a/crates/sail-execution/src/proto/converter/staged_lambda_tests.rs b/crates/sail-execution/src/proto/converter/staged_lambda_tests.rs
+new file mode 100644
+index 000000000..2e27e140f
+--- /dev/null
++++ b/crates/sail-execution/src/proto/converter/staged_lambda_tests.rs
+@@ -0,0 +1,202 @@
++use datafusion::arrow::datatypes::{DataType, Field};
++use datafusion::common::config::ConfigOptions;
++use datafusion::execution::TaskContext;
++use datafusion::logical_expr::{
++    ColumnarValue, HigherOrderFunctionArgs, HigherOrderReturnFieldArgs, HigherOrderSignature,
++    HigherOrderUDFImpl, ScalarUDF, Volatility,
++};
++use datafusion::physical_expr::expressions::Literal;
++use datafusion_common::{DFSchema, ScalarValue};
++use sail_function::scalar::math::zero_division::{SparkZeroDivisionError, ZeroDivisionKind};
++
++use super::*;
++use crate::proto::codec::RemoteExecutionCodec;
++
++#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
++enum Behavior {
++    RetainNone,
++    CompleteAt(usize),
++    NeverComplete,
++    PartialCount(usize),
++    CompleteCount(usize),
++}
++
++#[derive(Debug, PartialEq, Eq, Hash)]
++struct StagedUdf {
++    signature: HigherOrderSignature,
++    behavior: Behavior,
++}
++
++impl StagedUdf {
++    fn new(behavior: Behavior) -> HigherOrderUDF {
++        let count = if behavior == Behavior::RetainNone {
++            2
++        } else {
++            1
++        };
++        let mut signature = HigherOrderSignature::exact(
++            vec![ValueOrLambda::Lambda(()); count],
++            Volatility::Immutable,
++        );
++        signature.lambda_parameters_max_iterations = match behavior {
++            Behavior::CompleteAt(limit) => limit,
++            Behavior::RetainNone => 2,
++            _ => 1,
++        };
++        HigherOrderUDF::new_from_impl(Self {
++            signature,
++            behavior,
++        })
++    }
++}
++
++impl HigherOrderUDFImpl for StagedUdf {
++    fn name(&self) -> &str {
++        "staged_codec_test"
++    }
++    fn signature(&self) -> &HigherOrderSignature {
++        &self.signature
++    }
++    fn coerce_value_types(&self, types: &[DataType]) -> Result<Vec<DataType>> {
++        assert!(types.is_empty());
++        Ok(vec![])
++    }
++    fn lambda_parameters(
++        &self,
++        step: usize,
++        fields: &[ValueOrLambda<FieldRef, Option<FieldRef>>],
++    ) -> Result<LambdaParametersProgress> {
++        let dummy = vec![Arc::new(Field::new("", DataType::Null, true))];
++        Ok(match self.behavior {
++            Behavior::RetainNone => match step {
++                0 => LambdaParametersProgress::Partial(vec![Some(dummy), None]),
++                1 => LambdaParametersProgress::Partial(vec![None, Some(dummy)]),
++                2 => {
++                    if !fields
++                        .iter()
++                        .all(|f| matches!(f, ValueOrLambda::Lambda(Some(_))))
++                    {
++                        return plan_err!("previous lambda output was lost");
++                    }
++                    LambdaParametersProgress::Complete(vec![dummy.clone(), dummy])
++                }
++                _ => return plan_err!("unexpected resolution step"),
++            },
++            Behavior::CompleteAt(limit) if step == limit => {
++                LambdaParametersProgress::Complete(vec![dummy])
++            }
++            Behavior::CompleteAt(_) | Behavior::NeverComplete => {
++                LambdaParametersProgress::Partial(vec![Some(dummy)])
++            }
++            Behavior::PartialCount(count) => {
++                LambdaParametersProgress::Partial(vec![Some(dummy); count])
++            }
++            Behavior::CompleteCount(count) => {
++                LambdaParametersProgress::Complete(vec![dummy; count])
++            }
++        })
++    }
++    fn return_field_from_args(&self, _args: HigherOrderReturnFieldArgs) -> Result<FieldRef> {
++        Ok(Arc::new(Field::new("result", DataType::Int32, true)))
++    }
++    fn invoke_with_args(&self, _args: HigherOrderFunctionArgs) -> Result<ColumnarValue> {
++        plan_err!("decoding must not invoke the higher-order function")
++    }
++}
++
++fn resolve(
++    fun: &HigherOrderUDF,
++    count: usize,
++    failing_bodies: bool,
++) -> Result<Vec<Arc<dyn PhysicalExpr>>> {
++    let converter = RemotePhysicalProtoConverter::default();
++    let codec = RemoteExecutionCodec;
++    let task = TaskContext::default();
++    let ctx = PhysicalPlanDecodeContext::new(&task, &codec);
++    let mut inputs = Vec::new();
++    for _ in 0..count {
++        let body: Arc<dyn PhysicalExpr> = if failing_bodies {
++            let expression =
++                ScalarUDF::from(SparkZeroDivisionError::new(ZeroDivisionKind::Divide)).call(vec![]);
++            datafusion::physical_expr::create_physical_expr(
++                &expression, &DFSchema::empty(),
++                &datafusion::logical_expr::execution_props::ExecutionProps::new(),
++                &datafusion::logical_expr::physical_planning_context::PhysicalPlanningContext::default(),
++            )?
++        } else {
++            Arc::new(Literal::new(ScalarValue::Int32(Some(7))))
++        };
++        let lambda = Arc::new(LambdaExpr::try_new(vec!["unused".to_owned()], body)?)
++            as Arc<dyn PhysicalExpr>;
++        inputs.push(converter.physical_expr_to_proto(&lambda, &codec)?);
++    }
++    converter.decode_higher_order_args(fun, &inputs, &Schema::empty(), &ctx)
++}
++
++#[test]
++fn partial_none_keeps_previous_lambda_outputs() -> Result<()> {
++    let args = resolve(&StagedUdf::new(Behavior::RetainNone), 2, false)?;
++    assert_eq!(args.len(), 2);
++    for arg in args {
++        let lambda = arg
++            .downcast_ref::<LambdaExpr>()
++            .ok_or_else(|| plan_datafusion_err!("expected lambda"))?;
++        assert_eq!(lambda.body().data_type(&Schema::empty())?, DataType::Int32);
++    }
++    Ok(())
++}
++
++#[test]
++fn resolution_includes_zero_and_last_allowed_steps() -> Result<()> {
++    for limit in [0, 1, 2] {
++        assert_eq!(
++            resolve(&StagedUdf::new(Behavior::CompleteAt(limit)), 1, false)?.len(),
++            1
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn nonconvergent_parameter_resolution_is_bounded() -> Result<()> {
++    let result = resolve(&StagedUdf::new(Behavior::NeverComplete), 1, false);
++    let error = result
++        .err()
++        .ok_or_else(|| plan_datafusion_err!("nonconvergent parameters accepted"))?;
++    assert!(error.to_string().contains("resolution limit"), "{error}");
++    Ok(())
++}
++
++#[test]
++fn parameter_counts_preserve_physical_optional_lambda_prefixes() -> Result<()> {
++    for behavior in [
++        Behavior::PartialCount(0),
++        Behavior::PartialCount(2),
++        Behavior::CompleteCount(0),
++    ] {
++        let error = resolve(&StagedUdf::new(behavior), 1, false)
++            .err()
++            .ok_or_else(|| plan_datafusion_err!("invalid parameter count accepted"))?;
++        assert!(error.to_string().contains("parameter sets"), "{error}");
++    }
++    // Physical HigherOrderFunctionExpr permits unused trailing Complete sets,
++    // unlike logical lambda resolution. Preserve its existing decoder contract.
++    let fun = Arc::new(StagedUdf::new(Behavior::CompleteCount(2)));
++    let args = resolve(fun.as_ref(), 1, false)?;
++    let _physical = HigherOrderFunctionExpr::try_new_with_schema(
++        fun,
++        args,
++        &Schema::empty(),
++        Arc::new(ConfigOptions::default()),
++    )?;
++    Ok(())
++}
++
++#[test]
++fn staged_decode_does_not_invoke_failing_lambda_bodies() -> Result<()> {
++    assert_eq!(
++        resolve(&StagedUdf::new(Behavior::RetainNone), 2, true)?.len(),
++        2
++    );
++    Ok(())
++}
