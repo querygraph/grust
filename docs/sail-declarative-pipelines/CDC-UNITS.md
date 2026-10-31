@@ -455,3 +455,52 @@ transforms (A4a), merges (A4b, this suite), handler and single-pipeline
 runs (A4c), durability and full refresh (A5, A5b); the remaining
 unported assertions are the MemoryStream/checkpoint halves that need the
 activation runner.
+
+## Unit A6: Iggy bounded-source adapter (design pin)
+
+The handoff names Iggy a required integration whose client must not enter
+the pure control model, and unit 6 established the broker's behaviour on the
+pin (`evidence/fable-iggy-harness`: committed readable frontier, silent
+retention gaps, incarnation on recreation, accepted-but-unconfirmed acks
+under partition loss, owner generations). The SDP branch has no Iggy
+dependency at all; the pinned sail-iggy fork (`5816b9b`) carries a streaming
+`IggyStreamSource` (`formats/iggy/reader.rs`) and the `sail-iggy-mirror`
+crate, both poll-by-offset readers with `AutoCommit::Disabled`.
+
+Shape: a new workspace crate `crates/sail-iggy-bounded` (shared-interface
+change: one member and the pinned `iggy` SDK at `153fdf466` as a git
+dependency), implementing `sail_common_datafusion::streaming::bounded::BoundedSource`
+for one stream/topic:
+
+- `describe`: `get_topic` partitions with their incarnations as reported by
+  a poll context (`polled.context.incarnation`, harness s3), descriptor =
+  `{url, stream, topic}` as JSON;
+- `earliest`: the first readable offset, found by polling one message from
+  offset 0 and taking its offset (retention moves it silently, harness s2);
+- `frontier`: `partition.current_offset + 1` from `get_topic`, exclusive
+  (harness s1: nothing past it is readable);
+- `plan_end`: `min(frontier, start + max_rows)` in offsets;
+- `scan`: `poll_messages(stream, topic, partition, PollingStrategy::offset(start),
+count = end − start, auto_commit = false)`, then fail closed:
+  `RetentionGap` when the first returned offset is past `start`,
+  `NonContiguous` on any offset skip, `IncarnationMismatch` when the poll
+  context's incarnation differs from the range's; the payload decoded with
+  the fork's envelope rules into the declared schema;
+- cursors are `offset:<n>` tokens; a cursor not of that form is
+  `ForeignCursor`.
+
+The trait is synchronous; the adapter bridges the async SDK with
+`tokio::task::block_in_place` on the multi-thread runtime, which the run
+loop (`run.rs`) already executes under. Operational failures (connection,
+timeout, denied, not found, corrupt payloads) map to the
+`SourceError` variants of `ASYNC-SOURCE-CONTRACT.md` §2 where the caller
+takes `SourceError`, and to `ScanError` refusals where the trait demands
+them; the trait's own evolution to `SourceError` is a later contract unit.
+
+Tests: against the pinned broker binary already built for unit 6
+(`/Users/alexy/src/iggy-fable-pin-target/release/iggy-server`, Iggy
+`153fdf466`) through the `integration` harness as a dev-dependency, skipped
+with a named reason when the binary is absent; cases are the unit 6
+scenarios turned into adapter assertions (frontier, retention gap fails
+closed, recreation changes incarnation, exact range), then one SCD1 run
+(`run_flow`) with the adapter as the source.
