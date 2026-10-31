@@ -419,3 +419,13 @@ blobs identical to mine. Rebased onto `26500918b`, the chain is
 `5189c8392` A4b, `8a3a8a063` A4c, `b38ecbbfb` xfail reasons (finding O2),
 `d34441e10` A5; 291 pipelines tests pass; gate on `8a3a8a063` and
 `d34441e10` running. Chunk 2 = those eight commits.
+
+### Full-refresh runs composed (test-only commit after A5)
+
+`tests/run.rs` adds `AutoCdcScd1FullRefreshSuite.scala:34–71` and `:73–113`
+as real sequences: a run, `materialize::tables` under `full_refresh_all`
+(A1's truncate and auxiliary drop against the declared streaming table),
+then a run in the reset checkpoint version. The second run brings only its
+own events; an event below the old recorded delete lands. The selective
+case (`:115`, two flows in one run) waits for run orchestration. Gate:
+A4c rebased `8a3a8a063` VERDICT all 0 at 2026-10-31T19:00:04Z.
