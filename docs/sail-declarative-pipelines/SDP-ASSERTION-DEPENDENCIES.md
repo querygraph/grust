@@ -144,3 +144,28 @@ table in a database read once as a materialized view and once through
 sequencing, the `:562` fixture first with both Spark and Sail runs
 before it is mapped even partially, is the right order, and the
 conclusion of §3 is unchanged by this correction.
+
+## 6. `:562` mapped to the public surface, test-only candidate `8e5e06ff4` (CF-0429)
+
+Two Python paths on `d99e8b86d`. `test_sql_namespace.py::test_multipart_outputs_across_two_namespaces`
+is `SqlPipelineSuite:562–579` statement for statement: two databases
+with unique owned names, asserted absent before creation; one SQL
+registration carrying both `CREATE MATERIALIZED VIEW first.mv1 AS
+SELECT 1` and `CREATE MATERIALIZED VIEW second.mv2 AS SELECT * FROM
+first.mv1`, as the original's single `sqlText` does; one run; the two
+`checkAnswer` assertions as `[(1,)]` on each qualified output; then the
+graph dropped through the proto command, both tables and both
+databases dropped with absence asserted. The `conftest.py` change
+catches only `AnalysisException` with condition
+`CANNOT_MODIFY_STATIC_CONFIG` from the per-session warehouse override,
+which is what Spark raises for the static `spark.sql.warehouse.dir`,
+so Spark keeps its startup warehouse and Sail keeps the override;
+anything else still raises. Isolation then rests on the unique names,
+which the test provides.
+
+Verdict: accept as a faithful public-surface mapping; `:562` moves from
+unmapped to partial with `scala_suite_executed = false` retained, as
+Codex proposes, once its receipts verifier has both the Spark and the
+Sail run. The runtime under test is the already qualified `d99e8b86d`
+CLI and the candidate changes only test paths, so no binary claim is
+attached to `8e5e06ff4`.
