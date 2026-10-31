@@ -107,3 +107,16 @@ first.
   in `evidence/turso-control-probe/` shows the guard-row property under race
   and process kill, with a negative control. Power loss, shared-file access
   and restore remain unqualified. The adapter can live in the workspace.
+- B2 done: `947f5e113`. `control.rs` holds the operations over a small store
+  seam, so the in-process store and the Turso adapter share one code path. All
+  scenarios run on both, 58 tests. Tests inject a takeover between an
+  operation's guard read and its commit, because the race test alone left the
+  guard-row writes unpinned. Every mutated guard now fails a test, and the
+  racing tests passed 10 of 10 release runs with all 10 cores saturated.
+- B2 also closed gaps found against the design: initialization intents, unique
+  physical keys, the auxiliary recheck at ratification, escaped key components,
+  and lease time read only from the authority's clock.
+- Known B2 limits: `delta_ratified_commit` is not recorded yet and arrives with
+  the staged commit in B4. Incarnation rotation for a restored database is not
+  implemented. Enrolling a table that already has Delta versions needs an
+  initial head, also B4.
