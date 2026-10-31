@@ -378,3 +378,17 @@ compose A1's drop with this handler and are left to the activation tests.
 
 Gate: A4a `ef9472065` VERDICT all 0 (pytest 379 passed, 7 xfailed) at
 2026-10-31T18:33:02Z; A4b `ffad1d382` VERDICT all 0 at 18:36:10Z.
+
+### Chain state after the rebase onto `3847d4e57` (CF-0543, O1 fix)
+
+A4c `7ed24b112` VERDICT all 0 at 2026-10-31T18:45:58Z. Codex integrated the
+O1 order fix as `3847d4e57` (`validate_bindings` before resolution, the
+semantic validator after; my hooks stay in `validate()`); the chain rebased
+cleanly: `dc89eff36` catalog fix, `29552513b` A1, `910aeed42` A2,
+`c488974fb` A3, `8968be9e4` test port, `39d700423` A4a, `969b25981` A4b,
+`bf3d81141` A4c; 288 pipelines tests pass. On that head the seven strict
+xfails still fail, now for the wrapper rather than the order: the missing
+source wins (`[TABLE_OR_VIEW_NOT_FOUND] Table or view not found:
+no_such_source`) but Spark reports it through `UnresolvedPipelineException`
+("Flows with errors: <flow names>"), which Sail does not produce; recorded
+as finding O2 in the markers' reason.
