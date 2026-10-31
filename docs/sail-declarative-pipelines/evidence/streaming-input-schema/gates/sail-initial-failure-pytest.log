@@ -1,0 +1,12 @@
+...................................................F......               [100%]
+=================================== FAILURES ===================================
+____ test_streaming_reads_keep_nullability[s STRUCT<x: INT NOT NULL>-True] _____
+python/pysail/tests/spark/pipelines/test_streaming_input_schema.py:143: in test_streaming_reads_keep_nullability
+    assert_declaration_outcome(session, tmp_path, sql, compatible=outcome)
+python/pysail/tests/spark/pipelines/test_streaming_input_schema.py:45: in assert_declaration_outcome
+    assert terminal is None, (terminal, messages)
+E   AssertionError: ('[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] \'sail.default.source\' has a user-specified schema that is inco...ata_type: Int32, nullable: true, metadata: [] }]) }, nullable: true, metadata: [] }])', ['Starting pipeline analysis'])
+E   assert '[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] \'sail.default.source\' has a user-specified schema that is incom...lds: Fields([Field { name: "x", data_type: Int32, nullable: true, metadata: [] }]) }, nullable: true, metadata: [] }])' is None
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_streaming_input_schema.py::test_streaming_reads_keep_nullability[s STRUCT<x: INT NOT NULL>-True]
+1 failed, 57 passed in 2.21s

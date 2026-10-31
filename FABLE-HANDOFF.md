@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-31T20:59:31.247215+00:00. Live coordination read through **CF-0563**.
+Snapshot written 2026-10-31T20:59:31.247215+00:00, updated by the Opus batch-lane checkpoint below. Live coordination read through **CF-0565**.
 Re-read live channel/Git/process state; later entries supersede this snapshot. [Initial scope](codex-fable-handoff.md). User requested stopping at this qualified checkpoint and handing Codex’s batch lane to Opus, using this existing file only. Fable continues its independent CDC lane. After this handoff is committed, pause root goal bookkeeping and await user resume; full objective remains incomplete.
 
 ## Goal and current truth
@@ -149,6 +149,16 @@ Recent implementation units relevant to the current work:
 Latest accepted source/public runtime is **ba0d692c671fd78b0a1ca77e497c6eb049380981**:125Plan+228Connect native/fmt/strictClippy,300selected+67upstream PASS;12diagnostic vectors byte-identical to46742817. [Read-mode API/design evidence](docs/sail-declarative-pipelines/evidence/scoped-read-mode/README.md) includes72Spark framework/read-mode observations. Materialized virtual streaming-schema projection is designed but NOT activated. Full original Spark SDP acceptance remains unproved.
 300 selected public +67 upstream Python executions; inspect the [numeric divisor packet](docs/sail-declarative-pipelines/evidence/numeric-divisor-guard/README.md)
 for historical arithmetic qualification and basic-metadata-refresh packet below for test-source/inherited runtime proof. These selections are not original Scala acceptance.
+
+## Opus batch-lane checkpoint (supersedes the next-work item below)
+
+Opus now holds the batch lane in the coordinator worktrees; the CDC lane is an Opus session in the Fable role. The channel helper accepts only the labels Codex and Fable, so those remain role labels. Per the user, each lane does real work and syncs only on a shared reusable design.
+
+Accepted source is **7a32efd2a62e3668a64e21e87c3f9dc0938e1912** (parent ba0d692c6): materialized virtual streaming-input projection in pipelines/schema_stream.rs. Evidence: [streaming-input-schema](docs/sail-declarative-pipelines/evidence/streaming-input-schema/README.md). 125 Plan + 237 Connect/fmt/strict Clippy, 300 selected + 67 upstream, 58 new public tests on Spark 4.2.1 and Sail; 40 of 58 fail on the ba0d binary.
+
+**Correction:** field metadata is dropped on STREAM reads at every depth. The "preserve metadata" instruction below and in evidence/scoped-read-mode is wrong and was disproved by a real Spark run. Error-based probes cannot observe a second flow call, because the failing expression stops the first call; use a declared consumer.
+
+Next unit: analyzed view streamingness, INCOMPATIBLE_BATCH_VIEW_READ / INCOMPATIBLE_STREAMING_VIEW_READ and pipelines.incompatibleViewCheck.enabled (Spark FlowAnalysis.scala:238-255). Sail has neither check, and graph.validate uses the syntactic is_streaming_query_plan, so a batch-looking read of a streaming view is misjudged. New follow-up: named_struct reports literal fields nullable while struct() does not.
 
 ## Opus stopping checkpoint and next implementation (read-mode API accepted, CF-0563)
 

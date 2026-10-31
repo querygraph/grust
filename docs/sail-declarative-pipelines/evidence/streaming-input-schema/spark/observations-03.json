@@ -1,0 +1,144 @@
+{
+  "started_at": "2026-10-31T21:08:04.556988+00:00",
+  "version": "4.2.1",
+  "framework_default": "false",
+  "cases": [
+    {
+      "label": "second_call_d3_view_true_session_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(3), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "second_call_d3_view_true_session_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(3), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "second_call_d3_view_false_session_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(3), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+      "message": "[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] Table 'spark_catalog.psecond_call_d3_view_false_session_true.consumer' has a user-specified schema that is incompatible with the schema\ninferred from its query.\n\"\nStreaming tables are stateful and remember data that has already been\nprocessed. If you want to recompute the table from scratch, please full refresh\nthe table.\n              \n\nDeclared schema:\nroot\n |-- id: time(3) (nullable = true)\n |-- k: integer (nullable = true)\n\n\nInferred schema:\nroot\n |-- id: time(6) (nullable = true)\n |-- k: integer (nullable = false)\n SQLSTATE: 42000"
+    },
+    {
+      "label": "second_call_d3_view_false_session_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(3), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+      "message": "[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] Table 'spark_catalog.psecond_call_d3_view_false_session_false.consumer' has a user-specified schema that is incompatible with the schema\ninferred from its query.\n\"\nStreaming tables are stateful and remember data that has already been\nprocessed. If you want to recompute the table from scratch, please full refresh\nthe table.\n              \n\nDeclared schema:\nroot\n |-- id: time(3) (nullable = true)\n |-- k: integer (nullable = true)\n\n\nInferred schema:\nroot\n |-- id: time(6) (nullable = true)\n |-- k: integer (nullable = false)\n SQLSTATE: 42000"
+    },
+    {
+      "label": "second_call_d6_view_true_session_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(6), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+      "message": "[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] Table 'spark_catalog.psecond_call_d6_view_true_session_true.consumer' has a user-specified schema that is incompatible with the schema\ninferred from its query.\n\"\nStreaming tables are stateful and remember data that has already been\nprocessed. If you want to recompute the table from scratch, please full refresh\nthe table.\n              \n\nDeclared schema:\nroot\n |-- id: time(6) (nullable = true)\n |-- k: integer (nullable = true)\n\n\nInferred schema:\nroot\n |-- id: time(3) (nullable = true)\n |-- k: integer (nullable = false)\n SQLSTATE: 42000"
+    },
+    {
+      "label": "second_call_d6_view_true_session_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(6), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+      "message": "[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] Table 'spark_catalog.psecond_call_d6_view_true_session_false.consumer' has a user-specified schema that is incompatible with the schema\ninferred from its query.\n\"\nStreaming tables are stateful and remember data that has already been\nprocessed. If you want to recompute the table from scratch, please full refresh\nthe table.\n              \n\nDeclared schema:\nroot\n |-- id: time(6) (nullable = true)\n |-- k: integer (nullable = true)\n\n\nInferred schema:\nroot\n |-- id: time(3) (nullable = true)\n |-- k: integer (nullable = false)\n SQLSTATE: 42000"
+    },
+    {
+      "label": "second_call_d6_view_false_session_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(6), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "second_call_d6_view_false_session_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE STREAMING TABLE consumer (id TIME(6), k INT) AS SELECT id, k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "char_preserve_false_declared_False",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST('a' AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(array(id)) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pchar_preserve_false_declared_False.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(array(id))\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"array(id)\" has the type \"ARRAY<STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(array(id#102)))]\n+- ~SubqueryAlias spark_catalog.pchar_preserve_false_declared_False.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@5accef91, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@f8cc386, [], [id#102], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pchar_preserve_false_declared_False.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "char_preserve_false_declared_True",
+      "sql": "CREATE MATERIALIZED VIEW source (id CHAR(3)) AS SELECT CAST('a' AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(array(id)) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pchar_preserve_false_declared_True.consumer'.\nError: [UNSUPPORTED_DATA_TYPE_FOR_ENCODER] Cannot create encoder for \"CHAR(3)\". Please use a different output data type for your UDF or DataFrame. SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pchar_preserve_false_declared_True.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "char_preserve_true_declared_False",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST('a' AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(array(id)) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pchar_preserve_true_declared_False.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(array(id))\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"array(id)\" has the type \"ARRAY<CHAR(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(array(id#114)))]\n+- ~SubqueryAlias spark_catalog.pchar_preserve_true_declared_False.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@5accef91, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@3a3fbcc1, [], [id#114], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pchar_preserve_true_declared_False.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "char_preserve_true_declared_True",
+      "sql": "CREATE MATERIALIZED VIEW source (id CHAR(3)) AS SELECT CAST('a' AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(array(id)) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pchar_preserve_true_declared_True.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(array(id))\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"array(id)\" has the type \"ARRAY<CHAR(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(array(id#121)))]\n+- ~SubqueryAlias spark_catalog.pchar_preserve_true_declared_True.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@5accef91, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@4039436b, [], [id#121], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pchar_preserve_true_declared_True.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    }
+  ],
+  "completed_at": "2026-10-31T21:08:06.898826+00:00"
+}
