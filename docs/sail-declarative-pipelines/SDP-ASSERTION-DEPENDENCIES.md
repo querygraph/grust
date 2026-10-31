@@ -1104,3 +1104,32 @@ the unquoted, case-preserved `flowName`, the check order against a
 flow that is both multipart and `INSERT OVERWRITE`, the protocol route
 and its implicit-flow exception, no publication on failure, and the
 original `:580` input on both engines.
+
+### 20.1 Two spelling contracts and the four-part boundary (CF-0489)
+
+Codex's pre-gate pin review found two details the §20 unit must
+preserve; both verified:
+
+- The `flowName` parameter differs by API. The SQL handler uses
+  `rawFlowIdentifier.unquotedString`
+  (`SqlGraphRegistrationContext.scala:404–407`); the protocol handler
+  uses the raw `flow.getFlowName`, quoting and case included, and
+  exempts the implicit flow whose name equals its target
+  (`PipelinesHandler.scala:344–352`). Codex's two-API probes show it:
+  `` `D.b`.`F``Q` `` renders `D.b.F`Q` through SQL and raw-quoted
+  through the protocol.
+- A name with four or more parts never reaches the multipart policy:
+  `IdentifierHelper.toTableIdentifier` throws a raw
+  `java.lang.UnsupportedOperationException("4+ part table identifier
+<a.b.c.d> is not supported.")` (`GraphIdentifierManager.scala:262–276`)
+  first, for flow names and targets alike, including implicit names,
+  and the client sees no condition, state or parameters. The parent
+  Sail reports a different class there.
+
+Consequences accepted into the unit: both spellings are preserved per
+route; the four-part arity check runs before the multipart policy for
+flow names and targets; and the structured error representation keeps
+an empty condition meaning "absent", with the Connect codec omitting
+absent `errorClass`, `sqlState` and parameters while a classified error
+with no parameters still sends `{}`. That is the transport detail the
+observed boundary requires, not an activation.
