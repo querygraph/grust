@@ -1,0 +1,431 @@
+{
+  "started_at": "2026-10-31T11:26:03.017858+00:00",
+  "script_sha256": "11253077947bf6ef3998171f85b8d16c89876a63d4593c9d99b22032c6704b0e",
+  "mode": "sail",
+  "cases": [
+    {
+      "api": "sql",
+      "name": "v",
+      "sql": "CREATE TEMPORARY VIEW v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "session.v",
+      "sql": "CREATE TEMPORARY VIEW session.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "system.session.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "SeSsIoN.v",
+      "sql": "CREATE TEMPORARY VIEW SeSsIoN.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "`se\u017f\u017f\u0131on`.v",
+      "sql": "CREATE TEMPORARY VIEW `se\u017f\u017f\u0131on`.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "`\u017fy\u017ftem`.`SESS\u0130ON`.v",
+      "sql": "CREATE TEMPORARY VIEW `\u017fy\u017ftem`.`SESS\u0130ON`.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "session.`a.b`",
+      "sql": "CREATE TEMPORARY VIEW session.`a.b` AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "some_database.tv",
+      "sql": "CREATE TEMPORARY VIEW some_database.tv AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectType": "VIEW",
+        "qualifier": "`some_database`",
+        "objectName": "`tv`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `tv` cannot be qualified with `some_database`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "sql",
+      "name": "db.ns.v",
+      "sql": "CREATE TEMPORARY VIEW db.ns.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectName": "`v`",
+        "objectType": "VIEW",
+        "qualifier": "`db`.`ns`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `db`.`ns`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "sql",
+      "name": "system.other.v",
+      "sql": "CREATE TEMPORARY VIEW system.other.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectName": "`v`",
+        "objectType": "VIEW",
+        "qualifier": "`system`.`other`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `system`.`other`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "sql",
+      "name": "system.session.extra.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.extra.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectType": "VIEW",
+        "objectName": "`v`",
+        "qualifier": "`system`.`session`.`extra`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `system`.`session`.`extra`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "sql",
+      "name": "`a.b`.`c.d`",
+      "sql": "CREATE TEMPORARY VIEW `a.b`.`c.d` AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectType": "VIEW",
+        "objectName": "`c`.`d`",
+        "qualifier": "`a`.`b`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `c`.`d` cannot be qualified with `a`.`b`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "sql",
+      "name": "db.`a``b`",
+      "sql": "CREATE TEMPORARY VIEW db.`a``b` AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "a`b"
+      },
+      "message": "[INVALID_ATTRIBUTE_NAME_SYNTAX] Syntax error in the attribute name: a`b. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts."
+    },
+    {
+      "api": "sql",
+      "name": "session.session.v",
+      "sql": "CREATE TEMPORARY VIEW session.session.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "qualifier": "`session`.`session`",
+        "objectName": "`v`",
+        "objectType": "VIEW"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `session`.`session`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "sql",
+      "name": "`session.v`",
+      "sql": "CREATE TEMPORARY VIEW `session.v` AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "v",
+      "sql": "CREATE TEMPORARY VIEW v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "session.v",
+      "sql": "CREATE TEMPORARY VIEW session.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "system.session.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "SeSsIoN.v",
+      "sql": "CREATE TEMPORARY VIEW SeSsIoN.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "`se\u017f\u017f\u0131on`.v",
+      "sql": "CREATE TEMPORARY VIEW `se\u017f\u017f\u0131on`.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "`\u017fy\u017ftem`.`SESS\u0130ON`.v",
+      "sql": "CREATE TEMPORARY VIEW `\u017fy\u017ftem`.`SESS\u0130ON`.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "session.`a.b`",
+      "sql": "CREATE TEMPORARY VIEW session.`a.b` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `a.b`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "some_database.tv",
+      "sql": "CREATE TEMPORARY VIEW some_database.tv AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM some_database.tv;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "qualifier": "`some_database`",
+        "objectType": "VIEW",
+        "objectName": "`tv`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `tv` cannot be qualified with `some_database`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "pipeline",
+      "name": "db.ns.v",
+      "sql": "CREATE TEMPORARY VIEW db.ns.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM db.ns.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "qualifier": "`db`.`ns`",
+        "objectType": "VIEW",
+        "objectName": "`v`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `db`.`ns`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "pipeline",
+      "name": "system.other.v",
+      "sql": "CREATE TEMPORARY VIEW system.other.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM system.other.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectName": "`v`",
+        "qualifier": "`system`.`other`",
+        "objectType": "VIEW"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `system`.`other`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "pipeline",
+      "name": "system.session.extra.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.extra.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM system.session.extra.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "qualifier": "`system`.`session`.`extra`",
+        "objectName": "`v`",
+        "objectType": "VIEW"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `system`.`session`.`extra`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "pipeline",
+      "name": "`a.b`.`c.d`",
+      "sql": "CREATE TEMPORARY VIEW `a.b`.`c.d` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `a.b`.`c.d`;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectType": "VIEW",
+        "objectName": "`c`.`d`",
+        "qualifier": "`a`.`b`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `c`.`d` cannot be qualified with `a`.`b`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "pipeline",
+      "name": "db.`a``b`",
+      "sql": "CREATE TEMPORARY VIEW db.`a``b` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM db.`a``b`;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "a`b"
+      },
+      "message": "[INVALID_ATTRIBUTE_NAME_SYNTAX] Syntax error in the attribute name: a`b. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts."
+    },
+    {
+      "api": "pipeline",
+      "name": "session.session.v",
+      "sql": "CREATE TEMPORARY VIEW session.session.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM session.session.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "ParseException",
+      "condition": "INVALID_TEMP_OBJ_QUALIFIER",
+      "sql_state": "42602",
+      "parameters": {
+        "objectName": "`v`",
+        "objectType": "VIEW",
+        "qualifier": "`session`.`session`"
+      },
+      "message": "[INVALID_TEMP_OBJ_QUALIFIER] Temporary VIEW `v` cannot be qualified with `session`.`session`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION."
+    },
+    {
+      "api": "pipeline",
+      "name": "`session.v`",
+      "sql": "CREATE TEMPORARY VIEW `session.v` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `session.v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    }
+  ],
+  "cleanup_errors": [],
+  "test_commit": "db650c40e7605658b047fafac2fc721a395c4a0c",
+  "test_sha256": "944006f79285294de53f325ed2e3dc32db87879def4b2c16dd83fba0432fa235",
+  "server_artifact_source_commit": "db650c40e7605658b047fafac2fc721a395c4a0c",
+  "cli_sha256": "c07254ef1b006a76fbf6481c5587a81fb58ce3c187780efc7ee2f71761fe30e4",
+  "public_receipt_sha256": "34ce8d5fa329413916c083bcc6aa361686a87ba121b1e2c329b61eb5f0d932b6",
+  "server_pid": 36019,
+  "version": "4.2.1",
+  "pytest_command": [
+    "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "python/pysail/tests/spark/pipelines/test_sql_namespace.py",
+    "python/pysail/tests/spark/pipelines/test_cte_stream.py",
+    "python/pysail/tests/spark/pipelines/test_temporary_view_qualifiers.py",
+    "--junitxml=/tmp/sail-sdp-temp-qualifier-final/pytest.xml"
+  ],
+  "pytest_exit_code": 0,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T11:26:06.776889+00:00",
+  "remaining_listeners": []
+}

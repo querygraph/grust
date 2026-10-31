@@ -8,13 +8,13 @@ from original assertion dependencies.
 
 ## Current acceptance evidence
 
-Product test-only HEAD8e5e06ff48a5458fb6d68e4d82ca147f634e406e is paired-qualified
-on Spark/Sail. Runtime is the exact previously qualified d99e8b86d CLI artifact;
-Git proves that only two Python test paths changed. The [inventory](spark-4.2.1-inventory.json) remains462
-static registrations,97 assertion-reviewed,62 partial behavioral ports and400
-unmapped. None is fully qualified by executing its original Scala suite against
-Sail. These counts and the300 selected public/67 Python executions must stay
-distinct from full acceptance.
+Product HEADdb650c40e7605658b047fafac2fc721a395c4a0c and its rebuilt CLI are
+qualified by337 analyzer/plan/Connect tests,300 selected public,67 upstream
+Python and19 paired focused tests. Shared diagnostics60a separately passes173
+common library tests. The [inventory](spark-4.2.1-inventory.json) is462 static
+registrations,97 assertion-reviewed,63 partial behavioral ports and399 unmapped.
+None is fully qualified by original Scala-suite execution; selections and
+behavioral ports must stay distinct from that full goal.
 
 The scalar, decimal, worker, config and conditional units are useful Sail
 improvements. Their additional conformance matrices remain retained, including
@@ -40,7 +40,7 @@ sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSui
 | :403–432, arbitrary schemas | Both materialized view and streaming table read an external namespace; both must return1,2,3. This is also a mixed fixture. |
 | :540–559, declared table schema | Materialized-view graph resolves and validates; LONG range schema must be non-nullable. This is a concrete schema assertion, without string casts or CASE. |
 | :562–579, multipart table names | Two schemas, cross-schema materialized-view dependency; both outputs return1. Now paired-qualified as a public assertion port with both answers and owned cleanup; original Scala remains unexecuted. |
-| :599–615, multipart temporary view | Requires ParseException class and INVALID_TEMP_OBJ_QUALIFIER. |
+| :599–615, multipart temporary view | Now paired-qualified: ParseException/INVALID_TEMP_OBJ_QUALIFIER with structured42602/parameters. SESSION/SYSTEM.SESSION normalization is separately checked; original Scala remains unexecuted. |
 | :634–734, catalog/database directives | Two SQL files, per-file reset, current namespace capture, fixed temp-view namespace, cross-catalog inputs, STREAM over CTE, five output checks. STREAM is a batch CTE here, already handled by substitution; this case does not require a streaming runtime. |
 | :739–757, invalid catalog expression grid | CONCAT(foo,'1') and test.cat must fail registration with the Failed to resolve catalog expression prefix. Existing behavioral ports cover that narrow requirement; extra arithmetic matrices are separate. |
 
@@ -81,12 +81,31 @@ pass on both engines. The initial Spark setup error and narrowly corrected
 static-warehouse fixture are retained. Only this site's inventory status moves
 from unmapped to partial. Fable04eb37ac accepts the port.
 
-Next inspect the still-unmapped :599–615 temporary-view qualifier rejection:
-registration must raise ParseException with INVALID_TEMP_OBJ_QUALIFIER.
-Use the exact original SQL and compare both engines before choosing a product
-fix. Other actual requirements include mixed graph/input assertions at :44–88
-and external streaming-table reads at :403–432. Keep those runtime obligations
-separate from the already qualified STREAM(batch CTE) behavior.
+[SqlPipelineSuite:599](evidence/temporary-view-qualifiers/README.md) now has
+a product fix and paired assertion port. Query-defined views use Spark namespace
+normalization, shared diagnostics and typed parse-error propagation; arbitrary
+qualifiers fail with the original exception class/condition. Thirty direct/API
+cases match, including diagnostic quoting, and both unchanged counterfactual
+tests fail when their production behavior is disabled. CREATE USING and DROP
+follow separate paths and are outside this assertion's coverage.
+
+The six still-unmapped SQL registrations are streaming/mixed cases (:44, :197,
+:270, :403, :808, :1030). Existing partial sites still have internal/metadata/
+lifecycle assertions to qualify. Do not mistake32 SQL partial ports for complete
+batch or Scala-suite acceptance.
+
+Next design checkpoint: metadata-only materialization. MaterializeTablesSuite:125
+uses two internal registerFlow/registerTable definitions, then materializeGraph;
+it checks nullable INT x and STRING y catalog columns. :374 checks declared
+two-column schema plus identity partition x2. Inspect the original table/flow
+kinds and Sail's existing materialization/ownership seam before choosing native
+or public fixtures. An internal metadata assertion and a public streaming-query
+contract are different entry points; do not relabel the tables or weaken runtime
+guards to obtain a pass. CF-0440 explicitly rejects moving the public Table|Sink
+guard after catalog materialization: that would introduce side effects before
+the existing rejection. Use the internal metadata seam under its ownership
+contract; verify streaming merge/truncate/property/failure branches separately. Original Source is graph/MaterializeTablesSuite.scala
+at the same Spark pin. Batch event/failure-handler assertions remain open too.
 
 Record setup, registration, preparation/start, answers, structured failure
 metadata and cleanup separately. Existing incremental/sink guards remain until

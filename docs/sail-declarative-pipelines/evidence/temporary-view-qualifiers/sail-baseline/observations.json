@@ -1,0 +1,448 @@
+{
+  "started_at": "2026-10-31T11:09:58.721629+00:00",
+  "script_sha256": "c5da8593df1a9c7a00df9bf09832d874050c6572eabda58a9642540a41fb15b3",
+  "mode": "sail",
+  "cases": [
+    {
+      "api": "sql",
+      "name": "v",
+      "sql": "CREATE TEMPORARY VIEW v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "sql",
+      "name": "session.v",
+      "sql": "CREATE TEMPORARY VIEW session.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "system.session.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "SeSsIoN.v",
+      "sql": "CREATE TEMPORARY VIEW SeSsIoN.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "`se\u017f\u017f\u0131on`.v",
+      "sql": "CREATE TEMPORARY VIEW `se\u017f\u017f\u0131on`.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "`\u017fy\u017ftem`.`SESS\u0130ON`.v",
+      "sql": "CREATE TEMPORARY VIEW `\u017fy\u017ftem`.`SESS\u0130ON`.v AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "session.`a.b`",
+      "sql": "CREATE TEMPORARY VIEW session.`a.b` AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "some_database.tv",
+      "sql": "CREATE TEMPORARY VIEW some_database.tv AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "db.ns.v",
+      "sql": "CREATE TEMPORARY VIEW db.ns.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "system.other.v",
+      "sql": "CREATE TEMPORARY VIEW system.other.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "system.session.extra.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.extra.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "`a.b`.`c.d`",
+      "sql": "CREATE TEMPORARY VIEW `a.b`.`c.d` AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "db.`a``b`",
+      "sql": "CREATE TEMPORARY VIEW db.`a``b` AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "session.session.v",
+      "sql": "CREATE TEMPORARY VIEW session.session.v AS SELECT 1 AS value",
+      "expected_valid": false,
+      "phase": "sql",
+      "outcome": "error",
+      "error_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid argument: expected a single identifier for temporary view name"
+    },
+    {
+      "api": "sql",
+      "name": "`session.v`",
+      "sql": "CREATE TEMPORARY VIEW `session.v` AS SELECT 1 AS value",
+      "expected_valid": true,
+      "phase": "sql",
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "v",
+      "sql": "CREATE TEMPORARY VIEW v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    },
+    {
+      "api": "pipeline",
+      "name": "session.v",
+      "sql": "CREATE TEMPORARY VIEW session.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW session.v AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW session.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "system.session.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW system.session.v AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW system.session.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "SeSsIoN.v",
+      "sql": "CREATE TEMPORARY VIEW SeSsIoN.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW SeSsIoN.v AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW SeSsIoN.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "`se\u017f\u017f\u0131on`.v",
+      "sql": "CREATE TEMPORARY VIEW `se\u017f\u017f\u0131on`.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW `se\u017f\u017f\u0131on`.v AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW `se\u017f\u017f\u0131on`.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "`\u017fy\u017ftem`.`SESS\u0130ON`.v",
+      "sql": "CREATE TEMPORARY VIEW `\u017fy\u017ftem`.`SESS\u0130ON`.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW `\u017fy\u017ftem`.`SESS\u0130ON`.v AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW `\u017fy\u017ftem`.`SESS\u0130ON`.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "session.`a.b`",
+      "sql": "CREATE TEMPORARY VIEW session.`a.b` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `a.b`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW session.`a.b` AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW session.`a.b` AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "some_database.tv",
+      "sql": "CREATE TEMPORARY VIEW some_database.tv AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM some_database.tv;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW some_database.tv AS SELECT 1 AS value\n",
+        "codeLocation": "Query defined at qualifier.sql:1"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW some_database.tv AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "db.ns.v",
+      "sql": "CREATE TEMPORARY VIEW db.ns.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM db.ns.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW db.ns.v AS SELECT 1 AS value\n",
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "codeLocation": "Query defined at qualifier.sql:1"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW db.ns.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "system.other.v",
+      "sql": "CREATE TEMPORARY VIEW system.other.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM system.other.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW system.other.v AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW system.other.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "system.session.extra.v",
+      "sql": "CREATE TEMPORARY VIEW system.session.extra.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM system.session.extra.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW system.session.extra.v AS SELECT 1 AS value\n",
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "message": "invalid argument: expected a single identifier for temporary view name"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW system.session.extra.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "`a.b`.`c.d`",
+      "sql": "CREATE TEMPORARY VIEW `a.b`.`c.d` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `a.b`.`c.d`;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW `a.b`.`c.d` AS SELECT 1 AS value\n",
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "message": "invalid argument: expected a single identifier for temporary view name"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW `a.b`.`c.d` AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "db.`a``b`",
+      "sql": "CREATE TEMPORARY VIEW db.`a``b` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM db.`a``b`;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "codeLocation": "Query defined at qualifier.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW db.`a``b` AS SELECT 1 AS value\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW db.`a``b` AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "session.session.v",
+      "sql": "CREATE TEMPORARY VIEW session.session.v AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM session.session.v;",
+      "expected_valid": false,
+      "phase": "registration",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "invalid argument: expected a single identifier for temporary view name",
+        "offendingQuery": "\nOffending query:\nCREATE TEMPORARY VIEW session.session.v AS SELECT 1 AS value\n",
+        "codeLocation": "Query defined at qualifier.sql:1"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: expected a single identifier for temporary view name\n\nOffending query:\nCREATE TEMPORARY VIEW session.session.v AS SELECT 1 AS value\n\nQuery defined at qualifier.sql:1"
+    },
+    {
+      "api": "pipeline",
+      "name": "`session.v`",
+      "sql": "CREATE TEMPORARY VIEW `session.v` AS SELECT 1 AS value; CREATE MATERIALIZED VIEW mv AS SELECT * FROM `session.v`;",
+      "expected_valid": true,
+      "phase": "registration",
+      "outcome": "accepted"
+    }
+  ],
+  "cleanup_errors": [],
+  "server_artifact_source_commit": "d99e8b86d4db7aa2c5f79848496e6f3bfad6acb2",
+  "cli_sha256": "e03c1105b7bb71071a4a6f714dbfdcb1a46247912d207811bf6e88cd64616e00",
+  "public_receipt_sha256": "5e989e5e7ed8bd6d2ff47afe73d72774ee7c602c9148ee0c534ae14623f6438a",
+  "server_pid": 29992,
+  "version": "4.2.1",
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T11:10:00.378390+00:00",
+  "remaining_listeners": []
+}

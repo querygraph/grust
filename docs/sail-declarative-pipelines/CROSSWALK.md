@@ -11,8 +11,8 @@ is fully qualified by executing the original Scala suite against Sail.
 | MaterializeTablesSuite | 27 | 10 | 17 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 38 | 31 | 7 |
-| Total | 97 | 62 | 35 |
+| SqlPipelineSuite | 38 | 32 | 6 |
+| Total | 97 | 63 | 34 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -59,8 +59,14 @@ parameter when no cause exists. These belong to the pending Astra
 ## SQL pipeline assertions
 
 All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
-31 partial ports and 7 unmapped. This is not a complete Scala-suite verdict.
+32 partial ports and 6 unmapped. This is not a complete Scala-suite verdict.
 The reviewed groups include:
+
+- [Temporary-view qualifiers](evidence/temporary-view-qualifiers/README.md):
+  SqlPipelineSuite:599's arbitrary database qualifier produces ParseException/
+  INVALID_TEMP_OBJ_QUALIFIER on both engines. Native analyzer/planner/Connect
+  metadata and pipeline draft rollback are checked, with valid SESSION forms
+  separately exercising private/direct view execution.
 
 - [Multipart outputs](evidence/original-multipart/README.md): SqlPipelineSuite:562's
   two namespace-qualified materialized views register together; both return Row(1)
