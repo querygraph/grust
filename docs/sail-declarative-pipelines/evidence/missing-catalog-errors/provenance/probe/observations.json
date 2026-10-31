@@ -1,0 +1,286 @@
+{
+  "started_at": "2026-10-31T04:26:16.659773+00:00",
+  "engine": "sail",
+  "harness_sha256": "16d504c4d0bffa8908e299331f8b4fe0ea796c2cc44b2b03708826cdb8abed8f",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "Public SQL validation phase, condition/state/parameters and rows; not SDP Scala suite acceptance",
+  "cases": [
+    {
+      "name": "catalog_dead",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN current_catalog() ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "database_dead",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN current_database() ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "timezone_dead",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN current_timezone() ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "user_dead",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN current_user() ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "typeof_catalog",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN typeof(current_catalog()) ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "rows": [
+        {
+          "value": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "typeof_catalog_nested",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN typeof(concat(current_catalog(), current_database())) ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "rows": [
+        {
+          "value": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "typeof_after_nonfoldable",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN concat(current_catalog(), typeof(rand())) ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "nonfoldable_after_typeof",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN concat(typeof(rand()), current_catalog()) ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "missing_after_catalog",
+      "query": "SELECT IDENTIFIER(concat(current_catalog(), missing)) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`missing`",
+        "proposal": "`foo`"
+      }
+    },
+    {
+      "name": "missing_before_catalog",
+      "query": "SELECT IDENTIFIER(concat(missing, current_catalog())) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`missing`",
+        "proposal": "`foo`"
+      }
+    },
+    {
+      "name": "typeof_missing",
+      "query": "SELECT IDENTIFIER(typeof(missing)) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`foo`",
+        "objectName": "`missing`"
+      }
+    },
+    {
+      "name": "missing_subquery_after_catalog",
+      "query": "SELECT IDENTIFIER(concat(current_catalog(), (SELECT missing FROM input))) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`foo`",
+        "objectName": "`missing`"
+      }
+    },
+    {
+      "name": "typeof_scalar_subquery",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN typeof((SELECT foo FROM input)) ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "rows": [
+        {
+          "value": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "typeof_scalar_missing_subquery",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN typeof((SELECT missing FROM input)) ELSE 'foo' END) AS value FROM input",
+      "args": null,
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`foo`",
+        "objectName": "`missing`"
+      }
+    },
+    {
+      "name": "bound_parameter_after_catalog",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN current_catalog() ELSE :col END) AS value FROM input",
+      "args": {
+        "col": "foo"
+      },
+      "setup": "builtin_functions",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "bound_parameter_typeof",
+      "query": "SELECT IDENTIFIER(CASE WHEN false THEN typeof(current_catalog()) ELSE :col END) AS value FROM input",
+      "args": {
+        "col": "foo"
+      },
+      "setup": "builtin_functions",
+      "rows": [
+        {
+          "value": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "udf_typeof",
+      "query": "SELECT IDENTIFIER(typeof('literal')) AS value FROM input",
+      "args": null,
+      "setup": "python_udfs_typeof_and_probe_identity",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "udf_typeof_missing",
+      "query": "SELECT IDENTIFIER(typeof(missing)) AS value FROM input",
+      "args": null,
+      "setup": "python_udfs_typeof_and_probe_identity",
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`missing`",
+        "proposal": "`foo`"
+      }
+    },
+    {
+      "name": "udf_unique",
+      "query": "SELECT IDENTIFIER(probe_identity('literal')) AS value FROM input",
+      "args": null,
+      "setup": "python_udfs_typeof_and_probe_identity",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "udf_unique_missing",
+      "query": "SELECT IDENTIFIER(probe_identity(missing)) AS value FROM input",
+      "args": null,
+      "setup": "python_udfs_typeof_and_probe_identity",
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`missing`",
+        "proposal": "`foo`"
+      }
+    }
+  ],
+  "spark_version": "4.2.1",
+  "function_resolution_session_order": "second",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "listener_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T04:26:17.333819+00:00"
+}

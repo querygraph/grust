@@ -1,0 +1,334 @@
+[
+  {
+    "name": "api_'missing_catalog'",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "catalogName": "`missing_catalog`",
+      "config": "\"spark.sql.catalog.missing_catalog\""
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "sqlState": "42P08",
+          "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}",
+          "errorClass": "CATALOG_NOT_FOUND"
+        }
+      }
+    ]
+  },
+  {
+    "name": "api_'a.b'",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "config": "\"spark.sql.catalog.a.b\"",
+      "catalogName": "`a`.`b`"
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "sqlState": "42P08",
+          "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.a.b\\\"\",\"catalogName\":\"`a`.`b`\"}",
+          "errorClass": "CATALOG_NOT_FOUND"
+        }
+      }
+    ]
+  },
+  {
+    "name": "api_'a\"b'",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "config": "\"spark.sql.catalog.a\"b\"",
+      "catalogName": "`a\"b`"
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "errorClass": "CATALOG_NOT_FOUND",
+          "sqlState": "42P08",
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.a\\\"b\\\"\",\"catalogName\":\"`a\\\"b`\"}"
+        }
+      }
+    ]
+  },
+  {
+    "name": "api_'a`b'",
+    "returned": false,
+    "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+    "exception_type": "AnalysisException",
+    "parameters": {
+      "name": "a`b"
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.AnalysisException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.AnalysisException\"]",
+          "sqlState": "42601",
+          "errorClass": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+          "messageParameters": "{\"name\":\"a`b\"}"
+        }
+      }
+    ]
+  },
+  {
+    "name": "api_'雪'",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "config": "\"spark.sql.catalog.雪\"",
+      "catalogName": "`雪`"
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.雪\\\"\",\"catalogName\":\"`雪`\"}",
+          "sqlState": "42P08",
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "errorClass": "CATALOG_NOT_FOUND"
+        }
+      }
+    ]
+  },
+  {
+    "name": "api_''",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "catalogName": "``",
+      "config": "\"spark.sql.catalog.\""
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "messageParameters": "{\"catalogName\":\"``\",\"config\":\"\\\"spark.sql.catalog.\\\"\"}",
+          "sqlState": "42P08",
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "errorClass": "CATALOG_NOT_FOUND"
+        }
+      }
+    ]
+  },
+  {
+    "name": "api_'`a.b`'",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "catalogName": "`a.b`",
+      "config": "\"spark.sql.catalog.`a.b`\""
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "sqlState": "42P08",
+          "messageParameters": "{\"catalogName\":\"`a.b`\",\"config\":\"\\\"spark.sql.catalog.`a.b`\\\"\"}",
+          "errorClass": "CATALOG_NOT_FOUND"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_SET CATALOG missing_catalog",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "catalogName": "`missing_catalog`",
+      "config": "\"spark.sql.catalog.missing_catalog\""
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "sqlState": "42P08",
+          "errorClass": "CATALOG_NOT_FOUND",
+          "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_SET CATALOG 'missing_catalog'",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "catalogName": "`missing_catalog`",
+      "config": "\"spark.sql.catalog.missing_catalog\""
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "errorClass": "CATALOG_NOT_FOUND",
+          "sqlState": "42P08",
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_SET CATALOG IDENTIFIER('missing_catalog')",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "config": "\"spark.sql.catalog.missing_catalog\"",
+      "catalogName": "`missing_catalog`"
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\",\"catalogName\":\"`missing_catalog`\"}",
+          "sqlState": "42P08",
+          "errorClass": "CATALOG_NOT_FOUND",
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_USE CATALOG missing_catalog",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "catalogName": "`missing_catalog`",
+      "config": "\"spark.sql.catalog.missing_catalog\""
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "sqlState": "42P08",
+          "errorClass": "CATALOG_NOT_FOUND",
+          "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_USE missing_catalog.db",
+    "returned": false,
+    "condition": null,
+    "exception_type": "AnalysisException",
+    "parameters": null,
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.AnalysisException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_SELECT * FROM missing_catalog.db.input",
+    "returned": false,
+    "condition": null,
+    "exception_type": "AnalysisException",
+    "parameters": null,
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.AnalysisException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_SHOW TABLES IN missing_catalog.db",
+    "returned": false,
+    "condition": null,
+    "exception_type": "AnalysisException",
+    "parameters": null,
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.AnalysisException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_SET CATALOG '`a.b`'",
+    "returned": false,
+    "condition": "CATALOG_NOT_FOUND",
+    "exception_type": "SparkException",
+    "parameters": {
+      "config": "\"spark.sql.catalog.a.b\"",
+      "catalogName": "`a`.`b`"
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.a.b\\\"\",\"catalogName\":\"`a`.`b`\"}",
+          "sqlState": "42P08",
+          "errorClass": "CATALOG_NOT_FOUND",
+          "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
+        }
+      }
+    ]
+  },
+  {
+    "name": "sql_SET CATALOG '`a``b`'",
+    "returned": false,
+    "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+    "exception_type": "AnalysisException",
+    "parameters": {
+      "name": "a`b"
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.sql.AnalysisException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "messageParameters": "{\"name\":\"a`b\"}",
+          "sqlState": "42601",
+          "errorClass": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+          "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+        }
+      }
+    ]
+  }
+]

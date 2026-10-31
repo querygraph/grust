@@ -369,3 +369,37 @@ parameter tests and unchanged14+20 observations. The same48 cases improve25→28
 behaviors (metadata8); all20 remaining differences are retained. The plan crate
 is byte-identical to4ab. Both product units and all owned gates/probes are terminal;
 no full original Scala-suite acceptance or bare catalog activation is claimed.
+
+## Explicit catalog loads and native error hierarchy
+
+Committed55c237c489d551bb82b1aa9da3d6b035ab4a57ca adds one typed error factory
+beside quote_sql_identifier and applies it only to SetCurrentCatalog execution.
+Catalog API and public SET CATALOG keep the native CatalogNotFoundException,
+CATALOG_NOT_FOUND/42P08, quoted catalogName and configuration parameters. The
+existing transport derives the measured five-class hierarchy from this known
+class, allowing PySpark to select SparkException without replacing the native
+reason. There is no new serialized field, dependency, catalog provider branch,
+manager/planner change or analysis-time existence check.
+
+Fable973788dd and the independent16-case Spark oracle established the critical
+scope boundary: namespace resolution falls back to the current catalog and has
+different errors. The broader planner-map candidateba7 passed439 tests but was
+never advanced. Final55 leaves plan/catalog trees byte-identical to476, gates the
+physical conversion on SetCurrentCatalog and preserves CommitStateUnknown.
+Fable885c91eb reviewed that bounded implementation without a requested change.
+
+[Explicit-load evidence](evidence/missing-catalog-errors/README.md) records439 Rust
+libraries/fmt/strictClippy, diagnostic/hierarchy controls each0/1, a fresh300+67
+public run and4 parameter tests. The new16 queries improve0→12 behavior/public
+metadata matches, with ten matching native reason/hierarchy/metadata groups.
+Malformed names retain INVALID_ATTRIBUTE_NAME_SYNTAX; their existing single-class
+analysis hierarchy remains a wire difference. Three namespace errors are unchanged
+including public messages; Sail's existing USE CATALOG grammar extension remains
+a difference from Spark's parse error. No transient IDs/full stack/origin equality
+is claimed. The comparator includes explicit getCondition as well as display codes.
+
+The same48 catalog cases improve28→33 behaviors, metadata8→13; arithmetic14
+improves6→8, metadata3→5. All earlier positive cases remain positive and20 provenance
+observations are unchanged. Bare public/directive phase checks, intrinsic function
+annotations, ordinary arithmetic lowering, fallback resolution/frozen bindings and
+full original Scala SDP acceptance remain required work. No flow run or data write.
