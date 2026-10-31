@@ -1262,3 +1262,35 @@ three parameters exact and no table created.
 Verdict: accept, read-only, pending the native gate and the Spark mode
 probe. On landing the `:525` record is strengthened on the same terms
 as `:580` (already partial; counts unchanged).
+
+### 20.6 Pre-pin for the `INSERT` flow policy unit (CF-0501)
+
+Codex's twelve-case Spark oracle for the next unit is confirmed in the
+pin, with one structural consequence:
+
+- `INSERT INTO … IF NOT EXISTS` never reaches the graph: `AstBuilder`
+  raises `invalidStatement("INSERT INTO ... IF NOT EXISTS")`
+  (`AstBuilder.scala:1045`), a `ParseException`
+  `INVALID_STATEMENT_OR_CLAUSE` with `operation` = `toSQLStmt(...)`, the
+  upper-cased statement text, SQLSTATE `42601`
+  (`QueryParsingErrors.scala:535–540`, `error-conditions.json:4827–4832`),
+  message "The statement or clause: INSERT INTO ... IF NOT EXISTS is
+  not valid." It is a raw parser error like §18's, carrying no file
+  name.
+- For a flow operation that parsed, `CreateFlowHandler` applies the
+  registration-wrapped policies in this order: partition spec,
+  user-specified columns, `overwrite`, `ifPartitionNotExists`, then
+  `!byName` (`SqlGraphRegistrationContext.scala:479–506`), after the
+  raw multipart name check (§20.1). Since `IF NOT EXISTS` is legal in
+  Spark's grammar only with `INSERT OVERWRITE`, and the `overwrite`
+  check fires first, the handler's "IF NOT EXISTS not supported for
+  flows." arm is unreachable from SQL; it stays in the design only as
+  Spark's text, not as a Sail obligation with a reachable fixture. A
+  plain `INSERT INTO … BY NAME` registers.
+
+So the unit must split Sail's current combined message into the
+producer-owned strings of §20 in that precedence, route the
+`IF NOT EXISTS` form to the raw parser error, and keep the frozen BDD
+expectation only where the oracle agrees, correcting it per case with
+the Spark result recorded, as §19.1 did. Every existing query shape and
+assertion stays.
