@@ -632,3 +632,29 @@ client-only; in-JVM sites by equivalence to the reference substrate.
 The inventory's `scala_suite_executed = false` is permanent for the
 third tier, and the design should say so rather than treat it as a gap
 to close.
+
+### 14.1 Corrections from the reference substrate (CF-0458)
+
+- `PipelinesHandlerSuite` was listed in §14 among the client-only
+  Connect bodies. It is not: it extends `SparkFunSuite`, not the Connect
+  server base, and both tests call `PipelinesHandler.throwRunFailure`
+  and inspect the thrown value in-process
+  (`PipelinesHandlerSuite.scala:26`, `:49–62`). It is a pure in-JVM
+  helper contract, portable only by equivalence. Folder classification
+  is a first cut; each body has to be audited, as Codex says, and
+  `PipelineEventStreamSuite`'s client-facing bodies still need the base
+  replaced explicitly before they count.
+- `MaterializeTablesSuite` is abstract (`:39`) with two concrete
+  subclasses, `DefaultMaterializeTablesSuite` (`:33`) and
+  `HiveMaterializeTablesSuite` (`sql/hive/.../HiveMaterializeTablesSuite.scala:23`),
+  so every test in it runs twice at runtime, once per substrate. The
+  static inventory of 462 declarations did not encode that; Codex's
+  dependency-complete registration probe (36 concrete suite classes,
+  554 runtime names, no unresolved classes or ignored tags) is the
+  right denominator for the in-JVM tier, and the substrate's 29/29
+  `DefaultMaterializeTablesSuite` pass on Spark is its oracle baseline,
+  not Sail acceptance.
+- The design decomposition stands as Codex restates it: Python as is,
+  Connect bodies on an explicitly replaced fixture base, in-JVM sites by
+  native internal equivalence, with no promise that unchanged in-JVM
+  Spark classes execute against Sail.
