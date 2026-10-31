@@ -1156,3 +1156,45 @@ false)` exercises the decode-from-absent path, and both absent values
 
 Verdict: accept. Nothing blocking; the four fields are the ones §6.10
 said the wire must carry.
+
+### 6.12 Config capture for `spark.sql.legacy.allowNegativeScaleOfDecimal`: premises pinned (CF-0394)
+
+Codex's plan for the capture unit rests on five claims; all five are in
+the pinned sources, so the review of the candidate can be confined to
+the diff.
+
+- Key, default and visibility: `buildConf("spark.sql.legacy.allowNegativeScaleOfDecimal").internal().booleanConf.createWithDefault(false)`
+  (`SQLConf.scala:5732–5740`), read at evaluation through
+  `SqlApiConf.get.allowNegativeScaleOfDecimalEnabled`
+  (`Decimal.scala:663`, `:670`), which is the executing query's conf, so
+  capturing it at resolve time is equivalent.
+- `SET` validates before it mutates and stores the raw string:
+  `setConfString` runs `entry.valueConverter(value)` and only then
+  `setConfWithCheck(key, value)` (`SQLConf.scala:8797–8806`).
+- The boolean converter is `s.trim.toBoolean`
+  (`ConfigBuilder.scala:40–46`): Java `trim` (≤ U+0020, so NBSP fails)
+  then Scala's `toBoolean`, which is Java `equalsIgnoreCase` against
+  `true` and `false`. For those two words the only non-ASCII character
+  Java folds is the long s U+017F in the `s` position of `false`
+  (`Character.toUpperCase('ſ') == 'S'`); no other code point
+  upper-cases to T, R, U, E, F, A or L. That is why `falſe` is accepted
+  and `1`, `0`, `yes`, `''` are not.
+- The error is `SparkIllegalArgumentException`
+  `INVALID_CONF_VALUE.TYPE_MISMATCH` with `confName`, `confValue`,
+  `confType = "boolean"` (`ConfigBuilder.scala:112–120`), SQLSTATE 22022
+  with the message "The value '<confValue>' in the config "<confName>"
+  is invalid. It should be a/an '<confType>' value."
+  (`error-conditions.json` under `INVALID_CONF_VALUE`).
+- Sail already has the parser: `parse_spark_bool`
+  (`crates/sail-data-source/src/options/parsers.rs:30–44`) accepts
+  `true`/`false` ASCII-case-insensitively plus the `falſe` fold with the
+  reason in its comment, and the ORC path applies the Java trim before
+  it (`sail-spark-connect/src/config/orc.rs:24–36`). Extracting that
+  pure step is the right reuse; the ORC error mapping stays where it is.
+
+Nothing to challenge at plan level. The candidate's review will check:
+the trim is applied before the parser for the new key; the raw accepted
+string is what the session stores and returns; the typed error carries
+the three parameters and reaches the client with the
+`SparkIllegalArgumentException` hierarchy; and snapshot overrides do not
+leak into other sessions.
