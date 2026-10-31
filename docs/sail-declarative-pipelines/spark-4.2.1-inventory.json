@@ -4511,14 +4511,18 @@
       "name_expression": "\"Unsupported SQL statements throws error\"",
       "status": "partial-behavioral-port",
       "sail_tests": [
-        "python/pysail/tests/spark/pipelines/test_features.py::test_a_failed_sql_file_registers_no_partial_definitions"
+        "python/pysail/tests/spark/pipelines/test_features.py::test_a_failed_sql_file_registers_no_partial_definitions",
+        "python/pysail/tests/spark/pipelines/test_unsupported_pipeline_statements.py::test_unsupported_ctas_preserves_registration_diagnostic[original-525]",
+        "sail_spark_connect::pipelines::sql::tests::unsupported::original_unsupported_ctas_uses_registration_message_and_source"
       ],
       "coverage_review": {
-        "phase": "batch-parser",
-        "covered_assertions": "Ordinary CREATE TABLE AS SELECT is rejected in pipeline SQL; port also checks failed-file registration is atomic and later valid definition succeeds.",
-        "remaining_assertions": "Original SqlGraphElementRegistrationException class and Unsupported plan substring are not checked; port has an earlier valid statement in the same file. Original Scala suite remains unexecuted.",
-        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
-        "scala_suite_executed": false
+        "phase": "unsupported-table-as-select",
+        "covered_assertions": "Original CREATE TABLE t AS SELECT 1 input and both external-table fixtures; registration exception with Unsupported plan message, exact condition/state/message/offendingQuery/codeLocation; native no partial publication and ordinary SQL contrast. Additional mode and Unicode/comment origins pass on both engines.",
+        "remaining_assertions": "Original Scala suite unexecuted on Sail; full native/public replacement-fixture and catalog-profile conformance remains separate. Other unsupported logical plan shapes are not qualified by this unit.",
+        "sail_evidence": "evidence/unsupported-table-as-select/sail-feature/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "18604c01a2b59a619e2432f77c2c690b64463065",
+        "reference_evidence": "evidence/registration-error-boundaries/reference-sql-suite/receipt.json"
       }
     },
     {

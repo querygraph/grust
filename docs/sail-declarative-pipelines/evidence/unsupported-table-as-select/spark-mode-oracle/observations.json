@@ -1,0 +1,87 @@
+{
+  "started_at": "2026-10-31T15:28:23.088602+00:00",
+  "mode": "spark",
+  "script_sha256": "89c53d4c2f93690e8382240ac06bb1e013033e424100bf9f75742bbcaa9b01b6",
+  "cases": [
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "original",
+      "sql": "CREATE TABLE t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "Unsupported plan CreateTableAsSelect parsed from SQL query",
+        "offendingQuery": "\nOffending query:\nCREATE TABLE t AS SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan CreateTableAsSelect parsed from SQL query\n\nOffending query:\nCREATE TABLE t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1 SQLSTATE: 42000\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.SqlGraphElementRegistrationException\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:171)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "if-not-exists",
+      "sql": "CREATE TABLE IF NOT EXISTS t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "Unsupported plan CreateTableAsSelect parsed from SQL query",
+        "offendingQuery": "\nOffending query:\nCREATE TABLE IF NOT EXISTS t AS SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan CreateTableAsSelect parsed from SQL query\n\nOffending query:\nCREATE TABLE IF NOT EXISTS t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1 SQLSTATE: 42000\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.SqlGraphElementRegistrationException\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:171)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "create-or-replace",
+      "sql": "CREATE OR REPLACE TABLE t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "Unsupported plan ReplaceTableAsSelect parsed from SQL query",
+        "offendingQuery": "\nOffending query:\nCREATE OR REPLACE TABLE t AS SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ReplaceTableAsSelect parsed from SQL query\n\nOffending query:\nCREATE OR REPLACE TABLE t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1 SQLSTATE: 42000\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.SqlGraphElementRegistrationException\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:171)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "replace",
+      "sql": "REPLACE TABLE t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "Unsupported plan ReplaceTableAsSelect parsed from SQL query",
+        "offendingQuery": "\nOffending query:\nREPLACE TABLE t AS SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ReplaceTableAsSelect parsed from SQL query\n\nOffending query:\nREPLACE TABLE t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1 SQLSTATE: 42000\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.SqlGraphElementRegistrationException\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:171)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "contains_filename": true,
+      "table_exists": false
+    }
+  ],
+  "cleanup_errors": [],
+  "version": "4.2.1",
+  "completed_at": "2026-10-31T15:28:30.164192+00:00",
+  "remaining_listeners": []
+}

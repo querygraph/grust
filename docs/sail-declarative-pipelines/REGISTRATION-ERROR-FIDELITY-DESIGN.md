@@ -114,3 +114,23 @@ Existing coverage580 is strengthened without changing116reviewed87partial399
 unmapped. Unsupported-node, partition and individual INSERT-policy producers
 remain subsequent implementation units in this design. No full-goal or new
 streaming/catalog/effect authority follows.
+
+## Table-as-select producer qualified
+
+Commit18604c01a separately improves original SqlPipelineSuite525. The shared
+Sail table-as-select node renders CreateTableAsSelect for Create/IfNotExists and
+ReplaceTableAsSelect for Replace/OrReplace, confined to pipeline normalization.
+AnalysisError payloads enter the existing wrapper directly.248 relevant native
+tests, formatting/Clippy, fresh300+67,6 cases on each engine and both unchanged
+controls pass their intended verdicts. Only existing525 coverage improves;
+counts remain116reviewed87partial399unmapped. See [evidence](evidence/unsupported-table-as-select/README.md).
+
+Next INSERT oracle refinement: actual Spark rejects INSERT INTO ... IF NOT EXISTS
+as raw ParseException INVALID_STATEMENT_OR_CLAUSE/42601, operation parameter,
+before Flow name policy. The grammar accepts the token sequence but AstBuilder
+rejects it; accepted logical SQL IF NOT EXISTS is limited to overwrite forms,
+where earlier partition/overwrite checks win. Therefore the later graph handler's
+IF NOT EXISTS text has no reachable SQL fixture. Share the parser/normalization
+rule with ordinary Sail SQL; do not invent a pipeline wrapper for it. Remaining
+valid INSERT policies keep partition→columns→overwrite→by-name precedence.
+The12-case oracle is archived; no INSERT implementation changes occur in18604.
