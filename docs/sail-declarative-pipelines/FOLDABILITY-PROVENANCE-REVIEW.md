@@ -582,3 +582,27 @@ the SDP dispatch does not match, so Spark reports "Unsupported plan
 PlanWithUnresolvedIdentifier parsed from SQL query" (`:168–172`); Sail's
 `UseCatalog`/`UseDatabase` take a plain name, so the form is a parse error
 there. Low priority.
+
+### 9.4 The explicit policy type `f0a232af2` (CF-0322)
+
+Read against its diff on `3ffb497d3`. `ConstantContext { Ordinary, Identifier }`
+(`function/constant_context.rs`) replaces the bool, with two decisions as
+exhaustive matches, `retain_function_foldability` (read by `non_foldable` and
+by the UDF/HOF wrap at `function.rs`) and `defer_arithmetic_evaluation` (read
+by the three zero-divisor predicates). Behaviour unchanged by construction;
+Codex reports identical case outcomes. No change requested.
+
+One note for the next unit, which adds the public-bare and directive
+policies: the two decisions are not enough once a public-bare variant exists,
+because that policy treats the two things `retain_function_foldability`
+currently bundles differently. Current-like builtins must _not_ be marked
+there (the optimizer would have replaced them, §8), while registered UDFs,
+higher-order functions, generators and `raise_error` must still be marked
+(§8.1). So the variant needs the decision split into "replace current-like"
+and "retain intrinsic non-foldability", each an exhaustive match, and
+`defer_arithmetic_evaluation` is `false` for public-bare (Spark folds and
+raises `DIVIDE_BY_ZERO` under ANSI, which the ordinary literal-zero path
+already produces). The directive variant keeps the `Identifier` decisions
+and adds the two CheckAnalysis-first classes (§9.1). Keeping each as a
+`match` on the enum, as this unit does, is what makes the third variant
+unable to inherit a wrong default.
