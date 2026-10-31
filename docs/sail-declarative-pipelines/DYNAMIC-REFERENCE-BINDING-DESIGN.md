@@ -466,8 +466,10 @@ The generic CASE defect remains required work; no registry source was modified.
 The extra22 decimal/CASE/string probes preserve all parent rows/errors. Apart
 from the two remainder schema improvements, schemas remain identical. Decimal /
 precision, CASE result nullability and string arithmetic domains remain wrong;
-Spark rejects the two string-literal arithmetic queries under both modes, so a
-blanket string-to-double fallback is not justified. Fable's2b6c00cb review and
+Spark rejects the two-string arithmetic queries in ANSI mode and accepts them
+in legacy mode; mixed numeric/string pairs are accepted in both. A blanket
+string-to-double fallback is not justified. CF-0351–0352 corrects the first prose
+summary; raw original22-case observations and comparison counts were correct. Fable's2b6c00cb review and
 fresh Spark/parent diagnostics are retained. Initial Decimal JSON recorder
 failures on both engines are preserved separately from engine outcomes.
 

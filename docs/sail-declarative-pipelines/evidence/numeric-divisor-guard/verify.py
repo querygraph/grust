@@ -65,3 +65,15 @@ failed=load('additional-sail/receipt.json');assert failed['probe_exit_code']==1 
 assert 'Object of type Decimal is not JSON serializable' in (P/'additional-sail/probe.log').read_text()
 assert 'Object of type Decimal is not JSON serializable' in (P/'additional-spark.log').read_text()
 print('PASS extra22 decimal/CASE/string rows/errors match parent; two legacy remainder schemas improve to Spark; gaps retained; failed recorder attempt preserved')
+
+audit=load('string-mode-audit/observations.json');assert audit['spark_version']=='4.2.1' and audit['remaining_listener_pids']==''
+assert len(audit['cases'])==16
+for i,c in enumerate(audit['cases']):
+ ansi=(i//4)%2==0;assert c['requested_ansi']==ansi and c['effective_ansi']==str(ansi).lower()
+ if i%4<3 and ansi:assert not c['returned'] and c['condition']=='DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE'
+ else:assert c['returned'] and c['rows']==([[None]] if i%4==1 else [[3.5]])
+original=load('additional-spark-02/observations.json')['cases']
+strings={c['name']:c for c in original if 'string_' in c['name']}
+assert strings['legacy_string_zero']['rows']==[[None]] and strings['legacy_string_nonzero']['rows']==[[3.5]]
+assert all(not strings[n]['returned'] for n in ['ansi_string_zero','ansi_string_nonzero'])
+print('PASS string-mode correction: original observations and new effective-conf audit agree; raw comparison counts unchanged')

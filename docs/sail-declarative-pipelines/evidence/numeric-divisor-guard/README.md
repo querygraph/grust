@@ -65,9 +65,9 @@ test blob equality and single-file production mutations are verified.
   observations remain identical. Full additional-corpus parity is not implied.
   Spark comparison:16 outcomes,20 metadata/raw comparisons,7 successful schemas
   match. Decimal division precision/scale, CASE result nullability and string
-  arithmetic domains remain required. In these exact Spark probes, both
-  string-literal operands are rejected with BINARY_OP_WRONG_TYPE in both modes;
-  do not infer a blanket string-to-double coercion rule.
+  arithmetic domains remain required. Two string-literal operands are rejected with BINARY_OP_WRONG_TYPE in ANSI
+  mode and accepted in legacy mode. A mixed numeric/string pair is accepted in
+  both modes. Do not infer a blanket string-to-double coercion rule.
 
 The initial additional recorder failed serializing Decimal values for both
 engines; logs are retained and owned servers stopped. The corrected recorder
@@ -79,6 +79,17 @@ The parent-only extra build is qualified for22 probes, not a new full public
 suite. After it, gate HEAD is restored to candidate but its CLI remains the
 parent binary. Do not reuse that binary with the candidate's public receipt.
 All archived runtime receipts name the exact source and binary used at execution.
+
+## String-mode correction (CF-0351–0352)
+
+The first prose summary misread the original22-case comparison as rejecting
+strings under both modes. Raw observations and16/20/7 comparison counts were
+correct throughout: only ANSI rejects the two-string rows. Fable0a276ae9 caught
+the prose error. A fresh16-row Spark Connect audit records effective settings,
+true/false/true/false toggles, identical SQL and mode-specific comments; it
+corroborates ANSI rejection, legacy3.5/NULL and mixed7/'2'→3.5 in both modes.
+There is no observed query-reuse or configuration failure. Raw original evidence
+is unchanged; the reporting error is corrected, with append history retained.
 
 ## Verification and replay
 
