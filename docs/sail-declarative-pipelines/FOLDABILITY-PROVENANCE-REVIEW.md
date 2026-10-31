@@ -1134,3 +1134,5 @@ value of 1.0".
 - **What it does not close**, agreed: the dividend's nullness (§11.4),
   right-first operand order for a volatile dividend, input-domain errors such
   as `DIV` over doubles, and `pmod`'s separate builder.
+
+Continued in `OPERAND-EVALUATION-REVIEW.md` (this file passed its practical length).
