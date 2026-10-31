@@ -443,3 +443,58 @@ from the left, nullability widened, incompatible types failing before
 mutation), the no-truncate path on an existing table with rows, the
 preflight ordering, and that production-only controls fail the new
 native assertions.
+
+## 11. Metadata materialization candidate `a9eecf5f5` on `db650c40e` (CF-0444)
+
+Four paths. `execute` passes only the analyzed schema map to
+`materialize::tables` and keeps its `Table | Sink` rejection ahead of
+it (`execution.rs:28–37`). `materialize::tables` now:
+
+- Preflights the whole graph first: any `Table` output in the reset
+  selection without `pipelines.reset.allowed` equal to `false` is
+  refused as unsupported before any mutation, and one equal to `false`
+  is downgraded to an ordinary refresh, which is Spark's
+  `constructFullRefreshSet` (§10). Spark converts the property with
+  Scala's `toBoolean` on the raw value, no trim
+  (`PipelinesTableProperties.scala:95–96`, `:99–110`), so the
+  candidate's ASCII case-insensitive comparison matches it except for
+  the long-s fold, an exotic spelling that `parse_spark_bool` already
+  handles if exact parity is wanted later; Spark also rejects an
+  unparsable value at registration through `validateAndCanonicalize`,
+  which is a separate check for the properties path.
+- Admits `MaterializedView` and `Table` outputs, still excluding views,
+  sinks and unselected outputs.
+- For an existing `Table`, does not truncate and takes
+  `schema::streaming_columns`, which converts the catalog columns to
+  Spark fields and merges them on the left with the declared-exact or
+  inferred-nullable output fields through `schema_merge::merge_fields`;
+  the existing column diff and property path then apply. A
+  materialized view keeps its truncate and replacement.
+
+Native tests, against the original assertions: two streaming tables
+from batch queries materialize `x INT` and `y STRING`, nullable, with
+zero rows (`:125–161`); a declared `(x1 INT, x2 INT) PARTITIONED BY
+(x2)` table materializes both columns nullable with the identity
+partition on `x2` and zero rows (`:374–399`). Beyond them: an ordinary
+refresh of an existing table with a row keeps the row, keeps the left
+field order and the old comment, widens `id` to nullable, appends the
+new column and sets the property; a reset with `reset.allowed = false`
+downgrades and changes nothing; a partition change fails with
+`CANNOT_UPDATE_PARTITION_COLUMNS` and an incompatible type fails, both
+leaving rows and columns untouched; a mixed graph through the public
+`execute` creates neither target, and a full refresh of a streaming
+table is refused before effects.
+
+The test-only `metadata_schemas` resolves the fixture queries and
+calls `schema::infer` directly, because public analysis rejects a batch
+query for a streaming table (`graph.rs:400–405`,
+`INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE`) while
+Spark's internal resolve plus `DatasetManager` accepts the original
+fixtures, as Codex's compiled-helper reference showed. That is a
+test-only mirror of Spark's internal path, not a production bypass, and
+no output is relabelled.
+
+Verdict: accept, read-only, pending the native gates and the public
+regression run. On landing, `MaterializeTablesSuite:125` and `:374`
+can move to partial on the same terms as the SQL sites, with the
+Scala flag retained.
