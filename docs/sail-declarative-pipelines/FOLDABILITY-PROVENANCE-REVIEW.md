@@ -992,3 +992,145 @@ modes), `CAST(-0.0 AS DOUBLE) = 0.0` is `true` and `nullif(-0.0, 0.0)` is
   `0.0` as equal while DataFusion's does not; `predicate.rs:404` already
   normalises `IN` sets for this, so `SELECT CAST(-0.0 AS DOUBLE) = 0.0` is
   worth a row in the generic oracle, outside this unit.
+
+## 12. Operand evaluation cardinality: Sail's seams, read only (CF-0343/0344)
+
+Sail `5a1142bcd` (runtime-identical to `a49082801`), DataFusion 55.2.0. The
+checkpoint is to evaluate each arithmetic operand exactly once, in Spark's
+order (divisor first, then dividend, then the zero check), without losing
+native kernels, decimal typing or the window/aggregate extraction Sail already
+does. This section maps where an expression can be bound, duplicated or
+evaluated between resolution and execution.
+
+### 12.1 Resolution: where operands are built and where Sail already materializes
+
+- Function lowering (`function/scalar/math.rs`): `spark_divide`,
+  `spark_div`, `spark_modulo` receive resolved operand `Expr`s and emit
+  `dividend / make_safe_divisor(divisor)`. The ANSI arm of `make_safe_divisor`
+  clones the divisor into the predicate (§11.5); the non-ANSI arm is single
+  occurrence. This is the only place arithmetic duplicates an operand.
+- Projection assembly (`resolver/query/project.rs:26–64`): after
+  `resolve_named_expressions`, Sail rewrites the projection list through
+  `rewrite_projection::<T>` for `MonotonicIdRewriter`, `SparkPartitionIdRewriter`,
+  `ExplodeRewriter`, `WindowRewriter` and, for non-aggregates, `ExistsRewriter`
+  (`:172–200`), then `rewrite_multi_expr` (`:221–265`, "materialize
+  partition-dependent functions before evaluating an operator's expressions").
+  Each rewriter is a `PlanRewriter` that may replace a subtree with a column
+  reference and push the subtree into a new input node (`into_plan`): this is
+  Sail's existing materialization seam. An "operand materializer" that pulls a
+  volatile or expensive dividend/divisor into a `Projection` beneath the
+  arithmetic, and replaces it by a column, would be one more `rewrite_projection`
+  pass in this chain, after `WindowRewriter` (so window operands are already
+  columns) and before `rewrite_multi_expr`. The same chain runs for
+  aggregates through `rewrite_aggregate` (`query/aggregate.rs:211`).
+- Scope: `resolve_query_project` covers `SELECT` lists. Filters, joins,
+  sorts and `HAVING` resolve expressions through other paths
+  (`query/*.rs`); a materializer limited to projections would leave
+  `WHERE 1 / rand_int() > 0` with the duplicated divisor. Spark's rule is
+  per expression, not per operator.
+
+### 12.2 Logical pipeline: what can duplicate or evaluate
+
+- Sail's analyzer rules (`sail-logical-optimizer/src/lib.rs:22–41`,
+  installed by `sail-session/src/session_factory/server.rs:148`):
+  `ResolveLambdaVariables`, DataFusion's built-ins with Sail's
+  `TypeCoercion` in place of DataFusion's, and `ExtractScalarIteratorUDF`.
+  None evaluates expressions.
+- Sail's optimizer rules (`:43–70`, installed `:149`): Sail's
+  `DecorrelateLateralProjection`, `NormalizeScalarSubqueryKeys`,
+  `RewriteBinaryGrouping`, `ResolveLambdaVariables` prepended to
+  `Optimizer::default()`. Of DataFusion's defaults, `SimplifyExpressions`
+  never const-evaluates a subtree containing a `Volatile` function
+  (`expr_simplifier.rs:615–626`, `volatility_ok`), and
+  `CommonSubexprEliminate` never extracts a volatile node
+  (`common_subexpr_eliminate.rs:702`, `is_volatile_node`), so a duplicated
+  volatile divisor stays duplicated into the physical plan. Deterministic
+  duplicates are extracted, which is why the problem is invisible for
+  columns and literals.
+- `SessionState::create_physical_plan` is `optimize` then
+  `query_planner.create_physical_plan` (`session_state.rs:777–783`); Sail's
+  `ExtensionQueryPlanner` (`sail-session/src/planner.rs:88–120`) runs the
+  Delta and Iceberg metadata rewriters and `prepare_async_functions`, then
+  `DefaultPhysicalPlanner` with Sail's extension planners, then
+  `ensure_scalar_subquery_nullability`. None of these evaluates scalar
+  expressions.
+
+### 12.3 Physical evaluation: where a batch meets the expression
+
+- `ProjectionExec` evaluates each projected expression once per input
+  batch. A `CaseExpr` with one `WHEN` and an `ELSE` uses
+  `EvalMethod::ExpressionOrExpression` → `expr_or_expr`
+  (`physical-expr/.../case.rs:1175–1210`): the `WHEN` predicate is evaluated
+  on the batch; if all rows are true the `THEN` is evaluated, if none the
+  `ELSE` is evaluated on the whole batch, otherwise both on their row
+  selections. The lowered ANSI guard therefore evaluates the divisor in the
+  predicate and again in the `ELSE` for every batch: two draws of a
+  volatile divisor per batch, which is the mechanism behind "a typed error
+  despite a first divisor value of 1.0". `CaseBody::project` (`:132`)
+  projects _columns_ used by the body, not sub-expressions, so it does not
+  pre-evaluate a volatile function once.
+- A nullary volatile `ScalarFunctionExpr` is invoked once per
+  `evaluate(batch)` call, so the invocation count equals the number of
+  occurrences in the physical plan times the number of batches that reach
+  each occurrence, plus any planning-time evaluation. Reading finds no
+  planning-time evaluation of volatile functions in the analyzer, optimizer,
+  Sail's planner or `ProjectionExec`; §12.4 measures it.
+
+### 12.4 Cardinality evidence, measured per phase
+
+Codex's probe commit `20832708b` (`SELECT 1.0D / divisor_probe()`, a counting
+`Volatile` nullary UDF, ANSI on) was checked out in my own worktree and
+instrumented, uncommitted, to print the counter after each phase and the
+plans; copies and logs are under `evidence/operand-cardinality/`.
+
+| Phase                                              | Calls | Occurrences of `divisor_probe` in the plan |
+| -------------------------------------------------- | ----- | ------------------------------------------ |
+| after `resolve_named_plan`                         | 0     | 2 (logical, from `make_safe_divisor`)      |
+| after `SessionState::optimize`                     | 0     | 2                                          |
+| after `SessionState::create_physical_plan`         | 5     | 2 (physical)                               |
+| after `physical_plan::collect`                     | 6     |                                            |
+| a second full `execute_logical_plan(..).collect()` | 12    |                                            |
+
+So the logical pipeline evaluates nothing, physical planning evaluates the
+volatile divisor five times, and execution once (the predicate, which saw a
+zero draw and took the error branch, so the `ELSE` never ran). Codex's own
+backtraces (CF-0345) name the planning caller: `CaseExpr::nullable`
+const-evaluates each `WHEN` predicate on a one-row empty batch
+(`datafusion-physical-expr-55.2.0/src/expressions/case.rs:1255–1304`,
+`evaluate_predicate` `:1506–1524`) with no volatility check; `nullable()` is
+asked several times while `ProjectionExec` and the physical optimizer compute
+properties, hence five. The same code is in 54.1.0. The first draw is
+consumed at planning, which is exactly "a typed error despite a first divisor
+value of 1.0".
+
+### 12.5 The dependency finding and the unary guard, verified
+
+- **Dependency finding confirmed.** `evaluate_predicate` builds a batch with
+  no columns and one row and calls `predicate.evaluate`, treating any error as
+  "cannot evaluate" (`case.rs:1506–1524`). Nothing checks volatility, so every
+  `CASE` whose predicate contains a volatile or side-effecting function
+  (including a Python UDF) runs it during planning. This is generic DataFusion
+  behaviour outside arithmetic, as CF-0345 says; recorded in the DDD quirks
+  file as well. It is also why a `CASE`-based guard can never be made
+  single-evaluation in Sail without changing DataFusion: planning itself
+  evaluates the predicate.
+- **The unary guard removes both mechanisms.** With
+  `dividend / spark_zero_divisor(divisor)` there is no `CASE`, so no
+  planning-time predicate evaluation and no second syntactic occurrence; the
+  divisor is a plain function argument evaluated once per batch. Seams this
+  touches, all existing: `make_safe_divisor` becomes a call builder
+  (`math.rs`), the UDF lives beside `zero_division.rs` in `sail-function`,
+  the codec gets name-keyed stateless entries for kind and mode
+  (`codec.rs:3943,4172` pattern, as `StandardUdf` already does for the error
+  functions), and the arithmetic builders keep their decimal/interval
+  coercion because the guard's `return_type` is its input type. Checks for
+  the unit: `return_type` and `return_field_from_args` preserve type,
+  nullability true (non-ANSI returns `NULL`) and metadata; interval and
+  duration divisors stay unguarded as today; the ANSI kernel raises the typed
+  error on the first zero row and the non-ANSI kernel nulls zero rows, both
+  with a numeric zero test that covers `±0` and decimals; `Immutable`
+  volatility (deterministic in its argument) is correct and lets
+  `CommonSubexprEliminate` work as for any function.
+- **What it does not close**, agreed: the dividend's nullness (§11.4),
+  right-first operand order for a volatile dividend, input-domain errors such
+  as `DIV` over doubles, and `pmod`'s separate builder.

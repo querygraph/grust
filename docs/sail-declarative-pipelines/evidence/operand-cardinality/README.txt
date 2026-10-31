@@ -1,0 +1,1 @@
+host=Capitola.local date=2026-10-31T05:28:04Z sail=20832708b (probe commit on a49082801) toolchain=1.98.1 target=/Users/alexy/src/sail-sdp-fable-config-target; instrumented copy of Codex's probe (uncommitted in Sail, reverted)

@@ -1,0 +1,19 @@
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 24s
+     Running unittests src/lib.rs (/Users/alexy/src/sail-sdp-fable-config-target/debug/deps/sail_plan-84691ff2134eabe9)
+
+running 1 test
+PHASE after-optimize calls=0 occurrences=2
+OPTIMIZED Projection: Float64(1) / CAST(CASE WHEN abs(CAST(divisor_probe() AS Float64)) = Float64(0) THEN CAST(spark_divide_by_zero() AS Float64) ELSE divisor_probe() END AS Float64) AS #0
+  EmptyRelation: rows=1
+PHASE after-physical-plan calls=5 occurrences=2
+PHYSICAL ProjectionExec: expr=[1 / CASE WHEN abs(divisor_probe()) = 0 THEN CAST(spark_divide_by_zero() AS Float64) ELSE divisor_probe() END as #0]
+  PlaceholderRowExec
+
+PHASE after-collect calls=6 result=Err(External(StructuredSparkError { class: "org.apache.spark.SparkArithmeticException", condition: "DIVIDE_BY_ZERO", sql_state: "22012", message: "Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.", parameters: {"config": "\"spark.sql.ansi.enabled\""} }))
+PHASE after-execute_logical_plan calls=12 result=Err(External(StructuredSparkError { class: "org.apache.spark.SparkArithmeticException", condition: "DIVIDE_BY_ZERO", sql_state: "22012", message: "Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.", parameters: {"config": "\"spark.sql.ansi.enabled\""} }))
+test resolver::identifier::arithmetic_tests::volatile_divisor_is_evaluated_once_regression_probe ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 106 filtered out; finished in 0.04s
+
+exit=0
