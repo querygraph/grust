@@ -1,0 +1,111 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/sql.rs b/crates/sail-spark-connect/src/pipelines/sql.rs
+index e146ab29b..0d792ad15 100644
+--- a/crates/sail-spark-connect/src/pipelines/sql.rs
++++ b/crates/sail-spark-connect/src/pipelines/sql.rs
+@@ -97,6 +97,13 @@ where
+         Err(SparkError::AnalysisError(message)) => Err(PreparationFailure::Analysis(format!(
+             "Failed to resolve catalog expression: {message}"
+         ))),
++        Err(SparkError::Structured(error))
++            if error.class == "org.apache.spark.sql.AnalysisException" =>
++        {
++            Err(PreparationFailure::Analysis(format!(
++                "Failed to resolve catalog expression: {error}"
++            )))
++        }
+         Err(error) => Err(PreparationFailure::Evaluation(error)),
+     }
+ }
+diff --git a/crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs b/crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs
+index c089a0a77..d76686e02 100644
+--- a/crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs
++++ b/crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs
+@@ -9,6 +9,7 @@ use super::super::{
+     PreparationFailure, PreparedSql, PreparedStatement, register, resolve_statement,
+ };
+ use super::*;
++use crate::error::StructuredSparkError;
+ 
+ fn command(sql: &str) -> pc::DefineSqlGraphElements {
+     pc::DefineSqlGraphElements {
+@@ -232,6 +233,19 @@ async fn typed_catalog_preparation_uses_shared_resolution_and_preserves_error_ki
+     let result = resolve_statement(statement("CAST(NULL AS STRING)")?, &mut resolve).await;
+     assert!(matches!(result, Err(PreparationFailure::Analysis(message))
+         if message.starts_with("Failed to resolve catalog expression: ") && message.contains("NOT_A_CONSTANT_STRING.NULL")));
++    for sql in [
++        "IDENTIFIER(missing)",
++        "IDENTIFIER(concat(current_catalog(), missing))",
++        "IDENTIFIER(typeof(missing))",
++    ] {
++        let result = resolve_statement(statement(sql)?, &mut resolve).await;
++        assert!(
++            matches!(result, Err(PreparationFailure::Analysis(message))
++            if message.starts_with("Failed to resolve catalog expression: ")
++                && message.contains("UNRESOLVED_COLUMN.WITHOUT_SUGGESTION")),
++            "{sql}"
++        );
++    }
+     let result = resolve_statement(
+         statement("CAST(CAST('bad' AS INT) AS STRING)")?,
+         &mut resolve,
+@@ -261,3 +275,60 @@ async fn typed_catalog_preparation_uses_shared_resolution_and_preserves_error_ki
+     );
+     Ok(())
+ }
++
++#[tokio::test]
++async fn structured_catalog_errors_preserve_registration_boundary()
++-> Result<(), Box<dyn std::error::Error>> {
++    for (class, condition, analysis) in [
++        (
++            "org.apache.spark.sql.AnalysisException",
++            "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION",
++            true,
++        ),
++        (
++            "org.apache.spark.SparkArithmeticException",
++            "DIVIDE_BY_ZERO",
++            false,
++        ),
++    ] {
++        let prepared = prepare(command("SET CATALOG 'placeholder'"), |_| {
++            std::future::ready(Err(SparkError::Structured(Box::new(
++                StructuredSparkError {
++                    class: class.into(),
++                    condition: condition.into(),
++                    sql_state: "test".into(),
++                    message: "original error".into(),
++                    parameters: HashMap::new(),
++                },
++            ))))
++        })
++        .await?;
++        let mut graph = graph();
++        let error = prepared
++            .commit(&mut graph)
++            .err()
++            .ok_or_else(|| SparkError::internal("catalog failure was accepted"))?;
++        let SparkError::Structured(error) = error else {
++            return Err(SparkError::internal("structured error was lost").into());
++        };
++        if analysis {
++            assert_eq!(
++                error.condition,
++                "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR"
++            );
++            assert!(
++                error
++                    .message
++                    .contains("Failed to resolve catalog expression: ")
++            );
++            assert!(error.message.contains(condition));
++        } else {
++            assert_eq!(error.class, class);
++            assert_eq!(error.condition, condition);
++            assert_eq!(error.message, "original error");
++        }
++        assert!(graph.definition.outputs.is_empty());
++        assert!(graph.definition.flows.is_empty());
++    }
++    Ok(())
++}

@@ -329,3 +329,43 @@ Public bare typeof(1 DIV 0) reaches bigint catalog lookup in the oracle. Bare
 policy therefore must defer lowering-time arithmetic too: discard type-only
 children before evaluation, then evaluate raw1DIV0 before the command type check.
 Reusing the ordinary eager-zero path globally would violate this priority.
+
+## Wrapped catalog identifiers and registration error boundaries
+
+Committed4ab0d74bfa8d02c3a9486f4aaa8bf15e174f1091 resolves catalog IDENTIFIER
+using the existing scalar helper in an empty schema, with the shared
+analyzer_identifier stance for subqueries/type-only expressions. Fableb31c0bc0
+caught the table-helper column-precedence mismatch before advancement; the
+48-case Spark oracle confirms all three wrapped missing-column cases use
+UNRESOLVED_COLUMN.WITHOUT_SUGGESTION. The table-only remap remains table-only.
+The reviewed table-route candidate16da863ca is retained, unadvanced.
+
+[Wrapped catalog evidence](evidence/wrapped-catalog-identifier/README.md) qualifies
+104plan+177Connect/fmt/strictClippy, unchanged0/3+0/1 controls, a fresh300+67 CLI
+run and4 parameter tests. Original32 outcomes improve13→15; expanded48 matches25
+behaviors/8 metadata sets, with all failures retained. Earlier14 arithmetic and20
+provenance outcomes/metadata are unchanged. Bare catalog behavior stays pending.
+
+The newly preserved structured missing-column errors expose a separate SDP
+registration boundary: only string AnalysisError was wrapped; structured
+AnalysisException escaped directly. The dependent integration unit catches the
+existing structured analysis class, preserving arithmetic/evaluation errors.
+Fable98839112 reviewed this boundary against Spark's AnalysisException catch.
+A future structured ParseException producer would also need classification;
+current parse failures already enter the existing string-analysis path.
+
+Ordinary SELECT typeof(1 DIV 0) is another required generic-SQL correction:
+Fablee732cce1's Spark probe5 shows bigint (also with input rows), while Sail's
+ordinary eager-zero lowering fails before the type-only parent can discard its
+child. This does not justify changing the catalog oracle or preserving that
+ordinary behavior as a compatibility requirement. Intrinsic annotations, bare
+CheckAnalysis/optimizer policy, catalog lookup diagnostics, frozen bindings and
+full original Scala acceptance remain required.
+
+The dependent unit is committed4761d0064b592f66647dec807801c57fcfc546c9:
+[boundary evidence](evidence/catalog-analysis-boundary/README.md) records178Connect,
+fmt/strictClippy, unchanged0/1 control and its own fresh300+67 public run, four
+parameter tests and unchanged14+20 observations. The same48 cases improve25→28
+behaviors (metadata8); all20 remaining differences are retained. The plan crate
+is byte-identical to4ab. Both product units and all owned gates/probes are terminal;
+no full original Scala-suite acceptance or bare catalog activation is claimed.

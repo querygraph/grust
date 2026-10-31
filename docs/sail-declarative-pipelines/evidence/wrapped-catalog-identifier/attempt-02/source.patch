@@ -1,0 +1,156 @@
+diff --git a/crates/sail-plan/src/resolver/constant.rs b/crates/sail-plan/src/resolver/constant.rs
+index abed880a7..e973520ca 100644
+--- a/crates/sail-plan/src/resolver/constant.rs
++++ b/crates/sail-plan/src/resolver/constant.rs
+@@ -21,13 +21,38 @@ impl PlanResolver<'_> {
+     /// Resolve SQL's catalog-name expression without selecting a catalog or
+     /// executing a query. Direct Catalog API names do not need this SQL parsing.
+     pub async fn resolve_catalog_name(&self, expression: spec::Expr) -> PlanResult<String> {
++        let text = match expression {
++            spec::Expr::IdentifierClause { expr } => {
++                self.resolve_table_identifier_expr(*expr, &mut PlanResolverState::new())
++                    .await?
++            }
++            expression => {
++                self.resolve_unwrapped_catalog_expression(expression)
++                    .await?
++            }
++        };
++        let name = from_ast_object_name(
++            parse_object_name(&text).map_err(|error| PlanError::analysis(error.to_string()))?,
++        )?;
++        match Vec::<String>::from(name).as_slice() {
++            [name] => Ok(name.clone()),
++            _ => Err(PlanError::analysis(
++                "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name",
++            )),
++        }
++    }
++
++    /// Unwrapped directives validate the analyzed expression without optimization.
++    async fn resolve_unwrapped_catalog_expression(
++        &self,
++        expression: spec::Expr,
++    ) -> PlanResult<String> {
+         let expression = match expression {
+             spec::Expr::UnresolvedAttribute { name, .. } => {
+                 spec::Expr::Literal(spec::Literal::Utf8 {
+                     value: Some(quote_names_if_needed(name.parts())),
+                 })
+             }
+-            spec::Expr::IdentifierClause { expr } => *expr,
+             expression => expression,
+         };
+         let schema = Arc::new(DFSchema::empty());
+@@ -63,16 +88,7 @@ impl PlanResolver<'_> {
+                 "[NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+             ));
+         }
+-        let text = LiteralValue(&scalar).try_to_string()?;
+-        let name = from_ast_object_name(
+-            parse_object_name(text).map_err(|error| PlanError::analysis(error.to_string()))?,
+-        )?;
+-        match Vec::<String>::from(name).as_slice() {
+-            [name] => Ok(name.clone()),
+-            _ => Err(PlanError::analysis(
+-                "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name",
+-            )),
+-        }
++        Ok(LiteralValue(&scalar).try_to_string()?.to_string())
+     }
+ 
+     /// Check before simplification or physical evaluation can erase a volatile
+diff --git a/crates/sail-plan/src/resolver/constant/tests.rs b/crates/sail-plan/src/resolver/constant/tests.rs
+index c077a29e5..da0562681 100644
+--- a/crates/sail-plan/src/resolver/constant/tests.rs
++++ b/crates/sail-plan/src/resolver/constant/tests.rs
+@@ -318,3 +318,89 @@ fn non_foldable_annotation_prevents_builder_invocation() -> TestResult {
+     }
+     Ok(())
+ }
++
++#[tokio::test]
++async fn wrapped_catalog_type_only_arguments_use_analyzer_identifier_policy() -> TestResult {
++    let context = context()?;
++    for ansi_mode in [true, false] {
++        let resolver = PlanResolver::new(
++            &context,
++            Arc::new(PlanConfig {
++                ansi_mode,
++                ..Default::default()
++            }),
++        );
++        for (sql, expected) in [
++            ("IDENTIFIER(typeof(current_catalog()))", "string"),
++            ("IDENTIFIER(typeof(rand(0)))", "double"),
++            ("IDENTIFIER(typeof(1 DIV 0))", "bigint"),
++            ("IDENTIFIER(typeof(raise_error('unused')))", "void"),
++            ("IDENTIFIER(typeof(assert_true(true)))", "void"),
++            ("IDENTIFIER('`test.cat`')", "test.cat"),
++        ] {
++            assert_eq!(
++                resolver.resolve_catalog_name(expression(sql)?).await?,
++                expected,
++                "ansi={ansi_mode} {sql}"
++            );
++        }
++        for (sql, condition) in [
++            ("IDENTIFIER(current_catalog())", "NOT_CONSTANT"),
++            ("IDENTIFIER(rand(0))", "NOT_CONSTANT"),
++            ("IDENTIFIER(1 DIV 0)", "WRONG_TYPE"),
++            ("IDENTIFIER('test.cat')", "MULTI_PART_NAME"),
++            ("typeof(current_catalog())", "NOT_CONSTANT"),
++            ("typeof(rand(0))", "NOT_CONSTANT"),
++        ] {
++            let error = resolver
++                .resolve_catalog_name(expression(sql)?)
++                .await
++                .err()
++                .ok_or_else(|| PlanError::internal(format!("expected rejection: {sql}")))?;
++            assert!(
++                error.to_string().contains(condition),
++                "ansi={ansi_mode} {sql}: {error}"
++            );
++        }
++    }
++    let catalog = context.extension::<CatalogManager>()?;
++    assert_eq!(catalog.default_catalog()?.as_ref(), "catalog");
++    assert_eq!(Vec::<String>::from(catalog.default_database()?), vec!["db"]);
++    Ok(())
++}
++
++#[tokio::test]
++async fn wrapped_catalog_type_only_udf_never_invokes_the_function() -> TestResult {
++    let context = context()?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let observed = calls.clone();
++    context
++        .extension::<CatalogManager>()?
++        .register_function(create_udf(
++            "catalog_type_canary",
++            vec![],
++            DataType::Utf8,
++            Volatility::Immutable,
++            Arc::new(move |_| {
++                observed.fetch_add(1, Ordering::SeqCst);
++                Ok(ColumnarValue::Scalar(ScalarValue::Utf8(Some(
++                    "catalog".into(),
++                ))))
++            }),
++        ))?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    assert_eq!(
++        resolver
++            .resolve_catalog_name(expression("IDENTIFIER(typeof(catalog_type_canary()))")?)
++            .await?,
++        "string"
++    );
++    let error = resolver
++        .resolve_catalog_name(expression("IDENTIFIER(catalog_type_canary())")?)
++        .await
++        .err()
++        .ok_or_else(|| PlanError::internal("registered function was accepted"))?;
++    assert!(error.to_string().contains("NOT_CONSTANT"), "{error}");
++    assert_eq!(calls.load(Ordering::SeqCst), 0);
++    Ok(())
++}
