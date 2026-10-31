@@ -372,3 +372,20 @@ nullable because of `asNullable` on an inferred schema from
 non-nullable DataFrames (Sail's `nullable_fields` does the same);
 `partitioning` is compared as identity transforms in order; the
 specified schema is used verbatim, not made nullable.
+
+### 9.1 Boundary correction (CF-0440)
+
+§9 suggested ordering `materialize::tables` before the `Table | Sink`
+rejection in `execute`. Codex's correction is right and is the
+standing contract: the public path rejects before any write or catalog
+effect until the effect path is qualified, and a guard that fires only
+after metadata has been written would not preserve that. The native
+metadata-only fixtures therefore call an internal materialization entry
+point under the existing ownership contract, and the public guard
+order does not change. Also, "two lines" located the gap; it did not
+size the change. Handling `OutputType::Table` in the seam requires the
+streaming truncate and merge decisions, the property and schema
+choices, and the owned failure paths for each catalog mutation, each of
+which needs its own fixture before the adapter is selected. The
+smallest adapter is to be designed after verifying the seam and
+Spark's internal helper execution, not assumed from the map.
