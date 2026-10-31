@@ -326,3 +326,55 @@ keep. Test and command: `fable_probe_scalar_identifier_today` appended to
 `cargo test -p sail-plan --lib --locked resolver::identifier::tests::fable_probe -- --nocapture`
 with `CARGO_INCREMENTAL=0 RUSTUP_TOOLCHAIN=1.98.1`; `1 passed`, probe log in
 my scratchpad, not committed anywhere.
+
+## 7. Review of the F6 candidate `25534e8ea` (CF-0314)
+
+Read-only, against the diff on parent `15fd1888c`. The marker lives beside
+`LiteralEvaluator` in `sail-common-datafusion` (`literal/non_foldable.rs`):
+a private `ScalarUDFImpl` with `Signature::any(1, Volatile)`, identity
+`return_type`/`return_field_from_args`, and an `invoke_with_args` that
+refuses to run; only `mark_non_foldable(Expr)` is exported. The resolver gains
+a read-only `constant_context` config flag set on all three constant paths
+(`identifier.rs`, the new `resolve_scalar_identifier_expr`, `constant.rs`),
+`non_foldable` builders wrap their result when it is set, and registered or
+higher-order functions are wrapped after their selected branch resolved its
+arguments and lambdas (`function.rs:142–296`). No collector, scope or mutable
+context remains.
+
+Checks:
+
+- **Dead branches are Spark-faithful.** `ConditionalExpression.foldable` is
+  `children.forall(_.foldable)` (`Expression.scala:566–567`), inherited by
+  `If` and `CaseWhen` (`conditionalExpressions.scala:44–45,166–169`), so
+  `CASE WHEN false THEN current_catalog() ELSE 'foo' END` is `NOT_CONSTANT` in
+  Spark and `CASE WHEN false THEN typeof(current_catalog()) ELSE 'foo' END`
+  is foldable; the candidate's fixtures assert exactly that.
+- **Which check is load-bearing.** On both identifier paths
+  `require_constant_expression` runs on the logical tree before
+  `ExprSimplifier::simplify` (`identifier.rs`), so a marker in a dead branch is
+  found there, before simplification could drop the branch. The new
+  `LiteralEvaluator::evaluate` pre-check protects only callers that simplify
+  first and never ran the logical check; `resolve_catalog_name` is such a
+  caller but never emits the marker, because its eager flag rejects before any
+  builder runs. The pre-check is defense in depth, not the mechanism; its
+  comment should say so rather than "necessary".
+- **Subqueries.** `constant_context` is inherited by a subquery resolved
+  inside a scalar argument, so a marker can sit inside the subquery plan;
+  the final check rejects the subquery node itself and the marker never
+  reaches execution. A correlated subquery against the outer schema behaves
+  the same.
+- **typeof.** `type_of` reads `get_type` of the marked argument (identity
+  return type, field metadata preserved) and returns a literal, dropping the
+  marker; on the table path the relaxed `require_foldable` inside `typeof`
+  lets the wrapped argument through and the eager per-child check stays off
+  for it. Both match Spark's `TypeOf`.
+- **Not executable, not serialized.** The marker is produced only under
+  `constant_context` and consumed or discarded before any plan is returned;
+  `invoke_with_args` refusing is the right backstop for a future caller that
+  forgets the check.
+
+No change requested. Still open, as CF-0314 states: F2 (`constant_context`
+is now the right flag for the division builders to read; the scalar path still
+raises `DivideByZero` for `IDENTIFIER(1 div 0)`), and the five names from
+`FOLDABILITY-FUNCTION-TABLE.md` (`assert_true`, `raise_error`, `json_tuple`,
+`window`, `window_time`).
