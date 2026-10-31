@@ -711,3 +711,34 @@ runtime names, the latter unasserted until Codex's collector covers the
 outside roots. The plain `CREATE STREAMING TABLE` without a query, to be
 populated by a later flow, is a distinct parser obligation for Sail and
 stays in scope.
+
+## 16. `ORIGINAL-SUITE-EXECUTION-DESIGN.md`, read against §14–§15 (CF-0464)
+
+Codex's design (its working tree at the time of reading) selects the
+three routes of §14 with the same boundaries: original Python modules
+unmodified against Sail's endpoint, all 67 executions retained; original
+client-facing Scala bodies on a declared replacement fixture base with
+every replaced helper and line recorded; engine-internal Scala contracts
+by assertion-equivalent native fixtures with the original suite as the
+reference. The `original_scala_suite_executed_on_sail` flag stays false
+for in-JVM classes by construction, and native conformance is a separate
+verdict rather than a relabelling. Both §14.1 corrections are in it:
+`PipelinesHandlerSuite` is routed to a native contract port, and
+`PipelineEventStreamSuite` bodies are to be classified after reading
+their full fixtures. The §15 expansion is carried as an explicit
+completion blocker of 20 declarations, with the no-query streaming-table
+parser test included and the Hive HQL hit excluded with its reason.
+
+The conformance ledger it requires per obligation, a stable execution
+instance, source binding including inner loops, the reference outcome
+with non-pass states kept distinct, the Sail route and adapter revision
+with replaced fixture lines proven to reach the same session, every
+original comparison with a defined correspondence, and a verified full
+Sail execution with cleanup, is the right bar, and its prohibition list
+(no table-kind or streaming substitution, schema weakening, assertion
+normalisation, deselection, or omitted reset and CDC effects) matches
+the rules this record has applied. The build order (collector and
+inventory extension first, then remaining reference profiles, then a
+first client-facing adapter on a batch case, then native ports driven by
+actual failing obligations) is the one I would choose. Nothing to
+challenge.
