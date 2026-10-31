@@ -187,10 +187,7 @@ for the DDL parameters and implements `sameType`; `errors.rs` gains the
 five conditions. Tests: the thirteen KeyDriftSuite cases, the parquet
 target case and the schema-order cases, over the pure contract (10 native
 tests). Commit `f273442aa` on `922a69c45`; pipelines tests 256, strict
-Clippy and fmt clean in the build worktree. One pin still open: the
-nullability of the `__spark_autocdc_metadata` field is taken as nullable
-here; `AutoCdcMergeFlow`'s schema construction decides it and the SCD1
-write unit must read it. The checks run nowhere yet: the SCD1 write unit
+Clippy and fmt clean in the build worktree. The metadata field's nullability was first taken as nullable; `AutoCdcFlowSuite.scala:270–278` pins it as not nullable with nullable members, corrected in `9ef96af61`. The checks run nowhere yet: the SCD1 write unit
 calls them before creating the auxiliary table.
 
 ### Public test port and finding O1: validation runs before resolution
@@ -442,3 +439,19 @@ the lower sequence, `t_b` keeps suppressing it. Gate: A5 `d34441e10`
 VERDICT all 0 at 2026-10-31T19:03:03Z; `f6be32bc7` VERDICT all 0 at 19:07:27Z;
 `b302e1c28` VERDICT all 0 at 19:10:32Z. Chunk 2, the ten commits
 `23aa26eff..b302e1c28` on `26500918b`, offered to Codex (CF-0548).
+
+### Merge-execution suite ported (test-only commit)
+
+`tests/merge_execution.rs`: the 18 cases of
+`Scd1BatchProcessorMergeSuite.scala:107–541` run the A4b `spec::MergeInto`
+commands through Sail's merge resolver against seeded Delta tables, with
+the microbatch published as the write component's temporary view. All pass
+on the first run; the case-sensitive half of the grid case (Spark's
+`UNRESOLVED_COLUMN` for a mis-cased key) is not portable because the key is
+resolved by the flow definition before any merge in Sail. With this, every
+Spark SCD1 suite at the pin is ported or accounted for: ChangeArgs, flow
+and schema validators (A2), auxiliary state (A3), batch processor
+transforms (A4a), merges (A4b, this suite), handler and single-pipeline
+runs (A4c), durability and full refresh (A5, A5b); the remaining
+unported assertions are the MemoryStream/checkpoint halves that need the
+activation runner.
