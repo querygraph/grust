@@ -537,3 +537,32 @@ renders a space. A one-character change to the format string.
 
 Verdict: accept, pending the native gates, with the newline fix either
 folded in or recorded as a known text difference.
+
+## 13. `MaterializeTablesSuite:42–123` ("basic"), test-only candidate `b32ead862` (CF-0451)
+
+Two paths, test only. The original materializes a materialized view
+`a` three times with a specified schema `x INT NOT NULL`, `x2 INT` and
+the table comment `p-comment`: column comments `comment1`/`comment2`,
+then `comment3`/`comment4`, then none, each time asserting the V2
+columns `sameElements` the specified schema (name, type, nullability,
+comment, no default or generation) and `PROP_COMMENT == "p-comment"`.
+The port runs the same three materializations through the private
+`materialize::tables` with `CREATE MATERIALIZED VIEW a (x INT NOT NULL
+COMMENT …, x2 INT COMMENT …) COMMENT 'p-comment' AS …`, and after each
+asserts the two columns in order with `Int32`, `x` non-nullable, `x2`
+nullable, the expected comment or none, and `default`,
+`generated_always_as` and `identity` absent, which is what
+`structTypeToV2Columns` leaves null. The third stage exercises the
+comment-removal branch of Sail's column diff (`old.comment !=
+column.comment` with `None`). The table comment is read from
+`TableKind::Table.comment`, Sail's native seat for the reserved
+comment, rather than a properties map; Codex labels the difference and
+it does not change the assertion. Zero rows after each materialization
+is an extra check the original does not make, and is correct for the
+metadata-only path.
+
+Verdict: accept as a faithful port; the runtime is the inherited,
+publicly qualified `604a91f8d`, and the candidate changes no product
+code, so no fresh-build claim attaches. If the native gate exposes a
+product gap in the comment-removal branch, that is the separate
+reviewable chunk Codex already anticipates.
