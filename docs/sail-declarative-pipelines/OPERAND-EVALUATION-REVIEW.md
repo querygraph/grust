@@ -108,3 +108,123 @@ Corrections and consequences:
   and the `ELSE` are non-nullable; DataFusion's `CaseExpr::nullable` is the
   function §12.4 found pre-evaluating predicates, and it reports nullable
   here. A generic gap, as CF-0349 classifies it.
+
+## 2. `SparkDivModLazy`: challenge of the three-lambda design (CF-0353)
+
+Read only, Sail `b857dabb7`, the vendored DataFusion 55.2.0 with lambda
+support. CF-0353 proposes an internal higher-order UDF with three lambdas
+(right thunk, left thunk, native operation over the two values), evaluated
+row-major in one pass through `evaluate_lambda_rows`, so that each operand
+runs at most once per row in Spark's order and the typed divisor guard still
+raises after the left value is known.
+
+### 2.1 What the seams already give
+
+- `HigherOrderUDFImpl` (`datafusion-expr/higher_order_function.rs:523–808`)
+  with `lambda_parameters`, `return_field_from_args` and `invoke_with_args`
+  over `HigherOrderFunctionArgs`; `LambdaArgument::evaluate(params, spread_captures)`
+  (`physical-expr/higher_order_function.rs:236,372`) evaluates a body on a
+  batch laid out `[captures..., params...]`, where `spread_captures` decides
+  which rows of the captured columns the body sees. `ConvertTzLazy` and
+  `SparkSequenceLazy` use it through `evaluate_lambdas_until_null`
+  (`functions_nested_utils.rs:70–118`), which is batch-major with a shrinking
+  active-row set, and `evaluate_lambda_rows` (`:61`), which takes the
+  captures for an explicit row list; `scatter_active_rows` puts a compact
+  result back. Lambda parameters are inferred by `LambdaParametersProgress`
+  (`sail-plan/function/scalar/lambda.rs:125`); the lowering site for a lazy
+  UDF is `datetime.rs:894`.
+- Lambdas survive the pipeline: Sail's `TypeCoercion` resolves lambda bodies
+  through `value_fields_with_higher_order_udf` (`type_coercion.rs:1094–1107`);
+  `ResolveLambdaVariables` refreshes variable fields after folding
+  (`resolve_lambda_variables.rs:20–27`); `tree_node.rs:116,346` descends into
+  bodies, so `expr_to_columns` sees captured columns and
+  `OptimizeProjections` keeps them; `PushDownFilter` treats `Lambda` as an
+  ordinary node (`push_down_filter.rs:268`); the proto and Sail's codec
+  carry `LambdaExpr`/`LambdaVariable` and `HigherOrderFunctionExpr`
+  (`codec.rs:4917–4934,7893–7915`). Distributed encoding is therefore the
+  existing path, plus one name-keyed entry for the new UDF.
+
+### 2.2 Challenges
+
+1. **Row-major single pass is a blanket slow path on the hottest operator.**
+   `evaluate_lambda_rows(lambda, rows)` builds a `UInt64Array`, `take`s every
+   captured column for the row set, allocates a `NullArray` dummy, and
+   evaluates the body on that batch. A row-major loop does this once per row
+   per thunk: three body evaluations and two capture `take`s per row, each a
+   kernel dispatch on a one-row batch. Division appears in nearly every
+   analytical query; this would replace one vectorised kernel over a batch
+   with thousands of one-row evaluations. CF-0353 says per-row is the
+   correctness baseline, not a performance claim, and asks for a fast-path
+   argument before activation. Here it is: Spark's row-local rules (right
+   first; skip left when right is null or, outside ANSI, zero; skip the
+   operation when left is null; raise only then) are preserved by
+   batch-major evaluation with selection, which is exactly what
+   `evaluate_lambdas_until_null` already does: evaluate the right thunk over
+   the batch once, compute the active set (right not null, and not zero
+   outside ANSI), evaluate the left thunk once over the `take` of that set,
+   drop rows whose left is null, run the native operation over the survivors,
+   then the typed zero check, then scatter. Every operand is evaluated at
+   most once per row, no row is replayed, and the guard raises after the
+   left value is known. The only thing it does not reproduce is the order in
+   which errors from _different rows_ surface when one row fails in the right
+   thunk and an earlier row would have failed in the left thunk. That
+   cross-row ordering is not a Spark-defined semantic: Spark's own
+   whole-stage codegen is row-major within a partition but partitions race,
+   so the first error of a multi-error batch is already non-deterministic
+   across the job, and no public outcome depends on it. I would make
+   batch-major the design, with the convert_tz note's row-major caveat kept
+   as the one documented difference, rather than ship per-row for every `/`.
+   If row-major must be kept as a mode, it should be opt-in by configuration
+   with a measured cost, never the default. Also, when the active set is the
+   whole batch, pass the captures straight through instead of `take`-copying
+   them; `evaluate_lambda_rows` always copies today.
+2. **A lambda-lowered division is not a constant expression to the
+   simplifier or the identifier checks.** `ConstEvaluator` excludes
+   `Expr::Lambda` (`expr_simplifier.rs:700–701`), and
+   `require_constant_expression` admits only the listed variants
+   (`constant.rs`, `Expr::ScalarFunction` with a volatility test, everything
+   else non-constant). Division becomes `Expr::HigherOrderFunction`
+   (`datafusion-expr/expr.rs:429`), so `SELECT IDENTIFIER(CAST(4 / 2 AS STRING))`
+   and `SET CATALOG IDENTIFIER(...)` would turn `NOT_CONSTANT`, the §11
+   arithmetic replay rows would regress, and `SELECT 1 / 2` would stop
+   folding at plan time. Activation therefore needs the identifier
+   allow-list to admit the new UDF with its three bodies checked by the same
+   walk, and the `LiteralEvaluator` path to evaluate it (it goes through
+   `create_physical_expr`, which already plans `HigherOrderFunctionExpr`, so
+   that part is fine). Test these before the lowering unit, not after.
+3. **`CommonSubexprEliminate` stops at lambdas** (`common_subexpr_eliminate.rs:733–734`):
+   nothing inside a body is extracted and nothing from a body is shared with
+   the rest of the projection. `(a + b) / c` and `(a + b) * 2` in one
+   `SELECT` lose the shared `(a + b)` once the first becomes a lambda body;
+   today both are plain expressions and CSE extracts the sum. Measure on a
+   representative projection before accepting; it is the second performance
+   cost after item 1.
+4. **Nested and extracted operands.** `WindowRewriter`, `ExplodeRewriter`
+   and the aggregate rewrite run as `TreeNodeRewriter`s after lowering
+   (`project.rs:38–43`), and `transform` descends into lambda bodies
+   (`tree_node.rs:346`), so a window or aggregate operand inside a thunk is
+   still replaced by a column of the new input node and then captured. A
+   division inside another lambda (`transform(arr, x -> x / y)`) nests
+   `LambdaVariable`s; the fresh-parameter helper must allocate indices that
+   do not collide with the enclosing lambda's, and
+   `ResolveLambdaVariables` must refresh both levels. One fixture each.
+5. **Optimizer handling of conditional bodies.** `SimplifyExpressions`
+   does rewrite inside bodies (`transform` descends), which is what you
+   want for `CAST` elimination, but `ConstEvaluator` will not fold a body
+   that references a lambda parameter, so a thunk over a literal (`1 / 2`)
+   stays unevaluated until execution; combined with item 2 this is the
+   plan-shape change to expect in `EXPLAIN` and in any test asserting folded
+   literals.
+6. **Field inference order.** `LambdaParametersProgress` infers the
+   operation lambda's parameter fields from the thunks' result fields, so the
+   operation body is typed only after both thunks resolve; Sail's
+   `TypeCoercion` must then coerce inside the operation body (decimal
+   precision rules, the §1.2 types) with the thunk fields as the inputs. The
+   result field is the operation's with `nullable = true` and metadata
+   retained, as CF-0353 says; the §1.2 decimal rows are the oracle.
+
+Summary: the component is sound and the seams exist; the objections are to
+row-major as the default and to activating without the identifier and
+constant-folding consequences handled. Pure component tests first, as
+CF-0353 proposes, with the batch-major selection variant measured against
+the row-major one on the same fixture.
