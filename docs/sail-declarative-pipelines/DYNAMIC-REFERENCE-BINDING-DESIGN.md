@@ -484,10 +484,11 @@ windows and workers; it must not duplicate volatile operands or erase coercion.
 The original Scala suites remain unqualified; full goal stays active.
 
 
-The continued checkpoint adds ordered componentc1befda7a (402 function libraries),
-staged decoder04f1e8cc7 (235 execution libraries) and wire036dc6dde (239), all
-with exact fmt/strictClippy and unchanged causal controls. SQL lowering remains
+The checkpoint adds componentc1 (402 function), staged decoder04 (235 execution),
+wire036 (239 execution) and scoped constant407 (114 plan libraries), each with
+exact fmt/strictClippy and unchanged causal controls. SQL lowering remains
 unactivated. See [operand design](OPERAND-EVALUATION-DESIGN.md),
-[component evidence](evidence/ordered-divmod-component/README.md) and
-[codec evidence](evidence/ordered-divmod-codec/README.md) for remaining constant,
-folding, nested/extracted operands, performance and fast-path requirements.
+[component](evidence/ordered-divmod-component/README.md),
+[codec](evidence/ordered-divmod-codec/README.md) and
+[validation evidence](evidence/scoped-constant-validation/README.md) for remaining
+folding, optimizer/context, performance and fast-path/replay requirements.

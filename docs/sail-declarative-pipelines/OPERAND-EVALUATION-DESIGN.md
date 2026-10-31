@@ -177,3 +177,34 @@ caught the initial converter assumption, then review caught retention/bound
 semantics not covered by the initial integrated234 checks. All failed drafts
 and passing unadvanced checkpoints are retained. No fast-path flag, blanket
 lambda allowance, replay policy or provider/streaming effect is introduced.
+
+
+## Scoped constant eligibility (CF-0369–0371)
+
+Sail4070e895b69338eb19f22643f0e40815da89ff34 replaces the flat eligibility
+walk with a private lexical visitor. Ordinary variants and Volatile/async scalar
+rejection are unchanged. Only the exact internal SparkDivModLazy implementation
+with three direct lambda arguments opens scopes. Each body is walked under its
+own parameter names, removed before siblings; nested evaluators can shadow and
+capture outer bindings. Free variables, columns, arbitrary lambdas and different
+HOF implementations (including the same function name) remain rejected. Type and
+parameter-arity validation stay in the existing analyzer/evaluator.
+
+The [validation packet](evidence/scoped-constant-validation/README.md) qualifies
+114 plan libraries/fmt/strictClippy and four unchanged0/1 production controls.
+Seven fixtures use the real LiteralEvaluator for internal arithmetic/string and
+nested scope results; retain type-before-error, null-left/zero-right suppression
+and skipped failing-left behavior; reject scope leaks, provenance and immutable
+async functions without invoking bodies. There were no failed candidate attempts.
+This is internal eligibility proof, not end-to-end new SQL lowering proof.
+
+The next significant checkpoint, flagged to the user, is fast-path/performance
+and error-replay policy. No execution mode/flag/default changes in this unit.
+Literal folding and actual Sail optimizer behavior for fallible conditional
+bodies need probes before activation. Do not infer a Sail failure solely from
+DataFusion literal Cast behavior: Sail already uses SparkAnsiStringCast for
+supported ANSI string targets. Preserve volatile/stateful cardinality/order and
+resource/I/O/cancellation identity; no catch-and-replay shortcut is selected.
+Fable's CF-0370 read-only review request for this exact unit is pending as of
+CF-0371; incorporate further review before activation. Full original goal remains
+active and unqualified by these native component gates.
