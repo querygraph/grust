@@ -1,0 +1,70 @@
+{
+  "sail_commit": "95edc429d4d424fdcfba587800af86566bc10fcc",
+  "base": "26500918b128deacab31b44de3625324a5f40298",
+  "packages": [
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T19:05:18.730244+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-unresolved-flows-03-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-unresolved-flows-03-clippy.log",
+      "sha256": "4a9245f90277eb8a55571058ccefae005570a9e74a6083dfdc6a3f38ddddfc4b"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-unresolved-flows-03-rust.log",
+      "sha256": "f2d924e4076c995e55f0b3f6bbb2d4c71a645c0ecdbe139569991d092baa37aa"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "environment_overrides": {
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_DEV_INCREMENTAL": "false",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "PYTHONPATH": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "/Users/alexy/src/sail-pipelines-proposal/.venv"
+  },
+  "recorded_at": "2026-10-31T19:06:17.195041+00:00",
+  "outcome": "passed"
+}

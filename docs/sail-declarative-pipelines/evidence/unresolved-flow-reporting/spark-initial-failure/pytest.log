@@ -1,0 +1,357 @@
+I1031 12:02:58.888911 93951522 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(13, generation: 1)
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_ test_unresolved_flows_report_every_failure_before_terminal_error[False-False-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11550c830>
+pipeline = ('82433cab-db3a-4853-a246-f458e804aaa4', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1153f0740>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11550bc40>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e0')
+dry = False, reverse = False, multiple_producers = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+_ test_unresolved_flows_report_every_failure_before_terminal_error[False-False-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11551f8c0>
+pipeline = ('94d371d7-2812-421a-a7a3-2f38a364b0ee', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115590440>, <function pipeline_factory.<locals>.create.<locals>.run at 0x115579e40>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e1')
+dry = True, reverse = False, multiple_producers = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+_ test_unresolved_flows_report_every_failure_before_terminal_error[False-True-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11551fe90>
+pipeline = ('650a3bb2-488b-4822-a17d-fcbd9c27bfc6', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115590470>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11557b7e0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e2')
+dry = False, reverse = True, multiple_producers = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+_ test_unresolved_flows_report_every_failure_before_terminal_error[False-True-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115591c10>
+pipeline = ('0ce37530-d89f-4a4c-952a-20aa2018d71d', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1155b4980>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11559c400>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e3')
+dry = True, reverse = True, multiple_producers = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+_ test_unresolved_flows_report_every_failure_before_terminal_error[True-False-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1155b5370>
+pipeline = ('eed38991-8498-4887-8fc2-88ee8fcb9e9f', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1155b78f0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11559e840>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e4')
+dry = False, reverse = False, multiple_producers = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+_ test_unresolved_flows_report_every_failure_before_terminal_error[True-False-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1155de210>
+pipeline = ('26a10274-a6ab-49e7-ba26-6d3944614701', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1155de510>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1155e1da0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e5')
+dry = True, reverse = False, multiple_producers = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+_ test_unresolved_flows_report_every_failure_before_terminal_error[True-True-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1155dd370>
+pipeline = ('f2c52381-3e06-412e-b6f9-a6d8a2957b45', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1155f1070>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1155e1f80>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e6')
+dry = False, reverse = True, multiple_producers = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+_ test_unresolved_flows_report_every_failure_before_terminal_error[True-True-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1155f02c0>
+pipeline = ('66f6a50f-acf1-4a1b-b0af-437f4417b652', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1155f3d40>, <function pipeline_factory.<locals>.create.<locals>.run at 0x115608d60>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-401/test_unresolved_flows_report_e7')
+dry = True, reverse = True, multiple_producers = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("multiple_producers", [False, True])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, multiple_producers
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if multiple_producers:
+            statements.append("CREATE FLOW successful_producer AS INSERT INTO bad BY NAME SELECT 1 AS id")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+>       assert error.value.getMessageParameters() == {}
+E       AssertionError: assert None == {}
+E        +  where None = getMessageParameters()
+E        +    where getMessageParameters = AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.').getMessageParameters
+E        +      where AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself co...\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') = <ExceptionInfo AnalysisException('\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the... the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.') tblen=5>.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[False-False-False]
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[False-False-True]
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[False-True-False]
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[False-True-True]
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[True-False-False]
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[True-False-True]
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[True-True-False]
+FAILED python/pysail/tests/spark/pipelines/test_resolution_failures.py::test_unresolved_flows_report_every_failure_before_terminal_error[True-True-True]
+8 failed in 3.08s
