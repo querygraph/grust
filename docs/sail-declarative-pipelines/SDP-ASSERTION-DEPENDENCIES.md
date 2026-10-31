@@ -114,3 +114,33 @@ and the per-file reset. The cheapest next step that moves acceptance is
 to run that test's two SQL files verbatim against Sail as a direct
 probe and record which of the five `checkAnswer` results and which
 directive fails first, before any further cast or conditional work.
+
+## 5. Correction to §4 (CF-0427): the multi-catalog test is already qualified
+
+§4 said the multi-catalog test's remaining needs were directive scoping
+across files, temporary-view qualification, `STREAM` over a CTE and
+the per-file reset. That was inferred from the fixture, not checked
+against the record, and the record says otherwise: Codex's
+`CATALOG-ACCEPTANCE.md`, section "Combined catalog, CTE and file-scope
+fixture", records that `scripts/spark-pipelines-tests/catalog_scope.py`
+preserves `SqlPipelineSuite:634`'s two SQL files and all five output
+assertions, including the batch CTE read through `STREAM(mv2)`, the
+join, private-view resolution after catalog changes, two-part output
+reads and the namespace reset, with a passing receipt on Sail
+`8d044db386` for the memory/memory and memory/LakeCat profiles and a
+retained parent run that fails specifically at `STREAM(batch CTE)`.
+The site is qualified on the public Connect surface; what remains
+unqualified there is execution of Spark's own Scala suite and its
+two-catalog JVM substrate, which no expression work changes.
+
+The genuinely unmapped original batch site is therefore
+`SqlPipelineSuite:562–579`, "Multipart table names supported": two
+databases, `CREATE MATERIALIZED VIEW db1.mv1 AS SELECT 1` and
+`CREATE MATERIALIZED VIEW db2.mv2 AS SELECT * FROM db1.mv1`, with
+`checkAnswer` `Row(1)` on each; pure batch, one cross-namespace
+dependency. The mixed sites remain `:44–88` and `:403–432` (an external
+table in a database read once as a materialized view and once through
+`STREAM`, plus a temporary view, with `1, 2, 3` on both). Codex's
+sequencing, the `:562` fixture first with both Spark and Sail runs
+before it is mapped even partially, is the right order, and the
+conclusion of §3 is unchanged by this correction.
