@@ -1710,3 +1710,76 @@ Checked against sources:
 Nothing here touches an original site; counts unchanged.
 
 Verdict: accept, read-only, pending the final native test gate.
+
+### 20.15 INSERT/Flow grammar and source-backed syntax errors, candidate `25bf10d6e` on `a690e2ce9` (CF-0529)
+
+Design steps 2 and 4 together. Read read-only.
+
+Grammar (`sail-sql-parser/src/ast/statement/insert.rs`, via the variant
+hook): `INTO` parses target, optional partition, optional `IF NOT
+EXISTS`; `OVERWRITE` parses target and an optional partition that alone
+may carry `IF NOT EXISTS`. That is `SqlBaseParser.g4:590–591` exactly:
+the `INTO` form stays grammatical and is rejected by the shared
+validator as `AstBuilder.scala:1045` does, the `OVERWRITE` form without
+a partition is now a syntax error at `IF`. Clause order partition →
+if-not-exists → columns matches. `CREATE FLOW … AS` now requires an
+`INSERT` keyword lookahead (`statement.rs:75`, `Insert::parser().rewind()`)
+before the recursive statement parser, so `SELECT`, `WITH`, `CREATE`,
+`EXPLAIN` and nested `CREATE FLOW` bodies fail at their first token as
+in Spark, while `INSERT OVERWRITE DIRECTORY` and `INSERT INTO … REPLACE
+WHERE` still parse and reach the handler fallback, now the exact
+"Unable flow type. Only INSERT INTO flows are supported."
+(`pipeline.rs:120`, Spark `:425`). A `WITH` inside the flow's query
+remains legal, asserted natively and publicly. Codex names the backlog
+honestly: `REPLACE … BY NAME` and `REPLACE USING` are not in Sail's
+grammar, so those two Spark vectors (`Unable flow type` and the
+overwrite policy string respectively, §20.11.2) remain parse errors in
+Sail.
+
+Rendering (`error/parser/spark.rs`): only when the diagnostics carry
+the source (both `SqlSource` routes, `source.rs:67/:94`; the
+`parse_one_statement`, expression and lexer entry points keep the legacy
+string), only the first failure, only `ExpectedFound`; the source slice
+at the span must equal the found token and must not be whitespace or a
+comment, else the legacy `InvalidArgument` string is kept; the token is
+quoted with `\n`, `\r`, `\t` escaped, which is ANTLR's
+`escapeWSAndQuote`; an empty span at the end of the source renders
+"end of input". Class, condition, state, message template and the
+`error`/`hint` parameters match §20.12. Plan and Connect conversions
+route the structured error, else the old string. Probe 16
+(`evidence/set-catalog-oracle/probe16_*`, pyspark 4.2.1) confirms Spark
+reports `'select'` for the comment-and-emoji vector and "end of input"
+for a bare `SELECT`, both of which the native test pins.
+
+Findings:
+
+1. The empty hint is a claim, not an observation, for one reachable
+   class. Probe 16: `CREATE FLOW f AS INSERT INTO output BY NAME SELECT
+1 )` gives Spark `error = "')'"`, `hint = ": extra input ')'"`,
+   message "Syntax error at or near ')': extra input ')'.". Sail's
+   renderer would emit the same condition and state with `hint = ""`
+   and the shorter message, a structured error whose parameters differ
+   from Spark's. Codex says the hint classes are not qualified, which is
+   true of the tests, but the product does not withhold the structured
+   form where it cannot know the hint. Either the renderer stays
+   conservative (render only when the failure is at a position where
+   chumsky's expected set is non-empty and the input is not exhausted
+   by a complete statement, which approximates the no-viable and
+   input-mismatch classes) or the limit is written into the contract as
+   "hint is empty in Sail where Spark may say extra input or missing".
+   The second is acceptable if stated; the first is better. Not a
+   blocker for this unit, but the public test must not be read as
+   proving the hint.
+2. `PARSE_EMPTY_STATEMENT` is SQLSTATE 42617 with no parameters (probe
+   16, " "), correcting §20.12 which gave only the condition. Sail's
+   behaviour on an empty statement is untested here; pinned for the
+   backlog.
+3. An unterminated string gives Spark `error = "'''"` (the quote
+   character as the token). Sail's lexer fails first, which the renderer
+   correctly leaves on the legacy path. Pinned, not required.
+
+No original site asserts any of the 24 public cases; counts unchanged.
+
+Verdict: accept, read-only, pending the native gate and the paired
+public run, with finding 1 either fixed in this unit or written into
+the contract before the DONE.
