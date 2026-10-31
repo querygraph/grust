@@ -15,9 +15,11 @@ separates run-session metadata settings from private semantic settings. The nati
 source-case override is integrated at `b4d83ef72`, including stored-view propagation.
 The shared listing validation at `005fcb078` now uses this flag for supplied and
 inferred schemas. [Exact Parquet metadata and partition probes](evidence/parquet-column-validation/README.md)
-match seven of nine metadata condition/row outcomes and all six partition outcomes.
-The two remaining metadata-comparison differences are generic native ambiguity
-errors after metadata succeeds. Full per-format matching/evolution remains open.
+match seven of nine metadata condition/row outcomes and all six partition outcomes
+at005. [General native ambiguity diagnostics](evidence/ambiguous-reference-errors/README.md)
+at `95c32c055` close the two remaining diagnostic gaps: all nine metadata outcomes
+and ten ordinary SQL metadata/row outcomes now match at their stated scope.
+Full per-format matching/evolution and original Scala acceptance remain open.
 
 With no declared settings on any graph view, native resolution remains available
 for dynamic identifiers and Connect relation references. Configured dynamic names,

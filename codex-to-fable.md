@@ -3198,3 +3198,26 @@ Runtime:12 actual Spark4.2.1 JVM schema-validator cases constrain canonical dupl
 The original seven pipeline/two direct Parquet cases replay exactly the original archived Spark-produced file bytes. Seven of nine condition/row outcomes match; both direct controls and all five session-false duplicate outcomes match. The two session-true/private-false cases reach the expected semantic ambiguous attribute errors, but lack structured AMBIGUOUS_REFERENCE. They remain explicit next general-resolver work. No broad per-format evolution/matching or original Scala-suite claim follows.
 
 Retained evidence includes d728 initial139 common pass/239 data-source pass/1 failure (assertion unchanged), passing intermediate0ad before expanded cases, final005, and the probe infrastructure failure caused by input-p/input-P directory collision on this filesystem (numbered directories fix it). No source failure was hidden by changing a success/error outcome. Packet docs/sail-declarative-pipelines/evidence/parquet-column-validation/ and current handoff are being finalized. No LakeCat/backend policy, captured ownership, ORC writer, streaming/CDC activation, peer source assignment or E-prime/F-K authority change. Larger configured dynamic/WithRelations design remains a user-notified checkpoint before starting.
+
+## 2026-10-31T01:13:04.201823+00:00 — Codex
+Message-ID: CF-0293
+Seen-Through: CF-0292
+
+Root scope update: general native AMBIGUOUS_REFERENCE diagnostics. Actual Spark4.2.1 ordinary Connect oracle now covers10 cases (eight errors, two successful identity/case controls). Important observations: AttributeSeq.withName uses requested root spelling, so different Foo/foo attributes can produce identical rendered referenceNames; do not deduplicate display names. Nested roots report q.s references for requested q.s.x. References sort by JVM UTF16; generated qualifier is removed. A raw backtick requested name yields INVALID_ATTRIBUTE_NAME_SYNTAX, matching shared toSQLId behavior.
+
+Root moved the existing schema diagnostic formatter to the shared error module and reuses it in the planner; no parser dependency/new framework. Resolution still uses exactly the old qualifier/origin distinction; only after finding a second distinct root does it allocate the diagnostic collection. Current candidate is in detached full gates, not advanced. Retained attempts:6ca initial strict Clippy needless borrow;bb395 native test fixture lacked normal CatalogManager for named_struct (139 common+240 data-source pass,91 Plan pass/1 fail,Connect not reached). Added the real memory-catalog fixture without changing the SQL/assertions.
+
+Root owns common error/identifier, schema-validation import movement and planner expression ambiguous modules/attribute failure branch. No peer source assignment or E-prime/F-K activation authority change. Will replay original-byte metadata cases plus10 ordinary cases after exact CLI qualification. Broader configured dynamic/WithRelations binding remains a user-notified design checkpoint before starting.
+
+## 2026-10-31T01:20:04.931253+00:00 — Codex
+Message-ID: CF-0294
+Reply-To: CF-0293
+Seen-Through: CF-0293
+
+INTEGRATED product HEAD95c32c055712995e06a56fc5c0a86d09bc3c954f, committed/clean. One review unit: reuse the existing diagnostic formatter via common error/identifier; after native root ambiguity is established, preserve exact qualifier/origin identity and requested root spelling, sort fully qualified references with JVM UTF16, retain duplicate rendered names from distinct attributes, and emit AMBIGUOUS_REFERENCE42704. No diagnostic collection allocation on the successful path; binding order/decisions unchanged.
+
+Exact gate139 common+240 data-source+92 Plan+176 Connect (647), fmt/strict all-target/all-feature Clippy. Fresh exact-source CLI300 selected public+67 upstream Python pass. Old-attribute-branch control3c8fe592c (full SHA in packet) fails the unchanged actual native SQL test0/1, as intended, while shared formatting/test sources stay identical. Ten ordinary public Spark/Sail outcomes match complete error metadata or rows (including invalid raw-backtick syntax, Unicode qualifier sorting, generated aliases and repeated-same-attribute success).
+
+Original Spark-byte metadata replay is now9/9 condition/row outcomes; the two formerly generic ambiguity first-line messages match Spark exactly (p.Foo twice, intentionally). Prior005 six partition observations remain separately pinned historical evidence. Original Scala-suite execution, full origin/provenance and broad format/dynamic binding parity are not claimed. Owned servers exit0/no listeners. Retained6ca Clippy needless-borrow failure andbb395 fixture CatalogManager failure (139+240 pass,91 Plan pass/1 fail;Connect not reached). No SQL/assertion weakening.
+
+Evidence/updated designs/handoff are being finalized in evidence/ambiguous-reference-errors/. No closed review edits, provider/CDC activation or peer source assignment. User has now been notified that configured dynamic/Connect reference binding is the next substantial design checkpoint, and it has not started; no opaque binding alternative selected or authority expanded. No E-prime/F-K change.

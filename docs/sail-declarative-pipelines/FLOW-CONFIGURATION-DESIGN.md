@@ -20,9 +20,11 @@ Scala acceptance are not established by this comparison. The
 requirements, not claims of full Sail parity. [Shared listing validation](evidence/parquet-column-validation/README.md)
 at `005fcb078` now passes the five session-false duplicate checks and both direct
 controls using the original Spark bytes, plus six partition-schema/row probes.
-The two session-true/private-false cases reach ambiguity but lack its structured
-condition. Original Scala-suite execution, configured dynamic/opaque-reference
-binding and broader per-format support remain.
+[Native ambiguity diagnostics](evidence/ambiguous-reference-errors/README.md) at
+`95c32c055` close the two session-true/private-false diagnostic gaps; all nine
+metadata outcomes now match, including both ambiguity first-line messages.
+Original Scala-suite execution, configured dynamic/opaque-reference binding and
+broader per-format support remain.
 The [batch ownership design](BATCH-PROVIDER-MIGRATION-DESIGN.md) continues to govern
 admission, provider lifetime and per-command plan maps.
 

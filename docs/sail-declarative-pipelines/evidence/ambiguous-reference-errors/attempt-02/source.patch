@@ -1,0 +1,497 @@
+commit bb395f206fb3ff9c80754d61f23f30f76d5de763
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 18:09:07 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 18:09:07 2026 -0700
+
+    Report Spark-compatible structured ambiguity after native attribute resolution
+
+diff --git a/crates/sail-common-datafusion/src/error.rs b/crates/sail-common-datafusion/src/error.rs
+index 43993461c..556175d2c 100644
+--- a/crates/sail-common-datafusion/src/error.rs
++++ b/crates/sail-common-datafusion/src/error.rs
+@@ -1,3 +1,4 @@
++mod identifier;
+ mod structured;
+ 
+ use std::collections::HashSet;
+@@ -6,6 +7,7 @@ use std::fmt::Formatter;
+ 
+ use datafusion::arrow::error::ArrowError;
+ use datafusion_common::DataFusionError;
++pub use identifier::quote_sql_identifier;
+ use serde::{Deserialize, Serialize};
+ pub use structured::StructuredSparkError;
+ use thiserror::Error;
+diff --git a/crates/sail-common-datafusion/src/error/identifier.rs b/crates/sail-common-datafusion/src/error/identifier.rs
+new file mode 100644
+index 000000000..8a8fddc10
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/error/identifier.rs
+@@ -0,0 +1,68 @@
++use std::collections::HashMap;
++
++use datafusion_common::{DataFusionError, Result};
++
++use super::StructuredSparkError;
++
++/// Format a Spark toSQLId(String) diagnostic identifier, interpreting dots and
++/// backticks with AttributeNameParser syntax. Malformed input keeps Spark details.
++pub fn quote_sql_identifier(name: &str) -> Result<String> {
++    let invalid = || {
++        DataFusionError::External(Box::new(StructuredSparkError {
++            class: "org.apache.spark.sql.AnalysisException".into(),
++            condition: "INVALID_ATTRIBUTE_NAME_SYNTAX".into(),
++            sql_state: "42601".into(),
++            message: format!(
++                "Syntax error in the attribute name: {name}. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts."
++            ),
++            parameters: HashMap::from([("name".into(), name.into())]),
++        }))
++    };
++    let mut parts = vec![];
++    let mut part = String::new();
++    let mut quoted = false;
++    let mut previous = None;
++    let mut chars = name.chars().peekable();
++    while let Some(c) = chars.next() {
++        if quoted {
++            if c == '`' {
++                if chars.peek() == Some(&'`') {
++                    part.push('`');
++                    chars.next();
++                } else {
++                    quoted = false;
++                    if chars.peek().is_some_and(|next| *next != '.') {
++                        return Err(invalid());
++                    }
++                }
++            } else {
++                part.push(c);
++            }
++        } else if c == '`' {
++            if !part.is_empty() {
++                return Err(invalid());
++            }
++            quoted = true;
++        } else if c == '.' {
++            if previous.is_none() || previous == Some('.') || chars.peek().is_none() {
++                return Err(invalid());
++            }
++            parts.push(std::mem::take(&mut part));
++        } else {
++            part.push(c);
++        }
++        previous = Some(c);
++    }
++    if quoted {
++        return Err(invalid());
++    }
++    parts.push(part);
++    if parts.len() > 1 && parts[0] == "__auto_generated_subquery_name" {
++        parts.remove(0);
++    }
++    Ok(parts
++        .iter()
++        .map(|p| format!("`{}`", p.replace('`', "``")))
++        .collect::<Vec<_>>()
++        .join("."))
++}
+diff --git a/crates/sail-common-datafusion/src/schema_validation.rs b/crates/sail-common-datafusion/src/schema_validation.rs
+index 546869ad5..f83f2561e 100644
+--- a/crates/sail-common-datafusion/src/schema_validation.rs
++++ b/crates/sail-common-datafusion/src/schema_validation.rs
+@@ -5,7 +5,7 @@ use datafusion::arrow::datatypes::{DataType, FieldRef};
+ use datafusion_common::{DataFusionError, Result};
+ use sail_common::utils::root_lowercase::spark_root_lowercase;
+ 
+-use crate::error::StructuredSparkError;
++use crate::error::{StructuredSparkError, quote_sql_identifier};
+ 
+ /// Check each struct's names before descending into its children, as SchemaUtils
+ /// does. Report the UTF-16 lexical minimum duplicate at that level.
+@@ -27,7 +27,7 @@ pub fn validate_field_names(fields: &[FieldRef], case_sensitive: bool) -> Result
+         }
+     }
+     if let Some(name) = duplicate {
+-        let column = sql_identifier(&name)?;
++        let column = quote_sql_identifier(&name)?;
+         return Err(structured(
+             "COLUMN_ALREADY_EXISTS",
+             "42711",
+@@ -71,69 +71,6 @@ fn structured(
+     }))
+ }
+ 
+-/// SchemaUtils passes the raw duplicate name to toSQLId(String), which interprets
+-/// dots/backticks as AttributeNameParser syntax. It does not quote it as one part.
+-fn sql_identifier(name: &str) -> Result<String> {
+-    let invalid = || {
+-        structured(
+-            "INVALID_ATTRIBUTE_NAME_SYNTAX",
+-            "42601",
+-            format!(
+-                "Syntax error in the attribute name: {name}. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts."
+-            ),
+-            "name",
+-            name.into(),
+-        )
+-    };
+-    let mut parts = vec![];
+-    let mut part = String::new();
+-    let mut quoted = false;
+-    let mut previous = None;
+-    let mut chars = name.chars().peekable();
+-    while let Some(c) = chars.next() {
+-        if quoted {
+-            if c == '`' {
+-                if chars.peek() == Some(&'`') {
+-                    part.push('`');
+-                    chars.next();
+-                } else {
+-                    quoted = false;
+-                    if chars.peek().is_some_and(|next| *next != '.') {
+-                        return Err(invalid());
+-                    }
+-                }
+-            } else {
+-                part.push(c);
+-            }
+-        } else if c == '`' {
+-            if !part.is_empty() {
+-                return Err(invalid());
+-            }
+-            quoted = true;
+-        } else if c == '.' {
+-            if previous.is_none() || previous == Some('.') || chars.peek().is_none() {
+-                return Err(invalid());
+-            }
+-            parts.push(std::mem::take(&mut part));
+-        } else {
+-            part.push(c);
+-        }
+-        previous = Some(c);
+-    }
+-    if quoted {
+-        return Err(invalid());
+-    }
+-    parts.push(part);
+-    if parts.len() > 1 && parts[0] == "__auto_generated_subquery_name" {
+-        parts.remove(0);
+-    }
+-    Ok(parts
+-        .iter()
+-        .map(|p| format!("`{}`", p.replace('`', "``")))
+-        .collect::<Vec<_>>()
+-        .join("."))
+-}
+-
+ #[cfg(test)]
+ #[path = "schema_validation_tests.rs"]
+ mod tests;
+diff --git a/crates/sail-common-datafusion/src/schema_validation_tests.rs b/crates/sail-common-datafusion/src/schema_validation_tests.rs
+index 0841ded31..c99c53419 100644
+--- a/crates/sail-common-datafusion/src/schema_validation_tests.rs
++++ b/crates/sail-common-datafusion/src/schema_validation_tests.rs
+@@ -157,10 +157,10 @@ fn diagnostic_identifier_formatting_preserves_spark_attribute_syntax() -> TestRe
+         ("x.`a.b`", "`x`.`a.b`"),
+         ("__auto_generated_subquery_name.x", "`x`"),
+     ] {
+-        assert_eq!(sql_identifier(name)?, expected);
++        assert_eq!(quote_sql_identifier(name)?, expected);
+     }
+     for name in [".a", "a.", "a..b", "a`b", "`a`b", "`a"] {
+-        assert!(sql_identifier(name).is_err(), "{name}");
++        assert!(quote_sql_identifier(name).is_err(), "{name}");
+     }
+     Ok(())
+ }
+diff --git a/crates/sail-plan/src/resolver/expression/ambiguous.rs b/crates/sail-plan/src/resolver/expression/ambiguous.rs
+new file mode 100644
+index 000000000..e3db053dd
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/expression/ambiguous.rs
+@@ -0,0 +1,77 @@
++//! Diagnostics for ambiguity already established by native root resolution.
++use std::collections::HashMap;
++
++use datafusion_common::TableReference;
++use sail_common::spec;
++use sail_common_datafusion::error::{StructuredSparkError, quote_sql_identifier};
++
++use crate::error::{PlanError, PlanResult};
++use crate::resolver::PlanResolver;
++
++impl PlanResolver<'_> {
++    pub(super) fn ambiguous_attribute(
++        &self,
++        name: &spec::ObjectName,
++        root: &str,
++        qualifiers: Vec<Option<&TableReference>>,
++    ) -> PlanResult<PlanError> {
++        // Spark's UnresolvedAttribute.name quotes parts containing dots; its
++        // diagnostic toSQLId(String) then parses that name again.
++        let unresolved = name
++            .parts()
++            .iter()
++            .map(|part| {
++                let part = part.as_ref();
++                if part.contains('.') {
++                    format!("`{part}`")
++                } else {
++                    part.to_string()
++                }
++            })
++            .collect::<Vec<_>>()
++            .join(".");
++        let name = quote_sql_identifier(&unresolved)?;
++        let mut references = qualifiers
++            .into_iter()
++            .map(|qualifier| {
++                let mut parts = match qualifier {
++                    None => vec![],
++                    Some(TableReference::Bare { table }) => vec![table.as_ref()],
++                    Some(TableReference::Partial { schema, table }) => {
++                        vec![schema.as_ref(), table.as_ref()]
++                    }
++                    Some(TableReference::Full {
++                        catalog,
++                        schema,
++                        table,
++                    }) => vec![catalog.as_ref(), schema.as_ref(), table.as_ref()],
++                };
++                // AttributeSeq collects matches with the requested spelling, even
++                // when two different attributes then display the same qualified name.
++                parts.push(root);
++                let qualified = parts
++                    .iter()
++                    .map(|part| format!("`{}`", part.replace('`', "``")))
++                    .collect::<Vec<_>>()
++                    .join(".");
++                quote_sql_identifier(&qualified)
++            })
++            .collect::<Result<Vec<_>, _>>()?;
++        references.sort_by(|left, right| left.encode_utf16().cmp(right.encode_utf16()));
++        let references = format!("[{}]", references.join(", "));
++        Ok(PlanError::Structured(Box::new(StructuredSparkError {
++            class: "org.apache.spark.sql.AnalysisException".into(),
++            condition: "AMBIGUOUS_REFERENCE".into(),
++            sql_state: "42704".into(),
++            message: format!("Reference {name} is ambiguous, could be: {references}."),
++            parameters: HashMap::from([
++                ("name".into(), name),
++                ("referenceNames".into(), references),
++            ]),
++        })))
++    }
++}
++
++#[cfg(test)]
++#[path = "ambiguous_tests.rs"]
++mod tests;
+diff --git a/crates/sail-plan/src/resolver/expression/ambiguous_tests.rs b/crates/sail-plan/src/resolver/expression/ambiguous_tests.rs
+new file mode 100644
+index 000000000..3e2591ce9
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/expression/ambiguous_tests.rs
+@@ -0,0 +1,162 @@
++use std::sync::Arc;
++
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_common::DataFusionError;
++use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::session::plan::PlanService;
++
++use super::*;
++use crate::catalog::SparkCatalogObjectDisplay;
++use crate::config::PlanConfig;
++use crate::formatter::SparkPlanFormatter;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++#[tokio::test]
++async fn native_ambiguity_matches_actual_spark_421_diagnostics_and_identity() -> TestResult {
++    let context = SessionContext::new_with_config(SessionConfig::new().with_extension(Arc::new(
++        PlanService::new(
++            Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
++            Box::new(SparkPlanFormatter),
++        ),
++    )));
++    // Independent public Spark observations, including duplicate display names,
++    // requested spelling, nested roots, malformed names and UTF-16 ordering.
++    for (sql, sensitive, condition, state, parameters) in [
++        (
++            "SELECT Foo FROM (SELECT 1 AS Foo, 2 AS foo) q",
++            false,
++            "AMBIGUOUS_REFERENCE",
++            "42704",
++            HashMap::from([
++                ("referenceNames".into(), "[`q`.`Foo`, `q`.`Foo`]".into()),
++                ("name".into(), "`Foo`".into()),
++            ]),
++        ),
++        (
++            "SELECT p.Foo FROM (SELECT 1 AS Foo, 2 AS foo) p",
++            false,
++            "AMBIGUOUS_REFERENCE",
++            "42704",
++            HashMap::from([
++                ("referenceNames".into(), "[`p`.`Foo`, `p`.`Foo`]".into()),
++                ("name".into(), "`p`.`Foo`".into()),
++            ]),
++        ),
++        (
++            "SELECT foo FROM (SELECT 1 AS foo) z CROSS JOIN (SELECT 2 AS foo) a",
++            false,
++            "AMBIGUOUS_REFERENCE",
++            "42704",
++            HashMap::from([
++                ("referenceNames".into(), "[`a`.`foo`, `z`.`foo`]".into()),
++                ("name".into(), "`foo`".into()),
++            ]),
++        ),
++        (
++            "SELECT q.s.x FROM (SELECT named_struct('x',1) AS s,named_struct('x',2) AS s) q",
++            false,
++            "AMBIGUOUS_REFERENCE",
++            "42704",
++            HashMap::from([
++                ("referenceNames".into(), "[`q`.`s`, `q`.`s`]".into()),
++                ("name".into(), "`q`.`s`.`x`".into()),
++            ]),
++        ),
++        (
++            "SELECT `A.B` FROM (SELECT 1 AS `A.B`,2 AS `a.b`) q",
++            false,
++            "AMBIGUOUS_REFERENCE",
++            "42704",
++            HashMap::from([
++                ("referenceNames".into(), "[`q`.`A.B`, `q`.`A.B`]".into()),
++                ("name".into(), "`A.B`".into()),
++            ]),
++        ),
++        (
++            "SELECT `A``B` FROM (SELECT 1 AS `A``B`,2 AS `a``b`) q",
++            false,
++            "INVALID_ATTRIBUTE_NAME_SYNTAX",
++            "42601",
++            HashMap::from([("name".into(), "A`B".into())]),
++        ),
++        (
++            "SELECT foo FROM (SELECT 1 AS foo) `` CROSS JOIN (SELECT 2 AS foo) `𐀀`",
++            false,
++            "AMBIGUOUS_REFERENCE",
++            "42704",
++            HashMap::from([
++                ("referenceNames".into(), "[`𐀀`.`foo`, ``.`foo`]".into()),
++                ("name".into(), "`foo`".into()),
++            ]),
++        ),
++        (
++            "SELECT Foo FROM (SELECT 1 AS Foo,2 AS foo)",
++            false,
++            "AMBIGUOUS_REFERENCE",
++            "42704",
++            HashMap::from([
++                ("referenceNames".into(), "[`Foo`, `Foo`]".into()),
++                ("name".into(), "`Foo`".into()),
++            ]),
++        ),
++    ] {
++        let resolver = PlanResolver::new(
++            &context,
++            Arc::new(PlanConfig {
++                case_sensitive: sensitive,
++                ..Default::default()
++            }),
++        );
++        let ast = sail_sql_analyzer::parser::parse_one_statement(sql)?;
++        let plan = sail_sql_analyzer::statement::from_ast_statement(ast)?;
++        let error = resolver
++            .resolve_named_plan(plan)
++            .await
++            .err()
++            .ok_or("ambiguous query accepted")?;
++        let error = match error {
++            PlanError::Structured(error) => *error,
++            PlanError::DataFusionError(DataFusionError::External(error)) => *error
++                .downcast::<StructuredSparkError>()
++                .map_err(|error| error.to_string())?,
++            error => return Err(format!("{sql}: unstructured error: {error}").into()),
++        };
++        assert_eq!(
++            error.class, "org.apache.spark.sql.AnalysisException",
++            "{sql}"
++        );
++        assert_eq!(error.condition, condition, "{sql}");
++        assert_eq!(error.sql_state, state, "{sql}");
++        assert_eq!(error.parameters, parameters, "{sql}");
++    }
++    {
++        let resolver = PlanResolver::new(
++            &context,
++            Arc::new(PlanConfig {
++                case_sensitive: false,
++                ..Default::default()
++            }),
++        );
++        let ast = sail_sql_analyzer::parser::parse_one_statement(
++            "SELECT foo FROM (SELECT a.foo,a.foo FROM (SELECT 1 AS foo) a) q",
++        )?;
++        let plan = sail_sql_analyzer::statement::from_ast_statement(ast)?;
++        assert!(resolver.resolve_named_plan(plan).await.is_ok());
++    }
++    {
++        let resolver = PlanResolver::new(
++            &context,
++            Arc::new(PlanConfig {
++                case_sensitive: true,
++                ..Default::default()
++            }),
++        );
++        let ast = sail_sql_analyzer::parser::parse_one_statement(
++            "SELECT Foo FROM (SELECT 1 AS Foo,2 AS foo) q",
++        )?;
++        let plan = sail_sql_analyzer::statement::from_ast_statement(ast)?;
++        assert!(resolver.resolve_named_plan(plan).await.is_ok());
++    }
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/expression/attribute.rs b/crates/sail-plan/src/resolver/expression/attribute.rs
+index 250965278..d749c5911 100644
+--- a/crates/sail-plan/src/resolver/expression/attribute.rs
++++ b/crates/sail-plan/src/resolver/expression/attribute.rs
+@@ -359,12 +359,15 @@ impl PlanResolver<'_> {
+             // Spark checks root ambiguity before extracting fields. An unsupported
+             // extraction must not hide a second root and bind the first one instead.
+             // Spark deduplicates matches of the same attribute (e.g. `SELECT a, a`).
+-            if fields.any(|(other_qualifier, _, other)| {
+-                other_qualifier != qualifier || other.origin() != info.origin()
+-            }) {
+-                return Err(PlanError::AnalysisError(format!(
+-                    "ambiguous attribute: {name:?}"
+-                )));
++            let mut seen = std::collections::HashSet::from([(qualifier.cloned(), info.origin())]);
++            let mut qualifiers = vec![qualifier];
++            for (other_qualifier, _, other) in fields {
++                if seen.insert((other_qualifier.cloned(), other.origin())) {
++                    qualifiers.push(other_qualifier);
++                }
++            }
++            if qualifiers.len() > 1 {
++                return Err(self.ambiguous_attribute(name, root.as_ref(), qualifiers)?);
+             }
+             return match self.resolve_potentially_nested_field(
+                 col((qualifier, field)),
+diff --git a/crates/sail-plan/src/resolver/expression/mod.rs b/crates/sail-plan/src/resolver/expression/mod.rs
+index 53bcb2068..3ad2b7cdf 100644
+--- a/crates/sail-plan/src/resolver/expression/mod.rs
++++ b/crates/sail-plan/src/resolver/expression/mod.rs
+@@ -10,6 +10,7 @@ use crate::error::{PlanError, PlanResult};
+ use crate::resolver::PlanResolver;
+ use crate::resolver::state::PlanResolverState;
+ 
++mod ambiguous;
+ mod attribute;
+ mod cast;
+ mod function;
