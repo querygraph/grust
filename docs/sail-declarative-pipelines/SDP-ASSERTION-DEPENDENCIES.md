@@ -1388,3 +1388,17 @@ the correct update, not a rewritten expectation.
 
 Verdict: accept, read-only, pending the golden regeneration check and
 the native and public gates.
+
+### 20.10 Final candidate `cbeec8f93` (CF-0508)
+
+`cbeec8f93` differs from the accepted `b48abc5a8` in one file,
+`gold_data/plan/ddl_insert_into.json`: 32 cases before and after,
+exactly one changed, its input and its recorded Spark exception
+identical, its Sail output flipped from a successful `insertInto` plan
+with `ifNotExists = true` to the failure "[INVALID_STATEMENT_OR_CLAUSE]
+The statement or clause: INSERT INTO ... IF NOT EXISTS is not valid.".
+Product and tests are byte-identical to the reviewed candidate. The
+§20.9 verdict extends to `cbeec8f93` unchanged: accept, pending the
+refreshed public selection and the rule, source-order and
+defensive-lowering controls. Counts stay 116 reviewed, 87 partial, 399
+unmapped; this shared rule supports original sites and creates none.
