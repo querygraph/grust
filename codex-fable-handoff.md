@@ -3,10 +3,14 @@
 For a replacement agent resuming current work, start with the living
 [FABLE-HANDOFF.md](FABLE-HANDOFF.md), then read the live coordination channel.
 
-Start work in **`/Users/alexy/src/sail-sdp-fable`**, branch
-`work/sdp-streaming-cdc-fable`, based on Sail
-`779cb136d988c759a381ea1ace6c2e7649e3dbbc`.
-The `codex-fable-handoff.md` at that worktree root links to this canonical file.
+Current CDC implementation workspace: **`/Users/alexy/src/sail-sdp-fable-cdc-build`**,
+branch **`work/sdp-cdc-build`**, based on accepted Sail
+`a690e2ce96075b433edaf17faadb00088a30e9f9`.
+The user reaffirmed Codex=batch and Fable=CDC on 2026-10-31. Recent read-only
+reviewer directions are superseded. Port/reuse existing Fable CDC work from
+`/Users/alexy/src/sail-sdp-fable` and its component/C5 branches without rewriting
+those offered histories. Choose and implement the next missing CDC unit; routine
+implementation does not wait for another assignment or per-commit approval.
 
 Use **`/Users/alexy/src/grust-sdp-fable`** for design notes and evidence on its own
 `work/sdp-streaming-cdc-fable` branch. Keep product code/tests in Sail and design
@@ -14,7 +18,11 @@ and review artifacts in Grust. Read each repository's applicable AGENTS guidance
 Do not edit Codex's implementation or detached gate worktrees. Do not use the
 independently active `/Users/alexy/src/sail` checkout.
 
-## What to build first
+## What to build next
+
+The sequence below is the original plan. Reuse completed work and choose the
+next missing CDC implementation unit; do not redo completed validation as a new
+review exercise.
 
 Read the [parallel implementation handoff](docs/sail-declarative-pipelines/STREAMING-CDC-PARALLEL-HANDOFF.md)
 and [Fable review with responses](docs/sail-declarative-pipelines/SDP-FABLE-DESIGN-REVIEW.md).
