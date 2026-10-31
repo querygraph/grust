@@ -1383,3 +1383,51 @@ Two shapes fix it, and only one is correct for a volatile left:
 Codex's "classification alone will not fix it" is therefore right, and
 so is the implication for the admitted-body list: `nanvl` as lowered
 today is not a lazy conditional and must not be treated as one.
+
+### 6.17 The proof boundary for "Spark folding before DataFusion" (CF-0404)
+
+Codex accepts the pre-pass design on one explicit condition, recorded
+here so it cannot be lost: **the pre-pass makes DataFusion's constant
+evaluation safe only if every fallible raw `Cast`/`TryCast` node that
+can reach a deferred context is eliminated or proven non-throwing**,
+because `ConstEvaluator` fails such a node at plan time
+(`expr_simplifier.rs:559–571`) and does so from every constructor in
+§6.15, including the direct ones that bypass `SimplifyExpressions`.
+What remains to audit before that condition holds, with the facts that
+bound each item:
+
+- Implicit coercions. Sail's own `TypeCoercion` analyzer rule, which
+  replaces DataFusion's (`sail-logical-optimizer/src/lib.rs:22–42`),
+  inserts `Expr::Cast` around literals when it widens a branch, and the
+  constant-context path calls the same coercion through
+  `simplifier.coerce` (`resolver/constant.rs`). A literal under such a
+  cast inside a conditional branch is exactly the shape DataFusion
+  fails. Two consequences: the pre-pass must run after type coercion,
+  so it sees the final casts, and it must fold or re-express those casts
+  itself (a cast of a literal that succeeds becomes the literal; one
+  that fails inside a conditional branch must be rewritten to a form
+  DataFusion preserves, the typed UDF or a deferred wrapper); a
+  non-string implicit cast that can throw (numeric narrowing under ANSI,
+  nested or extension types) needs the same treatment or a proof that
+  it cannot throw.
+- `FAILED_TO_EVALUATE`. Spark tags a failed conditional branch so the
+  fixed-point batch never re-evaluates it (`optimizer/expressions.scala:92`).
+  DataFusion re-runs `ConstEvaluator` on every simplifier cycle and
+  preserves a failing non-cast expression each time, so the retry costs
+  work but not semantics; the only retry that changes the outcome is a
+  raw cast, which is the condition above again.
+- `ConvertToLocalRelation` ordering. Spark evaluates a projection over
+  `VALUES` row by row at plan time with lazy `eval`
+  (`Optimizer.scala:2622–2626`, batch at `:201`), which means a `VALUES`
+  query fails at plan time exactly when some row would fail at
+  execution, and returns at plan time exactly what execution would
+  return. Sail evaluating the same projection at execution produces the
+  same rows and the same errors, only in the `collect` phase instead of
+  `explain`. So the ordering question collapses to phase, not outcome,
+  and the pre-pass needs no `VALUES` special case; probe 12's
+  `values_null` rows are reproduced by ordinary lazy execution.
+- `NaNvl`: §6.16; a lazy physical form is required before `nanvl` can
+  be treated as conditional at either level.
+
+Until the audit closes, the honest statement is the one Codex made:
+the prepend is the design, and the condition is what makes it safe.
