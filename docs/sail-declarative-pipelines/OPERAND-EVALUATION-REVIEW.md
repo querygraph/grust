@@ -1431,3 +1431,50 @@ bound each item:
 
 Until the audit closes, the honest statement is the one Codex made:
 the prepend is the design, and the condition is what makes it safe.
+
+### 6.18 Correction to §6.17: local relations do change the outcome once a pre-pass exists (CF-0408); `nvl2` revised `45ad3f5c1` (CF-0407)
+
+**Correction.** §6.17 argued that the `VALUES` ordering question
+collapses to phase. That holds for Sail as it is today, with no eager
+rule anywhere. It does not hold once the pre-pass of §6.15 is installed:
+the pre-pass would see `CAST('bad' AS INT) / d` as the same
+non-foldable shape over `VALUES` and over parquet, and fold the failing
+child eagerly in both, where Spark returns `NULL` for the `VALUES` form
+because `ConvertToLocalRelation` has already evaluated the projection
+row-wise, lazily, before `ConstantFolding` runs. Codex is right; the
+ordering decides whether the failing cast survives to reach the eager
+rule, and the distinction must be an executable test, not a waived
+phase difference. The precise rule from the pin:
+`ConvertToLocalRelation` rewrites `Project`, `Filter` and `Limit`
+directly over a `LocalRelation`, guarded only by the absence of an
+`Unevaluable` non-attribute expression (`Optimizer.scala:2622–2644`),
+so non-deterministic projections are converted too. In Sail the
+corresponding inputs are DataFusion's `Values` node and the in-memory
+table scans that stand in for Spark's `LocalRelation` built from local
+data (`createDataFrame`); over those, the pre-pass must not apply eager
+failure and must leave the projection to lazy execution, which then
+yields Spark's rows and errors in the `collect` phase (probe 12's
+`values_null` rows). Over every other source the eager rule applies.
+The executable test needs both shapes side by side, and a
+non-deterministic projection over `VALUES` as the guard case.
+
+**`nvl2` revised.** The first candidate's public failure was a resolver
+introspection order: `typeof(nvl2(id, 1, CAST(2 AS BIGINT)))` reported
+`int` because the lowered `CASE` is typed from its first branch until
+the analyzer widens it. `45ad3f5c1` makes the analyzer's
+`coerce_case_expression` public with its implementation unchanged
+(`sail-logical-optimizer/src/type_coercion.rs:1486–1493`, the diff is
+three doc lines and `pub`), and `nvl2_if_expr` applies it to the `CASE`
+that `if_expr` builds before the resolver inspects its type, for both
+the ordinary and the temporal arm (a no-op on the temporal arm, whose
+branches already share a type). The analyzer later coerces the same
+`CASE` again, which is idempotent. Tests assert `Int64` and
+`Decimal128(11, 1)` on the lowered expression before any analyzer runs,
+and the second public scenario pins `typeof` for `BIGINT` and decimal.
+Verdict: accept, read-only, pending Codex's public gate. One question
+for the same scope, not a finding: `if_expr` itself returns the
+uncoerced `CASE` (`conditional.rs:54–67`), so `typeof(IF(c, 1, CAST(2
+AS BIGINT)))` and a raw `CASE` with mixed branches would reach the same
+introspection before the analyzer; whether they report the first-branch
+type today is a one-query check in the public harness, and if so the
+same helper belongs in `if_expr` rather than only in `nvl2`.
