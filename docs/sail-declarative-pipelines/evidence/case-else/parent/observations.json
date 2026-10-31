@@ -1,0 +1,334 @@
+{
+  "started_at": "2026-10-31T10:13:08.805770+00:00",
+  "mode": "sail",
+  "script_sha256": "4da098983fabcfba4416331d6e1f583cd1582504adb4f559904fcd03f2f775d8",
+  "cases": [
+    {
+      "ansi": true,
+      "expression": "CASE WHEN TRUE THEN 1 ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "CASE WHEN FALSE THEN 1 ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "CASE WHEN CAST(NULL AS BOOLEAN) THEN 1 ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "CASE WHEN FALSE THEN 1 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "CASE WHEN TRUE THEN CAST(NULL AS INT) ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "CASE WHEN FALSE THEN 1 ELSE CAST(NULL AS INT) END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "CASE WHEN TRUE THEN 1 WHEN FALSE THEN CAST(2 AS BIGINT) ELSE 3 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "CASE WHEN 1 > 0 THEN 1 WHEN 2 > 0 THEN 2.0 ELSE 1.2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(11,1)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.0"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN TRUE THEN 1 ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN FALSE THEN 1 ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN CAST(NULL AS BOOLEAN) THEN 1 ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN FALSE THEN 1 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN TRUE THEN CAST(NULL AS INT) ELSE 2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN FALSE THEN 1 ELSE CAST(NULL AS INT) END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN TRUE THEN 1 WHEN FALSE THEN CAST(2 AS BIGINT) ELSE 3 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "CASE WHEN 1 > 0 THEN 1 WHEN 2 > 0 THEN 2.0 ELSE 1.2 END",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(11,1)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.0"
+        ]
+      ]
+    }
+  ],
+  "commit": "a51bef4ce1b1b18b025fc697ace4b03c891380e8",
+  "cli_sha256": "f71a00313fe806bdfc1c19290da6566a42ed172eb88907b780117a696f92fd45",
+  "server_pid": 2375,
+  "version": "4.2.1",
+  "server_exit_code": 0,
+  "remaining_listeners": [],
+  "completed_at": "2026-10-31T10:13:10.327672+00:00"
+}

@@ -442,3 +442,42 @@ human-reviewable source unit should apply the shared coercion before those
 expressions expose their type, then remove the NVL2-specific wrapper if redundant.
 Native tests must inspect types before analysis; public typeof and temporal
 cases must pass. This inherited gap is not declared fixed by the NVL2 unit.
+
+
+## Qualified shared coercion and explicit ELSE (CF-0411–0421)
+
+Sail[a51bef4ce](evidence/conditional-types/README.md) shares analyzer CASE
+coercion at IF/CASE lowering, after temporal normalization; NVL2 delegates to IF.
+Native122/fmt/strictClippy/control0/1/fresh public300+67 pass; Spark/Sail features15
+each pass. All8 prior typeof mismatches now match rows and schema. Tests inspect
+types before analysis, reversed branches, NULL predicates, no-ELSE typed NULL,
+and branch invocation counts during coercion/skipping/selection. Fable47a61dc4
+accepts. No new optimizer rule is installed.
+
+Sail[e18c7a81a](evidence/case-else/README.md) then preserves an actual ELSE,
+keeping it in temporal normalization before splitting it from WHEN values.
+Native123/fmt/strictClippy/control0/1/fresh public300+67 and features18 pass.
+Spark16/final16 complete matches improve parent6/16. The existing literal CASE
+schema assertion passes unchanged, so its known-bug marker is removed.
+
+An extra4-case probe prevented a wrong fixture contract: Spark CaseWhen.nullable
+(conditionalExpressions.scala:191–201) has a TrueLiteral arm, considering only
+branches through the first true condition. Otherwise nullable/missing ELSE and
+all nullable THEN arms count, including literal-false arms. Spark merging types
+still includes every branch. DataFusion expr_schema.rs:315–360 instead applies
+predicate bounds to discard unreachable nullable THEN arms and includes ELSE.
+The extra4 rows match, all4 schemas differ in both directions. Do not erase a
+branch before type/coercion/provenance validation to fix this superficially.
+
+Checkpoint840 and its passing gates are retained. The final Rust fixture selects
+a NULL ELSE via false, rather than asserting nullable=true for true-then-1-else-NULL.
+Production/Python tree unchanged; the verifier proves identical Spark18 inputs,
+and exact final native/public gates pass independently. Fable4131e397 accepts
+the production fix; 5dace5c3 accepts the nullability correction. These extra4 and
+the older4 NVL2 cast/nullability cases remain required, separate failures.
+
+Next measure SparkAnsiStringCast's field contract against the pin and public
+oracles; a nullable-field change must not be assumed to close every retained case.
+Then resume source/conditional folding, local-row ordering and target-type policy
+before decimal SQL routing. All prior source/phase, original Scala-suite and
+streaming/CDC acceptance requirements remain active.
