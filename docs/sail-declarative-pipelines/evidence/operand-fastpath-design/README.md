@@ -34,7 +34,7 @@ operation to isolate conditional cast behavior; they do not prove arithmetic
 lowering or result-schema parity. The test passes as an observation collector.
 
 Fresh Spark Connect records 16 corresponding queries, effective ANSI, structured
-errors, and shutdown with no remaining listener. Spark returns one NULL row for
+errors, and shutdown with no remaining listener. Within these VALUES queries, Spark returns one NULL row for
 rightNULL for all targets/modes. With right0 it raises CAST_INVALID_INPUT under
 ANSI and returns NULL in legacy mode. Comparison covers row/null outcomes and
 displayed Sail condition tokens only, not public RPC/schema/error-metadata parity.
@@ -81,3 +81,15 @@ activation or fake-Volatile cast barrier has been selected.
 Run `verify.py` to check source pins, hashes, probe results and the retained
 conformance failure. Archived launch scripts name original worktrees and /tmp
 paths; read them before reuse. They are evidence, not a portable runner.
+
+
+## Source-scope correction after Fable review
+
+The [source/phase follow-up](../source-dependent-cast-folding/README.md) confirms
+that the VALUES result must not be generalised to arbitrary sources. Under ANSI,
+Spark can fail a foldable bad cast at planning beneath a nonfoldable Parquet
+column-dependent division, including an all-NULL divisor. Foldable wholes,
+conditional branches and early local-relation evaluation have different folding
+rules. The original sixteen oracle queries/assertions remain unchanged and valid.
+Exact context/phase behavior is required; always deferring a cast is insufficient.
+Legacy floating invalid-input behavior was corrected separately at63f5bd3b3.

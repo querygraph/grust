@@ -1,0 +1,1282 @@
+{
+  "started_at": "2026-10-31T08:05:39.778333+00:00",
+  "script_sha256": "9a78bdf577d33eb6297d94b4443a833ca06931cbc08373cee8ed695fc50026b1",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "cases": [
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS INT) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS INT) / d AS v FROM pq_null",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"INT\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS INT) / d AS v FROM pq_zero",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"INT\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS INT) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS INT) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS INT) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS INT) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST(CAST('bad' AS INT) AS DOUBLE) / CAST(CAST(NULL AS INT) AS DOUBLE)) AS STRING)"
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS v FROM pq_null",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"DOUBLE\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS v FROM pq_zero",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"DOUBLE\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS DOUBLE) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS DOUBLE) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS DOUBLE) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          1.0
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS DOUBLE) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST('bad' AS DOUBLE) / CAST(CAST(NULL AS INT) AS DOUBLE)) AS STRING)"
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS v FROM pq_null",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"DECIMAL(5,2)\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS v FROM pq_zero",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"DECIMAL(5,2)\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS DECIMAL(5,2)) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          "1.00"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(12,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS DECIMAL(5,2)) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST('bad' AS DECIMAL(5,2)) / CAST(CAST(NULL AS INT) AS DECIMAL(10,0))) AS STRING)"
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS v FROM pq_null",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"DECIMAL(38,10)\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS v FROM pq_zero",
+      "returned": false,
+      "phase": "explain",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"DECIMAL(38,10)\""
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS DECIMAL(38,10)) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          "1.0000000000"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS DECIMAL(38,10)) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST('bad' AS DECIMAL(38,10)) / CAST(CAST(NULL AS INT) AS DECIMAL(10,0))) AS STRING)"
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS INT) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS INT) / d AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS INT) / d AS v FROM pq_zero",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS INT) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS INT) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS INT) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          1
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS INT) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST(CAST('bad' AS INT) AS DOUBLE) / CAST(CAST(NULL AS INT) AS DOUBLE)) AS STRING)"
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS v FROM pq_zero",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS DOUBLE) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS DOUBLE) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS DOUBLE) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          1.0
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS DOUBLE) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST('bad' AS DOUBLE) / CAST(CAST(NULL AS INT) AS DOUBLE)) AS STRING)"
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS v FROM pq_zero",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS DECIMAL(5,2)) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          "1.00"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(12,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS DECIMAL(5,2)) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST('bad' AS DECIMAL(5,2)) / CAST(CAST(NULL AS INT) AS DECIMAL(10,0))) AS STRING)"
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "case": "values_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS v FROM VALUES (CAST(NULL AS INT)) AS t(d)",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "case": "parquet_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "case": "parquet_zero",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS v FROM pq_zero",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "case": "foldable_null",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / CAST(NULL AS INT) AS v",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "case": "foldable_null_over_parquet",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / CAST(NULL AS INT) AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "case": "case_branch_parquet",
+      "query": "SELECT CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS DECIMAL(38,10)) END AS v FROM pq_null",
+      "explain": "passed",
+      "returned": true,
+      "rows": [
+        [
+          "1.0000000000"
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "case": "identifier_null",
+      "query": "SELECT 1 FROM IDENTIFIER(CAST(CAST('bad' AS DECIMAL(38,10)) / CAST(NULL AS INT) AS STRING))",
+      "returned": false,
+      "phase": "sql",
+      "exception_type": "AnalysisException",
+      "condition": "NOT_A_CONSTANT_STRING.NULL",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "IDENTIFIER",
+        "expr": "CAST((CAST('bad' AS DECIMAL(38,10)) / CAST(CAST(NULL AS INT) AS DECIMAL(10,0))) AS STRING)"
+      }
+    }
+  ],
+  "spark_version": "4.2.1",
+  "completed_at": "2026-10-31T08:05:49.783495+00:00",
+  "remaining_listener_pids": ""
+}

@@ -259,3 +259,32 @@ Replay list direction remains unresolved: missed data errors can select a wrong
 row, but pure value semantics alone do not prove repeated system failures are
 safe. Audit each admitted native body's reachable raw error vocabulary before
 choosing a classifier/default. No replay activation is implied by this review.
+
+
+## Verified source/phase and decimal contract (CF-0382–0384)
+
+The [new packet](evidence/source-dependent-cast-folding/README.md) corrects the
+VALUES-only interpretation using fresh Spark/public56. ANSI bad literal casts
+under nonfoldable Parquet division fail during Spark planning, includingNULL
+right values; fully foldable parents, conditional branches and early local
+relations have different rules. Outcomes match34/56; schema/phase together16.
+Keep eager failures and skipped results as equally required. No always-deferred
+cast wrapper can establish exact behavior across these contexts.
+
+Fresh decimal192 matches114 outcomes/101 with schemas. Spark Unicode decimal and
+exponent digits, Java trim boundaries, extreme zero exponents and three distinct
+error kinds are executable fixtures. Existing ordinary HALF_UP cases match Sail;
+follow the actual Arrow cast/decimal.rs path rather than the separate parse
+utility. A focused typed decimal UDF/shared bounded parser is the candidate
+next component, unactivated until scalar/array/nullability/metadata, captured
+error/negative-scale policy, worker wire and folding context are qualified.
+
+Fable806d6678 reconciles replay: known data errors only, from exact admitted
+bodies and data types; preserve other errors. Add executable error fixtures and
+invalidate source/dependency audits on changes. Do not claim a token search
+proves exhaustive reachability. Fablec41fba30 identifies physical optimizer and
+worker decode reproof as candidates without a wire eligibility bit. The generic
+ExecutionPlan expression visitor is read-only; node rebuild and scan pushdown
+coverage still need proof. QueryPlanner can instead rewrite final logical Exprs
+before native construction, requiring audit of later physical rewrites. No seat,
+mode/default/classifier or arithmetic SQL activation is selected by this packet.
