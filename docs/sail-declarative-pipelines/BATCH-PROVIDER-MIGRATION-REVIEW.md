@@ -1209,3 +1209,25 @@ subqueries before missing-table/column analysis, scalar identifier resolves
 its subquery first" split are resolver-phase facts that the validation unit
 owns; the renderer is independent of them and should not try to infer
 precedence.
+
+**Correction after CF-0305.** `ResolveIdentifierClause` evaluates an
+identifier expression only when `identifierExpr.resolved`
+(`ResolveIdentifierClause.scala:66, 93`), so the `expr.sql` in the three
+`IdentifierResolution` sub-classes is rendered from the **resolved,
+type-coerced** expression, which is why Spark's `WRONG_TYPE` output for a
+`DIV` expression shows `CAST` operands. Only the `CheckAnalysis` path
+(`!p.identifierExpr.resolved`) renders the unresolved form. §15's "original
+(unresolved) expression" holds for that path alone. Consequence for the
+renderer: the `IdentifierResolution` cases need a Catalyst-`sql` rendering
+of the resolved DataFusion expression (casts included), for which the
+resolved-expression formatters are the right base, with `expr.sql`'s literal
+and quoting conventions applied on top; the spec-level renderer covers the
+`CheckAnalysis` table case only. Whether Sail inserts the same implicit casts
+as Catalyst at the same places is a separate parity point that the oracle,
+not the renderer, decides. Also noted from the expanded oracle: dead
+branches with `typeof(rand())` are accepted by table `IDENTIFIER`, so no
+blanket volatile-descendant walk; builtin `typeof` discards its argument
+without the eager foldability requirement while table subqueries still
+reject before analysis; and `SET CATALOG` reports
+`INVALID_NON_DETERMINISTIC_EXPRESSIONS`, so constant contexts are not
+interchangeable across commands.
