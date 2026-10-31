@@ -39,12 +39,12 @@ authorise a rerun are consistent with `ASYNC-SOURCE-CONTRACT.md` §3.
    and every retry", is the fix: materialize the reconciled rows once and
    publish the materialized batch. Built first (below), independent of the
    store.
-2. **Sink incarnation needs a seam the pin does not have.** The design keys
-   fencing on the immutable Delta table UUID (the `Metadata` action `id`)
-   and the auxiliary table's UUID. `LakehouseExecutionContext` and
-   `TableKind::Table` carry location and format but no table id; the id is
-   available from the Delta log at commit time and must be threaded into the
-   write context in unit 3. Not a contradiction; an explicit seam to add.
+2. **Sink incarnation: half the seam exists.** `CatalogTableIdentity.table_id`
+   (`lakehouse.rs:8`) and the coordinator's `table_id` carry the
+   catalog-managed table identity to the commit path; the Delta log's
+   `Metadata` id and the auxiliary table's identity are not threaded into
+   `MergeIntoOptions`, which has no write context. Unit 3 adds the typed
+   context and checks both; not a contradiction.
 3. **Turso in Sail is an unqualified dependency.** The design's first
    adapter needs the Turso/libsql client in the Sail workspace, where no
    SQLite-family dependency exists today. After the Iggy SDK conflict
@@ -83,3 +83,9 @@ first.
   path, declared first.
 - B5/B6: sealed input archive, two-step orchestration over the model, then
   the admission slice.
+
+## Build log
+
+- B0 done: `write.rs` seals the reconciled rows once (MemTable scan published
+  as the view); structural test plus a tied-events case; 316 pipelines tests
+  pass. Commit on the CDC branch after `4fc62deed`.
