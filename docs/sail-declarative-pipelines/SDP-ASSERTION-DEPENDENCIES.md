@@ -1226,3 +1226,39 @@ own string (`:573`), and its siblings are "Only single column based
 partitioning is supported." (`:581`) and "Multipart partition
 identifier not allowed." (`:587`). Both sites belong to the wrapped
 tier; neither is a raw error.
+
+### 20.5 Unsupported table-as-select in a pipeline file, candidate `18604c01a` on `c864386cc` (CF-0498)
+
+Seven paths, product in two: pipeline normalisation now rejects a
+`CreateTableAsSelect` command with `SqlError::AnalysisError("Unsupported
+plan <node> parsed from SQL query")`, where `<node>` is
+`CreateTableAsSelect` for `CREATE TABLE … AS` and `CREATE TABLE IF NOT
+EXISTS … AS`, and `ReplaceTableAsSelect` for `REPLACE TABLE … AS` and
+`CREATE OR REPLACE TABLE … AS`; and the SQL preparation places an
+`AnalysisError`'s message directly into the existing registration
+wrapper instead of the error's `to_string()`, so no prefix leaks into
+the `message` parameter. The node mapping is Spark's parser:
+`visitCreateTable` builds `CreateTableAsSelect` carrying `ifNotExists`
+(`AstBuilder.scala:5702`) and `visitReplaceTable` builds
+`ReplaceTableAsSelect` with `orCreate` (`:5785`), and
+`processSqlQuery`'s fall-through arm renders `nodeName` (§20.4). The
+initial create-only candidate was rightly superseded once Sail's shared
+`CommandNode::CreateTableAsSelect` was seen to carry the replace modes
+too. Ordinary SQL CTAS and RTAS still lower to their command; the
+rejection exists only in pipeline normalisation.
+
+Tests: native, the original `:525` input through `register_sql` yields
+the `AnalysisException` `PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR`,
+SQLSTATE `42000`, with the three parameters exact (`message` as above,
+`offendingQuery` "\nOffending query:\nCREATE TABLE t AS SELECT 1\n",
+`codeLocation` "Query defined at a.sql:1") and nothing published; the
+analyzer contrast for all four forms. Public, six cases on both engines
+with the original external-table fixtures: the original `:525`, a
+Unicode comment prefix placing the statement at line 3, a second
+statement at line 4 with a trailing comment retained in the offending
+text, `IF NOT EXISTS`, `CREATE OR REPLACE` and `REPLACE`, each with the
+three parameters exact and no table created.
+
+Verdict: accept, read-only, pending the native gate and the Spark mode
+probe. On landing the `:525` record is strengthened on the same terms
+as `:580` (already partial; counts unchanged).
