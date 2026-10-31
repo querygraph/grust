@@ -1,0 +1,25 @@
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+error: this `if` statement can be collapsed
+  --> crates/sail-plan/src/resolver/expression/function.rs:85:9
+   |
+85 | /         if registered || is_higher_order_function(&canonical_function_name) {
+86 | |             if let Some(foldable) = state.foldability_observer() {
+87 | |                 *foldable = false;
+88 | |             }
+89 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+   = note: `-D clippy::collapsible-if` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+   |
+85 ~         if (registered || is_higher_order_function(&canonical_function_name)) {
+86 ~             && let Some(foldable) = state.foldability_observer() {
+87 |                 *foldable = false;
+88 ~             }
+   |
+
+error: could not compile `sail-plan` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `sail-plan` (lib test) due to 1 previous error

@@ -1,0 +1,489 @@
+diff --git a/crates/sail-plan/src/function/aggregate.rs b/crates/sail-plan/src/function/aggregate.rs
+index c9297481e..1dcbe9676 100644
+--- a/crates/sail-plan/src/function/aggregate.rs
++++ b/crates/sail-plan/src/function/aggregate.rs
+@@ -1132,6 +1132,7 @@ mod tests {
+             preserve_count_argument_columns: false,
+             function_context: FunctionContextInput {
+                 require_foldable: false,
++                foldability_observer: None,
+                 argument_display_names: &argument_display_names,
+                 plan_config: &plan_config,
+                 session_context: &session_context,
+diff --git a/crates/sail-plan/src/function/common.rs b/crates/sail-plan/src/function/common.rs
+index 437d9253f..fb003a5b6 100644
+--- a/crates/sail-plan/src/function/common.rs
++++ b/crates/sail-plan/src/function/common.rs
+@@ -30,6 +30,8 @@ pub struct FunctionContextInput<'a> {
+     pub schema: &'a DFSchemaRef,
+     /// Require foldability before a builder can erase function provenance.
+     pub require_foldable: bool,
++    /// Record non-foldability that a builder may erase while lowering.
++    pub foldability_observer: Option<&'a mut bool>,
+ }
+ 
+ pub struct ScalarFunctionInput<'a> {
+@@ -44,7 +46,10 @@ pub(crate) struct ScalarFunctionBuilder;
+ 
+ impl ScalarFunctionBuilder {
+     pub fn non_foldable(function: ScalarFunction) -> ScalarFunction {
+-        Arc::new(move |input| {
++        Arc::new(move |mut input| {
++            if let Some(foldable) = input.function_context.foldability_observer.as_deref_mut() {
++                *foldable = false;
++            }
+             if input.function_context.require_foldable {
+                 return Err(PlanError::analysis(
+                     "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+diff --git a/crates/sail-plan/src/function/window.rs b/crates/sail-plan/src/function/window.rs
+index 38b4aeb56..0ca9b66f3 100644
+--- a/crates/sail-plan/src/function/window.rs
++++ b/crates/sail-plan/src/function/window.rs
+@@ -904,6 +904,7 @@ mod tests {
+                 distinct: false,
+                 function_context: FunctionContextInput {
+                     require_foldable: false,
++                    foldability_observer: None,
+                     argument_display_names: &argument_display_names,
+                     plan_config: &plan_config,
+                     session_context: &session_context,
+diff --git a/crates/sail-plan/src/resolver/constant/tests.rs b/crates/sail-plan/src/resolver/constant/tests.rs
+index e9c29b087..a85357c91 100644
+--- a/crates/sail-plan/src/resolver/constant/tests.rs
++++ b/crates/sail-plan/src/resolver/constant/tests.rs
+@@ -305,6 +305,7 @@ fn non_foldable_annotation_prevents_builder_invocation() -> TestResult {
+             arguments: vec![],
+             function_context: FunctionContextInput {
+                 require_foldable,
++                foldability_observer: None,
+                 argument_display_names: &[],
+                 plan_config: &config,
+                 session_context: &context,
+diff --git a/crates/sail-plan/src/resolver/expression/attribute.rs b/crates/sail-plan/src/resolver/expression/attribute.rs
+index b82ec3b04..95ee240ca 100644
+--- a/crates/sail-plan/src/resolver/expression/attribute.rs
++++ b/crates/sail-plan/src/resolver/expression/attribute.rs
+@@ -122,6 +122,7 @@ impl PlanResolver<'_> {
+                 arguments: vec![],
+                 function_context: FunctionContextInput {
+                     require_foldable: state.config().require_foldable,
++                    foldability_observer: state.foldability_observer(),
+                     argument_display_names: &[],
+                     plan_config: &self.config,
+                     session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/expression/function.rs b/crates/sail-plan/src/resolver/expression/function.rs
+index eed85e992..ae7cf1a5d 100644
+--- a/crates/sail-plan/src/resolver/expression/function.rs
++++ b/crates/sail-plan/src/resolver/expression/function.rs
+@@ -79,6 +79,14 @@ impl PlanResolver<'_> {
+ 
+         let canonical_function_name = function_name.to_ascii_lowercase();
+         let catalog_manager = self.ctx.extension::<CatalogManager>()?;
++        let registered = catalog_manager
++            .get_function(&canonical_function_name)?
++            .is_some();
++        if registered || is_higher_order_function(&canonical_function_name) {
++            if let Some(foldable) = state.foldability_observer() {
++                *foldable = false;
++            }
++        }
+         if state.config().require_foldable
+             && (catalog_manager
+                 .get_function(&canonical_function_name)?
+@@ -123,6 +131,12 @@ impl PlanResolver<'_> {
+         let (argument_display_names, arguments) = if canonical_function_name == "struct" {
+             self.resolve_struct_expressions_and_names(arguments, schema, state)
+                 .await?
++        } else if canonical_function_name == "typeof" && !registered {
++            // The runtime replacement discards only its own argument provenance.
++            // An already non-foldable parent must remain non-foldable on return.
++            let mut scope = state.suspend_foldability();
++            self.resolve_expressions_and_names(arguments, schema, scope.state())
++                .await?
+         } else if has_spec_lambda_argument && is_higher_order_function(&canonical_function_name) {
+             self.resolve_higher_order_function_arguments(
+                 &canonical_function_name,
+@@ -190,6 +204,7 @@ impl PlanResolver<'_> {
+                             arguments,
+                             function_context: FunctionContextInput {
+                                 require_foldable: state.config().require_foldable,
++                                foldability_observer: state.foldability_observer(),
+                                 argument_display_names: &argument_display_names,
+                                 plan_config: &self.config,
+                                 session_context: self.ctx,
+@@ -250,6 +265,7 @@ impl PlanResolver<'_> {
+                                         .preserve_count_argument_columns,
+                                     function_context: FunctionContextInput {
+                                         require_foldable: state.config().require_foldable,
++                                        foldability_observer: state.foldability_observer(),
+                                         argument_display_names: &argument_display_names,
+                                         plan_config: &self.config,
+                                         session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/expression/misc.rs b/crates/sail-plan/src/resolver/expression/misc.rs
+index 2a23fc715..68daaedc9 100644
+--- a/crates/sail-plan/src/resolver/expression/misc.rs
++++ b/crates/sail-plan/src/resolver/expression/misc.rs
+@@ -95,8 +95,9 @@ impl PlanResolver<'_> {
+         schema: &DFSchemaRef,
+         state: &mut PlanResolverState,
+     ) -> PlanResult<NamedExpr> {
+-        let resolved = self.resolve_expression(expr, schema, state).await?;
+-        let name = self.evaluate_identifier_expr(resolved, state)?;
++        let name = self
++            .resolve_scalar_identifier_expr(expr, schema, state)
++            .await?;
+         let object_name = sail_sql_analyzer::expression::from_ast_object_name(
+             sail_sql_analyzer::parser::parse_object_name(&name)?,
+         )?;
+diff --git a/crates/sail-plan/src/resolver/expression/window.rs b/crates/sail-plan/src/resolver/expression/window.rs
+index da1f16f9d..c3d3b7e8a 100644
+--- a/crates/sail-plan/src/resolver/expression/window.rs
++++ b/crates/sail-plan/src/resolver/expression/window.rs
+@@ -157,6 +157,7 @@ impl PlanResolver<'_> {
+                         distinct: is_distinct,
+                         function_context: FunctionContextInput {
+                             require_foldable: state.config().require_foldable,
++                            foldability_observer: state.foldability_observer(),
+                             argument_display_names: &argument_display_names,
+                             plan_config: &self.config,
+                             session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/identifier.rs b/crates/sail-plan/src/resolver/identifier.rs
+index 136a20ef7..f188a9420 100644
+--- a/crates/sail-plan/src/resolver/identifier.rs
++++ b/crates/sail-plan/src/resolver/identifier.rs
+@@ -3,7 +3,7 @@ use std::sync::Arc;
+ use arrow::datatypes::DataType;
+ use datafusion::optimizer::simplify_expressions::ExprSimplifier;
+ use datafusion_common::tree_node::{Transformed, TreeNode};
+-use datafusion_common::{DFSchema, ScalarValue};
++use datafusion_common::{DFSchema, DFSchemaRef, ScalarValue};
+ use datafusion_expr::simplify::SimplifyContextBuilder;
+ use datafusion_expr::{Expr, ExprSchemable};
+ use sail_common::spec;
+@@ -42,6 +42,25 @@ impl PlanResolver<'_> {
+         self.evaluate_identifier_expr(resolved, scope.state())
+     }
+ 
++    /// Scalar arguments finish semantic resolution before provenance validation.
++    pub(super) async fn resolve_scalar_identifier_expr(
++        &self,
++        expression: spec::Expr,
++        schema: &DFSchemaRef,
++        state: &mut PlanResolverState,
++    ) -> PlanResult<String> {
++        let mut scope = state.observe_foldability();
++        let resolved = self
++            .resolve_expression(expression, schema, scope.state())
++            .await?;
++        if !scope.is_foldable() {
++            return Err(PlanError::analysis(
++                "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] IDENTIFIER function is not foldable",
++            ));
++        }
++        self.evaluate_identifier_expr(resolved, scope.state())
++    }
++
+     /// Substitute bound SQL parameters, then validate before constant folding
+     /// can remove a non-foldable child or evaluate a wrongly typed expression.
+     pub(super) fn evaluate_identifier_expr(
+@@ -99,3 +118,7 @@ impl PlanResolver<'_> {
+ 
+ #[cfg(test)]
+ mod tests;
++
++#[cfg(test)]
++#[path = "identifier/provenance_tests.rs"]
++mod provenance_tests;
+diff --git a/crates/sail-plan/src/resolver/identifier/provenance_tests.rs b/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
+new file mode 100644
+index 000000000..559ba74fb
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
+@@ -0,0 +1,178 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++use std::sync::atomic::{AtomicUsize, Ordering};
++
++use arrow::datatypes::DataType;
++use datafusion::prelude::SessionContext;
++use datafusion_common::{DFSchema, ScalarValue};
++use datafusion_expr::{ColumnarValue, Volatility, create_udf};
++use sail_catalog::manager::CatalogManager;
++use sail_catalog::provider::CreateViewOptions;
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++
++use super::tests::{context, expression};
++use super::*;
++use crate::config::PlanConfig;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++async fn input() -> Result<SessionContext, Box<dyn std::error::Error>> {
++    let ctx = context()?;
++    ctx.extension::<CatalogManager>()?
++        .create_view(
++            &["input"],
++            CreateViewOptions {
++                definition: "SELECT 9 AS foo".into(),
++                columns: vec![],
++                if_not_exists: false,
++                replace: false,
++                comment: None,
++                properties: vec![],
++            },
++        )
++        .await?;
++    Ok(ctx)
++}
++fn query(expr: &str) -> PlanResult<spec::Plan> {
++    Ok(sail_sql_analyzer::statement::from_ast_statement(
++        sail_sql_analyzer::parser::parse_one_statement(&format!(
++            "SELECT IDENTIFIER({expr}) AS value FROM input"
++        ))?,
++    )?)
++}
++
++#[tokio::test]
++async fn scalar_session_functions_keep_nonfoldable_provenance_and_semantic_error_priority()
++-> TestResult {
++    let ctx = input().await?;
++    let resolver = PlanResolver::new(&ctx, Arc::new(PlanConfig::default()));
++    for expr in [
++        "CASE WHEN false THEN current_catalog() ELSE 'foo' END",
++        "CASE WHEN false THEN current_database() ELSE 'foo' END",
++        "CASE WHEN false THEN current_timezone() ELSE 'foo' END",
++        "CASE WHEN false THEN current_user() ELSE 'foo' END",
++        "CASE WHEN false THEN concat(current_catalog(), typeof(rand())) ELSE 'foo' END",
++        "CASE WHEN false THEN concat(typeof(rand()), current_catalog()) ELSE 'foo' END",
++    ] {
++        let error = resolver
++            .resolve_named_plan(query(expr)?)
++            .await
++            .err()
++            .ok_or("nonfoldable function was erased")?;
++        assert!(
++            error
++                .to_string()
++                .contains("NOT_A_CONSTANT_STRING.NOT_CONSTANT"),
++            "{expr}: {error}"
++        );
++    }
++    for expr in [
++        "concat(current_catalog(), missing)",
++        "concat(missing, current_catalog())",
++        "concat(current_catalog(), (SELECT missing FROM input))",
++        "typeof(missing)",
++        "CASE WHEN false THEN typeof((SELECT missing FROM input)) ELSE 'foo' END",
++    ] {
++        let error = resolver
++            .resolve_named_plan(query(expr)?)
++            .await
++            .err()
++            .ok_or("missing column was accepted")?;
++        assert!(
++            error
++                .to_string()
++                .contains("UNRESOLVED_COLUMN.WITH_SUGGESTION"),
++            "{expr}: {error}"
++        );
++    }
++    for expr in [
++        "CASE WHEN false THEN typeof(current_catalog()) ELSE 'foo' END",
++        "CASE WHEN false THEN typeof(concat(current_catalog(), current_database())) ELSE 'foo' END",
++        "CASE WHEN false THEN typeof((SELECT foo FROM input)) ELSE 'foo' END",
++    ] {
++        let named = resolver.resolve_named_plan(query(expr)?).await?;
++        assert_eq!(named.fields, Some(vec!["value".into()]));
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn identifier_observation_restores_parent_parameters_and_state_after_errors() -> TestResult {
++    let ctx = context()?;
++    let resolver = PlanResolver::new(&ctx, Arc::new(PlanConfig::default()));
++    let mut state = PlanResolverState::new();
++    state.config_mut().arrow_allow_large_var_types = true;
++    let schema = Arc::new(DFSchema::empty());
++    let mut params = state.enter_param_values_scope(
++        HashMap::from([("col".into(), ScalarValue::Utf8(Some("foo".into())))]),
++        vec![],
++    );
++    for (expr, accepted) in [
++        (
++            "CASE WHEN false THEN current_catalog() ELSE :col END",
++            false,
++        ),
++        (
++            "CASE WHEN false THEN typeof(current_catalog()) ELSE :col END",
++            true,
++        ),
++        (
++            "CASE WHEN false THEN concat(current_catalog(), typeof(current_database())) ELSE :col END",
++            false,
++        ),
++        (
++            "CASE WHEN false THEN typeof(current_database()) ELSE :col END",
++            true,
++        ),
++    ] {
++        let result = resolver
++            .resolve_scalar_identifier_expr(expression(expr)?, &schema, params.state())
++            .await;
++        if accepted {
++            assert_eq!(result?, "foo");
++        } else {
++            assert!(result.is_err());
++        }
++        assert!(params.state().foldability_observer().is_none());
++        assert!(!params.state().config().require_foldable);
++        assert!(!params.state().config().table_identifier);
++        assert!(params.state().config().arrow_allow_large_var_types);
++        assert!(params.state().get_param_value("col").is_some());
++    }
++    drop(params);
++    assert!(state.get_param_value("col").is_none());
++    assert!(state.foldability_observer().is_none());
++    Ok(())
++}
++
++#[tokio::test]
++async fn registered_typeof_keeps_udf_rules_without_executing_the_function() -> TestResult {
++    let ctx = input().await?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let observed = calls.clone();
++    ctx.extension::<CatalogManager>()?
++        .register_function(create_udf(
++            "typeof",
++            vec![DataType::Utf8],
++            DataType::Utf8,
++            Volatility::Immutable,
++            Arc::new(move |_| {
++                observed.fetch_add(1, Ordering::SeqCst);
++                Ok(ColumnarValue::Scalar(ScalarValue::Utf8(Some("foo".into()))))
++            }),
++        ))?;
++    let resolver = PlanResolver::new(&ctx, Arc::new(PlanConfig::default()));
++    for (expr, condition) in [
++        ("typeof('literal')", "NOT_A_CONSTANT_STRING.NOT_CONSTANT"),
++        ("typeof(missing)", "UNRESOLVED_COLUMN.WITH_SUGGESTION"),
++    ] {
++        let error = resolver
++            .resolve_named_plan(query(expr)?)
++            .await
++            .err()
++            .ok_or("registered typeof was folded")?;
++        assert!(error.to_string().contains(condition), "{expr}: {error}");
++    }
++    assert_eq!(calls.load(Ordering::SeqCst), 0);
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/identifier/tests.rs b/crates/sail-plan/src/resolver/identifier/tests.rs
+index aeaef44ca..d5c1f4153 100644
+--- a/crates/sail-plan/src/resolver/identifier/tests.rs
++++ b/crates/sail-plan/src/resolver/identifier/tests.rs
+@@ -20,7 +20,7 @@ use crate::formatter::SparkPlanFormatter;
+ 
+ type TestResult = Result<(), Box<dyn std::error::Error>>;
+ 
+-fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
++pub(super) fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
+     let provider = MemoryCatalogProvider::new("catalog".into(), vec!["db"].try_into()?, None);
+     let manager = CatalogManager::try_new(CatalogManagerOptions {
+         catalogs: HashMap::from([(
+@@ -42,7 +42,7 @@ fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
+         SessionStateBuilder::new().with_config(config).build(),
+     ))
+ }
+-fn expression(sql: &str) -> PlanResult<spec::Expr> {
++pub(super) fn expression(sql: &str) -> PlanResult<spec::Expr> {
+     Ok(sail_sql_analyzer::expression::from_ast_expression(
+         sail_sql_analyzer::parser::parse_expression(sql)?,
+     )?)
+diff --git a/crates/sail-plan/src/resolver/query/join.rs b/crates/sail-plan/src/resolver/query/join.rs
+index 556a3b9d4..88a0e868e 100644
+--- a/crates/sail-plan/src/resolver/query/join.rs
++++ b/crates/sail-plan/src/resolver/query/join.rs
+@@ -296,6 +296,7 @@ impl PlanResolver<'_> {
+                             arguments,
+                             function_context: FunctionContextInput {
+                                 require_foldable: state.config().require_foldable,
++                                foldability_observer: state.foldability_observer(),
+                                 argument_display_names: &[],
+                                 plan_config: &self.config,
+                                 session_context: self.ctx,
+diff --git a/crates/sail-plan/src/resolver/state.rs b/crates/sail-plan/src/resolver/state.rs
+index ff59ca7f1..8b92d342a 100644
+--- a/crates/sail-plan/src/resolver/state.rs
++++ b/crates/sail-plan/src/resolver/state.rs
+@@ -8,6 +8,8 @@ use sail_common::spec;
+ use crate::error::{PlanError, PlanResult};
+ use crate::resolver::PlanResolver;
+ use crate::resolver::expression::NamedExpr;
++mod foldability;
++
+ use crate::resolver::query::{CteInfo, CteKind, MissingInputBoundaries, MissingInputResolution};
+ 
+ /// The field information for fields in the logical plan.
+@@ -107,6 +109,8 @@ pub(super) struct PlanResolverState {
+     /// Unresolved subquery references from a WithRelations node, keyed by plan_id.
+     subquery_references: HashMap<i64, spec::QueryPlan>,
+     config: PlanResolverStateConfig,
++    /// Identifier argument provenance, separate from restorable resolver configuration.
++    foldability: Option<bool>,
+     /// Named parameter values available while resolving a `WithParameters` query node.
+     /// These provide placeholder types and support early `IDENTIFIER` evaluation.
+     param_values: std::collections::HashMap<String, ScalarValue>,
+@@ -144,6 +148,7 @@ impl PlanResolverState {
+             parameter_view_origins: HashSet::new(),
+             subquery_references: HashMap::new(),
+             config: PlanResolverStateConfig::default(),
++            foldability: None,
+             param_values: std::collections::HashMap::new(),
+             positional_param_values: Vec::new(),
+             lambda_param_scopes: Vec::new(),
+diff --git a/crates/sail-plan/src/resolver/state/foldability.rs b/crates/sail-plan/src/resolver/state/foldability.rs
+new file mode 100644
+index 000000000..d609f4e8a
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/state/foldability.rs
+@@ -0,0 +1,39 @@
++use super::PlanResolverState;
++
++impl PlanResolverState {
++    pub fn observe_foldability(&mut self) -> FoldabilityScope<'_> {
++        FoldabilityScope::new(self, Some(true))
++    }
++
++    pub fn suspend_foldability(&mut self) -> FoldabilityScope<'_> {
++        FoldabilityScope::new(self, None)
++    }
++
++    pub fn foldability_observer(&mut self) -> Option<&mut bool> {
++        self.foldability.as_mut()
++    }
++}
++
++/// Observation belongs to one identifier argument. Type-only replacements may
++/// discard their children's observations, then restore the exact parent value.
++pub(in crate::resolver) struct FoldabilityScope<'a> {
++    state: &'a mut PlanResolverState,
++    previous: Option<bool>,
++}
++impl<'a> FoldabilityScope<'a> {
++    fn new(state: &'a mut PlanResolverState, value: Option<bool>) -> Self {
++        let previous = std::mem::replace(&mut state.foldability, value);
++        Self { state, previous }
++    }
++    pub fn state(&mut self) -> &mut PlanResolverState {
++        self.state
++    }
++    pub fn is_foldable(&self) -> bool {
++        self.state.foldability != Some(false)
++    }
++}
++impl Drop for FoldabilityScope<'_> {
++    fn drop(&mut self) {
++        self.state.foldability = self.previous;
++    }
++}

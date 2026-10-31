@@ -1,0 +1,118 @@
+diff --git a/crates/sail-plan/src/function/scalar/math.rs b/crates/sail-plan/src/function/scalar/math.rs
+index 26136d718..d34ba30de 100644
+--- a/crates/sail-plan/src/function/scalar/math.rs
++++ b/crates/sail-plan/src/function/scalar/math.rs
+@@ -375,7 +375,7 @@ fn spark_divide(input: ScalarFunctionInput) -> PlanResult<Expr> {
+ 
+     // Constant-name resolution must validate the result type before evaluation.
+     // Ordinary queries keep the existing literal-zero fast path.
+-    if !function_context.require_foldable && is_zero_literal(&divisor) {
++    if !function_context.constant_context && is_zero_literal(&divisor) {
+         if function_context.plan_config.ansi_mode {
+             return Err(PlanError::ArrowError(ArrowError::DivideByZero));
+         } else {
+@@ -441,7 +441,7 @@ fn spark_div(input: ScalarFunctionInput) -> PlanResult<Expr> {
+     let (dividend, divisor) = arguments.two()?;
+ 
+     // Constant-name resolution defers evaluation until after type validation.
+-    if !function_context.require_foldable && is_zero_literal(&divisor) {
++    if !function_context.constant_context && is_zero_literal(&divisor) {
+         if function_context.plan_config.ansi_mode {
+             return Err(PlanError::ArrowError(ArrowError::DivideByZero));
+         } else {
+@@ -630,7 +630,7 @@ fn spark_modulo(input: ScalarFunctionInput) -> PlanResult<Expr> {
+     let (dividend, divisor) = arguments.two()?;
+ 
+     // Constant-name resolution defers evaluation until after type validation.
+-    if !function_context.require_foldable && is_zero_literal(&divisor) {
++    if !function_context.constant_context && is_zero_literal(&divisor) {
+         if function_context.plan_config.ansi_mode {
+             return Err(PlanError::ArrowError(ArrowError::ArithmeticOverflow(
+                 "Remainder by zero".to_string(),
+diff --git a/crates/sail-plan/src/resolver/identifier.rs b/crates/sail-plan/src/resolver/identifier.rs
+index ba4e4eaa5..cc916f44c 100644
+--- a/crates/sail-plan/src/resolver/identifier.rs
++++ b/crates/sail-plan/src/resolver/identifier.rs
+@@ -119,3 +119,7 @@ mod tests;
+ #[cfg(test)]
+ #[path = "identifier/provenance_tests.rs"]
+ mod provenance_tests;
++
++#[cfg(test)]
++#[path = "identifier/arithmetic_tests.rs"]
++mod arithmetic_tests;
+diff --git a/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs b/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
+new file mode 100644
+index 000000000..33ca196ec
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
+@@ -0,0 +1,69 @@
++use std::sync::Arc;
++
++use arrow::error::ArrowError;
++use datafusion_common::DFSchema;
++
++use super::tests::{context, expression};
++use super::*;
++use crate::config::PlanConfig;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++#[tokio::test]
++async fn constant_type_validation_precedes_arithmetic_and_restores_ordinary_policy() -> TestResult {
++    let ctx = context()?;
++    for ansi_mode in [true, false] {
++        let resolver = PlanResolver::new(
++            &ctx,
++            Arc::new(PlanConfig {
++                ansi_mode,
++                ..Default::default()
++            }),
++        );
++        let mut state = PlanResolverState::new();
++        let schema = Arc::new(DFSchema::empty());
++        for sql in ["1 / 0", "1 DIV 0", "1 % 0"] {
++            let error = resolver
++                .resolve_scalar_identifier_expr(expression(sql)?, &schema, &mut state)
++                .await
++                .err()
++                .ok_or("numeric identifier was accepted")?;
++            assert!(
++                error
++                    .to_string()
++                    .contains("NOT_A_CONSTANT_STRING.WRONG_TYPE"),
++                "ansi={ansi_mode} {sql}: {error}"
++            );
++            assert!(!state.config().constant_context);
++            assert!(!state.config().require_foldable);
++        }
++        // The datatype must remain BIGINT even when ANSI mode would evaluate
++        // division by zero to NULL. TypeOf does not evaluate its argument.
++        assert_eq!(
++            resolver
++                .resolve_scalar_identifier_expr(
++                    expression(
++                        "CASE WHEN typeof(1 DIV 0) = 'bigint' THEN 'foo' ELSE 'missing' END"
++                    )?,
++                    &schema,
++                    &mut state
++                )
++                .await?,
++            "foo"
++        );
++        assert!(!state.config().constant_context);
++        let plan = sail_sql_analyzer::statement::from_ast_statement(
++            sail_sql_analyzer::parser::parse_one_statement("SELECT 1 DIV 0")?,
++        )?;
++        let ordinary = resolver.resolve_named_plan(plan).await;
++        if ansi_mode {
++            assert!(matches!(
++                ordinary,
++                Err(PlanError::ArrowError(ArrowError::DivideByZero))
++            ));
++        } else {
++            assert!(ordinary.is_ok());
++        }
++    }
++    Ok(())
++}

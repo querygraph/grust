@@ -180,8 +180,8 @@ remain unresolved, including bare missing columns, produce NOT_CONSTANT. For
 resolved constants, foldability precedes type validation, then evaluation and null
 validation. Preserve parameter substitution before guarded constant checks.
 
-Builtin typeof is a runtime replacement: its argument's resolved type can become
-a literal even if the discarded expression contains rand(). A blanket volatile
+Spark builtin TypeOf overrides foldable=true and evaluates only its child's
+resolved datatype, even if the discarded expression contains rand(). A blanket volatile
 walk over the raw spec would reject valid inputs. The native refinement uses the
 existing request-local ConfigScope, with a table-identifier context that preserves
 early subquery refusal while allowing builtin typeof to resolve its discarded
@@ -217,3 +217,54 @@ matches28 behaviors and11 complete metadata sets; replacement7 matches6 behavior
 Remaining primary differences are string division-by-zero diagnostics, four unbound
 parameter routes and scalar dead-current_catalog. Counts retain every observation;
 they do not establish full identifier metadata, frozen bindings or Scala acceptance.
+
+## Expression-local provenance design, after Fable review
+
+The collector prototype18de98927 retained function provenance in an optional state
+boolean outside ConfigScope; it passed its gates but was never advanced. Fable's
+532bbdff review identified a smaller representation: preserve non-foldability in
+the lowered expression itself. Committed25534e8ea uses a private type-preserving
+Volatile marker, introduced only in constant contexts. Existing validation rejects
+it; builtin TypeOf discards its child's expression naturally after reading its
+type. Registered/HOF markers are attached after the actual selected branch resolves
+arguments and lambdas. No mutable observer/context frame or function-registry
+rewrite is needed. LiteralEvaluator also guards the marker before physical
+materialization, including inactive branches; it does not undo earlier simplification.
+
+The existing eager table/catalog guard remains separate from read-only
+constant_context. Arithmetic builders still consult the older flag and need the
+next independent split to preserve scalar type-before-evaluation priority. Five
+additional function annotations need their context oracles before activation.
+Both engines report sessionOrder=second, but Spark's builtin-first path and Sail's
+registered-first lookup choose different typeof functions; that generic catalog
+issue is retained rather than masked here. Full structured metadata remains open.
+
+## Qualified provenance and arithmetic units; next catalog checkpoint
+
+25534e8eaf8aecc7e769309acae357aab14fd127 is committed after140 shared +100 plan +177
+Connect tests, formatting/strict Clippy, four unchanged controls and a fresh300+67
+public run plus4 original parameter tests. 3ffb497d3e5dcbb48c56a5dd06687044ef994508
+is a separate three-predicate arithmetic change, qualified by101+177 libraries,
+an unchanged0/1 control and its own fresh public/parameter run. Both retain earlier
+binding comparisons. Provenance improves11/20→19/20 behaviors (complete metadata11);
+validation34 now matches29 behaviors; arithmetic improves2/14→6/14 (metadata3).
+Remaining failures are retained per case, with no full Scala acceptance claim.
+
+The next substantial design phase is catalog expression policy, announced before
+implementation. Fable's independent025fe2a8/55-row oracle shows that bare
+SET CATALOG e is determinism-checked, optimized and then evaluated, while its
+IDENTIFIER(e) form is evaluated during analysis. Bare current_catalog() succeeds;
+the wrapped form is nonconstant. Bare typeof(rand()) is nondeterministic, while
+its wrapped form evaluates the type. Bare assert_true(true) simplifies to NULL
+before type validation; its wrapped form is nonconstant. typeof(raise_error(...))
+and typeof(assert_true(true)) both reach catalog void lookup. Root's14-case probe
+corroborates the type-only/catalog boundary. The existing helper collapses these
+forms and its old tests encode identifier policy for bare expressions too.
+
+Do not fix this by disabling all provenance in bare expressions: deterministic
+registered UDFs and HOFs can remain intrinsically non-foldable after current-like
+replacement. Preserve actual nondeterminism before type-only lowering erases its
+argument. Fable's87f423c0 function-property survey is a review checklist; individual
+context oracles and Sail's ownership/phase boundaries still determine implementation.
+The five additional annotations, complete diagnostics/origins, function lookup,
+frozen bindings and streaming durability remain separate required work.

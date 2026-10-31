@@ -1,0 +1,33 @@
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+   Compiling sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+warning: function `contains_marker` is never used
+  --> crates/sail-common-datafusion/src/literal/non_foldable.rs:19:15
+   |
+19 | pub(super) fn contains_marker(expression: &Expr) -> Result<bool> {
+   |               ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-common-datafusion` (lib test) generated 2 warnings
+    Finished `test` profile [unoptimized] target(s) in 21.29s
+     Running unittests src/lib.rs (target/debug/deps/sail_common_datafusion-20ecac8d8c7980a2)
+
+running 1 test
+test literal::non_foldable::tests::materialization_keeps_type_and_rejects_nonfoldable_dead_branches ... FAILED
+
+failures:
+
+---- literal::non_foldable::tests::materialization_keeps_type_and_rejects_nonfoldable_dead_branches stdout ----
+Error: Plan("materialization erased non-foldability")
+
+
+failures:
+    literal::non_foldable::tests::materialization_keeps_type_and_rejects_nonfoldable_dead_branches
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 139 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p sail-common-datafusion --lib`
