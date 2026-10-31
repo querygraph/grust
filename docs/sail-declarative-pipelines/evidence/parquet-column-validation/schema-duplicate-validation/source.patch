@@ -1,0 +1,374 @@
+commit 52d4403c424542d598de70095b83c491c08c0bc4
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 17:36:16 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 17:36:16 2026 -0700
+
+    Share Spark-compatible schema duplicate validation across readers and schema changes
+
+diff --git a/crates/sail-common-datafusion/src/column_change.rs b/crates/sail-common-datafusion/src/column_change.rs
+index 6716087bd..b6a4302cf 100644
+--- a/crates/sail-common-datafusion/src/column_change.rs
++++ b/crates/sail-common-datafusion/src/column_change.rs
+@@ -57,31 +57,7 @@ pub fn replacement_schema(columns: &[ColumnChange<DataType>]) -> Result<Schema>
+     Ok(Schema::new(fields))
+ }
+ 
+-pub fn validate_field_names(fields: &[FieldRef], case_sensitive: bool) -> Result<()> {
+-    let mut names = std::collections::HashSet::new();
+-    for field in fields {
+-        let name = if case_sensitive {
+-            field.name().clone()
+-        } else {
+-            field.name().to_lowercase()
+-        };
+-        if !names.insert(name) {
+-            return plan_err!("Column '{}' already exists", field.name());
+-        }
+-        validate_type(field.data_type(), case_sensitive)?;
+-    }
+-    Ok(())
+-}
+-
+-fn validate_type(ty: &DataType, case_sensitive: bool) -> Result<()> {
+-    match ty {
+-        DataType::Struct(fields) => validate_field_names(fields, case_sensitive),
+-        DataType::List(field) | DataType::LargeList(field) | DataType::Map(field, _) => {
+-            validate_type(field.data_type(), case_sensitive)
+-        }
+-        _ => Ok(()),
+-    }
+-}
++pub use crate::schema_validation::validate_field_names;
+ 
+ fn names_match(left: &str, right: &str, case_sensitive: bool) -> bool {
+     left == right || (!case_sensitive && left.eq_ignore_ascii_case(right))
+diff --git a/crates/sail-common-datafusion/src/lib.rs b/crates/sail-common-datafusion/src/lib.rs
+index b3009acd8..c93be88e4 100644
+--- a/crates/sail-common-datafusion/src/lib.rs
++++ b/crates/sail-common-datafusion/src/lib.rs
+@@ -23,6 +23,7 @@ pub mod scan;
+ pub mod schema;
+ pub mod schema_evolution;
+ pub mod schema_merge;
++pub mod schema_validation;
+ pub mod session;
+ pub mod statistics;
+ pub mod streaming;
+diff --git a/crates/sail-common-datafusion/src/schema_validation.rs b/crates/sail-common-datafusion/src/schema_validation.rs
+new file mode 100644
+index 000000000..546869ad5
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/schema_validation.rs
+@@ -0,0 +1,139 @@
++//! Spark schema name validation, shared by readers and schema changes.
++use std::collections::{HashMap, HashSet};
++
++use datafusion::arrow::datatypes::{DataType, FieldRef};
++use datafusion_common::{DataFusionError, Result};
++use sail_common::utils::root_lowercase::spark_root_lowercase;
++
++use crate::error::StructuredSparkError;
++
++/// Check each struct's names before descending into its children, as SchemaUtils
++/// does. Report the UTF-16 lexical minimum duplicate at that level.
++pub fn validate_field_names(fields: &[FieldRef], case_sensitive: bool) -> Result<()> {
++    let mut names = HashSet::new();
++    let mut duplicate: Option<String> = None;
++    for field in fields {
++        let name = if case_sensitive {
++            field.name().clone()
++        } else {
++            spark_root_lowercase(field.name())
++        };
++        if !names.insert(name.clone())
++            && duplicate
++                .as_ref()
++                .is_none_or(|previous| name.encode_utf16().cmp(previous.encode_utf16()).is_lt())
++        {
++            duplicate = Some(name);
++        }
++    }
++    if let Some(name) = duplicate {
++        let column = sql_identifier(&name)?;
++        return Err(structured(
++            "COLUMN_ALREADY_EXISTS",
++            "42711",
++            format!(
++                "The column {column} already exists. Choose another name or rename the existing column."
++            ),
++            "columnName",
++            column,
++        ));
++    }
++    for field in fields {
++        validate_type(field.data_type(), case_sensitive)?;
++    }
++    Ok(())
++}
++
++fn validate_type(ty: &DataType, case_sensitive: bool) -> Result<()> {
++    match ty {
++        DataType::Struct(fields) => validate_field_names(fields, case_sensitive),
++        DataType::List(field)
++        | DataType::LargeList(field)
++        | DataType::FixedSizeList(field, _)
++        | DataType::Map(field, _) => validate_type(field.data_type(), case_sensitive),
++        _ => Ok(()),
++    }
++}
++
++fn structured(
++    condition: &str,
++    state: &str,
++    message: String,
++    key: &str,
++    value: String,
++) -> DataFusionError {
++    DataFusionError::External(Box::new(StructuredSparkError {
++        class: "org.apache.spark.sql.AnalysisException".into(),
++        condition: condition.into(),
++        sql_state: state.into(),
++        message,
++        parameters: HashMap::from([(key.into(), value)]),
++    }))
++}
++
++/// SchemaUtils passes the raw duplicate name to toSQLId(String), which interprets
++/// dots/backticks as AttributeNameParser syntax. It does not quote it as one part.
++fn sql_identifier(name: &str) -> Result<String> {
++    let invalid = || {
++        structured(
++            "INVALID_ATTRIBUTE_NAME_SYNTAX",
++            "42601",
++            format!(
++                "Syntax error in the attribute name: {name}. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts."
++            ),
++            "name",
++            name.into(),
++        )
++    };
++    let mut parts = vec![];
++    let mut part = String::new();
++    let mut quoted = false;
++    let mut previous = None;
++    let mut chars = name.chars().peekable();
++    while let Some(c) = chars.next() {
++        if quoted {
++            if c == '`' {
++                if chars.peek() == Some(&'`') {
++                    part.push('`');
++                    chars.next();
++                } else {
++                    quoted = false;
++                    if chars.peek().is_some_and(|next| *next != '.') {
++                        return Err(invalid());
++                    }
++                }
++            } else {
++                part.push(c);
++            }
++        } else if c == '`' {
++            if !part.is_empty() {
++                return Err(invalid());
++            }
++            quoted = true;
++        } else if c == '.' {
++            if previous.is_none() || previous == Some('.') || chars.peek().is_none() {
++                return Err(invalid());
++            }
++            parts.push(std::mem::take(&mut part));
++        } else {
++            part.push(c);
++        }
++        previous = Some(c);
++    }
++    if quoted {
++        return Err(invalid());
++    }
++    parts.push(part);
++    if parts.len() > 1 && parts[0] == "__auto_generated_subquery_name" {
++        parts.remove(0);
++    }
++    Ok(parts
++        .iter()
++        .map(|p| format!("`{}`", p.replace('`', "``")))
++        .collect::<Vec<_>>()
++        .join("."))
++}
++
++#[cfg(test)]
++#[path = "schema_validation_tests.rs"]
++mod tests;
+diff --git a/crates/sail-common-datafusion/src/schema_validation_tests.rs b/crates/sail-common-datafusion/src/schema_validation_tests.rs
+new file mode 100644
+index 000000000..0841ded31
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/schema_validation_tests.rs
+@@ -0,0 +1,166 @@
++use std::sync::Arc;
++
++use datafusion::arrow::datatypes::Field;
++
++use super::*;
++
++type TestResult = Result<()>;
++fn fields(names: &[&str]) -> Vec<FieldRef> {
++    names
++        .iter()
++        .map(|name| Arc::new(Field::new(*name, DataType::Int32, true)))
++        .collect()
++}
++fn nested(ty: DataType) -> Vec<FieldRef> {
++    vec![Arc::new(Field::new("outer", ty, true))]
++}
++fn assert_error(
++    fields: &[FieldRef],
++    sensitive: bool,
++    condition: &str,
++    parameter: &str,
++) -> TestResult {
++    let result = validate_field_names(fields, sensitive);
++    let Err(DataFusionError::External(error)) = result else {
++        return datafusion_common::internal_err!(
++            "expected structured duplicate error, got {result:?}"
++        );
++    };
++    let error = error
++        .downcast_ref::<StructuredSparkError>()
++        .ok_or_else(|| {
++            datafusion_common::internal_datafusion_err!("lost structured duplicate error")
++        })?;
++    assert_eq!(error.class, "org.apache.spark.sql.AnalysisException");
++    assert_eq!(error.condition, condition);
++    let invalid = condition == "INVALID_ATTRIBUTE_NAME_SYNTAX";
++    assert_eq!(error.sql_state, if invalid { "42601" } else { "42711" });
++    assert_eq!(
++        error.parameters,
++        HashMap::from([(
++            if invalid { "name" } else { "columnName" }.into(),
++            parameter.into()
++        )])
++    );
++    Ok(())
++}
++
++#[test]
++fn duplicate_checks_match_actual_spark_421_schemautils() -> TestResult {
++    // Exact cases from the independent JVM oracle, not generated by this validator.
++    let mixed = DataType::Struct(fields(&["Foo", "foo"]).into());
++    assert_error(
++        &fields(&["Foo", "foo"]),
++        false,
++        "COLUMN_ALREADY_EXISTS",
++        "`foo`",
++    )?;
++    validate_field_names(&fields(&["Foo", "foo"]), true)?;
++    assert_error(
++        &nested(mixed.clone()),
++        false,
++        "COLUMN_ALREADY_EXISTS",
++        "`foo`",
++    )?;
++    assert_error(
++        &nested(DataType::List(Arc::new(Field::new(
++            "element",
++            mixed.clone(),
++            true,
++        )))),
++        false,
++        "COLUMN_ALREADY_EXISTS",
++        "`foo`",
++    )?;
++    let map = DataType::Map(
++        Arc::new(Field::new(
++            "entries",
++            DataType::Struct(
++                vec![
++                    Field::new("key", DataType::Utf8, false),
++                    Field::new("value", mixed.clone(), true),
++                ]
++                .into(),
++            ),
++            false,
++        )),
++        false,
++    );
++    assert_error(&nested(map), false, "COLUMN_ALREADY_EXISTS", "`foo`")?;
++    let mut parent = nested(mixed);
++    parent.extend(fields(&["Z", "z"]));
++    assert_error(&parent, false, "COLUMN_ALREADY_EXISTS", "`z`")?;
++    for (names, sensitive, condition, expected) in [
++        (
++            vec!["Z", "z", "A", "a"],
++            false,
++            "COLUMN_ALREADY_EXISTS",
++            "`a`",
++        ),
++        (
++            vec!["İ", "i\u{307}"],
++            false,
++            "COLUMN_ALREADY_EXISTS",
++            "`i\u{307}`",
++        ),
++        (
++            vec!["A.B", "a.b"],
++            false,
++            "COLUMN_ALREADY_EXISTS",
++            "`a`.`b`",
++        ),
++        (
++            vec!["A`B", "a`b"],
++            false,
++            "INVALID_ATTRIBUTE_NAME_SYNTAX",
++            "a`b",
++        ),
++        (
++            vec!["\u{e000}", "\u{e000}", "𐀀", "𐀀"],
++            true,
++            "COLUMN_ALREADY_EXISTS",
++            "`𐀀`",
++        ),
++        (vec!["Foo", "Foo"], true, "COLUMN_ALREADY_EXISTS", "`Foo`"),
++    ] {
++        assert_error(&fields(&names), sensitive, condition, expected)?;
++    }
++    Ok(())
++}
++
++#[test]
++fn arrow_array_layouts_retain_recursive_validation() -> TestResult {
++    let element = Arc::new(Field::new(
++        "element",
++        DataType::Struct(fields(&["Foo", "foo"]).into()),
++        true,
++    ));
++    for ty in [
++        DataType::List(element.clone()),
++        DataType::LargeList(element.clone()),
++        DataType::FixedSizeList(element, 2),
++    ] {
++        let fields = nested(ty);
++        assert_error(&fields, false, "COLUMN_ALREADY_EXISTS", "`foo`")?;
++        validate_field_names(&fields, true)?;
++    }
++    Ok(())
++}
++
++#[test]
++fn diagnostic_identifier_formatting_preserves_spark_attribute_syntax() -> TestResult {
++    for (name, expected) in [
++        ("", "``"),
++        ("``", "``"),
++        ("`a.b`", "`a.b`"),
++        ("`a``b`", "`a``b`"),
++        ("x.`a.b`", "`x`.`a.b`"),
++        ("__auto_generated_subquery_name.x", "`x`"),
++    ] {
++        assert_eq!(sql_identifier(name)?, expected);
++    }
++    for name in [".a", "a.", "a..b", "a`b", "`a`b", "`a"] {
++        assert!(sql_identifier(name).is_err(), "{name}");
++    }
++    Ok(())
++}

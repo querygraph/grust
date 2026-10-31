@@ -1,0 +1,36 @@
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index a2d7af455..51da423b2 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -23,7 +23,6 @@ use object_store::{ObjectMeta, ObjectStore};
+ use sail_common_datafusion::datasource::{
+     DataSource, OptionLayer, SinkInfo, SinkMode, SourceInfo, find_path_in_options,
+ };
+-use sail_common_datafusion::schema_validation::validate_field_names;
+ use url::Url;
+ 
+ use crate::listing::partition::{
+@@ -275,7 +274,6 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+ 
+         let prepared = match schema {
+             Some(schema) => {
+-                validate_field_names(schema.fields(), read_case_sensitive)?;
+                 read_format
+                     .prepare_explicit_schema(
+                         ctx,
+@@ -309,7 +307,6 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+                 let schema = rewrite_unsupported_fields(schema);
+                 // Check the complete physical schema before partition columns
+                 // replace file columns; replacement must not hide duplicates.
+-                validate_field_names(schema.fields(), read_case_sensitive)?;
+ 
+                 let discovered_partitions = infer_partitions(&inference_files)?;
+                 // With no prepared supplied schema, Spark uses all discovered
+@@ -326,7 +323,6 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+ 
+         // Partition names are checked separately; shadowing a file column
+         // does not make the directory field a duplicate.
+-        validate_field_names(&partition_fields, read_case_sensitive)?;
+         let partition_directory_names =
+             partition_directory_names(&partition_fields, &discovered_partitions)?;
+         validate_partition_directory_names(&inference_files, &partition_directory_names)?;

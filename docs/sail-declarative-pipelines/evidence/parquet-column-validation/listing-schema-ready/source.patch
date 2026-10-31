@@ -1,0 +1,277 @@
+commit 005fcb07826321693c937a23f362f2e0212aa441
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 17:48:28 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 17:48:28 2026 -0700
+
+    Prepare and validate file and partition schemas with the captured source case policy
+
+diff --git a/crates/sail-data-source/src/listing/partition.rs b/crates/sail-data-source/src/listing/partition.rs
+index 0c756fba2..c25399d71 100644
+--- a/crates/sail-data-source/src/listing/partition.rs
++++ b/crates/sail-data-source/src/listing/partition.rs
+@@ -86,6 +86,19 @@ pub(super) fn prepare_explicit_partitions(
+             })
+             .collect::<Result<Vec<_>>>()?
+     };
++    Ok((
++        without_partition_fields(schema, &partitions, case_sensitive),
++        partitions,
++    ))
++}
++
++/// Directory partition values replace matching physical file columns. Keep this
++/// preparation identical for supplied and inferred schemas.
++pub(super) fn without_partition_fields(
++    schema: &Schema,
++    partitions: &[FieldRef],
++    case_sensitive: bool,
++) -> Schema {
+     let file_fields = schema
+         .fields()
+         .iter()
+@@ -96,10 +109,7 @@ pub(super) fn prepare_explicit_partitions(
+         })
+         .cloned()
+         .collect::<Vec<_>>();
+-    Ok((
+-        Schema::new_with_metadata(file_fields, schema.metadata().clone()),
+-        partitions,
+-    ))
++    Schema::new_with_metadata(file_fields, schema.metadata().clone())
+ }
+ 
+ /// Resolve the fields selected by existing schema preparation back to observed
+diff --git a/crates/sail-data-source/src/listing/schema_validation_tests.rs b/crates/sail-data-source/src/listing/schema_validation_tests.rs
+new file mode 100644
+index 000000000..525124ca9
+--- /dev/null
++++ b/crates/sail-data-source/src/listing/schema_validation_tests.rs
+@@ -0,0 +1,167 @@
++use std::sync::Arc;
++
++use bytes::Bytes;
++use datafusion::arrow::array::RecordBatch;
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::logical_expr::TableSource;
++use datafusion::parquet::arrow::ArrowWriter;
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_common::{Constraints, DataFusionError};
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use sail_common_datafusion::datasource::{DataSource, SourceInfo};
++use sail_common_datafusion::error::StructuredSparkError;
++use url::Url;
++
++use crate::formats::parquet::ParquetDataSource;
++
++type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
++fn mixed() -> Schema {
++    Schema::new(vec![
++        Field::new("Foo", DataType::Int64, true),
++        Field::new("foo", DataType::Int64, true),
++    ])
++}
++async fn source(
++    physical: Schema,
++    requested: Option<Schema>,
++    sensitive: bool,
++    normalize: bool,
++    partitioned: bool,
++) -> TestResult<Arc<dyn TableSource>> {
++    let mut config = SessionConfig::new();
++    config.options_mut().sql_parser.enable_ident_normalization = normalize;
++    config
++        .options_mut()
++        .execution
++        .listing_table_ignore_subdirectory = false;
++    let ctx = SessionContext::new_with_config(config);
++    let schema = Arc::new(physical);
++    let mut bytes = Vec::new();
++    let mut writer = ArrowWriter::try_new(&mut bytes, schema.clone(), None)?;
++    writer.write(&RecordBatch::new_empty(schema))?;
++    writer.close()?;
++    let store = Arc::new(InMemory::new());
++    let path = if partitioned {
++        "data/p=one/part.parquet"
++    } else {
++        "data/part.parquet"
++    };
++    store
++        .put(&Path::from(path), Bytes::from(bytes).into())
++        .await?;
++    ctx.register_object_store(&Url::parse("memory://schema-validation")?, store);
++    Ok(ParquetDataSource::default()
++        .create_source(
++            &ctx.state(),
++            SourceInfo {
++                paths: vec!["memory://schema-validation/data/".into()],
++                lakehouse_table: None,
++                schema: requested,
++                constraints: Constraints::default(),
++                partition_by: vec![],
++                bucket_by: None,
++                sort_order: vec![],
++                options: vec![],
++                read_case_sensitive: sensitive,
++            },
++        )
++        .await?)
++}
++fn duplicate(error: Box<dyn std::error::Error>, expected: &str) -> TestResult {
++    let datafusion = error
++        .downcast_ref::<DataFusionError>()
++        .ok_or("not a DataFusion error")?;
++    let DataFusionError::External(cause) = datafusion else {
++        return Err(format!("unstructured: {datafusion}").into());
++    };
++    let cause = cause
++        .downcast_ref::<StructuredSparkError>()
++        .ok_or("lost structured details")?;
++    assert_eq!(cause.condition, "COLUMN_ALREADY_EXISTS");
++    assert_eq!(cause.sql_state, "42711");
++    assert_eq!(cause.parameters["columnName"], expected);
++    Ok(())
++}
++
++#[tokio::test]
++async fn actual_parquet_metadata_uses_captured_case_policy_at_root_and_nested_levels() -> TestResult
++{
++    for normalize in [false, true] {
++        for schema in [
++            mixed(),
++            Schema::new(vec![Field::new(
++                "outer",
++                DataType::Struct(mixed().fields().clone()),
++                true,
++            )]),
++        ] {
++            let expected = schema.fields().clone();
++            let allowed = source(schema.clone(), None, true, normalize, false).await?;
++            assert_eq!(allowed.schema().fields(), &expected);
++            duplicate(
++                source(schema, None, false, normalize, false)
++                    .await
++                    .err()
++                    .ok_or("duplicate file columns accepted")?,
++                "`foo`",
++            )?;
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn supplied_schema_names_are_validated_with_the_same_source_policy() -> TestResult {
++    let physical = Schema::new(vec![Field::new("foo", DataType::Int64, true)]);
++    source(physical.clone(), Some(mixed()), true, false, false).await?;
++    duplicate(
++        source(physical, Some(mixed()), false, true, false)
++            .await
++            .err()
++            .ok_or("duplicate supplied names accepted")?,
++        "`foo`",
++    )
++}
++
++#[tokio::test]
++async fn separate_data_and_partition_checks_allow_partition_shadowing() -> TestResult {
++    // Exact schemas from the six public Spark Parquet shadowing observations.
++    for names in [vec!["p"], vec!["P"], vec!["P", "p"]] {
++        let physical = Schema::new(
++            names
++                .iter()
++                .map(|name| Field::new(*name, DataType::Utf8, true))
++                .collect::<Vec<_>>(),
++        );
++        for sensitive in [false, true] {
++            let result = source(physical.clone(), None, sensitive, false, true).await;
++            if names.len() == 2 && !sensitive {
++                duplicate(
++                    result
++                        .err()
++                        .ok_or("partition shadow hid duplicate file fields")?,
++                    "`p`",
++                )?;
++                continue;
++            }
++            let source = result?;
++            let expected = if sensitive && names.contains(&"P") {
++                vec!["P", "p"]
++            } else {
++                vec!["p"]
++            };
++            assert_eq!(
++                source
++                    .schema()
++                    .fields()
++                    .iter()
++                    .map(|field| field.name().as_str())
++                    .collect::<Vec<_>>(),
++                expected
++            );
++        }
++    }
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index 54793bea4..a2d7af455 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -23,10 +23,12 @@ use object_store::{ObjectMeta, ObjectStore};
+ use sail_common_datafusion::datasource::{
+     DataSource, OptionLayer, SinkInfo, SinkMode, SourceInfo, find_path_in_options,
+ };
++use sail_common_datafusion::schema_validation::validate_field_names;
+ use url::Url;
+ 
+ use crate::listing::partition::{
+     inferred_partition_fields, partition_directory_names, prepare_explicit_partitions,
++    without_partition_fields,
+ };
+ use crate::listing::table::{ListingTableSource, ListingTableSourceConfig};
+ use crate::listing::utils::{
+@@ -273,6 +275,7 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+ 
+         let prepared = match schema {
+             Some(schema) => {
++                validate_field_names(schema.fields(), read_case_sensitive)?;
+                 read_format
+                     .prepare_explicit_schema(
+                         ctx,
+@@ -304,15 +307,26 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+                     .infer_schema(ctx, &inference_files, compression, read_case_sensitive)
+                     .await?;
+                 let schema = rewrite_unsupported_fields(schema);
++                // Check the complete physical schema before partition columns
++                // replace file columns; replacement must not hide duplicates.
++                validate_field_names(schema.fields(), read_case_sensitive)?;
+ 
+                 let discovered_partitions = infer_partitions(&inference_files)?;
+                 // With no prepared supplied schema, Spark uses all discovered
+                 // partitions even when explicit selectors were provided.
+                 let partition_fields = inferred_partition_fields(&discovered_partitions);
++                let schema = Arc::new(without_partition_fields(
++                    &schema,
++                    &partition_fields,
++                    read_case_sensitive,
++                ));
+                 (schema, partition_fields, discovered_partitions)
+             }
+         };
+ 
++        // Partition names are checked separately; shadowing a file column
++        // does not make the directory field a duplicate.
++        validate_field_names(&partition_fields, read_case_sensitive)?;
+         let partition_directory_names =
+             partition_directory_names(&partition_fields, &discovered_partitions)?;
+         validate_partition_directory_names(&inference_files, &partition_directory_names)?;
+@@ -450,3 +464,7 @@ mod inference_selection_tests;
+ #[cfg(test)]
+ #[path = "explicit_schema_tests.rs"]
+ mod explicit_schema_tests;
++
++#[cfg(test)]
++#[path = "schema_validation_tests.rs"]
++mod schema_validation_tests;

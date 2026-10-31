@@ -1,0 +1,426 @@
+{
+  "started_at": "2026-10-31T00:33:35.170610+00:00",
+  "harness_sha256": "94bf86bb6e0289d7aac3e2f04b8f0e6f98208a972dbd307108c7282c9eeb3405",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "actual JVM SchemaUtils validator; separate Parquet public runtime oracle required",
+  "cases": [
+    {
+      "name": "root_insensitive",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "Foo",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "foo",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`foo`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "root_sensitive",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "Foo",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "foo",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": true,
+      "outcome": "success"
+    },
+    {
+      "name": "nested",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "outer",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "Foo",
+                  "type": "integer",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "foo",
+                  "type": "integer",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`foo`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "array",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "items",
+            "type": {
+              "type": "array",
+              "elementType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "Foo",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "foo",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`foo`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "map_value",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "items",
+            "type": {
+              "type": "map",
+              "keyType": "string",
+              "valueType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "Foo",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {}
+                  },
+                  {
+                    "name": "foo",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`foo`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "root_before_nested",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "nested",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "Foo",
+                  "type": "integer",
+                  "nullable": true,
+                  "metadata": {}
+                },
+                {
+                  "name": "foo",
+                  "type": "integer",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "Z",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "z",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`z`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `z` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "sorted_duplicate",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "Z",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "z",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "A",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`a`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `a` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "root_case_fold",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "İ",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "i̇",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`i̇`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `i̇` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "quoted_name",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "A.B",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a.b",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`a`.`b`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `a`.`b` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "backtick_name",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "A`B",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a`b",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "a`b"
+      },
+      "message": "[INVALID_ATTRIBUTE_NAME_SYNTAX] Syntax error in the attribute name: a`b. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts. SQLSTATE: 42601"
+    },
+    {
+      "name": "utf16_duplicate_order",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "𐀀",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "𐀀",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": true,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`𐀀`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `𐀀` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    },
+    {
+      "name": "case_sensitive_exact",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "Foo",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "Foo",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "case_sensitive": true,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`Foo`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `Foo` already exists. Choose another name or rename the existing column. SQLSTATE: 42711"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "pyspark_version": "4.2.1",
+  "completed_at": "2026-10-31T00:33:39.746714+00:00"
+}

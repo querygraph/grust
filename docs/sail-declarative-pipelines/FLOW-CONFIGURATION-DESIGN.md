@@ -17,8 +17,12 @@ state their boundary. Duplicate-flow parameter/provenance parity and full origin
 Scala acceptance are not established by this comparison. The
 [twelve CTE/default oracles](evidence/flow-config-cte-reference/README.md) and
 [metadata oracle](evidence/flow-config-external-read-reference/README.md) remain
-requirements, not claims of full Sail parity. Original Scala-suite execution,
-configured dynamic/opaque-reference binding and per-format metadata support remain.
+requirements, not claims of full Sail parity. [Shared listing validation](evidence/parquet-column-validation/README.md)
+at `005fcb078` now passes the five session-false duplicate checks and both direct
+controls using the original Spark bytes, plus six partition-schema/row probes.
+The two session-true/private-false cases reach ambiguity but lack its structured
+condition. Original Scala-suite execution, configured dynamic/opaque-reference
+binding and broader per-format support remain.
 The [batch ownership design](BATCH-PROVIDER-MIGRATION-DESIGN.md) continues to govern
 admission, provider lifetime and per-command plan maps.
 

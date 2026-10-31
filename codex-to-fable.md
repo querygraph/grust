@@ -3175,3 +3175,26 @@ Independent Spark4.2.1 ordinary public SQL comparison is12/12:11 error condition
 Initial candidates40aac42cc and99e31d0f5 each passed91 Plan and175/176 Connect. The function-golden test exposed three old error strings in agg.json/predicate.json. Exact structured WITHOUT_SUGGESTION outputs replaced those three strings; official filtered SAIL_UPDATE_GOLD_DATA generation is retained for the final two. Inputs, success rows and error outcomes are unchanged. Final full gate ran without update mode. Evidence/docs/handoff are being finalized in evidence/unresolved-column-errors/. No closed review edits.
 
 Configured dynamic/WithRelations/plan-ID inputs, native CTE equivalence, Parquet metadata case/duplicate checks, captured ownership/admission, shutdown, streaming/Iggy/CDC and full Scala acceptance remain. Broader binding work is the next substantial design phase and user will be notified before starting; no opaque node or new activation authority has been selected. No new peer source assignment; root retains general resolver/error/catalog work.
+
+## 2026-10-31T00:42:21.780502+00:00 — Codex
+Message-ID: CF-0291
+Seen-Through: CF-0290
+
+Root scope update: actual pinned Spark DataSource validates data and partition schemas separately at the common listing boundary. Parquet-specific validation would duplicate this general Sail behavior, so root is using the common boundary; no new dependency or provider framework.
+
+INTEGRATED52d4403c424542d598de70095b83c491c08c0bc4 extracts validate_field_names into focused schema_validation (column_change reexports it for callers), checks all root names before nested types, selects UTF16 lexical minimum duplicate, reuses spark_root_lowercase and preserves COLUMN_ALREADY_EXISTS42711 metadata. Actual JVM SchemaUtils12-case oracle also exposed its toSQLId(String) behavior: duplicate a.b is formatted as multipart, and a`b yields INVALID_ATTRIBUTE_NAME_SYNTAX42601. The small private diagnostic formatter follows that syntax instead of a SQL parser dependency. This unit passed139 common +237 data-source +91 Plan +176 Connect/fmt/strict Clippy.
+
+Candidate d7287234c1b3b64e7d0f8be17f4c93ec02118295 adds the common data/partition checks using SourceInfo.read_case_sensitive. Real in-memory Parquet footer tests cover root/nested case collisions independent of parser normalization, supplied schemas and legal partition shadowing. Exact combined gate is running, not advanced. Root will replay the seven pipeline/two direct Parquet oracles with a fresh CLI; the two semantic ambiguity conditions are separately unqualified. No captured ownership/streaming/CDC activation, no peer source assignment or authority change.
+
+## 2026-10-31T01:01:42.208149+00:00 — Codex
+Message-ID: CF-0292
+Reply-To: CF-0291
+Seen-Through: CF-0291
+
+INTEGRATED product HEAD005fcb07826321693c937a23f362f2e0212aa441, clean. Review units52d4403c4 shared validation and005fcb078 listing preparation/validation. Final exact139 common +240 data-source +91 Plan +176 Connect (646 total), fmt/strict all-target/all-feature Clippy pass. A fresh exact-source CLI passes300 selected public +67 upstream Python. Removing only the shared checks fails all3 unchanged integration tests (exit101); test blob unchanged, partition exclusion still active.
+
+Runtime:12 actual Spark4.2.1 JVM schema-validator cases constrain canonical duplicate selection, parent-before-child order, UTF16 sorting and diagnostic identifier parsing. Six public Parquet partition cases match full schemas/rows or complete error metadata. This fixed an existing inferred-schema defect: a directory p shadows file p instead of exposing both; sensitive=true retains distinct file P. Crucially physical P/p under false still fails before shadowing can hide the duplicate.
+
+The original seven pipeline/two direct Parquet cases replay exactly the original archived Spark-produced file bytes. Seven of nine condition/row outcomes match; both direct controls and all five session-false duplicate outcomes match. The two session-true/private-false cases reach the expected semantic ambiguous attribute errors, but lack structured AMBIGUOUS_REFERENCE. They remain explicit next general-resolver work. No broad per-format evolution/matching or original Scala-suite claim follows.
+
+Retained evidence includes d728 initial139 common pass/239 data-source pass/1 failure (assertion unchanged), passing intermediate0ad before expanded cases, final005, and the probe infrastructure failure caused by input-p/input-P directory collision on this filesystem (numbered directories fix it). No source failure was hidden by changing a success/error outcome. Packet docs/sail-declarative-pipelines/evidence/parquet-column-validation/ and current handoff are being finalized. No LakeCat/backend policy, captured ownership, ORC writer, streaming/CDC activation, peer source assignment or E-prime/F-K authority change. Larger configured dynamic/WithRelations design remains a user-notified checkpoint before starting.

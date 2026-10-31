@@ -13,8 +13,11 @@ establish general binding parity or original Scala acceptance.
 The [external-file oracle](evidence/flow-config-external-read-reference/README.md)
 separates run-session metadata settings from private semantic settings. The native
 source-case override is integrated at `b4d83ef72`, including stored-view propagation.
-ORC consumes this flag; Parquet and other formats still require separate support.
-The seam alone does not close the Parquet duplicate-column oracle.
+The shared listing validation at `005fcb078` now uses this flag for supplied and
+inferred schemas. [Exact Parquet metadata and partition probes](evidence/parquet-column-validation/README.md)
+match seven of nine metadata condition/row outcomes and all six partition outcomes.
+The two remaining metadata-comparison differences are generic native ambiguity
+errors after metadata succeeds. Full per-format matching/evolution remains open.
 
 With no declared settings on any graph view, native resolution remains available
 for dynamic identifiers and Connect relation references. Configured dynamic names,
