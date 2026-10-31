@@ -164,3 +164,19 @@ Full16-vector replay matches12: two ordinary unsupported-node names and two
 REPLACE forms remain explicit backlog, alongside recovery hints, empty statements,
 lexical errors, full UTF16 query summaries and mixed-error order. No full SDP
 or original-site promotion. Fable independently owns CDC implementation.
+
+
+## REPLACE representation and implementation
+
+The next design checkpoint was announced before implementation. Two commits
+retain semantics without a new writer: c0a824053 adds optional AST BY NAME and
+a default-false/omit-false InsertMode::Replace flag, routed through existing
+TruncateIf and WriteColumnMatch::ByName. Its serde compatibility, paired4 and
+Sail Delta row2 proofs are [bound here](evidence/replace-where-by-name/README.md).
+9f80ea48e adds a distinct USING AST with ordered keys/CTE/BY NAME and correct
+pipeline rejection precedence ([evidence](evidence/replace-using/README.md)).
+Ordinary USING execution explicitly remains unsupported until correct transactional
+matching exists; no append or key-dropping approximation.438native+syntax,300+67,
+paired8,rows2 and control qualify the final increment. All16 custom reference
+vectors match compared error fields, not full query-context/general recovery
+semantics or the entire SDP objective. Original inventory accounting is unchanged.

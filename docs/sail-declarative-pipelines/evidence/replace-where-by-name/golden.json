@@ -1,0 +1,56 @@
+{
+  "sail_commit": "b5e3b2a2ba17b9314ba9007a45989c60ea9b0174",
+  "checks": [
+    {
+      "name": "analyzer",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-sql-analyzer",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "update": false,
+      "log": "/tmp/sail-sdp-replace-where-analyzer.log",
+      "sha256": "9ec6b39450ff8f1a0f6f801ab98554dfe4e975eaea5093135728a93b3d8305d4"
+    },
+    {
+      "name": "plan",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked",
+        "proto::plan::tests::test_sql_to_plan"
+      ],
+      "exit_code": 0,
+      "update": true,
+      "log": "/tmp/sail-sdp-replace-where-plan.log",
+      "sha256": "bbd3b45c8d6c62785526b91982e8f2fafa8b847d51b2e41e4d5149af8f77973a"
+    },
+    {
+      "name": "syntax",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-sql-parser",
+        "--test",
+        "syntax",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "update": true,
+      "log": "/tmp/sail-sdp-replace-where-syntax.log",
+      "sha256": "2c13b0d9cea21b637b9c5cf221b57a1901b2042ed7f728e4b32406059e5f6b8e"
+    }
+  ],
+  "recorded_at": "2026-10-31T17:51:38.476856+00:00"
+}
