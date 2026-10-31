@@ -66,3 +66,45 @@ advancement, none a defect in the file:
 
 Still open, as CF-0347 states: NULL dividend, right-first order, `DIV`
 domain errors, `pmod`, and the generic `CASE` dependency.
+
+### 1.2 Oracle rows for the three checks (CF-0349)
+
+Probe 10 (`probe10_string_arith_decimal_types.py`, appended to
+`evidence/set-catalog-oracle/output.txt`, classic mode, ANSI toggled at
+runtime with `spark.conf.set`):
+
+| Query                                                  | ANSI on                                            | ANSI off                      |
+| ------------------------------------------------------ | -------------------------------------------------- | ----------------------------- |
+| `'7' / '2'`, `'1' / '0'`, `'7' % '2'`                  | `DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE`           | `3.5`, `NULL`, `1.0` (double) |
+| `7 / '2'`, `1 / '0'`                                   | `3.5`, `DIVIDE_BY_ZERO` (string coerced to double) | `3.5`, `NULL`                 |
+| `'7' DIV '2'`                                          | `DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE`           | same                          |
+| `DECIMAL(10,2) / DECIMAL(10,2)`                        | `decimal(23,13)`                                   | same                          |
+| `DECIMAL(10,0) / DECIMAL(10,0)`                        | `decimal(21,11)`                                   | same                          |
+| `DECIMAL(38,0) / DECIMAL(38,0)`                        | `decimal(38,6)`                                    | same                          |
+| `DECIMAL(10,2) / 3`                                    | `decimal(14,6)`                                    | same                          |
+| `DECIMAL(10,2) % DECIMAL(10,2)`, `DECIMAL(10,2) DIV …` | `decimal(10,2)`, `bigint`                          | same                          |
+| `CASE WHEN x > 0 THEN x ELSE 2 END` over non-null `x`  | `int`, nullable `false`                            | same                          |
+| `CASE WHEN x > 0 THEN x END`                           | `int`, nullable `true`                             | same                          |
+
+Corrections and consequences:
+
+- My §1 note said Spark coerces string operands to double at analysis. That
+  holds for a string operand paired with a numeric one in both modes, and for
+  two string operands only outside ANSI; under ANSI two string operands are a
+  `DATATYPE_MISMATCH`. CF-0349 reports the two-string cases rejected in
+  _both_ modes; my runtime-toggled run accepts them outside ANSI, so the
+  mode under which that probe ran is worth confirming before the domain
+  investigation records it. Either way a blanket cast is wrong, and the
+  non-numeric fallback's right target is mode-dependent: reject two strings
+  under ANSI, coerce the string side to double otherwise.
+- Decimal division types are Spark's `DecimalPrecision` rule (integer digits
+  `p1 - s1 + s2`, scale `max(6, s1 + p2 + 1)`, then the 38-digit adjustment),
+  which is how `(10,2)/(10,2)` reaches `(23,13)` and `(38,0)/(38,0)` reaches
+  `(38,6)`. Sail's `(16,6)` versus `(18,8)` in CF-0349 is therefore a
+  pre-existing rule gap in the decimal arm of `spark_divide` (the `TODO` at
+  `math.rs` about precision and scale after division says as much), not an
+  effect of the guard; the parent run will show the same numbers.
+- `CASE` nullability: Spark's `CaseWhen.nullable` is false when every branch
+  and the `ELSE` are non-nullable; DataFusion's `CaseExpr::nullable` is the
+  function §12.4 found pre-evaluating predicates, and it reports nullable
+  here. A generic gap, as CF-0349 classifies it.

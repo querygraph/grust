@@ -174,3 +174,36 @@ PROBE SELECT x / y FROM VALUES (CAST(1 AS DOUBLE), CAST(-0.0 AS DOUBLE)) AS t(x,
 PROBE SELECT 1.0 / CAST('NaN' AS DOUBLE), 1.0 % CAST('NaN' AS DOUBLE) => [(nan, nan)]
 PROBE SELECT typeof(1 / CAST(-0.0 AS FLOAT)) => [('double',)]
 PROBE SELECT -0.0 / 1.0, CAST(-0.0 AS DOUBLE) / 1 => [(Decimal('0.000000'), 0.0)]
+=== probe10_string_arith_decimal_types date=2026-10-31T05:42:11Z classic-mode
+=== ansi=true
+PROBE SELECT '7' / '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 / 2)" due to data type mismatch: the binary operator requires the input type ("D
+PROBE SELECT '1' / '0' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(1 / 0)" due to data type mismatch: the binary operator requires the input type ("D
+PROBE SELECT 1 / '0' => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.en
+PROBE SELECT '7' % '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 % 2)" due to data type mismatch: the binary operator requires the input type "NU
+PROBE SELECT '7' DIV '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 div 2)" due to data type mismatch: the binary operator requires the input type (
+PROBE SELECT 7 / '2' => [(3.5,)] schema=[('(7 / 2)', 'double', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)) => [(Decimal('0.3333333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)))', 'decimal(23,13)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)) => [(Decimal('0.33333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)))', 'decimal(21,11)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)) => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)))', 'decimal(38,6)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)) => [(Decimal('1.00'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)))', 'decimal(10,2)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) DIV CAST(3 AS DECIMAL(10,2)) => [(0,)] schema=[('(CAST(1 AS DECIMAL(10,2)) div CAST(3 AS DECIMAL(10,2)))', 'bigint', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / 3 => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / 3)', 'decimal(14,6)', True)]
+PROBE SELECT CASE WHEN x > 0 THEN x ELSE 2 END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', False)]
+PROBE SELECT CASE WHEN x > 0 THEN x END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', True)]
+PROBE SELECT x / 2 AS d, x / y AS e FROM VALUES (CAST(1 AS DECIMAL(10,2)), CAST(2 AS DECIMAL(10,2))) AS t(x, y) => [(Decimal('0.500000'), Decimal('0.5000000000000'))] schema=[('d', 'decimal(14,6)', True), ('e', 'decimal(23,13)', True)]
+=== ansi=false
+PROBE SELECT '7' / '2' => [(3.5,)] schema=[('(7 / 2)', 'double', True)]
+PROBE SELECT '1' / '0' => [(None,)] schema=[('(1 / 0)', 'double', True)]
+PROBE SELECT 1 / '0' => [(None,)] schema=[('(1 / 0)', 'double', True)]
+PROBE SELECT '7' % '2' => [(1.0,)] schema=[('(7 % 2)', 'double', True)]
+PROBE SELECT '7' DIV '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 div 2)" due to data type mismatch: the binary operator requires the input type (
+PROBE SELECT 7 / '2' => [(3.5,)] schema=[('(7 / 2)', 'double', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)) => [(Decimal('0.3333333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)))', 'decimal(23,13)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)) => [(Decimal('0.33333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)))', 'decimal(21,11)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)) => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)))', 'decimal(38,6)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)) => [(Decimal('1.00'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)))', 'decimal(10,2)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) DIV CAST(3 AS DECIMAL(10,2)) => [(0,)] schema=[('(CAST(1 AS DECIMAL(10,2)) div CAST(3 AS DECIMAL(10,2)))', 'bigint', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / 3 => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / 3)', 'decimal(14,6)', True)]
+PROBE SELECT CASE WHEN x > 0 THEN x ELSE 2 END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', False)]
+PROBE SELECT CASE WHEN x > 0 THEN x END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', True)]
+PROBE SELECT x / 2 AS d, x / y AS e FROM VALUES (CAST(1 AS DECIMAL(10,2)), CAST(2 AS DECIMAL(10,2))) AS t(x, y) => [(Decimal('0.500000'), Decimal('0.5000000000000'))] schema=[('d', 'decimal(14,6)', True), ('e', 'decimal(23,13)', True)]
