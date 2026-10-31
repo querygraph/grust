@@ -1,0 +1,13 @@
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 3deb460b0..6ff73e6a0 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -3900,7 +3900,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                 return Ok(Arc::new(ScalarUDF::from(SparkStringToDecimal::try_new(
+                     precision,
+                     scale,
+-                    fail_on_error,
++                    fail_on_error & false,
+                     allow_negative_scale,
+                 )?)));
+             }

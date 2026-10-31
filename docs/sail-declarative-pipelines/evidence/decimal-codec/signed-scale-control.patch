@@ -1,0 +1,13 @@
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 3deb460b0..0f7a29840 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -4520,7 +4520,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+         } else if let Some(func) = node.inner().downcast_ref::<SparkStringToDecimal>() {
+             UdfKind::SparkStringToDecimal(r#gen::SparkStringToDecimalUdf {
+                 precision: u32::from(func.precision()),
+-                scale: i32::from(func.scale()),
++                scale: i32::from(func.scale()).abs(),
+                 fail_on_error: func.fail_on_error(),
+                 allow_negative_scale: func.allow_negative_scale(),
+             })

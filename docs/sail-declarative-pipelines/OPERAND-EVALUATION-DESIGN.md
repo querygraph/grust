@@ -315,3 +315,23 @@ then generic Sail config/type policy and exact source/conditional folding before
 SQL resolver routing. Public CLI remains qualified63f5; scalar component gates
 are not an8a7 public verdict. Add the new NUMERIC_* conditions to the audited
 raw vocabulary before this class enters any future native fast-path admission.
+
+
+## Decimal worker wire (CF-0390–0393)
+
+Sailb48162de9c9ee9cf4f386fa7eb3ebf683601a64d adds ExtendedScalarUdf tag43
+carrying precision/scale/fail_on_error/allow_negative_scale; tags1..42 unchanged.
+[Evidence](evidence/decimal-codec/README.md):243 execution libraries/fmt/strictClippy,
+five unchanged0/1 controls for both policy bits, sign and both checked narrowing
+conversions. Full physical HOF round trips preserve captured string columns,
+skipped failing casts, typed errors and empty batches. Malformed257/258/-256
+would wrap to valid native values and are rejected before construction.
+Fableb38215b4 accepts this unit. Direct codec/expression tests do not establish
+live worker RPC or new public SQL; the qualified CLI remains63f5.
+
+The next design checkpoint, explicitly flagged to the user atCF-0393, is generic
+config/type policy capture and exact source/conditional folding before resolver
+activation. Negative target refusal remains resolver-owned, while input range
+policy is captured and now travels in the worker payload. No folding/planner-seat,
+fast-path mode/default/classifier or provider/streaming authority was selected by
+the wire unit. The source-dependent failure baseline remains required.

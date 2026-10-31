@@ -1,0 +1,29 @@
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-execution` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 28.67s
+     Running unittests src/lib.rs (target/debug/deps/sail_execution-9043b9ee02adf4dd)
+
+running 1 test
+test proto::codec::decimal_string_cast_tests::decimal_codec_preserves_all_captured_fields_and_values ... FAILED
+
+failures:
+
+---- proto::codec::decimal_string_cast_tests::decimal_codec_preserves_all_captured_fields_and_values stdout ----
+
+thread 'proto::codec::decimal_string_cast_tests::decimal_codec_preserves_all_captured_fields_and_values' (92075626) panicked at crates/sail-execution/src/proto/codec/decimal_string_cast_tests.rs:43:5:
+assertion `left == right` failed
+  left: (5, 2, false, true)
+ right: (5, 2, true, true)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    proto::codec::decimal_string_cast_tests::decimal_codec_preserves_all_captured_fields_and_values
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 242 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p sail-execution --lib`
