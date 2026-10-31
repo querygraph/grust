@@ -493,3 +493,92 @@ scalar path now reaches Spark's `WRONG_TYPE` for `IDENTIFIER(1 div 0)`. The
 bare catalog form still pins `WRONG_TYPE` where Spark folds to
 `DIVIDE_BY_ZERO` under ANSI, which belongs to the catalog phase Codex named
 as next, not to B. No change requested on either unit.
+
+## 9. The `SET CATALOG` AST and result path, and SDP's directive namespace (CF-0320)
+
+Read only, Sail `3ffb497d3`, Spark `617618396`. CF-0320 asked for the wrapped
+`SET CATALOG` AST/result path and the sequential SDP directive behaviour.
+
+### 9.1 Three policies, not two
+
+| Where the expression runs                  | Spark path                                                                                                                                                                                                                                                        | Policy                                                                                                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| public SQL, bare `SET CATALOG e`           | `SparkSqlParser.visitSetCatalog` → `SetCatalogCommand(e)`; `ResolveSetCatalogCommand` (extended resolution rule, `BaseSessionStateBuilder.scala:243`) turns a bare `UnresolvedAttribute` into a quoted literal and keeps anything else; `run` after the optimizer | determinism check (`CheckAnalysis.scala:1032`) → optimizer (current-like replaced, foldables folded, conditionals simplified) → identifier rule at run (§8) |
+| any `IDENTIFIER(e)` in expression position | `AstBuilder.scala:3727` builds `ExpressionWithUnresolvedIdentifier(e, UnresolvedAttribute(_))`; `ResolveIdentifierClause` evaluates `e` during analysis and yields `UnresolvedAttribute(parts)`, which `ResolveSetCatalogCommand` then quotes into the literal    | identifier rule at analysis, before `CheckAnalysis`, no optimizer                                                                                           |
+| SDP file directive, bare `SET CATALOG e`   | `SqlGraphRegistrationContext.processSqlQuery` matches the parsed `SetCatalogCommand`; `SetCatalogCommandHandler` runs `analyzer.executeAndCheck` and then `analyzed.getCatalogName()` (`SqlGraphRegistrationContext.scala:541–562`), no optimizer                 | `CheckAnalysis` (whole-tree determinism, generator placement) → identifier rule on the analyzed, unoptimized expression                                     |
+
+Consequences for the SDP directive form, from source (not probed; the SDP
+harness is Codex's, and the one-line probe is `SET CATALOG current_catalog()`
+in a pipeline file expecting registration failure):
+
+- `current_catalog()`, `current_user()`, `current_timezone()` are
+  `NOT_CONSTANT` in a directive, unlike the public bare form, because
+  `ReplaceCurrentLike` never runs; the error is wrapped as
+  `SqlGraphElementRegistrationException("Failed to resolve catalog expression: …")`
+  (`:554–558`), the same prefix Sail's `PreparationFailure::Analysis` uses
+  (`pipelines/sql.rs:96–98`).
+- `rand()` and `typeof(rand())` are `INVALID_NON_DETERMINISTIC_EXPRESSIONS`
+  (CheckAnalysis before `getCatalogName`), `explode(..)` is
+  `UNSUPPORTED_GENERATOR.OUTSIDE_SELECT`, `1 DIV 0` is `WRONG_TYPE` `bigint`,
+  `typeof(current_catalog())` sets the catalog to `string` with no existence
+  check at registration (`context.setCurrentCatalog` stores a string), and a
+  non-`AnalysisException` from evaluation (ANSI `DIVIDE_BY_ZERO` from
+  `CAST(1 DIV 0 AS STRING)`) escapes the handler unwrapped, which is Sail's
+  `PreparationFailure::Evaluation` split.
+- So Sail's present eager identifier policy in `resolve_catalog_name` is the
+  right policy for SDP directives except for the two CheckAnalysis-first
+  classes above; the public bare form is the only one that needs the
+  optimizer-first sequence. The pinned catalog test rows (§8) are therefore
+  correct for directives and wrong for the public bare command; the test
+  should say which form it pins.
+
+### 9.2 Sail's path
+
+`Statement::SetCatalog` always becomes `SetCurrentCatalogExpression`
+(`sail-sql-analyzer/statement.rs:209–216`), `USE CATALOG name` becomes the
+literal `SetCurrentCatalog` (`:217–226`). The command resolver calls
+`resolve_catalog_name` then `resolve_catalog_command` (`command/mod.rs:234–236`);
+`resolve_catalog_name` quotes a bare attribute, unwraps `IdentifierClause`,
+and runs the identifier policy on the rest (`constant.rs:22–74`). The result
+schema is `display.empty()` with no rows (`sail-catalog/command.rs:245–248,290–293`),
+which matches `SetCatalogCommand.output = Seq.empty`. For the three-policy
+split the AST already carries what is needed: `IdentifierClause` is visible at
+`constant.rs:29`, so the unwrap is the one place where the IDENTIFIER form and
+the bare form are conflated, and the SDP preparation callback
+(`pipelines/mod.rs:199–214`) can keep calling the directive policy while the
+public command gets the optimizer-first one.
+
+### 9.3 Sequential directives and the virtual namespace
+
+Spark's registration context is created per `DefineSqlGraphElements`
+request, that is per file (`PipelinesHandler.scala:229`), and its state is
+two options (`SqlGraphRegistrationContext.scala:44–59`): `SET CATALOG` sets the
+catalog and clears the database (`:552,560`), `USE db` sets the database,
+`USE cat.db` sets both (`:524–539`), and every later dataset in the file
+captures `(currentCatalog, currentDatabase)` into its `QueryContext`. Sail's
+commit does the same (`pipelines/sql.rs:290–306`). Two facts settle CF-0320's
+namespace question:
+
+- Directive expressions never see the virtual namespace in Spark either.
+  The handler analyzes against `spark.sessionState.analyzer`, the directive's
+  only namespace-dependent inputs would be column references, which fail in
+  both engines, and the current-like functions that would need the namespace
+  are rejected as non-foldable before evaluation. Resolving every catalog
+  expression in `prepare` with a callback that sees only the expression is
+  therefore faithful; no overlay is needed for directive evaluation, and no
+  shared-session mutation or graph lock across awaits is implied.
+- `current_catalog()`/`current_database()` inside flow queries are replaced
+  by the optimizer when the flow runs, under whatever the session's catalog
+  manager holds then. The only place SDP sets the catalog manager from a
+  `QueryContext` is around `command.run` in `DatasetManager.materializeView`
+  (`DatasetManager.scala:221–235`); flow execution is not wrapped. That is the
+  "computed reads follow the live session" behaviour Codex's namespace oracle
+  already confirmed (CF-0301), and it is a separate integration unit from the
+  catalog policy, as CF-0320 says.
+
+One remaining difference by reading: `USE IDENTIFIER(..)` in a pipeline file
+parses to `PlanWithUnresolvedIdentifier` (`SparkSqlParser.scala:500–501`), which
+the SDP dispatch does not match, so Spark reports "Unsupported plan
+PlanWithUnresolvedIdentifier parsed from SQL query" (`:168–172`); Sail's
+`UseCatalog`/`UseDatabase` take a plain name, so the form is a parse error
+there. Low priority.
