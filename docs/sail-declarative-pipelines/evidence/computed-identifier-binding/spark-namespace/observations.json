@@ -1,0 +1,67 @@
+{
+  "started_at": "2026-10-31T01:51:08.936135+00:00",
+  "harness_sha256": "745b472445bea98325ae2173233e3b27070b30bba2e977e85d2f6e446e625141",
+  "scope": "Public namespace phase oracle; rows and session namespace only, no full metadata or Scala verdict",
+  "engine": "spark",
+  "cases": [
+    {
+      "name": "named",
+      "query": "SELECT foo FROM external_input",
+      "events": [
+        "Flow spark_catalog.binding_a.result_named is QUEUED.",
+        "Flow spark_catalog.binding_a.result_named is PLANNING.",
+        "Flow spark_catalog.binding_a.result_named is STARTING.",
+        "Flow spark_catalog.binding_a.result_named is RUNNING.",
+        "Flow spark_catalog.binding_a.result_named has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "session_namespace": "binding_b"
+    },
+    {
+      "name": "literal",
+      "query": "SELECT foo FROM IDENTIFIER('external_input')",
+      "events": [
+        "Flow spark_catalog.binding_a.result_literal is QUEUED.",
+        "Flow spark_catalog.binding_a.result_literal is PLANNING.",
+        "Flow spark_catalog.binding_a.result_literal is STARTING.",
+        "Flow spark_catalog.binding_a.result_literal is RUNNING.",
+        "Flow spark_catalog.binding_a.result_literal has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "session_namespace": "binding_b"
+    },
+    {
+      "name": "computed",
+      "query": "SELECT foo FROM IDENTIFIER(concat('external_', 'input'))",
+      "events": [
+        "Flow spark_catalog.binding_a.result_computed is QUEUED.",
+        "Flow spark_catalog.binding_a.result_computed is PLANNING.",
+        "Flow spark_catalog.binding_a.result_computed is STARTING.",
+        "Flow spark_catalog.binding_a.result_computed is RUNNING.",
+        "Flow spark_catalog.binding_a.result_computed has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 10
+        }
+      ],
+      "session_namespace": "binding_b"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "completed_at": "2026-10-31T01:51:22.638600+00:00"
+}

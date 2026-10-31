@@ -1,0 +1,66 @@
+{
+  "started_at": "2026-10-31T01:44:27.948290+00:00",
+  "harness_sha256": "fa497af93d5df6e8e3095d3fdc7c96ad9c33aa3bc303bf5807f4b7617bf96ece",
+  "scope": "Spark namespace phase oracle only",
+  "cases": [
+    {
+      "name": "named",
+      "query": "SELECT foo FROM external_input",
+      "events": [
+        "Flow spark_catalog.binding_a.result_named is QUEUED.",
+        "Flow spark_catalog.binding_a.result_named is PLANNING.",
+        "Flow spark_catalog.binding_a.result_named is STARTING.",
+        "Flow spark_catalog.binding_a.result_named is RUNNING.",
+        "Flow spark_catalog.binding_a.result_named has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "session_namespace": "binding_b"
+    },
+    {
+      "name": "literal",
+      "query": "SELECT foo FROM IDENTIFIER('external_input')",
+      "events": [
+        "Flow spark_catalog.binding_a.result_literal is QUEUED.",
+        "Flow spark_catalog.binding_a.result_literal is PLANNING.",
+        "Flow spark_catalog.binding_a.result_literal is STARTING.",
+        "Flow spark_catalog.binding_a.result_literal is RUNNING.",
+        "Flow spark_catalog.binding_a.result_literal has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "session_namespace": "binding_b"
+    },
+    {
+      "name": "computed",
+      "query": "SELECT foo FROM IDENTIFIER(concat('external_', 'input'))",
+      "events": [
+        "Flow spark_catalog.binding_a.result_computed is QUEUED.",
+        "Flow spark_catalog.binding_a.result_computed is PLANNING.",
+        "Flow spark_catalog.binding_a.result_computed is STARTING.",
+        "Flow spark_catalog.binding_a.result_computed is RUNNING.",
+        "Flow spark_catalog.binding_a.result_computed has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 10
+        }
+      ],
+      "session_namespace": "binding_b"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "completed_at": "2026-10-31T01:44:45.993272+00:00"
+}

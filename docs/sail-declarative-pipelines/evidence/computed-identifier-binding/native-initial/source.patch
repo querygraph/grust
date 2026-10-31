@@ -1,0 +1,214 @@
+commit b4c250435d0277e7e581685d38d14b11261e4907
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 18:43:10 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 18:43:10 2026 -0700
+
+    Distinguish computed relation targets in request-local scope policy
+
+diff --git a/crates/sail-plan/src/resolver/query/late_bound_scope_tests.rs b/crates/sail-plan/src/resolver/query/late_bound_scope_tests.rs
+new file mode 100644
+index 000000000..e3874093c
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/late_bound_scope_tests.rs
+@@ -0,0 +1,103 @@
++use std::sync::Mutex;
++
++use super::*;
++use crate::resolver::scope::{VIEW_NAMESPACE_PART, VIEW_NAMESPACE_SIZE, ViewScope};
++
++fn parsed(sql: &str) -> Result<spec::Plan, Box<dyn std::error::Error>> {
++    Ok(sail_sql_analyzer::statement::from_ast_statement(
++        sail_sql_analyzer::parser::parse_one_statement(sql)?,
++    )?)
++}
++
++#[tokio::test]
++async fn default_scope_keeps_computed_binding_and_cte_precedence() -> TestResult {
++    let fixture = Fixture::new().await?;
++    for sql in [
++        "SELECT a FROM IDENTIFIER(concat('in', 'put'))",
++        "WITH input AS (SELECT 1 AS a) SELECT a FROM IDENTIFIER(concat('in', 'put'))",
++    ] {
++        let named = fixture.resolver().resolve_named_plan(parsed(sql)?).await?;
++        assert_eq!(named.fields, Some(vec!["a".into()]));
++    }
++    assert_eq!(fixture.calls.load(Ordering::SeqCst), 0);
++    Ok(())
++}
++
++struct LateCatalogOnly<'a> {
++    input: &'a LogicalPlan,
++    named: AtomicUsize,
++    late: Mutex<Vec<Vec<String>>>,
++}
++impl RelationScope for LateCatalogOnly<'_> {
++    fn resolve(&self, _: &[String]) -> PlanResult<Option<LogicalPlan>> {
++        self.named.fetch_add(1, Ordering::SeqCst);
++        Ok(Some(self.input.clone()))
++    }
++    fn resolve_late_bound(&self, name: &[String]) -> PlanResult<Option<LogicalPlan>> {
++        self.late
++            .lock()
++            .map_err(|e| crate::error::PlanError::internal(e.to_string()))?
++            .push(name.to_vec());
++        Ok(None)
++    }
++}
++
++#[tokio::test]
++async fn late_target_opt_out_preserves_native_ctes_and_view_namespace() -> TestResult {
++    let fixture = Fixture::new().await?;
++    let scope = LateCatalogOnly {
++        input: &fixture.inputs.0,
++        named: AtomicUsize::new(0),
++        late: Mutex::new(vec![]),
++    };
++    let resolver = PlanResolver::new(&fixture.ctx, Arc::new(PlanConfig::default()))
++        .with_relation_scope(&scope);
++    resolver
++        .resolve_named_plan(parsed("SELECT a FROM input")?)
++        .await?;
++    assert_eq!(scope.named.load(Ordering::SeqCst), 1);
++    let error = resolver
++        .resolve_named_plan(parsed("SELECT a FROM IDENTIFIER(concat('in', 'put'))")?)
++        .await
++        .err()
++        .ok_or("late target incorrectly used named binding")?;
++    assert!(
++        error.to_string().contains("TABLE_OR_VIEW_NOT_FOUND"),
++        "{error}"
++    );
++    assert_eq!(scope.named.load(Ordering::SeqCst), 1);
++    assert_eq!(scope.late.lock().map_err(|e| e.to_string())?.len(), 1);
++    resolver
++        .resolve_named_plan(parsed(
++            "WITH input AS (SELECT 1 AS a) SELECT a FROM IDENTIFIER(concat('in', 'put'))",
++        )?)
++        .await?;
++    assert_eq!(
++        scope.late.lock().map_err(|e| e.to_string())?.len(),
++        1,
++        "CTE lookup must precede the late hook"
++    );
++    let manager = fixture.ctx.extension::<CatalogManager>()?;
++    let properties = vec![
++        (VIEW_NAMESPACE_SIZE.into(), "2".into()),
++        (format!("{VIEW_NAMESPACE_PART}0"), "catalog".into()),
++        (format!("{VIEW_NAMESPACE_PART}1"), "db".into()),
++    ];
++    let view = ViewScope::from_properties(manager.as_ref(), Some(&scope), &properties)?
++        .ok_or("view scope absent")?;
++    let resolver =
++        PlanResolver::new(&fixture.ctx, Arc::new(PlanConfig::default())).with_relation_scope(&view);
++    let error = resolver
++        .resolve_named_plan(parsed("SELECT a FROM IDENTIFIER(concat('in', 'put'))")?)
++        .await
++        .err()
++        .ok_or("view child lost late policy")?;
++    assert!(error.to_string().contains("TABLE_OR_VIEW_NOT_FOUND"));
++    assert_eq!(
++        scope.late.lock().map_err(|e| e.to_string())?.last(),
++        Some(&vec!["catalog".into(), "db".into(), "input".into()])
++    );
++    assert_eq!(scope.named.load(Ordering::SeqCst), 1);
++    assert_eq!(fixture.calls.load(Ordering::SeqCst), 0);
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/query/read.rs b/crates/sail-plan/src/resolver/query/read.rs
+index 2a1fa1686..08f66ec61 100644
+--- a/crates/sail-plan/src/resolver/query/read.rs
++++ b/crates/sail-plan/src/resolver/query/read.rs
+@@ -42,6 +42,16 @@ impl PlanResolver<'_> {
+         &self,
+         table: spec::ReadNamedTable,
+         state: &mut PlanResolverState,
++    ) -> PlanResult<LogicalPlan> {
++        self.resolve_query_read_named_table_with_scope(table, state, false)
++            .await
++    }
++
++    async fn resolve_query_read_named_table_with_scope(
++        &self,
++        table: spec::ReadNamedTable,
++        state: &mut PlanResolverState,
++        late_bound: bool,
+     ) -> PlanResult<LogicalPlan> {
+         let spec::ReadNamedTable {
+             name,
+@@ -102,9 +112,12 @@ impl PlanResolver<'_> {
+         }
+ 
+         let reference: Vec<String> = name.clone().into();
+-        if let Some(scope) = self.relation_scope
+-            && let Some(plan) = scope.resolve(&reference)?
+-        {
++        let scoped = match self.relation_scope {
++            Some(scope) if late_bound => scope.resolve_late_bound(&reference)?,
++            Some(scope) => scope.resolve(&reference)?,
++            None => None,
++        };
++        if let Some(plan) = scoped {
+             if temporal.is_some() {
+                 return Err(PlanError::unsupported("time travel on a scoped relation"));
+             }
+@@ -327,7 +340,7 @@ impl PlanResolver<'_> {
+         let name = sail_sql_analyzer::expression::from_ast_object_name(
+             sail_sql_analyzer::parser::parse_object_name(&name_str)?,
+         )?;
+-        self.resolve_query_read_named_table(
++        self.resolve_query_read_named_table_with_scope(
+             spec::ReadNamedTable {
+                 name,
+                 temporal: None,
+@@ -335,6 +348,7 @@ impl PlanResolver<'_> {
+                 options,
+             },
+             state,
++            true,
+         )
+         .await
+     }
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index 4895a3b15..f72e327fe 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -348,3 +348,6 @@ mod view_publication;
+ 
+ #[path = "read_case_tests.rs"]
+ mod read_case;
++
++#[path = "late_bound_scope_tests.rs"]
++mod late_bound_scope;
+diff --git a/crates/sail-plan/src/resolver/scope.rs b/crates/sail-plan/src/resolver/scope.rs
+index 0acea2dd9..0e244edc2 100644
+--- a/crates/sail-plan/src/resolver/scope.rs
++++ b/crates/sail-plan/src/resolver/scope.rs
+@@ -12,6 +12,13 @@ pub(super) const VIEW_NAMESPACE_PART: &str = "view.catalogAndNamespace.part.";
+ pub trait RelationScope: Send + Sync {
+     fn resolve(&self, name: &[String]) -> PlanResult<Option<LogicalPlan>>;
+ 
++    /// Resolve a target produced by a computed IDENTIFIER expression, after
++    /// native CTE lookup. Callers may distinguish this later binding phase from
++    /// named inputs. Existing scopes retain the same lookup by default.
++    fn resolve_late_bound(&self, name: &[String]) -> PlanResult<Option<LogicalPlan>> {
++        self.resolve(name)
++    }
++
+     /// Bind an external name using the caller's captured namespace. This keeps
+     /// independent planning requests from mutating shared catalog defaults.
+     fn qualify(&self, name: &[String]) -> PlanResult<Vec<String>> {
+@@ -79,6 +86,13 @@ impl RelationScope for ViewScope<'_> {
+         }
+     }
+ 
++    fn resolve_late_bound(&self, name: &[String]) -> PlanResult<Option<LogicalPlan>> {
++        match self.parent {
++            Some(parent) => parent.resolve_late_bound(&self.qualify(name)?),
++            None => Ok(None),
++        }
++    }
++
+     fn qualify(&self, name: &[String]) -> PlanResult<Vec<String>> {
+         if name.len() == 1 {
+             let mut parts = self.namespace.clone();

@@ -1,0 +1,106 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/analysis.rs b/crates/sail-spark-connect/src/pipelines/analysis.rs
+index 4f2391d97..ab2c3844e 100644
+--- a/crates/sail-spark-connect/src/pipelines/analysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/analysis.rs
+@@ -68,6 +68,18 @@ impl RelationScope for GraphScope<'_> {
+         }
+     }
+ 
++    // Computed IDENTIFIER targets materialize after Spark's graph substitution.
++    // Their expression subqueries still use this scope; the eventual target does not.
++    fn resolve_late_bound(&self, _: &[String]) -> PlanResult<Option<LogicalPlan>> {
++        Ok(None)
++    }
++
++    fn qualify_late_bound(&self, name: &[String]) -> PlanResult<Name> {
++        // Late analysis uses the ordinary session catalog namespace, which may
++        // differ from the graph's captured namespace. Do not mutate either one.
++        Ok(name.to_vec())
++    }
++
+     fn qualify(&self, name: &[String]) -> PlanResult<Name> {
+         match name {
+             [table] if !self.flow.database.is_empty() => Ok(vec![
+diff --git a/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs b/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
+index 7f7e5e6a7..408cff663 100644
+--- a/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
+@@ -271,3 +271,30 @@ async fn changed_union_repeats_native_analysis_but_an_unchanged_union_does_not()
+     );
+     Ok(())
+ }
++
++#[tokio::test]
++async fn computed_target_does_not_bind_or_inherit_the_graph_view() -> TestResult {
++    let ctx = catalog_preparation_tests::context()?;
++    ctx.state_ref()
++        .write()
++        .config_mut()
++        .set_extension(std::sync::Arc::new(
++            sail_common_datafusion::datasource::DataSourceRegistry::new(),
++        ));
++    let mut graph = definition("CREATE TEMPORARY VIEW z_sensitive AS SELECT 1 AS foo; CREATE MATERIALIZED VIEW target AS SELECT Foo FROM IDENTIFIER(concat('z_', 'sensitive'))").await?;
++    set(&mut graph, "z_sensitive", CASE, "true")?;
++    let error = analysis::analyze(&ctx, &graph)
++        .await
++        .err()
++        .ok_or("computed name incorrectly bound graph view")?;
++    assert!(
++        error.to_string().contains("TABLE_OR_VIEW_NOT_FOUND"),
++        "{error}"
++    );
++    assert!(
++        !ctx.extension::<SparkSession>()?
++            .plan_config()?
++            .case_sensitive
++    );
++    Ok(())
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/config/trace.rs b/crates/sail-spark-connect/src/pipelines/config/trace.rs
+index 6ac6b55c4..c34b399c1 100644
+--- a/crates/sail-spark-connect/src/pipelines/config/trace.rs
++++ b/crates/sail-spark-connect/src/pipelines/config/trace.rs
+@@ -101,11 +101,9 @@ impl<F: Fn(&str) -> bool> Trace<'_, F> {
+                         }
+                     }
+                 }
+-                spec::ReadType::DynamicTable(_) => {
+-                    return Err(PlanError::unsupported(
+-                        "configuration trace of dynamic table identifiers",
+-                    ));
+-                }
++                // The computed target is materialized after graph substitution.
++                // Its expression/sample subqueries are visited below as usual.
++                spec::ReadType::DynamicTable(_) => {}
+                 spec::ReadType::DataSource(_) | spec::ReadType::Udtf(_) => {}
+             },
+             N::Project { .. }
+diff --git a/crates/sail-spark-connect/src/pipelines/config/trace_tests.rs b/crates/sail-spark-connect/src/pipelines/config/trace_tests.rs
+index 9a5b5c123..81f01bd5c 100644
+--- a/crates/sail-spark-connect/src/pipelines/config/trace_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/config/trace_tests.rs
+@@ -149,7 +149,7 @@ fn qualification_keeps_canonical_identity_and_registered_format_paths_are_extern
+ }
+ 
+ #[test]
+-fn deferred_binding_forms_are_explicit_errors_instead_of_silently_missing_reads() -> TestResult {
++fn late_targets_do_not_bind_graph_names_and_reference_forms_remain_explicit() -> TestResult {
+     let graph = graph();
+     let query = spec::QueryPlan::new(spec::QueryNode::Read {
+         read_type: spec::ReadType::DynamicTable(Box::new(spec::ReadDynamicTable {
+@@ -169,7 +169,14 @@ fn deferred_binding_forms_are_explicit_errors_instead_of_silently_missing_reads(
+         catalog: "c".into(),
+         database: "d".into(),
+     };
+-    assert!(ordered_inputs(&graph, &flow, &query, false, |_| false).is_err());
++    assert!(ordered_inputs(&graph, &flow, &query, false, |_| false)?.is_empty());
++    assert_eq!(
++        trace(
++            "SELECT * FROM IDENTIFIER((SELECT foo FROM z_sensitive))",
++            false
++        )?,
++        expected(&[&["z_sensitive"]])
++    );
+     let references = spec::QueryPlan::new(spec::QueryNode::WithRelations {
+         root: Box::new(query),
+         references: vec![],

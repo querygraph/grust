@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-31T01:39:33.610978+00:00. Live coordination read through **CF-0295**.
+Snapshot written 2026-10-31T02:03:17.425881+00:00. Live coordination read through **CF-0301**.
 Re-read live channel/Git/process state; later entries supersede this snapshot. [Initial scope](codex-fable-handoff.md).
 
 ## Goal and current truth
@@ -39,12 +39,12 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `ccb6fb21240b1b4d2962da833a74a17ade5e84c3` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `2acaa1ef775811897a5a0338d5c6066c7e315103` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `dd4c9344adc063d73e8350cf77002c075d0dd49c` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `b5d82d8c15b9826fff7ff2aee6f03d61579d3cd5` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
-| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | latest consumed review `439df325` |
+| Parallel Fable docs | `/Users/alexy/src/grust-sdp-fable`, `work/sdp-streaming-cdc-fable` | latest consumed review `6780d721` |
 | Parallel Fable detached gate | `/Users/alexy/src/sail-sdp-fable-gate` | verify its actual current candidate/process |
 | Fable config component | `/Users/alexy/src/sail-sdp-fable-config`, `work/sdp-flow-config-merge` | offer `164058355ce2bd52214339a4092d519abf2ea859` imported at349771bd9; own `/Users/alexy/src/sail-sdp-fable-config-target` |
 | Spark reference | `/Users/alexy/src/spark-sdp-4.2.1` | `617618396087429b5627a86ce933bb0f5d6645cb` |
@@ -149,18 +149,19 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest fresh public CLI gate is **ccb6fb21240b1b4d2962da833a74a17ade5e84c3**:
-300 selected public +67 upstream Python executions; inspect the [dynamic design packet](docs/sail-declarative-pipelines/evidence/dynamic-binding-design/README.md)
+Latest fresh public CLI gate is **dd4c9344adc063d73e8350cf77002c075d0dd49c**:
+300 selected public +67 upstream Python executions; inspect the [computed binding packet](docs/sail-declarative-pipelines/evidence/computed-identifier-binding/README.md)
 for exact terminal qualification. These selections are not original Scala acceptance.
 
-## Current implementation and immediate next work (CF-0295)
+## Current implementation and immediate next work (CF-0301)
 
-Coordinator HEAD **ccb6fb21240b1b4d2962da833a74a17ade5e84c3** is committed/clean. Exact678 libraries/fmt/strict Clippy, fresh300+67 public and dynamic10/13 outcomes verified before advancement. Three computed forms remain different. All owned gates terminal.
+Coordinator HEAD **dd4c9344adc063d73e8350cf77002c075d0dd49c** is committed/clean. Native `d2ada245e` (94+176) and SDP `dd4c9344a` (94+177) libraries/fmt/strict Clippy, independent unchanged native1/1 controls + SDP0/1 control, fresh300+67, dynamic13/13 and namespace3/3 qualified before advancement. All owned gates terminal; no listeners.
 [Review units](docs/sail-declarative-pipelines/evidence/flow-config-runtime/README.md): b4d source-case seam (88+151; two 0/2 controls),349 pure maps (88+166),fa78 trace (88+170),1bc runtime. Native dynamic/parameter-relation regression fixtures fail0/2 without the no-view-settings path; pass unchanged in the integrated source. Earlier query/expression packets retain their exact historical gates. No captured public Session activation.
 [General missing-column units](docs/sail-declarative-pipelines/evidence/unresolved-column-errors/README.md): abad typed PlanError→existing Connect codec (88+176);7b native diagnostics (91+176), unchanged control2 helper pass/1 native fail. Two retained initial gates failed solely on three old golden error strings; official fixture generation changed no inputs/outcomes.
 [Shared schemas/file sources](docs/sail-declarative-pipelines/evidence/parquet-column-validation/README.md):52d extracts Spark-compatible validation, old column_change path reexported, actual JVM12-case oracle;005 validates captured policy and fixes inferred partition shadowing. Exact643/646 library gates; disabling checks fails0/3 unchanged tests. Retains239/1 initial data-source failure, intermediate pass and probe directory-name collision. Public read replay uses original Spark file bytes. Follow-up95 closes the two ambiguity diagnostics; full reader matching/merge policy remains open.
 [Ambiguity unit](docs/sail-declarative-pipelines/evidence/ambiguous-reference-errors/README.md): shared formatter reuse; requested spelling and UTF16 order; qualifier/origin identities preserved even with identical display names; no diagnostic allocation on successful lookup. Exact647 libraries/unchanged control0 pass+1 fail/fresh300+67/public10+9 comparisons. Initial Clippy borrow and missing normal catalog fixture retained. Dynamic/reference design phase is now active, user notified before starting.
 [Current design](docs/sail-declarative-pipelines/DYNAMIC-REFERENCE-BINDING-DESIGN.md): ccb normalizes non-null string literals to named reads, preserves computed/null forms and fixes Identifier sampling grammar. Same-input literal control1 pass/1 fail. Spark thirteen-case dynamic and seven-case protocol oracles show late computed lookup, used-only generic references, eager SQL parameters and frozen external Foo9 despite catalog replacement bar10. No source-snapshot/binding representation selected; do not fresh-resolve parameters or retain graph providers as a shortcut. See retained grammar/warehouse/missing-argument/verifier failures.
+[Computed unit / next work](docs/sail-declarative-pipelines/evidence/computed-identifier-binding/README.md): late target skips graph lookup/config and uses live session namespace; native CTE precedence/default callers/view creation namespace remain. Two expression-helper probes differ0/2 (Spark NOT_CONSTANT before column analysis); fix next without losing parameter substitution. Frozen local-Parquet parameter oracle: appended file invisible, deleted listed file fails, same-length replacement bytes visible; composed SELECT foo+1 stays frozen. No etag enforcement/owned-plan exception selected. Generic references, frozen-parameter ownership/UDF/config/encoding remain design work; notify before the next substantial phase. Retains invalid0-test control, vacuous namespace control, stronger catalog witness and missing-registry fixture failure. Fable review6780d721; CF-0296–0301 carry discussion only.
 
 [Read](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md),
 [writer/schema](docs/sail-declarative-pipelines/evidence/resolver-writer-session/README.md) and

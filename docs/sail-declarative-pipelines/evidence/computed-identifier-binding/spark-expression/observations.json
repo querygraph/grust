@@ -1,0 +1,74 @@
+{
+  "engine": "spark",
+  "started_at": "2026-10-31T01:47:49.536100+00:00",
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "9c65fe7325bc07d90a5d885154b69fafcb50518254c35400cd761f2747044530",
+  "scope": "Public Connect dynamic binding observations; source pin and installed runtime are recorded separately; no Scala suite verdict",
+  "cases": [
+    {
+      "name": "expression_graph_subquery",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT * FROM IDENTIFIER((SELECT Foo FROM z_sensitive))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Failed to resolve flow: 'spark_catalog.fusion_expression_graph_subquery.result'.\nError: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression scalarsubquery() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 25;\n'Project [*]\n+- 'PlanWithUnresolvedIdentifier scalar-subquery#19 [], org.apache.spark.sql.catalyst.parser.AstBuilder$$Lambda$3699/0x00000080023a5cb0@4db0884a\n      +- 'Project ['Foo]\n         +- SubqueryAlias z_sensitive\n            +- Project [1 AS foo#16]\n               +- OneRowRelation\n",
+          "protobuf_text": "timestamp {\n  seconds: 1793411277\n  nanos: 921626000\n}\nmessage: \"Failed to resolve flow: \\'spark_catalog.fusion_expression_graph_subquery.result\\'.\\nError: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression scalarsubquery() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 25;\\n\\'Project [*]\\n+- \\'PlanWithUnresolvedIdentifier scalar-subquery#19 [], org.apache.spark.sql.catalyst.parser.AstBuilder$$Lambda$3699/0x00000080023a5cb0@4db0884a\\n      +- \\'Project [\\'Foo]\\n         +- SubqueryAlias z_sensitive\\n            +- Project [1 AS foo#16]\\n               +- OneRowRelation\\n\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.fusion_expression_graph_subquery.result\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "expression_graph_subquery_exact",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT * FROM IDENTIFIER((SELECT foo FROM z_sensitive))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Failed to resolve flow: 'spark_catalog.fusion_expression_graph_subquery_exact.result'.\nError: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression scalarsubquery() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 25;\n'Project [*]\n+- 'PlanWithUnresolvedIdentifier scalar-subquery#40 [], org.apache.spark.sql.catalyst.parser.AstBuilder$$Lambda$3699/0x00000080023a5cb0@320f944e\n      +- 'Project ['foo]\n         +- SubqueryAlias z_sensitive\n            +- Project [1 AS foo#37]\n               +- OneRowRelation\n",
+          "protobuf_text": "timestamp {\n  seconds: 1793411278\n  nanos: 270182000\n}\nmessage: \"Failed to resolve flow: \\'spark_catalog.fusion_expression_graph_subquery_exact.result\\'.\\nError: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression scalarsubquery() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 25;\\n\\'Project [*]\\n+- \\'PlanWithUnresolvedIdentifier scalar-subquery#40 [], org.apache.spark.sql.catalyst.parser.AstBuilder$$Lambda$3699/0x00000080023a5cb0@320f944e\\n      +- \\'Project [\\'foo]\\n         +- SubqueryAlias z_sensitive\\n            +- Project [1 AS foo#37]\\n               +- OneRowRelation\\n\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.fusion_expression_graph_subquery_exact.result\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    }
+  ],
+  "catalog": "spark_catalog",
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "outcome": "observed",
+  "listener_probe_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T01:47:58.829544+00:00"
+}
