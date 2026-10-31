@@ -1,0 +1,60 @@
+    Checking sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+error: unused import: `ArrayRef`
+ --> crates/sail-function/src/scalar/spark_string_to_decimal/tests.rs:1:27
+  |
+1 | use arrow::array::{Array, ArrayRef, StringArray};
+  |                           ^^^^^^^^
+  |
+  = note: `-D unused-imports` implied by `-D warnings`
+  = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error[E0277]: `?` couldn't convert the error to `datafusion_common::DataFusionError`
+  --> crates/sail-function/src/scalar/spark_string_to_decimal/tests/boundaries.rs:16:84
+   |
+ 9 | fn java_bmp_digit_mapping_and_surrogate_pair_rejection() -> Result<()> {
+   |                                                             ---------- expected `datafusion_common::DataFusionError` because of this
+...
+16 |     let mapping: Mapping = serde_json::from_str(include_str!("digit-mapping.json"))?;
+   |                            --------------------------------------------------------^ the trait `std::convert::From<serde_json::Error>` is not implemented for `datafusion_common::DataFusionError`
+   |                            |
+   |                            this can't be annotated with `?` because it has type `Result<_, serde_json::Error>`
+   |
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = help: `datafusion_common::DataFusionError` implements trait `std::convert::From<T>`:
+             std::convert::From<&std::sync::Arc<datafusion_common::DataFusionError>>
+             std::convert::From<arrow_schema::ArrowError>
+             std::convert::From<datafusion::object_store::Error>
+             std::convert::From<datafusion::object_store::path::Error>
+             std::convert::From<datafusion::parquet::errors::ParquetError>
+             From<Box<dyn Error + Send + Sync>>
+             std::convert::From<std::fmt::Error>
+             std::convert::From<std::io::Error>
+   = note: the full name for the type has been written to '/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_function-0d11f11767b8b03a.long-type-15933079621550903369.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: `?` couldn't convert the error to `datafusion_common::DataFusionError`
+  --> crates/sail-function/src/scalar/spark_string_to_decimal/tests.rs:96:85
+   |
+93 | fn spark_421_contract_matches_scalars_and_arrays_for_all_string_layouts() -> Result<()> {
+   |                                                                              ---------- expected `datafusion_common::DataFusionError` because of this
+...
+96 |     let cases: Vec<Case> = serde_json::from_str(include_str!("tests/contract.json"))?;
+   |                            ---------------------------------------------------------^ the trait `std::convert::From<serde_json::Error>` is not implemented for `datafusion_common::DataFusionError`
+   |                            |
+   |                            this can't be annotated with `?` because it has type `Result<_, serde_json::Error>`
+   |
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = help: `datafusion_common::DataFusionError` implements trait `std::convert::From<T>`:
+             std::convert::From<&std::sync::Arc<datafusion_common::DataFusionError>>
+             std::convert::From<arrow_schema::ArrowError>
+             std::convert::From<datafusion::object_store::Error>
+             std::convert::From<datafusion::object_store::path::Error>
+             std::convert::From<datafusion::parquet::errors::ParquetError>
+             From<Box<dyn Error + Send + Sync>>
+             std::convert::From<std::fmt::Error>
+             std::convert::From<std::io::Error>
+   = note: the full name for the type has been written to '/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_function-0d11f11767b8b03a.long-type-15933079621550903369.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `sail-function` (lib test) due to 3 previous errors

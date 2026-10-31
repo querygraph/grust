@@ -1,0 +1,1050 @@
+diff --git a/crates/sail-function/src/scalar/cast_error.rs b/crates/sail-function/src/scalar/cast_error.rs
+new file mode 100644
+index 000000000..efa20e10c
+--- /dev/null
++++ b/crates/sail-function/src/scalar/cast_error.rs
+@@ -0,0 +1,30 @@
++use std::collections::HashMap;
++
++use datafusion_common::DataFusionError;
++use sail_common_datafusion::error::StructuredSparkError;
++
++pub(super) fn invalid_string_cast(value: &str, target: &str, boolean: bool) -> DataFusionError {
++    let expression = format!("'{}'", value.replace('\\', "\\\\").replace('\'', "\\'"));
++    let source_type = "\"STRING\"";
++    let target_type = format!("\"{target}\"");
++    let message = format!(
++        "The value {expression} of the type {source_type} cannot be cast to {target_type} because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
++    );
++    DataFusionError::External(Box::new(StructuredSparkError {
++        class: if boolean {
++            "org.apache.spark.SparkRuntimeException"
++        } else {
++            "java.lang.NumberFormatException"
++        }
++        .into(),
++        condition: "CAST_INVALID_INPUT".into(),
++        sql_state: "22018".into(),
++        message,
++        parameters: HashMap::from([
++            ("expression".into(), expression),
++            ("sourceType".into(), source_type.into()),
++            ("targetType".into(), target_type),
++            ("ansiConfig".into(), "\"spark.sql.ansi.enabled\"".into()),
++        ]),
++    }))
++}
+diff --git a/crates/sail-function/src/scalar/mod.rs b/crates/sail-function/src/scalar/mod.rs
+index 1ec6b434c..210c5e348 100644
+--- a/crates/sail-function/src/scalar/mod.rs
++++ b/crates/sail-function/src/scalar/mod.rs
+@@ -1,5 +1,6 @@
+ pub mod array;
+ pub mod array_struct_field;
++mod cast_error;
+ pub mod collection;
+ pub mod csv;
+ pub mod datetime;
+@@ -17,6 +18,7 @@ pub mod normalize_float_keys;
+ pub mod predicate;
+ pub mod spark_ansi_string_cast;
+ pub mod spark_cast_string_to_int32;
++pub mod spark_string_to_decimal;
+ pub mod spark_struct_rename;
+ pub mod spark_time_precision_cast;
+ pub mod spark_to_string;
+diff --git a/crates/sail-function/src/scalar/spark_ansi_string_cast.rs b/crates/sail-function/src/scalar/spark_ansi_string_cast.rs
+index 1205d728a..6ddc7275f 100644
+--- a/crates/sail-function/src/scalar/spark_ansi_string_cast.rs
++++ b/crates/sail-function/src/scalar/spark_ansi_string_cast.rs
+@@ -1,4 +1,3 @@
+-use std::collections::HashMap;
+ use std::sync::Arc;
+ 
+ use arrow::datatypes::{DataType, FieldRef};
+@@ -9,7 +8,6 @@ use datafusion_common::{DataFusionError, Result, ScalarValue, plan_err};
+ use datafusion_expr::{
+     ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDFImpl, Signature, Volatility,
+ };
+-use sail_common_datafusion::error::StructuredSparkError;
+ 
+ use crate::error::{invalid_arg_count_exec_err, unsupported_data_type_exec_err};
+ 
+@@ -59,29 +57,11 @@ impl SparkAnsiStringCast {
+     }
+ 
+     fn invalid_input(&self, value: &str) -> DataFusionError {
+-        let expression = format!("'{}'", value.replace('\\', "\\\\").replace('\'', "\\'"));
+-        let source_type = "\"STRING\"";
+-        let target_type = format!("\"{}\"", self.sql_target);
+-        let message = format!(
+-            "The value {expression} of the type {source_type} cannot be cast to {target_type} because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+-        );
+-        DataFusionError::External(Box::new(StructuredSparkError {
+-            class: if self.target_type == DataType::Boolean {
+-                "org.apache.spark.SparkRuntimeException"
+-            } else {
+-                "java.lang.NumberFormatException"
+-            }
+-            .into(),
+-            condition: "CAST_INVALID_INPUT".into(),
+-            sql_state: "22018".into(),
+-            message,
+-            parameters: HashMap::from([
+-                ("expression".into(), expression),
+-                ("sourceType".into(), source_type.into()),
+-                ("targetType".into(), target_type),
+-                ("ansiConfig".into(), "\"spark.sql.ansi.enabled\"".into()),
+-            ]),
+-        }))
++        super::cast_error::invalid_string_cast(
++            value,
++            &self.sql_target,
++            self.target_type == DataType::Boolean,
++        )
+     }
+ 
+     fn failed_value(&self, input: &ColumnarValue) -> Result<Option<String>> {
+diff --git a/crates/sail-function/src/scalar/spark_ansi_string_cast/tests.rs b/crates/sail-function/src/scalar/spark_ansi_string_cast/tests.rs
+index 0d2861ab5..804f269c8 100644
+--- a/crates/sail-function/src/scalar/spark_ansi_string_cast/tests.rs
++++ b/crates/sail-function/src/scalar/spark_ansi_string_cast/tests.rs
+@@ -1,3 +1,5 @@
++use std::collections::HashMap;
++
+ use arrow::array::{ArrayRef, StringArray};
+ use arrow::datatypes::{Field, Schema};
+ use datafusion_common::config::ConfigOptions;
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal.rs b/crates/sail-function/src/scalar/spark_string_to_decimal.rs
+new file mode 100644
+index 000000000..b27192c3d
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal.rs
+@@ -0,0 +1,192 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use arrow::array::Decimal128Array;
++use arrow::datatypes::{DataType, Decimal128Type, FieldRef, validate_decimal_precision_and_scale};
++use arrow_schema::extension::{EXTENSION_TYPE_METADATA_KEY, EXTENSION_TYPE_NAME_KEY};
++use datafusion_common::cast::{as_large_string_array, as_string_array, as_string_view_array};
++use datafusion_common::{DataFusionError, Result, ScalarValue};
++use datafusion_expr::{
++    ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDFImpl, Signature, Volatility,
++};
++use sail_common_datafusion::error::StructuredSparkError;
++
++use crate::error::{invalid_arg_count_exec_err, unsupported_data_type_exec_err};
++
++mod parse;
++
++/// Spark STRING-to-DECIMAL semantics. Policies are captured at planning time;
++/// legacy CAST and TRY_CAST both use `fail_on_error = false`.
++#[derive(Debug, PartialEq, Eq, Hash)]
++pub struct SparkStringToDecimal {
++    signature: Signature,
++    precision: u8,
++    scale: i8,
++    fail_on_error: bool,
++    allow_negative_scale: bool,
++}
++
++impl SparkStringToDecimal {
++    pub fn try_new(
++        precision: u8,
++        scale: i8,
++        fail_on_error: bool,
++        allow_negative_scale: bool,
++    ) -> Result<Self> {
++        validate_decimal_precision_and_scale::<Decimal128Type>(precision, scale)?;
++        Ok(Self {
++            signature: Signature::uniform(
++                1,
++                vec![DataType::Utf8, DataType::LargeUtf8, DataType::Utf8View],
++                Volatility::Immutable,
++            ),
++            precision,
++            scale,
++            fail_on_error,
++            allow_negative_scale,
++        })
++    }
++
++    pub fn precision(&self) -> u8 {
++        self.precision
++    }
++    pub fn scale(&self) -> i8 {
++        self.scale
++    }
++    pub fn fail_on_error(&self) -> bool {
++        self.fail_on_error
++    }
++    /// This policy also changes range classification for positive-scale targets:
++    /// Spark permits a parsed negative scale beyond 38 integral digits when set.
++    pub fn allow_negative_scale(&self) -> bool {
++        self.allow_negative_scale
++    }
++
++    fn cast_value(&self, value: Option<&str>) -> Result<Option<i128>> {
++        let Some(value) = value else {
++            return Ok(None);
++        };
++        match parse::cast(value, self.precision, self.scale, self.allow_negative_scale) {
++            Ok(result) => Ok(Some(result)),
++            Err(_) if !self.fail_on_error => Ok(None),
++            Err(parse::CastError::Invalid) => Err(super::cast_error::invalid_string_cast(
++                value,
++                &format!("DECIMAL({},{})", self.precision, self.scale),
++                false,
++            )),
++            Err(parse::CastError::UnsupportedRange) => {
++                Err(DataFusionError::External(Box::new(StructuredSparkError {
++                    class: "org.apache.spark.SparkArithmeticException".into(),
++                    condition: "NUMERIC_OUT_OF_SUPPORTED_RANGE".into(),
++                    sql_state: "22003".into(),
++                    message: format!(
++                        "The value {value} cannot be interpreted as a numeric since it has more than 38 digits."
++                    ),
++                    parameters: HashMap::from([("value".into(), value.into())]),
++                })))
++            }
++            Err(parse::CastError::Overflow(decimal)) => {
++                let value = decimal.error_value();
++                Err(DataFusionError::External(Box::new(StructuredSparkError {
++                    class: "org.apache.spark.SparkArithmeticException".into(),
++                    condition: "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION".into(),
++                    sql_state: "22003".into(),
++                    message: format!(
++                        "{value} cannot be represented as Decimal({}, {}). If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error, and return NULL instead.",
++                        self.precision, self.scale
++                    ),
++                    parameters: HashMap::from([
++                        ("value".into(), value),
++                        ("precision".into(), self.precision.to_string()),
++                        ("scale".into(), self.scale.to_string()),
++                        ("config".into(), "\"spark.sql.ansi.enabled\"".into()),
++                    ]),
++                })))
++            }
++        }
++    }
++
++    fn cast_array<'a>(
++        &self,
++        values: impl Iterator<Item = Option<&'a str>>,
++    ) -> Result<ColumnarValue> {
++        let values = values
++            .map(|v| self.cast_value(v))
++            .collect::<Result<Vec<_>>>()?;
++        Ok(ColumnarValue::Array(Arc::new(
++            Decimal128Array::from(values).with_precision_and_scale(self.precision, self.scale)?,
++        )))
++    }
++}
++
++impl ScalarUDFImpl for SparkStringToDecimal {
++    fn name(&self) -> &str {
++        "spark_string_to_decimal"
++    }
++    fn signature(&self) -> &Signature {
++        &self.signature
++    }
++    fn return_type(&self, _arg_types: &[DataType]) -> Result<DataType> {
++        Ok(DataType::Decimal128(self.precision, self.scale))
++    }
++    fn return_field_from_args(&self, args: ReturnFieldArgs) -> Result<FieldRef> {
++        let [input] = args.arg_fields else {
++            return Err(invalid_arg_count_exec_err(
++                self.name(),
++                (1, 1),
++                args.arg_fields.len(),
++            ));
++        };
++        let mut metadata = input.metadata().clone();
++        metadata.remove(EXTENSION_TYPE_NAME_KEY);
++        metadata.remove(EXTENSION_TYPE_METADATA_KEY);
++        Ok(Arc::new(
++            input
++                .as_ref()
++                .clone()
++                .with_name(self.name())
++                .with_data_type(DataType::Decimal128(self.precision, self.scale))
++                .with_nullable(true)
++                .with_metadata(metadata),
++        ))
++    }
++    fn invoke_with_args(&self, args: ScalarFunctionArgs) -> Result<ColumnarValue> {
++        let [input] = args.args.as_slice() else {
++            return Err(invalid_arg_count_exec_err(
++                self.name(),
++                (1, 1),
++                args.args.len(),
++            ));
++        };
++        if !matches!(
++            input.data_type(),
++            DataType::Utf8 | DataType::LargeUtf8 | DataType::Utf8View
++        ) {
++            return Err(unsupported_data_type_exec_err(
++                self.name(),
++                "STRING",
++                &input.data_type(),
++            ));
++        }
++        match input {
++            ColumnarValue::Scalar(value) => Ok(ColumnarValue::Scalar(ScalarValue::Decimal128(
++                self.cast_value(value.try_as_str().flatten())?,
++                self.precision,
++                self.scale,
++            ))),
++            ColumnarValue::Array(array) => match array.data_type() {
++                DataType::Utf8 => self.cast_array(as_string_array(array)?.iter()),
++                DataType::LargeUtf8 => self.cast_array(as_large_string_array(array)?.iter()),
++                DataType::Utf8View => self.cast_array(as_string_view_array(array)?.iter()),
++                _ => Err(unsupported_data_type_exec_err(
++                    self.name(),
++                    "STRING",
++                    array.data_type(),
++                )),
++            },
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs b/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
+new file mode 100644
+index 000000000..553815e2f
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
+@@ -0,0 +1,183 @@
++//! Java BigDecimal's string grammar and Spark's bounded HALF_UP rescaling.
++//! Work and storage depend on the input length and target precision, never on
++//! the magnitude of the exponent. Java parses UTF-16 chars, not code points.
++
++#[derive(Debug)]
++pub(super) struct Decimal {
++    negative: bool,
++    digits: Vec<u8>,
++    scale: i32,
++}
++
++#[derive(Debug)]
++pub(super) enum CastError {
++    Invalid,
++    UnsupportedRange,
++    Overflow(Decimal),
++}
++
++// Character.digit(char, 10): these BMP blocks each contain exactly 0..9.
++// Verified exhaustively against JDK20.0.2's 65536 char values. Supplementary
++// digits are surrogate pairs in Java and are not accepted by BigDecimal.
++const DIGIT_STARTS: [u32; 37] = [
++    48, 1632, 1776, 1984, 2406, 2534, 2662, 2790, 2918, 3046, 3174, 3302, 3430, 3558, 3664, 3792,
++    3872, 4160, 4240, 6112, 6160, 6470, 6608, 6784, 6800, 6992, 7088, 7232, 7248, 42528, 43216,
++    43264, 43472, 43504, 43600, 44016, 65296,
++];
++
++fn digit(c: char) -> Option<u8> {
++    if c.is_ascii_digit() {
++        return Some(c as u8 - b'0');
++    }
++    let code = u32::from(c);
++    DIGIT_STARTS
++        .iter()
++        .find_map(|&start| code.checked_sub(start).filter(|&d| d < 10).map(|d| d as u8))
++}
++
++impl Decimal {
++    fn parse(input: &str) -> Result<Self, CastError> {
++        let mut chars = input.trim_matches(|c| c <= '\u{20}').chars().peekable();
++        let negative = match chars.peek() {
++            Some('-') => {
++                chars.next();
++                true
++            }
++            Some('+') => {
++                chars.next();
++                false
++            }
++            _ => false,
++        };
++        let mut digits = Vec::new();
++        let mut point = false;
++        let mut fraction = 0_i64;
++        while let Some(&c) = chars.peek() {
++            if let Some(d) = digit(c) {
++                digits.push(d);
++                if point {
++                    fraction += 1;
++                }
++            } else if c == '.' && !point {
++                point = true;
++            } else {
++                break;
++            }
++            chars.next();
++        }
++        if digits.is_empty() {
++            return Err(CastError::Invalid);
++        }
++        let mut exponent = 0_i64;
++        if matches!(chars.peek(), Some('e' | 'E')) {
++            chars.next();
++            let negative_exponent = match chars.peek() {
++                Some('-') => {
++                    chars.next();
++                    true
++                }
++                Some('+') => {
++                    chars.next();
++                    false
++                }
++                _ => false,
++            };
++            let mut any = false;
++            let mut significant = 0;
++            for c in chars.by_ref() {
++                let d = digit(c).ok_or(CastError::Invalid)?;
++                any = true;
++                if d != 0 || significant != 0 {
++                    significant += 1;
++                }
++                // BigDecimal.parseExp permits ten significant exponent digits.
++                if significant > 10 {
++                    return Err(CastError::Invalid);
++                }
++                exponent = exponent * 10 + i64::from(d);
++            }
++            if !any {
++                return Err(CastError::Invalid);
++            }
++            if negative_exponent {
++                exponent = -exponent;
++            }
++        }
++        if chars.next().is_some() {
++            return Err(CastError::Invalid);
++        }
++        let scale = fraction
++            .checked_sub(exponent)
++            .and_then(|s| i32::try_from(s).ok())
++            .ok_or(CastError::Invalid)?;
++        let leading = digits.iter().position(|&d| d != 0).unwrap_or(digits.len());
++        digits.drain(..leading);
++        Ok(Self {
++            negative,
++            digits,
++            scale,
++        })
++    }
++
++    pub(super) fn error_value(&self) -> String {
++        let digits: String = self.digits.iter().map(|d| char::from(b'0' + d)).collect();
++        let sign = if self.negative { "-" } else { "" };
++        // Spark DataTypeErrors uses plain notation except below scale -1000.
++        if self.scale < -1000 {
++            let exponent = self.digits.len() as i64 - 1 - i64::from(self.scale);
++            let (first, rest) = digits.split_at(1);
++            if rest.is_empty() {
++                format!("{sign}{first}E+{exponent}")
++            } else {
++                format!("{sign}{first}.{rest}E+{exponent}")
++            }
++        } else if self.scale <= 0 {
++            format!(
++                "{sign}{digits}{}",
++                "0".repeat((-i64::from(self.scale)) as usize)
++            )
++        } else {
++            let scale = self.scale as usize;
++            if scale >= digits.len() {
++                format!("{sign}0.{}{digits}", "0".repeat(scale - digits.len()))
++            } else {
++                let (whole, fraction) = digits.split_at(digits.len() - scale);
++                format!("{sign}{whole}.{fraction}")
++            }
++        }
++    }
++}
++
++pub(super) fn cast(
++    input: &str,
++    precision: u8,
++    scale: i8,
++    allow_negative_scale: bool,
++) -> Result<i128, CastError> {
++    let decimal = Decimal::parse(input)?;
++    if decimal.digits.is_empty() {
++        return Ok(0);
++    }
++    if !allow_negative_scale && decimal.digits.len() as i128 - i128::from(decimal.scale) > 38 {
++        return Err(CastError::UnsupportedRange);
++    }
++    let kept = decimal.digits.len() as i128 + i128::from(scale) - i128::from(decimal.scale);
++    if kept < 0 {
++        return Ok(0);
++    }
++    if kept > i128::from(precision) {
++        return Err(CastError::Overflow(decimal));
++    }
++    let kept = kept as usize;
++    let mut value = 0_i128;
++    for index in 0..kept {
++        value = value * 10 + i128::from(decimal.digits.get(index).copied().unwrap_or(0));
++    }
++    if decimal.digits.get(kept).is_some_and(|&d| d >= 5) {
++        value += 1;
++    }
++    if value >= 10_i128.pow(u32::from(precision)) {
++        return Err(CastError::Overflow(decimal));
++    }
++    Ok(if decimal.negative { -value } else { value })
++}
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/tests.rs b/crates/sail-function/src/scalar/spark_string_to_decimal/tests.rs
+new file mode 100644
+index 000000000..b88ea5b8f
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/tests.rs
+@@ -0,0 +1,176 @@
++use arrow::array::{Array, StringArray};
++use arrow::datatypes::Field;
++use datafusion_common::config::ConfigOptions;
++use datafusion_common::exec_err;
++use sail_common_datafusion::error::{
++    CommonErrorCause, PythonErrorCause, PythonErrorCauseExtractor,
++};
++
++use super::*;
++
++mod boundaries;
++
++struct NoPython;
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++
++fn invoke(function: &SparkStringToDecimal, input: ColumnarValue) -> Result<ColumnarValue> {
++    let rows = match &input {
++        ColumnarValue::Array(a) => a.len(),
++        _ => 1,
++    };
++    function.invoke_with_args(ScalarFunctionArgs {
++        arg_fields: vec![Arc::new(Field::new("source", input.data_type(), true))],
++        args: vec![input],
++        number_rows: rows,
++        return_field: Arc::new(Field::new(
++            "result",
++            DataType::Decimal128(function.precision(), function.scale()),
++            true,
++        )),
++        config_options: Arc::new(ConfigOptions::default()),
++    })
++}
++
++#[derive(serde::Deserialize)]
++struct Case {
++    source: Option<String>,
++    precision: u8,
++    scale: i8,
++    fail_on_error: bool,
++    #[serde(default)]
++    allow_negative_scale: bool,
++    expected: Option<i128>,
++    condition: Option<String>,
++    sql_state: Option<String>,
++    parameters: HashMap<String, String>,
++}
++
++fn assert_case(result: Result<ColumnarValue>, case: &Case, scalar: bool) -> Result<()> {
++    match (result, &case.condition) {
++        (Err(error), Some(condition)) => {
++            let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error)
++            else {
++                return exec_err!("missing structured decimal error: {error}");
++            };
++            assert_eq!(&error.condition, condition);
++            assert_eq!(Some(&error.sql_state), case.sql_state.as_ref());
++            assert_eq!(error.parameters, case.parameters);
++            assert_eq!(
++                error.class,
++                if condition == "CAST_INVALID_INPUT" {
++                    "java.lang.NumberFormatException"
++                } else {
++                    "org.apache.spark.SparkArithmeticException"
++                }
++            );
++        }
++        (Ok(value), None) => {
++            assert_eq!(matches!(value, ColumnarValue::Scalar(_)), scalar);
++            let value = match value {
++                ColumnarValue::Scalar(v) => v,
++                ColumnarValue::Array(a) => ScalarValue::try_from_array(&a, 0)?,
++            };
++            assert_eq!(
++                value,
++                ScalarValue::Decimal128(case.expected, case.precision, case.scale),
++                "{:?}",
++                case.source
++            );
++        }
++        (result, condition) => {
++            return exec_err!(
++                "decimal outcome mismatch for {:?}: {result:?} vs {condition:?}",
++                case.source
++            );
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn spark_421_contract_matches_scalars_and_arrays_for_all_string_layouts() -> Result<()> {
++    // 96 distinct policies/inputs, losslessly deduplicated from the recorded
++    // Spark 4.2.1 192-cell ANSI/legacy CAST/TRY_CAST oracle. Legacy and TRY agree.
++    let cases: Vec<Case> = serde_json::from_str(include_str!("tests/contract.json"))
++        .map_err(|e| DataFusionError::External(Box::new(e)))?;
++    assert_eq!(cases.len(), 96);
++    check_cases(cases)
++}
++
++#[test]
++fn spark_421_negative_scale_policy_contract_matches_all_string_layouts() -> Result<()> {
++    let cases: Vec<Case> = serde_json::from_str(include_str!("tests/policy-contract.json"))
++        .map_err(|e| DataFusionError::External(Box::new(e)))?;
++    assert_eq!(cases.len(), 32);
++    check_cases(cases)
++}
++
++fn check_cases(cases: Vec<Case>) -> Result<()> {
++    for case in cases {
++        let function =
++            SparkStringToDecimal::try_new(case.precision, case.scale, case.fail_on_error, false)?;
++        for source in [DataType::Utf8, DataType::LargeUtf8, DataType::Utf8View] {
++            let scalar = ColumnarValue::Scalar(ScalarValue::Utf8(case.source.clone()))
++                .cast_to(&source, None)?;
++            assert_case(invoke(&function, scalar), &case, true)?;
++            let array =
++                ColumnarValue::Array(Arc::new(StringArray::from(vec![case.source.as_deref()])))
++                    .cast_to(&source, None)?;
++            assert_case(invoke(&function, array), &case, false)?;
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn arrays_preserve_nulls_slices_empty_batches_and_first_error() -> Result<()> {
++    for source in [DataType::Utf8, DataType::LargeUtf8, DataType::Utf8View] {
++        let values = ColumnarValue::Array(Arc::new(StringArray::from(vec![
++            Some("unused"),
++            Some("1.235"),
++            None,
++            Some("bad"),
++            Some("2e1"),
++        ])))
++        .cast_to(&source, None)?
++        .into_array(5)?;
++        let function = SparkStringToDecimal::try_new(5, 2, false, false)?;
++        for array in [values.clone(), values.slice(1, 4), values.slice(0, 0)] {
++            let result = invoke(&function, ColumnarValue::Array(Arc::clone(&array)))?
++                .into_array(array.len())?;
++            let expected = if array.len() == 5 {
++                vec![None, Some(124), None, None, Some(2000)]
++            } else if array.is_empty() {
++                vec![]
++            } else {
++                vec![Some(124), None, None, Some(2000)]
++            };
++            assert_eq!(
++                result.as_ref(),
++                &Decimal128Array::from(expected).with_precision_and_scale(5, 2)? as &dyn Array
++            );
++        }
++        let strict = SparkStringToDecimal::try_new(5, 2, true, false)?;
++        let values = ColumnarValue::Array(Arc::new(StringArray::from(vec![
++            None,
++            Some("first"),
++            Some("second"),
++        ])))
++        .cast_to(&source, None)?;
++        let error = invoke(&strict, values)
++            .err()
++            .ok_or_else(|| datafusion_common::exec_datafusion_err!("expected first invalid row"))?;
++        let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error) else {
++            return exec_err!("unstructured: {error}");
++        };
++        assert_eq!(
++            error.parameters.get("expression").map(String::as_str),
++            Some("'first'")
++        );
++    }
++    Ok(())
++}
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/tests/boundaries.rs b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/boundaries.rs
+new file mode 100644
+index 000000000..eaafcade7
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/boundaries.rs
+@@ -0,0 +1,207 @@
++use datafusion_expr::expr::HigherOrderFunction;
++use datafusion_expr::{Expr, HigherOrderUDF, ScalarUDF, lambda, lit};
++use sail_common_datafusion::literal::LiteralEvaluator;
++
++use super::*;
++use crate::scalar::math::div_mod_lazy::SparkDivModLazy;
++
++#[test]
++fn java_bmp_digit_mapping_and_surrogate_pair_rejection() -> Result<()> {
++    #[derive(serde::Deserialize)]
++    struct Mapping {
++        starts: Vec<u32>,
++        java_version: String,
++        bmp_mapping_verified: bool,
++    }
++    let mapping: Mapping = serde_json::from_str(include_str!("digit-mapping.json"))
++        .map_err(|e| DataFusionError::External(Box::new(e)))?;
++    assert_eq!(mapping.java_version, "20.0.2");
++    assert!(mapping.bmp_mapping_verified);
++    assert_eq!(mapping.starts.len(), 37);
++    for code in 0..=65535 {
++        let Some(c) = char::from_u32(code) else {
++            continue;
++        };
++        let expected = mapping
++            .starts
++            .iter()
++            .find_map(|&start| code.checked_sub(start).filter(|&d| d < 10));
++        match super::super::parse::cast(&c.to_string(), 1, 0, false) {
++            Ok(value) => assert_eq!(Some(value), expected.map(i128::from), "U+{code:04X}"),
++            Err(super::super::parse::CastError::Invalid) => {
++                assert!(expected.is_none(), "U+{code:04X}")
++            }
++            other => {
++                return exec_err!("unexpected single-character result U+{code:04X}: {other:?}");
++            }
++        }
++    }
++    for s in ["𝟙", "𐒡", "𞥐", "①", "²"] {
++        assert!(matches!(
++            super::super::parse::cast(s, 5, 2, false),
++            Err(super::super::parse::CastError::Invalid)
++        ));
++    }
++    Ok(())
++}
++
++#[test]
++fn exponent_scale_limits_and_rounding_are_bounded() -> Result<()> {
++    let f = SparkStringToDecimal::try_new(38, 2, true, false)?;
++    for s in [
++        "0e2147483648",
++        "0.0e2147483649",
++        "0.00e2147483650",
++        "0e-2147483647",
++        "1e-2147483647",
++        "0e000000000000000000000000001",
++    ] {
++        assert_eq!(f.cast_value(Some(s))?, Some(0), "{s}");
++    }
++    for s in [
++        "0e2147483649",
++        "0e-2147483648",
++        "1e99999999999",
++        "1e-99999999999",
++        "1e",
++        "1e+",
++        "1e-",
++        "1.2.3",
++        "+",
++        "-",
++        ".",
++        "++1",
++    ] {
++        let error = f.cast_value(Some(s)).err().ok_or_else(|| {
++            datafusion_common::exec_datafusion_err!("accepted malformed exponent {s}")
++        })?;
++        let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error) else {
++            return exec_err!("unstructured {s}: {error}");
++        };
++        assert_eq!(error.condition, "CAST_INVALID_INPUT", "{s}");
++    }
++    for (s, expected) in [
++        ("000.005", 1),
++        ("-000.005", -1),
++        ("1.234", 123),
++        ("-1.235", -124),
++    ] {
++        assert_eq!(f.cast_value(Some(s))?, Some(expected));
++    }
++    let tiny = format!("0.{}5", "0".repeat(1000));
++    assert_eq!(f.cast_value(Some(&tiny))?, Some(0));
++    let f = SparkStringToDecimal::try_new(38, 0, true, false)?;
++    let maximum = "9".repeat(38);
++    assert_eq!(f.cast_value(Some(&maximum))?, Some(10_i128.pow(38) - 1));
++    let f = SparkStringToDecimal::try_new(38, 38, true, false)?;
++    assert_eq!(
++        f.cast_value(Some(&format!("0.{maximum}")))?,
++        Some(10_i128.pow(38) - 1)
++    );
++    assert!(f.cast_value(Some(&format!("0.{maximum}5"))).is_err());
++    Ok(())
++}
++
++#[test]
++fn negative_scale_policy_changes_range_errors_and_overflow_display() -> Result<()> {
++    for (allow, condition) in [
++        (false, "NUMERIC_OUT_OF_SUPPORTED_RANGE"),
++        (true, "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION"),
++    ] {
++        let f = SparkStringToDecimal::try_new(5, 2, true, allow)?;
++        let error = f
++            .cast_value(Some("1e39"))
++            .err()
++            .ok_or_else(|| datafusion_common::exec_datafusion_err!("expected range error"))?;
++        let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error) else {
++            return exec_err!("unstructured: {error}");
++        };
++        assert_eq!(error.condition, condition);
++        assert_eq!(
++            error.parameters.get("value"),
++            Some(&if allow {
++                format!("1{}", "0".repeat(39))
++            } else {
++                "1e39".into()
++            })
++        );
++    }
++    let f = SparkStringToDecimal::try_new(5, 2, true, true)?;
++    for (source, expected) in [
++        ("0001000.000", "1000.000"),
++        ("-1e1001", "-1E+1001"),
++        ("1.230e2147483648", "1.230E+2147483648"),
++    ] {
++        let error = f
++            .cast_value(Some(source))
++            .err()
++            .ok_or_else(|| datafusion_common::exec_datafusion_err!("expected overflow"))?;
++        let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error) else {
++            return exec_err!("unstructured: {error}");
++        };
++        assert_eq!(
++            error.parameters.get("value").map(String::as_str),
++            Some(expected)
++        );
++    }
++    // Negative target-scale acceptance is a resolver/config decision. The pure
++    // UDF handles the Arrow type; its flag governs parsed input range policy.
++    let f = SparkStringToDecimal::try_new(5, -2, true, false)?;
++    assert_eq!(f.cast_value(Some("149"))?, Some(1));
++    assert_eq!(f.cast_value(Some("150"))?, Some(2));
++    assert_eq!(f.cast_value(Some("-150"))?, Some(-2));
++    Ok(())
++}
++
++#[test]
++fn fields_are_nullable_type_only_and_preserve_nonextension_metadata() -> Result<()> {
++    for fail in [true, false] {
++        for nullable in [true, false] {
++            let f = SparkStringToDecimal::try_new(5, 2, fail, false)?;
++            assert_eq!(f.signature().volatility, Volatility::Immutable);
++            let input = Arc::new(
++                Field::new("source", DataType::Utf8, nullable).with_metadata(HashMap::from([
++                    ("comment".into(), "retained".into()),
++                    (EXTENSION_TYPE_NAME_KEY.into(), "arrow.json".into()),
++                    (EXTENSION_TYPE_METADATA_KEY.into(), "{}".into()),
++                ])),
++            );
++            let bad = ScalarValue::Utf8(Some("bad".into()));
++            let field = f.return_field_from_args(ReturnFieldArgs {
++                arg_fields: &[input],
++                scalar_arguments: &[Some(&bad)],
++            })?;
++            assert_eq!(field.data_type(), &DataType::Decimal128(5, 2));
++            assert!(field.is_nullable());
++            assert_eq!(
++                field.metadata(),
++                &HashMap::from([("comment".into(), "retained".into())])
++            );
++        }
++    }
++    for (p, s) in [(0, 0), (39, 0), (5, 6)] {
++        assert!(SparkStringToDecimal::try_new(p, s, true, false).is_err());
++    }
++    let f = SparkStringToDecimal::try_new(5, 2, true, false)?;
++    assert!(invoke(&f, ColumnarValue::Scalar(ScalarValue::Int32(Some(1)))).is_err());
++    Ok(())
++}
++
++#[test]
++fn typed_failing_decimal_stays_skipped_in_the_ordered_literal_evaluator() -> Result<()> {
++    let cast =
++        ScalarUDF::from(SparkStringToDecimal::try_new(5, 2, true, false)?).call(vec![lit("bad")]);
++    let expression = Expr::HigherOrderFunction(HigherOrderFunction::new(
++        Arc::new(HigherOrderUDF::new_from_impl(SparkDivModLazy::new(true))),
++        vec![
++            lambda(["unused_r"], lit(ScalarValue::Int32(None))),
++            lambda(["unused_l"], cast),
++            lambda(["l", "r"], lit(7)),
++        ],
++    ));
++    assert_eq!(
++        LiteralEvaluator::new().evaluate(&expression)?,
++        ScalarValue::Int32(None)
++    );
++    Ok(())
++}
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/tests/contract.json b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/contract.json
+new file mode 100644
+index 000000000..841189e22
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/contract.json
+@@ -0,0 +1,98 @@
++[
++{"source":null,"precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"bad","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(5,2)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'bad'"}},
++{"source":"","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(5,2)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"''"}},
++{"source":"1.235","precision":5,"scale":2,"fail_on_error":true,"expected":124,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.245","precision":5,"scale":2,"fail_on_error":true,"expected":125,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"-1.235","precision":5,"scale":2,"fail_on_error":true,"expected":-124,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.994","precision":5,"scale":2,"fail_on_error":true,"expected":99999,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.995","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"config":"\"spark.sql.ansi.enabled\"","precision":"5","value":"999.995","scale":"2"}},
++{"source":"99999.999","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"config":"\"spark.sql.ansi.enabled\"","precision":"5","value":"99999.999","scale":"2"}},
++{"source":"1e3","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"config":"\"spark.sql.ansi.enabled\"","precision":"5","value":"1000","scale":"2"}},
++{"source":"123456","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"config":"\"spark.sql.ansi.enabled\"","precision":"5","value":"123456","scale":"2"}},
++{"source":"1e400","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e400"}},
++{"source":"9999999999999999999999999999999999999999","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"9999999999999999999999999999999999999999"}},
++{"source":"NaN","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(5,2)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'NaN'"}},
++{"source":"1.0f","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(5,2)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'1.0f'"}},
++{"source":"0x1.0p2","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(5,2)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'0x1.0p2'"}},
++{"source":" 1.2 ","precision":5,"scale":2,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(5,2)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"' 1.2 '"}},
++{"source":"１２.３","precision":5,"scale":2,"fail_on_error":true,"expected":1230,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"١٢.٣","precision":5,"scale":2,"fail_on_error":true,"expected":1230,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e٢","precision":5,"scale":2,"fail_on_error":true,"expected":10000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483647","precision":5,"scale":2,"fail_on_error":true,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483648","precision":5,"scale":2,"fail_on_error":true,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0.00000000000000000000000000000000000000001","precision":5,"scale":2,"fail_on_error":true,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"\u00001.2\u0000","precision":5,"scale":2,"fail_on_error":true,"expected":120,"condition":null,"sql_state":null,"parameters":{}},
++{"source":null,"precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"bad","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.235","precision":5,"scale":2,"fail_on_error":false,"expected":124,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.245","precision":5,"scale":2,"fail_on_error":false,"expected":125,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"-1.235","precision":5,"scale":2,"fail_on_error":false,"expected":-124,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.994","precision":5,"scale":2,"fail_on_error":false,"expected":99999,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.995","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"99999.999","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e3","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"123456","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e400","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"9999999999999999999999999999999999999999","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"NaN","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.0f","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0x1.0p2","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":" 1.2 ","precision":5,"scale":2,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"１２.３","precision":5,"scale":2,"fail_on_error":false,"expected":1230,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"١٢.٣","precision":5,"scale":2,"fail_on_error":false,"expected":1230,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e٢","precision":5,"scale":2,"fail_on_error":false,"expected":10000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483647","precision":5,"scale":2,"fail_on_error":false,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483648","precision":5,"scale":2,"fail_on_error":false,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0.00000000000000000000000000000000000000001","precision":5,"scale":2,"fail_on_error":false,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"\u00001.2\u0000","precision":5,"scale":2,"fail_on_error":false,"expected":120,"condition":null,"sql_state":null,"parameters":{}},
++{"source":null,"precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"bad","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(38,10)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'bad'"}},
++{"source":"","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(38,10)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"''"}},
++{"source":"1.235","precision":38,"scale":10,"fail_on_error":true,"expected":12350000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.245","precision":38,"scale":10,"fail_on_error":true,"expected":12450000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"-1.235","precision":38,"scale":10,"fail_on_error":true,"expected":-12350000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.994","precision":38,"scale":10,"fail_on_error":true,"expected":9999940000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.995","precision":38,"scale":10,"fail_on_error":true,"expected":9999950000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"99999.999","precision":38,"scale":10,"fail_on_error":true,"expected":999999990000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e3","precision":38,"scale":10,"fail_on_error":true,"expected":10000000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"123456","precision":38,"scale":10,"fail_on_error":true,"expected":1234560000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e400","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e400"}},
++{"source":"9999999999999999999999999999999999999999","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"9999999999999999999999999999999999999999"}},
++{"source":"NaN","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(38,10)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'NaN'"}},
++{"source":"1.0f","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(38,10)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'1.0f'"}},
++{"source":"0x1.0p2","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(38,10)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"'0x1.0p2'"}},
++{"source":" 1.2 ","precision":38,"scale":10,"fail_on_error":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","targetType":"\"DECIMAL(38,10)\"","ansiConfig":"\"spark.sql.ansi.enabled\"","expression":"' 1.2 '"}},
++{"source":"１２.３","precision":38,"scale":10,"fail_on_error":true,"expected":123000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"١٢.٣","precision":38,"scale":10,"fail_on_error":true,"expected":123000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e٢","precision":38,"scale":10,"fail_on_error":true,"expected":1000000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483647","precision":38,"scale":10,"fail_on_error":true,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483648","precision":38,"scale":10,"fail_on_error":true,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0.00000000000000000000000000000000000000001","precision":38,"scale":10,"fail_on_error":true,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"\u00001.2\u0000","precision":38,"scale":10,"fail_on_error":true,"expected":12000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":null,"precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"bad","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.235","precision":38,"scale":10,"fail_on_error":false,"expected":12350000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.245","precision":38,"scale":10,"fail_on_error":false,"expected":12450000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"-1.235","precision":38,"scale":10,"fail_on_error":false,"expected":-12350000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.994","precision":38,"scale":10,"fail_on_error":false,"expected":9999940000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"999.995","precision":38,"scale":10,"fail_on_error":false,"expected":9999950000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"99999.999","precision":38,"scale":10,"fail_on_error":false,"expected":999999990000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e3","precision":38,"scale":10,"fail_on_error":false,"expected":10000000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"123456","precision":38,"scale":10,"fail_on_error":false,"expected":1234560000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e400","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"9999999999999999999999999999999999999999","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"NaN","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1.0f","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0x1.0p2","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":" 1.2 ","precision":38,"scale":10,"fail_on_error":false,"expected":null,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"１２.３","precision":38,"scale":10,"fail_on_error":false,"expected":123000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"١٢.٣","precision":38,"scale":10,"fail_on_error":false,"expected":123000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e٢","precision":38,"scale":10,"fail_on_error":false,"expected":1000000000000,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483647","precision":38,"scale":10,"fail_on_error":false,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0e2147483648","precision":38,"scale":10,"fail_on_error":false,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"0.00000000000000000000000000000000000000001","precision":38,"scale":10,"fail_on_error":false,"expected":0,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"\u00001.2\u0000","precision":38,"scale":10,"fail_on_error":false,"expected":12000000000,"condition":null,"sql_state":null,"parameters":{}}
++]
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/tests/digit-mapping.json b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/digit-mapping.json
+new file mode 100644
+index 000000000..a92cdaa85
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/digit-mapping.json
+@@ -0,0 +1 @@
++{"java_version":"20.0.2","starts":[48, 1632, 1776, 1984, 2406, 2534, 2662, 2790, 2918, 3046, 3174, 3302, 3430, 3558, 3664, 3792, 3872, 4160, 4240, 6112, 6160, 6470, 6608, 6784, 6800, 6992, 7088, 7232, 7248, 42528, 43216, 43264, 43472, 43504, 43600, 44016, 65296],"bmp_mapping_verified":true}
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/tests/policy-contract.json b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/policy-contract.json
+new file mode 100644
+index 000000000..020ab7051
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/tests/policy-contract.json
+@@ -0,0 +1,34 @@
++[
++{"source":"1e39","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"1000000000000000000000000000000000000000","scale":"2","precision":"5","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"1e1000","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","scale":"2","precision":"5","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"1e1001","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"1E+1001","scale":"2","precision":"5","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"1.230e2147483648","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"1.230E+2147483648","scale":"2","precision":"5","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"𝟙","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(5,2)\"","expression":"'𝟙'"}},
++{"source":"𐒡","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(5,2)\"","expression":"'𐒡'"}},
++{"source":"𞥐","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(5,2)\"","expression":"'𞥐'"}},
++{"source":"١٢.٣","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":true,"expected":1230,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e39","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"1000000000000000000000000000000000000000","scale":"0","precision":"38","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"1e1000","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","scale":"0","precision":"38","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"1e1001","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"1E+1001","scale":"0","precision":"38","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"1.230e2147483648","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION","sql_state":"22003","parameters":{"value":"1.230E+2147483648","scale":"0","precision":"38","config":"\"spark.sql.ansi.enabled\""}},
++{"source":"𝟙","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(38,0)\"","expression":"'𝟙'"}},
++{"source":"𐒡","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(38,0)\"","expression":"'𐒡'"}},
++{"source":"𞥐","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(38,0)\"","expression":"'𞥐'"}},
++{"source":"١٢.٣","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":true,"expected":12,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e39","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e39"}},
++{"source":"1e1000","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e1000"}},
++{"source":"1e1001","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e1001"}},
++{"source":"1.230e2147483648","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1.230e2147483648"}},
++{"source":"𝟙","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(5,2)\"","expression":"'𝟙'"}},
++{"source":"𐒡","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(5,2)\"","expression":"'𐒡'"}},
++{"source":"𞥐","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(5,2)\"","expression":"'𞥐'"}},
++{"source":"١٢.٣","precision":5,"scale":2,"fail_on_error":true,"allow_negative_scale":false,"expected":1230,"condition":null,"sql_state":null,"parameters":{}},
++{"source":"1e39","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e39"}},
++{"source":"1e1000","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e1000"}},
++{"source":"1e1001","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1e1001"}},
++{"source":"1.230e2147483648","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"NUMERIC_OUT_OF_SUPPORTED_RANGE","sql_state":"22003","parameters":{"value":"1.230e2147483648"}},
++{"source":"𝟙","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(38,0)\"","expression":"'𝟙'"}},
++{"source":"𐒡","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(38,0)\"","expression":"'𐒡'"}},
++{"source":"𞥐","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":null,"condition":"CAST_INVALID_INPUT","sql_state":"22018","parameters":{"sourceType":"\"STRING\"","ansiConfig":"\"spark.sql.ansi.enabled\"","targetType":"\"DECIMAL(38,0)\"","expression":"'𞥐'"}},
++{"source":"١٢.٣","precision":38,"scale":0,"fail_on_error":true,"allow_negative_scale":false,"expected":12,"condition":null,"sql_state":null,"parameters":{}}
++]

@@ -288,3 +288,30 @@ ExecutionPlan expression visitor is read-only; node rebuild and scan pushdown
 coverage still need proof. QueryPlanner can instead rewrite final logical Exprs
 before native construction, requiring audit of later physical rewrites. No seat,
 mode/default/classifier or arithmetic SQL activation is selected by this packet.
+
+
+## Callable decimal component (CF-0386–0389)
+
+Sail8a7bf8ca4d98d43437eb005dde5db5b1f024e13c adds SparkStringToDecimal
+without registration or resolver/wire/folding activation. Its
+[packet](evidence/decimal-scalar/README.md) qualifies410 function libraries,
+formatting/strictClippy, four unchanged0/1 controls, original Spark192 reduced
+to96 distinct policies plus32 fresh negative-scale-policy cases, each scalar
+and array in three string layouts. Java BMP digit mapping is exhaustive against
+JDK20 and identical under JDK17; supplementary digits are rejected as UTF16
+surrogate pairs, rather than admitting every Unicode Nd code point.
+
+The constructor captures p/s, fail_on_error and allow_negative_scale. The latter
+changes input-range errors even for positive-scale targets; it is not a third
+error mode. Negative target refusal stays resolver-owned. Parsing validates
+Java trim, grammar and i32 scale before the zero shortcut; HALF_UP rescaling is
+bounded by target precision and errors retain the correct original or canonical
+value. Fields are nullable, type-only and clear extension metadata. The shared
+invalid-string factory preserves the existing primitive caster's error contract.
+Fable6b7fe4de accepts the component without correctness findings.
+
+Next commit: worker serialization carrying all four fields and typed errors,
+then generic Sail config/type policy and exact source/conditional folding before
+SQL resolver routing. Public CLI remains qualified63f5; scalar component gates
+are not an8a7 public verdict. Add the new NUMERIC_* conditions to the audited
+raw vocabulary before this class enters any future native fast-path admission.

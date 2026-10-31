@@ -1,0 +1,29 @@
+   Compiling sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-function` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 10.95s
+     Running unittests src/lib.rs (target/debug/deps/sail_function-c1522955ea9368b7)
+
+running 1 test
+test scalar::spark_string_to_decimal::tests::spark_421_negative_scale_policy_contract_matches_all_string_layouts ... FAILED
+
+failures:
+
+---- scalar::spark_string_to_decimal::tests::spark_421_negative_scale_policy_contract_matches_all_string_layouts stdout ----
+
+thread 'scalar::spark_string_to_decimal::tests::spark_421_negative_scale_policy_contract_matches_all_string_layouts' (92029317) panicked at crates/sail-function/src/scalar/spark_string_to_decimal/tests.rs:59:13:
+assertion `left == right` failed
+  left: "NUMERIC_OUT_OF_SUPPORTED_RANGE"
+ right: "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    scalar::spark_string_to_decimal::tests::spark_421_negative_scale_policy_contract_matches_all_string_layouts
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 409 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p sail-function --lib`

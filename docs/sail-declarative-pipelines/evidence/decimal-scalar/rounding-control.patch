@@ -1,0 +1,13 @@
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs b/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
+index 553815e2f..a02b23545 100644
+--- a/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
+@@ -173,7 +173,7 @@ pub(super) fn cast(
+     for index in 0..kept {
+         value = value * 10 + i128::from(decimal.digits.get(index).copied().unwrap_or(0));
+     }
+-    if decimal.digits.get(kept).is_some_and(|&d| d >= 5) {
++    if decimal.digits.get(kept).is_some_and(|&d| d >= 6) {
+         value += 1;
+     }
+     if value >= 10_i128.pow(u32::from(precision)) {
