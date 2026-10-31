@@ -262,3 +262,11 @@ fmt/strictClippy/two controls qualify the generic increment; no production SQL
 consumer/public rerun or inventory promotion. Separate062dc4136 repairs an
 existing syntax snapshot with baseline/candidate generation equality proof.
 Counts486/116/87/399 and original reference142 stay unchanged.
+
+
+[Owned parser retentiona690e2ce9](evidence/owned-parser-diagnostics/README.md)
+qualifies394 native+syntax/fmt/strictClippy/three controls while keeping legacy
+Display and error classification. No grammar or new public-runtime verdict.
+Step3 retention precedes grammar/structured transport integration; two failed
+context fixtures are retained with exact consumed-prefix/token-span correction.
+Counts486/116/87/399 and reference142 remain unchanged.

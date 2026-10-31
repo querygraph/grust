@@ -1,0 +1,33 @@
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+warning: unused variable: `found`
+  --> crates/sail-sql-analyzer/src/error/parser.rs:48:63
+   |
+48 |                         RichReason::ExpectedFound { expected, found } => {
+   |                                                               ^^^^^ help: try ignoring the field: `found: _`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `sail-sql-analyzer` (lib test) generated 1 warning (run `cargo fix --lib -p sail-sql-analyzer --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized] target(s) in 31.19s
+     Running unittests src/lib.rs (target/debug/deps/sail_sql_analyzer-4f04600e3097c8e8)
+
+running 1 test
+test error::parser::tests::expected_found_keeps_token_and_eof_distinct ... FAILED
+
+failures:
+
+---- error::parser::tests::expected_found_keeps_token_and_eof_distinct stdout ----
+
+thread 'error::parser::tests::expected_found_keeps_token_and_eof_distinct' (93377776) panicked at crates/sail-sql-analyzer/src/error/parser/tests.rs:57:9:
+assertion `left == right` failed
+  left: None
+ right: Some("b")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    error::parser::tests::expected_found_keeps_token_and_eof_distinct
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 55 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p sail-sql-analyzer --lib`

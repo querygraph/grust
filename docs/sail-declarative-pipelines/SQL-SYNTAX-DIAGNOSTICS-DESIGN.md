@@ -128,3 +128,26 @@ and affected downstream consumers. Fable CF-0523 confirms the hook/default
 expansion and attributes the stale snapshot to earlier AST changes. TreeSyntax
 and TreeText still reflect AST fields; after custom grammar helpers, an unchanged
 syntax graph is not proof that the accepted grammar stayed unchanged.
+
+
+## Owned diagnostic retention qualified
+
+Commita690e2ce9 implements step3's owned retention before grammar integration.
+[Evidence](evidence/owned-parser-diagnostics/README.md) binds394 native tests,
+formatting/strict Clippy, syntax integration and three unchanged-test controls.
+ExpectedFound/Custom, expected/token strings, EOF, UTF8 byte spans, contexts,
+failure order and existing Display survive without a SQL-source lifetime.
+Plan/Connect retain existing string behavior in this refactor; structured
+propagation/rendering are still required. Two fixture-only native failures are
+retained: SQL grammar did not emit the assumed contexts, and an explicit Chumsky
+context covers consumed prefix0:1 separately from unexpected token1:2. Final
+assertions pin both exact ranges; no production/golden change fixed the fixtures.
+Whole INSERT/Flow grammar, raw Spark metadata and broader contexts/hints/order
+remain integration work. No public CLI or original-site promotion follows.
+
+Fable CF-0527 accepts retention and confirms Chumsky0.13 context-prefix semantics.
+Rendering additionally needs the original SQL: convert UTF8 byte offsets into
+one-based line and zero-based UTF16 column, and obtain error-token text from
+the matching source slice. Token Display uses placeholders for whitespace;
+hidden trivia must not become a reported ANTLR-style error token. Retention
+alone does not supply source text or qualify those renderer requirements.
