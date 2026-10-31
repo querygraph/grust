@@ -674,3 +674,32 @@ outcome is `INTERNAL_ERROR`, retained as a mismatch) and the empty schema,
 which also makes Spark's suggestion-less variant the expected class. The
 unbound-parameter row is a separate class difference (Sail reports a plan
 error from `evaluate_identifier_expr`'s placeholder transform), low priority.
+
+### 9.7 Units `4ab0d74bf` and candidate `19d57e262` (CF-0329)
+
+`4ab0d74bf`, read against its diff on `f0a232af2`: `resolve_catalog_name`
+now splits at the AST, the one conflation point §9.2 named. An
+`IdentifierClause` goes through `resolve_scalar_identifier_expr` in an empty
+schema with the analyzer-time flag (renamed `table_identifier` →
+`analyzer_identifier`, since both contexts keep subqueries unresolved and let
+`typeof` discard its child), so column precedence is the scalar one (§9.6)
+while the table-only `UNRESOLVED_COLUMN` remap stays in
+`resolve_table_identifier_expr`; the unwrapped form keeps the eager policy in
+`resolve_unwrapped_catalog_expression`, which is the directive policy of §9.1
+less the two CheckAnalysis-first classes; single-part parsing is shared after
+both. No change requested.
+
+`19d57e262`, candidate on `4ab0d74bf`: `resolve_statement` gains an arm that
+wraps `SparkError::Structured` errors of class
+`org.apache.spark.sql.AnalysisException` with the registration prefix, so a
+structured `UNRESOLVED_COLUMN` from a wrapped directive is reported the way
+Spark's `case e: AnalysisException` reports it, while arithmetic and cast
+failures stay `Evaluation`. Sail emits that single class string for every
+structured analysis error today (`unresolved.rs:65`, `ambiguous.rs:63`, the
+pipeline sites), so the equality test is complete now. One note, not a
+finding: Spark's `ParseException` extends `AnalysisException` and is wrapped
+by the handler; Sail's parse failures reach this arm as string analysis
+errors, but if a structured parse error with the `ParseException` class
+string (`error.rs:278`) is ever produced here, the equality test would miss
+it. A small set of analysis classes, or a predicate on the error type, would
+close that in advance.
