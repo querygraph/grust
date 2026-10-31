@@ -158,7 +158,9 @@ Accepted source is **7a32efd2a62e3668a64e21e87c3f9dc0938e1912** (parent ba0d692c
 
 **Correction:** field metadata is dropped on STREAM reads at every depth. The "preserve metadata" instruction below and in evidence/scoped-read-mode is wrong and was disproved by a real Spark run. Error-based probes cannot observe a second flow call, because the failing expression stops the first call; use a declared consumer.
 
-Next unit: analyzed view streamingness, INCOMPATIBLE_BATCH_VIEW_READ / INCOMPATIBLE_STREAMING_VIEW_READ and pipelines.incompatibleViewCheck.enabled (Spark FlowAnalysis.scala:238-255). Sail has neither check, and graph.validate uses the syntactic is_streaming_query_plan, so a batch-looking read of a streaming view is misjudged. New follow-up: named_struct reports literal fields nullable while struct() does not.
+Also accepted: **15272ec0a17070b3a9694992cc4a94ba98f572ce** (parent 7a32efd2a), analyzed view streamingness and both view read-mode errors; [evidence](docs/sail-declarative-pipelines/evidence/view-read-modes/README.md). 125+237 native, 300+67, 92 of 92 new public on Sail; 19 of 34 fail on the 7a32 binary. Its known limits are listed there.
+
+Next unit: the general public analyze/execute guard in pipeline query functions (ATTEMPT_ANALYSIS_IN_PIPELINE_QUERY_FUNCTION), which the earlier 44 Spark failures show exists and Sail has not been shown to implement. Follow-up: named_struct reports literal fields nullable while struct() does not.
 
 ## Opus stopping checkpoint and next implementation (read-mode API accepted, CF-0563)
 

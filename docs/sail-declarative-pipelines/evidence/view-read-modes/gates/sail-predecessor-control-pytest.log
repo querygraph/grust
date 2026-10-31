@@ -1,0 +1,156 @@
+F..F.FF.F..F.FF.F..F.FF..F.FF.FFFF                                       [100%]
+=================================== FAILURES ===================================
+_ test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+_ test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-None] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:42: in assert_outcome
+    assert f"[{expected}]" in " ".join([*messages, terminal]), (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INCOMPATIBLE_BATCH_VIEW_READ]' in 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`'
+E    +  where 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`' = <built-in method join of str object at 0x1051baba0>(['Starting pipeline analysis', '[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`'])
+E    +    where <built-in method join of str object at 0x1051baba0> = ' '.join
+_ test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-None] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:42: in assert_outcome
+    assert f"[{expected}]" in " ".join([*messages, terminal]), (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INCOMPATIBLE_STREAMING_VIEW_READ]' in 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'
+E    +  where 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`' = <built-in method join of str object at 0x1051baba0>(['Starting pipeline analysis', '[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'])
+E    +    where <built-in method join of str object at 0x1051baba0> = ' '.join
+_ test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+_ test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+_ test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-None] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:42: in assert_outcome
+    assert f"[{expected}]" in " ".join([*messages, terminal]), (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INCOMPATIBLE_BATCH_VIEW_READ]' in 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`'
+E    +  where 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`' = <built-in method join of str object at 0x1051baba0>(['Starting pipeline analysis', '[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`'])
+E    +    where <built-in method join of str object at 0x1051baba0> = ' '.join
+_ test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-None] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:42: in assert_outcome
+    assert f"[{expected}]" in " ".join([*messages, terminal]), (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INCOMPATIBLE_STREAMING_VIEW_READ]' in 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'
+E    +  where 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`' = <built-in method join of str object at 0x1051baba0>(['Starting pipeline analysis', '[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'])
+E    +    where <built-in method join of str object at 0x1051baba0> = ' '.join
+_ test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+_ test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+_ test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-None] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:39: in assert_outcome
+    assert terminal is None, (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] `sail`.`default`.`consumer`' is None
+_ test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-None] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:39: in assert_outcome
+    assert terminal is None, (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`' is None
+_ test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:62: in test_read_mode_against_the_analyzed_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + set_flag + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+_ test_streamingness_comes_from_the_whole_view[CREATE TEMPORARY VIEW v AS SELECT * FROM src UNION ALL SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:75: in test_streamingness_comes_from_the_whole_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:42: in assert_outcome
+    assert f"[{expected}]" in " ".join([*messages, terminal]), (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INCOMPATIBLE_STREAMING_VIEW_READ]' in 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'
+E    +  where 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`' = <built-in method join of str object at 0x1051baba0>(['Starting pipeline analysis', '[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'])
+E    +    where <built-in method join of str object at 0x1051baba0> = ' '.join
+_ test_streamingness_comes_from_the_whole_view[CREATE TEMPORARY VIEW v AS WITH c AS (SELECT * FROM STREAM(src)) SELECT * FROM c;-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ] _
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:75: in test_streamingness_comes_from_the_whole_view
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + view + consumer, expected)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:42: in assert_outcome
+    assert f"[{expected}]" in " ".join([*messages, terminal]), (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INCOMPATIBLE_STREAMING_VIEW_READ]' in 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'
+E    +  where 'Starting pipeline analysis [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`' = <built-in method join of str object at 0x1051baba0>(['Starting pipeline analysis', '[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`'])
+E    +    where <built-in method join of str object at 0x1051baba0> = ' '.join
+_________ test_streamingness_passes_through_a_batch_read_of_a_view[w] __________
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:87: in test_streamingness_passes_through_a_batch_read_of_a_view
+    assert_outcome(pipeline_spark, tmp_path, sql, None)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:39: in assert_outcome
+    assert terminal is None, (terminal, messages)
+E   AssertionError: ('[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`', ['Starting pipeline analysis'])
+E   assert '[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`consumer`' is None
+_________________ test_the_session_setting_disables_the_check __________________
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:93: in test_the_session_setting_disables_the_check
+    assert_outcome(pipeline_spark, tmp_path, SOURCE + BATCH_VIEW + STREAMING_TABLE + "STREAM(v)", BATCH_FLOW)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+____________ test_a_view_setting_does_not_exempt_its_own_first_read ____________
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:100: in test_a_view_setting_does_not_exempt_its_own_first_read
+    assert_outcome(pipeline_spark, tmp_path, sql, BATCH_READ)
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:41: in assert_outcome
+    assert terminal is not None
+E   assert None is not None
+___________ test_an_invalid_setting_fails_only_a_flow_reading_a_view ___________
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:106: in test_an_invalid_setting_fails_only_a_flow_reading_a_view
+    assert terminal is not None
+E   assert None is not None
+________________ test_error_identifies_the_view_and_the_setting ________________
+python/pysail/tests/spark/pipelines/test_view_read_modes.py:117: in test_error_identifies_the_view_and_the_setting
+    assert any(expected in message for message in messages), messages
+E   AssertionError: ['Starting pipeline analysis', 'Pipeline run completed']
+E   assert False
+E    +  where False = any(<generator object test_error_identifies_the_view_and_the_setting.<locals>.<genexpr> at 0x11951acf0>)
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-None]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-None]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[None-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-None]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-None]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[true-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM src;-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)-INCOMPATIBLE_BATCH_VIEW_READ-None]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-None]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_read_mode_against_the_analyzed_view[false-CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);-CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ-INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_streamingness_comes_from_the_whole_view[CREATE TEMPORARY VIEW v AS SELECT * FROM src UNION ALL SELECT * FROM STREAM(src);-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_streamingness_comes_from_the_whole_view[CREATE TEMPORARY VIEW v AS WITH c AS (SELECT * FROM STREAM(src)) SELECT * FROM c;-CREATE STREAMING TABLE consumer AS SELECT * FROM v-INCOMPATIBLE_STREAMING_VIEW_READ]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_streamingness_passes_through_a_batch_read_of_a_view[w]
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_the_session_setting_disables_the_check
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_a_view_setting_does_not_exempt_its_own_first_read
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_an_invalid_setting_fails_only_a_flow_reading_a_view
+FAILED python/pysail/tests/spark/pipelines/test_view_read_modes.py::test_error_identifies_the_view_and_the_setting
+19 failed, 15 passed in 1.36s
