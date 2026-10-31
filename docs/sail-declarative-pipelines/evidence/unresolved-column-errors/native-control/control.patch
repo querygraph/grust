@@ -1,0 +1,24 @@
+diff --git a/crates/sail-plan/src/resolver/expression/attribute.rs b/crates/sail-plan/src/resolver/expression/attribute.rs
+index 250965278..d86a77f50 100644
+--- a/crates/sail-plan/src/resolver/expression/attribute.rs
++++ b/crates/sail-plan/src/resolver/expression/attribute.rs
+@@ -181,11 +181,17 @@ impl PlanResolver<'_> {
+             }
+         }
+         let Some(outer_schema) = state.get_outer_query_schema().cloned() else {
+-            return Err(self.unresolved_attribute(&name, schema, state)?);
++            return Err(PlanError::AnalysisError(format!(
++                // Spark tests expect the error message to start with: "attribute {name:?} is missing"
++                "attribute {name:?} is missing from the schema: cannot resolve attribute"
++            )));
+         };
+         match self.resolve_outer_field(&name, &outer_schema, state)? {
+             Some((name, expr)) => Ok(NamedExpr::new(vec![name], expr)),
+-            None => Err(self.unresolved_attribute(&name, schema, state)?),
++            None => Err(PlanError::AnalysisError(format!(
++                // Spark tests expect the error message to start with: "attribute {name:?} is missing"
++                "attribute {name:?} is missing from the schema: cannot resolve attribute or outer attribute"
++            ))),
+         }
+     }
+ 

@@ -4,9 +4,11 @@ Status: the ordered graph-input trace is integrated at `fa78d067c`. Runtime
 activation `1bc9d1562` uses the existing PlanResolver/GraphScope;
 its passing final gates and branch advancement are recorded in the
 [runtime packet](evidence/flow-config-runtime/README.md). No opaque provider-binding
-representation was introduced. The thirteen public configuration probes improve
-from three matching outcomes to eight; five structured unresolved-column errors
-remain different. This is not general binding parity or original Scala acceptance.
+representation was introduced. General resolver diagnostics at `7b5667c1f` improve
+the thirteen public configuration probes from eight matching outcomes to thirteen;
+[the new packet](evidence/unresolved-column-errors/README.md) includes twelve ordinary
+SQL comparisons and the exact condition/parameter/message boundary. This does not
+establish general binding parity or original Scala acceptance.
 
 The [external-file oracle](evidence/flow-config-external-read-reference/README.md)
 separates run-session metadata settings from private semantic settings. The native
@@ -40,7 +42,7 @@ The existing per-command table-bounded provider maps remain useful for upstream
 views and committed tables. They do not provide an identity for two occurrences
 of an external read, nor a general pre-semantic binding stage.
 
-## Selected next prototype
+## Selected binding approach
 
 Use typed structural navigation to collect graph-view reads in the required order,
 interpreting CTE scope under the initial flow settings. Derive the first pass's

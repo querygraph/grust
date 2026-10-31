@@ -3152,3 +3152,26 @@ INTEGRATED: product HEAD 1bc9d15620dd4c85ac3f09ff8ec90d5b92a4292e is committed a
 The new native DynamicTable and WithRelations regression fixtures fail0/2 in unchanged 38abecd844202d3ea117526a27214271c40cb909 and pass unchanged in integrated source: graphs with no declared view settings use native resolution directly. Configured dynamic/opaque relation binding remains incomplete (including the unrelated-configured-view limitation); no claim of general support. Your Parquet/other-format metadata caveat is explicit in the design, packet and handoff. No captured ownership or streaming/CDC activation.
 
 Evidence is docs/sail-declarative-pipelines/evidence/flow-config-runtime/ in the coordinator Grust tree; documentation commit/gate is being finalized. It preserves initial compile/lint/clock-fixture failures, two source-case controls, native regression failure, intermediate passes, exact final receipts and an executable8/5 verifier. Existing closed review and E-prime/F-K authority unchanged. No new peer source assignment; root retains unresolved binding/error/catalog work. User will be notified before the next substantial design phase.
+
+## 2026-10-31T00:24:15.778755+00:00 — Codex
+Message-ID: CF-0289
+Seen-Through: CF-0288
+
+Root scope update: general Sail unresolved-column errors, not a pipeline-only string translator. Integrated abadcd8b068d10429ca550dcb51c9a36bf3f42c6 preserves the existing shared StructuredSparkError through PlanError and the existing Connect codec; exact 88 Plan +176 Connect/fmt/strict Clippy passed, including complete metadata through the new planner branch.
+
+Independent Spark4.2.1 public ordinary-SQL probe now records12 cases (11 errors plus case-insensitive success), including WITHOUT_SUGGESTION, qualifier trimming, stable distance ties, five-candidate truncation, dot/backtick quoting and supplementary Unicode. All11 observed errors have42703 and expected native condition/parameters; Spark stopped,15002 free. Source basis is pinned QueryCompilationErrors/StringUtils/QuotingUtils/UnresolvedAttribute; distance compares UTF16 as Java does.
+
+Candidate40aac42cccfa68fe6088256450a9ae994a0c1f86 adds diagnostics only after final native attribute/outer lookup fails, preserving resolution decisions and other nested-field/ambiguity errors. It is in detached full gates; not advanced. Root owns resolver expression/unresolved.rs, unresolved_tests.rs, final attribute failure sites and updated stronger SDP runtime error assertions. Broader configured dynamic/WithRelations binding remains the next substantial design phase and user will be notified before starting. No peer source assignment or E-prime/F-K authority change.
+
+## 2026-10-31T00:30:47.540358+00:00 — Codex
+Message-ID: CF-0290
+Reply-To: CF-0289
+Seen-Through: CF-0289
+
+INTEGRATED: product HEAD7b5667c1fef901c5f6768fd5af222beeed453f15 committed/clean, on the separate abadcd8b0 typed planner-error transport unit. Final exact gate:91 Plan +176 Connect, fmt and strict all-target/all-feature Clippy. Rebuilt exact-source CLI:300 selected public +67 upstream Python pass. Unchanged wiring-bypass control267406558 (full SHA in packet) passes2 helper tests and fails1 actual native SQL test, as intended; test blob unchanged.
+
+Independent Spark4.2.1 ordinary public SQL comparison is12/12:11 error conditions/states/exception types/all parameters plus1 success-row case. The unchanged SDP13-input configuration comparison is now13/13 condition/success-row outcomes, up from8/13 at1bc; all five missing-column first-line messages match Spark too. Duplicate-flow parameter/provenance equivalence and original Scala-suite acceptance remain unqualified. All owned Sail servers stopped exit0/no listeners; Spark15002 is free.
+
+Initial candidates40aac42cc and99e31d0f5 each passed91 Plan and175/176 Connect. The function-golden test exposed three old error strings in agg.json/predicate.json. Exact structured WITHOUT_SUGGESTION outputs replaced those three strings; official filtered SAIL_UPDATE_GOLD_DATA generation is retained for the final two. Inputs, success rows and error outcomes are unchanged. Final full gate ran without update mode. Evidence/docs/handoff are being finalized in evidence/unresolved-column-errors/. No closed review edits.
+
+Configured dynamic/WithRelations/plan-ID inputs, native CTE equivalence, Parquet metadata case/duplicate checks, captured ownership/admission, shutdown, streaming/Iggy/CDC and full Scala acceptance remain. Broader binding work is the next substantial design phase and user will be notified before starting; no opaque node or new activation authority has been selected. No new peer source assignment; root retains general resolver/error/catalog work.

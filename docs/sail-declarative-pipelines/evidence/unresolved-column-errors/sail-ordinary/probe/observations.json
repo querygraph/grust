@@ -1,0 +1,176 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T00:28:29.884115+00:00",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "536c15ea4836b9e43090d12425f0cf85aa07fbf57b891faa71c89b3920091a5c",
+  "scope": "ordinary public SQL missing-column metadata; not Scala acceptance",
+  "cases": [
+    {
+      "name": "one_suggestion",
+      "sql": "SELECT Foo FROM (SELECT 1 AS foo) a",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`Foo`",
+        "proposal": "`foo`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`]."
+    },
+    {
+      "name": "no_suggestion",
+      "sql": "SELECT missing",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`missing`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved."
+    },
+    {
+      "name": "join_aliases",
+      "sql": "SELECT z1.Foo FROM (SELECT 1 AS foo) z1 CROSS JOIN (SELECT 2 AS bar) a_insensitive CROSS JOIN (SELECT 3 AS foo) z2",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`z1`.`foo`, `z2`.`foo`, `a_insensitive`.`bar`",
+        "objectName": "`z1`.`Foo`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `z1`.`Foo` cannot be resolved. Did you mean one of the following? [`z1`.`foo`, `z2`.`foo`, `a_insensitive`.`bar`]."
+    },
+    {
+      "name": "two_qualifiers",
+      "sql": "SELECT ext.Foo FROM (SELECT 1 AS foo) z_sensitive CROSS JOIN (SELECT 2 AS foo) ext",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`ext`.`foo`, `z_sensitive`.`foo`",
+        "objectName": "`ext`.`Foo`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `ext`.`Foo` cannot be resolved. Did you mean one of the following? [`ext`.`foo`, `z_sensitive`.`foo`]."
+    },
+    {
+      "name": "limit_five",
+      "sql": "SELECT missing FROM (SELECT 1 AS aaa,2 AS bbb,3 AS ccc,4 AS ddd,5 AS eee,6 AS fff,7 AS ggg) q",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`missing`",
+        "proposal": "`aaa`, `bbb`, `ccc`, `ddd`, `eee`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`aaa`, `bbb`, `ccc`, `ddd`, `eee`]."
+    },
+    {
+      "name": "dotted_name",
+      "sql": "SELECT `A.B` FROM (SELECT 1 AS `a.b`) q",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`A.B`",
+        "proposal": "`a.b`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `A.B` cannot be resolved. Did you mean one of the following? [`a.b`]."
+    },
+    {
+      "name": "escaped_backtick",
+      "sql": "SELECT `A``B` FROM (SELECT 1 AS `a``b`) q",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`a``b`",
+        "objectName": "`A``B`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `A``B` cannot be resolved. Did you mean one of the following? [`a``b`]."
+    },
+    {
+      "name": "unicode_distance",
+      "sql": "SELECT `😀` FROM (SELECT 1 AS `😁`,2 AS a,3 AS `雪`) q",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`😁`, `a`, `雪`",
+        "objectName": "`😀`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `😀` cannot be resolved. Did you mean one of the following? [`😁`, `a`, `雪`]."
+    },
+    {
+      "name": "qualified_missing",
+      "sql": "SELECT q.Foo FROM (SELECT 1 AS foo,2 AS bar) q",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`q`.`Foo`",
+        "proposal": "`q`.`foo`, `q`.`bar`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `q`.`Foo` cannot be resolved. Did you mean one of the following? [`q`.`foo`, `q`.`bar`]."
+    },
+    {
+      "name": "unknown_qualifier",
+      "sql": "SELECT x.foo FROM (SELECT 1 AS foo,2 AS bar) q",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`x`.`foo`",
+        "proposal": "`q`.`foo`, `q`.`bar`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `x`.`foo` cannot be resolved. Did you mean one of the following? [`q`.`foo`, `q`.`bar`]."
+    },
+    {
+      "name": "duplicate_output",
+      "sql": "SELECT Foo FROM (SELECT 1 AS foo) q CROSS JOIN (SELECT 2 AS bar) b",
+      "case_sensitive": true,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`q`.`foo`, `b`.`bar`",
+        "objectName": "`Foo`"
+      },
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`q`.`foo`, `b`.`bar`]."
+    },
+    {
+      "name": "case_insensitive_success",
+      "sql": "SELECT Foo FROM (SELECT 1 AS foo) q",
+      "case_sensitive": false,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "outcome": "success"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "pyspark_version": "4.2.1",
+  "completed_at": "2026-10-31T00:28:30.421751+00:00"
+}

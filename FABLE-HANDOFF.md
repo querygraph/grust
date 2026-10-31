@@ -1,6 +1,6 @@
 # Fable continuation handoff
 
-Snapshot written 2026-10-31T00:17:47.509444+00:00. Live coordination read through **CF-0288**.
+Snapshot written 2026-10-31T00:30:30.673510+00:00. Live coordination read through **CF-0290**.
 Re-read live channel/Git/process state; later entries supersede this snapshot. [Initial scope](codex-fable-handoff.md).
 
 ## Goal and current truth
@@ -42,8 +42,8 @@ consumer167d577c6; use actual Git ancestry, not offer order.
 
 | Role | Path / branch | Inspected source snapshot |
 | --- | --- | --- |
-| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `1bc9d15620dd4c85ac3f09ff8ec90d5b92a4292e` |
-| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `290ca5e3b5de47ec675cd8a585464085b78459c2` |
+| Codex product | `/Users/alexy/src/sail-pipelines-proposal`, `work/spark-declarative-pipelines` | `7b5667c1fef901c5f6768fd5af222beeed453f15` |
+| Codex documents/live log | `/Users/alexy/src/grust-sdp`, `work/sail-declarative-pipelines` | base before this update: `9e87d9ed911bb9c1a492dbd3ff0f4dd643efa150` |
 | Codex Sail detached gate | `/Users/alexy/src/sail-sdp-gate` | verify live gate HEAD; local capture/control evidence linked below |
 | Codex Grust detached gate | `/Users/alexy/src/grust-sdp-review-gate` | changes with each documentation candidate |
 | Parallel Fable product | `/Users/alexy/src/sail-sdp-fable`, `work/sdp-streaming-cdc-fable` | `d88467e419a6fe2546e8bd18d4705e4909d02b28` (inline guard; pure pieces imported separately) |
@@ -152,14 +152,15 @@ Recent implementation units relevant to the current work:
 | `a2cee8f00` | Native Drop stops aborting after complete admission. 38 library/optimized tests +300 public/67 upstream pass; real-published error control fails before fix. [Packet](docs/sail-declarative-pipelines/evidence/uncertain-runtime-drop/README.md) |
 | `070caa80b` | Mutation observers classify interruption before drain, preserving typed observer/join errors. 112+198 library and112+6 optimized tests pass; both unchanged publication controls fail before fix. [Packet](docs/sail-declarative-pipelines/evidence/interrupted-mutation-observers/README.md) |
 
-Latest fresh public CLI gate is **1bc9d15620dd4c85ac3f09ff8ec90d5b92a4292e**:
-300 selected public +67 upstream Python executions; inspect the [runtime packet](docs/sail-declarative-pipelines/evidence/flow-config-runtime/README.md)
+Latest fresh public CLI gate is **7b5667c1fef901c5f6768fd5af222beeed453f15**:
+300 selected public +67 upstream Python executions; inspect the [diagnostic packet](docs/sail-declarative-pipelines/evidence/unresolved-column-errors/README.md)
 for exact terminal qualification. These selections are not original Scala acceptance.
 
-## Current implementation and immediate next work (CF-0288)
+## Current implementation and immediate next work (CF-0290)
 
-Coordinator HEAD **1bc9d15620dd4c85ac3f09ff8ec90d5b92a4292e** is committed/clean. Exact88 Plan +176 Connect/fmt/strict Clippy, fresh300+67 public, and13-case8/5 matrix verified before advancement. All owned gates terminal.
+Coordinator HEAD **7b5667c1fef901c5f6768fd5af222beeed453f15** is committed/clean. Exact91 Plan +176 Connect/fmt/strict Clippy, fresh300+67 public, ordinary12/12 metadata and SDP13/13 condition/row comparisons verified before advancement. All owned gates terminal.
 [Review units](docs/sail-declarative-pipelines/evidence/flow-config-runtime/README.md): b4d source-case seam (88+151; two 0/2 controls),349 pure maps (88+166),fa78 trace (88+170),1bc runtime. Native dynamic/parameter-relation regression fixtures fail0/2 without the no-view-settings path; pass unchanged in the integrated source. Earlier query/expression packets retain their exact historical gates. No captured public Session activation.
+[General missing-column units](docs/sail-declarative-pipelines/evidence/unresolved-column-errors/README.md): abad typed PlanError→existing Connect codec (88+176);7b native diagnostics (91+176), unchanged control2 helper pass/1 native fail. Two retained initial gates failed solely on three old golden error strings; official fixture generation changed no inputs/outcomes.
 
 [Read](docs/sail-declarative-pipelines/evidence/resolver-read-session/README.md),
 [writer/schema](docs/sail-declarative-pipelines/evidence/resolver-writer-session/README.md) and
@@ -237,7 +238,7 @@ uses view flow namespace/config and consumer config for table reads. Each map dr
 no eager post-write read. Mock leases and unrelated-closure checks qualify that scope.
 163b2fb52 removes dead required/with_dependencies selection state. Two unchanged-test
 controls each2pass/1fail. Fable0ceb51c8/fea89cc0 reviews consumed through CF-0248.
-The selected [native configuration design](docs/sail-declarative-pipelines/NATIVE-INPUT-BINDING-DESIGN.md) now has runtime activation: ordered trace, private first-pass config, success-only union/conditional native second call, accepted per-command settings. No opaque binding node. Identical13 public probes improve3 matching/10 differing outcomes to8/5; all five remaining differences are structured unresolved-column conditions. Fable CF-0286 caught that only ORC consumes the new source-case flag; Parquet duplicate-column support is still open. Configured dynamic/WithRelations/plan-ID inputs and CTE equivalence remain unfinished; no-settings graphs preserve native query support. Root owns wiring/activation; no E′/F–K authority. Notify the user before a new substantial binding/lifecycle design phase. Captured preparation/admission, provider/SDK I/O, shutdown, ORC writes, CDC/C0 and full Scala acceptance remain.
+The selected [native configuration design](docs/sail-declarative-pipelines/NATIVE-INPUT-BINDING-DESIGN.md) now has runtime activation: ordered trace, private first-pass config, success-only union/conditional native second call, accepted per-command settings. No opaque binding node. Identical13 public condition/success-row outcomes now all match after7b native diagnostics;12 ordinary SQL probes match full condition/state/parameters, and five missing-column first-line messages match Spark. Broader binding and full duplicate-flow provenance parity remain unqualified. Fable CF-0286 caught that only ORC consumes the new source-case flag; Parquet duplicate-column support is still open. Configured dynamic/WithRelations/plan-ID inputs and CTE equivalence remain unfinished; no-settings graphs preserve native query support. Root owns wiring/activation; no E′/F–K authority. Notify the user before a new substantial binding/lifecycle design phase. Captured preparation/admission, provider/SDK I/O, shutdown, ORC writes, CDC/C0 and full Scala acceptance remain.
 Mock plan-map leases do not qualify SDK/session/factory caches. C5 E′ must preserve schemas/publications, one-resolution publication and per-command execution; never restore required/with_dependencies.
 
 ## Acceptance accounting and major remaining work

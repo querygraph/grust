@@ -7,10 +7,14 @@ Runtime activation `1bc9d1562` carries accepted settings through analysis
 and per-command reanalysis; inspect its [exact gates and limitations](evidence/flow-config-runtime/README.md).
 No opaque provider slot or captured physical-preparation activation is included.
 
-The identical thirteen public probes now match eight error-condition/success-row
+The identical thirteen public probes now all match error-condition/success-row
 outcomes, against the historical three-of-thirteen
-[baseline](evidence/flow-config-fusion-reference/README.md). Five generic native
-unresolved-column errors still differ from Spark's structured condition. The
+[baseline](evidence/flow-config-fusion-reference/README.md) and eight-of-thirteen
+runtime integration. General resolver diagnostics at `7b5667c1f` close the five
+unresolved-column differences, with twelve additional ordinary SQL oracles;
+[exact metadata and message comparisons](evidence/unresolved-column-errors/README.md)
+state their boundary. Duplicate-flow parameter/provenance parity and full original
+Scala acceptance are not established by this comparison. The
 [twelve CTE/default oracles](evidence/flow-config-cte-reference/README.md) and
 [metadata oracle](evidence/flow-config-external-read-reference/README.md) remain
 requirements, not claims of full Sail parity. Original Scala-suite execution,
@@ -148,4 +152,4 @@ CTE suggestion with the twelve direct observations; accepted-map reuse for comma
 reanalysis remains an optimization requiring binding/phase equivalence evidence.
 The original Scala suites have not been
 executed against Sail; their assertions are reference requirements, not passed
-acceptance. Eight of thirteen public differential outcomes match at the integrated runtime commit; five structured unresolved-column conditions still differ.
+acceptance. All thirteen public differential condition/success-row outcomes match after the general missing-column diagnostic unit; full original Scala acceptance and broader binding requirements remain open.
