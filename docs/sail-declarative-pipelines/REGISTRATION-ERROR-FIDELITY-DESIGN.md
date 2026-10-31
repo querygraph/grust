@@ -171,3 +171,13 @@ The selection explicitly migrates those three IDs and retains297 others/all
 other source hashes. No original Spark assertion changes or inventory promotion.
 Non-INSERT/CTE-wrapped operations, broader parser contexts/order, batch effect
 qualification and streaming/CDC remain required work.
+
+
+## Next grammar/diagnostics checkpoint
+
+The user-notified [syntax design](SQL-SYNTAX-DIAGNOSTICS-DESIGN.md) covers Fable
+CF-0514 residuals. Sixteen Spark registration vectors pin the first invalid token
+and empty hint for PARSE_SYNTAX_ERROR42601, plus accepted INSERT-query WITH.
+A generic variant-parser hook preserves AST layout; grammar and owned diagnostic
+retention must integrate before claiming client parity. No parser source change
+or Sail verdict is included in this design/reference packet.
