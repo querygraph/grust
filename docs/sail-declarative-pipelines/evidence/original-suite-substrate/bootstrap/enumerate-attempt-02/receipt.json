@@ -1,0 +1,54 @@
+{
+  "recorded_at": "2026-10-31T12:38:53.031395+00:00",
+  "checks": [
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java",
+        "-cp",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/*:/private/tmp/sail-sdp-scala-suite-substrate/artifacts/*",
+        "scala.tools.nsc.Main",
+        "-usejavacp",
+        "-d",
+        "/private/tmp/sail-sdp-scala-suite-substrate/enumerator-classes",
+        "/private/tmp/sail-sdp-scala-suite-substrate/EnumerateSuites.scala"
+      ],
+      "exit_code": 0,
+      "log": "/private/tmp/sail-sdp-scala-suite-substrate/enumerate-attempt-02/0.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/jar",
+        "cf",
+        "/private/tmp/sail-sdp-scala-suite-substrate/enumerator.jar",
+        "-C",
+        "/private/tmp/sail-sdp-scala-suite-substrate/enumerator-classes",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "/private/tmp/sail-sdp-scala-suite-substrate/enumerate-attempt-02/1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/bin/spark-submit",
+        "--master",
+        "local[2]",
+        "--driver-class-path",
+        "/private/tmp/sail-sdp-scala-suite-substrate/artifacts/*",
+        "--driver-java-options",
+        "-ea -Dspark.testing=1 -Dspark.test.home=/Users/alexy/src/spark-sdp-4.2.1",
+        "--class",
+        "org.apache.spark.sql.pipelines.conformance.EnumerateSuites",
+        "/private/tmp/sail-sdp-scala-suite-substrate/enumerator.jar",
+        "/private/tmp/sail-sdp-scala-suite-substrate/enumerate-attempt-02/suites.json",
+        "/private/tmp/sail-sdp-scala-suite-substrate/artifacts/spark-pipelines_2.13-4.2.1-tests.jar",
+        "/private/tmp/sail-sdp-scala-suite-substrate/artifacts/spark-connect_2.13-4.2.1-tests.jar"
+      ],
+      "exit_code": 0,
+      "log": "/private/tmp/sail-sdp-scala-suite-substrate/enumerate-attempt-02/2.log",
+      "sha256": "315634d65279a49395dfdc85fb283a931f212b82c175a95a4d53ed5d2029da25"
+    }
+  ],
+  "scope": "ScalaTest suite registration on Spark reference; no Sail execution"
+}

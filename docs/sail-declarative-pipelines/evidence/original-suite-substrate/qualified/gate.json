@@ -1,0 +1,117 @@
+{
+  "commit": "70a634e2b59e75e8d457873bc4befd9c5ad91787",
+  "scope": "Exact tool gate and original Spark reference suites; no Sail acceptance",
+  "started_at": "2026-10-31T12:55:06.000359+00:00",
+  "checks": [
+    {
+      "name": "ruff",
+      "command": [
+        "uv",
+        "tool",
+        "run",
+        "--offline",
+        "ruff==0.17.3",
+        "check",
+        "scripts/sdp-scala-reference"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-scala-reference-qualified/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "name": "format",
+      "command": [
+        "uv",
+        "tool",
+        "run",
+        "--offline",
+        "ruff==0.17.3",
+        "format",
+        "--check",
+        "scripts/sdp-scala-reference"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-scala-reference-qualified/format.log",
+      "sha256": "eee76f865de5a9f2456950f710ae5d5f9b5bd0ea02aa54f614c5eed6642a0bfd"
+    },
+    {
+      "name": "collect",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "/Users/alexy/src/grust-sdp-review-gate/scripts/sdp-scala-reference/run.py",
+        "--spark-source",
+        "/Users/alexy/src/spark-sdp-4.2.1",
+        "--spark-home",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark",
+        "--java-home",
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+        "--python",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "--cache",
+        "/tmp/sail-sdp-scala-suite-substrate/artifacts",
+        "--output",
+        "/tmp/sail-sdp-scala-reference-qualified/collect",
+        "collect"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-scala-reference-qualified/collect.log",
+      "sha256": "25e2fddd211f6a9162d9ef49f12452460b11c64cde47702cca3ebfb6b61bfd9c"
+    },
+    {
+      "name": "default",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "/Users/alexy/src/grust-sdp-review-gate/scripts/sdp-scala-reference/run.py",
+        "--spark-source",
+        "/Users/alexy/src/spark-sdp-4.2.1",
+        "--spark-home",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark",
+        "--java-home",
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+        "--python",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "--cache",
+        "/tmp/sail-sdp-scala-suite-substrate/artifacts",
+        "--output",
+        "/tmp/sail-sdp-scala-reference-qualified/default",
+        "run",
+        "--registration",
+        "/tmp/sail-sdp-scala-reference-qualified/collect/suites.json",
+        "--suite",
+        "org.apache.spark.sql.pipelines.graph.DefaultMaterializeTablesSuite"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-scala-reference-qualified/default.log",
+      "sha256": "66b9f3b9347c8cd27d62378e1eb12312d92d725e85e37fdbac7c97983e207d41"
+    },
+    {
+      "name": "hive",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "/Users/alexy/src/grust-sdp-review-gate/scripts/sdp-scala-reference/run.py",
+        "--spark-source",
+        "/Users/alexy/src/spark-sdp-4.2.1",
+        "--spark-home",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark",
+        "--java-home",
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+        "--python",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "--cache",
+        "/tmp/sail-sdp-scala-suite-substrate/artifacts",
+        "--output",
+        "/tmp/sail-sdp-scala-reference-qualified/hive",
+        "run",
+        "--registration",
+        "/tmp/sail-sdp-scala-reference-qualified/collect/suites.json",
+        "--suite",
+        "org.apache.spark.sql.hive.pipelines.HiveMaterializeTablesSuite"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-scala-reference-qualified/hive.log",
+      "sha256": "40cce1cbd5acb035c4a09a321f4670ee0fa88a0f0089b839aa641e0a726d75ec"
+    }
+  ],
+  "outcome": "passed",
+  "completed_at": "2026-10-31T12:55:45.329221+00:00"
+}

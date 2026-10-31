@@ -5,7 +5,7 @@ binaries **on Spark**, outside Sail's runtime/dependency graph. It provides an
 expanded reference manifest and oracle results. It never claims Sail acceptance.
 
 `artifacts.json` pins twenty Maven Central test/framework artifacts by SHA256.
-The three published test-source JARs must byte-match every SDP Scala source in
+The three published test-source JARs must byte-match every Scala source in the three owned SDP test roots at
 Spark commit617618396087429b5627a86ce933bb0f5d6645cb, including the inherited Hive
 materialization suite. Unexpected or changed cached JARs fail verification.
 No binaries are committed. The supplied Spark distribution's runtime JAR hashes
@@ -58,3 +58,9 @@ that tier executes. Source positions inside generic grid helpers also need
 explicit mapping to their caller declarations; do not invent a mapping by name.
 
 See the original-suite execution design for the separate Sail conformance routes.
+
+The owned-root manifest is not the whole goal denominator. The design checkpoint
+identified additional parser and session-lifecycle SDP declarations elsewhere in
+Spark; they remain explicit scope-expansion obligations until this tool and the
+canonical inventory are extended. Do not treat554 registered names as all SDP
+tests or as a Sail pass count.

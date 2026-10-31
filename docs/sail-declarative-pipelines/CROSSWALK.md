@@ -1,9 +1,10 @@
 # Spark SDP acceptance crosswalk
 
-The pinned inventory has 462 static Scala test registration call sites, including
+The legacy owned-root inventory has462 static Scala test registration call sites, including
 helpers and parameter declarations. It is not an expanded runtime denominator.
 Assertion review currently covers 97 registrations; 365 remain unaudited. None
-is fully qualified by executing the original Scala suite against Sail.
+is a full Sail conformance verdict; the [execution design](ORIGINAL-SUITE-EXECUTION-DESIGN.md)
+requires route-specific evidence preserving all original assertions.
 
 | Suite | Reviewed | Partial ports | Unmapped |
 | --- | ---: | ---: | ---: |
@@ -200,3 +201,14 @@ control0/1 pass. Production paths match publicly qualified parent604; no new pub
 run/build is claimed. Totals remain68 partial/394 unmapped,97 reviewed/462 static.
 The original suite has not executed against Sail. Original-suite execution harness
 is the next user-notified Astra design checkpoint.
+
+## Original-suite reference and scope checkpoint
+
+[Exact Grust70a634e2 evidence](evidence/original-suite-substrate/README.md)
+registers554 owned-root runtime names and passes original Default/Hive metadata
+suites29 each on Spark. These are reference outcomes, not Sail acceptance, and
+no native site is promoted. [20 outside-root declarations](spark-4.2.1-scope-expansion.json)
+remain to reconcile, including parser inheritance/direct SQL rejection/session
+cache lifecycle. Neither legacy462 nor owned554 is the complete goal denominator.
+Next: extend collection/inventory, map full fixtures/assertions and implement the
+[declared Sail routes](ORIGINAL-SUITE-EXECUTION-DESIGN.md).

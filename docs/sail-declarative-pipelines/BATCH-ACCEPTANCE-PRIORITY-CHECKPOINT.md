@@ -142,3 +142,15 @@ improve assertion coverage but do not establish full-suite acceptance against
 Sail. Preserve original scope and identify the actual JVM/Connect/native bridge
 needed for that verdict before treating partial-port counts as acceptance. No
 new streaming/CDC or effect activation is authorized by this checkpoint.
+
+## Execution design result
+
+The [design](ORIGINAL-SUITE-EXECUTION-DESIGN.md) and isolated reference tool now
+make Scala suite names/variants observable:554 owned-root names, original
+Default/Hive29+29 reference passes, no Sail promotion. The
+[20-declaration outside-root expansion](spark-4.2.1-scope-expansion.json) is open
+and blocks completion; extend parser/lifecycle collection and canonical mapping
+next. Preserve all original assertions through original Python execution,
+declared replacement-base client bodies or native internal equivalence. Do not
+require literal Spark-internal JVM classes to run inside Sail or mistake their
+reference passes for Sail acceptance.
