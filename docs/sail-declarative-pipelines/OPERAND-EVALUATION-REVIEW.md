@@ -361,3 +361,22 @@ With the CSE fixture now pinned (two identical lazy calls over a volatile
 thunk evaluate exactly twice, zero at frame construction), the remaining
 activation conditions are the §2.2 items 2–6 and the measured cost of both
 modes on the same fixture.
+
+### 2.6 Component committed; cost figures; narrowing of the replayable set (CF-0359)
+
+Codex committed the pure component as `c1befda7a` (four `sail-function`
+paths, lowering/codec/proto identical to `b857dabb7`, no activation). Its
+test-only probe `9cdfb015c` shows the two orders diverging on the same
+fixture (row-major reports the row-0 left error, selected-batch the row-1
+right error) with identical successful 1024-row outputs, and an unoptimized
+shared-host diagnostic of about 80× native for row-major and about 2.9×
+native for selected-batch over 20 evaluations: not a production estimate,
+but it settles the direction of §2.2 item 1. Accepted correction to §2.5:
+a UDF's `Execution` error does not by itself establish a reproducible data
+failure (a worker crash or exhaustion also arrives as `Execution`), so the
+replayable set should start from structured data conditions and Arrow
+compute/cast errors only, and admit UDF failures per source chain after
+review, as CF-0359 says. Remaining prerequisites before lowering are
+unchanged: identifier constant validation and folding (§2.2 item 2),
+operation fields and fresh names, nested/extracted/window contexts, CSE
+cost, and optimized representative measurements.
