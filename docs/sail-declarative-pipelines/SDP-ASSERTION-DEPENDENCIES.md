@@ -1402,3 +1402,74 @@ Product and tests are byte-identical to the reviewed candidate. The
 refreshed public selection and the rule, source-order and
 defensive-lowering controls. Counts stay 116 reviewed, 87 partial, 399
 unmapped; this shared rule supports original sites and creates none.
+
+### 20.11 Flow INSERT policy producers, candidate `4fca6f3d4` on `cbeec8f93` (CF-0513)
+
+The unit replaces the combined "Only INSERT INTO by name flows
+supported; partition specifications and target column lists are not
+allowed." message with Spark's five producer strings, evaluated in
+`sail-sql-analyzer/src/pipeline.rs` after the raw multipart flow-name
+check and before the target identifier is lowered. Read against the pin:
+
+- Order and strings. Spark's `validateInsertIntoFlow`
+  (`SqlGraphRegistrationContext.scala:475–510`) checks `partitionSpec`
+  ("Partition spec may not be specified for flow target."), then
+  `userSpecifiedCols` ("Column schema may not be specified for flow
+  target."), then `overwrite` ("INSERT OVERWRITE flows not
+  supported."), then `ifPartitionNotExists` ("IF NOT EXISTS not
+  supported for flows."), then `!byName` ("Only INSERT INTO by name
+  flows supported."). Sail's chain is partition → column list → overwrite
+  → not-by-name, byte-identical strings. The missing fourth arm is the
+  one §20.6/§20.7 proved unreachable: the `INTO` form is a parse error at
+  `AstBuilder.scala:1045` (Sail's shared `validate_insert_modes` runs
+  first), and the grammar's `OVERWRITE` arm admits `IF NOT EXISTS` only
+  after a `partitionSpec` (`SqlBaseParser.g4:590`), so the partition arm
+  fires first.
+- Placement. Spark runs the policies inside `extractInsertFlow` before
+  `IdentifierHelper.toTableIdentifier` on the target (`:460–467`), after
+  the flow-name check (`:404–410`). Sail matches: `multipart_flow_name_error`
+  before, `pipeline_identifier_arity_error` on the target after. The two
+  four-part-target cases in the native test (`A.b.c.d`) pin that order.
+- Wrapping. `SqlError::analysis(message)` reaches
+  `PreparationFailure::Analysis` and `registration_error` in
+  `pipelines/sql.rs`, which supplies condition, SQLSTATE 42000,
+  `offendingQuery` and `codeLocation`; the public test asserts all three
+  parameters and `Query defined at flow.sql:2`.
+- Tests. Native: 11 operations through both entry points, plus a positive
+  `c.d.output BY NAME` control. Public: the same 11 plus the three BDD
+  outline inputs, exact fields. The BDD outline keeps its three inputs
+  and gains an `error` column; the old shared substring was replaced by
+  the per-row producer string, which is a correction of a non-Spark
+  expectation, not a loosened one.
+- Dependencies. No original Spark test asserts any of the five strings:
+  `git grep -F` over the pin for each string, and for "Unable flow
+  type", hits only `SqlGraphRegistrationContext.scala` itself. The unit
+  is Spark fidelity with no inventory effect; 486/116/87/399 stands.
+
+Residuals, pre-existing and outside this unit, recorded so they are not
+rediscovered:
+
+- `INSERT OVERWRITE t IF NOT EXISTS …` without `PARTITION` is a Spark
+  parse error: probe 14 (`evidence/set-catalog-oracle/probe14_*`) on
+  pyspark 4.2.1 returns `PARSE_SYNTAX_ERROR` for the form with and
+  without `BY NAME`, and `TABLE_OR_VIEW_NOT_FOUND` once a partition spec
+  is present. Sail's AST (`sail-sql-parser/src/ast/statement.rs:302–315`)
+  declares `partition` and `if_not_exists` as independent options, so by
+  the AST definition (not executed here) that text parses in Sail and
+  the candidate would report "INSERT OVERWRITE flows not supported." as
+  a registration error. The shared validator of §20.8 deliberately left
+  the overwrite form alone; closing this is a parser-grammar unit, and
+  no original site asserts it.
+- The let-else fallback keeps the old combined message with a literal
+  `[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR]` prefix, which the
+  wrapper then prefixes again. It is now reachable only for a `WITH`-led
+  insert or a non-`INSERT` body under `CREATE FLOW`; Spark's grammar
+  admits only `createPipelineFlowHeader insertInto query`
+  (`SqlBaseParser.g4:420`), so both are parse errors there, and the
+  handler's "Unable flow type. Only INSERT INTO flows are supported."
+  (`:425`) is reachable only from the protocol path. Same class as the
+  first residual.
+
+Verdict: accept, read-only, pending the native gate, the public
+selection migration (297 retained hashes plus three new IDs) and the
+paired Spark run of the 14 public cases.
