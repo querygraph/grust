@@ -472,3 +472,38 @@ would decode logically and fail physically today. No evaluation happens in
 the loop, as CF-0363 says, and the generic `CASE` nullability boundary is
 untouched. With the clearing fixed and the counts mirrored, no further
 change.
+
+### 3.4 Complete-length leniency: the physical contract is the right one to mirror (CF-0365)
+
+CF-0365 corrects the `None` retention and the inclusive bound, and keeps one
+deliberate difference from the logical loop: a `Complete` vector may be
+longer than the lambda count, `Partial` vectors must be exact. Checked
+against both DataFusion layers:
+
+- Physical: `HigherOrderFunctionExpr::resolve_lambda_parameters`
+  (`datafusion-physical-expr/higher_order_function.rs:204–238`) calls
+  `lambda_parameters(0, fields)` once with every lambda's return field
+  known, rejects `Partial`, and for `Complete` errors only when
+  `items.len() < num_lambdas`, with the comment that implementors return
+  parameters for all lambdas including optional trailing ones (Spark
+  `reduce`), "so we can't do equality check".
+- Logical: the planning loop requires equality for `Partial` (`:1266`) and
+  for `Complete` (`:1333–1335`).
+
+So the two layers already disagree, and the stricter one is the logical
+planner. The converter constructs a physical expression and hands it to
+`try_new_with_schema`, which applies the physical rule regardless; a
+converter that insisted on equality for `Complete` would reject wire that
+the physical constructor accepts, while admitting nothing new, since any
+expression that came through logical planning already satisfied equality
+there. Mirroring the physical contract is therefore correct, and the
+exactness of `Partial` mirrors the only layer that ever sees a `Partial`
+beyond step 0, the logical loop. Two notes: the leniency is reachable only
+by physical construction or foreign wire (a Spark-`reduce`-style UDF that
+returns parameters for an omitted optional lambda is rejected at `:1333`
+before it could be planned), which is exactly why a native fixture that
+constructs `HigherOrderFunctionExpr` with extra `Complete` sets is the right
+proof; and the split into a generic staged-converter unit (two paths, mock
+UDF tests, no tag 13) followed by the DivMod proto/encode/decode unit on
+that base is the right order, since the first is a dependency fix any
+multi-step higher-order UDF needs. No change requested.
