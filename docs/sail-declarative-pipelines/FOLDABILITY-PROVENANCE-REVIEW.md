@@ -816,3 +816,117 @@ The tests pin reason, `errorClass`, `sqlState`, the five classes, quoted
 `catalogName` for plain, dotted, quoted, non-ASCII and empty names, the
 `config` parameter, the message, and the same through a
 `DataFusionError::Shared(Context(..))` wrapper. No change requested.
+
+## 11. Arithmetic lowering: removing the eager zero-divisor paths (CF-0337)
+
+Read only, Sail `55c237c48`, Spark `617618396`, PySpark 4.2.1. CF-0337's
+design: delete the three literal-zero fast paths and `is_zero_literal`, keep
+the runtime guards, replace the generated `raise_error` guard with a typed
+nullary `SparkZeroDivisionError` UDF (two names for `DIVIDE_BY_ZERO` and
+`REMAINDER_BY_ZERO`, null return type, codec name registration), and surface
+`SparkArithmeticException` with its hierarchy at the transport boundary.
+
+### 11.1 Spark's rule, pinned and observed
+
+`DivModLike.eval` (`arithmetic.scala`, the trait body): evaluate the divisor;
+if it is null, or zero outside ANSI, return null; then evaluate the dividend;
+if it is null, return null; then, if the divisor is zero (ANSI), raise
+`remainderByZeroError` for `Remainder` and `Pmod` and `divideByZeroError`
+otherwise; `isZero` is `Decimal.isZero` for decimals and `== 0` for every
+other type, floats included. The factories build
+`SparkArithmeticException(errorClass, config = toSQLConf("spark.sql.ansi.enabled"), context)`
+(`QueryExecutionErrors.scala`), which `extends ArithmeticException with SparkThrowable`
+(`SparkException.scala:225–231`); SQLSTATE `22012`; templates verbatim from
+`error-conditions.json:2105–2110,6201–6206`: "Division by zero. Use
+`try_divide` to tolerate divisor being 0 and return NULL instead. If necessary
+set <config> to "false" to bypass this error." and "Remainder by zero. Use
+`try_mod` …". PySpark maps the hierarchy's `java.lang.ArithmeticException`
+entry to `ArithmeticException` (`connect.py`, mapping table).
+
+Probe 8 (`probe8_division_by_zero.py`, appended to
+`evidence/set-catalog-oracle/output.txt`, classic mode, Java class read from
+the Py4J exception):
+
+| Query (ANSI on)                                                  | Spark 4.2.1                                    |
+| ---------------------------------------------------------------- | ---------------------------------------------- |
+| `1 / 0`, `1 DIV 0`, `1.5 / 0`, `CAST(1 / 0 AS STRING)`           | `SparkArithmeticException` `DIVIDE_BY_ZERO`    |
+| `1 % 0`, `pmod(1, 0)`, `1.0 % 0.0`, double `% 0.0`               | `SparkArithmeticException` `REMAINDER_BY_ZERO` |
+| `CAST(NULL AS INT) / 0`, `% 0`, `DIV 0`; `1 / CAST(NULL AS INT)` | `NULL`, no error                               |
+| `x / y` over `(NULL, 0)`                                         | `NULL`, no error                               |
+| `x / 0` over `(1), (NULL)`                                       | `DIVIDE_BY_ZERO` (the non-null row)            |
+| `x / y`, `x % y` over `(1, 0)`                                   | `DIVIDE_BY_ZERO`, `REMAINDER_BY_ZERO`          |
+| `CASE WHEN false THEN 1 / 0 ELSE 2 END`, `coalesce(2, 1 / 0)`    | `2.0`, no error                                |
+| `typeof(1 / 0)`                                                  | `double`                                       |
+| `try_divide(1, 0)`, `try_mod(1, 0)`                              | `NULL`                                         |
+
+With ANSI off every row above is `NULL`, including the float and double
+modulo rows (not `NaN`).
+
+### 11.2 Sail today
+
+Three builders take an eager path when the divisor is a zero literal
+(`math.rs:376–384,444–452,637–645`): ANSI raises
+`PlanError::ArrowError(DivideByZero)` at lowering, which the transport labels
+`java.lang.ArithmeticException` with the Arrow text "divide by zero"; non-ANSI
+lowers to `Literal(Null)`. Otherwise `make_safe_divisor` (`math.rs:323–356`)
+wraps the divisor alone: `nullif(divisor, 0)` outside ANSI, and in ANSI
+`CASE WHEN divisor = 0 THEN raise_error('Division by zero') ELSE divisor END`,
+whose `RaiseError` returns a plain `DataFusionError::Execution` and so a
+generic execution class, not `SparkArithmeticException`.
+
+### 11.3 Findings
+
+- **F1, remove the eager paths: agree.** It is the §9.5 invariant, lowering
+  never evaluates. The non-ANSI `Literal(Null)` result is subsumed by
+  `nullif` after constant folding, and the `defer_arithmetic_evaluation`
+  decision becomes dead once every context defers, as CF-0337 says.
+- **F2, the typed guard: right shape, with the error carried structurally.**
+  The UDF should return `DataFusionError::External(Box<StructuredSparkError>)`
+  exactly as `catalog_not_found_error` does, so `CommonErrorCause::build`
+  downcasts it (`common-datafusion/error.rs:135`) and `spark_status` can
+  attach the measured hierarchy (`SparkArithmeticException`,
+  `java.lang.ArithmeticException`, `java.lang.RuntimeException`,
+  `java.lang.Exception`, `java.lang.Throwable`, `java.lang.Object`; measure it
+  as for `CatalogNotFoundException`). Parameters: `config` =
+  `"spark.sql.ansi.enabled"` with the double quotes `toSQLConf` adds; SQLSTATE
+  `22012`; templates verbatim. An `Immutable` nullary error function is safe
+  under the simplifier: `ConstEvaluator` keeps an expression whose evaluation
+  fails (`expr_simplifier.rs:513,559,718`, `SimplifyRuntimeError`), the same
+  property `RaiseError` relies on today, and a dead branch is removed before
+  evaluation (probe 8's `CASE WHEN false` row). Codec: name-keyed decode and
+  `is::<T>()` encode as for `RaiseError` (`codec.rs:3943,4172`); two stateless
+  types for the two conditions is the smallest payload-free form. Spark's
+  `QueryContext` summary (`== SQL (line, position) ==`) cannot be reproduced
+  from a UDF; record it as a metadata gap, not a target.
+- **F3, evaluation order is a finding, not a probe question.** Spark returns
+  `NULL` for a `NULL` dividend even when the divisor is zero under ANSI
+  (probe 8: constant and `(NULL, 0)` rows). A divisor-only guard raises
+  regardless of the dividend, so today's shape and the candidate's shape both
+  mismatch there. Matching requires the dividend's nullness in the guard:
+  `CASE WHEN divisor = 0 AND dividend IS NOT NULL THEN error() ELSE divisor END`,
+  then `dividend / <guard>`; when the dividend is `NULL` the else branch
+  yields `NULL / 0`, which the Arrow kernel evaluates only on valid slots and
+  so returns `NULL` without raising. This references the dividend twice.
+  There is no duplication-free form short of a UDF that performs the whole
+  operation, which would lose the native kernel and Sail's decimal typing;
+  the duplicate is a single `IS NOT NULL` over the dividend, which
+  `CommonSubexprEliminate` removes for anything but window expressions. I
+  would take it, and pin `x / y` over `(NULL, 0)` in the activation oracle;
+  if window dividends must stay single-evaluation, keep the divisor-only
+  guard there as a documented deviation.
+- **F4, float modulo answered.** `isZero` is `== 0` for every non-decimal
+  type, so `1.0 % 0.0` is `REMAINDER_BY_ZERO` under ANSI and `NULL` outside
+  it. `nullif(divisor, 0)` already gives `NULL` for `0.0`; the comment at
+  `math.rs:630–631` ("returns NaN (IEEE 754)") describes neither Spark nor
+  the current code and should go.
+- **F5, conditions by operator.** `/` and `DIV` raise `DIVIDE_BY_ZERO`;
+  `%` and `pmod` raise `REMAINDER_BY_ZERO` (`DivModLike`'s match on
+  `Remainder` and `Pmod`). `pmod`'s builder must therefore use the remainder
+  guard; worth checking it shares `make_safe_divisor` at all.
+- **F6, class consistency after the change.** Today the literal case reports
+  `java.lang.ArithmeticException` and the runtime case a generic execution
+  class; after the change both come from the guard, so the one typed error
+  settles class, condition, state and parameters for every zero-divisor
+  path, and PySpark's type stays `ArithmeticException` through the
+  hierarchy. That is the argument for doing F2 in the same unit as F1 rather
+  than after it.
