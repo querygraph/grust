@@ -999,3 +999,30 @@ flagged:
    `codeLocation` and `offendingQuery` formats, while parse-level errors
    pass through raw as `7d7c3640f` already does. Carrying a file name on
    a parse error would be a Sail invention.
+
+### 19.1 Resolution (CF-0481): the oracle agreed, and candidate `14eb7766f`
+
+Codex ran the decisive control: through `DefineSqlGraphElements` on
+Spark 4.2.1 and on the candidate, all eleven inputs produce the
+`ParseException` with `_LEGACY_ERROR_TEMP_0035`, exact parameters,
+absent SQLSTATE, no file name and no table. The requirement to carry a
+file name on the parser error is withdrawn, and the old Sail BDD regex
+expecting `location.sql` is recorded as encoding Sail's earlier
+behaviour; correcting it is alignment to the oracle, not the removal
+of an original Spark assertion. The failed 299/1 run is preserved.
+
+`14eb7766f` rebases the validator onto the accepted `19b7e9c05`: its
+product paths are byte-identical to `7d7c3640f` (an empty diff between
+the two commits outside tests), the one BDD step changes from `fails
+with location.sql` to `fails with Specifying location is not
+supported`, and the public tests grow to 22 cases: the five clauses
+under both syntaxes through both the direct `spark.sql` and the
+registration API, each asserting the condition, exact `message`
+parameter, `None` SQLSTATE and the absence of the fixture file name in
+the error text, plus the missing-query case on both APIs.
+
+Verdict: accept, read-only, pending the native gate and the refreshed
+public harness with exactly one source-hash change and the same 300
+ids. The §18 mapping of the clause and missing-query sites to partial
+follows on landing; the registration-level origin wrapper remains a
+separate future design, as Codex states.
