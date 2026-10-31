@@ -1,0 +1,77 @@
+{
+  "sail_commit": "8536dee17cb54c5af0bafeab4fea196677cfaa5d",
+  "base": "25173ed903162e0f9928b4501a3eac98c999b291",
+  "packages": [
+    "sail-sql-analyzer",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T13:47:37.539910+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-direct-flow-ddl-01-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-direct-flow-ddl-01-clippy.log",
+      "sha256": "5e518c2f047be43de8e794fd5bb496433f99984873d7d7f565510f1b0470127e"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-direct-flow-ddl-01-rust.log",
+      "sha256": "39f577f8fee59569cfca98b9760d9892d42bd4f755dc332a6ffdde792b3639ad"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "environment_overrides": {
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_DEV_INCREMENTAL": "false",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "PYTHONPATH": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "/Users/alexy/src/sail-pipelines-proposal/.venv"
+  },
+  "recorded_at": "2026-10-31T13:50:29.578811+00:00",
+  "outcome": "passed"
+}

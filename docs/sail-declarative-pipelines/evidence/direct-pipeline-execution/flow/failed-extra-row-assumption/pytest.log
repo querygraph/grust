@@ -1,0 +1,29 @@
+I1031 06:50:32.058029 92849516 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(13, generation: 1)
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+________ test_flow_direct_execution_has_spark_diagnostic_and_keeps_rows ________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x116b4c5f0>
+
+    def test_flow_direct_execution_has_spark_diagnostic_and_keeps_rows(spark):
+        try:
+            spark.sql("CREATE TABLE table1 AS SELECT 1").collect()
+            spark.sql("CREATE TABLE table2 AS SELECT 2").collect()
+            with pytest.raises(UnsupportedOperationException) as captured:
+                spark.sql("CREATE FLOW f AS INSERT INTO table2 SELECT * FROM table1").collect()
+            error = captured.value
+            assert error.getCondition() == "UNSUPPORTED_FEATURE.CREATE_FLOW_QUERY_EXECUTION"
+            assert error.getSqlState() == "0A000"
+            assert error.getMessageParameters() == {}
+            assert [tuple(row) for row in spark.table("table1").collect()] == [(1,)]
+>           assert [tuple(row) for row in spark.table("table2").collect()] == [(2,)]
+E           assert [(1,), (2,)] == [(2,)]
+E             
+E             At index 0 diff: (1,) != (2,)
+E             Left contains one more item: (2,)
+E             Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_direct_execution.py:30: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_direct_execution.py::test_flow_direct_execution_has_spark_diagnostic_and_keeps_rows
+1 failed, 2 passed in 0.82s

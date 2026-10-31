@@ -73,3 +73,10 @@ selection and count both sets. Each declared name must exist. Dedicated parser
 suites execute in full, while shared-suite runs use only their fixed SDP names.
 The extended runtime count is established by the new collection receipt; the
 554 count above is the preserved v1 owned-root baseline.
+
+Qualified expanded profile:43 nonempty suites,595 scoped runtime names,56 source
+bindings and99 original Spark reference executions (including2 lifecycle cases).
+See the expanded-original-suite-reference evidence packet. Hive SlowHiveTest
+tags are retained and executed; Ignore/skipped outcomes remain disallowed.
+Canonical declaration scope is486 sites, including24 additions to the legacy462.
+All counts refer to their stated layer and do not establish Sail acceptance.

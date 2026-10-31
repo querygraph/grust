@@ -1,8 +1,8 @@
 # Spark SDP acceptance crosswalk
 
-The legacy owned-root inventory has462 static Scala test registration call sites, including
+The reconciled inventory has486 static Scala test registration call sites, including
 helpers and parameter declarations. It is not an expanded runtime denominator.
-Assertion review currently covers 97 registrations; 365 remain unaudited. None
+Assertion review currently covers100 registrations;386 remain unaudited. None
 is a full Sail conformance verdict; the [execution design](ORIGINAL-SUITE-EXECUTION-DESIGN.md)
 requires route-specific evidence preserving all original assertions.
 
@@ -13,7 +13,8 @@ requires route-specific evidence preserving all original assertions.
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
 | SqlPipelineSuite | 38 | 32 | 6 |
-| Total | 97 | 68 | 29 |
+| DDLSuite (both inherited reference profiles) | 3 | 3 | 0 |
+| Total | 100 | 71 | 29 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -212,3 +213,7 @@ remain to reconcile, including parser inheritance/direct SQL rejection/session
 cache lifecycle. Neither legacy462 nor owned554 is the complete goal denominator.
 Next: extend collection/inventory, map full fixtures/assertions and implement the
 [declared Sail routes](ORIGINAL-SUITE-EXECUTION-DESIGN.md).
+
+## Current parser/DDL/lifecycle expansion
+
+Canonical scope now includes all24 identified extra declarations:486 sites,100 reviewed,71 partial and415 unmapped. [Expanded reference evidence](evidence/expanded-original-suite-reference/README.md) binds56 source files and595 scoped names;99 original Spark reference executions pass, with no Sail promotion. [Direct declaration diagnostics](evidence/direct-pipeline-execution/README.md) adds partial public ports of DDLSuite2522/2533/2544. Both inherited reference profiles execute, while Sail profile/internal equivalence remains open. Spark's Flow rejection has an observed INSERT effect; row preservation is a separate Sail policy, not an original diagnostic assertion. Earlier count snapshots below are historical.

@@ -1,0 +1,9 @@
+# Direct pipeline declaration diagnostics
+
+Sail dataset fix 25173ed903162e0f9928b4501a3eac98c999b291 and Flow candidate c50ef22530a42a48aac330252a4d14ab239527e6 preserve Spark 4.2.1 unsupported-operation classification, condition, SQLSTATE and parameters for direct CREATE MATERIALIZED VIEW / STREAMING TABLE / FLOW execution. Pipeline registration retains its own lowering path. The dataset change has 224 native tests, and Flow has 225; both have fresh CLI gates of 300 selected public plus 67 upstream executions. Three direct diagnostic cases pass on both engines. Sail additionally passes its separate reject-before-insert policy test.
+
+Original declarations are DDLSuite.scala:2522,2533,2544 at Spark617618396087429b5627a86ce933bb0f5d6645cb. Their original Spark Scala tests pass in both InMemoryCatalogedDDLSuite and HiveDDLSuite (expanded reference packet). Public ports do not establish original JVM suite execution on Sail or catalog-profile equivalence.
+
+An earlier Flow candidate8536dee17cb54c5af0bafeab4fea196677cfaa5d incorrectly added cross-engine row preservation to the diagnostic assertion. Spark fails that added assertion. The isolated schema probe records table2[[2]] before rejection and table2[[1],[2]] afterward on Spark 4.2.1. The original test makes no assertions about row effects. The corrected test keeps original diagnostic assertions, and the Sail-only policy test preserves Sail's existing rejection-before-write behavior. This evidence establishes an observed engine difference; it does not diagnose its cause. Failed XML, candidate receipts and the first isolated probe's setup failure remain preserved. No claim of row-effect or full-message parity is made.
+
+Production-only controls restore the old dataset guard, remove the error hierarchy, or restore the old Flow guard while retaining each test unchanged; the corresponding tests fail. No public Table/Sink, streaming or CDC activation is authorized by these changes.

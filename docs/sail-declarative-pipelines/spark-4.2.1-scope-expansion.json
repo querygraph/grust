@@ -1,9 +1,9 @@
 {
   "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
-  "kind": "Open scope expansion beyond legacy owned-root inventory; not yet reconciled",
+  "kind": "Reconciled parser DDL and lifecycle declaration expansion; Sail acceptance remains open",
   "completion_blocker": true,
   "legacy_static_sites": 462,
-  "additional_identified_declarations": 20,
+  "additional_identified_declarations": 24,
   "owned_registered_runtime_names": 554,
   "owned_runtime_is_complete_goal_denominator": false,
   "source_sha256": {
@@ -13,7 +13,9 @@
     "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala": "c126521adf1a0af4fb729876c0f1212c2eb9217c610f608f5b2c4732e1778b44",
     "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/service/SparkConnectSessionHolderSuite.scala": "f1322f185f03cb8c544e6550cfe93ab6e5a905813af39e8be2677d762340f232",
     "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/service/SparkConnectSessionManagerSuite.scala": "5674da0a4fe51d1baf35998ffc8b3c9901c059cb1545e36cf8e1f729ad29b93e",
-    "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateStreamingTableAsSelectParserSuite.scala": "e7eb351bce988cf5eda1ae555f8843b1ffb99acef027e74ddf9e7c422c6e9ff3"
+    "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateStreamingTableAsSelectParserSuite.scala": "e7eb351bce988cf5eda1ae555f8843b1ffb99acef027e74ddf9e7c422c6e9ff3",
+    "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala": "4a8f7157234bb12f2e93bbdd5702b777823fbc3c02f00cb8475a356be8e7045b",
+    "sql/hive/src/test/scala/org/apache/spark/sql/hive/execution/HiveDDLSuite.scala": "a452e977acc1646affec8d7fc33322df82d1798cc2ff955d32ac3045de9b9b77"
   },
   "cases": [
     {
@@ -195,12 +197,59 @@
       "name_expression": "\"Pipeline execution cache is cleared when the session holder is closed\"",
       "status": "identified-unmapped",
       "assertion_audited": false
+    },
+    {
+      "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala:35",
+      "source": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala",
+      "line": 35,
+      "method": "test",
+      "name_expression": "\"comment is correctly parsed\"",
+      "status": "identified-unmapped",
+      "assertion_audited": false
+    },
+    {
+      "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala:46",
+      "source": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala",
+      "line": 46,
+      "method": "test",
+      "name_expression": "\"multipart flow names are correctly parsed\"",
+      "status": "identified-unmapped",
+      "assertion_audited": false
+    },
+    {
+      "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala:58",
+      "source": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateFlowCommandSuite.scala",
+      "line": 58,
+      "method": "test",
+      "name_expression": "\"INSERT subquery is correctly parsed\"",
+      "status": "identified-unmapped",
+      "assertion_audited": false
+    },
+    {
+      "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala:2544",
+      "source": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala",
+      "line": 2544,
+      "method": "test",
+      "name_expression": "s\"CREATE FLOW statement cannot be directly executed\"",
+      "status": "identified-unmapped",
+      "assertion_audited": false
     }
   ],
   "inherited_variants": [
     {
       "source": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/v2/CreateStreamingTableAsSelectParserSuite.scala",
       "base": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/CreatePipelineDatasetAsSelectParserSuiteBase.scala",
+      "needs_runtime_expansion": true
+    },
+    {
+      "source": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala",
+      "concrete_class": "org.apache.spark.sql.execution.command.InMemoryCatalogedDDLSuite",
+      "needs_runtime_expansion": true
+    },
+    {
+      "source": "sql/hive/src/test/scala/org/apache/spark/sql/hive/execution/HiveDDLSuite.scala",
+      "base": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala",
+      "concrete_class": "org.apache.spark.sql.hive.execution.HiveDDLSuite",
       "needs_runtime_expansion": true
     }
   ],
@@ -209,5 +258,11 @@
     "reason": "HQL materialized-view table-type rejection, not Spark Declarative Pipelines; source lines608\u2013627 reviewed.",
     "sha256": "93f2a0df2e98b6777ab9d86ca5d954c0f31f495750b92e032059893dd9c3e242",
     "line": 609
-  }
+  },
+  "scope_discovery_note": "Flow symbol/inheritance follow-up added CreateFlowCommandSuite three declarations and DDLSuite:2544; dataset-only search was incomplete.",
+  "canonical_reconciled": true,
+  "canonical_static_sites": 486,
+  "expanded_registered_runtime_names": 595,
+  "expanded_nonempty_suites": 43,
+  "reference_evidence": "evidence/expanded-original-suite-reference/summary.json"
 }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="3" time="0.822" timestamp="2026-10-31T06:50:32.892930-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_direct_execution" name="test_pipeline_dataset_direct_execution_has_spark_diagnostic[MATERIALIZED VIEW]" time="0.122" /><testcase classname="python.pysail.tests.spark.pipelines.test_direct_execution" name="test_pipeline_dataset_direct_execution_has_spark_diagnostic[STREAMING TABLE]" time="0.037" /><testcase classname="python.pysail.tests.spark.pipelines.test_direct_execution" name="test_flow_direct_execution_has_spark_diagnostic_and_keeps_rows" time="0.585"><failure message="assert [(1,), (2,)] == [(2,)]&#10;  &#10;  At index 0 diff: (1,) != (2,)&#10;  Left contains one more item: (2,)&#10;  Use -v to get more diff">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x116b4c5f0&gt;
+
+    def test_flow_direct_execution_has_spark_diagnostic_and_keeps_rows(spark):
+        try:
+            spark.sql("CREATE TABLE table1 AS SELECT 1").collect()
+            spark.sql("CREATE TABLE table2 AS SELECT 2").collect()
+            with pytest.raises(UnsupportedOperationException) as captured:
+                spark.sql("CREATE FLOW f AS INSERT INTO table2 SELECT * FROM table1").collect()
+            error = captured.value
+            assert error.getCondition() == "UNSUPPORTED_FEATURE.CREATE_FLOW_QUERY_EXECUTION"
+            assert error.getSqlState() == "0A000"
+            assert error.getMessageParameters() == {}
+            assert [tuple(row) for row in spark.table("table1").collect()] == [(1,)]
+&gt;           assert [tuple(row) for row in spark.table("table2").collect()] == [(2,)]
+E           assert [(1,), (2,)] == [(2,)]
+E             
+E             At index 0 diff: (1,) != (2,)
+E             Left contains one more item: (2,)
+E             Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_direct_execution.py:30: AssertionError</failure></testcase></testsuite></testsuites>

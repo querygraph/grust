@@ -20,9 +20,12 @@ for label in ['default','hive']:
  tests=[t for p in (root/'xml').glob('*.xml')for t in ET.parse(p).iter('testcase')];assert len(tests)==29 and all(not list(t)for t in tests)
  for name,h in r['output_sha256'].items():assert sha(root/name)==h
 failed=json.loads((E/'bootstrap/materialize-hive-attempt-01/receipt.json').read_text());assert failed['exit_code']!=0 and 'SparkEnv' in (E/'bootstrap/materialize-hive-attempt-01/run.log').read_text()
-exp=json.loads((D/'spark-4.2.1-scope-expansion.json').read_text());assert exp['completion_blocker'] and len(exp['cases'])==exp['additional_identified_declarations']==20 and not exp['owned_runtime_is_complete_goal_denominator']
+# Historical counters are bound to their original immutable documentation snapshot.
+SNAPSHOT='3806b1bc58cf466c5146ca0f6829a3632701aaec'
+def historical(name):return json.loads(subprocess.check_output(['git','-C',R,'show',SNAPSHOT+':docs/sail-declarative-pipelines/'+name]))
+exp=historical('spark-4.2.1-scope-expansion.json');assert exp['completion_blocker'] and len(exp['cases'])==exp['additional_identified_declarations']==20 and not exp['owned_runtime_is_complete_goal_denominator']
 for name,h in exp['source_sha256'].items():
  data=subprocess.check_output(['git','-C',S,'show',exp['spark_commit']+':'+name]);assert hashlib.sha256(data).hexdigest()==h
 assert any(c['source'].endswith('/CreateStreamingTableParserSuite.scala')and c['line']==31 for c in exp['cases'])
-legacy=json.loads((D/'spark-4.2.1-inventory.json').read_text());assert len(legacy['cases'])==462 and all(c['id']not in {x['id']for x in legacy['cases']}for c in exp['cases'])
+legacy=historical('spark-4.2.1-inventory.json');assert len(legacy['cases'])==462 and all(c['id']not in {x['id']for x in legacy['cases']}for c in exp['cases'])
 print('PASS exact reference tool,47 source bindings,554 owned names,58 original Spark passes;20 outside declarations open; no Sail promotion')

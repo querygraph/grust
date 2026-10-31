@@ -133,3 +133,7 @@ Fable CF-0457/0459, Grust f255c89b/c82f925d, supports the route distinction and
 withdraws PipelinesHandlerSuite from the client-only examples. Fable CF-0463/Grust2388c8fe confirms the20 outside-root declarations, including
 the distinct no-query ST parser test missed in its first listing. No source assignment or
 streaming/CDC activation authority was transferred.
+
+## Implementation checkpoint: expanded source scope
+
+The implemented fixed scope now includes24 additional declarations (including Flow), with canonical486 sites and595 registered scoped runtime names across43 nonempty suites. Published JAR sources match56 pinned Scala files. All99 recorded original reference executions pass, including both lifecycle cases and both inherited DDL catalog profiles. See [reference evidence](evidence/expanded-original-suite-reference/README.md). These are Spark executions; the conformance routes and full-goal obligations above remain unchanged.

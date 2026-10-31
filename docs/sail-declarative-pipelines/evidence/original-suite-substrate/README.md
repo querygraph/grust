@@ -42,3 +42,8 @@ its recorded file hashes. No binary JARs are committed; artifact URLs, published
 checksums and frozen SHA256 pins make the isolated cache reproducible.
 
 Run `python verify.py` with local Grust/Spark Git object stores available.
+
+Historical verification note: this packet's original20/462 scope counters now
+read immutable documentation snapshot3806b1bc58cf466c5146ca0f6829a3632701aaec.
+Current canonical scope has expanded to486. The original verifier and manifest
+are preserved as *before-snapshot-binding files; all original assertions remain.

@@ -1,0 +1,62 @@
+{
+  "started_at": "2026-10-31T13:42:26.688852+00:00",
+  "mode": "sail",
+  "script_sha256": "4ea4859ef972bf34769ba791ca4057dedcf68a1ed2ff0431a0316bc2234faf0b",
+  "cases": [
+    {
+      "kind": "MATERIALIZED VIEW",
+      "sql": "CREATE MATERIALIZED VIEW table1 AS SELECT 1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.",
+      "table_exists": false
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "sql": "CREATE STREAMING TABLE table1 AS SELECT 1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.",
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW",
+      "sql": "CREATE FLOW f AS INSERT INTO table2 SELECT * FROM table1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "pipeline declarations require a pipeline registration context",
+      "rows": {
+        "table1": [
+          [
+            1
+          ]
+        ],
+        "table2": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "25173ed903162e0f9928b4501a3eac98c999b291",
+  "cli_sha256": "ac6e0f881c5c07b9cacac36a7afc3a41aaf7c3c4237ca46eca77f098b75bb365",
+  "version": "4.2.1",
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T13:42:28.491700+00:00",
+  "remaining_listeners": []
+}
