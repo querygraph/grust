@@ -169,3 +169,54 @@ Codex proposes, once its receipts verifier has both the Spark and the
 Sail run. The runtime under test is the already qualified `d99e8b86d`
 CLI and the candidate changes only test paths, so no binary claim is
 attached to `8e5e06ff4`.
+
+## 7. Pre-pin for the next batch case: `:599–615`, `INVALID_TEMP_OBJ_QUALIFIER` (CF-0431)
+
+The original test registers `CREATE TEMPORARY VIEW some_database.tv AS
+SELECT 1` followed by a materialized view over it, intercepts a
+`ParseException`, and asserts `errorClass` contains
+`INVALID_TEMP_OBJ_QUALIFIER` (`SqlPipelineSuite.scala:599–615`). The
+rule it exercises, from the pin:
+
+- `SparkSqlParser.normalizeTempViewIdentifier`
+  (`sql/core/.../SparkSqlParser.scala:233–257`), used for `CREATE` and
+  `DROP TEMPORARY VIEW`: a one-part name is the view name; a two-part
+  name is accepted only when the first part is `session`
+  (case-insensitive, `CatalogManager.SESSION_NAMESPACE`); a three-part
+  name only when the parts are `system.session`; anything else, and any
+  longer name, throws.
+- The error is a `ParseException` built by
+  `QueryParsingErrors.invalidTempObjQualifierError`
+  (`QueryParsingErrors.scala:767–779`) with condition
+  `INVALID_TEMP_OBJ_QUALIFIER`, SQLSTATE `42602`, and parameters
+  `objectType = "VIEW"`, `objectName = toSQLId(last part)`,
+  `qualifier = toSQLId(all parts but the last, joined by '.')`; the
+  message is "Temporary <objectType> <objectName> cannot be qualified
+  with <qualifier>. Temporary objects can only be qualified with
+  SESSION or SYSTEM.SESSION." (`error-conditions.json:4857–4862`). The
+  Connect class is `org.apache.spark.sql.catalyst.parser.ParseException`,
+  which PySpark maps to its `ParseException`.
+
+Sail today, at `d99e8b86d`:
+
+- `sail-sql-analyzer/src/statement.rs:518–525` rejects every
+  multi-part temporary view name with
+  `SqlError::invalid("expected a single identifier for temporary view
+name")`, which `sail-spark-connect/src/error.rs:93–100` maps to
+  `SparkError::InvalidArgument`: wrong class, no condition, and stricter
+  than Spark, since `session.v` and `system.session.v` are valid there.
+- `SqlError` has no structured variant (`sail-sql-analyzer/src/error.rs:11–26`);
+  `SparkThrowable::ParseException` carries only a message, while
+  `SparkThrowable::Structured` carries class, condition, state and
+  parameters (`error.rs:272–280`).
+
+So the case needs a small Sail source unit, not a test mapping alone:
+the `session`/`system.session` normalisation in the analyzer with the
+view name returned, a structured parse error for every other qualifier
+carrying the class, condition, SQLSTATE and the three parameters with
+backtick-quoted identifiers, the same rule on `DROP TEMPORARY VIEW`,
+and the pipelines SQL handler letting that error through unchanged so
+the public test can assert the condition. The sibling pipelines check
+for persistent views over temporary ones already builds a structured
+`INVALID_TEMP_OBJ_REFERENCE` (`pipelines/analysis.rs:174–192`), which
+is the pattern to follow.
