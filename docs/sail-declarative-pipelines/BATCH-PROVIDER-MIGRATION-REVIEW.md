@@ -1127,3 +1127,85 @@ dependencies, graph drop and cancellation, and distributed encoding must be
 explicit first. Agreed that a leaf descriptor plus unresolved spec is
 insufficient if it reopens view definitions or function bindings. No
 implementation of either option is selected.
+
+## 15. Expression display and origin support for structured `NOT_A_CONSTANT_STRING` (CF-0302)
+
+Discussion only, against Sail `dd4c9344a`, Spark `617618396`, DataFusion
+55.2.0.
+
+**What Spark renders.** `IdentifierResolution.evalIdentifierExpr`
+(`IdentifierResolution.scala:22–49`) raises the three sub-classes in order
+`NOT_CONSTANT` (not foldable after `trimAliases(prepareForEval(expr))`),
+`WRONG_TYPE` (not `StringType`), `NULL` (evaluates to null), each with
+`name = "IDENTIFIER"` and `expr = expr.sql` of the **original** expression
+(aliases included), `WRONG_TYPE` adding `dataType = e.dataType.catalogString`.
+A table `IDENTIFIER` whose expression never resolves (it contains a subquery)
+is reported by `CheckAnalysis` (`CheckAnalysis.scala:454–458`) as
+`NOT_CONSTANT` with `p.identifierExpr.sql` of the unresolved expression.
+Condition text and SQLSTATE 42601 are in the pinned error conditions.
+`expr.sql` is Catalyst's own rendering: `UnresolvedAttribute.sql` joins
+`quoteIfNeeded` parts with dots (`unresolved.scala:327`), `Literal.sql` is
+the typed form (`'text'`, `CAST(NULL AS t)`, typed numeric suffixes,
+`literals.scala:546–`), and subquery expressions do not override `sql`, so
+they fall to `Expression.sql`'s default `prettyName(children.sql)`
+(`Expression.scala:381–384`), which for a scalar subquery with no outer
+references is `scalarsubquery()`. Codex's note that the printed subtree
+shows substituted graph data likely comes from the error's plan context,
+not the `expr` parameter; the packet's recorded `expr` strings decide.
+
+**What Sail has today.** Six string-tagged sites emit
+`"[NOT_A_CONSTANT_STRING.X] …"` through `PlanError::analysis` with no
+parameters (`resolver/constant.rs:54, 61, 110`, `expression/mod.rs:125`,
+`expression/function.rs:89`, `function/common.rs:50`); none carries `expr`,
+`name` or `dataType`, so a structured unit must add all three.
+
+**Reusable pieces, and their limits.**
+
+- `PlanFormatter::data_type_to_simple_string` (`SparkPlanFormatter`,
+  `sail-plan/src/formatter.rs:49–`) is Spark's `simpleString`, which equals
+  `catalogString` for the types involved: directly usable for `dataType`.
+- Codex's shared identifier formatter from the unresolved-column and
+  ambiguity units (`toSQLId` behaviour, CF-0293/0294) is the rule
+  `UnresolvedAttribute.sql` needs per name part; reuse it for attribute
+  rendering and for `name`.
+- `PlanFormatter::function_to_string` and `literal_to_string` render
+  **resolved** DataFusion expressions in Spark's column-naming style for
+  `df.columns` (`expression/function.rs:305`, `literal.rs:45`,
+  `udf.rs:106`, `window.rs:274`). That is a different convention from
+  `expr.sql`: display literals are unquoted, `sql` literals are typed and
+  quoted. They are precedent for the function-name and argument structure,
+  not a drop-in `expr.sql`.
+- DataFusion's `Unparser::expr_to_sql` (`datafusion-sql/src/unparser/
+expr.rs:96`) turns a resolved `Expr` into a SQL AST under a `Dialect`. It
+  renders DataFusion names and quoting, not Catalyst's pretty names, literal
+  forms or backtick rules, and it needs a resolved expression, whereas Spark
+  renders the unresolved one. Usable only with a Sail dialect and
+  post-processing; the divergence risk is high for little gain.
+- Therefore the smallest faithful renderer is a **`spec::Expr` → Catalyst
+  `sql` string** function over the unresolved spec, covering attributes
+  (identifier formatter), literals (the `Literal.sql` table, oracle-driven),
+  functions (`name(args)` with `DISTINCT`/`FILTER` as Catalyst prints them),
+  aliases (Spark includes them in `expr.sql`), casts, and subqueries as
+  `scalarsubquery()`/`exists()`-style defaults; reuse
+  `visit_subqueries`/`visit_children` for traversal and `PlanFormatter` for
+  types. Every unrendered variant should be an explicit error, not a
+  fallback string.
+
+**Origin and parameter provenance.** `spec::Expr::Placeholder(String)`
+holds the parser's variable text (`sail-sql-analyzer/src/expression.rs:
+1076`), and positional values are resolved by ordinal
+(`expression/misc.rs:70–95`, `get_positional_param_value(index)`); the
+spec carries no spans or offsets, although `sail-sql-parser` has
+`TokenSpan` (`span.rs:7`). Spark's `_25`/`_18` names are source offsets of
+the positional markers, so reproducing them would require the analyzer to
+carry the placeholder's token offset into the placeholder's display name.
+That is a contained change, but it is a change to a spec string and a
+parser-to-analyzer plumbing decision, so it should be its own reviewed unit;
+until then, as Codex says, do not fabricate offsets.
+
+**Phase and precedence.** The sub-class order (`NOT_CONSTANT` before
+`WRONG_TYPE` before evaluation/`NULL`) and the "table identifier rejects
+subqueries before missing-table/column analysis, scalar identifier resolves
+its subquery first" split are resolver-phase facts that the validation unit
+owns; the renderer is independent of them and should not try to infer
+precedence.
