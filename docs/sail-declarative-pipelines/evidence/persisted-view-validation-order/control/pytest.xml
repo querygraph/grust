@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="0.310" timestamp="2026-10-31T12:24:09.637032-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_validation_order" name="test_missing_query_precedes_persisted_view_temporary_source[False-False]" time="0.126"><failure message="AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None&#10; +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()&#10; +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition&#10; +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x119212b40&gt;
+pipeline = ('d6e92185-1029-4687-a7d8-714e3070b5a2', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119213170&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x119262de0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-421/test_missing_query_precedes_pe0')
+dry = False, missing_first = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("missing_first", [False, True])
+    def test_missing_query_precedes_persisted_view_temporary_source(pipeline_spark, pipeline, tmp_path, dry, missing_first):
+        _, registry, run = pipeline
+        view = "CREATE TEMPORARY VIEW temporary AS SELECT 1 AS id; CREATE VIEW persisted AS SELECT * FROM temporary"
+        missing = "CREATE MATERIALIZED VIEW missing AS SELECT * FROM missing_source"
+        text = f"{missing};{view}" if missing_first else f"{view};{missing}"
+        registry.register_sql(text, tmp_path / "validation.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None
+E        +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()
+E        +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition
+E        +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_validation_order.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_validation_order" name="test_missing_query_precedes_persisted_view_temporary_source[False-True]" time="0.031"><failure message="AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None&#10; +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()&#10; +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition&#10; +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x119253b60&gt;
+pipeline = ('38f68146-cfcd-4792-8fa4-55b56002072f', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1192896d0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1192e00e0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-421/test_missing_query_precedes_pe1')
+dry = True, missing_first = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("missing_first", [False, True])
+    def test_missing_query_precedes_persisted_view_temporary_source(pipeline_spark, pipeline, tmp_path, dry, missing_first):
+        _, registry, run = pipeline
+        view = "CREATE TEMPORARY VIEW temporary AS SELECT 1 AS id; CREATE VIEW persisted AS SELECT * FROM temporary"
+        missing = "CREATE MATERIALIZED VIEW missing AS SELECT * FROM missing_source"
+        text = f"{missing};{view}" if missing_first else f"{view};{missing}"
+        registry.register_sql(text, tmp_path / "validation.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None
+E        +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()
+E        +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition
+E        +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_validation_order.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_validation_order" name="test_missing_query_precedes_persisted_view_temporary_source[True-False]" time="0.030"><failure message="AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None&#10; +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()&#10; +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition&#10; +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x119252930&gt;
+pipeline = ('d0550630-64b8-48d1-8c60-895a156779f6', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1192887a0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1192e0ae0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-421/test_missing_query_precedes_pe2')
+dry = False, missing_first = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("missing_first", [False, True])
+    def test_missing_query_precedes_persisted_view_temporary_source(pipeline_spark, pipeline, tmp_path, dry, missing_first):
+        _, registry, run = pipeline
+        view = "CREATE TEMPORARY VIEW temporary AS SELECT 1 AS id; CREATE VIEW persisted AS SELECT * FROM temporary"
+        missing = "CREATE MATERIALIZED VIEW missing AS SELECT * FROM missing_source"
+        text = f"{missing};{view}" if missing_first else f"{view};{missing}"
+        registry.register_sql(text, tmp_path / "validation.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None
+E        +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()
+E        +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition
+E        +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_validation_order.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_validation_order" name="test_missing_query_precedes_persisted_view_temporary_source[True-True]" time="0.033"><failure message="AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None&#10; +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()&#10; +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition&#10; +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11928b470&gt;
+pipeline = ('46aee09e-168f-4d46-a7bf-5e5250595703', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1192fd7f0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1192e3600&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-421/test_missing_query_precedes_pe3')
+dry = True, missing_first = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("missing_first", [False, True])
+    def test_missing_query_precedes_persisted_view_temporary_source(pipeline_spark, pipeline, tmp_path, dry, missing_first):
+        _, registry, run = pipeline
+        view = "CREATE TEMPORARY VIEW temporary AS SELECT 1 AS id; CREATE VIEW persisted AS SELECT * FROM temporary"
+        missing = "CREATE MATERIALIZED VIEW missing AS SELECT * FROM missing_source"
+        text = f"{missing};{view}" if missing_first else f"{view};{missing}"
+        registry.register_sql(text, tmp_path / "validation.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'INVALID_TEMP_OBJ_REFERENCE' is None
+E        +  where 'INVALID_TEMP_OBJ_REFERENCE' = getCondition()
+E        +    where getCondition = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`').getCondition
+E        +      where AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') = &lt;ExceptionInfo AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`persisted` references temporary view `temporary`') tblen=7&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_validation_order.py:18: AssertionError</failure></testcase></testsuite></testsuites>

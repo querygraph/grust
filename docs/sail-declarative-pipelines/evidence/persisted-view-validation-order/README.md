@@ -1,0 +1,5 @@
+# Persisted-view source validation follows query resolution
+
+The existing INVALID_TEMP_OBJ_REFERENCE check ran while virtual outputs were being constructed, masking an independent missing-table error. Move that unchanged check after successful query resolution, matching Spark4.2.1 GraphValidations.validateSuccessfulFlowAnalysis before validatePersistedViewSources. One native test covers both registration orders; four paired public cases cover order × dry/run and assert the missing-flow summary with no catalog publication. Existing persisted-view-only errors remain covered by the broad regression selection.
+
+Qualification:218 Connect native/fmt/strict Clippy,300 selected public+67 upstream Python tests,paired Spark/Sail4,unchanged old7cf binary control fails4/4. The existing frozen runner in the unresolved-flow-reporting packet applies without fixture migrations; primary cases are added separately. Broader declared-schema/validation ordering and cycle diagnostic parity remain incomplete. No CDC activation or inventory-site promotion follows.
