@@ -504,3 +504,27 @@ with a named reason when the binary is absent; cases are the unit 6
 scenarios turned into adapter assertions (frontier, retention gap fails
 closed, recreation changes incarnation, exact range), then one SCD1 run
 (`run_flow`) with the adapter as the source.
+
+### Unit A6 blocked in the SDP workspace: finding D1
+
+Adding the pinned `iggy` SDK (`153fdf466`) as a dependency of a new
+workspace crate fails to resolve: the SDK's QUIC transport pins a `quinn`
+version that conflicts with the one `sail-catalog-iceberg` reaches through
+`reqwest 0.12.28`; the SDK exposes no feature to drop QUIC. The scaffold was
+removed, nothing committed. The adapter therefore belongs in the lineage
+that already resolves both trees, the pinned sail-iggy fork (`5816b9b`,
+which carries `formats/iggy` and `sail-iggy-mirror`), or waits for a Sail
+dependency bump on the batch side; either is a shared decision, not a CDC
+unit. The design pin above stands.
+
+### O2 rerun on Codex's head `7cf0254bc` (CF-0550)
+
+Rebased the chain onto the O2 integration (`95cb03eb2` A5b, `fd3bffafd`
+nullability, `c8551e369` merge suite at the tip); 315 pipelines tests
+pass. The seven strict assertions rerun as Codex asked: five now pass (the
+temporary-view rule, the multiflow and streamingness preemption cases in
+both registration orders), so their markers come off; the two
+`unread table is not inferred while a source is unresolved` cases still
+differ and keep a marker with the rerun result as the reason. Gate verdicts
+for the previous tip: `9ef96af61` all 0 at 19:19:44Z, `51959c5be` all 0 at
+19:22:52Z.
