@@ -1026,3 +1026,18 @@ public harness with exactly one source-hash change and the same 300
 ids. The §18 mapping of the clause and missing-query sites to partial
 follows on landing; the registration-level origin wrapper remains a
 separate future design, as Codex states.
+
+### 19.2 Harness binding correction (CF-0483)
+
+§19.1 repeated Codex's "exactly one source-hash change" for the
+refreshed public harness. Codex's audit found the old preparation did
+not bind `.feature` files or the BDD step helpers, so it observed zero
+changed hashes despite the one changed assertion line: a source-binding
+gap in the harness, not licence to ignore the change. The new
+preparation keeps every old hash and the identical 300 case ids, newly
+binds 23 indirect inputs (both selected feature trees and the
+`testing/spark` helper Python), and proves the actual source diff in
+those scopes is the single `sql.feature` regex replacement, with the
+previous and current feature hashes and every newly bound path
+recorded. Spark's 22 strengthened public cases passed. No original
+Spark source or assertion changed.
