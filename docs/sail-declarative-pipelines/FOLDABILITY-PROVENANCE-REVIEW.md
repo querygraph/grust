@@ -640,3 +640,37 @@ arises where Spark raises it, in simplification or execution, and `typeof`
 discards its child first in every policy. Whether the fast path can simply go,
 or must be kept for a plan-shape reason, is for Codex to weigh; the probe
 rows above are the oracle for either choice.
+
+### 9.6 Wrapped catalog identifiers follow the scalar precedence, not the table one (CF-0325)
+
+CF-0325 routes a top-level catalog `IdentifierClause` through the existing
+table `IDENTIFIER` resolver. Probe 6 (`probe6_wrapped_unresolved.py`, appended
+to `evidence/set-catalog-oracle/output.txt`) checks the one place the table
+and scalar resolvers differ, an unresolved column inside the wrapper:
+
+| Statement                                                                    | Spark 4.2.1                                       |
+| ---------------------------------------------------------------------------- | ------------------------------------------------- |
+| `SET CATALOG IDENTIFIER(missing)`                                            | `UNRESOLVED_COLUMN.WITHOUT_SUGGESTION`            |
+| `SET CATALOG IDENTIFIER(concat(current_catalog(), missing))`                 | `UNRESOLVED_COLUMN.WITHOUT_SUGGESTION`            |
+| `SET CATALOG IDENTIFIER(typeof(missing))`                                    | `UNRESOLVED_COLUMN.WITHOUT_SUGGESTION`            |
+| `SELECT * FROM IDENTIFIER(missing)`                                          | `NOT_A_CONSTANT_STRING.NOT_CONSTANT`              |
+| `SELECT * FROM IDENTIFIER(concat(current_catalog(), missing))`               | `NOT_A_CONSTANT_STRING.NOT_CONSTANT`              |
+| `SET CATALOG missing`                                                        | literal `` `missing` ``, then `CATALOG_NOT_FOUND` |
+| `SET CATALOG IDENTIFIER('spark_catalog')`, `` SET CATALOG `spark_catalog` `` | accepted                                          |
+| `SET CATALOG IDENTIFIER(:p)` (unbound)                                       | `UNBOUND_SQL_PARAMETER`                           |
+| `SET CATALOG IDENTIFIER(CAST(NULL AS STRING))`                               | `NOT_A_CONSTANT_STRING.NULL`                      |
+
+This is §2's precedence rule again: the catalog wrapper is an
+`ExpressionWithUnresolvedIdentifier` (`AstBuilder.scala:3727`), so an unresolved
+argument falls to `CheckAnalysis`'s catch-all and reports the column, while a
+table `PlanWithUnresolvedIdentifier` reports `NOT_CONSTANT`
+(`CheckAnalysis.scala:456`). Sail's table resolver remaps
+`UNRESOLVED_COLUMN.*` to `NOT_CONSTANT` (`identifier.rs:30–41`), so routing the
+catalog wrapper through it would make the three `missing` rows `NOT_CONSTANT`
+where Spark says `UNRESOLVED_COLUMN`. The scalar resolver's deferred
+precedence is the right one for the wrapper; what the catalog form needs from
+the table path is only the subquery stance (left unresolved; Spark's own
+outcome is `INTERNAL_ERROR`, retained as a mismatch) and the empty schema,
+which also makes Spark's suggestion-less variant the expected class. The
+unbound-parameter row is a separate class difference (Sail reports a plan
+error from `evaluate_identifier_expr`'s placeholder transform), low priority.

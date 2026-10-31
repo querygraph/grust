@@ -82,3 +82,14 @@ PROBE SELECT 1 DIV 0 => DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `
 PROBE SELECT typeof(1 DIV 0) FROM VALUES (1), (2) AS t(x) => [('bigint',), ('bigint',)]
 PROBE SELECT typeof(x DIV 0) FROM VALUES (1) AS t(x) => [('bigint',)]
 PROBE SELECT IDENTIFIER(typeof(1 DIV 0)) FROM (SELECT 1 AS bigint) => [(1,)]
+=== probe6_wrapped_unresolved date=2026-10-31T03:52:40Z ansi=true
+PROBE SET CATALOG IDENTIFIER(missing) => UNRESOLVED_COLUMN.WITHOUT_SUGGESTION: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved.  SQLSTATE: 42703; line 1 pos 23; / 'SetCatalogCommand expressionwithunresolvedidentifier('missing, 
+PROBE SET CATALOG IDENTIFIER(concat(current_catalog(), missing)) => UNRESOLVED_COLUMN.WITHOUT_SUGGESTION: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved.  SQLSTATE: 42703; line 1 pos 49; / 'SetCatalogCommand expressionwithunresolvedidentifier('concat(cu
+PROBE SET CATALOG IDENTIFIER(typeof(missing)) => UNRESOLVED_COLUMN.WITHOUT_SUGGESTION: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved.  SQLSTATE: 42703; line 1 pos 30; / 'SetCatalogCommand expressionwithunresolvedidentifier('typeof('m
+PROBE SET CATALOG missing => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `missing` not found. Consider to set the SQL config "spark.sql.catalog.missing
+PROBE SET CATALOG `spark_catalog` => ACCEPTED; current_catalog=spark_catalog
+PROBE SET CATALOG IDENTIFIER('spark_catalog') => ACCEPTED; current_catalog=spark_catalog
+PROBE SET CATALOG IDENTIFIER(:p) => UNBOUND_SQL_PARAMETER: [UNBOUND_SQL_PARAMETER] Found the unbound parameter: p. Please, fix `args` and provide a mapping of the parameter to either a SQL literal or collection constructor functions such as `map()`, `array()`, `struct()`. SQLSTA
+PROBE SET CATALOG IDENTIFIER(CAST(NULL AS STRING)) => NOT_A_CONSTANT_STRING.NULL: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 23
+PROBE SELECT * FROM IDENTIFIER(missing) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression missing used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, 
+PROBE SELECT * FROM IDENTIFIER(concat(current_catalog(), missing)) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat(current_catalog(), missing) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must 
