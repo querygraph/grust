@@ -1,0 +1,33 @@
+    Checking sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+    Checking sail-object-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-object-store)
+    Checking sail-celeborn v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-celeborn)
+    Checking sail-catalog v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog)
+    Checking sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+    Checking sail-cache v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-cache)
+    Checking sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+    Checking sail-system-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-system-store)
+    Checking sail-telemetry v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-telemetry)
+    Checking sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+    Checking sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+    Checking sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+    Checking sail-catalog-memory v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-memory)
+    Checking sail-catalog-system v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-system)
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+    Checking sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+    Checking sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+error[E0433]: cannot find module or crate `datafusion_expr` in this scope
+  --> crates/sail-execution/src/proto/codec/ansi_string_cast_tests.rs:57:52
+   |
+57 |         let field = decoded.return_field_from_args(datafusion_expr::ReturnFieldArgs {
+   |                                                    ^^^^^^^^^^^^^^^ use of unresolved module or unlinked crate `datafusion_expr`
+   |
+help: there is a crate or module with a similar name
+   |
+57 -         let field = decoded.return_field_from_args(datafusion_expr::ReturnFieldArgs {
+57 +         let field = decoded.return_field_from_args(datafusion_spark::ReturnFieldArgs {
+   |
+
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `sail-execution` (lib test) due to 1 previous error
