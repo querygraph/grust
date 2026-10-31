@@ -1,0 +1,219 @@
+{
+  "started_at": "2026-10-31T19:47:12.108697+00:00",
+  "mode": "sail",
+  "script_sha256": "69b53b4a19b16074716b40d9aeee1468f5479d255428ca6640fd2967441a7c7b",
+  "runtime_commit": "7f7a14eb39f54ab8991063df2ca58bbf66fa5c54",
+  "cli_sha256": "de1b6ee93f1c25f5ddc5ce7367d2ca59f1f130411fafcdd74cbd03c3f5c4dda6",
+  "version": "4.2.1",
+  "namespace": "sail.default",
+  "cases": [
+    {
+      "declared": false,
+      "read": false,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": false,
+      "read": false,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": false,
+      "read": false,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged;CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged;CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Starting pipeline analysis"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] `sail`.`default`.`merged`: invalid argument: cannot merge incompatible pipeline types Int32 and ConfiguredUtf8 { utf8_type: Configured }",
+      "direct": null,
+      "downstream": null
+    }
+  ],
+  "probe_completed": true,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T19:47:13.963837+00:00",
+  "remaining_listeners": []
+}
