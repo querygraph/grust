@@ -237,3 +237,12 @@ Canonical scope now includes all24 identified extra declarations:486 sites,100 r
 ## Unsupported table-as-select producer
 
 [18604c01a](evidence/unsupported-table-as-select/README.md) strengthens existing partial SqlPipelineSuite525 with original input/fixtures, exact wrapper fields and correct CreateTableAsSelect versus ReplaceTableAsSelect mode names.248 selected native,300+67 public,6 cases per engine and two unchanged-test controls qualify the increment. Counts remain116reviewed87partial399unmapped. The captured12-case next INSERT oracle is not a Sail fix: IF NOT EXISTS on INSERT INTO is raw parser error42601 before Flow policy, requiring shared Sail SQL normalization; remaining valid-form messages follow producer precedence.
+
+
+[Shared INSERT-validation cbeec8f93](evidence/insert-mode-validation/README.md)
+qualifies the ordinary/pipeline raw parser boundary before Flow policy, including
+whole-file precedence over catalog evaluation.252 native,300+67 public,paired15
+and three unchanged-test controls pass. One stale Sail golden output corrected
+through the official generator; all32 inputs/Spark exceptions unchanged. This is
+shared support, with no new original-site promotion:486/116/87/399 unchanged.
+Broader parse origins/order and individual valid Flow-policy messages remain open.

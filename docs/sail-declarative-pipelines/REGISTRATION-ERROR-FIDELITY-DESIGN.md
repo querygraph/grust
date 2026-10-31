@@ -134,3 +134,24 @@ IF NOT EXISTS text has no reachable SQL fixture. Share the parser/normalization
 rule with ordinary Sail SQL; do not invent a pipeline wrapper for it. Remaining
 valid INSERT policies keep partition→columns→overwrite→by-name precedence.
 The12-case oracle is archived; no INSERT implementation changes occur in18604.
+
+
+## Shared INSERT validation qualified
+
+Commit cbeec8f93 closes the announced shared-parser checkpoint with a private
+mode-only AST validator. Both SqlSource entry points validate the entire parsed
+file before registration or catalog evaluation; both AST lowerers also validate.
+Flow and Explain recurse through their existing nested statements. No new public
+AST, error type, wrapper, dependency or execution path is introduced. Ordinary
+SQL and pipeline SQL now reject INSERT INTO ... IF NOT EXISTS with Spark's raw
+ParseException/INVALID_STATEMENT_OR_CLAUSE/42601 and operation parameter. Valid
+overwrite IF NOT EXISTS retains its command flags.
+
+[Evidence](evidence/insert-mode-validation/README.md) binds252 native tests,
+formatting/strict Clippy, fresh300+67 public, paired15 and three unchanged-test
+controls. The initial golden failure is retained: its preexisting Spark oracle
+already rejected the input. Official regeneration changes only that Sail output
+among32 cases, preserving all inputs and recorded Spark exceptions. No original
+inventory site is promoted. Query contexts and general mixed-parser-error
+ordering remain unqualified. Valid Flow-policy producers are the next unit;
+streaming/CDC and public effect admission remain separate required work.

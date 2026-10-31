@@ -1,0 +1,77 @@
+[
+  {
+    "index": 3,
+    "input": "INSERT INTO TABLE testcat.ns1.ns2.tbl\nPARTITION (p1 = 3) IF NOT EXISTS\nSELECT * FROM source",
+    "exception": "\n[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: INSERT INTO ... IF NOT EXISTS is not valid. SQLSTATE: 42601\n== SQL (line 1, position 1) ==\nINSERT INTO TABLE testcat.ns1.ns2.tbl\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPARTITION (p1 = 3) IF NOT EXISTS\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+    "before": {
+      "success": {
+        "command": {
+          "insertInto": {
+            "input": {
+              "project": {
+                "input": {
+                  "read": {
+                    "namedTable": {
+                      "name": [
+                        "source"
+                      ],
+                      "temporal": null,
+                      "sample": null,
+                      "options": []
+                    },
+                    "isStreaming": false
+                  },
+                  "planId": null
+                },
+                "expressions": [
+                  {
+                    "unresolvedStar": {
+                      "target": null,
+                      "planId": null,
+                      "wildcardOptions": {
+                        "ilikePattern": null,
+                        "excludeColumns": null,
+                        "exceptColumns": null,
+                        "replaceColumns": null,
+                        "renameColumns": null
+                      }
+                    }
+                  }
+                ]
+              },
+              "planId": null
+            },
+            "table": [
+              "testcat",
+              "ns1",
+              "ns2",
+              "tbl"
+            ],
+            "mode": {
+              "insertByPosition": {
+                "overwrite": false
+              }
+            },
+            "partition": [
+              [
+                "p1",
+                {
+                  "literal": {
+                    "int32": {
+                      "value": 3
+                    }
+                  }
+                }
+              ]
+            ],
+            "ifNotExists": true
+          },
+          "planId": null
+        }
+      }
+    },
+    "after": {
+      "failure": "[INVALID_STATEMENT_OR_CLAUSE] The statement or clause: INSERT INTO ... IF NOT EXISTS is not valid."
+    }
+  }
+]

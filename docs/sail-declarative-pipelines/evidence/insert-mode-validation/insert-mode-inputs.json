@@ -1,0 +1,32 @@
+[
+  {
+    "label": "single-0",
+    "sql": "INSERT INTO missing IF NOT EXISTS SELECT 1",
+    "kind": "INSERT-MODE"
+  },
+  {
+    "label": "single-1",
+    "sql": "INSERT INTO missing IF NOT EXISTS BY NAME SELECT 1",
+    "kind": "INSERT-MODE"
+  },
+  {
+    "label": "single-2",
+    "sql": "INSERT INTO missing PARTITION(p=1) IF NOT EXISTS SELECT 1",
+    "kind": "INSERT-MODE"
+  },
+  {
+    "label": "single-3",
+    "sql": "CREATE FLOW f AS INSERT INTO missing IF NOT EXISTS BY NAME SELECT 1",
+    "kind": "INSERT-MODE"
+  },
+  {
+    "label": "single-4",
+    "sql": "CREATE FLOW a.f AS INSERT INTO missing IF NOT EXISTS SELECT 1",
+    "kind": "INSERT-MODE"
+  },
+  {
+    "label": "single-5",
+    "sql": "EXPLAIN INSERT INTO missing IF NOT EXISTS SELECT 1",
+    "kind": "INSERT-MODE"
+  }
+]
