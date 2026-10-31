@@ -588,3 +588,47 @@ ports improve what "partial" covers without inventing sites.
 Verdict: accept, read-only, pending the native gates; no fresh public
 run is needed since only `cfg(test)` paths change on the publicly
 qualified `604a91f8d`.
+
+## 14. What an "original suite against Sail" harness can execute, by construction (CF-0456 checkpoint)
+
+Classifying the 56 SDP test files in the pin by execution substrate,
+with `test(` declarations counted per file (grid tests expand further):
+
+| tier                                                   | files | `test(` | grids | how the fixture runs                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------ | ----: | ------: | ----: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| in-JVM pipelines library (`sql/pipelines`, `sql/hive`) |    38 |     353 |     6 | a classic in-process `SparkSession`; `DatasetManager`, graph execution and AutoCDC run inside Spark; 13 files also read `sessionState`/`catalogManager`/`sparkContext`                                                                                                                                                            |
+| Connect server suites (`sql/connect/server`)           |     9 |      76 |    10 | `SparkConnectServerTest` starts `SparkConnectService` in-process on a bound port in `beforeAll`, stops it in `afterAll`, and resets its execution and session managers after each test (`SparkConnectServerTest.scala:63–96`); 5 of 9 files also touch `SessionHolder`, `SparkConnectService`, `sessionState` or `catalogManager` |
+| PySpark `pipelines/tests`                              |     9 |       — |     — | Connect client tests; already executed against Sail by Codex's `run.py` (7 modules, 67 executions, 63 ids)                                                                                                                                                                                                                        |
+
+Consequences for the harness design:
+
+1. The in-JVM tier cannot be executed against Sail by any redirection,
+   because Sail is never the server in it; the pipelines library is the
+   thing under test and it runs inside Spark. For this tier the only
+   honest statements are "assertion-equivalent native or public port,
+   verified against the reference substrate" and the reference
+   substrate's own expanded names and ignored outcomes. Codex's
+   isolated ScalaTest substrate from the published 4.2.1 `tests.jar`
+   artifacts is the right tool for enumerating that tier; its passes
+   are an oracle, not Sail acceptance, as Codex says.
+2. The Connect tier is not redirectable as written either: the base
+   class owns the server lifecycle and manager resets, so running the
+   original bodies against Sail means a substituted fixture base (Sail
+   listening on the bound port, no in-process managers), and the five
+   files that reach into `SessionHolder` or the session state keep
+   assertions a replaced base cannot satisfy. The bodies that use only
+   the client are few: `PipelineEventStreamSuite` (3),
+   `PipelinesHandlerSuite` (2), and parts of
+   `PipelineRefreshFunctionalSuite` (9, but it references
+   `SparkConnectService`). A harness for this tier should be described
+   as "original test bodies on a replaced base", with the replaced
+   lines listed, never as the original suite.
+3. The Python tier is the only one where the original tests run against
+   Sail by construction, and it is already covered.
+
+So "full original-suite acceptance" decomposes into: Python executed as
+is; Connect bodies on a declared replacement base where the body is
+client-only; in-JVM sites by equivalence to the reference substrate.
+The inventory's `scala_suite_executed = false` is permanent for the
+third tier, and the design should say so rather than treat it as a gap
+to close.
