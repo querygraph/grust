@@ -8,11 +8,11 @@ is fully qualified by executing the original Scala suite against Sail.
 | Suite | Reviewed | Partial ports | Unmapped |
 | --- | ---: | ---: | ---: |
 | ViewSuite | 11 | 7 | 4 |
-| MaterializeTablesSuite | 27 | 10 | 17 |
+| MaterializeTablesSuite | 27 | 12 | 15 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
 | SqlPipelineSuite | 38 | 32 | 6 |
-| Total | 97 | 63 | 34 |
+| Total | 97 | 65 | 32 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -167,3 +167,15 @@ execution. Four paired Spark 4.2.1 CTE cases support the shared classifier fix;
 ## Repeated nested materialization schema ports
 
 Recorded 2026-10-30T02:41:33.921674+00:00. [Sail `f6f1328192`](evidence/nested-materialization/README.md) passes two partial ports of MaterializeTablesSuite735/780, preserving six exact nested schemas after two catalog-output refreshes. The original internal fixture remains distinct from fresh public Connect graphs; the failed same-graph attempt is retained. The existing462 registrations now include61 partial ports; no original Scala-suite execution is claimed.
+
+## Internal metadata table ports
+
+[Exact Sail a9eecf5f5 evidence](evidence/internal-table-metadata/README.md) adds
+partial ports for MaterializeTablesSuite:125 and :374 through the private
+metadata seam, preserving streaming Table kinds and batch function schemas.
+Spark production DatasetManager passes the same catalog assertions using the
+original registration helper; no original ScalaTest suite was executed against
+Sail. Native189, production-only control1pass/3fail, fresh public300+67 pass.
+Current canonical total:65 partial/397 unmapped,97 reviewed/462 static sites.
+Streaming execution, full-reset owned cleanup and remaining metadata contract
+coverage are still open; see the [design](METADATA-TABLE-MATERIALIZATION-DESIGN.md).

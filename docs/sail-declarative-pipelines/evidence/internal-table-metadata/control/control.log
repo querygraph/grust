@@ -1,0 +1,40 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 24.29s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-c2295be7729d71ef)
+
+running 4 tests
+test pipelines::materialize::tests::multiple_streaming_targets_materialize_nullable_columns_without_rows ... FAILED
+test pipelines::materialize::tests::streaming_target_preserves_declared_schema_and_identity_partition ... FAILED
+test pipelines::materialize::tests::unsupported_full_reset_and_public_execution_reject_before_catalog_effects ... ok
+test pipelines::materialize::tests::ordinary_streaming_refresh_merges_schema_without_truncating_rows ... FAILED
+
+failures:
+
+---- pipelines::materialize::tests::multiple_streaming_targets_materialize_nullable_columns_without_rows stdout ----
+Error: NotFound(Table, "[TABLE_OR_VIEW_NOT_FOUND] Table or view not found: t1")
+
+---- pipelines::materialize::tests::streaming_target_preserves_declared_schema_and_identity_partition stdout ----
+Error: NotFound(Table, "[TABLE_OR_VIEW_NOT_FOUND] Table or view not found: a")
+
+---- pipelines::materialize::tests::ordinary_streaming_refresh_merges_schema_without_truncating_rows stdout ----
+
+thread 'pipelines::materialize::tests::ordinary_streaming_refresh_merges_schema_without_truncating_rows' (92568471) panicked at crates/sail-spark-connect/src/pipelines/materialize/tests.rs:184:5:
+assertion `left == right` failed
+  left: ["id", "retained"]
+ right: ["id", "retained", "added"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    pipelines::materialize::tests::multiple_streaming_targets_materialize_nullable_columns_without_rows
+    pipelines::materialize::tests::ordinary_streaming_refresh_merges_schema_without_truncating_rows
+    pipelines::materialize::tests::streaming_target_preserves_declared_schema_and_identity_partition
+
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 185 filtered out; finished in 0.24s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

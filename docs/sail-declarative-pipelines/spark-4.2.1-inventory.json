@@ -3138,15 +3138,17 @@
       "line": 125,
       "method": "test",
       "name_expression": "\"multiple\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "crates/sail-spark-connect/src/pipelines/materialize/tests.rs::multiple_streaming_targets_materialize_nullable_columns_without_rows"
+      ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "",
-        "remaining_assertions": "Two independently materialized table schemas and exact nullable INT/STRING columns are unported.",
-        "sail_evidence": null,
+        "covered_assertions": "Original streaming table metadata columns and no-flow materialization; independent nullable INT x/STRING y targets.",
+        "remaining_assertions": "Original ScalaTest execution against Sail and original JVM graph integration remain unqualified.",
+        "sail_evidence": "evidence/internal-table-metadata/native/rust.log",
         "scala_suite_executed": false,
-        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+        "entry_point": "Private Sail tables(schema map), real resolved batch queries, unchanged Table outputs; standalone Spark DatasetManager with original registration helper."
       }
     },
     {
@@ -3267,15 +3269,17 @@
       "line": 374,
       "method": "test",
       "name_expression": "\"partition columns with user schema\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "crates/sail-spark-connect/src/pipelines/materialize/tests.rs::streaming_target_preserves_declared_schema_and_identity_partition"
+      ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "",
-        "remaining_assertions": "Declared two-column schema and identity partition transform are unported.",
-        "sail_evidence": null,
+        "covered_assertions": "Original streaming table metadata columns and no-flow materialization; declared nullable INT x1,x2 and identity partition x2.",
+        "remaining_assertions": "Original ScalaTest execution against Sail and original JVM graph integration remain unqualified.",
+        "sail_evidence": "evidence/internal-table-metadata/native/rust.log",
         "scala_suite_executed": false,
-        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+        "entry_point": "Private Sail tables(schema map), real resolved batch queries, unchanged Table outputs; standalone Spark DatasetManager with original registration helper."
       }
     },
     {

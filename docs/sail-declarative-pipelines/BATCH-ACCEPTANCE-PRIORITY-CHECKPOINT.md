@@ -120,3 +120,15 @@ ports, native internal-graph checks and original-suite execution distinct.
 Then make the next source fix in a small commit with direct failing/passing
 evidence for that original assertion. Preserve mixed-case streaming obligations
 and every known scalar regression while prioritizing direct batch progress.
+
+## Metadata checkpoint result
+
+Sail `a9eecf5f5` and the [metadata packet](evidence/internal-table-metadata/README.md)
+now qualify partial native ports of original MaterializeTablesSuite:125/:374,
+using the internal schema-only seam and unchanged Table kinds. Source/private
+metadata creation and ordinary merge refresh are committed; public analysis and
+rejection-before-effects remain. The [design](METADATA-TABLE-MATERIALIZATION-DESIGN.md)
+records the executable Spark production reference, remaining errors/path/backend
+coverage and full-reset auxiliary ownership work. Notify the user before starting
+that next substantial design checkpoint. Batch event/handler acceptance and the
+other original fixtures remain priorities; these two ports do not complete SDP.

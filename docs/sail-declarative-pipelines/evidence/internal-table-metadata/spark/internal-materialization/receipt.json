@@ -1,0 +1,46 @@
+{
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "checks": [
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java",
+        "-cp",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/*",
+        "scala.tools.nsc.Main",
+        "-usejavacp",
+        "-d",
+        "/tmp/sail-sdp-internal-materialization/classes",
+        "/tmp/sail-sdp-internal-materialization/TestGraphRegistrationContext.scala",
+        "/tmp/sail-sdp-internal-materialization/MetadataOracle.scala"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-internal-materialization/check-0.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/jar",
+        "cf",
+        "/tmp/sail-sdp-internal-materialization/oracle.jar",
+        "-C",
+        "/tmp/sail-sdp-internal-materialization/classes",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-internal-materialization/check-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/bin/spark-submit",
+        "--class",
+        "org.apache.spark.sql.pipelines.graph.MetadataOracle",
+        "/tmp/sail-sdp-internal-materialization/oracle.jar",
+        "/tmp/sail-sdp-internal-materialization/data"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-internal-materialization/check-2.log",
+      "sha256": "640521b071e4317337af1dff552af85dda9b521d956736873c654afe6dfd5ad2"
+    }
+  ]
+}

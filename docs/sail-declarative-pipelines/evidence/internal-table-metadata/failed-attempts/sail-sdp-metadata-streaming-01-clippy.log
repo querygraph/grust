@@ -1,0 +1,34 @@
+    Checking sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+    Checking sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+    Checking sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+    Checking sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+    Checking sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+    Checking sail-physical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-optimizer)
+    Checking sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+    Checking sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+    Checking sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+    Checking sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+    Checking sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+    Checking sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+error[E0618]: expected function, found `std::vec::Vec<sail_common_datafusion::catalog::TableColumnStatus>`
+   --> crates/sail-spark-connect/src/pipelines/materialize/tests.rs:198:16
+    |
+ 53 | / async fn columns(
+ 54 | |     ctx: &SessionContext,
+ 55 | |     table: &str,
+ 56 | | ) -> Result<Vec<TableColumnStatus>, Box<dyn std::error::Error>> {
+    | |_______________________________________________________________- this function of the same name is available here, but it's shadowed by the local binding
+...
+179 |       let columns = columns(&ctx, "target").await?;
+    |           ------- `columns` has type `std::vec::Vec<sail_common_datafusion::catalog::TableColumnStatus>`
+...
+198 |       assert_eq!(columns(&ctx, "target").await?.len(), 3);
+    |                  ^^^^^^^----------------
+    |                  |
+    |                  call expression requires function
+
+For more information about this error, try `rustc --explain E0618`.
+error: could not compile `sail-spark-connect` (lib test) due to 1 previous error
