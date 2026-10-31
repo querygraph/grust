@@ -1248,3 +1248,41 @@ padding and rejects `falſe`; the new key is the first to use the Spark
 rule. Aligning the others is a separate, pre-existing parity item.
 
 Verdict: accept.
+
+### 6.14 The lenient set for a source- and conditional-aware folding rule (pre-pinned for the next unit)
+
+Codex's next unit mirrors Spark's `ConstantFolding` in Sail. The rule's
+one data-dependent input is which parents make a failing foldable child
+survive to execution. From the pin:
+
+- `ConditionalExpression` (`expressions/Expression.scala:566–583`) has
+  exactly four implementors: `If` (`conditionalExpressions.scala:45`),
+  `CaseWhen` (`:169`), `Coalesce` (`nullExpressions.scala:53`) and
+  `NaNvl` (`:347`). Its `foldable` is `final` and `children.forall`
+  (`:567`), so a fully foldable conditional folds whole, parent-first,
+  through its own lazy `eval`.
+- `And` and `Or` (`predicates.scala:842`, `:938`) are not conditional
+  expressions: `TRUE AND CAST('bad' AS INT) > 0` over a real source
+  fails at plan time under ANSI, exactly like the division in §6.2.
+- For a non-foldable conditional, `constantFolding` recurses into every
+  child with `isConditionalBranch = true`
+  (`optimizer/expressions.scala:79–80`), including the always-evaluated
+  inputs (`If.predicate`, `CaseWhen` conditions, the first `Coalesce`
+  argument). A failing predicate is therefore also left in place, tagged
+  `FAILED_TO_EVALUATE` so it is never re-tried (`:63–72`, `:92`), not
+  only a failing branch value.
+- Everything else follows the generic arm (`:107–112`): children are
+  folded first, and if the rebuilt parent is foldable it is folded as a
+  whole, which is where the failure propagates for a non-conditional,
+  non-foldable parent.
+
+So a Sail rule that wants parity has three behaviours to encode, not
+one: parent-first evaluation of foldable subtrees (which DataFusion's
+bottom-up `ConstEvaluator` does not do), leniency for every child of
+the four conditional kinds, and eager failure elsewhere, with the
+`VALUES` exception coming from the local-relation batch rather than
+from the folding rule (§6.2). The DataFusion rule already fails eagerly
+for `Cast(Literal)` and is lenient for everything else
+(`expr_simplifier.rs:559–571`), which is neither of Spark's two
+behaviours; the Sail rule should replace that special case rather than
+stack on it.
