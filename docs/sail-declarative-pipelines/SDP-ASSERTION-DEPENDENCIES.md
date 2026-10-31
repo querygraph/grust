@@ -930,3 +930,72 @@ no-query streaming-table test in `CreateStreamingTableParserSuite.scala`).
 The no-query streaming-table case stays explicit partial coverage,
 since its internal-plan correspondence is not asserted. Constraints
 (`:105`) and collation (`:253`) remain open.
+
+## 19. Positive parser ports `19b7e9c05`; the wrapper boundary that stopped `7d7c3640f` (CF-0478, CF-0479)
+
+**`19b7e9c05`, test-only, accepted.** Three test modules on `f9982230d`,
+no product change. It ports nine original declarations: the base
+suite's column definitions (`:32`), partitioning (`:77`), comment
+(`:119`), `USING` (`:163`), `IF NOT EXISTS` (`:174`) and table
+properties (`:185`), each under both `AS SELECT` syntaxes, with the
+nested struct column's types, nullability, comment and absent default,
+generation and identity asserted; and the three `CreateFlowCommandSuite`
+cases (`:35`, `:46`, `:58`): optional comment, all multipart name
+components, and the `INSERT OVERWRITE … PARTITION … BY NAME` child
+preserved as syntax. Two correspondence limits are stated rather than
+hidden: Sail's configured `STRING` type for Spark's `StringType`, and
+no Spark column metadata. The flow child is tested as syntax only, with
+no broadening of registration acceptance. CTAS subqueries (`:227`) and
+collation (`:253`) are not claimed. Verdict: accept as a faithful
+native port; the inventory move to 109 reviewed and 80 partial that
+Codex expects follows from these nine.
+
+**The wrapper boundary.** `7d7c3640f` passed every native gate and the
+eleven paired Spark cases, then failed one frozen Sail public test that
+expects `location.sql` inside an `AnalysisException` when a
+`LOCATION` clause is rejected during registration. Codex treats this
+as an original-scope dependency and states the requirement as carrying
+the parse error's class, condition, parameters and absent state _and_
+the source file name through registration. The pin says where the file
+name actually travels:
+
+- `PipelinesHandler.defineSqlGraphElements` calls
+  `SqlGraphRegistrationContext.processSqlFile(sqlText, sqlFilePath,
+session)` with no `try` (`PipelinesHandler.scala:222–233`).
+- `processSqlFile` calls `splitSqlFileIntoQueries`, which runs
+  `spark.sessionState.sqlParser.parsePlan` on each statement with no
+  `catch` (`SqlGraphRegistrationContext.scala:637–648`); the
+  `QueryOrigin` with `filePath`, `sqlText`, `line` and `startPosition`
+  is built only for a plan that parsed (`:681–689`).
+- The file origin reaches an error only through
+  `SqlGraphElementRegistrationException(msg, queryOrigin)`, an
+  `AnalysisException` with condition
+  `PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR`, SQLSTATE `42000`,
+  parameters `message`, `offendingQuery` ("\nOffending query:\n<sql>\n")
+  and `codeLocation` ("Query defined at <file>:<line>", or "Query
+  defined in file <file>") (`:63–95`, `error-conditions.json:6024–6031`),
+  thrown by the handlers for registration-level failures such as an
+  unsupported plan kind (`:168–172`) or a catalog expression (`:554–558`).
+
+So in Spark a `CREATE MATERIALIZED VIEW … LOCATION …` inside a pipeline
+SQL file fails in `parsePlan` and reaches the Connect client as a raw
+`ParseException`, `_LEGACY_ERROR_TEMP_0035`, with its parser query
+context and no file name; `SqlPipelineSuite:599` already shows
+`processSqlFile` surfacing a raw `ParseException` for the temp-view
+qualifier. The frozen Sail assertion therefore encodes Sail's earlier
+behaviour, not Spark's. Two consequences for the design phase Codex has
+flagged:
+
+1. The decisive control is cheap and should come first: register the
+   `LOCATION` statement through `DefineSqlGraphElements` on Spark 4.2.1
+   and record the client's class, condition, parameters and whether any
+   file name appears. If it is the raw parse error, changing the frozen
+   test to expect that is alignment to the oracle, not relaxation, and
+   `7d7c3640f` needs no wrapper to land.
+2. The wrapper that does exist in Spark is the registration-level one
+   above, and it is the right target for the origin design: Sail's
+   `PreparationFailure::Analysis` string should become that structured
+   `AnalysisException` with the three parameters and the exact
+   `codeLocation` and `offendingQuery` formats, while parse-level errors
+   pass through raw as `7d7c3640f` already does. Carrying a file name on
+   a parse error would be a Sail invention.
