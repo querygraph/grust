@@ -1,0 +1,62 @@
+[
+  {
+    "label": "ctas",
+    "sql": "CREATE TABLE t AS SELECT 1",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "select",
+    "sql": "-- \u96ea\nSELECT '\u00e9;\u96ea' /* trailing ; */;",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "second",
+    "sql": "SET marker = 1;\n\n-- source\nSELECT 2 -- trailing\n;",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "partition-year",
+    "sql": "\nCREATE MATERIALIZED VIEW a\nPARTITIONED BY (year(id1))\nAS SELECT id as id1, id as id2 FROM range(1,2)",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "partition-multipart",
+    "sql": "CREATE MATERIALIZED VIEW a PARTITIONED BY (a.b) AS SELECT 1",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "flow-multipart",
+    "sql": "\nCREATE STREAMING TABLE st;\nCREATE FLOW some_database.f AS INSERT INTO st BY NAME\nSELECT * FROM STREAM external_t1;\n",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "flow-positional",
+    "sql": "CREATE FLOW f AS INSERT INTO st SELECT 1",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "flow-overwrite",
+    "sql": "CREATE FLOW f AS INSERT OVERWRITE st BY NAME SELECT 1",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "flow-partition",
+    "sql": "CREATE FLOW f AS INSERT INTO st PARTITION (p) BY NAME SELECT 1",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "flow-columns",
+    "sql": "CREATE FLOW f AS INSERT INTO st (a) SELECT 1",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "catalog-null",
+    "sql": "-- source\nSET CATALOG CAST(NULL AS STRING)",
+    "kind": "REGISTRATION"
+  },
+  {
+    "label": "evaluation",
+    "sql": "SET CATALOG CAST(CAST('bad' AS INT) AS STRING)",
+    "kind": "REGISTRATION"
+  }
+]

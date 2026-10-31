@@ -4572,14 +4572,18 @@
       "name_expression": "\"Flow cannot be created with multipart identifier\"",
       "status": "partial-behavioral-port",
       "sail_tests": [
-        "python/pysail/tests/spark/pipelines/test_features.py::test_standalone_flow_names_must_have_one_component[a.b]"
+        "python/pysail/tests/spark/pipelines/test_features.py::test_standalone_flow_names_must_have_one_component[a.b]",
+        "python/pysail/tests/spark/pipelines/test_flow_name_errors.py::test_original_sql_multipart_flow_rejection",
+        "sail_spark_connect::pipelines::sql::tests::flow_name::original_multipart_flow_input_keeps_raw_error_and_discards_sail_draft"
       ],
       "coverage_review": {
-        "phase": "batch-parser",
-        "covered_assertions": "Two-part standalone flow name is rejected at registration; output remains unpublished.",
-        "remaining_assertions": "Original some_database.f message Flow with multipart name ... is not supported and original exception class are not asserted. Original Scala suite remains unexecuted.",
-        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
-        "scala_suite_executed": false
+        "phase": "registration-error-fidelity",
+        "covered_assertions": "Original some_database.f input and both external-table fixtures; raw AnalysisException with original message, exact MULTIPART_FLOW_NAME_NOT_SUPPORTED/0A000/flowName. Native test also preserves Sail draft rollback; additional both-API tests cover spelling, arity, implicit flow and rejection precedence.",
+        "remaining_assertions": "Original JVM suite unexecuted on Sail; native/public replacement fixtures and catalog profiles are distinct. Full registration/origin conformance remains separate.",
+        "sail_evidence": "evidence/registration-error-boundaries/sail-feature/pytest.xml",
+        "scala_suite_executed": false,
+        "runtime_commit": "c864386cc2e4c9dde71bebe5d05bc14055ba122b",
+        "reference_evidence": "evidence/registration-error-boundaries/reference-sql-suite/receipt.json"
       }
     },
     {
