@@ -507,3 +507,306 @@ proof; and the split into a generic staged-converter unit (two paths, mock
 UDF tests, no tag 13) followed by the DivMod proto/encode/decode unit on
 that base is the right order, since the first is a dependency fix any
 multi-step higher-order UDF needs. No change requested.
+
+## 4. Scoped constant validator, committed `4070e895b` (CF-0370, CF-0371)
+
+Three paths on `036dc6dde`: `resolver/constant.rs` delegates to a new
+`constant/validation.rs` (96 lines) and `constant/validation_tests.rs`
+(263 lines). Read read-only against the diff and against DataFusion
+55.2.0's visitor contract; no Sail edits.
+
+### 4.1 Parity with the old variant
+
+The old `exists` closure listed twenty node kinds as constant and treated
+`ScalarFunction` as non-constant when `Volatile` or async; everything else
+was non-constant. The visitor's `Frame::Ordinary` arm lists the same twenty
+kinds, and its `ScalarFunction` guard is the complement of the old
+predicate (`!= Volatile && as_async().is_none()`), so `Stable` functions
+stay admitted as before. Every other variant falls to `_ => None`, which
+sets `constant = false` and stops. Parity holds; Codex's "ordinary allowed
+node sets compared against parent, unchanged" is what the diff shows.
+
+### 4.2 Lexical boundary, read against the visitor contract
+
+`TreeNode::visit` runs `f_down`, then the children only if `f_down`
+returned `Continue` (`visit_children`), then `f_up` only if the children
+returned `Continue` (`visit_parent`); `Stop` skips `f_up`
+(`datafusion-common-55.2.0/src/tree_node.rs:539–572`). `Expr::apply_children`
+visits a higher-order function's `args` (`datafusion-expr-55.2.0/src/tree_node.rs:115`)
+and a `Lambda`'s `body` (`:346`). Consequences for the frame stack:
+
+- Every `f_down` that returns `Continue` pushes exactly one frame and the
+  matching `f_up` pops it, so the stack is the lexical ancestry of the
+  current node. A `Stop` leaves the stack dirty, but the visitor is
+  discarded, so nothing reads it.
+- `Expr::Lambda` is admitted only when the top frame is `Evaluator`, which
+  is true only for a direct argument of an admitted `SparkDivModLazy`
+  (sibling frames are popped before the next argument is entered). A
+  lambda inside a body, a lambda under an alias, or a lambda argument of
+  any other higher-order function is rejected; the tests cover all three.
+- `LambdaVariable` is admitted when any enclosing `Lambda` frame declares
+  its name. That is lexical capture, including across a nested evaluator,
+  which is what `LambdaArgument::evaluate(params, spread_captures)`
+  implements at runtime (§2.1), so the nested test's `6` is the right
+  answer and not a leak.
+- Admission of the evaluator is by exact Rust type (`Any::is`), argument
+  count three, and all arguments literally `Expr::Lambda`. The same-name
+  spoof is rejected by the type test.
+
+What the visitor does not check, and why that is fine here: lambda
+parameter counts (1, 1, 2) and types. Those are decided by
+`lambda_parameters`/`return_field_from_args` during type inference, which
+the `eligible_expressions_preserve_type_null_and_error_evaluation_phases`
+test shows runs before any evaluation (type `Int32` first, `DIVIDE_BY_ZERO`
+only on `evaluate`). A malformed internal expression therefore still errors,
+and before any thunk runs. Codex's split (foldability here, arity there) is
+the right one.
+
+### 4.3 Verdict
+
+Accept. The lexical boundary is exact under the visitor contract, old
+variant parity holds, volatile and provenance descendants are rejected
+without invocation (`counter == 0`), and the `IMMUTABLE` async fixture
+exercises the async predicate on its own. The two end-to-end identifier
+fixtures from §3.2 remain activation items, and Codex's point stands that
+before lowering they would exercise the old expression rather than prove
+new-HOF admission.
+
+## 5. Generic staged decoder `04f1e8cc7` and DivMod codec `036dc6dde` (CF-0367, CF-0368)
+
+### 5.1 Decoder, against the §3.3 and §3.4 checklist
+
+- `Partial` `None` is retained: the loop `continue`s past a `None` entry
+  and leaves `decoded_values[index]` and `value_or_lambda[index]` as the
+  previous step left them. The `RetainNone` mock fails at step 2 with
+  "previous lambda output was lost" if either is dropped, so the test is
+  not vacuous.
+- The step range is `0..=lambda_parameters_max_iterations`. The logical
+  loop calls step 0, and after each `Partial` increments and errors only
+  when `step > limit` (`datafusion-expr-55.2.0/src/higher_order_function.rs:1312–1327`),
+  so its last call is at `step == limit`; the decoder makes the same calls.
+  Codex's CF-0367 wording "make limit exclusive (including 0)" does not
+  describe the committed code; the committed code and the test
+  `resolution_includes_zero_and_last_allowed_steps` (limits 0, 1, 2) are
+  the inclusive bound, which is the correct one.
+- `Partial` counts must equal the lambda count; `Complete` may be longer
+  but not shorter. That is the physical `HigherOrderFunctionExpr`
+  contract (`datafusion-physical-expr-55.2.0/src/higher_order_function.rs:218–231`)
+  rather than the logical one, as argued in §3.4; the `CompleteCount(2)`
+  mock proves the decoded arguments construct a real physical expression.
+- Over-declared lambda parameters (`params.len() > fields.len()`) are
+  rejected; under-declared are accepted through the `zip` in
+  `extend_lambda_schema` (`converter.rs:407–413`), matching the physical
+  `LambdaExpr` rule that trailing lambda parameters are optional.
+- The final pass re-decodes every lambda body against the `Complete`
+  fields and discards the partial-pass bodies; `body.return_field` is
+  computed only on partial passes. Codex's "extra final-pass
+  `body.return_field` work is avoided" is accurate.
+- Failing bodies (`SparkZeroDivisionError`) decode without invocation, so
+  the decoder never evaluates wire.
+
+### 5.2 Codec
+
+Tag 13 is unused in the `HigherOrderUdf` oneof (1–12 taken);
+`SparkDivModLazyUdf { ansi_mode }` is encoded by downcast and decoded by
+construction, the same shape as the other HOF arms. The four tests
+evaluate the original and the decoded physical expression on the same
+batches:
+
+- Three-row skip semantics in both modes and both kinds: `(NULL, 0)`,
+  `(8, 2)`, `(8, NULL)` give `NULL, 4|0, NULL`. The first row is `NULL`
+  under ANSI because the dividend-null check precedes the ANSI zero check
+  in `DivModLike.eval` (§1.2, probe 8), so the test pins the order, not
+  only the values.
+- `(8, 0)` under ANSI surfaces `org.apache.spark.SparkArithmeticException`,
+  `DIVIDE_BY_ZERO`/`REMAINDER_BY_ZERO`, SQLSTATE `22012`, `config` =
+  `"spark.sql.ansi.enabled"` after the round trip; legacy returns `NULL`.
+- A captured column (`offset`) and a non-prefix parameter
+  (`_right_value` alone) survive the wire.
+- A failing left thunk stays skipped on a one-row batch in both modes.
+- Malformed wire: a missing third lambda fails in
+  `SparkDivModLazy::lambda_parameters` ("three lambda arguments"); an
+  over-declared lambda fails in the decoder.
+
+Verdict: accept both units. Together they satisfy the §3.1 and §3.3
+checklists, and the `Complete` leniency is the physical contract as
+settled in §3.4.
+
+## 6. Fast-path and replay design checkpoint (CF-0372, CF-0373, CF-0375, CF-0376)
+
+### 6.1 Raw error classification: verified, and a challenge to the direction of the list
+
+Codex's finding is in the source: `CommonErrorCause::build` maps
+`DataFusionError::Execution`, `ExecutionJoin` and `ResourcesExhausted` all
+to `CommonErrorCause::Execution`
+(`crates/sail-common-datafusion/src/error.rs:188–190`), and the
+`Collection` arm picks the first non-retryable member. That enum is a
+transport and job policy; it cannot decide replay. Agreed.
+
+The challenge is to the shape of the predicate, not its inputs. Under the
+proposed fast path (batch first; on an _admitted data error_ discard the
+partial arrays and run the ordered row evaluator once), the two ways the
+predicate can be wrong are not symmetric:
+
+- A false negative (a real data error the allow-list does not recognise)
+  propagates the batch error, which may be the wrong row's error: the
+  retained counterexample reports right-row 1 where the ordered evaluator
+  reports left-row 0. That is a silent deviation from Spark's row-major
+  first-error rule (§2.4, probe 11), and the user cannot tell.
+- A false positive (a system error replayed) costs one ordered re-run of a
+  body that is already proven deterministic and side-effect free. The
+  outcome is the same system error again, or success where the ordered
+  path's smaller peak memory avoids the exhaustion. For `ExecutionJoin`
+  from cancellation the enclosing future is being dropped and replay
+  observes nothing new.
+
+So the predicate pays in correctness on one side and in latency on the
+other. The list should therefore be a short deny-list of errors for which
+replay is pointless or harmful (`ExecutionJoin`, `CommitStateUnknown`,
+and `ResourcesExhausted` if fail-fast is wanted), with every other error
+from an admitted body replayed, rather than an allow-list that must
+enumerate every data-error shape to stay correct. Two rows of the
+prototype matrix show why: `opaque_source` (an unknown envelope whose
+source is the Spark `DIVIDE_BY_ZERO` structured error) classifies as
+non-data and is not replayed, while `CommonErrorCause` reports the same
+error to the client as `Structured`, so the client sees a Spark data
+error from possibly the wrong row; and `collection_mixed` refuses replay
+although its data member is the one Spark would have raised first. Under
+a deny-list both replay, and the "direct `Execution` is a data error only
+because admission excludes arbitrary UDFs" special case disappears,
+because admission is doing that work already. The admission policy itself
+(ordered by default; batch only for an exact native class set, with
+unknown UDFs, HOFs, async, volatile, provenance and subqueries ordered)
+is the right one and is not challenged.
+
+### 6.2 Conditional casts: Codex's oracle does not generalise beyond `VALUES`
+
+CF-0373 concluded from a sixteen-query Spark run that "right NULL always
+returns NULL" for `CAST('bad' AS T) / d`, and from that derived a
+"crucial activation prerequisite" that Sail's optimizer must not fail the
+cast before lazy evaluation. The oracle's source was `VALUES`. Probe 12
+(`evidence/set-catalog-oracle/probe12_cast_laziness_by_source.py`,
+output `probe12_output.jsonl`, 56 cases, Spark 4.2.1 `local[1]`) varies
+the source and the shape, with `explain()` forced before `collect()` so a
+plan-time failure is distinguishable from an execution failure. For each
+of `INT`, `DOUBLE`, `DECIMAL(5,2)`, `DECIMAL(38,10)` the result is the
+same:
+
+| shape                                                                   | ANSI                                           | legacy |
+| ----------------------------------------------------------------------- | ---------------------------------------------- | ------ |
+| `… / d FROM VALUES (CAST(NULL AS INT))`                                 | `NULL`                                         | `NULL` |
+| `… / d FROM parquet` with `d` all `NULL`                                | plan time `CAST_INVALID_INPUT` (explain fails) | `NULL` |
+| `… / d FROM parquet` with `d = 0`                                       | plan time `CAST_INVALID_INPUT`                 | `NULL` |
+| `CAST('bad' AS T) / CAST(NULL AS INT)` (foldable, any source)           | `NULL`                                         | `NULL` |
+| `CASE WHEN d IS NULL THEN 1 ELSE CAST('bad' AS T) END` (parquet)        | `1`                                            | `1`    |
+| `FROM IDENTIFIER(CAST(CAST('bad' AS T) / CAST(NULL AS INT) AS STRING))` | `NOT_A_CONSTANT_STRING.NULL`                   | same   |
+
+The mechanism is in the pinned source. `ConstantFolding.constantFolding`
+is parent-first: a foldable expression is evaluated as a whole
+(`optimizer/expressions.scala:95`), so a foldable `Divide` runs its own
+`eval`, which checks the divisor first and never evaluates the cast. The
+children of a non-foldable parent are folded one by one, and a failure
+propagates unless the child is inside a conditional branch
+(`:63–72`, `:79–80`, the `FAILED_TO_EVALUATE` tag). `VALUES` is a
+`LocalRelation`, and the batch `LocalRelation early`
+(`Optimizer.scala:201–202`) runs `ConvertToLocalRelation` before the
+operator-optimization batch, evaluating the whole projection row by row
+with `InterpretedMutableProjection` (`:2622–2626`), which is why the
+`VALUES` form sees `Divide.eval`'s laziness. `hasNoSideEffect` treats a
+legacy `Cast` as side-effect free (`:58`) because it returns `NULL`.
+
+On the DataFusion side the asymmetry Codex observed is deliberate:
+`ConstEvaluator` keeps a failing expression for execution time, except a
+`Cast`/`TryCast` whose input is a literal, which it fails at plan time
+"rather than deferring to execution time"
+(`datafusion-optimizer-55.2.0/src/simplify_expressions/expr_simplifier.rs:559–571`).
+A scalar UDF cast such as `SparkAnsiStringCast` is preserved; an
+`Expr::Cast` is not.
+
+Consequences for the checkpoint:
+
+1. For a column-dependent division over a real source, Spark under ANSI
+   fails at plan time too. Sail failing in `simplify_expressions` is the
+   same phase; the difference is the error (DataFusion's cast message
+   versus `CAST_INVALID_INPUT`, `NumberFormatException` class). The
+   prerequisite there is error-class parity, not laziness.
+2. Laziness is required exactly where Spark is lazy: constant contexts
+   (`IDENTIFIER`, `SET CATALOG`, directives, any fully foldable
+   expression, all parent-first), conditional branches, and local
+   relations. In a constant context the internal evaluator plus
+   `ConstEvaluator`'s preservation of a failed UDF call reproduces
+   parent-first evaluation, so option (A), a typed immutable cast UDF
+   covering decimals (and the legacy float fix that CF-0376 has started),
+   delivers both the error class and the constant-context laziness.
+3. Option (A) over-delivers in one direction: with the cast preserved and
+   the HOF lazy at runtime, `CAST('bad' AS DECIMAL(5,2)) / d` over parquet
+   with every `d` NULL returns `NULL` in Sail where Spark fails at plan
+   time. That is a bounded, documented deviation in the lenient direction,
+   the direction Spark itself moved for conditional branches. If exact
+   parity is wanted, the one place to encode Spark's rule is a Sail
+   analyzer or optimizer rule that eagerly folds foldable children of a
+   non-foldable, non-conditional parent and propagates their errors; it
+   should not be a property of the cast.
+4. Option (B), a deferred-cast wrapper over the native kernel, is
+   dominated by (A): it gives laziness without the error class.
+5. The `decimal(38,10)` in Sail's error for a requested `DECIMAL(5,2)` is
+   Sail's coercion of the division; Spark's own result type for
+   `DECIMAL(5,2) / INT` is `decimal(16,13)` (probe 12 `types`), so the
+   comparison should be on the resolved division type, not the cast.
+
+### 6.3 String-to-numeric cast oracle for the CF-0376 unit (probe 13)
+
+Probe 13 (`probe13_string_cast_matrix.py`, output `probe13_output.jsonl`)
+casts thirty strings from a parquet column to `DOUBLE`, `FLOAT`, `INT`,
+`BIGINT`, `DECIMAL(5,2)`, `DECIMAL(38,10)` with `CAST` and `TRY_CAST` in
+both modes (720 cells; a failing whole-column query is re-run per row to
+get each input's condition). The rows a legacy float cast unit and the
+later decimal unit need:
+
+- Legacy `CAST` of a malformed string returns `NULL` for all six targets.
+  ANSI `CAST` raises `CAST_INVALID_INPUT` (`NumberFormatException`); decimal
+  overflow raises `NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION`
+  (`ArithmeticException`) for `'1e3'`, `'123456'`, `'99999.999'` into
+  `DECIMAL(5,2)`, and `NUMERIC_OUT_OF_SUPPORTED_RANGE` for `'1e400'` and
+  forty nines. `TRY_CAST` returns `NULL` in both modes for every error
+  cell.
+- `DOUBLE`/`FLOAT` accept: surrounding whitespace, `d`/`f` suffixes,
+  exponents, `'NaN'`/`'nan'`, `'inf'`/`'+inf'`/`'-inf'`/`'Infinity'`/
+  `'-Infinity'` (case-insensitive), `'0.'`, `'.5'`, `'+1'`; `'1e400'` is
+  `inf`, `'1e-400'` is `0.0`, forty nines is `1e40` as `DOUBLE` and `inf`
+  as `FLOAT`; `'99999.999'` as `FLOAT` is `100000.0`. Rejected (`NULL` or
+  error by mode): `''`, `' '`, `'0x10'`, `'1_000'`, `'1,000'`.
+- Decimals round `HALF_UP` (`1.235 → 1.24`, `1.245 → 1.25`,
+  `-1.235 → -1.24`), accept whitespace, exponent, `'0.'`, `'.5'`, and
+  reject the `d`/`f` suffixes, `NaN`/`inf`, hex and separators.
+- Integers: legacy `CAST` truncates a decimal string (`'1.5' → 1`,
+  `'99999.999' → 99999`, `'.5' → 0`) but `TRY_CAST` and ANSI `CAST`
+  reject it; exponents are rejected for integers in every mode.
+
+Codex's planned minimal change (route only legacy string to `Float32`/
+`Float64` through the existing `TryCast` path) is consistent with the
+`DOUBLE`/`FLOAT` legacy column above provided DataFusion's float parser
+accepts the same lexical set; the suffix, special-value and whitespace
+rows are the ones to test, since Arrow's parser is stricter than Java's
+`parseDouble` on at least the suffixes.
+
+### 6.4 Rule placement and costs
+
+Sail prepends its custom optimizer rules and appends
+`ResolveLambdaVariables` after the built-ins because folding changes
+lambda argument types (`crates/sail-logical-optimizer/src/lib.rs:44–66`);
+the analyzer runs `ResolveLambdaVariables` first, Sail's `TypeCoercion` in
+place of DataFusion's, and `ExtractScalarIteratorUDF` last (`:22–42`). An
+admission proof that needs post-coercion types and post-folding bodies
+has two candidate seats: the last optimizer position (after
+`ResolveLambdaVariables`), which runs once per optimizer pass, or the
+physical planner (`ExtensionQueryPlanner`, §2.1), which sees the final
+logical expression once. The second is the cheaper and the one that
+cannot be invalidated by a later rule; Codex's "carry it in explicit
+worker state with ordered default" fits it.
+
+The cost figures (row/native 851.77 and 901.43, selected-batch/native
+12.45 and 3.53, shared host, 1024 integer rows) rank the three paths and
+nothing more: the ordered row evaluator cannot be a broad default, and the
+all-active zero-copy path is the only candidate for one. They are not
+before/after numbers and should not be cited as such.
