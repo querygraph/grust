@@ -317,3 +317,64 @@ strict Clippy and fmt clean.
 Gate: `9dcb9ed08` (test port) VERDICT all 0, pytest 338, at
 2026-10-31T18:19:40Z; sail-catalog strict Clippy and 20 tests at that head.
 A4a/A4b gate running on the rebased shas.
+
+## Unit A4c: the SCD1 write component (design pin)
+
+What Spark does per flow start and per microbatch, and the Sail seams:
+
+- `createAuxiliaryTableIfNotExists` (`FlowExecution.scala:398–440`): if the
+  auxiliary identifier does not exist, create it with the auxiliary schema
+  (A3), the target's declared format as provider when present, and the
+  properties `pipelines.autocdc.scdType` = SCD label and
+  `pipelines.autocdc.keyColumnNames` = the compact JSON of the key names;
+  an existing table is left untouched (drift validation ran first). Sail:
+  `spec::CommandNode::CreateTable { table, definition }` through
+  `execution::run_command`, the `TableDefinition` as `materialize.rs`
+  builds it, with `file_format` from the destination's format.
+- `Scd1ForeachBatchHandler.execute` (`:39–72`): validate (A2
+  `microbatch::validate`), reconcile against the auxiliary table read (A4a
+  `reconcile`), register the reconciled plan as a session temporary view
+  (`CatalogManager::create_temporary_view` with `replace`, the
+  `TemporaryViewManager` holding the `LogicalPlan`), then run the A4b
+  auxiliary merge and target merge as `spec::CommandNode::MergeInto`
+  through `run_command`, in that order; the retry argument at `:55–60`
+  holds unchanged.
+- Expressions: the flow's `sequencing` and `delete_condition` are
+  `spec::Expr`; the resolver's `resolve_expression` is crate-private, so
+  the handler resolves them by resolving a `spec` projection over the
+  microbatch view and taking the projection's expressions, which binds
+  them to the view's qualifiers exactly as the batch columns are bound.
+- Tests: native, with `sail-delta-lake` as a dev-dependency registering
+  `DeltaLakeSource` in the pipelines test context (it is already compiled
+  through `sail-session`), so a Delta destination accepts the merges;
+  cases from `AutoCdcScd1SinglePipelineSuite`, the durability suite's
+  "dropped auxiliary table is recreated" and the full-refresh suite's
+  second runs, expressed as two handler invocations over MemTable batches.
+  No streaming runner, checkpoint or `execution::execute` wiring: the
+  handler is invoked by tests only, and activation is the next design
+  checkpoint (user-notified).
+
+### Unit A4c: write component, delivered
+
+`autocdc/write.rs`: `ensure_auxiliary_table` and `handle_microbatch` as
+pinned above, with one design choice recorded: the flow's `sequencing` and
+`delete_condition` (`spec::Expr`) are evaluated once as the reserved helper
+columns `__spark_autocdc_sequence` and `__spark_autocdc_delete` of a
+projection over the batch view, which is how Spark evaluates them as
+`Column`s over the microbatch; the helper columns are dropped before the
+reconciled view is published, and the resolved sequencing type is the
+evaluated column's type. Tests (`tests/write.rs`, 6) run the handler
+in-process against a Delta destination created in the test warehouse,
+using the production session's analyzer, optimizer and physical optimizer
+rules (finding: the pipelines test context lacked them, and the Delta merge
+path plans an explicit repartition only Sail's physical rules remove).
+Cases: `AutoCdcScd1SinglePipelineSuite` empty-target upsert (`:43`), the
+one-run upsert/delete/re-upsert convergence with the delete flag excluded
+(`:74`), the parquet rejection (`:168`); `AutoCdcScd1AuxiliaryTableDurabilitySuite`
+cross-run upsert (`:42`), suppression below a recorded delete with the
+tombstone visible in the auxiliary table (`:83`), and recreation of a
+dropped auxiliary table (`:184`). The full-refresh suite's second-run cases
+compose A1's drop with this handler and are left to the activation tests.
+
+Gate: A4a `ef9472065` VERDICT all 0 (pytest 379 passed, 7 xfailed) at
+2026-10-31T18:33:02Z; A4b `ffad1d382` VERDICT all 0 at 18:36:10Z.
