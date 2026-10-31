@@ -498,3 +498,42 @@ Verdict: accept, read-only, pending the native gates and the public
 regression run. On landing, `MaterializeTablesSuite:125` and `:374`
 can move to partial on the same terms as the SQL sites, with the
 Scala flag retained.
+
+## 12. Structured partition diagnostics, candidate `8c44213a8` on `a9eecf5f5` (CF-0447)
+
+Four paths. The two string-only analysis errors in `materialize::tables`
+become structured `AnalysisException`s built in
+`materialize/errors.rs`:
+
+- `CANNOT_UPDATE_PARTITION_COLUMNS`, SQLSTATE `42000`, parameters
+  `existingPartitionColumns` and `requestedPartitionColumns` rendered
+  in Spark's `Transform.toString` spelling (`identity(x)`, `years(c)`,
+  `bucket(n, c)`, …) with Sail's identifier quoting, the requested side
+  always identity, and an omitted declaration rendering as the empty
+  string, which is `allTransforms.mkString(", ")` of nothing
+  (`DatasetManager.scala:286–296`).
+- `SPECIFY_CLUSTER_BY_WITH_PARTITIONED_BY_IS_NOT_ALLOWED`, SQLSTATE
+  `42908`, no parameters (`:272–277`), raised before the existing-table
+  lookup, so no target is created; the test asserts the table absent.
+
+The templates match `error-conditions.json:724–730` and `:6452–6457`.
+The original assertions (`MaterializeTablesSuite:444–445`, `:487–488`,
+`:1063–1067`) check only the cause's condition, class and the retained
+partitioning, which the native ports do, including the retained
+`identity(x)` after both the changed and the omitted declaration. The
+outer `TableMaterializationException(tableName, cause)`
+(`DatasetManager.scala:60–64`) and origins remain explicitly open, as
+Codex states; this unit must not be counted as wrapper or attribution
+parity. The omitted-partition port covers only the failing half of
+`:402`; its success half (same partition column, columns reordered by
+the catalog) is still unmapped.
+
+One finding, outside the original assertions and not blocking: Spark
+joins the lines of a multi-line message template with a newline
+(`ErrorClassesJSONReader.scala:186`, `:202`), so the
+`CANNOT_UPDATE_PARTITION_COLUMNS` message a Spark client sees has a
+line break before "Please delete the table …", where the candidate
+renders a space. A one-character change to the format string.
+
+Verdict: accept, pending the native gates, with the newline fix either
+folded in or recorded as a known text difference.
