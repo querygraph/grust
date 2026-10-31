@@ -80,3 +80,34 @@ Verdict: accept, read-only, pending the public gate. Two notes:
   unresolved column in a later expression. Spark raises both in
   analysis as well, so this is a precedence detail to watch in the
   public comparison, not a defect.
+
+## 3. The other nullability direction: ANSI string casts inherit their input's nullability (CF-0415)
+
+Codex's four retained `nvl2` mismatches run the other way from §1: Sail
+reports `nullable = false` where Spark reports `true`, on cases that
+already lower through `IF` with a real `else_expr` and involve casts.
+The cause is in the cast, not the conditional:
+
+- `SparkAnsiStringCast::return_field_from_args` copies the input field
+  and changes only its name, type and metadata, with the comment "Match
+  type-only Cast's source nullability"
+  (`sail-function/src/scalar/spark_ansi_string_cast.rs:109–129` at
+  `982877d85`). A non-nullable string input, a literal or a non-null
+  column, therefore yields a non-nullable cast.
+- Spark's `Cast.nullable` for a non-`TRY` cast is `child.nullable ||
+forceNullable(from, to)`, and `forceNullable` is `true` for any cast
+  from `StringType` to a non-string, non-binary type, in every mode
+  (`Cast.scala:630–631`, `:433`; pinned in §6.8 of the operand review).
+  `TRY_CAST` is nullable too (`:632–640`).
+- Sail's legacy `SparkCastStringToInt32` already forces `nullable = true`
+  and tests it (`spark_cast_string_to_int32.rs:221–232`), and
+  `SparkStringToDecimal` does the same (§6.10), so the ANSI primitive
+  caster is the odd one out.
+
+Fix: `with_nullable(true)` in the ANSI caster's return field, matching
+its two siblings; the "match type-only Cast" comment describes
+DataFusion's `Cast`, which is the wrong reference for a Spark cast from
+string. This should close the four `nvl2` cases and the twenty ANSI
+`CAST` schema mismatches Codex counted at CF-0378, and it is independent
+of the `else_expr` change in §1; the two together are the two
+directions of the schema gap.
