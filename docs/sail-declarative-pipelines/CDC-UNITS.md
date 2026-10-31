@@ -528,3 +528,5 @@ both registration orders), so their markers come off; the two
 differ and keep a marker with the rerun result as the reason. Gate verdicts
 for the previous tip: `9ef96af61` all 0 at 19:19:44Z, `51959c5be` all 0 at
 19:22:52Z.
+
+Chain tip `4fc62deed` on `7cf0254bc`: VERDICT commit=4fc62deed488ccf2f25fa2035454a04e0c2416a7 fmt=0 clippy=0 rust_common=0 rust_common_datafusion=0 rust_pipelines=0 maturin=0 pytest_pipelines=0 at 2026-10-31T19:27:48Z
