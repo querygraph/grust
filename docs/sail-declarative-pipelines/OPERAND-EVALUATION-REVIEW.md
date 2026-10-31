@@ -322,3 +322,42 @@ lowering, so the physical function can carry it as a flag. The remaining
 caveat is cross-partition, which Spark leaves to scheduling in both
 engines. With this, the §2.2 performance objection and CF-0355's
 observability objection are both met without a documented deviation.
+
+### 2.5 Replay-safe classification for the deterministic fast path (CF-0357)
+
+CF-0357 accepts the deterministic batch-then-replay path as a candidate
+subject to three conditions. Proposed predicates, read-only:
+
+- **Replay-safe thunk.** No `Volatile` descendant in any of the three
+  bodies (`Expr::is_volatile`, recursive). `Stable` functions (`now()`,
+  `current_date()`, `current_timestamp()`) are deterministic within a
+  query by DataFusion's definition and Spark's (`CurrentTimestampLike` is
+  foldable, evaluated once per query at `ComputeCurrentTime`), so they do
+  not block the fast path. A registered Python UDF declared deterministic is
+  replay-safe by Spark's own contract (task retries re-run it); one declared
+  nondeterministic is `Volatile` in Sail (`pyspark_udf.rs:57–58`) and takes
+  the row-major path. Decide at lowering, carry as a flag on the physical
+  function, never re-derive at execution.
+- **Replayable error.** Replay only when the batch step failed with a
+  _data_ error, the kind a row-major pass would reproduce on the same row:
+  `DataFusionError::External(StructuredSparkError)` carrying a data
+  condition (`DIVIDE_BY_ZERO`, `REMAINDER_BY_ZERO`, `CAST_INVALID_INPUT`,
+  `USER_RAISED_EXCEPTION`, …), `ArrowError`-derived compute and cast
+  errors, and `Execution` errors raised by a UDF body. Never replay
+  `ResourcesExhausted`, I/O, cancellation or internal errors
+  (`CommonErrorCause::build` already classifies these,
+  `common-datafusion/error.rs`): those propagate unchanged, because the
+  row-major rerun would only hide the real cause or double the resource
+  use. A conservative first cut is an allow-list of replayable classes with
+  everything else propagated; a mis-classified replayable error then costs
+  Spark's error order on that one class, never correctness.
+- **Cancellation.** The replay runs inside the same `invoke_with_args`
+  call on the same batch, so task cancellation reaches it the way it
+  reaches any kernel: there is no new stream, no retained state, and the
+  partial batch-major results are dropped before the rerun. No new
+  cancellation surface.
+
+With the CSE fixture now pinned (two identical lazy calls over a volatile
+thunk evaluate exactly twice, zero at frame construction), the remaining
+activation conditions are the §2.2 items 2–6 and the measured cost of both
+modes on the same fixture.
