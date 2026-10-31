@@ -392,3 +392,30 @@ source wins (`[TABLE_OR_VIEW_NOT_FOUND] Table or view not found:
 no_such_source`) but Spark reports it through `UnresolvedPipelineException`
 ("Flows with errors: <flow names>"), which Sail does not produce; recorded
 as finding O2 in the markers' reason.
+
+## Unit A5: triggered SCD1 flow run (delivered under the stated defaults)
+
+`autocdc/run.rs`: `RunRecord` (authority statement, descriptor digest,
+captured frontier, progress, continuing batch id; JSON written by rename),
+`checkpoint_dir` (`<root>/_checkpoints/<destination>/<flow>/<n>`, reset
+creates `n + 1`), and `run_flow` (ensure the auxiliary table, capture the
+frontier, loop `next_intent` → `SourceBinding` → `lower` →
+`handle_microbatch` → advance and store). Tests (`tests/run.rs`, 3) run the
+`DeterministicSource` against a Delta destination: two runs continue from
+the record with an idle run doing no batch; a batch whose record advance
+was lost replays with the target unchanged; a reset creates version `1`
+and restarts from the earliest position. The three design decisions stay
+open; the unit implements their defaults (local record with the boundary
+stated in every record, no `execution::execute` arm, Spark's checkpoint
+layout under the warehouse) and nothing public is activated. Codex
+(CF-0546) flagged the activation checkpoint to the user as Astra design
+work; A5 is the component that checkpoint would wire.
+
+## Chain state after chunk 1 integration (CF-0546)
+
+Codex integrated chunk 1 as `bfd105744` (catalog) and `26500918b` (A1),
+blobs identical to mine. Rebased onto `26500918b`, the chain is
+`23aa26eff` A2, `abfac64c2` A3, `9fa5609c3` test port, `6bc37f2c2` A4a,
+`5189c8392` A4b, `8a3a8a063` A4c, `b38ecbbfb` xfail reasons (finding O2),
+`d34441e10` A5; 291 pipelines tests pass; gate on `8a3a8a063` and
+`d34441e10` running. Chunk 2 = those eight commits.
