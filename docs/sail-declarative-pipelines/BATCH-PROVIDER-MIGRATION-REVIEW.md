@@ -916,3 +916,135 @@ Notes:
 
 No change requested on the seam; the trace is a draft and these are inputs
 to its first commit. No code, no scope change.
+
+## 14. Dynamic references, Connect references and the frozen-input constraint (CF-0295)
+
+Codex's draft `DYNAMIC-REFERENCE-BINDING-DESIGN.md` and
+`evidence/dynamic-binding-design/` read against Sail `ccb6fb212` and Spark
+`617618396`. Read only; design review, not a source assignment.
+
+### 14.1 The protocol-phase split, confirmed from source
+
+- **Literal `IDENTIFIER` early, computed late.** `AstBuilder.withIdentClause`
+  turns a non-null string literal into a named relation at parse time;
+  everything else stays `PlanWithUnresolvedIdentifier` and is materialized
+  by `ResolveIdentifierClause` during ordinary analysis, after
+  `FlowAnalysis` has substituted graph inputs. The design's first unit
+  (normalize only `Literal(Utf8(Some(name)))` into `ReadType::NamedTable` in
+  the SQL analyzer, keep computed, cast, null and parameter forms as
+  `DynamicTable`) is the right cut, and the ten-of-thirteen dynamic
+  outcomes bear it out.
+- **Generic `WithRelations`.** Spark's `transformWithRelations` builds a
+  plan-ID map and substitutes `UnresolvedPlanId` occurrences; a reference
+  contributes settings only where it is used. The design's unit 4 (lexical
+  plan-ID lookup, expand actual occurrences in traversal order, typed
+  plan-reference visitor, repeated uses and shadowing preserved) matches.
+- **SQL root with all-`SubqueryAlias` references.** `SparkConnectPlanner.
+transformWithRelations` selects `transformSqlWithRefs` →
+  `executeSQLWithRefs` (`SparkConnectPlanner.scala:410, 3156–3178`): each
+  reference is `Dataset.ofRows(session, transformRelation(input))
+.createOrReplaceTempView(alias)`, then `executeSQL(root)` runs under the
+  ordinary session, then the temp views are dropped, and the **analyzed**
+  `logicalPlan` of the root (`Dataset.logicalPlan` is
+  `queryExecution.commandExecuted`, `Dataset.scala:272–276`) becomes the
+  flow's plan. That is why a graph-local parameter fails
+  `TABLE_OR_VIEW_NOT_FOUND` at registration (the ordinary catalog has no
+  graph views) and why the external parameter is frozen: the analyzed plan
+  carries the external relation already resolved, file index included, and
+  `FlowAnalysis.analyze` later rewrites only `UnresolvedRelation` nodes
+  (`FlowAnalysis.scala:110–139`), so nothing re-resolves it on later runs.
+
+### 14.2 What "frozen" means, and why Sail cannot get it from a stored plan
+
+In Spark the frozen object is the analyzed relation including its file
+listing (`HadoopFsRelation` over an in-memory file index built at
+analysis), captured once at registration under ordinary session rules. In
+Sail a resolved `LogicalPlan` does not carry a listing: file sources list at
+physical planning, inside `plan_table_scan` → `list_files_for_scan`
+(`sail-data-source/src/listing/planner.rs:85–119, 341`), from the Session
+supplied to that command. So storing a resolved plan the way the catalog
+manager stores a temporary view (`TemporaryView { plan: Arc<LogicalPlan>,
+columns, properties }`, `sail-catalog/src/temp_view.rs:18–60`, session
+lifetime) would preserve the _name resolution_ and _schema_ of the
+parameter but would still list the current files on every command, which
+is exactly the behaviour the DROP/recreate witness rules out. The design's
+sentence "preserving only schema is also insufficient" is therefore
+necessary, and so is "a resolved plan is insufficient" for Sail
+specifically. The frozen description must pin the _data_, not the name or
+the plan.
+
+### 14.3 Existing mechanisms with a small footprint
+
+- **Sail `FileScanIdentity`** (`sail-execution/src/proto/codec/
+file_scan_identity.rs`): per file group, each file's location, `e_tag`
+  and `version`, encoded from a `FileScanConfig` and restored into one
+  (`encode_file_scan_identity`, `parse_file_scan_config_with_identity`)
+  with mismatch errors. It exists for worker transport, but it is already
+  an immutable description of a file read that is stronger than Spark's
+  (Spark freezes the listing, not object versions). A frozen file input can
+  be represented as "listing captured at registration" in this form, as
+  plain data with no provider `Arc`, which also satisfies "no
+  `LogicalPlan`/providers in sail-common".
+- **Versioned tables.** `DeltaTableSource` carries a version-pinned
+  `snapshot` and `IcebergScan` a `snapshot`; Sail's time-travel options
+  already express "read version _v_". But the witness replaces the catalog
+  entry with a different location, so pinning a version _by name_ would
+  follow the new table. The pin must be location plus version. LakeCat's
+  `TableCommitSnapshot { ident, location, metadata_location, version, … }`
+  (`lakecat-store/src/records.rs:185–194`) is exactly that shape for catalog
+  tables and is the natural immutable description where LakeCat is the
+  catalog; for Delta/Iceberg by path, location plus version/snapshot id
+  suffices.
+- **Owned, session-local registries with explicit cleanup already exist**
+  as patterns: `TemporaryViewManager` (`RwLock<HashMap<String,
+Arc<TemporaryView>>>`) and `RemoteCheckpointRegistry` (`sail-cache/src/
+remote_checkpoint.rs:45–50`: session id, `closed`, `relations` by id,
+  `insert`/`get`/`resolve_relation`/`cleanup_relation`/`cleanup_session`).
+  Codex rightly refuses to overload the latter; its _contract_ (publication
+  index keyed by id, session scoped, explicit cleanup, closed flag) is the
+  template for a pipeline-owned frozen-input registry, scoped to the
+  dataflow graph's lifetime rather than the session's.
+
+### 14.4 A candidate with the smallest new surface
+
+1. **Capture at registration, under ordinary session rules** (as Spark
+   does): resolve each SQL parameter reference with the plain resolver
+   (graph-local names fail `TABLE_OR_VIEW_NOT_FOUND`, matching Spark),
+   derive its schema and columns, and derive a `FrozenSource` description:
+   for file sources the listing identity (locations, `e_tag`, `version`,
+   partition values), for Delta/Iceberg the location plus version or
+   snapshot id, for LakeCat-managed tables the commit snapshot. No provider
+   is retained; the registering session's stores are used once.
+2. **Own it with the graph.** Store `{ alias, schema, columns, source }` in
+   the dataflow graph registry entry (Connect `pipelines/mod.rs` already
+   holds graphs per session), cleaned with the graph, closed flag like the
+   checkpoint registry. Nothing in sail-common.
+3. **Install by alias through the existing `RelationScope`.** SQL parameter
+   references are named aliases, each distinct, so the name-keyed scope is
+   adequate here (unlike §12's occurrence problem): `GraphScope::resolve`
+   returns a plan over a "frozen source" provider built from the
+   description. The only new provider is a file source that scans a fixed
+   listing instead of calling `list_files_for_scan`; the identity-restoring
+   codec path shows the shape, and projection and filter pushdown stay on
+   the fixed file set. For versioned tables the existing time-travel path
+   with an explicit location is the provider.
+4. **Scope it to SQL-with-references parameters only.** Spark freezes only
+   these; ordinary graph reads and generic `WithRelations` references are
+   re-resolved each run through `readGraphInput`. Generalizing the frozen
+   contract to all external reads would diverge from Spark.
+
+### 14.5 Open points the design should carry
+
+- Spark's freeze is a _listing_ freeze; files deleted after registration
+  fail at read time in Spark too. With `e_tag`/`version` in the identity,
+  Sail would additionally detect replaced contents; decide whether that
+  stricter check is wanted or should be a documented difference.
+- The frozen description is replay identity for the parameter only; it
+  does not make the pipeline's own tables or views replayable, and it must
+  not be presented as the C0 answer.
+- Registration-time resolution runs provider I/O (listing, Delta log read)
+  under the registering request; it needs an owner like any other
+  pre-planning work (§1, §6).
+- Dropping the graph must drop the frozen descriptions; a restart loses
+  them, as the checkpoint registry's comment already states for its own
+  case, and Spark's registered flow plans are equally process-local.
