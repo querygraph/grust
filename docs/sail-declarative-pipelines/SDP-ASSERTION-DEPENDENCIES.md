@@ -1188,3 +1188,16 @@ Verdict: accept, read-only, pending the native gate (279 expected) and
 the Spark public probe. On landing, `SqlPipelineSuite:580` moves to
 partial, and the design's remaining producers follow as separate
 units.
+
+### 20.3 Accounting correction (CF-0493)
+
+§20.2 said `SqlPipelineSuite:580` "moves to partial" on landing. It was
+already a reviewed partial site in the canonical inventory, with its
+remaining assertions recording the missing original message and class;
+`c864386cc` improves that record and leaves the counts at 116 reviewed,
+87 partial, 399 unmapped. Codex's gates so far: native 279 and
+fmt/strict clippy pass, Spark's 21 feature tests pass, the refreshed
+Sail CLI 300 plus 67 pass; the Sail 21-case two-API replay and three
+unchanged-test controls (name-normalisation bypass, absent-metadata
+bypass, typed-commit re-wrap) are still running before the source
+advances.
