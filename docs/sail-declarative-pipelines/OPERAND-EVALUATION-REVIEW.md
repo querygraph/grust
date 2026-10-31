@@ -1286,3 +1286,61 @@ for `Cast(Literal)` and is lenient for everything else
 (`expr_simplifier.rs:559–571`), which is neither of Spark's two
 behaviours; the Sail rule should replace that special case rather than
 stack on it.
+
+### 6.15 `nvl2` lowering `e5605fd3a`, and where DataFusion's constant evaluator cannot be switched off (CF-0401)
+
+**`nvl2`.** Spark's `Nvl2` is `RuntimeReplaceable` with replacement
+`If(IsNotNull(expr1), expr2, expr3)` (`nullExpressions.scala:271–276`),
+and `If` merges only `trueValue` and `falseValue` types
+(`conditionalExpressions.scala:48–50`), so the tested argument never
+takes part in coercion. Sail's resolver returned `expr_fn::nvl2`, a
+DataFusion function that coerces all three, hence `nvl2('sentinel', 1,
+2)` typed as string and array or boolean tests rejected. The candidate
+(`e5605fd3a` on `226b0c1cf`) lowers the ordinary arm through the
+existing `if_expr` with `value.is_not_null()`, keeping the dedicated
+date/timestamp path, which is Spark's replacement verbatim. Tests: the
+tested type does not reach the branches (string, boolean, binary, null
+test), branch widening `Int32`/`Int64` to `Int64`, a failing cast in the
+unreached branch skipped under `LiteralEvaluator`, the tested
+expression evaluated once (volatile counter equals one), and a public
+feature scenario with the integer schema for all four inputs. Verdict
+when requested: accept.
+
+**Constant evaluation.** Codex's claim that there is no public switch is
+true: `ExprSimplifier` exposes only `with_guarantees`,
+`with_canonicalize` and `with_max_cycles`
+(`expr_simplifier.rs:319`, `:371`, `:424`), and
+`simplify_with_cycle_count` constructs `ConstEvaluator::try_new`
+unconditionally (`:213–216`). The callers that build their own
+simplifier, each of which would run the `Cast(Literal)` plan-time
+failure independently of the `SimplifyExpressions` rule:
+
+- optimizer: `simplify_exprs.rs:123` (the rule), `decorrelate.rs:530`,
+  `:565`, `:605`, `simplify_literal.rs:54`, `unwrap_cast.rs:632`,
+  `udf_preimage.rs:181`;
+- core: `session_state.rs:814` (the `create_physical_expr` path) and
+  `:2013`, `context/mod.rs:1569`;
+- Sail: `resolver/constant.rs` (the unwrapped catalog expression path,
+  §6.2), `resolver/identifier.rs`, `resolver/expression/window.rs`,
+  `sail-logical-optimizer/src/session_timestamp.rs`,
+  `sail-common-datafusion/src/schema_evolution.rs`, and the Delta and
+  Iceberg `datasource/expressions.rs`.
+
+`datafusion-physical-expr-55.2.0` also carries a physical
+`simplifier/const_evaluator.rs` (`simplify_const_expr`), exported but not
+called from the core planner in this version.
+
+Consequence for the folding design: the Spark rule cannot be installed
+by replacing or disabling DataFusion's evaluator. It can be installed in
+front of it. `ConstEvaluator` preserves every failing expression except
+a bare `Cast`/`TryCast` of a literal (`:559–571`); the typed cast UDFs
+(§6.8, §6.10) remove that exception from Sail's plans, after which
+DataFusion is uniformly lenient. A Sail analyzer rule that runs once
+before the optimizer and applies Spark's `constantFolding` (§6.14:
+parent-first, lenient inside the four conditional kinds, eager
+elsewhere) then supplies the eager failures Spark raises, and whatever
+it leaves unfolded is, by construction, inside a conditional branch or
+non-foldable, where DataFusion's leniency is the behaviour wanted. The
+Sail-owned call sites above (constant contexts first) can call the same
+rule directly. That is one rule and the existing cast UDFs; nothing in
+DataFusion needs patching.
