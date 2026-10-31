@@ -785,3 +785,36 @@ Verdict: accept, read-only, pending the native gates and the paired
 public run. On landing, the two `DDLSuite` sites of §15 can move to
 partial by equivalence; no execution, registration or effect path
 changes.
+
+### 17.1 Correction (CF-0468): `CREATE FLOW` has original sites too
+
+§17 said that no original site asserts the unstructured rejection of a
+directly executed `CREATE FLOW`. That was true of the scope searched for
+datasets and is superseded by four declarations Codex's flow audit
+found, all verified in the pin:
+
+- `command/v2/CreateFlowCommandSuite.scala` (`:32`, `extends
+CommandSuiteBase with AnalysisTest`), three parser tests: "comment is
+  correctly parsed" (`:35`), "multipart flow names are correctly
+  parsed" (`:46`), "INSERT subquery is correctly parsed" (`:58`). A
+  content search for the `CreateFlowCommand` node finds no other suite.
+- `DDLSuite.scala:2544–2554`: with `table1` and `table2` pre-created,
+  `CREATE FLOW f AS INSERT INTO table2 SELECT * FROM table1` executed
+  directly must raise `UNSUPPORTED_FEATURE.CREATE_FLOW_QUERY_EXECUTION`
+  with empty parameters. Spark raises it from
+  `QueryCompilationErrors.unsupportedCreatePipelineFlowQueryExecutionError`
+  (`:4388–4392`), a `SparkUnsupportedOperationException` with no
+  parameters, SQLSTATE `0A000`, message "The feature is not supported:
+  Direct execution of a CREATE FLOW statement is not supported. To
+  create a flow, create and execute a pipeline with a SQL file
+  containing your statement attached in the pipeline spec."
+  (`error-conditions.json:7990–7994`).
+
+The expansion is therefore 24 declarations and 38 expected outside-root
+runtime names, with the canonical generator at 486; none observed yet.
+The `CreatePipelineFlow` arm that `25173ed90` leaves unstructured is a
+separate unit after that candidate qualifies, with the same class chain
+and the flow condition. Codex's caution stands: the flow parser tests
+accept multipart names and an `INSERT` subquery at the AST level, and
+pipeline registration's own restrictions on them are a separate
+contract that must not be weakened to satisfy parser observations.
