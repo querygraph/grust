@@ -120,3 +120,34 @@ first.
   the staged commit in B4. Incarnation rotation for a restored database is not
   implemented. Enrolling a table that already has Delta versions needs an
   initial head, also B4.
+- B3/B4 done: `2a2cb8454`. An optional fence travels from the MERGE spec through
+  `MergeIntoOptions`, the Delta planner and the worker codec to
+  `DeltaCommitExec`. A fenced commit stages, ratifies, and publishes only a new
+  ratification. A retry that replays a receipt keeps its own staged entry
+  unpublished, because publishing it would append a second log version. An
+  unfenced write to an enrolled table and a fenced write with no authority are
+  both refused at the commit node, so choosing another operation does not remove
+  the fence.
+- B5 done: `bf4fb115c`. `run_durable_flow` seals, archives, merges with stable
+  request identities, and completes. Tests crash at each stage of a batch and
+  check both tables, heads and checkpoint, and the worked recovery trace runs on
+  real Delta tables with the Turso authority reopened from disk.
+- Design points B3 to B5 settled by building:
+  - An unratified preparation is replaced by a new attempt, in the ratification
+    transaction. Keeping it would strand recovery, since a rerun stages a new
+    file name.
+  - Enrolled tables need in-commit timestamps. Ratified staging takes its
+    timestamp from the commit, and the auxiliary table inherits the property.
+  - A Delta table has no log, and so no identity, until its first commit. An
+    empty unfenced merge before enrollment writes version 0.
+- Known limits after B5:
+  - The auxiliary table and that first commit are still created unfenced, before
+    enrollment. The design's Initialization intent exists in the model and is
+    not yet used by the run.
+  - Fenced commits refuse catalog-managed tables. V1 covers filesystem-managed
+    Delta tables, and the merge is the only fenced operation.
+  - Reset is modelled and tested in `sail-sdp-control`, but `materialize::tables`
+    does not yet run it through the authority.
+  - The fence is checked only in the session process; a worker without the
+    extension refuses, so fenced commits run in local mode.
+  - B6 (admission in `execution::execute`) and the Iggy adapter remain.
