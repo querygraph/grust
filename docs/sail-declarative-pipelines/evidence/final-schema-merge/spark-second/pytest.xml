@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="19" time="3.360" timestamp="2026-10-31T13:35:36.247403-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-first]" time="1.882" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-last]" time="0.110" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-none]" time="0.124" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-first]" time="0.101" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-last]" time="0.110" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-first]" time="0.110" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-last]" time="0.084" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-first]" time="0.099" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-last]" time="0.081" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[False-False]" time="0.045" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[True-False]" time="0.039" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[True-True]" time="0.042" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[ARRAY&lt;INT&gt;-ARRAY&lt;STRING&gt;]" time="0.073" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[STRUCT&lt;x: INT&gt;-STRUCT&lt;x: STRING&gt;]" time="0.060" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[MAP&lt;STRING, INT&gt;-MAP&lt;STRING, STRING&gt;]" time="0.065" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[DECIMAL(8,2)-DECIMAL(9,3)]" time="0.047" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[TIME(3)-TIME(6)]" time="0.037"><failure message="pyspark.errors.exceptions.connect.AnalysisException: &#10;Failed to resolve flows in the pipeline.&#10;&#10;A flow can fail to resolve because the flow itself contains errors or because it reads&#10;from an upstream flow which failed to resolve.&#10;&#10;Flows with errors: spark_catalog.default.events_left, spark_catalog.default.events_right&#10;Flows that failed due to upstream errors: spark_catalog.default.merged_left, spark_catalog.default.merged_right&#10;&#10;To view the exceptions that were raised while resolving these flows, look for flow&#10;failures that precede this log.&#10;&#10;JVM stacktrace:&#10;org.apache.spark.sql.pipelines.graph.UnresolvedPipelineException&#10;&#09;at org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)&#10;&#09;at org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)&#10;&#09;at org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)&#10;&#09;at org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)&#10;&#09;at scala.util.Try$.apply(Try.scala:217)&#10;&#09;at org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)&#10;&#09;at org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)&#10;&#09;at org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)&#10;&#09;at org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)&#10;&#09;at org.apache.spark.sql.pipelines.graph.PipelineExecution.dryRunPipeline(PipelineExecution.scala:89)&#10;&#09;at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:561)&#10;&#09;at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)&#10;&#09;at scala.util.Using$.resource(Using.scala:296)&#10;&#09;at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)&#10;&#09;at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)&#10;&#09;at org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)&#10;&#09;at org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)&#10;&#09;at org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)&#10;&#09;at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)&#10;&#09;at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)&#10;&#09;at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)&#10;&#09;at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)&#10;&#09;at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)&#10;&#09;at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)&#10;&#09;at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)&#10;&#09;at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)&#10;&#09;at org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117b01d00&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-433/test_final_merge_reports_enclo4')
+left = 'TIME(3)', right = 'TIME(6)'
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("TIME(3)", "TIME(6)"),
+            ("INTERVAL YEAR", "INTERVAL DAY"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+        with pytest.raises(SparkException) as error:
+&gt;           run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:37: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x117b36ea0&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "
+Failed to resolve fl...
+
+To view the exceptions that were raised while resolving these flows, look for flow
+failures that precede this log."
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: 
+E                   Failed to resolve flows in the pipeline.
+E                   
+E                   A flow can fail to resolve because the flow itself contains errors or because it reads
+E                   from an upstream flow which failed to resolve.
+E                   
+E                   Flows with errors: spark_catalog.default.events_left, spark_catalog.default.events_right
+E                   Flows that failed due to upstream errors: spark_catalog.default.merged_left, spark_catalog.default.merged_right
+E                   
+E                   To view the exceptions that were raised while resolving these flows, look for flow
+E                   failures that precede this log.
+E                   
+E                   JVM stacktrace:
+E                   org.apache.spark.sql.pipelines.graph.UnresolvedPipelineException
+E                   	at org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)
+E                   	at org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)
+E                   	at org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)
+E                   	at org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)
+E                   	at scala.util.Try$.apply(Try.scala:217)
+E                   	at org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)
+E                   	at org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)
+E                   	at org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)
+E                   	at org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)
+E                   	at org.apache.spark.sql.pipelines.graph.PipelineExecution.dryRunPipeline(PipelineExecution.scala:89)
+E                   	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:561)
+E                   	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)
+E                   	at scala.util.Using$.resource(Using.scala:296)
+E                   	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)
+E                   	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)
+E                   	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)
+E                   	at org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)
+E                   	at org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)
+E                   	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)
+E                   	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)
+E                   	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)
+E                   	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)
+E                   	at org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)
+E                   	at org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)
+E                   	at org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)
+E                   	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)
+E                   	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)
+E                   	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[INTERVAL YEAR-INTERVAL DAY]" time="0.055" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[STRUCT&lt;`Mixed Case`: INT&gt;-STRUCT&lt;`Mixed Case`: STRING&gt;]" time="0.049" /></testsuite></testsuites>

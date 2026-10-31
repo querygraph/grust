@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="18" time="1.789" timestamp="2026-10-31T13:41:14.793529-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-first]" time="0.382" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-last]" time="0.088" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-none]" time="0.078" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-first]" time="0.093" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-last]" time="0.066" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-first]" time="0.071" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-last]" time="0.110" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-first]" time="0.057" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-last]" time="0.072" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[False-False]" time="0.059"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 276 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1193f3240&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_schema_merge_preser0')
+declared = False, read = False
+
+    @pytest.mark.parametrize(("declared", "read"), [(False, False), (True, False), (True, True)])
+    def test_final_schema_merge_preserves_structured_error(pipeline_factory, tmp_path, declared, read):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        registry.register_sql(";".join(statements), tmp_path / "final-schema.sql")
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, '"INT"', '"STRING"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "INT" and "STRING". Plea...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"INT"', right = '"STRING"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 276 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[True-False]" time="0.046"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 276 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1194527a0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_schema_merge_preser1')
+declared = True, read = False
+
+    @pytest.mark.parametrize(("declared", "read"), [(False, False), (True, False), (True, True)])
+    def test_final_schema_merge_preserves_structured_error(pipeline_factory, tmp_path, declared, read):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        registry.register_sql(";".join(statements), tmp_path / "final-schema.sql")
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, '"INT"', '"STRING"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "INT" and "STRING". Plea...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"INT"', right = '"STRING"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 276 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[True-True]" time="0.062"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 276 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1193c3ec0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_schema_merge_preser2')
+declared = True, read = True
+
+    @pytest.mark.parametrize(("declared", "read"), [(False, False), (True, False), (True, True)])
+    def test_final_schema_merge_preserves_structured_error(pipeline_factory, tmp_path, declared, read):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        registry.register_sql(";".join(statements), tmp_path / "final-schema.sql")
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, '"INT"', '"STRING"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "INT" and "STRING". Plea...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"INT"', right = '"STRING"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 276 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[ARRAY&lt;INT&gt;-ARRAY&lt;STRING&gt;]" time="0.089"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 290 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x11936d6c0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_merge_reports_enclo0')
+left = 'ARRAY&lt;INT&gt;', right = 'ARRAY&lt;STRING&gt;'
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, f'"{left}"', f'"{right}"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "ARRAY&lt;INT&gt;" and "ARRAY&lt;...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"ARRAY&lt;INT&gt;"', right = '"ARRAY&lt;STRING&gt;"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 290 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[STRUCT&lt;x: INT&gt;-STRUCT&lt;x: STRING&gt;]" time="0.067"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 298 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x119452b60&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_merge_reports_enclo1')
+left = 'STRUCT&lt;x: INT&gt;', right = 'STRUCT&lt;x: STRING&gt;'
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, f'"{left}"', f'"{right}"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "STRUCT&lt;x: INT&gt;" and "ST...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"STRUCT&lt;x: INT&gt;"', right = '"STRUCT&lt;x: STRING&gt;"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 298 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[MAP&lt;STRING, INT&gt;-MAP&lt;STRING, STRING&gt;]" time="0.049"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 302 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x119488fe0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_merge_reports_enclo2')
+left = 'MAP&lt;STRING, INT&gt;', right = 'MAP&lt;STRING, STRING&gt;'
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, f'"{left}"', f'"{right}"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "MAP&lt;STRING, INT&gt;" and "...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"MAP&lt;STRING, INT&gt;"', right = '"MAP&lt;STRING, STRING&gt;"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 302 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[DECIMAL(8,2)-DECIMAL(9,3)]" time="0.056"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 291 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x11948ac00&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_merge_reports_enclo3')
+left = 'DECIMAL(8,2)', right = 'DECIMAL(9,3)'
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, f'"{left}"', f'"{right}"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "DECIMAL(8,2)" and "DECI...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"DECIMAL(8,2)"', right = '"DECIMAL(9,3)"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 291 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[INTERVAL YEAR TO MONTH-INTERVAL DAY TO SECOND]" time="0.056"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 311 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1194b8c20&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_merge_reports_enclo4')
+left = 'INTERVAL YEAR TO MONTH', right = 'INTERVAL DAY TO SECOND'
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, f'"{left}"', f'"{right}"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "INTERVAL YEAR TO MONTH"...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"INTERVAL YEAR TO MONTH"', right = '"INTERVAL DAY TO SECOND"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 311 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[STRUCT&lt;`Mixed Case`: INT&gt;-STRUCT&lt;`Mixed Case`: STRING&gt;]" time="0.060"><failure message="AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'&#10;  &#10;  Skipping 320 identical leading characters in diff, use -v to show&#10;  -  the merge. SQLSTATE: 42825&#10;  +  the merge.">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1194ba840&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-437/test_final_merge_reports_enclo5')
+left = 'STRUCT&lt;`Mixed Case`: INT&gt;', right = 'STRUCT&lt;`Mixed Case`: STRING&gt;'
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+        with pytest.raises(SparkException) as error:
+            run(dry=True)
+&gt;       _assert_merge_error(error.value, f'"{left}"', f'"{right}"')
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkException('[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "STRUCT&lt;`Mixed Case`: IN...they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge.')
+left = '"STRUCT&lt;`Mixed Case`: INT&gt;"', right = '"STRUCT&lt;`Mixed Case`: STRING&gt;"'
+
+    def _assert_merge_error(error, left, right):
+        assert error.getCondition() == "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE"
+        assert error.getSqlState() == "42825"
+        parameters = error.getMessageParameters()
+        # Producer scheduling is not an ordered contract. Check both original
+        # types and require the message to preserve the actual parameter order.
+        assert set(parameters) == {"left", "right"}
+        assert {parameters["left"], parameters["right"]} == {left, right}
+&gt;       assert error.getMessage().split("\n\nJVM stacktrace:")[0] == (
+            "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types "
+            f"{parameters['left']} and {parameters['right']}. Please check the data types "
+            "of the columns being merged and ensure that they are compatible. If necessary, "
+            "consider casting the columns to compatible data types before attempting the merge. "
+            "SQLSTATE: 42825"
+        )
+E       AssertionError: assert '[CANNOT_MERG...ng the merge.' == '[CANNOT_MERG...LSTATE: 42825'
+E         
+E         Skipping 320 identical leading characters in diff, use -v to show
+E         -  the merge. SQLSTATE: 42825
+E         +  the merge.
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:112: AssertionError</failure></testcase></testsuite></testsuites>
