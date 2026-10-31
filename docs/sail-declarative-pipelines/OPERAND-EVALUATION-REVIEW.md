@@ -228,3 +228,97 @@ row-major as the default and to activating without the identifier and
 constant-folding consequences handled. Pure component tests first, as
 CF-0353 proposes, with the batch-major selection variant measured against
 the row-major one on the same fixture.
+
+### 2.3 Candidate `89599e5cc`, read against its diff
+
+Four `sail-function` paths, no lowering or codec. `SparkDivModLazy`
+(`math/div_mod_lazy.rs`): `HigherOrderSignature::exact` of three lambdas,
+`Immutable`; `lambda_parameters` gives the two thunks a dummy `Null`
+parameter and the operation `[left, right]` from the thunk fields, `Partial`
+until both are known; `return_field_from_args` validates the divisor type
+(numeric or `Null`) and returns the operation field with `nullable = true`;
+`short_circuits()` is true; `coerce_value_types` admits no value arguments.
+`invoke_with_args` loops rows: evaluate the right thunk on the row, return
+`NULL` if it is null or, outside ANSI, zero (via the shared
+`numeric_zero_mask`, extracted from `divisor.rs` so `±0` and decimals have
+one definition); else evaluate the left thunk on the row, return `NULL` if
+null; else evaluate the operation with the two one-row arrays as parameters
+and the row's captures; `concat` the one-row chunks. This is Spark's
+`DivModLike.eval` order exactly, each thunk at most once per row, no replay,
+and the ANSI zero error comes from the operation body's guard after the left
+is known. The tests pin right-first/null/legacy-zero skips with a call trace,
+first-row error before a later right operand, `±0`/`NaN`/`inf`/empty batch,
+field metadata and admission, and an optimizer pass that keeps a
+conditional failing operand and a captured column. As a correctness
+baseline it is right; no change requested to the component.
+
+Two things to verify by fixture before it meets lowering:
+
+- **CSE through a lambda body.** `Expr::is_volatile_node` matches only a
+  `ScalarFunction` with `Volatile` signature (`datafusion-expr/expr.rs:2159–2160`);
+  the `HigherOrderFunction` node is `Immutable`. `CommonSubexprEliminate`
+  refuses to extract `Lambda`/`LambdaVariable` nodes and volatile nodes
+  (`common_subexpr_eliminate.rs:701–704`) and its `test_volatile` shows a
+  volatile _descendant_ protects an ordinary parent; whether that protection
+  travels through a `Lambda` child to the HOF node is what decides if two
+  identical `spark_divmod_lazy` calls with `rand()` in a thunk get merged
+  into one evaluation, which would break the cardinality this component
+  exists for. One fixture with two such calls in a projection settles it.
+- **Per-row cost shape.** Each row does two `take_arrays` of the captures,
+  a `NullArray` dummy, up to three body evaluations on one-row batches, and
+  a `new_null_array`/`concat` at the end. Fine for a baseline, not for
+  activation (§2.2 item 1, revised below).
+
+### 2.4 Cross-row error selection: Spark's rule, observed, and the fast path it allows
+
+CF-0355 did not accept that cross-row error order is unobservable, and it
+was right. Probe 11 (`probe11_cross_row_error_order.py`, appended to
+`evidence/set-catalog-oracle/output.txt`), ANSI on, `local[1]` and
+`local[2]`, whole-stage codegen on and off, with row 1 failing on the left
+operand (`raise_error`, `USER_RAISED_EXCEPTION`) and row 2 on the right
+(`CAST('y' AS INT)`, `CAST_INVALID_INPUT`):
+
+| Rows                                     | Spark 4.2.1 (all four configurations) |
+| ---------------------------------------- | ------------------------------------- |
+| row 1 left fails, row 2 right fails      | `USER_RAISED_EXCEPTION`               |
+| row 1 right fails, row 2 left fails      | `CAST_INVALID_INPUT`                  |
+| row 1 left raises, row 2 divides by zero | `USER_RAISED_EXCEPTION`               |
+| row 1 divides by zero, row 2 left raises | `DIVIDE_BY_ZERO`                      |
+| the first case under `REPARTITION(2)`    | `USER_RAISED_EXCEPTION`               |
+
+Within a partition Spark is strictly row-major and the first failing row's
+error is the public outcome, in both interpreted and generated code; only
+the cross-partition case is scheduling-dependent, and the two-row
+repartition did not even separate the rows. So §2.2 item 1's claim that the
+order is "not a Spark-defined semantic" is withdrawn for the same-partition
+case: a selected-batch evaluation that runs the right thunk over the whole
+batch first would report `CAST_INVALID_INPUT` where Spark reports
+`USER_RAISED_EXCEPTION`, and that is public metadata.
+
+The fast path survives in a narrower, exact form, and Spark's own contract
+says where the line is. `Expression.deterministic`'s documentation
+(`Expression.scala:118–131`): "The non-deterministic expressions should not
+change in number and order. They should not be evaluated during the query
+planning." Deterministic expressions carry no such contract, and Spark
+re-evaluates them freely (task retries re-run a deterministic projection).
+Therefore:
+
+- When every thunk is deterministic (no `Volatile` function in any body),
+  evaluate batch-major with selection: right over the batch, left over the
+  selected rows, operation over the survivors. If every step succeeds the
+  result is identical to row-major and nothing was evaluated twice. If any
+  step errors, discard and re-run the same batch row-major from the first
+  row; the first failing row's error is then Spark's. Replaying a
+  deterministic batch is within Spark's contract, and the cost lands only
+  on the error path, which terminates the query anyway.
+- When any thunk is nondeterministic, run row-major from the start: the
+  at-most-once-per-row and order contract forbids replay, and exact error
+  order requires it. This is the rare path, and it is the component as
+  committed.
+
+`SimplifyExpressions`-style volatility detection over the three bodies
+(`Expr::is_volatile`, recursive, `expr.rs:2170`) decides the mode at
+lowering, so the physical function can carry it as a flag. The remaining
+caveat is cross-partition, which Spark leaves to scheduling in both
+engines. With this, the §2.2 performance objection and CF-0355's
+observability objection are both met without a documented deviation.

@@ -207,3 +207,18 @@ PROBE SELECT CAST(1 AS DECIMAL(10,2)) / 3 => [(Decimal('0.333333'),)] schema=[('
 PROBE SELECT CASE WHEN x > 0 THEN x ELSE 2 END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', False)]
 PROBE SELECT CASE WHEN x > 0 THEN x END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', True)]
 PROBE SELECT x / 2 AS d, x / y AS e FROM VALUES (CAST(1 AS DECIMAL(10,2)), CAST(2 AS DECIMAL(10,2))) AS t(x, y) => [(Decimal('0.500000'), Decimal('0.5000000000000'))] schema=[('d', 'decimal(14,6)', True), ('e', 'decimal(23,13)', True)]
+=== probe11_cross_row_error_order date=2026-10-31T05:58:04Z ansi=true
+PROBE local[1] codegen=true row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[1] codegen=true row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[1] codegen=false row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[1] codegen=false row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[1] row1-left-raise row2-div0 => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[1] row1-div0 row2-left-raise => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If ne
+PROBE local[1] 2 partitions left-raise vs cast => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] codegen=true row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] codegen=true row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[2] codegen=false row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] codegen=false row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[2] row1-left-raise row2-div0 => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] row1-div0 row2-left-raise => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If ne
+PROBE local[2] 2 partitions left-raise vs cast => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
