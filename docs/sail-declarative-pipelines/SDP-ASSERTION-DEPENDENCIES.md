@@ -1347,3 +1347,44 @@ NOT EXISTS`, upper case), precedence of this parse error over an
 earlier statement's flow-name or registration error within one file,
 the direct-SQL path, and that `INSERT OVERWRITE … IF NOT EXISTS` still
 parses.
+
+### 20.9 Shared `INSERT` mode validation, candidate `b48abc5a8` on `18604c01a` (CF-0506)
+
+Nine paths. Product: `sail-sql-analyzer/validation.rs::validate_insert_modes`
+rejects `InsertInto` with `into_or_overwrite = Into` and
+`if_not_exists` set as the typed `ParseException`
+`INVALID_STATEMENT_OR_CLAUSE`, SQLSTATE `42601`, `operation` =
+`INSERT INTO ... IF NOT EXISTS`, message "The statement or clause: INSERT
+INTO ... IF NOT EXISTS is not valid.", recursing only into
+`CreatePipelineFlow` and `Explain`; it runs over every statement after
+both `SqlSource` parse paths (`parse_statements` and
+`parse_statements_with_spans`) and again at the head of both the
+ordinary and the pipeline AST lowering. That is the §20.8 design and
+`AstBuilder.scala:1044–1046`'s rule, in Spark's whole-file order.
+
+Tests: native, six statement shapes (plain, `BY NAME`, static
+`PARTITION`, inside `CREATE FLOW` with single and multipart names,
+inside `EXPLAIN`) produce the identical typed error on `parse_one_statement`,
+both `SqlSource` paths, and both lowerers from a syntactic AST; a
+whole-file precedence test puts the invalid `INSERT` after a multipart
+flow, an unsupported CTAS and a catalog expression and gets the parse
+error each time, with the Connect-level test proving the catalog
+resolver is never invoked; and the positive control keeps `INSERT
+OVERWRITE … PARTITION(p=1) IF NOT EXISTS`, with and without `BY NAME`,
+lowering with `if_not_exists` set, the partition kept and the overwrite
+insert mode. Public, 15 cases: the six shapes through ordinary SQL and
+the pipeline API, and three whole-file precedence cases, each asserting
+condition, state, parameter, message and the absence of the file name.
+
+The one native failure is the existing golden
+`gold_data/plan/ddl_insert_into.json`: for `INSERT INTO TABLE … PARTITION
+(p1 = 3) IF NOT EXISTS SELECT …` its recorded Spark exception already
+reads `INVALID_STATEMENT_OR_CLAUSE … INSERT INTO ... IF NOT EXISTS`,
+while the recorded Sail output was a successful plan with
+`ifNotExists = true`. The fixture therefore documents the bug this unit
+fixes, and regenerating only that case's Sail output with the official
+generator, with inputs, exceptions and all other outputs unchanged, is
+the correct update, not a rewritten expectation.
+
+Verdict: accept, read-only, pending the golden regeneration check and
+the native and public gates.
