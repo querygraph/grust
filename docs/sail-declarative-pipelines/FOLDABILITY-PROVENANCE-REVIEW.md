@@ -453,3 +453,43 @@ marker, reject any non-`Immutable` function as `INVALID_NON_DETERMINISTIC_EXPRES
 `typeof(rand())` is rejected as a whole), simplify, then apply the type, null
 and parse checks on the folded literal. The division row then falls out of
 simplification under the session's ANSI mode, which is what the probe shows.
+
+### 8.1 Registered functions on the bare path, and units A/B (CF-0318)
+
+CF-0318 asked that the bare-path recommendation also qualify deterministic
+registered UDFs and higher-order functions, which Spark keeps non-foldable
+even after optimizer replacement, and that actual nondeterminism be kept
+ahead of `typeof`'s discard. Probe 4 (`probe4_registered_udf.py`, appended to
+`evidence/set-catalog-oracle/output.txt`) registers a deterministic and a
+nondeterministic Python identity UDF:
+
+| Expression                                       | bare `SET CATALOG e`                                       | `SET CATALOG IDENTIFIER(e)`  |
+| ------------------------------------------------ | ---------------------------------------------------------- | ---------------------------- |
+| `det_identity('spark_catalog')`                  | `INTERNAL_ERROR` "Invalid PythonUDF … requires attributes" | `NOT_CONSTANT`               |
+| `concat(det_identity('spark_'), 'catalog')`      | same `INTERNAL_ERROR`                                      | `NOT_CONSTANT`               |
+| `typeof(det_identity('x'))`                      | `CATALOG_NOT_FOUND` `string`                               | `CATALOG_NOT_FOUND` `string` |
+| `nondet_identity('spark_catalog')`               | `INVALID_NON_DETERMINISTIC_EXPRESSIONS`                    | `NOT_CONSTANT`               |
+| `typeof(nondet_identity('x'))`                   | `INVALID_NON_DETERMINISTIC_EXPRESSIONS`                    | `CATALOG_NOT_FOUND` `string` |
+| `SELECT IDENTIFIER(det_identity('x')) …`         | `NOT_CONSTANT` (scalar identifier)                         |                              |
+| `SELECT IDENTIFIER(typeof(det_identity('x'))) …` | accepted, column `string` (scalar identifier)              |                              |
+
+So the refinement is right and the §8 recommendation is amended: on the bare
+path, registered UDFs and higher-order functions keep the marker (Spark's
+`ScalaUDF`/`PythonUDF` and `HigherOrderFunction` are non-foldable by class, and
+Spark's own bare outcome for a Python UDF is an internal error, so
+`NOT_CONSTANT` is the only sensible Sail target); only the current-like
+builtins lose it, because the optimizer replaces them before `run`. The
+determinism check runs on the whole expression before any folding, so
+`typeof(nondet(..))` is rejected while `typeof(det(..))` folds to its type
+string in both forms, and both are consistent with the scalar identifier
+path.
+
+Units advanced by CF-0318, read against their diffs: A `25534e8ea` is the
+candidate reviewed in §7, unchanged. B `3ffb497d3` makes the three
+zero-divisor predicates read `constant_context` instead of `require_foldable`
+(`function/scalar/math.rs`, three one-line changes) and adds
+`identifier/arithmetic_tests.rs`; this is exactly the F2 split, and the
+scalar path now reaches Spark's `WRONG_TYPE` for `IDENTIFIER(1 div 0)`. The
+bare catalog form still pins `WRONG_TYPE` where Spark folds to
+`DIVIDE_BY_ZERO` under ANSI, which belongs to the catalog phase Codex named
+as next, not to B. No change requested on either unit.
