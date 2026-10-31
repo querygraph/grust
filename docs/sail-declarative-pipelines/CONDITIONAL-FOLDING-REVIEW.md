@@ -44,3 +44,39 @@ expects to see it. It belongs in the IF/CASE unit Codex is gating, or
 in the next one; either way it should close at least the `CASE` member
 of the four gaps, with a public schema scenario for `CASE … ELSE` over
 non-nullable branches as the proof.
+
+## 2. IF and CASE through the shared coercion, candidate `a51bef4ce` on `982877d85` (CF-0412)
+
+Three paths. `case` and `if_expr` now return through
+`coerce_conditional_case`, which applies the analyzer's
+`coerce_case_expression` with the captured session time zone after the
+existing string/temporal normalisation; `nvl2` delegates to `if_expr`
+and its private wrapper from §6.18 is gone, so there is one coercion
+site for the three functions and it is the analyzer's own
+implementation. Raw SQL `CASE` reaches `case` through the `when`
+function (§1), so it is covered.
+
+Tests: for both builders, both branch orders, `Int32`/`Int64` and
+`Int32`/`Decimal(2,1)` widening are asserted on the lowered expression
+before any analyzer runs and again after `TypeCoercion`, with the
+`true`/`false`/`NULL` conditions evaluated through `LiteralEvaluator`;
+a `CASE` without `ELSE` coerces all branches, stays nullable and yields
+a typed `NULL` when nothing matches; multiple branches with a trailing
+`ELSE` take the common type; an `Immutable` throwing branch is invoked
+zero times during coercion and when skipped, once when selected. The
+public feature pins `typeof` for `IF` and `CASE` (`bigint`,
+`decimal(11,1)`) under both ANSI settings and evaluates coerced
+branches over nullable conditions, including a `no_else` `NULL` row.
+
+Verdict: accept, read-only, pending the public gate. Two notes:
+
+- The `else_expr` finding of §1 is not in this candidate (the two
+  crossed); the `case` builder still emits `(lit(true), value)` with
+  `else_expr: None`, so `CASE … ELSE` over non-nullable branches stays
+  reported nullable. Carry it as the next change in the same file.
+- Coercion failures now surface while the expression is resolved, not
+  in the analyzer, so for a projection with several expressions the
+  first error a client sees may change order relative to, say, an
+  unresolved column in a later expression. Spark raises both in
+  analysis as well, so this is a precedence detail to watch in the
+  public comparison, not a defect.
