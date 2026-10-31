@@ -3121,15 +3121,16 @@
       "sail_tests": [
         "python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication_preserves_order_and_comments",
         "python/pysail/tests/spark/pipelines/test_schema.py::test_schema_refresh_updates_comments_without_reordering_existing_columns",
-        "python/pysail/tests/spark/pipelines/test_execution.py::test_materialized_view_comment_is_published[False]"
+        "python/pysail/tests/spark/pipelines/test_execution.py::test_materialized_view_comment_is_published[False]",
+        "crates/sail-spark-connect/src/pipelines/materialize/tests/basic.rs::basic_metadata_refresh_preserves_exact_schema_and_updates_then_removes_comments"
       ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "Initial declared columns/comments, comment updates/removal, and table comments.",
-        "remaining_assertions": "Original mixed nullable/nonnullable integer schema across all three materializations is unported.",
-        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "covered_assertions": "All three original exact mixed-nullability INT schema/comment states and stable table comment, through private MV metadata refresh; zero rows additionally checked.",
+        "remaining_assertions": "Original ScalaTest/JVM execution against Sail remains unqualified; native assertion port and Spark verbatim-body reference do not execute the original suite against Sail.",
+        "sail_evidence": "evidence/basic-metadata-refresh/native/rust.log",
         "scala_suite_executed": false,
-        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+        "entry_point": "Private Sail tables(schema map), original output kinds; reserved table comment uses Sail TableKind.comment. Spark production DatasetManager executes verbatim original test bodies with unmodified original registration helper."
       }
     },
     {
@@ -3195,15 +3196,16 @@
       "name_expression": "\"schema matches existing table schema\"",
       "status": "partial-behavioral-port",
       "sail_tests": [
-        "python/pysail/tests/spark/pipelines/test_schema.py::test_schema_refresh_updates_comments_without_reordering_existing_columns"
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_schema_refresh_updates_comments_without_reordering_existing_columns",
+        "crates/sail-spark-connect/src/pipelines/materialize/tests/basic.rs::inferred_streaming_metadata_matches_sql_created_existing_int_schema"
       ],
       "coverage_review": {
         "phase": "catalog-materialization",
-        "covered_assertions": "Repeated materialization retains matching common column types and nullability.",
-        "remaining_assertions": "Exact pre-existing INT table fixture and direct catalog column equality are unported.",
-        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "covered_assertions": "Exact SQL-created nullable INT schema before/after ordinary Table metadata materialization of batch 1/2/3 query; no comments/default/generation/identity and zero rows additionally checked.",
+        "remaining_assertions": "Original ScalaTest/JVM execution against Sail remains unqualified; native assertion port and Spark verbatim-body reference do not execute the original suite against Sail.",
+        "sail_evidence": "evidence/basic-metadata-refresh/native/rust.log",
         "scala_suite_executed": false,
-        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+        "entry_point": "Private Sail tables(schema map), original output kinds; reserved table comment uses Sail TableKind.comment. Spark production DatasetManager executes verbatim original test bodies with unmodified original registration helper."
       }
     },
     {

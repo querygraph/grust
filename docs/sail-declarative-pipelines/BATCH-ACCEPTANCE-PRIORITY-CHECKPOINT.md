@@ -132,3 +132,13 @@ records the executable Spark production reference, remaining errors/path/backend
 coverage and full-reset auxiliary ownership work. Notify the user before starting
 that next substantial design checkpoint. Batch event/handler acceptance and the
 other original fixtures remain priorities; these two ports do not complete SDP.
+
+## Original-suite execution checkpoint
+
+The user has been notified before the next Astra design phase: establish the
+original-suite execution harness. Exact native ports and verbatim Spark reference
+bodies, including [basic metadata](evidence/basic-metadata-refresh/README.md),
+improve assertion coverage but do not establish full-suite acceptance against
+Sail. Preserve original scope and identify the actual JVM/Connect/native bridge
+needed for that verdict before treating partial-port counts as acceptance. No
+new streaming/CDC or effect activation is authorized by this checkpoint.

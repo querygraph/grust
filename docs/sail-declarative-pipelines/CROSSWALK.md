@@ -190,3 +190,13 @@ pass. :402 success/schema assertions, JVM outer materialization wrapper and
 origins remain open. Exact native191, unchanged control0/2, Spark3 cases and fresh
 public300+67 pass; original ScalaTest execution against Sail is still false.
 Current canonical total:68 partial/394 unmapped,97 reviewed/462 static sites.
+
+## Exact basic metadata and matching existing schema
+
+[Test-only Sail807d66b15 evidence](evidence/basic-metadata-refresh/README.md)
+strengthens already partial :42/:236 with exact native integer/comment fixtures
+and two verbatim original Spark test-body references. Native193 and comment-removal
+control0/1 pass. Production paths match publicly qualified parent604; no new public
+run/build is claimed. Totals remain68 partial/394 unmapped,97 reviewed/462 static.
+The original suite has not executed against Sail. Original-suite execution harness
+is the next user-notified Astra design checkpoint.

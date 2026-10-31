@@ -105,3 +105,14 @@ TableMaterializationException, query origins and original JVM integration remain
 open. :402 success/schema portions remain unported. Next ordinary batch port is
 :42 exact basic metadata refresh/comment removal. Notify the user before opening
 a substantial wrapper/origin or full-reset/CDC cleanup design phase.
+
+## Exact positive metadata fixtures
+
+[Test-only Sail807d66b15](evidence/basic-metadata-refresh/README.md) now ports
+:42 basic comment refresh/removal and :236 matching an existing SQL-created INT
+schema with the original output kinds. Both verbatim original Spark bodies pass;
+exact native193 and removal control0/1 qualify the two native assertions. No
+product source changed and the runtime remains the qualified604 CLI. The next
+user-notified Astra design checkpoint is the original-suite execution harness,
+since these adapters still do not execute the full original suites against Sail.
+Substantial wrapper/origin and full-reset/CDC design also retain advance notice.

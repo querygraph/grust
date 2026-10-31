@@ -1,0 +1,46 @@
+{
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "checks": [
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java",
+        "-cp",
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/jars/*",
+        "scala.tools.nsc.Main",
+        "-usejavacp",
+        "-d",
+        "/tmp/sail-sdp-basic-metadata-oracle-expanded/classes",
+        "/tmp/sail-sdp-basic-metadata-oracle-expanded/TestGraphRegistrationContext.scala",
+        "/tmp/sail-sdp-basic-metadata-oracle-expanded/BasicMetadataOracle.scala"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-basic-metadata-oracle-expanded/check-0.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/jar",
+        "cf",
+        "/tmp/sail-sdp-basic-metadata-oracle-expanded/oracle.jar",
+        "-C",
+        "/tmp/sail-sdp-basic-metadata-oracle-expanded/classes",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-basic-metadata-oracle-expanded/check-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/bin/spark-submit",
+        "--class",
+        "org.apache.spark.sql.pipelines.graph.BasicMetadataOracle",
+        "/tmp/sail-sdp-basic-metadata-oracle-expanded/oracle.jar",
+        "/tmp/sail-sdp-basic-metadata-oracle-expanded/data"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-basic-metadata-oracle-expanded/check-2.log",
+      "sha256": "24a0cb0a84a6d0adcc6fbd2d8766a968bf21cd0232b6286e00315cd354882a7d"
+    }
+  ]
+}
