@@ -8,7 +8,7 @@ Oracle: Spark 4.2.1 with `delta-spark_4.2_2.13` 4.4.1 and `delta-storage` 4.4.1 
 
 The 23 differences:
 
-- 14 come from file layout. Spark writes two files for a two-row insert and Sail writes one, so the same statement is a file delete on one and a rewrite on the other. The same rule gives a different outcome. `layout_*` forces one row per file and those cases all agree.
+- 9 come from file layout. Spark writes two files for a two-row insert and Sail writes one, so the same statement is a file delete on one and a rewrite on the other. The same rule gives a different outcome. `layout_*` forces one row per file and those cases all agree.
 - `dv_layout`: Sail's DELETE of a whole one-row file keeps the file with a deletion vector, where Spark removes the file. The stream rule then sees a change, not a delete. The stream is right; the difference is in DELETE.
 - 3 are probe statements Sail refuses or rejects: a `VACUUM` retention check, and an `INSERT` with too few columns.
 - `stream_static_join`: `collect()` on `INSERT` into a parquet table fails after the write. This predates this work and is separate from Delta.
