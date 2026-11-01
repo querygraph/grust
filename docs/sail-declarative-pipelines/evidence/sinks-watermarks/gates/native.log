@@ -1,0 +1,44 @@
+   Compiling sail-sql-parser v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-parser)
+    Checking sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+    Checking sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+    Checking sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+    Checking sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+    Checking sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+    Checking sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+    Checking sail-physical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-optimizer)
+    Checking sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+    Checking sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+    Checking sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+    Checking sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+    Checking sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+    Checking sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+error: this `if` statement can be collapsed
+   --> crates/sail-spark-connect/src/pipelines/materialize.rs:359:9
+    |
+359 | /         if let Some(flow) = graph.flows.iter().find(|flow| &flow.target == name) {
+360 | |             if let Err(error) = check_view_aliases(name, &flow.query) {
+361 | |                 let _ = events.send(format!("Flow '{display}' has FAILED.\nError: {error}"));
+362 | |                 failed.insert(name.clone());
+...   |
+365 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+359 ~         if let Some(flow) = graph.flows.iter().find(|flow| &flow.target == name)
+360 ~             && let Err(error) = check_view_aliases(name, &flow.query) {
+361 |                 let _ = events.send(format!("Flow '{display}' has FAILED.\nError: {error}"));
+362 |                 failed.insert(name.clone());
+363 |                 continue;
+364 ~             }
+    |
+
+error: could not compile `sail-spark-connect` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `sail-spark-connect` (lib test) due to 1 previous error
+GATE=101
