@@ -1,0 +1,16 @@
+{
+  "source_changes": [
+    {
+      "path": "python/pysail/tests/spark/pipelines/test_schema.py",
+      "before": "1e1dedb3164692b7bb1b0758dbe8e0033a9b4f452163f7c7c516437dbc56dba1",
+      "after": "35dac451943fcd080abb647008a6171d0293cb3142e7e39c9aeda62cc77a3fda"
+    },
+    {
+      "path": "python/pysail/tests/spark/pipelines/test_nested_materialization.py",
+      "before": "6ea8ad1dc423d19a77a3debfdcf3b4348afc83d91a55518f941fbffafd5bcaa6",
+      "after": "9cac55ad3068de52774c504eb8c232b3928f5049dc1f32cdafb24f66fd2122d3"
+    }
+  ],
+  "selected_nodes_unchanged": true,
+  "reason": "createDataFrame with a DDL string schema sends an AnalyzePlan DdlParse RPC, which Spark 4.2.1 rejects inside a query function with ATTEMPT_ANALYSIS_IN_PIPELINE_QUERY_FUNCTION. Both originals fail on real Spark. Each fixture now passes a StructType; no assertion changed."
+}
