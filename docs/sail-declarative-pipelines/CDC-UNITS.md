@@ -599,3 +599,26 @@ for the previous tip: `9ef96af61` all 0 at 19:19:44Z, `51959c5be` all 0 at
 19:22:52Z.
 
 Chain tip `4fc62deed` on `7cf0254bc`: VERDICT commit=4fc62deed488ccf2f25fa2035454a04e0c2416a7 fmt=0 clippy=0 rust_common=0 rust_common_datafusion=0 rust_pipelines=0 maturin=0 pytest_pipelines=0 at 2026-10-31T19:27:48Z
+
+### Iggy adapter merged onto root `19d7137eb` (CF-0578, CF-0580)
+
+Merged the batch root into `work/sdp-iggy-adapter` with no textual conflicts.
+The union failed two checks, and neither came from the Iggy read path:
+
+- A flow streaming from a view over `readStream.format(...)` reported COMPLETED
+  having read nothing. The append path looked inside the view for table reads
+  only, so the batch was empty and the empty check returned success. The Iggy
+  test caught it, but it held for any streaming data source. `streamed_names`
+  now refuses the read until a real reader exists (`91cf49709`).
+- `registered_orc_source_rejects_writing` still expected ORC writing to be
+  refused. It fails on bare `31ac33f65` too, so it was a root failure. The test
+  now expects the writer to plan and write nothing yet.
+
+The clippy failure at `91cf49709` came from the lint on `31ac33f65`: merging
+root `19d7137eb` was the only change, and clippy passes at the tip.
+
+VERDICT commit=a8229598c7a0bcb44e313e3b9784add4ea48e48d fmt=0 clippy=0 rust_common=0 rust_common_datafusion=0 rust_pipelines=0 rust_plan=0 rust_session=0 rust_iggy=0 maturin=0 pytest_pipelines=0 at 2026-11-01T04:48:04Z
+
+Python pipelines 657 passed; adapter 39 unit and 7 broker scenarios in Rust. The
+Delta Python suite was not rerun on this tip. Integration into the root is the
+peer's step and has not happened yet.
