@@ -575,6 +575,8 @@ applying a topic, incremental and idempotent reruns, a recreated topic leaving
 the target alone, a missing topic refused with nothing created, and the two
 refused reads. These need `SAIL_IGGY_SERVER_BINARY`; without it they skip.
 
+Chain tip `c4ff4703c` on `2eae921c5`: VERDICT commit=c4ff4703ce55de67ad6475229911be932a5cdf3f fmt=0 clippy=0 rust_common=0 rust_common_datafusion=0 rust_pipelines=0 rust_plan=0 rust_session=0 rust_iggy=0 maturin=0 pytest_pipelines=0 at 2026-11-01T02:28:50Z, with the broker binary set; 367 Rust and 580 Python pipelines tests. `sail-delta-lake` is outside that gate's list: its 348 library tests and fmt pass at the same commit, and its Python suite was not rerun.
+
 Limits: `sequence_by` and the target schema come from the source, so a declared
 target schema is not reconciled. A recreated partition stops the run; there is
 no reset path yet, and full refresh stays refused. Partitions empty at offset 0
