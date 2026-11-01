@@ -8,32 +8,32 @@ Read-only audit. Nothing was built or run. Proposed tests below have not been ex
 
 ## Counts
 
-| Scope | Rows | COVERED | PARTIAL, metadata only | PARTIAL, other | MISSING | NOT_APPLICABLE |
-|---|---:|---:|---:|---:|---:|---:|
-| Rows reclassified (first audit PARTIAL or MISSING) | 32 | 2 | 6 | 23 | 1 | 0 |
-| New suites | 21 | 3 | 3 | 15 | 0 | 0 |
-| Rows not re-audited (first audit COVERED or NOT_APPLICABLE) | 137 | 130 | 0 | 0 | 0 | 7 |
-| **All rows** | **190** | **135** | **9** | **38** | **1** | **7** |
+| Scope                                                       |    Rows | COVERED | PARTIAL, metadata only | PARTIAL, other | MISSING | NOT_APPLICABLE |
+| ----------------------------------------------------------- | ------: | ------: | ---------------------: | -------------: | ------: | -------------: |
+| Rows reclassified (first audit PARTIAL or MISSING)          |      32 |       2 |                      6 |             23 |       1 |              0 |
+| New suites                                                  |      21 |       3 |                      3 |             15 |       0 |              0 |
+| Rows not re-audited (first audit COVERED or NOT_APPLICABLE) |     137 |     130 |                      0 |              0 |       0 |              7 |
+| **All rows**                                                | **190** | **135** |                  **9** |         **38** |   **1** |          **7** |
 
-| Suite | Cases | COVERED | PARTIAL | MISSING | NOT_APPLICABLE |
-|---|---:|---:|---:|---:|---:|
-| AutoCdcAuxiliaryTableSuite | 5 | 5 | 0 | 0 | 0 |
-| AutoCdcScd1AuxiliaryTableDurabilitySuite | 6 | 3 | 3 | 0 | 0 |
-| AutoCdcScd1FullRefreshSuite | 3 | 2 | 1 | 0 | 0 |
-| AutoCdcScd1KeyDriftSuite | 13 | 12 | 1 | 0 | 0 |
-| AutoCdcScd1SinglePipelineSuite | 4 | 3 | 1 | 0 | 0 |
-| AutoCdcFlowSuite | 22 | 12 | 3 | 0 | 7 |
-| ChangeArgsSuite | 22 | 21 | 1 | 0 | 0 |
-| Scd1BatchProcessorMergeSuite | 20 | 19 | 0 | 1 | 0 |
-| Scd1BatchProcessorSuite | 36 | 34 | 2 | 0 | 0 |
-| Scd1ForeachBatchHandlerSuite | 18 | 6 | 12 | 0 | 0 |
-| ConnectValidPipelineSuite | 1 | 1 | 0 | 0 | 0 |
-| ConnectInvalidPipelineSuite | 4 | 2 | 2 | 0 | 0 |
-| PythonPipelineSuite | 15 | 12 | 3 | 0 | 0 |
-| AutoCdcScd1MultiPipelineSuite | 5 | 0 | 5 | 0 | 0 |
-| AutoCdcScd1SchemaEvolutionSuite | 13 | 3 | 10 | 0 | 0 |
-| AutoCdcScd1TargetTableDurabilitySuite | 3 | 0 | 3 | 0 | 0 |
-| **Total** | **190** | **135** | **47** | **1** | **7** |
+| Suite                                    |   Cases | COVERED | PARTIAL | MISSING | NOT_APPLICABLE |
+| ---------------------------------------- | ------: | ------: | ------: | ------: | -------------: |
+| AutoCdcAuxiliaryTableSuite               |       5 |       5 |       0 |       0 |              0 |
+| AutoCdcScd1AuxiliaryTableDurabilitySuite |       6 |       3 |       3 |       0 |              0 |
+| AutoCdcScd1FullRefreshSuite              |       3 |       2 |       1 |       0 |              0 |
+| AutoCdcScd1KeyDriftSuite                 |      13 |      12 |       1 |       0 |              0 |
+| AutoCdcScd1SinglePipelineSuite           |       4 |       3 |       1 |       0 |              0 |
+| AutoCdcFlowSuite                         |      22 |      12 |       3 |       0 |              7 |
+| ChangeArgsSuite                          |      22 |      21 |       1 |       0 |              0 |
+| Scd1BatchProcessorMergeSuite             |      20 |      19 |       0 |       1 |              0 |
+| Scd1BatchProcessorSuite                  |      36 |      34 |       2 |       0 |              0 |
+| Scd1ForeachBatchHandlerSuite             |      18 |       6 |      12 |       0 |              0 |
+| ConnectValidPipelineSuite                |       1 |       1 |       0 |       0 |              0 |
+| ConnectInvalidPipelineSuite              |       4 |       2 |       2 |       0 |              0 |
+| PythonPipelineSuite                      |      15 |      12 |       3 |       0 |              0 |
+| AutoCdcScd1MultiPipelineSuite            |       5 |       0 |       5 |       0 |              0 |
+| AutoCdcScd1SchemaEvolutionSuite          |      13 |       3 |      10 |       0 |              0 |
+| AutoCdcScd1TargetTableDurabilitySuite    |       3 |       0 |       3 |       0 |              0 |
+| **Total**                                | **190** | **135** |  **47** |   **1** |          **7** |
 
 Upgrades from the first audit: KeyDrift:188 and :315 to COVERED. Handler:327 and Python:1186 from MISSING to PARTIAL.
 
@@ -75,40 +75,40 @@ So the tests below match rendered text. Each regex comes from the Spark log or f
 
 Across the whole file:
 
-| Dropped | Effect |
-|---|---|
-| `cdcMeta(...)` on every row | Metadata asserted only by name in `test_a_target_without_the_metadata_column_gains_it` and by one field in `test_a_view_downstream_of_a_target_sees_what_the_flow_writes` |
-| Full-row `checkAnswer` on `spark.table` | `rows(...)` selects by name, so column position is never pinned, including Spark's rule that an evolved column lands after the metadata column |
-| Intermediate `checkAnswer` after run 1 | Absent from every multi-run port |
-| `sqlState` | Not asserted anywhere in the file |
-| `CREATE TABLE` up front | Multi-1, Multi-2 and Evolution 1, 4, 5, 6, 7 and the nested cases let the first run create the target |
-| `NOT NULL` on the metadata column | `METADATA` omits it, while `cdcMetadataDdl` has it |
-| Separate streams per pipeline | One `Landing` is shared, so a later flow with a new checkpoint replays earlier files. This changes what Multi-1, -3 and -4 test |
-| `PIPELINES_MAX_FLOW_RETRY_ATTEMPTS=0` | Failure cases run with default retries. No assertion depends on it |
+| Dropped                                 | Effect                                                                                                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cdcMeta(...)` on every row             | Metadata asserted only by name in `test_a_target_without_the_metadata_column_gains_it` and by one field in `test_a_view_downstream_of_a_target_sees_what_the_flow_writes` |
+| Full-row `checkAnswer` on `spark.table` | `rows(...)` selects by name, so column position is never pinned, including Spark's rule that an evolved column lands after the metadata column                            |
+| Intermediate `checkAnswer` after run 1  | Absent from every multi-run port                                                                                                                                          |
+| `sqlState`                              | Not asserted anywhere in the file                                                                                                                                         |
+| `CREATE TABLE` up front                 | Multi-1, Multi-2 and Evolution 1, 4, 5, 6, 7 and the nested cases let the first run create the target                                                                     |
+| `NOT NULL` on the metadata column       | `METADATA` omits it, while `cdcMetadataDdl` has it                                                                                                                        |
+| Separate streams per pipeline           | One `Landing` is shared, so a later flow with a new checkpoint replays earlier files. This changes what Multi-1, -3 and -4 test                                           |
+| `PIPELINES_MAX_FLOW_RETRY_ATTEMPTS=0`   | Failure cases run with default retries. No assertion depends on it                                                                                                        |
 
 Per test:
 
-| Python test | Spark assertions dropped |
-|---|---|
-| `test_a_preloaded_row_outranks_a_lower_sequence` | Metadata `(None,5)` and `(None,10)` |
-| `test_preloaded_rows_merge_and_the_auxiliary_table_appears_on_the_first_run` | Metadata `(None,2)` |
-| `test_a_target_without_the_metadata_column_gains_it` | Metadata `(None,1)` |
-| `test_two_targets_keep_independent_state` | Metadata. `t_b` sees `t_a`'s row through the shared landing, where Spark asserts exactly one row |
-| `test_a_later_pipeline_reads_a_target_without_its_metadata_column` | Selects three columns out of `downstream`, so an extra metadata column there would pass. Spark's `checkAnswer` is on the whole table |
-| `test_two_pipelines_merge_into_a_shared_target` | Check after pipeline 1, metadata, auxiliary existence. "id=1 untouched" is lost: flow_two replays `(1, alice, 1)` from the shared landing, so id=1 is re-upserted on a tie |
-| `test_two_pipelines_with_other_columns_evolve_a_shared_target` | The whole third stage (pipeline 1 re-runs on the old schema, `age` persists), check after pipeline 1, metadata, column position |
-| `test_a_second_pipeline_with_other_keys_is_refused` | `sqlState`, all four parameters. Note the oracle's values are `name STRING` and `id INT`; Spark's `id INT NOT NULL` comes from a Scala primitive |
-| `test_a_nullable_column_merges_mixed_values` | Run 1 row, metadata |
-| `test_a_type_change_between_runs_is_refused` (3 cases) | `sqlState`, and the order of `left` and `right` |
-| `test_a_new_source_column_is_added_to_the_target` | Run 1 row, `name`, `seq`, metadata, position of `email` after metadata |
-| `test_broadening_the_selection_adds_the_column` | Same as above |
-| `test_narrowing_the_selection_keeps_the_column` | Run 1 row, `name`, `seq`, metadata |
-| `test_a_dropped_source_column_keeps_its_rows_and_is_null_on_new_ones` | Run 1 row, `name`, `seq`, metadata, position |
-| `test_dropping_a_nested_struct_field_is_refused` | `colName` `` `value`.`b`.`c` ``, `tableName` |
-| `test_dropping_a_field_in_an_array_of_structs_is_refused` | `colName` `` `vals`.`element`.`b`.`d` ``, `tableName` |
-| `test_a_column_differing_from_the_target_by_case_is_ambiguous` | `queryContext` fragment. Spark's parameters are `.*`, so nothing else. Unasserted divergence: Spark reports `` [`...`.`Value`, `...`.`Value`] ``, while `execute.rs` builds `` [`...`.`value`, `...`.`Value`] `` |
-| `test_a_new_field_in_an_array_of_structs_is_added` | Nothing |
-| `test_extra_target_columns_survive_the_merge` | Nothing |
+| Python test                                                                  | Spark assertions dropped                                                                                                                                                                                     |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test_a_preloaded_row_outranks_a_lower_sequence`                             | Metadata `(None,5)` and `(None,10)`                                                                                                                                                                          |
+| `test_preloaded_rows_merge_and_the_auxiliary_table_appears_on_the_first_run` | Metadata `(None,2)`                                                                                                                                                                                          |
+| `test_a_target_without_the_metadata_column_gains_it`                         | Metadata `(None,1)`                                                                                                                                                                                          |
+| `test_two_targets_keep_independent_state`                                    | Metadata. `t_b` sees `t_a`'s row through the shared landing, where Spark asserts exactly one row                                                                                                             |
+| `test_a_later_pipeline_reads_a_target_without_its_metadata_column`           | Selects three columns out of `downstream`, so an extra metadata column there would pass. Spark's `checkAnswer` is on the whole table                                                                         |
+| `test_two_pipelines_merge_into_a_shared_target`                              | Check after pipeline 1, metadata, auxiliary existence. "id=1 untouched" is lost: flow_two replays `(1, alice, 1)` from the shared landing, so id=1 is re-upserted on a tie                                   |
+| `test_two_pipelines_with_other_columns_evolve_a_shared_target`               | The whole third stage (pipeline 1 re-runs on the old schema, `age` persists), check after pipeline 1, metadata, column position                                                                              |
+| `test_a_second_pipeline_with_other_keys_is_refused`                          | `sqlState`, all four parameters. Note the oracle's values are `name STRING` and `id INT`; Spark's `id INT NOT NULL` comes from a Scala primitive                                                             |
+| `test_a_nullable_column_merges_mixed_values`                                 | Run 1 row, metadata                                                                                                                                                                                          |
+| `test_a_type_change_between_runs_is_refused` (3 cases)                       | `sqlState`, and the order of `left` and `right`                                                                                                                                                              |
+| `test_a_new_source_column_is_added_to_the_target`                            | Run 1 row, `name`, `seq`, metadata, position of `email` after metadata                                                                                                                                       |
+| `test_broadening_the_selection_adds_the_column`                              | Same as above                                                                                                                                                                                                |
+| `test_narrowing_the_selection_keeps_the_column`                              | Run 1 row, `name`, `seq`, metadata                                                                                                                                                                           |
+| `test_a_dropped_source_column_keeps_its_rows_and_is_null_on_new_ones`        | Run 1 row, `name`, `seq`, metadata, position                                                                                                                                                                 |
+| `test_dropping_a_nested_struct_field_is_refused`                             | `colName` `` `value`.`b`.`c` ``, `tableName`                                                                                                                                                                 |
+| `test_dropping_a_field_in_an_array_of_structs_is_refused`                    | `colName` `` `vals`.`element`.`b`.`d` ``, `tableName`                                                                                                                                                        |
+| `test_a_column_differing_from_the_target_by_case_is_ambiguous`               | `queryContext` fragment. Spark's parameters are `.*`, so nothing else. Unasserted divergence: Spark reports ``[`...`.`Value`, `...`.`Value`]``, while `execute.rs` builds ``[`...`.`value`, `...`.`Value`]`` |
+| `test_a_new_field_in_an_array_of_structs_is_added`                           | Nothing                                                                                                                                                                                                      |
+| `test_extra_target_columns_survive_the_merge`                                | Nothing                                                                                                                                                                                                      |
 
 The rest of the file (views, unions, Delta sources, full refresh, dry run) has no Spark suite counterpart and maps to no row here.
 
@@ -116,66 +116,66 @@ The rest of the file (views, unions, Delta sources, full refresh, dry run) has n
 
 "Closure" names a block in the next section.
 
-| Suite | Line | Spark test | Was | Now | Evidence and gap | Closure |
-|---|---:|---|---|---|---|---|
-| AuxDurability | 151 | aux preserves declared key order | PARTIAL | PARTIAL | `test_the_auxiliary_table_records_keys_in_declared_order` asserts the first two column names. Drops the third name and the `keyColumnNames` property | C1 |
-| AuxDurability | 184 | dropped aux recreated | PARTIAL | PARTIAL, metadata | `test_a_dropped_auxiliary_table_is_recreated` runs the production path and asserts recreation. Drops `seq` and metadata | M1 |
-| AuxDurability | 223 | key names survive special characters | PARTIAL | PARTIAL | `test_special_characters_in_key_names_survive_two_runs` uses two of Spark's four names (no `a"b`, no `c\d`) and never reads the property | C2 |
-| FullRefresh | 159 | selective refresh | PARTIAL | PARTIAL, metadata | `test_two_flows_in_one_pipeline_and_a_selective_full_refresh`, production path, same ids and sequences. Drops metadata | M2 |
-| KeyDrift | 188 | composite reorder no drift | PARTIAL | COVERED | `test_reordering_composite_keys_is_not_drift`. Spark asserts only that the run completes; this asserts the row too | |
-| KeyDrift | 208 | nullability or metadata no drift | PARTIAL | PARTIAL | `reorder_nullability_and_backticks_are_not_drift` is validator only. No completing second run, no column metadata | C3 |
-| KeyDrift | 315 | case-insensitive no drift | PARTIAL | COVERED | `test_keys_may_be_given_in_another_case`. Spark asserts only completion | |
-| SinglePipeline | 118 | two flows, one pipeline | PARTIAL | PARTIAL | First half of `test_two_flows_in_one_pipeline_and_a_selective_full_refresh`. Drops auxiliary existence, metadata, and Spark's second row | C4 |
-| Flow | 211 | schema, Include | PARTIAL | PARTIAL | Names only in Rust; no type or metadata struct check | C5 |
-| Flow | 234 | schema, Exclude | PARTIAL | PARTIAL | Names only. `"seq" not in columns` is one fact | C5 |
-| Flow | 255 | metadata uses resolved type | PARTIAL | PARTIAL | `test_a_sequence_expression_types_the_metadata` covers the cast over BIGINT but only `upsertSequence`. Spark compares the whole struct | C6 |
-| ChangeArgs | 254 | `quoted` safe for `col` | PARTIAL | PARTIAL | Rust test asserts a different condition (`AUTOCDC_MULTIPART_COLUMN_IDENTIFIER`). No DataFrame half | C7 |
-| MergeSuite | 476 | grid, caseSensitive=true | MISSING | MISSING | `test_a_mis_cased_key_fails_when_names_are_case_sensitive` fails at the flow check, before any merge (oracle: `AUTOCDC_KEY_NOT_IN_SELECTED_SCHEMA`), and has no condition. No merge runs under case sensitivity | R1 |
-| BatchProcessor | 390 | key collides with reserved name | PARTIAL | PARTIAL | Failure only, no `AMBIGUOUS_REFERENCE`. Unreachable from a client | R2 |
-| BatchProcessor | 640 | incompatible sequencing type | PARTIAL | PARTIAL | Failure only, no `DATATYPE_MISMATCH.CAST_WITHOUT_SUGGESTION`. Unreachable from a client | R3 |
-| Handler | 84 | null sequencing before merge | PARTIAL | PARTIAL | `test_a_null_sequence_fails_before_any_merge` asserts no effect, but `match="AUTOCDC_"` and no metadata. Rust pins condition on the validator alone | C8 |
-| Handler | 113 | null key before merge | PARTIAL | PARTIAL | `test_a_null_key_fails_before_any_merge`: one null row where Spark has two and a good row, family match, no aux assertion | C9 |
-| Handler | 145 | composite null key | PARTIAL | PARTIAL | Rust validator only. No test with tables | C10 |
-| Handler | 233 | sequencing must be orderable | PARTIAL | PARTIAL | Rust validator only. No test with tables | C11 |
-| Handler | 270 | stale dropped, fresh written | PARTIAL | PARTIAL, metadata | `test_a_tombstone_drops_a_stale_row_and_a_fresh_upsert_is_written`. Drops target metadata and aux `upsertSequence` | M3 |
-| Handler | 308 | dedup before merge | PARTIAL | PARTIAL, metadata | `test_duplicate_keys_in_a_batch_merge_once_over_an_existing_row`. Drops only `deleteSequence` | M4 |
-| Handler | 327 | six out-of-order batches | MISSING | PARTIAL | `test_out_of_order_batches_converge_with_the_sequence_excluded` excludes `seq`, but a different sequence. Never sends an older delete below a live row, drops the check after batch 4, the final aux row, and metadata | C12 |
-| Handler | 438 | late delete, tombstone kept | PARTIAL | PARTIAL, metadata | `test_a_late_delete_leaves_the_row_and_still_records_a_tombstone` | M5 |
-| Handler | 456 | within-batch delete then upsert | PARTIAL | PARTIAL, metadata | `test_a_delete_losing_within_a_batch_leaves_no_tombstone`. One send is one batch (`MAX_FILES_PER_BATCH` is 100), so dedup is reached | M6 |
-| Handler | 480 | composite key isolates rows | PARTIAL | PARTIAL | `test_a_composite_key_merges_on_every_key` runs a real composite merge. Drops aux empty, metadata and the Exclude selection | C13 |
-| Handler | 599 | case-insensitive at every stage | PARTIAL | PARTIAL | `test_an_upper_case_flow_runs_when_names_are_case_insensitive` uses `except_column_list`, not Spark's uppercase Include, and asserts a delete, not an upsert over a row with aux empty | C14 |
-| Handler | 621 | case-sensitive analysis | PARTIAL | PARTIAL | `test_a_mis_cased_key_fails_when_names_are_case_sensitive` has no exception type or condition, so an internal error passes. Only the key is uppercase | C15 |
-| ConnectInvalid | 608 | persisted view | PARTIAL | PARTIAL | Debug-string match, no parameters. Python is a skip stub | R4 |
-| ConnectInvalid | 658 | temporary view | PARTIAL | PARTIAL | `test_auto_cdc_flow_targeting_a_temporary_view` asserts the condition with `` `target_view` ``. Spark's test expects a qualified name it builds by hand. No oracle run of this file was found | C16 |
-| Python | 1166 | source is the flow's input | PARTIAL | PARTIAL | `test_auto_cdc_flow_resolves` asserts resolution only | C17 |
-| Python | 1186 | single-part source inherits defaults | MISSING | PARTIAL | `test_auto_cdc_flow_resolves` runs with a non-session default database, so a mis-qualified `events` would fail. Default catalog never differs and inputs are not asserted | C18 |
-| Python | 1218 | multi-part source resolves | PARTIAL | PARTIAL | `multi_part_source_is_kept_for_resolution_against_the_graph` asserts the parse. No test names a qualified `source` | C17 |
+| Suite          | Line | Spark test                           | Was     | Now               | Evidence and gap                                                                                                                                                                                                       | Closure |
+| -------------- | ---: | ------------------------------------ | ------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| AuxDurability  |  151 | aux preserves declared key order     | PARTIAL | PARTIAL           | `test_the_auxiliary_table_records_keys_in_declared_order` asserts the first two column names. Drops the third name and the `keyColumnNames` property                                                                   | C1      |
+| AuxDurability  |  184 | dropped aux recreated                | PARTIAL | PARTIAL, metadata | `test_a_dropped_auxiliary_table_is_recreated` runs the production path and asserts recreation. Drops `seq` and metadata                                                                                                | M1      |
+| AuxDurability  |  223 | key names survive special characters | PARTIAL | PARTIAL           | `test_special_characters_in_key_names_survive_two_runs` uses two of Spark's four names (no `a"b`, no `c\d`) and never reads the property                                                                               | C2      |
+| FullRefresh    |  159 | selective refresh                    | PARTIAL | PARTIAL, metadata | `test_two_flows_in_one_pipeline_and_a_selective_full_refresh`, production path, same ids and sequences. Drops metadata                                                                                                 | M2      |
+| KeyDrift       |  188 | composite reorder no drift           | PARTIAL | COVERED           | `test_reordering_composite_keys_is_not_drift`. Spark asserts only that the run completes; this asserts the row too                                                                                                     |         |
+| KeyDrift       |  208 | nullability or metadata no drift     | PARTIAL | PARTIAL           | `reorder_nullability_and_backticks_are_not_drift` is validator only. No completing second run, no column metadata                                                                                                      | C3      |
+| KeyDrift       |  315 | case-insensitive no drift            | PARTIAL | COVERED           | `test_keys_may_be_given_in_another_case`. Spark asserts only completion                                                                                                                                                |         |
+| SinglePipeline |  118 | two flows, one pipeline              | PARTIAL | PARTIAL           | First half of `test_two_flows_in_one_pipeline_and_a_selective_full_refresh`. Drops auxiliary existence, metadata, and Spark's second row                                                                               | C4      |
+| Flow           |  211 | schema, Include                      | PARTIAL | PARTIAL           | Names only in Rust; no type or metadata struct check                                                                                                                                                                   | C5      |
+| Flow           |  234 | schema, Exclude                      | PARTIAL | PARTIAL           | Names only. `"seq" not in columns` is one fact                                                                                                                                                                         | C5      |
+| Flow           |  255 | metadata uses resolved type          | PARTIAL | PARTIAL           | `test_a_sequence_expression_types_the_metadata` covers the cast over BIGINT but only `upsertSequence`. Spark compares the whole struct                                                                                 | C6      |
+| ChangeArgs     |  254 | `quoted` safe for `col`              | PARTIAL | PARTIAL           | Rust test asserts a different condition (`AUTOCDC_MULTIPART_COLUMN_IDENTIFIER`). No DataFrame half                                                                                                                     | C7      |
+| MergeSuite     |  476 | grid, caseSensitive=true             | MISSING | MISSING           | `test_a_mis_cased_key_fails_when_names_are_case_sensitive` fails at the flow check, before any merge (oracle: `AUTOCDC_KEY_NOT_IN_SELECTED_SCHEMA`), and has no condition. No merge runs under case sensitivity        | R1      |
+| BatchProcessor |  390 | key collides with reserved name      | PARTIAL | PARTIAL           | Failure only, no `AMBIGUOUS_REFERENCE`. Unreachable from a client                                                                                                                                                      | R2      |
+| BatchProcessor |  640 | incompatible sequencing type         | PARTIAL | PARTIAL           | Failure only, no `DATATYPE_MISMATCH.CAST_WITHOUT_SUGGESTION`. Unreachable from a client                                                                                                                                | R3      |
+| Handler        |   84 | null sequencing before merge         | PARTIAL | PARTIAL           | `test_a_null_sequence_fails_before_any_merge` asserts no effect, but `match="AUTOCDC_"` and no metadata. Rust pins condition on the validator alone                                                                    | C8      |
+| Handler        |  113 | null key before merge                | PARTIAL | PARTIAL           | `test_a_null_key_fails_before_any_merge`: one null row where Spark has two and a good row, family match, no aux assertion                                                                                              | C9      |
+| Handler        |  145 | composite null key                   | PARTIAL | PARTIAL           | Rust validator only. No test with tables                                                                                                                                                                               | C10     |
+| Handler        |  233 | sequencing must be orderable         | PARTIAL | PARTIAL           | Rust validator only. No test with tables                                                                                                                                                                               | C11     |
+| Handler        |  270 | stale dropped, fresh written         | PARTIAL | PARTIAL, metadata | `test_a_tombstone_drops_a_stale_row_and_a_fresh_upsert_is_written`. Drops target metadata and aux `upsertSequence`                                                                                                     | M3      |
+| Handler        |  308 | dedup before merge                   | PARTIAL | PARTIAL, metadata | `test_duplicate_keys_in_a_batch_merge_once_over_an_existing_row`. Drops only `deleteSequence`                                                                                                                          | M4      |
+| Handler        |  327 | six out-of-order batches             | MISSING | PARTIAL           | `test_out_of_order_batches_converge_with_the_sequence_excluded` excludes `seq`, but a different sequence. Never sends an older delete below a live row, drops the check after batch 4, the final aux row, and metadata | C12     |
+| Handler        |  438 | late delete, tombstone kept          | PARTIAL | PARTIAL, metadata | `test_a_late_delete_leaves_the_row_and_still_records_a_tombstone`                                                                                                                                                      | M5      |
+| Handler        |  456 | within-batch delete then upsert      | PARTIAL | PARTIAL, metadata | `test_a_delete_losing_within_a_batch_leaves_no_tombstone`. One send is one batch (`MAX_FILES_PER_BATCH` is 100), so dedup is reached                                                                                   | M6      |
+| Handler        |  480 | composite key isolates rows          | PARTIAL | PARTIAL           | `test_a_composite_key_merges_on_every_key` runs a real composite merge. Drops aux empty, metadata and the Exclude selection                                                                                            | C13     |
+| Handler        |  599 | case-insensitive at every stage      | PARTIAL | PARTIAL           | `test_an_upper_case_flow_runs_when_names_are_case_insensitive` uses `except_column_list`, not Spark's uppercase Include, and asserts a delete, not an upsert over a row with aux empty                                 | C14     |
+| Handler        |  621 | case-sensitive analysis              | PARTIAL | PARTIAL           | `test_a_mis_cased_key_fails_when_names_are_case_sensitive` has no exception type or condition, so an internal error passes. Only the key is uppercase                                                                  | C15     |
+| ConnectInvalid |  608 | persisted view                       | PARTIAL | PARTIAL           | Debug-string match, no parameters. Python is a skip stub                                                                                                                                                               | R4      |
+| ConnectInvalid |  658 | temporary view                       | PARTIAL | PARTIAL           | `test_auto_cdc_flow_targeting_a_temporary_view` asserts the condition with `` `target_view` ``. Spark's test expects a qualified name it builds by hand. No oracle run of this file was found                          | C16     |
+| Python         | 1166 | source is the flow's input           | PARTIAL | PARTIAL           | `test_auto_cdc_flow_resolves` asserts resolution only                                                                                                                                                                  | C17     |
+| Python         | 1186 | single-part source inherits defaults | MISSING | PARTIAL           | `test_auto_cdc_flow_resolves` runs with a non-session default database, so a mis-qualified `events` would fail. Default catalog never differs and inputs are not asserted                                              | C18     |
+| Python         | 1218 | multi-part source resolves           | PARTIAL | PARTIAL           | `multi_part_source_is_kept_for_resolution_against_the_graph` asserts the parse. No test names a qualified `source`                                                                                                     | C17     |
 
 ## New suites
 
-| Suite | # | Spark test | Class | Evidence and gap | Closure |
-|---|---:|---|---|---|---|
-| MultiPipeline | 1 | separate tables, independent state | PARTIAL | `test_two_targets_keep_independent_state`, see drops | C19 |
-| MultiPipeline | 2 | downstream pipeline reads target | PARTIAL | `test_a_later_pipeline_reads_a_target_without_its_metadata_column` | C20 |
-| MultiPipeline | 3 | same table, identical schemas | PARTIAL | `test_two_pipelines_merge_into_a_shared_target` | C21 |
-| MultiPipeline | 4 | same key, different columns | PARTIAL | `test_two_pipelines_with_other_columns_evolve_a_shared_target` stops one stage early | C22 |
-| MultiPipeline | 5 | different keys, KEY_SCHEMA_DRIFT | PARTIAL | `test_a_second_pipeline_with_other_keys_is_refused` pins the condition end to end. Rust pins parameters on other values | C23 |
-| Evolution | 1 | nullable column, mixed values | PARTIAL | `test_a_nullable_column_merges_mixed_values` | C24 |
-| Evolution | 2 | widening refused | PARTIAL | `test_a_type_change_between_runs_is_refused[INT-BIGINT...]` | C25 |
-| Evolution | 3 | narrowing refused | PARTIAL | Same test, `BIGINT-INT` | C25 |
-| Evolution | 4 | new source column added | PARTIAL | `test_a_new_source_column_is_added_to_the_target` | C26 |
-| Evolution | 5 | broadening selection | PARTIAL | `test_broadening_the_selection_adds_the_column` | C26 |
-| Evolution | 6 | narrowing selection | PARTIAL | `test_narrowing_the_selection_keeps_the_column` | C26 |
-| Evolution | 7 | dropped source column | PARTIAL | `test_a_dropped_source_column_keeps_its_rows_and_is_null_on_new_ones` | C26 |
-| Evolution | 8 | nested struct field dropped | PARTIAL | `test_dropping_a_nested_struct_field_is_refused` | C27 |
-| Evolution | 9 | new field in array of structs | COVERED | `test_a_new_field_in_an_array_of_structs_is_added`, same data and same final assertion | |
-| Evolution | 10 | field dropped from array of structs | PARTIAL | `test_dropping_a_field_in_an_array_of_structs_is_refused` | C27 |
-| Evolution | 11 | case-only name, AMBIGUOUS_REFERENCE | COVERED | `test_a_column_differing_from_the_target_by_case_is_ambiguous`. Condition matched, parameters are wildcards in Spark. Query context dropped as a diagnostic | |
-| Evolution | 12 | extra target columns preserved | COVERED | `test_extra_target_columns_survive_the_merge`, identical select and rows | |
-| Evolution | 13 | TIMESTAMP to STRING refused | PARTIAL | `test_a_type_change_between_runs_is_refused[TIMESTAMP-...]` | C25 |
-| TargetDurability | 1 | preloaded rows, lower and higher | PARTIAL, metadata | `test_a_preloaded_row_outranks_a_lower_sequence` | M7 |
-| TargetDurability | 2 | preloaded rows, aux lazy | PARTIAL, metadata | `test_preloaded_rows_merge_and_the_auxiliary_table_appears_on_the_first_run` | M8 |
-| TargetDurability | 3 | metadata column auto-added | PARTIAL, metadata | `test_a_target_without_the_metadata_column_gains_it` | M9 |
+| Suite            |   # | Spark test                          | Class             | Evidence and gap                                                                                                                                            | Closure |
+| ---------------- | --: | ----------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| MultiPipeline    |   1 | separate tables, independent state  | PARTIAL           | `test_two_targets_keep_independent_state`, see drops                                                                                                        | C19     |
+| MultiPipeline    |   2 | downstream pipeline reads target    | PARTIAL           | `test_a_later_pipeline_reads_a_target_without_its_metadata_column`                                                                                          | C20     |
+| MultiPipeline    |   3 | same table, identical schemas       | PARTIAL           | `test_two_pipelines_merge_into_a_shared_target`                                                                                                             | C21     |
+| MultiPipeline    |   4 | same key, different columns         | PARTIAL           | `test_two_pipelines_with_other_columns_evolve_a_shared_target` stops one stage early                                                                        | C22     |
+| MultiPipeline    |   5 | different keys, KEY_SCHEMA_DRIFT    | PARTIAL           | `test_a_second_pipeline_with_other_keys_is_refused` pins the condition end to end. Rust pins parameters on other values                                     | C23     |
+| Evolution        |   1 | nullable column, mixed values       | PARTIAL           | `test_a_nullable_column_merges_mixed_values`                                                                                                                | C24     |
+| Evolution        |   2 | widening refused                    | PARTIAL           | `test_a_type_change_between_runs_is_refused[INT-BIGINT...]`                                                                                                 | C25     |
+| Evolution        |   3 | narrowing refused                   | PARTIAL           | Same test, `BIGINT-INT`                                                                                                                                     | C25     |
+| Evolution        |   4 | new source column added             | PARTIAL           | `test_a_new_source_column_is_added_to_the_target`                                                                                                           | C26     |
+| Evolution        |   5 | broadening selection                | PARTIAL           | `test_broadening_the_selection_adds_the_column`                                                                                                             | C26     |
+| Evolution        |   6 | narrowing selection                 | PARTIAL           | `test_narrowing_the_selection_keeps_the_column`                                                                                                             | C26     |
+| Evolution        |   7 | dropped source column               | PARTIAL           | `test_a_dropped_source_column_keeps_its_rows_and_is_null_on_new_ones`                                                                                       | C26     |
+| Evolution        |   8 | nested struct field dropped         | PARTIAL           | `test_dropping_a_nested_struct_field_is_refused`                                                                                                            | C27     |
+| Evolution        |   9 | new field in array of structs       | COVERED           | `test_a_new_field_in_an_array_of_structs_is_added`, same data and same final assertion                                                                      |         |
+| Evolution        |  10 | field dropped from array of structs | PARTIAL           | `test_dropping_a_field_in_an_array_of_structs_is_refused`                                                                                                   | C27     |
+| Evolution        |  11 | case-only name, AMBIGUOUS_REFERENCE | COVERED           | `test_a_column_differing_from_the_target_by_case_is_ambiguous`. Condition matched, parameters are wildcards in Spark. Query context dropped as a diagnostic |         |
+| Evolution        |  12 | extra target columns preserved      | COVERED           | `test_extra_target_columns_survive_the_merge`, identical select and rows                                                                                    |         |
+| Evolution        |  13 | TIMESTAMP to STRING refused         | PARTIAL           | `test_a_type_change_between_runs_is_refused[TIMESTAMP-...]`                                                                                                 | C25     |
+| TargetDurability |   1 | preloaded rows, lower and higher    | PARTIAL, metadata | `test_a_preloaded_row_outranks_a_lower_sequence`                                                                                                            | M7      |
+| TargetDurability |   2 | preloaded rows, aux lazy            | PARTIAL, metadata | `test_preloaded_rows_merge_and_the_auxiliary_table_appears_on_the_first_run`                                                                                | M8      |
+| TargetDurability |   3 | metadata column auto-added          | PARTIAL, metadata | `test_a_target_without_the_metadata_column_gains_it`                                                                                                        | M9      |
 
 ## Closures
 
@@ -204,17 +204,17 @@ def create(catalog=None, database=None):
 
 ### Metadata only: one edit per test
 
-| Id | Test | Replacement assertions |
-|---|---|---|
-| M1 | `test_a_dropped_auxiliary_table_is_recreated` | `rows(space, "id", "name", "seq", *META) == [(1, "alicia", 2, None, 2)]` |
-| M2 | `test_two_flows_...` second half | Select `"id", "seq", *META`: `t_a == [(1, 5, None, 5)]`, `t_b == [(1, 10, None, 10)]` |
-| M3 | `test_a_tombstone_drops_...` | `cdc.target("id", "name", *META) == [(2, "fresh", None, 20)]`, `cdc.auxiliary("id") == [(1, 10, None)]` |
-| M4 | `test_duplicate_keys_...` | `cdc.target("id", "name", *META) == [(1, "newer", None, 20)]` |
-| M5 | `test_a_late_delete_...` | `cdc.target("id", "name", *META) == [(1, "alice", None, 5)]`, `cdc.auxiliary("id") == [(1, 2, None)]` |
-| M6 | `test_a_delete_losing_...` | `cdc.target("id", "name", *META) == [(1, "bob", None, 3)]` |
-| M7 | `test_a_preloaded_row_outranks_...` | `rows(space, "id", "name", "seq", *META) == [(1, "alice", 5, None, 5), (2, "bob2", 10, None, 10)]` |
-| M8 | `test_preloaded_rows_merge_...` | `rows(space, "id", "name", "seq", *META) == [(1, "bob", 2, None, 2)]` |
-| M9 | `test_a_target_without_the_metadata_column_gains_it` | `rows(space, "id", "name", "seq", *META) == [(1, "alice", 1, None, 1)]` |
+| Id  | Test                                                 | Replacement assertions                                                                                  |
+| --- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| M1  | `test_a_dropped_auxiliary_table_is_recreated`        | `rows(space, "id", "name", "seq", *META) == [(1, "alicia", 2, None, 2)]`                                |
+| M2  | `test_two_flows_...` second half                     | Select `"id", "seq", *META`: `t_a == [(1, 5, None, 5)]`, `t_b == [(1, 10, None, 10)]`                   |
+| M3  | `test_a_tombstone_drops_...`                         | `cdc.target("id", "name", *META) == [(2, "fresh", None, 20)]`, `cdc.auxiliary("id") == [(1, 10, None)]` |
+| M4  | `test_duplicate_keys_...`                            | `cdc.target("id", "name", *META) == [(1, "newer", None, 20)]`                                           |
+| M5  | `test_a_late_delete_...`                             | `cdc.target("id", "name", *META) == [(1, "alice", None, 5)]`, `cdc.auxiliary("id") == [(1, 2, None)]`   |
+| M6  | `test_a_delete_losing_...`                           | `cdc.target("id", "name", *META) == [(1, "bob", None, 3)]`                                              |
+| M7  | `test_a_preloaded_row_outranks_...`                  | `rows(space, "id", "name", "seq", *META) == [(1, "alice", 5, None, 5), (2, "bob2", 10, None, 10)]`      |
+| M8  | `test_preloaded_rows_merge_...`                      | `rows(space, "id", "name", "seq", *META) == [(1, "bob", 2, None, 2)]`                                   |
+| M9  | `test_a_target_without_the_metadata_column_gains_it` | `rows(space, "id", "name", "seq", *META) == [(1, "alice", 1, None, 1)]`                                 |
 
 ### Everything else
 
@@ -303,7 +303,7 @@ def test_a_literal_dot_key_resolves_only_when_quoted(pipeline_spark, pipeline_fa
         frame.select("a.b").collect()
 ```
 
-**C8, Handler:84.** Tighten the existing test. Oracle text: `` AutoCDC flow on table `cat`.`ns1`.`target` in batch 1 ... contains 1 row(s) with a null sequencing value ``.
+**C8, Handler:84.** Tighten the existing test. Oracle text: ``AutoCDC flow on table `cat`.`ns1`.`target` in batch 1 ... contains 1 row(s) with a null sequencing value``.
 
 ```python
 with pytest.raises(FAILURE, match=r"(?s)NULL_SEQUENCE.*`target` in batch 1 .*contains 1 row\(s\) with a null sequencing value"):
@@ -488,14 +488,14 @@ with pytest.raises(FAILURE, match=rf'(?s)Failed to merge incompatible data types
 
 **C26, Evolution 4 to 7.** Pre-create the target with Spark's DDL and use whole rows.
 
-| Row | DDL before `{METADATA}` | After run 1 | After run 2 |
-|---|---|---|---|
-| 4 | `id INT NOT NULL, name STRING, seq BIGINT NOT NULL` | `[(1, "alice", 1, (None, 1))]` | `[(1, "alice", 1, (None, 1), None), (2, "bob", 2, (None, 2), "b@x.com")]` |
-| 5 | same | same | same |
-| 6 | `id INT NOT NULL, name STRING, email STRING, seq BIGINT NOT NULL` | `[(1, "alice", "a@x.com", 1, (None, 1))]` | `[(1, "alice", "a@x.com", 1, (None, 1)), (2, "bob", None, 2, (None, 2))]` |
-| 7 | as row 4 | `[(1, "alice", 1, (None, 1), "a@x.com")]` | `[(1, "alice", 1, (None, 1), "a@x.com"), (2, "bob", 2, (None, 2), None)]` |
+| Row | DDL before `{METADATA}`                                           | After run 1                               | After run 2                                                               |
+| --- | ----------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
+| 4   | `id INT NOT NULL, name STRING, seq BIGINT NOT NULL`               | `[(1, "alice", 1, (None, 1))]`            | `[(1, "alice", 1, (None, 1), None), (2, "bob", 2, (None, 2), "b@x.com")]` |
+| 5   | same                                                              | same                                      | same                                                                      |
+| 6   | `id INT NOT NULL, name STRING, email STRING, seq BIGINT NOT NULL` | `[(1, "alice", "a@x.com", 1, (None, 1))]` | `[(1, "alice", "a@x.com", 1, (None, 1)), (2, "bob", None, 2, (None, 2))]` |
+| 7   | as row 4                                                          | `[(1, "alice", 1, (None, 1), "a@x.com")]` | `[(1, "alice", 1, (None, 1), "a@x.com"), (2, "bob", 2, (None, 2), None)]` |
 
-**C27, Evolution 8, 10.** Oracle text: ``Cannot write incompatible data for the table ``: Cannot find data for the output column `value`.`b`.`c`.``
+**C27, Evolution 8, 10.** Oracle text: `Cannot write incompatible data for the table `: Cannot find data for the output column `value`.`b`.`c`.``
 
 ```python
 match=r"(?s)CANNOT_FIND_DATA.*table ``: Cannot find data for the output column `value`\.`b`\.`c`"
