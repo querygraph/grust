@@ -622,3 +622,38 @@ VERDICT commit=a8229598c7a0bcb44e313e3b9784add4ea48e48d fmt=0 clippy=0 rust_comm
 Python pipelines 657 passed; adapter 39 unit and 7 broker scenarios in Rust. The
 Delta Python suite was not rerun on this tip. Integration into the root is the
 peer's step and has not happened yet.
+
+### Fenced reset delivered (CF-0583)
+
+A full refresh of a durable AutoCDC target now runs through the authority, so a
+recreated source partition has a way forward. Branch `work/sdp-fenced-reset`.
+
+- **Order:** check that the source still holds its origin, publish what any
+  unfinished batch had ratified, `BeginReset`, truncate target then auxiliary,
+  publish, `FinalizeReset`, give the flow a new checkpoint at the source start.
+- **Truncate:** a `MERGE` of an empty source with `NOT MATCHED BY SOURCE DELETE`,
+  because the fence reaches a commit only through `MergeInto`. Both tables keep
+  their identity. This departs from the design's drop and recreate of the
+  auxiliary table.
+- **Checkpoints:** archives live under the `<n>` the authority reserved. Batch
+  numbers restart in a generation, so sharing a directory would collide.
+- **Recovery:** a crash resumes the reset whether or not the next run asked for
+  one.
+- **Source:** `BoundedSource::retains_origin` is required, with no default.
+
+The real broker found a bug the fixtures did not: a run stopped by its source
+kept its lease, so the full refresh its error calls for failed with a conflict
+until the lease expired. Source refusals now release the target.
+
+All 7 deliberate breakages were caught. One survived at first, and its test now
+loses the ratified commit so that the publish step is exercised.
+
+VERDICT commit=8e67e43c5ba0dff3d0ae0df489283ea19fe24232 fmt=0 clippy=0 rust_common=0 rust_common_datafusion=0 rust_pipelines=0 rust_plan=0 rust_session=0 rust_iggy=0 maturin=0 pytest_pipelines=0 at 2026-11-01T05:44:41Z
+
+Limits: a reset keeps both schemas and the keys, so it cannot serve as the way to
+change them, although the auxiliary errors still advise a full refresh. Total
+retention of a partition at offset 0 still reads as an origin, so a reset can
+start from an emptied partition. `retains_origin` on Iggy has no broker scenario
+for a partition whose first rows expired. Only a source refusal releases the
+lease; any other failure waits for expiry, 60 seconds. Initialization intents
+remain unused. The Delta Python suite was not rerun on this tip.
