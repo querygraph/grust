@@ -679,11 +679,23 @@ VERDICT commit=9da5a6ecbad5d1ed959d6a24870affa0adce1eb7 fmt=0 clippy=0 rust_comm
 
 Python pipelines 961 passed, 11 skipped, 1 xfailed, without `test_end_to_end_cli.py`, which needs a server on port 15002. `sail-delta-lake` lib 354, `sail-sdp-control` 26, `sail-logical-plan` 3. The Delta Python suite has 4 failed and 12 errors, the same 16 test ids as bare root `43e4626aa`. All 12 deliberate breakages of the new logic were caught.
 
-Limits that remain, each refused rather than run wrongly:
+### Remaining refusals closed (2026-11-01)
 
-- A warehouse that is not on a local disk, because the authority, archives and manifests are local files.
-- Catalog-managed tables.
-- Streaming formats other than Iggy, files and Delta, such as `rate`.
-- Cluster mode has not been exercised; the path has only run locally.
+Commit `0b6f34dd2` on root `5111f29c8`.
 
-Other limits: a Delta source's `retains_origin` is always true, so a reset after a vacuum fails during the rebuild, not before it. A partition emptied at offset 0 still reads as an origin. A source file deleted after being listed fails the read. Power loss and restore are not qualified for the Turso store.
+- **Iceberg targets:** a target the authority cannot fence takes a plain path. Progress is the checkpoint, as in Spark, and a replayed merge is safe because rows win by sequence. New columns arrive by `ALTER TABLE`, because Iceberg's MERGE has no schema evolution. There is no Spark oracle: the runtime for Spark 4.2 is not on Maven.
+- **Catalog-managed Delta:** takes the same plain path, because the catalog already orders its commits. This routing has never run: its tests need Docker for Unity Catalog, which this machine does not have.
+- **`rate`:** Spark runs AutoCDC over it to completion, so it is a source now.
+- **Remote warehouses:** the authority, archives and file lists stay in a local state directory keyed by warehouse URL, and a marker in the warehouse records that. A machine that lost the directory stops rather than restarting against tables with history. Tested against `moto`, not real S3. One machine owns the flows.
+- **Vacuum:** a reset refuses a Delta source whose first range can no longer be read, before anything is truncated. This has no end-to-end test.
+
+VERDICT commit=0b6f34dd2880a78a818a2444d2fdee20413b57ec fmt=0 clippy=0 rust_common=0 rust_common_datafusion=0 rust_pipelines=0 rust_plan=0 rust_session=0 rust_iggy=0 maturin=0 pytest_pipelines=0 at 2026-11-01T23:12:50Z
+
+Python pipelines 982 passed, 11 skipped. The CLI file passes against a private Sail server, and `sail-delta-lake`, `sail-sdp-control` and `sail-logical-plan` pass. The whole Spark tree has 52 failed and 1 error. The 52 fail the same way on bare `5111f29c8`, and those sampled are plan snapshots that predate the root's ANSI printing. `sail-spark-connect` has 2 ORC codec failures, also on the bare root. The error, in `test_parity_normalization.py`, did not occur in the narrower root control and passes alone, so it is unexplained in the full-tree run.
+
+Limits that remain:
+
+- Power loss and restore are not qualified for the Turso store.
+- AutoCDC has not been run in cluster mode by this lane.
+- A flow's query cannot hold stateful operators, such as streaming deduplication, before the merge.
+- A partition emptied at offset 0 still reads as an origin.

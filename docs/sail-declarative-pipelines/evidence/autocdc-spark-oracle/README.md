@@ -1,6 +1,6 @@
 # AutoCDC against Spark 4.2.1
 
-Product commit `541d48b83`, on root `be0881c80`, branch `work/sdp-initialization-intents`.
+Product commit `0b6f34dd2`, on root `5111f29c8`, branch `work/sdp-initialization-intents`.
 
 Oracle: Spark 4.2.1 from PyPI, with `SharedTablesInMemoryRowLevelOperationTableCatalog` from Maven's `spark-catalyst_2.13-4.2.1-tests.jar` and `spark-sql_2.13-4.2.1-tests.jar`. This is the catalog Spark's own AutoCDC suites use, as `cat.ns1`.
 
@@ -23,10 +23,12 @@ The launcher sets `AUTOCDC_ORACLE_NAMESPACE=cat.ns1`, so each test file qualifie
 
 | File                           | Spark 4.2.1          | Sail      |
 | :----------------------------- | :------------------- | :-------- |
-| `test_autocdc_semantics.py`    | 18 passed            | 18 passed |
-| `test_autocdc_spark_suites.py` | 35 passed, 3 skipped | 38 passed |
+| `test_autocdc_semantics.py`    | 27 passed            | 27 passed |
+| `test_autocdc_spark_suites.py` | 41 passed, 4 skipped | 45 passed |
 
-The 3 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a format with no bounded read, and Delta sources, which need jars this oracle does not load.
+The 4 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a format with no bounded read, Delta sources, and Iceberg targets. The Iceberg runtime for Spark 4.2 is not on Maven, so Iceberg has no oracle here.
+
+These runs found two differences that were then fixed: a selection is checked before the sequence is evaluated, and a structured error ends with its SQLSTATE.
 
 ## What these files do not show
 
@@ -34,4 +36,6 @@ The 3 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a form
 - Nothing here compares Delta commit contents, because the oracle has no Delta target.
 - Error text is compared by condition, and for type changes by the two types. Other parameters are not compared.
 
-`audit.md` classifies every Spark AutoCDC test at the pin before this work's last additions: 169 cases, 130 covered, 29 partial, 3 missing, 7 not applicable. Its behaviour gaps were inferred from code. All five were then fixed and tested. Its partial and missing rows were not reclassified one by one afterwards.
+`audit.md` is the first classification, at `f0bd5320a`: 169 cases. `audit-strict.md` is the stricter second one: 190 cases, 135 covered, 47 partial, 1 missing, 7 not applicable. It proposes a test for each open row, and those were then applied and run on both engines. The rows were not formally reclassified afterwards.
+
+Spark's nullability assertions stay in Rust, because a file source cannot declare a non-null column. New assertions were not mutation tested. The 12 breakages of the product logic ran at `541d48b83`.
