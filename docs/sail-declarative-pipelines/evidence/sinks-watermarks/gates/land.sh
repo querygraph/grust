@@ -3,7 +3,7 @@
 set -e -o pipefail
 R=/Users/alexy/src/sail-pipelines-proposal; C=$1; L=$2; F=$3; T=$4
 [[ -n $T ]] || { print "REFUSED: no pipelines run given"; exit 1; }
-[[ $(tail -1 $T/pytest.log) != *failed* && $(tail -1 $T/pytest.log) != *error* && $(tail -1 $T/pytest.log) == *passed* ]] || { print "REFUSED: pipelines $(tail -1 $T/pytest.log)"; exit 1; }
+[[ $(tail -1 $T/pytest.log) != *[0-9]\ failed* && $(tail -1 $T/pytest.log) != *[0-9]\ error* && $(tail -1 $T/pytest.log) == *passed* ]] || { print "REFUSED: pipelines $(tail -1 $T/pytest.log)"; exit 1; }
 [[ $(tail -1 $L) == GATE=0 ]] || { print "REFUSED: native gate $(tail -1 $L)"; exit 1; }
 /Users/alexy/src/sail-pipelines-proposal/.venv/bin/python - $F $C <<'P'
 import json,sys
