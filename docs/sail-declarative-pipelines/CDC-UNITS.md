@@ -659,3 +659,18 @@ start from an emptied partition. `retains_origin` on Iggy has no broker scenario
 for a partition whose first rows expired. Only a source refusal releases the
 lease; any other failure waits for expiry, 60 seconds. Initialization intents
 remain unused. The Delta Python suite was not rerun on this tip.
+
+### Compatibility with Spark 4.2.1 (2026-11-01)
+
+The goal moved from a working Iggy path to Spark's AutoCDC behaviour. Evidence: `evidence/autocdc-spark-oracle`.
+
+What changed, on `work/sdp-initialization-intents`:
+
+- **Mixed graphs:** AutoCDC flows dispatch from the ordinary flow runner, so they share its ordering, retries, failure containment and events.
+- **Sources:** a flow's query runs as Spark runs it. `flow_source.rs` finds every streaming read under the query, through views, and treats them as one source: Iggy, file tables, file paths, Delta tables and tables the pipeline writes. Unions and projections work. Other formats are refused.
+- **Schema:** incompatible types and case-only names are refused before any write. New columns, including nested ones, arrive by an Initialization intent whose fenced merge commits the change and advances no batch. A nested field the flow stopped writing is refused.
+- **Full refresh:** replaces the target's schema by a fenced overwrite and drops the auxiliary table, as `DatasetManager` does, so keys and types can change. The authority binds the new identity, and also rebinds a user-dropped auxiliary table.
+- **Analysis:** a target has `AutoCdcMergeFlow.schema`, so a dry run reports what a run would, and downstream views see what the flow writes.
+- **Fence hole closed:** `ALTER` on Delta commits outside `DeltaCommitExec`, so it moved an enrolled table's log past the authority's head. It is now refused.
+
+Earlier sections overstate coverage in two places. The full-refresh and dropped-auxiliary ports in `tests/run.rs` run paths production bypasses; the production path is covered by `test_autocdc_spark_suites.py` and the durable tests. The suites `AutoCdcScd1SchemaEvolutionSuite`, `AutoCdcScd1MultiPipelineSuite` and `AutoCdcScd1TargetTableDurabilitySuite` were not ported before this section.
