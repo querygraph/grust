@@ -674,3 +674,16 @@ What changed, on `work/sdp-initialization-intents`:
 - **Fence hole closed:** `ALTER` on Delta commits outside `DeltaCommitExec`, so it moved an enrolled table's log past the authority's head. It is now refused.
 
 Earlier sections overstate coverage in two places. The full-refresh and dropped-auxiliary ports in `tests/run.rs` run paths production bypasses; the production path is covered by `test_autocdc_spark_suites.py` and the durable tests. The suites `AutoCdcScd1SchemaEvolutionSuite`, `AutoCdcScd1MultiPipelineSuite` and `AutoCdcScd1TargetTableDurabilitySuite` were not ported before this section.
+
+VERDICT commit=9da5a6ecbad5d1ed959d6a24870affa0adce1eb7 fmt=0 clippy=0 rust_common=0 rust_common_datafusion=0 rust_pipelines=0 rust_plan=0 rust_session=0 rust_iggy=0 maturin=0 pytest_pipelines=0 at 2026-11-01T20:25:46Z
+
+Python pipelines 961 passed, 11 skipped, 1 xfailed, without `test_end_to_end_cli.py`, which needs a server on port 15002. `sail-delta-lake` lib 354, `sail-sdp-control` 26, `sail-logical-plan` 3. The Delta Python suite has 4 failed and 12 errors, the same 16 test ids as bare root `43e4626aa`. All 12 deliberate breakages of the new logic were caught.
+
+Limits that remain, each refused rather than run wrongly:
+
+- A warehouse that is not on a local disk, because the authority, archives and manifests are local files.
+- Catalog-managed tables.
+- Streaming formats other than Iggy, files and Delta, such as `rate`.
+- Cluster mode has not been exercised; the path has only run locally.
+
+Other limits: a Delta source's `retains_origin` is always true, so a reset after a vacuum fails during the rebuild, not before it. A partition emptied at offset 0 still reads as an origin. A source file deleted after being listed fails the read. Power loss and restore are not qualified for the Turso store.
