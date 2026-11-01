@@ -448,8 +448,10 @@ commands through Sail's merge resolver against seeded Delta tables, with
 the microbatch published as the write component's temporary view. All pass
 on the first run; the case-sensitive half of the grid case (Spark's
 `UNRESOLVED_COLUMN` for a mis-cased key) is not portable because the key is
-resolved by the flow definition before any merge in Sail. With this, every
-Spark SCD1 suite at the pin is ported or accounted for: ChangeArgs, flow
+resolved by the flow definition before any merge in Sail. This covers, in part,
+the Spark SCD1 suites at the pin (corrected in CF-0586: `AutoCdcScd1SchemaEvolutionSuite`,
+`AutoCdcScd1MultiPipelineSuite` and `AutoCdcScd1TargetTableDurabilitySuite`, 21
+tests, are not ported): ChangeArgs, flow
 and schema validators (A2), auxiliary state (A3), batch processor
 transforms (A4a), merges (A4b, this suite), handler and single-pipeline
 runs (A4c), durability and full refresh (A5, A5b); the remaining
