@@ -523,6 +523,67 @@ which carries `formats/iggy` and `sail-iggy-mirror`), or waits for a Sail
 dependency bump on the batch side; either is a shared decision, not a CDC
 unit. The design pin above stands.
 
+### Unit A6 delivered: finding D1 was a lock hold
+
+The operator chose to port the adapter into the SDP workspace. D1 reproduced
+as written, but its reading was wrong: `reqwest 0.12.28` accepts
+`quinn ^0.11.1`, and only the lockfile held 0.11.11. The SDK's `quinn` is a
+minimum, not a pin. `cargo update --precise` of `quinn`, `reqwest` 0.13,
+`tokio-rustls`, `blake3` and `bon` resolves it inside existing ranges, and the
+pinned SDK compiles on the gate toolchain. `rustls` already unified `ring` and
+`aws-lc-rs` before the SDK arrived, so that is unchanged.
+
+Branch `work/sdp-iggy-adapter` on `2eae921c5`:
+
+| Commit      | Unit                                                                           |
+| ----------- | ------------------------------------------------------------------------------ |
+| `c34fb714e` | `BoundedSource` returns `SourceError`; `describe` is fallible                  |
+| `7e433c0b6` | `crates/sail-iggy-bounded`: the adapter and the `iggy` format                  |
+| `9f21668e7` | Pipelines admit a view that is one `readStream.format("iggy")`                 |
+| `c4ff4703c` | Ratification binds a SHA-256 of the staged bytes (CF-0572), checked at publish |
+
+Where the delivered adapter differs from the design pin above:
+
+- The pin expected `describe` to take incarnations from a poll context. At the
+  pinned SDK, `get_topic` reports them per partition.
+- After a recreate, the client's first poll fails with `HistoryUnavailable`
+  and drops its cached route; the documented recovery is to poll again. Only
+  the real broker showed this. The adapter retries once, then applies the
+  ordinary incarnation checks.
+- An empty page in a range consults the broker's partition record rather than
+  the reply's context, so a partition recreated empty is a mismatch, not a gap.
+- The trait stayed synchronous. The source owns a one-worker runtime instead
+  of using `block_in_place` on the caller's, so it works from either runtime
+  flavour, and each call has a deadline, because the SDK otherwise reconnects
+  without limit.
+- The descriptor carries an address without credentials, so run records hold
+  no password and a rotated password keeps the source's identity.
+- JSON decoding adds `Int32` and microsecond timestamps to the fork's types,
+  which Spark schemas need. An unsupported type is a planning error.
+
+Three gaps were invisible until a real pipeline ran, because every earlier test
+built its inputs by hand: the resolver dropped `is_streaming` on data source
+reads; analysis gives an AutoCDC target its query's schema rather than
+`AutoCdcMergeFlow.schema`, which `execute` now computes; and source names were
+compared without case folding.
+
+Evidence: 39 unit tests and 7 scenarios against `iggy-server` at `153fdf466`,
+the scenarios passing 4 of 4 runs (frontier, retention gap, recreation empty
+and refilled, restart, dead broker, denied, not found). 17 of 17 adapter
+mutants fail a test. 5 PySpark tests run a pipeline against the real broker:
+applying a topic, incremental and idempotent reruns, a recreated topic leaving
+the target alone, a missing topic refused with nothing created, and the two
+refused reads. These need `SAIL_IGGY_SERVER_BINARY`; without it they skip.
+
+Limits: `sequence_by` and the target schema come from the source, so a declared
+target schema is not reconciled. A recreated partition stops the run; there is
+no reset path yet, and full refresh stays refused. Partitions empty at offset 0
+after total retention read the same as never-written ones; a run with progress
+past that point stops as stalled rather than continuing. A `current_thread`
+caller blocks its runtime for up to the deadline. TLS and QUIC transports were
+not exercised; the scenarios use plain TCP on one node. The SDK is an edge build
+pinned by git revision, not a release.
+
 ### O2 rerun on Codex's head `7cf0254bc` (CF-0550)
 
 Rebased the chain onto the O2 integration (`95cb03eb2` A5b, `fd3bffafd`
