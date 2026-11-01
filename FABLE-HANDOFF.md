@@ -162,6 +162,8 @@ Also accepted: **15272ec0a17070b3a9694992cc4a94ba98f572ce** (parent 7a32efd2a), 
 
 Also accepted: **dea8e10fb4c6ff4c258cd747e2a4b14b2c960daa** (parent 15272ec0a), the server-side definition guard; [evidence](docs/sail-declarative-pipelines/evidence/query-function-guard/README.md). 125+245 native, 300+67, 61 on Spark and Sail, 535 of 535 in the pipelines directory; 32 of 61 fail on the 15272 binary. **The frozen harness now lives in evidence/query-function-guard/harness**, because two test fixtures migrated; the earlier copy no longer matches the tree. Query functions cannot pass a DDL string schema, which is an analysis RPC.
 
+Also accepted: **2eae921c51f63de1baa5400be6a8d12b514782f3**, a fast-forward of dea8e10fb with the peer's CDC chain (CF-0570, CF-0572); [evidence](docs/sail-declarative-pipelines/evidence/cdc-root-integration/README.md). This is the current root. The union is qualified; CDC itself is not accepted, and no public path reaches it because no production code registers BoundedSources. Delta Python outcomes are unchanged from dea8e10fb, with 12 failed and 12 errors pre-existing; the delta-spark interoperability tests do not run on this host. An external test server needs SAIL_EXECUTION__DEFAULT_PARALLELISM=4 and SAIL_RUNTIME__STACK_SIZE=16777216, or Delta plan snapshots fail.
+
 Follow-ups: named_struct reports literal fields nullable while struct() does not; SHOW CREATE TABLE is unimplemented in Sail's parser.
 
 ## Opus stopping checkpoint and next implementation (read-mode API accepted, CF-0563)
