@@ -48,8 +48,8 @@
     "python/pysail/tests/spark/pipelines/test_features.py": "2b7dd61d8ea3bd5aa67db200bcf62ef0b15763246b9dde5f05e0991f2deaf92e",
     "python/pysail/tests/spark/pipelines/test_file_sources.py": "d860e9406a069261de11f9ad541b744cb50aa3902c7d5bc58a242057ee019cd0",
     "python/pysail/tests/spark/pipelines/test_lifecycle_errors.py": "ef7eed0570a1b0d5568097139e9dca193f6efa264ed5efef16712aa87359c79e",
-    "python/pysail/tests/spark/pipelines/test_nested_materialization.py": "9cac55ad3068de52774c504eb8c232b3928f5049dc1f32cdafb24f66fd2122d3",
-    "python/pysail/tests/spark/pipelines/test_properties.py": "9d4f7580074a668d63aa337ade9f6740c7f20aa14286ba2bae63142359ca88e2",
+    "python/pysail/tests/spark/pipelines/test_nested_materialization.py": "4795f0c7627a3be2a60469693d30087dbdf31fe6f20ce388807b92a102d4e718",
+    "python/pysail/tests/spark/pipelines/test_properties.py": "d01df74e53c9dcf30c4b6903a2fe4b9cb785052e0893bcc7e35691632e019862",
     "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py": "907052b66ddd7cf59d6fd1e39b1df5ad278aff425fbfeed51d6c5b3d0261c33a",
     "python/pysail/tests/spark/pipelines/test_registration_errors.py": "b1c4406b6270140a2d77d90b594927612718a7fc9ab688f74e3658541c6b33d7",
     "python/pysail/tests/spark/pipelines/test_schema.py": "35dac451943fcd080abb647008a6171d0293cb3142e7e39c9aeda62cc77a3fda",
@@ -80,7 +80,7 @@
     "python/pysail/tests/spark/dml/features/ctas_error_handling.feature": "fa498e73be70962406fb5100f2485c126b2319e1a96e949fac385d9bb7896589",
     "python/pysail/tests/spark/dml/features/explain_write.feature": "04580d287e4d06926f41ec61c5bd8b12ef78d705392f3d89d69aa547588f4a1f",
     "python/pysail/tests/spark/dml/features/truncate_table.feature": "20fe09718a5271dcb2dc98b0810738e1d46635f03a549244b2a8bb7ac54d191c",
-    "python/pysail/tests/spark/pipelines/features/sql.feature": "a25d3d6ebb68483f8ec411318ffb3e53f280615a7fec5fb6e7a30a7df56389d3",
+    "python/pysail/tests/spark/pipelines/features/sql.feature": "5cf58b5523eccee25c1e9d13037b613242627c94956ad72d3cba914699a5386d",
     "python/pysail/tests/spark/pipelines/features/views.feature": "8008dfbd3efad593079e666a578c9e4748357492f3abe857be2ac478c326106e"
   },
   "case_counts_by_file": {
@@ -202,5 +202,27 @@
     ],
     "selected_nodes_unchanged": true,
     "reason": "Preserve missing-column assertion in the flow event and assert the unresolved-pipeline terminal wrapper, matching Spark4.2.1."
+  },
+  "audit_alignment": {
+    "candidate": "5e905ecce9faef6b120f3f40f7b38529f4282672",
+    "source_changes": [
+      {
+        "path": "python/pysail/tests/spark/pipelines/test_nested_materialization.py",
+        "before": "9cac55ad3068de52774c504eb8c232b3928f5049dc1f32cdafb24f66fd2122d3",
+        "after": "4795f0c7627a3be2a60469693d30087dbdf31fe6f20ce388807b92a102d4e718"
+      },
+      {
+        "path": "python/pysail/tests/spark/pipelines/test_properties.py",
+        "before": "9d4f7580074a668d63aa337ade9f6740c7f20aa14286ba2bae63142359ca88e2",
+        "after": "d01df74e53c9dcf30c4b6903a2fe4b9cb785052e0893bcc7e35691632e019862"
+      },
+      {
+        "path": "python/pysail/tests/spark/pipelines/features/sql.feature",
+        "before": "a25d3d6ebb68483f8ec411318ffb3e53f280615a7fec5fb6e7a30a7df56389d3",
+        "after": "5cf58b5523eccee25c1e9d13037b613242627c94956ad72d3cba914699a5386d"
+      }
+    ],
+    "selected_nodes_unchanged": true,
+    "reason": "sql.feature: the nonidentity partitioning scenario now expects Spark's own text, 'Invalid partitioning transform', from SqlGraphRegistrationContext.scala:573 and SqlPipelineSuite.scala:326 at Spark 617618396. test_nested_materialization.py and test_properties.py: an autouse fixture drops the tables a case leaves, with no assertion changed."
   }
 }
