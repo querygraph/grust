@@ -1,6 +1,6 @@
 # AutoCDC against Spark 4.2.1
 
-Product commit `4389a3ede`, on root `5cc046a0c`, branch `work/sdp-initialization-intents`.
+Product commit `f288738c3`, on root `2e73a0b87`, branch `work/sdp-initialization-intents`.
 
 Oracle: Spark 4.2.1 from PyPI, with `SharedTablesInMemoryRowLevelOperationTableCatalog` from Maven's `spark-catalyst_2.13-4.2.1-tests.jar` and `spark-sql_2.13-4.2.1-tests.jar`. This is the catalog Spark's own AutoCDC suites use, as `cat.ns1`.
 
@@ -44,15 +44,18 @@ These runs found two differences that were then fixed: a selection is checked be
 
 | Check                                            | Result                                                       |
 | :----------------------------------------------- | :----------------------------------------------------------- |
-| Whole Spark Python tree                          | 12124 passed, 0 failed, 1 error                              |
+| Whole Spark Python tree                          | 12125 passed, 0 failed, 1 error                              |
 | AutoCDC in local-cluster mode, with S3 and Iggy  | 87 passed                                                    |
 | Spark-verified tests on an Iceberg target        | 78 passed, 2 skipped                                         |
 | AutoCDC on a Hive 4.0.1 metastore, `run-hive.sh` | 80 passed                                                    |
 | SIGKILL during runs, `crash.py`                  | 24 on the memory catalog and 6 on Hive, every recovery exact |
+| Unity Catalog v0.4.0 suite, with AutoCDC         | 230 passed, 6 xfailed                                        |
 
-The error is an ORC encoding failure reported at server stop, not a CDC test: see CF-0601.
+The error is an ORC encoding failure reported at session stop, not a CDC test: see CF-0606.
 
-The Iceberg row compares Sail's Iceberg path with expectations Spark verified on its test catalog. It is not Iceberg on Spark: the Iceberg 1.12 runtime for Spark 4.1 is binary-incompatible with 4.2.1, and running a nightly snapshot runtime needs the owner's approval.
+Unity Catalog was built from source at v0.4.0 and run without Docker. The suite ran with `PYSAIL_INTEGRATION_SUITE=unity` and `PYSAIL_UNITY_CATALOG_URL` pointing at that server.
+
+The Iceberg row compares Sail's Iceberg path with expectations Spark verified on its test catalog. It is not Iceberg on Spark. The Iceberg 1.12.0 runtime for Spark 4.1 and the 1.13.0-SNAPSHOT nightly for Spark 4.2 were both run, and both are binary-incompatible with Spark 4.2.1 at its view API. No Iceberg runtime for Spark 4.2.1 exists.
 
 ## Audit
 

@@ -703,11 +703,18 @@ The batch lane's runner starts a Hive 4.0.1 metastore without Docker. AutoCDC fa
 
 VERDICT commit=4389a3ede7d38d43e29c97f24bf868a9b1784d12, all 0. Results at that commit are in `evidence/autocdc-spark-oracle`.
 
+### Unity Catalog, and the runtimes that cannot run (2026-11-02)
+
+Unity Catalog v0.4.0 was built from source and run without Docker, with managed tables enabled. AutoCDC into a managed Delta table failed only because Unity refuses `DROP TABLE ... PURGE`, so a refused purge now drops without it. The Unity fixture can also use an external server (`PYSAIL_UNITY_CATALOG_URL`). On such a server it deletes its catalog before each module, because a catalog left by an earlier module keeps that module's storage root. The Unity suite, including the new AutoCDC file, has 230 passed and 6 xfailed.
+
+Both Iceberg runtimes for Spark were tried against Spark 4.2.1: 1.12.0 for Spark 4.1, and the 1.13.0-SNAPSHOT nightly for Spark 4.2. Neither loads, because both are built against a different Spark view API (`SparkView`/`View`). So no released or nightly Iceberg runtime can run on Spark 4.2.1, and Iceberg has no comparison on real Spark.
+
+VERDICT commit=f288738c3c0849be4f6edb83b2e31a6ae7a50ed8: every gate is 0 except `spark_tree=1`. The whole Spark tree has 12125 passed and 1 error. That error is a teardown failure in `test_parity_normalization.py`: the session kept the earlier refusal to write a pre-1970 timestamp to ORC, and then failed when it shut down. It belongs to the batch lane. The oracle, local-cluster, Iceberg-variant, Hive (80/80) and Unity runs pass. Crash seeds 21–23 on the in-memory catalog and seed 31 on Hive give 40 of 40 rows.
+
 Limits that remain:
 
-- Power loss and restore are not qualified. The Turso store runs in `mvcc` journal mode, and only process death is tested.
-- Catalog-managed Delta routing has never run: its tests need Docker for Unity Catalog.
-- Iceberg has no comparison on real Spark itself. Its Sail path passes the tests whose expectations Spark verified on its test catalog. A nightly Iceberg runtime for Spark 4.2 exists and was not run.
-- Remote warehouses are tested against `moto`, not real S3, and one machine owns the flows.
+- Power loss and restore are not qualified, and the operator accepted this as a limit. The Turso store runs in `mvcc` journal mode, and only process death is tested.
+- Iceberg has no comparison on real Spark, because no runtime for Spark 4.2.1 exists. Its Sail path passes the tests whose expectations Spark verified on its test catalog.
+- Remote warehouses are tested against `moto`, which the operator accepted instead of real S3. One machine owns the flows.
 - Stateful queries before the merge have no state store. Each is evaluated over everything read so far and everything read before the batch, and the difference is merged. So the cost of a batch grows with the source, and the source must still hold its history. A row behind the watermark is not dropped as in Spark: it can change a window already emitted. `dropDuplicates` on a subset of columns may keep a different row than Spark, which keeps the first it saw.
 - A partition emptied at offset 0 still reads as an origin.
