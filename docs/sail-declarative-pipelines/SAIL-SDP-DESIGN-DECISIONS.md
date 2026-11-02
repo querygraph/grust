@@ -427,6 +427,6 @@ The other documented differences, recorded where each applies, are:
   - Cluster worker effects.
   - Effect-adapter candidates A and B are not selected.
 - **ORC.** Transport of an unknown outcome, native accounting bounds, and real object stores.
-- **Cluster mode.** Why a worker's Flight `do_get` stream for a canceled job's stage-0 shuffle output stays open after the job's tasks are aborted, which holds the worker's graceful stop until the 5-second abort (found in 2 of 3 firings; the third had no open stream). See FABLE-HANDOFF.md.
+- **Cluster mode.** Why a worker's Flight `do_get` stream for a canceled job's stage-0 shuffle output stays open after the job's tasks are aborted, which holds the worker's graceful stop until the 5-second abort (found in 2 of 3 firings; the third had no open stream). Narrowed further: one channel's sender outlives the aborted shuffle task while sibling channels close; the race does not reproduce under heavier logging. The 5-second bound keeps every stop finite and no test fails. See FABLE-HANDOFF.md.
 - **Append sources.** Delta and Iceberg append sources, rate limits, and exactly-once delivery for plain file tables.
 - **Follow-ups.** named_struct nullability. The Hive fallback and S3 paths are unverified (user decision 5 waives the S3 Hive tests).
