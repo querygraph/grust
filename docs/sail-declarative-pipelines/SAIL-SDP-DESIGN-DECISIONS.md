@@ -4,7 +4,8 @@ This is the consolidated record of every settled decision for Sail Declarative P
 
 - **Status:** current as of 2026-11-02.
 - **Product root:** `fb3a6ab03` on `work/spark-declarative-pipelines`, not pushed.
-- **Coordination log:** read through CF-0616.
+- **Coordination log:** read through CF-0624.
+- **Review:** DESIGN.md "Review at milestone 1" lists verified defects, proposed design changes and code improvements; none of them changes a decision above until it lands.
 
 Each entry names who decided it and where it is recorded:
 - **User:** the user's decision.
@@ -427,6 +428,6 @@ The other documented differences, recorded where each applies, are:
   - Cluster worker effects.
   - Effect-adapter candidates A and B are not selected.
 - **ORC.** Transport of an unknown outcome, native accounting bounds, and real object stores.
-- **Cluster mode.** Why a worker's Flight `do_get` stream for a canceled job's stage-0 shuffle output stays open after the job's tasks are aborted, which holds the worker's graceful stop until the 5-second abort (found in 2 of 3 firings; the third had no open stream). Narrowed further: one channel's sender outlives the aborted shuffle task while sibling channels close; the race does not reproduce under heavier logging. The 5-second bound keeps every stop finite and no test fails. See FABLE-HANDOFF.md.
+- **Cluster mode.** A worker can wait up to 5 seconds to stop because the driver's output forwarder holds its Flight response open during the driver's own wait (DESIGN.md, review design change 3; fix proposed, not landed).
 - **Append sources.** Delta and Iceberg append sources, rate limits, and exactly-once delivery for plain file tables.
 - **Follow-ups.** named_struct nullability. The Hive fallback and S3 paths are unverified (user decision 5 waives the S3 Hive tests).
