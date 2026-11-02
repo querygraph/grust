@@ -101,3 +101,14 @@ The profile found four product defects the memory catalog could not show:
 The Sail Hive fixtures, which use Docker, were not run, so the fallback path to older metastores and S3-backed Hive are unverified. Sail's own HMS Python tests also need Docker and did not run. Spark's Hive suites add no test bodies: HiveMaterializeTablesSuite is MaterializeTablesSuite with a Hive session. `hive_profile_plugin.py` clears `default` between tests, since a metastore outlives sessions.
 
 Audit: 384 ported, 37 partial, 14 internal, 0 missing. The 37 partial cases are AutoCDC cases of PythonPipelineSuite, event fields and capacity that never reach a client, states a client cannot request, and the `memory` writeStream case.
+
+## `2e73a0b87` to `df2457e50`: Spark-measured fixes, shutdown, Unity
+
+- `2e73a0b87`: a cluster job canceled by a stopping driver ends its output with an error, not a clean end. The worker's gRPC graceful stop is bounded at 5 seconds and then aborted; this is what held a worker inside its shutdown. Bare `USE`, declared view columns and the DATA_SOURCE_NOT_FOUND text match Spark 4.2.1, measured on real Spark one test at a time (32 of 40 earlier Spark failures were leftovers between tests).
+- `4898ad4a3` merges CF-0605 (Initialization intents).
+- `b1f41c6bf`: a job failure already delivered to its query, with resources drained, is logged at shutdown instead of failing cleanup; an unknown commit outcome is still reported. The ORC teardown error went from 1 to 0 in the pipelines run.
+- `df2457e50` merges CF-0607 (AutoCDC into Unity Catalog).
+
+Each gate: native 15 crates, frozen 300 + 67 PASS, pipelines plus ORC 1254 passed, 23 skipped, 4 strict expected failures, Hive 69 passed and 2 xfailed, second catalog 13 passed, Delta failures identical by name to the baseline.
+
+User decisions recorded 2026-11-02 in FABLE-HANDOFF.md. Spark's internal Scala suites are excluded from the goal by the user.
