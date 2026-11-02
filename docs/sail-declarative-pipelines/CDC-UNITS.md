@@ -697,5 +697,5 @@ Limits that remain:
 
 - Power loss and restore are not qualified for the Turso store.
 - AutoCDC has not been run in cluster mode by this lane.
-- A flow's query cannot hold stateful operators, such as streaming deduplication, before the merge.
+- Stateful queries before the merge have no state store. Each is evaluated over everything read so far and everything read before the batch, and the difference is merged. So the cost of a batch grows with the source, and the source must still hold its history. A row behind the watermark is not dropped as in Spark: it can change a window already emitted. `dropDuplicates` on a subset of columns may keep a different row than Spark, which keeps the first it saw.
 - A partition emptied at offset 0 still reads as an origin.

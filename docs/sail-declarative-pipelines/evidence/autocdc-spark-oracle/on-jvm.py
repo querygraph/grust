@@ -10,7 +10,7 @@ env={**os.environ,'JAVA_HOME':java,'SPARK_HOME':home,'SPARK_LOCAL_IP':'127.0.0.1
 for k in ['SPARK_REMOTE','SPARK_CONNECT_MODE_ENABLED','SPARK_LOCAL_REMOTE']: env.pop(k,None)
 log=(out/'server.log').open('w')
 p=subprocess.Popen([home+'/bin/spark-submit','--class','org.apache.spark.sql.connect.service.SparkConnectServer','--master','local[2]',
- '--conf',f'spark.connect.grpc.binding.port={port}','--conf',f'spark.driver.extraClassPath={cp}','--conf','spark.sql.catalog.cat=org.apache.spark.sql.connector.catalog.SharedTablesInMemoryRowLevelOperationTableCatalog',
+ '--conf',f'spark.connect.grpc.binding.port={port}','--conf','spark.sql.shuffle.partitions=2','--conf',f'spark.driver.extraClassPath={cp}','--conf','spark.sql.catalog.cat=org.apache.spark.sql.connector.catalog.SharedTablesInMemoryRowLevelOperationTableCatalog',
  '--conf',f'spark.sql.warehouse.dir={(out/"wh").as_uri()}'],cwd=out,env=env,stdout=log,stderr=subprocess.STDOUT)
 def up():
     with socket.socket() as c:

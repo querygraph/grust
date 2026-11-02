@@ -1,6 +1,6 @@
 # AutoCDC against Spark 4.2.1
 
-Product commit `0b6f34dd2`, on root `5111f29c8`, branch `work/sdp-initialization-intents`.
+Product commit `dd0feb578`, on root `ad5c11711`, branch `work/sdp-initialization-intents`.
 
 Oracle: Spark 4.2.1 from PyPI, with `SharedTablesInMemoryRowLevelOperationTableCatalog` from Maven's `spark-catalyst_2.13-4.2.1-tests.jar` and `spark-sql_2.13-4.2.1-tests.jar`. This is the catalog Spark's own AutoCDC suites use, as `cat.ns1`.
 
@@ -23,10 +23,14 @@ The launcher sets `AUTOCDC_ORACLE_NAMESPACE=cat.ns1`, so each test file qualifie
 
 | File                           | Spark 4.2.1          | Sail      |
 | :----------------------------- | :------------------- | :-------- |
-| `test_autocdc_semantics.py`    | 27 passed            | 27 passed |
+| `test_autocdc_semantics.py`    | 33 passed            | 33 passed |
 | `test_autocdc_spark_suites.py` | 41 passed, 4 skipped | 45 passed |
 
 The 4 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a format with no bounded read, Delta sources, and Iceberg targets. The Iceberg runtime for Spark 4.2 is not on Maven, so Iceberg has no oracle here.
+
+The launcher sets `spark.sql.shuffle.partitions=2`: with Spark's default of 200, each stateful run takes about 30 seconds on two local cores.
+
+Spark also accepts stateful queries before an AutoCDC merge, which Sail refused until this comparison: deduplication with and without a watermark, inner stream joins, and watermarked window aggregates. An aggregate without a watermark is refused by both.
 
 These runs found two differences that were then fixed: a selection is checked before the sequence is evaluated, and a structured error ends with its SQLSTATE.
 
