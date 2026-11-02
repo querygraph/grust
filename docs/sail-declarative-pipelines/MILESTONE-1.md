@@ -93,6 +93,10 @@ Every settled decision is recorded in [SAIL-SDP-DESIGN-DECISIONS.md](SAIL-SDP-DE
 - ORC timestamps outside ORC-763's window before the epoch fail rather than read back wrong.
 - Sail completes 3 Iceberg nested-type cases that Spark with Iceberg refuses.
 
+## After the milestone
+
+- `6f45d5d73` (gated, on top of `sdp-batch-m1`): late rows in the append path now follow Spark. The AutoCDC Spark oracle was rerun on `7d6bc1917`: semantics 42 passed; spark_suites 43 passed and 4 Sail-only skipped. Delta AutoCDC targets are policy (user decision 21).
+
 ## Open, not in this milestone
 
 - **Late rows in the append path:** Spark's rule is `window.end <= watermark`. This is the next unit of work.

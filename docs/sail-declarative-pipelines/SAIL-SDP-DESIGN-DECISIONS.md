@@ -340,6 +340,7 @@ The other documented differences, recorded where each applies, are:
   - `tumbling_window` became `event_window`.
   - `windowed_aggregate` finds watermarks through unions.
   - The append path keeps its refusals: a sliding window, more than one watermark, or a watermark not directly on a streaming read.
+- **Late rows in the append path** (Codex, `6f45d5d73`, measured on Spark 4.2.1 with Delta 4.4.1). A row is dropped only when its window has ended by the watermark the batch started with (`window.end <= watermark`, WatermarkSupport). The watermark is `floorDiv(max event µs, 1000)` minus the delay in whole milliseconds, starts at 0 and never moves back. Before this, a row behind the watermark was dropped even while its window was open.
 
 ## 14. AutoCDC and the control store
 
@@ -416,7 +417,6 @@ The other documented differences, recorded where each applies, are:
 
 ## 16. Open questions (not decided)
 
-- **Append path late rows.** The append path drops late rows by event time. Spark drops a late row only when its window has ended (`window.end <= watermark`), with watermark = floorDiv(max event µs, 1000) − delay ms, starting at 0 and never moving back. Codex will fix this after the batch goal closes (CF-0613).
 - **CDC representation.** The C0 representation (logical canonical encoding or sealed bytes), the B12 tie-break, and durable staging (CF-0053, CF-0054).
 - **CDC activation.** Production durability, fencing and recovery: the activation gate, qualification on a real backend, and the recovery trace. Public Table, Sink, streaming and CDC effects stay disabled outside the admitted AutoCDC graph.
 - **Performance work.** The replay fast path and where its check runs; constant folding; lazy NaNvl.
