@@ -3,7 +3,8 @@
 This milestone is Sail's implementation of Spark 4.2.1 Spark Declarative Pipelines: the complete batch implementation, plus AutoCDC and streaming. The unchanged `pyspark.pipelines` client and the `spark-pipelines` CLI run against Sail over Spark Connect.
 
 - **Branch:** `work/spark-declarative-pipelines`, tag `sdp-batch-m1`, pushed to `querygraph/sail`.
-- **Root:** `53790f575`. It adds two commits on top of the gated `fb3a6ab03`: `21c1cb498` (the demo, the report source, and a fix to AutoCDC target locations; gated) and `53790f575` (the built report editions only).
+- **Root:** `7d6bc1917`, tagged `sdp-batch-m1` and pushed with the branch to `querygraph/sail` on 2026-11-02. On top of the gated `fb3a6ab03` it adds: `21c1cb498` (the demo, the report source, and a fix to AutoCDC target locations; gated), `53790f575` (the built report editions only), and `7d6bc1917`, the CDC lane's `6c6c9d447` (a watermark after a transformation keeps only open rows; gated). The report was built at `21c1cb49`, before that last merge, so its results tables do not include it.
+- **Gate on `7d6bc1917`:** native GATE=0; frozen 300 + 67 PASS; pipelines 1263 passed, 23 skipped, 4 strict expected failures; Hive 69 passed; second catalog 13 passed; Delta unchanged. Demo: 48 passed, 0 failed, 0 skipped, with Iggy.
 - **Base:** upstream Sail `0ba425c03`. The branch adds 371 commits, with 801 files changed.
 - **Lanes:** the batch lane wrote batch, SQL, catalog, runtime and ORC. The CDC lane wrote AutoCDC, with the streaming and Iggy work it needs. Both lanes are on this root.
 
