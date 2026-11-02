@@ -26,7 +26,7 @@ The launcher sets `AUTOCDC_ORACLE_NAMESPACE=cat.ns1`, so each test file qualifie
 | `test_autocdc_semantics.py`    | 41 passed            | 41 passed |
 | `test_autocdc_spark_suites.py` | 43 passed, 4 skipped | 47 passed |
 
-The 4 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a format with no bounded read, Delta sources, and Iceberg targets. The Iceberg runtime for Spark 4.2 is not on Maven, so Iceberg has no oracle here.
+The 4 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a format with no bounded read, Delta sources, and Iceberg targets. Iceberg runs on real Spark separately, below.
 
 The launcher sets `spark.sql.shuffle.partitions=2`: with Spark's default of 200, each stateful run takes about 30 seconds on two local cores.
 
@@ -53,7 +53,9 @@ These runs found two differences that were then fixed: a selection is checked be
 
 Unity Catalog was built from source at v0.4.0 and run without Docker. The suite ran with `PYSAIL_INTEGRATION_SUITE=unity` and `PYSAIL_UNITY_CATALOG_URL` pointing at that server.
 
-The Iceberg row compares Sail's Iceberg path with expectations Spark verified on its test catalog. It is not Iceberg on Spark. The Iceberg 1.12.0 runtime for Spark 4.1 and the 1.13.0-SNAPSHOT nightly for Spark 4.2 were both run, and both are binary-incompatible with Spark 4.2.1 at its view API. No Iceberg runtime for Spark 4.2.1 exists.
+The Iceberg row compares Sail's Iceberg path with expectations Spark verified on its test catalog.
+
+`on-jvm-ice42.py` runs the same files on Spark 4.2.1 with the Iceberg 1.13.0-SNAPSHOT runtime (commit `2742348`) and its catalog cache off. 40 of 41 and 41 of 43 run tests pass. The three failures are Spark with Iceberg refusing to change a nested type in place during a full refresh or schema evolution; Sail completes them. An earlier note here said no Iceberg runtime loads on Spark 4.2.1. That came from a launcher that loaded the 4.1 runtime, and it was wrong.
 
 ## Audit
 

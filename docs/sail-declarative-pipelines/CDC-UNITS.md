@@ -707,14 +707,13 @@ VERDICT commit=4389a3ede7d38d43e29c97f24bf868a9b1784d12, all 0. Results at that 
 
 Unity Catalog v0.4.0 was built from source and run without Docker, with managed tables enabled. AutoCDC into a managed Delta table failed only because Unity refuses `DROP TABLE ... PURGE`, so a refused purge now drops without it. The Unity fixture can also use an external server (`PYSAIL_UNITY_CATALOG_URL`). On such a server it deletes its catalog before each module, because a catalog left by an earlier module keeps that module's storage root. The Unity suite, including the new AutoCDC file, has 230 passed and 6 xfailed.
 
-Both Iceberg runtimes for Spark were tried against Spark 4.2.1: 1.12.0 for Spark 4.1, and the 1.13.0-SNAPSHOT nightly for Spark 4.2. Neither loads, because both are built against a different Spark view API (`SparkView`/`View`). So no released or nightly Iceberg runtime can run on Spark 4.2.1, and Iceberg has no comparison on real Spark.
+The Iceberg 1.12.0 runtime for Spark 4.1 does not load on Spark 4.2.1, because Spark 4.2 made `View` a class (`IncompatibleClassChangeError` in `SparkView`). An earlier version of this note said the 1.13.0-SNAPSHOT nightly for Spark 4.2 fails the same way. That was wrong: the launcher put the 4.1 jar on the classpath, so the nightly never ran. See the correction below.
 
 VERDICT commit=f288738c3c0849be4f6edb83b2e31a6ae7a50ed8: every gate is 0 except `spark_tree=1`. The whole Spark tree has 12125 passed and 1 error. That error is a teardown failure in `test_parity_normalization.py`: the session kept the earlier refusal to write a pre-1970 timestamp to ORC, and then failed when it shut down. It belongs to the batch lane. The oracle, local-cluster, Iceberg-variant, Hive (80/80) and Unity runs pass. Crash seeds 21–23 on the in-memory catalog and seed 31 on Hive give 40 of 40 rows.
 
 Limits that remain:
 
 - Power loss and restore are not qualified, and the operator accepted this as a limit. The Turso store runs in `mvcc` journal mode, and only process death is tested.
-- Iceberg has no comparison on real Spark, because no runtime for Spark 4.2.1 exists. Its Sail path passes the tests whose expectations Spark verified on its test catalog.
 - Remote warehouses are tested against `moto`, which the operator accepted instead of real S3. One machine owns the flows.
 - A stateful join re-runs over all the rows it keeps, so its cost grows with its state. Spark's state grows the same way, but it does not join everything again in each batch.
 - `withWatermark` must sit on a streaming read, or on a row-wise chain or a union over streaming reads: projections, filters, aliases, and added, renamed or dropped columns. After a transformation, every row read is kept as state, because the event time is not a column of the read.
@@ -749,3 +748,18 @@ VERDICT commit=669e35e6b43dc02b70e40c6acfee24ac062b5713, on root `df2457e50`: ev
 - Unity: 230 passed.
 - Real Spark 4.2.1: both test files pass.
 - Crash seeds: every recovery exact.
+
+### Iceberg on real Spark 4.2.1 (2026-11-02)
+
+The earlier claim that no Iceberg runtime runs on Spark 4.2.1 was wrong, and it was never tested. The Iceberg launcher put the 1.12.0 runtime for Spark 4.1 on the classpath, so the `IncompatibleClassChangeError` came from that jar. The 1.13.0-SNAPSHOT nightly (commit `2742348`, built against Spark 4.2.1) has a `SparkView` that does not implement `View`, and it loads.
+
+`on-jvm-ice42.py` runs the AutoCDC files on Spark 4.2.1 with that runtime and an Iceberg Hadoop catalog. The catalog's table cache must be off (`cache-enabled=false`): with the cache on, Spark read snapshots from before the pipeline's own writes, and most tests failed.
+
+| File                           | Spark 4.2.1 with Iceberg       |
+| :----------------------------- | :----------------------------- |
+| `test_autocdc_semantics.py`    | 40 passed, 1 failed            |
+| `test_autocdc_spark_suites.py` | 41 passed, 2 failed, 4 skipped |
+
+All three failures are Spark with Iceberg refusing to change a nested type in place: `Cannot update '<column>', not a primitive type`. Spark's full refresh alters the existing Iceberg table rather than replacing it. The tests are a full refresh that changes keys and types, a selective full refresh, and a new field in an array of structs. Sail completes these, as Spark does on its own row-level test catalog, so this is a difference, kept rather than copied. Every other expectation agrees.
+
+The gate has a new step, `iceberg_on_spark`, which passes only when exactly these three tests fail.
