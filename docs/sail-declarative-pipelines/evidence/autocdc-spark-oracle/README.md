@@ -1,6 +1,6 @@
 # AutoCDC against Spark 4.2.1
 
-Product commit `b529720dc`, on root `d14be81fa`, branch `work/sdp-initialization-intents`.
+Product commit `4389a3ede`, on root `5cc046a0c`, branch `work/sdp-initialization-intents`.
 
 Oracle: Spark 4.2.1 from PyPI, with `SharedTablesInMemoryRowLevelOperationTableCatalog` from Maven's `spark-catalyst_2.13-4.2.1-tests.jar` and `spark-sql_2.13-4.2.1-tests.jar`. This is the catalog Spark's own AutoCDC suites use, as `cat.ns1`.
 
@@ -24,7 +24,7 @@ The launcher sets `AUTOCDC_ORACLE_NAMESPACE=cat.ns1`, so each test file qualifie
 | File                           | Spark 4.2.1          | Sail      |
 | :----------------------------- | :------------------- | :-------- |
 | `test_autocdc_semantics.py`    | 33 passed            | 33 passed |
-| `test_autocdc_spark_suites.py` | 42 passed, 4 skipped | 46 passed |
+| `test_autocdc_spark_suites.py` | 43 passed, 4 skipped | 47 passed |
 
 The 4 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a format with no bounded read, Delta sources, and Iceberg targets. The Iceberg runtime for Spark 4.2 is not on Maven, so Iceberg has no oracle here.
 
@@ -42,12 +42,13 @@ These runs found two differences that were then fixed: a selection is checked be
 
 ## Other runs at the same commit
 
-| Check                                           | Result                                           |
-| :---------------------------------------------- | :----------------------------------------------- |
-| Whole Spark Python tree                         | 12122 passed, 0 failed, 1 error                  |
-| AutoCDC in local-cluster mode, with S3 and Iggy | 86 passed                                        |
-| Spark-verified tests on an Iceberg target       | 77 passed, 2 skipped                             |
-| SIGKILL during runs, `crash.py`                 | 24 kills, every recovery exact, after 64 earlier |
+| Check                                            | Result                                                       |
+| :----------------------------------------------- | :----------------------------------------------------------- |
+| Whole Spark Python tree                          | 12124 passed, 0 failed, 1 error                              |
+| AutoCDC in local-cluster mode, with S3 and Iggy  | 87 passed                                                    |
+| Spark-verified tests on an Iceberg target        | 78 passed, 2 skipped                                         |
+| AutoCDC on a Hive 4.0.1 metastore, `run-hive.sh` | 80 passed                                                    |
+| SIGKILL during runs, `crash.py`                  | 24 on the memory catalog and 6 on Hive, every recovery exact |
 
 The error is an ORC encoding failure reported at server stop, not a CDC test: see CF-0601.
 
@@ -55,6 +56,6 @@ The Iceberg row compares Sail's Iceberg path with expectations Spark verified on
 
 ## Audit
 
-`audit.md` is the first classification, at `f0bd5320a`. `audit-strict.md` is the stricter second one. `audit-final.md` is the third: 190 cases, 172 covered, 11 partial, 0 missing, 7 not applicable, on stated judgement calls. Six partial rows were closed after it by assertions it proposed, and it was not rerun. What remains is mainly the exact input set of a flow, which has no client surface, and a second catalog.
+`audit.md` is the first classification, at `f0bd5320a`. `audit-strict.md` is the stricter second one. `audit-final.md` is the third: 190 cases, 172 covered, 11 partial, 0 missing, 7 not applicable, on stated judgement calls. Seven partial rows were closed after it by assertions it proposed, and it was not rerun. What remains is mainly the exact input set of a flow, which has no client surface, and a second catalog.
 
 New assertions were not mutation tested. The 12 breakages of the product logic ran at `541d48b83`.

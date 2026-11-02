@@ -695,15 +695,19 @@ Python pipelines 982 passed, 11 skipped. The CLI file passes against a private S
 
 ### Crash recovery (2026-11-02)
 
-`crash.py` kills a real server with SIGKILL during runs and restarts it. The first campaigns all failed to recover, though every earlier test passed, because those tests stopped a run inside one process. A dead owner's lease stopped the next run at once, and an auxiliary table with a random location could not be found by a catalog that had forgotten it. A run now waits the lease out, and a fenced target's auxiliary table lives at `<target>.autocdc-aux/<generation>`, so a reset never deletes in place. A user's `DROP TABLE` of that table leaves its files, so its tombstones return on the next run, where Spark starts empty. That is stricter than Spark, not looser.
+`crash.py` kills a real server with SIGKILL during runs and restarts it. The first campaigns all failed to recover, though every earlier test passed, because those tests stopped a run inside one process. A dead owner's lease stopped the next run at once, and an auxiliary table with a random location could not be found by a catalog that had forgotten it. A run now waits the lease out. A fenced target's auxiliary table lives beside the target, one directory per generation, so a reset never deletes in place, and the authority records where it is. A missing auxiliary table is reopened there only while a batch is open. Otherwise it was dropped, and it starts empty at a new path, as in Spark; reopening it first brought back tombstones that suppressed a row Spark inserts. So a catalog that forgets the table while no batch is open also loses its tombstones, as Spark would.
 
-VERDICT commit=b529720dcafe7e18ac6df142d1d7d99b12f617ae, all 0. Results at that commit are in `evidence/autocdc-spark-oracle`.
+### A real Hive metastore (2026-11-02)
+
+The batch lane's runner starts a Hive 4.0.1 metastore without Docker. AutoCDC failed 54 of 80 tests on it before these fixes. A metastore gives a recreated target its old location, so a fixed auxiliary path collided: each new auxiliary table now has a unique path, and only an open batch reopens the recorded one. Hive cannot replace a table, so a fenced reset overwrites by path and a plain one drops and creates. Hive writes `file:/path`, which got an enrolled table's `ALTER` past the refusal, so the path is parsed first.
+
+VERDICT commit=4389a3ede7d38d43e29c97f24bf868a9b1784d12, all 0. Results at that commit are in `evidence/autocdc-spark-oracle`.
 
 Limits that remain:
 
 - Power loss and restore are not qualified. The Turso store runs in `mvcc` journal mode, and only process death is tested.
 - Catalog-managed Delta routing has never run: its tests need Docker for Unity Catalog.
-- Iceberg has no comparison on real Spark itself.
+- Iceberg has no comparison on real Spark itself. Its Sail path passes the tests whose expectations Spark verified on its test catalog. A nightly Iceberg runtime for Spark 4.2 exists and was not run.
 - Remote warehouses are tested against `moto`, not real S3, and one machine owns the flows.
 - Stateful queries before the merge have no state store. Each is evaluated over everything read so far and everything read before the batch, and the difference is merged. So the cost of a batch grows with the source, and the source must still hold its history. A row behind the watermark is not dropped as in Spark: it can change a window already emitted. `dropDuplicates` on a subset of columns may keep a different row than Spark, which keeps the first it saw.
 - A partition emptied at offset 0 still reads as an origin.
