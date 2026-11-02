@@ -150,9 +150,9 @@ Latest accepted source/public runtime is **ba0d692c671fd78b0a1ca77e497c6eb049380
 300 selected public +67 upstream Python executions; inspect the [numeric divisor packet](docs/sail-declarative-pipelines/evidence/numeric-divisor-guard/README.md)
 for historical arithmetic qualification and basic-metadata-refresh packet below for test-source/inherited runtime proof. These selections are not original Scala acceptance.
 
-## Current root: `a4dfce84a` (supersedes the status lines below)
+## Current root: `67a6931ba` (supersedes the status lines below)
 
-Root `a4dfce84a` on `work/spark-declarative-pipelines`, not pushed. Batch is complete against the audit in `docs/sail-declarative-pipelines/evidence/batch-gaps`: 435 entries, 0 missing, pipelines 1227 passed with 5 strict expected failures, the same in local-cluster mode, whole tree 0 regressed against upstream `0ba425c03`. Compare with that base, not only the last root. No original Scala suite ran against Sail.
+Root `67a6931ba` on `work/spark-declarative-pipelines`, not pushed. Batch is complete against the audit in `docs/sail-declarative-pipelines/evidence/batch-gaps`: 435 entries, 0 missing, pipelines 1243 passed with 5 strict expected failures, the same in local-cluster mode, whole tree 0 regressed and 0 failed against upstream `0ba425c03` with `run-full.py`, 12 JVM fixture errors on both sides. Compare with that base, not only the last root. No original Scala suite ran against Sail.
 
 Landing: `merge/gate-run.sh` then `merge/land.sh`, or `merge/gate-merge.sh` then a fast-forward. Check that the frozen harness printed PASS: a changed frozen source stops it. Never run `cargo fmt --all`, which rewrites `vendor/`.
 
