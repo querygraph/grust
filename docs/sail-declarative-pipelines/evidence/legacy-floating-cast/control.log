@@ -1,0 +1,34 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 25.16s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 3 tests
+test resolver::expression::cast::tests::floating::legacy_floating_literal_and_conditional_casts_survive_optimization ... FAILED
+test resolver::expression::cast::tests::floating::legacy_floating_string_columns_return_null_for_malformed_values ... FAILED
+test resolver::expression::cast::tests::floating::ansi_floating_cast_errors_and_explicit_try_cast_are_preserved ... FAILED
+
+failures:
+
+---- resolver::expression::cast::tests::floating::legacy_floating_literal_and_conditional_casts_survive_optimization stdout ----
+Error: Context("Optimizer rule 'simplify_expressions' failed", ArrowError(CastError("Cannot cast string 'bad' to value of Float32 type"), Some("")))
+
+---- resolver::expression::cast::tests::floating::legacy_floating_string_columns_return_null_for_malformed_values stdout ----
+Error: ArrowError(CastError("Cannot cast string 'bad' to value of Float32 type"), Some(""))
+
+---- resolver::expression::cast::tests::floating::ansi_floating_cast_errors_and_explicit_try_cast_are_preserved stdout ----
+Error: Context("Optimizer rule 'simplify_expressions' failed", ArrowError(CastError("Cannot cast string 'bad' to value of Float32 type"), Some("")))
+
+
+failures:
+    resolver::expression::cast::tests::floating::ansi_floating_cast_errors_and_explicit_try_cast_are_preserved
+    resolver::expression::cast::tests::floating::legacy_floating_literal_and_conditional_casts_survive_optimization
+    resolver::expression::cast::tests::floating::legacy_floating_string_columns_return_null_for_malformed_values
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 114 filtered out; finished in 0.05s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

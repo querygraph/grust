@@ -1,0 +1,454 @@
+{
+  "started_at": "2026-10-31T21:22:32.274139+00:00",
+  "version": "4.2.1",
+  "framework_default": "false",
+  "cases": [
+    {
+      "label": "batch_view_st_stream_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pbatch_view_st_stream_default.consumer'.\nError: [INCOMPATIBLE_BATCH_VIEW_READ] View `v` is a batch view and must be referenced using SparkSession#read. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pbatch_view_st_stream_default.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "batch_view_st_batch_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;CREATE STREAMING TABLE consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pbatch_view_st_batch_default`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pbatch_view_st_batch_default`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] Flow `spark_catalog`.`pbatch_view_st_batch_default`.`consumer` returns an invalid relation type. Streaming tables may only be defined by streaming relations, but the flow `spark_catalog`.`pbatch_view_st_batch_default`.`consumer` attempts to write a batch relation to the streaming table `spark_catalog`.`pbatch_view_st_batch_default`.`consumer`. Consider using the STREAM operator in Spark-SQL to convert the batch relation into a streaming relation, or populating the streaming table with an append once-flow instead. SQLSTATE: 42000"
+    },
+    {
+      "label": "batch_view_mv_batch_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "batch_view_mv_stream_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pbatch_view_mv_stream_default.consumer'.\nError: [INCOMPATIBLE_BATCH_VIEW_READ] View `v` is a batch view and must be referenced using SparkSession#read. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pbatch_view_mv_stream_default.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "stream_view_st_stream_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "stream_view_st_batch_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);CREATE STREAMING TABLE consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pstream_view_st_batch_default.consumer'.\nError: [INCOMPATIBLE_STREAMING_VIEW_READ] View `v` is a streaming view and must be referenced using SparkSession#readStream. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pstream_view_st_batch_default.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "stream_view_mv_batch_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pstream_view_mv_batch_default.consumer'.\nError: [INCOMPATIBLE_STREAMING_VIEW_READ] View `v` is a streaming view and must be referenced using SparkSession#readStream. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pstream_view_mv_batch_default.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "stream_view_mv_stream_default",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pstream_view_mv_stream_default`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pstream_view_mv_stream_default`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`pstream_view_mv_stream_default`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`pstream_view_mv_stream_default`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`pstream_view_mv_stream_default`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "batch_view_st_stream_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=false;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pbatch_view_st_stream_false`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pbatch_view_st_stream_false`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] Flow `spark_catalog`.`pbatch_view_st_stream_false`.`consumer` returns an invalid relation type. Streaming tables may only be defined by streaming relations, but the flow `spark_catalog`.`pbatch_view_st_stream_false`.`consumer` attempts to write a batch relation to the streaming table `spark_catalog`.`pbatch_view_st_stream_false`.`consumer`. Consider using the STREAM operator in Spark-SQL to convert the batch relation into a streaming relation, or populating the streaming table with an append once-flow instead. SQLSTATE: 42000"
+    },
+    {
+      "label": "batch_view_st_batch_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=false;CREATE STREAMING TABLE consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pbatch_view_st_batch_false`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pbatch_view_st_batch_false`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] Flow `spark_catalog`.`pbatch_view_st_batch_false`.`consumer` returns an invalid relation type. Streaming tables may only be defined by streaming relations, but the flow `spark_catalog`.`pbatch_view_st_batch_false`.`consumer` attempts to write a batch relation to the streaming table `spark_catalog`.`pbatch_view_st_batch_false`.`consumer`. Consider using the STREAM operator in Spark-SQL to convert the batch relation into a streaming relation, or populating the streaming table with an append once-flow instead. SQLSTATE: 42000"
+    },
+    {
+      "label": "batch_view_mv_batch_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=false;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "batch_view_mv_stream_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=false;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "stream_view_st_stream_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=false;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "stream_view_st_batch_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=false;CREATE STREAMING TABLE consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "stream_view_mv_batch_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=false;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pstream_view_mv_batch_false`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pstream_view_mv_batch_false`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`pstream_view_mv_batch_false`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`pstream_view_mv_batch_false`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`pstream_view_mv_batch_false`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "stream_view_mv_stream_false",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=false;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pstream_view_mv_stream_false`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pstream_view_mv_stream_false`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`pstream_view_mv_stream_false`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`pstream_view_mv_stream_false`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`pstream_view_mv_stream_false`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "batch_view_st_stream_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=true;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pbatch_view_st_stream_true.consumer'.\nError: [INCOMPATIBLE_BATCH_VIEW_READ] View `v` is a batch view and must be referenced using SparkSession#read. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pbatch_view_st_stream_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "batch_view_st_batch_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=true;CREATE STREAMING TABLE consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pbatch_view_st_batch_true`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pbatch_view_st_batch_true`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] Flow `spark_catalog`.`pbatch_view_st_batch_true`.`consumer` returns an invalid relation type. Streaming tables may only be defined by streaming relations, but the flow `spark_catalog`.`pbatch_view_st_batch_true`.`consumer` attempts to write a batch relation to the streaming table `spark_catalog`.`pbatch_view_st_batch_true`.`consumer`. Consider using the STREAM operator in Spark-SQL to convert the batch relation into a streaming relation, or populating the streaming table with an append once-flow instead. SQLSTATE: 42000"
+    },
+    {
+      "label": "batch_view_mv_batch_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=true;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "batch_view_mv_stream_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=true;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pbatch_view_mv_stream_true.consumer'.\nError: [INCOMPATIBLE_BATCH_VIEW_READ] View `v` is a batch view and must be referenced using SparkSession#read. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pbatch_view_mv_stream_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "stream_view_st_stream_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=true;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "stream_view_st_batch_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=true;CREATE STREAMING TABLE consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pstream_view_st_batch_true.consumer'.\nError: [INCOMPATIBLE_STREAMING_VIEW_READ] View `v` is a streaming view and must be referenced using SparkSession#readStream. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pstream_view_st_batch_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "stream_view_mv_batch_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=true;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pstream_view_mv_batch_true.consumer'.\nError: [INCOMPATIBLE_STREAMING_VIEW_READ] View `v` is a streaming view and must be referenced using SparkSession#readStream. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pstream_view_mv_batch_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "stream_view_mv_stream_true",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=true;CREATE MATERIALIZED VIEW consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`pstream_view_mv_stream_true`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`pstream_view_mv_stream_true`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`pstream_view_mv_stream_true`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`pstream_view_mv_stream_true`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`pstream_view_mv_stream_true`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "nested_w_off_st_batch",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=false;CREATE TEMPORARY VIEW w AS SELECT * FROM v;CREATE STREAMING TABLE consumer AS SELECT * FROM w",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "nested_w_off_st_stream",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(src);SET pipelines.incompatibleViewCheck.enabled=false;CREATE TEMPORARY VIEW w AS SELECT * FROM v;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(w)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "union_view_st_stream",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src UNION ALL SELECT * FROM STREAM(src);CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "union_view_st_batch",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src UNION ALL SELECT * FROM STREAM(src);CREATE STREAMING TABLE consumer AS SELECT * FROM v",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.punion_view_st_batch.consumer'.\nError: [INCOMPATIBLE_STREAMING_VIEW_READ] View `v` is a streaming view and must be referenced using SparkSession#readStream. This check can be disabled by setting Spark conf pipelines.incompatibleViewCheck.enabled = false. SQLSTATE: 42000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.punion_view_st_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "cte_view_st_stream",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS WITH c AS (SELECT * FROM STREAM(src)) SELECT * FROM c;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "external_stream_view",
+      "sql": "CREATE TEMPORARY VIEW v AS SELECT * FROM STREAM(spark_catalog.default.ext);CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow due to upstream failure: 'spark_catalog.pexternal_stream_view.consumer'.\nError: Failed to read dataset 'v'. Dataset is defined in the pipeline but could not be resolved.",
+        "Failed to resolve flow: 'v'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`ext` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`pexternal_stream_view`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 41;\nNamedStreamingRelation('UnresolvedRelation [spark_catalog, default, ext], [], true\n, name=<Unassigned>)"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: v\nFlows that failed due to upstream errors: spark_catalog.pexternal_stream_view.consumer\n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "external_batch_view",
+      "sql": "CREATE TEMPORARY VIEW v AS SELECT * FROM spark_catalog.default.ext;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow due to upstream failure: 'spark_catalog.pexternal_batch_view.consumer'.\nError: Failed to read dataset 'v'. Dataset is defined in the pipeline but could not be resolved.",
+        "Failed to resolve flow: 'v'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`ext` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`pexternal_batch_view`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 41;\n'UnresolvedRelation [spark_catalog, default, ext], [], false\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: v\nFlows that failed due to upstream errors: spark_catalog.pexternal_batch_view.consumer\n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "invalid_flag",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;SET pipelines.incompatibleViewCheck.enabled=maybe;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pinvalid_flag.consumer'.\nError: For input string: \"maybe\""
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pinvalid_flag.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "session_flag_off",
+      "sql": "CREATE MATERIALIZED VIEW src AS SELECT 1 AS id;CREATE TEMPORARY VIEW v AS SELECT * FROM src;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE",
+      "sql_state": "42000",
+      "parameters": {
+        "flowIdentifier": "`spark_catalog`.`psession_flag_off`.`consumer`",
+        "tableIdentifier": "`spark_catalog`.`psession_flag_off`.`consumer`"
+      },
+      "message": "[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] Flow `spark_catalog`.`psession_flag_off`.`consumer` returns an invalid relation type. Streaming tables may only be defined by streaming relations, but the flow `spark_catalog`.`psession_flag_off`.`consumer` attempts to write a batch relation to the streaming table `spark_catalog`.`psession_flag_off`.`consumer`. Consider using the STREAM operator in Spark-SQL to convert the batch relation into a streaming relation, or populating the streaming table with an append once-flow instead. SQLSTATE: 42000"
+    }
+  ],
+  "completed_at": "2026-10-31T21:22:35.599364+00:00"
+}

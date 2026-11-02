@@ -1,0 +1,13 @@
+diff --git a/crates/sail-spark-connect/src/config.rs b/crates/sail-spark-connect/src/config.rs
+index 6fd1628ef..761429ce3 100644
+--- a/crates/sail-spark-connect/src/config.rs
++++ b/crates/sail-spark-connect/src/config.rs
+@@ -346,7 +346,7 @@ impl TryFrom<&SparkRuntimeConfig> for PlanConfig {
+             })
+             .transpose()?
+         {
+-            output.legacy_allow_negative_scale_of_decimal = value;
++            output.legacy_allow_negative_scale_of_decimal = value & false;
+         }
+ 
+         if let Some(value) = config

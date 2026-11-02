@@ -1,0 +1,13 @@
+diff --git a/crates/sail-plan/src/resolver/query/read.rs b/crates/sail-plan/src/resolver/query/read.rs
+index 2a1fa1686..626837a15 100644
+--- a/crates/sail-plan/src/resolver/query/read.rs
++++ b/crates/sail-plan/src/resolver/query/read.rs
+@@ -362,7 +362,7 @@ impl PlanResolver<'_> {
+                     let mut resolver = PlanResolver::new(self.ctx, self.config.clone())
+                         .with_relation_scope(&scope);
+                     resolver.query_session = self.query_session;
+-                    resolver.source_read_case_sensitive = self.source_read_case_sensitive;
++
+                     resolver.resolve_query_plan(query_plan, state).await?
+                 }
+                 None => self.resolve_query_plan(query_plan, state).await?,

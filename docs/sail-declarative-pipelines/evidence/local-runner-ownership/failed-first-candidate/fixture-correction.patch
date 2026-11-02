@@ -1,0 +1,25 @@
+diff --git a/crates/sail-execution/src/job_runner/local/tests.rs b/crates/sail-execution/src/job_runner/local/tests.rs
+index b9acb752c..4fe4edfda 100644
+--- a/crates/sail-execution/src/job_runner/local/tests.rs
++++ b/crates/sail-execution/src/job_runner/local/tests.rs
+@@ -323,8 +323,18 @@ async fn reaping_preserves_later_nonretryable_cleanup_after_an_earlier_failure()
+         .await
+         .err()
+         .ok_or("reaping lost cleanup failures")?;
+-    assert!(error.to_string().contains("earlier cleanup failed"));
+-    assert!(error.to_string().contains("local commit outcome unknown"));
++    // Collection's Display only renders its first member. Inspect both retained
++    // errors directly, then verify the classifier still finds the later cause.
++    let DataFusionError::Collection(errors) = &error else {
++        return Err("stop did not retain both cleanup failures".into());
++    };
++    assert_eq!(errors.len(), 2);
++    assert!(errors[0].to_string().contains("earlier cleanup failed"));
++    assert!(
++        errors[1]
++            .to_string()
++            .contains("local commit outcome unknown")
++    );
+     let cause = CommonErrorCause::new::<NoPython>(&error);
+     assert!(!cause.is_retryable());
+     assert!(matches!(cause, CommonErrorCause::CommitStateUnknown(_)));

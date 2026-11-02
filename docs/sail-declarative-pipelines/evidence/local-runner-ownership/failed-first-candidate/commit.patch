@@ -1,0 +1,1342 @@
+diff --git a/crates/sail-common-datafusion/src/session/job.rs b/crates/sail-common-datafusion/src/session/job.rs
+index 105ed975a..0bb63a2a5 100644
+--- a/crates/sail-common-datafusion/src/session/job.rs
++++ b/crates/sail-common-datafusion/src/session/job.rs
+@@ -19,7 +19,9 @@ pub trait JobRunner: Send + Sync + 'static {
+     /// Returns the distributed execution plan for EXPLAIN output.
+     fn explain(&self, plan: Arc<dyn ExecutionPlan>) -> Result<String>;
+ 
+-    async fn stop(&self);
++    /// Stop admission/execution and report shutdown or resource-cleanup errors.
++    /// Implementations specify which local or remote cleanup they can confirm.
++    async fn stop(&self) -> Result<()>;
+ }
+ 
+ pub struct JobService {
+diff --git a/crates/sail-execution/src/job_runner.rs b/crates/sail-execution/src/job_runner.rs
+index 0cd07c838..14300e075 100644
+--- a/crates/sail-execution/src/job_runner.rs
++++ b/crates/sail-execution/src/job_runner.rs
+@@ -1,20 +1,20 @@
+ use std::sync::Arc;
+-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+ 
+-use datafusion::common::{DataFusionError, Result, internal_datafusion_err, internal_err};
++use datafusion::common::{DataFusionError, Result, internal_datafusion_err};
+ use datafusion::execution::SendableRecordBatchStream;
+-use datafusion::physical_plan::{ExecutionPlan, execute_stream};
++use datafusion::physical_plan::ExecutionPlan;
+ use datafusion::prelude::SessionContext;
+ use sail_common::actor::ActorSystem;
+ use sail_common_datafusion::session::job::JobRunner;
+-use sail_telemetry::telemetry::global_metrics;
+-use sail_telemetry::{TracingExecOptions, trace_execution_plan};
+ use tokio::sync::oneshot;
+ 
+ use crate::driver::{DriverActor, DriverComponents, DriverHandle, DriverMessage, DriverOptions};
+ use crate::job_graph::{JobGraph, JobGraphOptions};
+ use crate::shuffle::ShuffleBackendKind;
+ 
++mod local;
++pub use local::LocalJobRunner;
++
+ fn explain_job_graph(
+     plan: Arc<dyn ExecutionPlan>,
+     shuffle_backend: ShuffleBackendKind,
+@@ -24,68 +24,6 @@ fn explain_job_graph(
+         .map_err(|e| DataFusionError::External(Box::new(e)))
+ }
+ 
+-pub struct LocalJobRunner {
+-    session_id: String,
+-    next_job_id: AtomicU64,
+-    stopped: AtomicBool,
+-}
+-
+-impl LocalJobRunner {
+-    pub fn new(session_id: String) -> Self {
+-        Self {
+-            session_id,
+-            next_job_id: AtomicU64::new(1),
+-            stopped: AtomicBool::new(false),
+-        }
+-    }
+-}
+-
+-impl Default for LocalJobRunner {
+-    fn default() -> Self {
+-        Self::new(String::new())
+-    }
+-}
+-
+-#[tonic::async_trait]
+-impl JobRunner for LocalJobRunner {
+-    fn explain(&self, plan: Arc<dyn ExecutionPlan>) -> Result<String> {
+-        explain_job_graph(
+-            plan,
+-            ShuffleBackendKind::Flight {
+-                compression: crate::shuffle::ShuffleCompression::None,
+-                connection_count: std::num::NonZeroUsize::MIN,
+-                initial_stream_window_size: None,
+-                initial_connection_window_size: None,
+-            },
+-        )
+-    }
+-
+-    async fn execute(
+-        &self,
+-        ctx: &SessionContext,
+-        plan: Arc<dyn ExecutionPlan>,
+-    ) -> Result<SendableRecordBatchStream> {
+-        if self.stopped.load(Ordering::Relaxed) {
+-            return internal_err!("job runner is stopped");
+-        }
+-        let job_id = self.next_job_id.fetch_add(1, Ordering::Relaxed);
+-        let options = TracingExecOptions {
+-            metrics: global_metrics(),
+-            session_id: Some(self.session_id.clone()),
+-            job_id: Some(job_id),
+-            stage: None,
+-            attempt: None,
+-            operator_id: None,
+-        };
+-        let plan = trace_execution_plan(plan, options)?;
+-        Ok(execute_stream(plan, ctx.task_ctx())?)
+-    }
+-
+-    async fn stop(&self) {
+-        self.stopped.store(true, Ordering::Relaxed);
+-    }
+-}
+-
+ pub struct ClusterJobRunner {
+     driver: DriverHandle,
+     shuffle_backend: ShuffleBackendKind,
+@@ -136,7 +74,12 @@ impl JobRunner for ClusterJobRunner {
+             .map_err(|e| internal_datafusion_err!("{e}"))
+     }
+ 
+-    async fn stop(&self) {
+-        let _ = self.driver.shutdown_and_wait().await;
++    async fn stop(&self) -> Result<()> {
++        // This retains the driver's existing shutdown contract. Driver/worker
++        // acknowledgement and whole-cluster cleanup need separate qualification.
++        self.driver
++            .shutdown_and_wait()
++            .await
++            .map_err(|error| DataFusionError::External(Box::new(error)))
+     }
+ }
+diff --git a/crates/sail-execution/src/job_runner/local.rs b/crates/sail-execution/src/job_runner/local.rs
+new file mode 100644
+index 000000000..5b844c0b8
+--- /dev/null
++++ b/crates/sail-execution/src/job_runner/local.rs
+@@ -0,0 +1,330 @@
++use std::any::Any;
++use std::collections::BTreeMap;
++use std::panic::{AssertUnwindSafe, catch_unwind};
++use std::sync::{Arc, Mutex, MutexGuard};
++
++use datafusion::common::{DataFusionError, Result, internal_datafusion_err};
++use datafusion::execution::SendableRecordBatchStream;
++use datafusion::physical_plan::{ExecutionPlan, execute_stream};
++use datafusion::prelude::SessionContext;
++use futures::future::join_all;
++use sail_common_datafusion::error::CommonErrorCause;
++use sail_common_datafusion::managed_stream::{ManagedStreamControl, StreamPreparation};
++use sail_common_datafusion::session::job::JobRunner;
++use sail_common_datafusion::task_resources::{ScopedTaskContext, TaskResourceScope};
++use sail_python_udf::error::PyErrExtractor;
++use sail_telemetry::telemetry::global_metrics;
++use sail_telemetry::{TracingExecOptions, trace_execution_plan};
++use tokio::runtime::Handle;
++
++use super::explain_job_graph;
++use crate::shuffle::{ShuffleBackendKind, ShuffleCompression};
++
++#[derive(Clone)]
++struct Job {
++    control: ManagedStreamControl,
++    resources: Arc<TaskResourceScope>,
++}
++
++struct Failure {
++    error: Arc<DataFusionError>,
++    nonretryable: bool,
++}
++
++impl Failure {
++    fn new(error: DataFusionError) -> Self {
++        // Cause extraction can call foreign error/Python code. Never do this
++        // while holding the job registry mutex.
++        let nonretryable = !CommonErrorCause::new::<PyErrExtractor>(&error).is_retryable();
++        Self {
++            error: Arc::new(error),
++            nonretryable,
++        }
++    }
++}
++
++#[derive(Default)]
++struct Failures {
++    first: Option<Arc<DataFusionError>>,
++    nonretryable: Option<Arc<DataFusionError>>,
++}
++
++impl Failures {
++    fn retain(&mut self, failure: &Failure) {
++        if self.first.is_none() {
++            self.first = Some(failure.error.clone());
++        }
++        if failure.nonretryable && self.nonretryable.is_none() {
++            self.nonretryable = Some(failure.error.clone());
++        }
++    }
++
++    fn errors(&self) -> Vec<Arc<DataFusionError>> {
++        let mut errors: Vec<_> = self.first.iter().cloned().collect();
++        if let Some(error) = &self.nonretryable
++            && !errors.iter().any(|existing| Arc::ptr_eq(existing, error))
++        {
++            errors.push(error.clone());
++        }
++        errors
++    }
++}
++
++struct Jobs {
++    stopped: bool,
++    next_id: u64,
++    active: BTreeMap<u64, Job>,
++    failures: Failures,
++}
++
++pub struct LocalJobRunner {
++    session_id: String,
++    jobs: Mutex<Jobs>,
++}
++
++impl LocalJobRunner {
++    pub fn new(session_id: String) -> Self {
++        Self {
++            session_id,
++            jobs: Mutex::new(Jobs {
++                stopped: false,
++                next_id: 1,
++                active: BTreeMap::new(),
++                failures: Failures::default(),
++            }),
++        }
++    }
++
++    fn lock(&self) -> MutexGuard<'_, Jobs> {
++        // No execution, error classification or foreign destruction occurs
++        // under this mutex. Keep ownership reachable if it is poisoned.
++        self.jobs.lock().unwrap_or_else(|error| error.into_inner())
++    }
++
++    fn snapshot(&self) -> Vec<(u64, Job)> {
++        self.lock()
++            .active
++            .iter()
++            .map(|(id, job)| (*id, job.clone()))
++            .collect()
++    }
++
++    /// Reclaim completed history on later admission/stop. Interrupted drainage
++    /// remains owned; there is no completion-forwarding task to lose on shutdown.
++    fn reap(&self) {
++        let completed: Vec<_> = self
++            .snapshot()
++            .into_iter()
++            .filter_map(|(id, job)| {
++                let report = job.control.completed()?;
++                report
++                    .resources_drained
++                    .then(|| (id, report.cleanup_result().err().map(Failure::new)))
++            })
++            .collect();
++        let mut removed = Vec::with_capacity(completed.len());
++        {
++            let mut state = self.lock();
++            for (id, failure) in &completed {
++                if let Some(job) = state.active.remove(id) {
++                    if let Some(failure) = failure {
++                        state.failures.retain(failure);
++                    }
++                    removed.push(job);
++                }
++            }
++        }
++        // Last control/resource/error references may run destructors.
++        drop(removed);
++    }
++
++    fn admit(&self, job: Job) -> Result<u64> {
++        self.reap();
++        let mut state = self.lock();
++        if state.stopped {
++            return Err(internal_datafusion_err!("job runner is stopped"));
++        }
++        let id = state.next_id;
++        state.next_id = id
++            .checked_add(1)
++            .ok_or_else(|| internal_datafusion_err!("local job identity exhausted"))?;
++        state.active.insert(id, job);
++        Ok(id)
++    }
++
++    async fn stop_jobs(&self) -> Result<()> {
++        let jobs: Vec<_> = {
++            let mut state = self.lock();
++            state.stopped = true;
++            state
++                .active
++                .iter()
++                .map(|(id, job)| (*id, job.clone()))
++                .collect()
++        };
++        let mut cancellation_errors = vec![];
++        // Seal and cancel every admitted preparation/stream before waiting for
++        // any one job. Dropping the later waiter cannot undo these requests.
++        for (_, job) in &jobs {
++            let result = catch_unwind(AssertUnwindSafe(|| job.control.cancel()))
++                .unwrap_or_else(|payload| Err(panic_error("cancellation", payload)));
++            if let Err(error) = result {
++                cancellation_errors.push(error);
++            }
++        }
++        let failures: Vec<_> = cancellation_errors.into_iter().map(Failure::new).collect();
++        {
++            let mut state = self.lock();
++            for failure in &failures {
++                state.failures.retain(failure);
++            }
++        }
++        let reports = join_all(jobs.iter().map(|(id, job)| async move {
++            let report = job.control.completion().await;
++            let mut failures = vec![];
++            if let Err(error) = report.cleanup_result() {
++                failures.push(Failure::new(error));
++            }
++            let drained = if report.resources_drained {
++                true
++            } else {
++                // The immutable interrupted report remains a failure even if
++                // this later join confirms all supervisors have now finished.
++                match job.resources.drain().await {
++                    Ok(report) => {
++                        failures.extend(report.errors().into_iter().map(Failure::new));
++                        true
++                    }
++                    Err(error) => {
++                        failures.push(Failure::new(error));
++                        false
++                    }
++                }
++            };
++            (*id, drained, failures)
++        }))
++        .await;
++        let mut removed = Vec::with_capacity(reports.len());
++        let errors = {
++            let mut state = self.lock();
++            for (id, drained, failures) in &reports {
++                // Inspect every snapshotted report, even if another admission
++                // sweep or stop waiter has already retired its registry entry.
++                for failure in failures {
++                    state.failures.retain(failure);
++                }
++                if *drained && let Some(job) = state.active.remove(id) {
++                    removed.push(job);
++                }
++            }
++            state.failures.errors()
++        };
++        drop(removed);
++        match errors.len() {
++            0 => Ok(()),
++            1 => Err(DataFusionError::Shared(errors[0].clone())),
++            _ => Err(DataFusionError::Collection(
++                errors.into_iter().map(DataFusionError::Shared).collect(),
++            )),
++        }
++    }
++}
++
++impl Default for LocalJobRunner {
++    fn default() -> Self {
++        Self::new(String::new())
++    }
++}
++
++impl Drop for LocalJobRunner {
++    fn drop(&mut self) {
++        let jobs = std::mem::take(
++            &mut self
++                .jobs
++                .get_mut()
++                .unwrap_or_else(|error| error.into_inner())
++                .active,
++        );
++        for (_, job) in jobs {
++            // Best effort only. An explicit stop awaits registered cleanup.
++            let _ = catch_unwind(AssertUnwindSafe(|| job.control.cancel()));
++        }
++    }
++}
++
++#[tonic::async_trait]
++impl JobRunner for LocalJobRunner {
++    fn explain(&self, plan: Arc<dyn ExecutionPlan>) -> Result<String> {
++        explain_job_graph(
++            plan,
++            ShuffleBackendKind::Flight {
++                compression: ShuffleCompression::None,
++                connection_count: std::num::NonZeroUsize::MIN,
++                initial_stream_window_size: None,
++                initial_connection_window_size: None,
++            },
++        )
++    }
++
++    async fn execute(
++        &self,
++        ctx: &SessionContext,
++        plan: Arc<dyn ExecutionPlan>,
++    ) -> Result<SendableRecordBatchStream> {
++        let runtime =
++            Handle::try_current().map_err(|error| DataFusionError::External(Box::new(error)))?;
++        let scoped = ScopedTaskContext::new(&ctx.task_ctx(), runtime.clone());
++        let (preparation, control) = StreamPreparation::new(scoped.resources.clone(), runtime);
++        let id = self.admit(Job {
++            control: control.clone(),
++            resources: scoped.resources,
++        })?;
++        let prepared = catch_unwind(AssertUnwindSafe(|| {
++            let plan = trace_execution_plan(
++                plan,
++                TracingExecOptions {
++                    metrics: global_metrics(),
++                    session_id: Some(self.session_id.clone()),
++                    job_id: Some(id),
++                    stage: None,
++                    attempt: None,
++                    operator_id: None,
++                },
++            )?;
++            let schema = plan.schema();
++            let stream = execute_stream(plan, scoped.context)?;
++            Ok::<_, DataFusionError>((schema, stream))
++        }))
++        .unwrap_or_else(|payload| Err(panic_error("preparation", payload)));
++        match prepared {
++            Ok((schema, stream)) => Ok(Box::pin(preparation.complete(schema, stream))),
++            Err(error) => {
++                preparation.fail(error);
++                let report = control.completion().await;
++                self.reap();
++                report.result()?;
++                Err(internal_datafusion_err!(
++                    "failed preparation had no error report"
++                ))
++            }
++        }
++    }
++
++    /// Await owned preparation, stream disposal and registered supervisors.
++    /// Unregistered operator tasks and remote effects retain their own contracts.
++    async fn stop(&self) -> Result<()> {
++        self.stop_jobs().await
++    }
++}
++
++fn panic_error(operation: &str, payload: Box<dyn Any + Send>) -> DataFusionError {
++    let message = payload
++        .downcast_ref::<&str>()
++        .copied()
++        .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
++        .unwrap_or("unknown panic");
++    internal_datafusion_err!("local job {operation} panicked: {message}")
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-execution/src/job_runner/local/test_support.rs b/crates/sail-execution/src/job_runner/local/test_support.rs
+new file mode 100644
+index 000000000..15fa80286
+--- /dev/null
++++ b/crates/sail-execution/src/job_runner/local/test_support.rs
+@@ -0,0 +1,162 @@
++use std::fmt;
++use std::pin::Pin;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::sync::{Arc, Mutex};
++use std::task::{Context, Poll};
++
++use datafusion::arrow::datatypes::{Schema, SchemaRef};
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::common::tree_node::TreeNodeRecursion;
++use datafusion::common::{Result, internal_datafusion_err, internal_err};
++use datafusion::execution::{SendableRecordBatchStream, TaskContext};
++use datafusion::physical_expr::{EquivalenceProperties, Partitioning, PhysicalExpr};
++use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
++use datafusion::physical_plan::{
++    DisplayAs, DisplayFormatType, ExecutionPlan, PlanProperties, RecordBatchStream,
++};
++use futures::Stream;
++
++type Execute = dyn FnOnce(Arc<TaskContext>) -> Result<SendableRecordBatchStream> + Send;
++
++pub(super) fn plan(
++    callback: impl FnOnce(Arc<TaskContext>) -> Result<SendableRecordBatchStream> + Send + 'static,
++) -> Arc<dyn ExecutionPlan> {
++    Arc::new(CallbackExec {
++        callback: Mutex::new(Some(Box::new(callback))),
++        properties: Arc::new(PlanProperties::new(
++            EquivalenceProperties::new(Arc::new(Schema::empty())),
++            Partitioning::UnknownPartitioning(1),
++            EmissionType::Both,
++            Boundedness::Bounded,
++        )),
++    })
++}
++
++struct CallbackExec {
++    callback: Mutex<Option<Box<Execute>>>,
++    properties: Arc<PlanProperties>,
++}
++
++impl fmt::Debug for CallbackExec {
++    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
++        formatter
++            .debug_struct("CallbackExec")
++            .finish_non_exhaustive()
++    }
++}
++
++impl DisplayAs for CallbackExec {
++    fn fmt_as(&self, _: DisplayFormatType, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
++        formatter.write_str("CallbackExec")
++    }
++}
++
++impl ExecutionPlan for CallbackExec {
++    fn name(&self) -> &str {
++        "CallbackExec"
++    }
++
++    fn properties(&self) -> &Arc<PlanProperties> {
++        &self.properties
++    }
++
++    fn children(&self) -> Vec<&Arc<dyn ExecutionPlan>> {
++        vec![]
++    }
++
++    fn apply_expressions(
++        &self,
++        _: &mut dyn FnMut(&Arc<dyn PhysicalExpr>) -> Result<TreeNodeRecursion>,
++    ) -> Result<TreeNodeRecursion> {
++        Ok(TreeNodeRecursion::Continue)
++    }
++
++    #[expect(deprecated)]
++    fn replace_children(
++        self: Arc<Self>,
++        children: Vec<Arc<dyn ExecutionPlan>>,
++        _: datafusion::physical_plan::ReplaceChildrenOptions,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        self.with_new_children(children)
++    }
++
++    fn with_new_children(
++        self: Arc<Self>,
++        children: Vec<Arc<dyn ExecutionPlan>>,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        if !children.is_empty() {
++            return internal_err!("CallbackExec does not accept children");
++        }
++        Ok(self)
++    }
++
++    fn execute(
++        &self,
++        partition: usize,
++        context: Arc<TaskContext>,
++    ) -> Result<SendableRecordBatchStream> {
++        if partition != 0 {
++            return internal_err!("CallbackExec only accepts partition zero");
++        }
++        let callback = {
++            let mut callback = self
++                .callback
++                .lock()
++                .map_err(|_| internal_datafusion_err!("test plan callback lock poisoned"))?;
++            callback
++                .take()
++                .ok_or_else(|| internal_datafusion_err!("test plan executed more than once"))?
++        };
++        callback(context)
++    }
++}
++
++#[derive(Default)]
++pub(super) struct Counts {
++    pub(super) polls: AtomicUsize,
++    pub(super) drops: AtomicUsize,
++}
++
++type Next = dyn FnMut(&mut Context<'_>) -> Poll<Option<Result<RecordBatch>>> + Send;
++
++pub(super) fn stream(
++    poll: impl FnMut(&mut Context<'_>) -> Poll<Option<Result<RecordBatch>>> + Send + 'static,
++) -> (SendableRecordBatchStream, Arc<Counts>) {
++    let counts = Arc::new(Counts::default());
++    (
++        Box::pin(CallbackStream {
++            poll: Box::new(poll),
++            schema: Arc::new(Schema::empty()),
++            counts: counts.clone(),
++        }),
++        counts,
++    )
++}
++
++struct CallbackStream {
++    poll: Box<Next>,
++    schema: SchemaRef,
++    counts: Arc<Counts>,
++}
++
++impl Stream for CallbackStream {
++    type Item = Result<RecordBatch>;
++
++    fn poll_next(self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Option<Self::Item>> {
++        let this = self.get_mut();
++        this.counts.polls.fetch_add(1, Ordering::SeqCst);
++        (this.poll)(context)
++    }
++}
++
++impl RecordBatchStream for CallbackStream {
++    fn schema(&self) -> SchemaRef {
++        self.schema.clone()
++    }
++}
++
++impl Drop for CallbackStream {
++    fn drop(&mut self) {
++        self.counts.drops.fetch_add(1, Ordering::SeqCst);
++    }
++}
+diff --git a/crates/sail-execution/src/job_runner/local/tests.rs b/crates/sail-execution/src/job_runner/local/tests.rs
+new file mode 100644
+index 000000000..b9acb752c
+--- /dev/null
++++ b/crates/sail-execution/src/job_runner/local/tests.rs
+@@ -0,0 +1,450 @@
++use std::collections::HashMap;
++use std::future::Future;
++use std::pin::Pin;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::sync::mpsc;
++use std::task::{Context, Poll, Waker};
++
++use datafusion::prelude::SessionConfig;
++use futures::StreamExt;
++use sail_common_datafusion::error::{
++    CommitStateUnknownError, PythonErrorCause, PythonErrorCauseExtractor, StructuredSparkError,
++};
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use tokio::sync::oneshot;
++
++use super::*;
++
++#[path = "test_support.rs"]
++mod support;
++use support::{plan, stream};
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++fn assert_pending<T>(future: Pin<&mut impl Future<Output = T>>) {
++    assert!(
++        future
++            .poll(&mut Context::from_waker(Waker::noop()))
++            .is_pending()
++    );
++}
++
++struct NoPython;
++
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++
++fn query_error() -> DataFusionError {
++    DataFusionError::External(Box::new(StructuredSparkError {
++        class: "java.lang.NumberFormatException".into(),
++        condition: "CAST_INVALID_INPUT".into(),
++        sql_state: "22018".into(),
++        message: "invalid local query value".into(),
++        parameters: HashMap::from([("expression".into(), "'bad'".into())]),
++    }))
++}
++
++fn unknown() -> DataFusionError {
++    DataFusionError::External(Box::new(CommitStateUnknownError(
++        "local commit outcome unknown".into(),
++    )))
++}
++
++fn delayed_cleanup(
++    resources: &TaskResourceScope,
++    observed: oneshot::Sender<()>,
++    released: oneshot::Receiver<()>,
++    result: Result<()>,
++) -> Result<()> {
++    resources.spawn(|mut canceled| async move {
++        canceled
++            .wait_for(|value| *value)
++            .await
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        let _ = observed.send(());
++        released
++            .await
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        result
++    })?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn stopped_admission_never_invokes_execution() -> TestResult {
++    let runner = LocalJobRunner::default();
++    let context = SessionContext::new();
++    let calls = Arc::new(AtomicUsize::new(0));
++    let invoked = calls.clone();
++    runner.stop().await?;
++    let output = runner
++        .execute(
++            &context,
++            plan(move |_| {
++                invoked.fetch_add(1, Ordering::SeqCst);
++                Ok(stream(|_| Poll::Pending).0)
++            }),
++        )
++        .await;
++    assert!(output.is_err());
++    assert_eq!(calls.load(Ordering::SeqCst), 0);
++    assert!(runner.lock().active.is_empty());
++    Ok(())
++}
++
++#[test]
++fn admitted_construction_and_its_cleanup_both_delay_stop() -> TestResult {
++    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
++    let runner = Arc::new(LocalJobRunner::default());
++    let context = SessionContext::new();
++    let (entered, entry) = mpsc::sync_channel(0);
++    let (construct, construction) = mpsc::sync_channel(0);
++    let (observed, observation) = oneshot::channel();
++    let (release, released) = oneshot::channel();
++    let (source, counts) = stream(|_| Poll::Pending);
++    let physical = plan(move |context| {
++        delayed_cleanup(
++            context.extension::<TaskResourceScope>()?.as_ref(),
++            observed,
++            released,
++            Ok(()),
++        )?;
++        entered
++            .send(())
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        construction
++            .recv()
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        Ok(source)
++    });
++    let worker = runner.clone();
++    let handle = runtime.handle().clone();
++    let execution = std::thread::spawn(move || handle.block_on(worker.execute(&context, physical)));
++    entry.recv()?;
++    assert_eq!(runner.lock().active.len(), 1);
++    runtime.block_on(async {
++        let mut stop = Box::pin(runner.stop());
++        assert_pending(stop.as_mut());
++        observation.await?;
++        assert_eq!(counts.drops.load(Ordering::SeqCst), 0);
++        construct.send(())?;
++        let _retained = execution
++            .join()
++            .map_err(|_| "execution thread panicked")??;
++        assert_pending(stop.as_mut());
++        assert_eq!(counts.polls.load(Ordering::SeqCst), 0);
++        release.send(()).map_err(|_| "cleanup supervisor lost")?;
++        stop.await?;
++        assert_eq!(counts.drops.load(Ordering::SeqCst), 1);
++        assert!(runner.lock().active.is_empty());
++        Ok::<_, Box<dyn std::error::Error>>(())
++    })?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn execution_receives_fresh_scopes_isolated_from_sibling_and_parent() -> TestResult {
++    let parent = Arc::new(TaskResourceScope::new(Handle::current()));
++    let context = SessionContext::new_with_config(
++        SessionConfig::new()
++            .with_target_partitions(7)
++            .with_extension(parent.clone()),
++    );
++    let runner = LocalJobRunner::default();
++    let mut sources = vec![];
++    let mut contexts = vec![];
++    for _ in 0..2 {
++        let (sent, received) = oneshot::channel();
++        sources.push(
++            runner
++                .execute(
++                    &context,
++                    plan(move |context| {
++                        sent.send(context)
++                            .map_err(|_| internal_datafusion_err!("context receiver lost"))?;
++                        Ok(stream(|_| Poll::Pending).0)
++                    }),
++                )
++                .await?,
++        );
++        contexts.push(received.await?);
++    }
++    let first = contexts[0].extension::<TaskResourceScope>()?;
++    let second = contexts[1].extension::<TaskResourceScope>()?;
++    assert!(!Arc::ptr_eq(&first, &second));
++    assert!(!Arc::ptr_eq(&first, &parent));
++    assert!(!Arc::ptr_eq(&second, &parent));
++    for child in &contexts {
++        assert_eq!(
++            child.session_config().options().execution.target_partitions,
++            7
++        );
++        assert!(Arc::ptr_eq(&child.runtime_env(), &context.runtime_env()));
++    }
++    let first_control = runner.snapshot()[0].1.control.clone();
++    drop(sources.remove(0));
++    first_control.completion().await.cleanup_result()?;
++    assert!(first.spawn(|_| async { Ok(()) }).is_err());
++    let (sent, received) = oneshot::channel();
++    second.spawn(|canceled| async move {
++        let _ = sent.send(*canceled.borrow());
++        Ok(())
++    })?;
++    assert!(!received.await?);
++    runner.stop().await?;
++    parent.spawn(|canceled| async move {
++        assert!(!*canceled.borrow());
++        Ok(())
++    })?;
++    assert!(parent.drain().await?.is_clean());
++    Ok(())
++}
++
++#[tokio::test]
++async fn construction_errors_and_panics_wait_for_admitted_resource_cleanup() -> TestResult {
++    for panics in [false, true] {
++        let runner = LocalJobRunner::default();
++        let context = SessionContext::new();
++        let (observed, observation) = oneshot::channel();
++        let (release, released) = oneshot::channel();
++        let physical = plan(move |context| {
++            delayed_cleanup(
++                context.extension::<TaskResourceScope>()?.as_ref(),
++                observed,
++                released,
++                Ok(()),
++            )?;
++            if panics {
++                std::panic::resume_unwind(Box::new("construction fixture panic"));
++            }
++            Err(query_error())
++        });
++        let mut execution = Box::pin(runner.execute(&context, physical));
++        assert_pending(execution.as_mut());
++        observation.await?;
++        assert_eq!(runner.lock().active.len(), 1);
++        assert_pending(execution.as_mut());
++        release.send(()).map_err(|_| "construction cleanup lost")?;
++        let error = execution
++            .await
++            .err()
++            .ok_or("construction failure was successful")?;
++        let cause = CommonErrorCause::new::<NoPython>(&error);
++        if panics {
++            assert!(
++                matches!(cause, CommonErrorCause::Internal(message) if message.contains("construction fixture panic"))
++            );
++        } else {
++            assert!(
++                matches!(cause, CommonErrorCause::Structured(error) if error.condition == "CAST_INVALID_INPUT")
++            );
++        }
++        assert!(runner.lock().active.is_empty());
++        runner.stop().await?;
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn query_failure_is_separate_from_cleanup_uncertainty_at_stop() -> TestResult {
++    for uncertain in [false, true] {
++        let runner = LocalJobRunner::default();
++        let context = SessionContext::new();
++        let physical = plan(move |context| {
++            context
++                .extension::<TaskResourceScope>()?
++                .spawn(move |_| async move { if uncertain { Err(unknown()) } else { Ok(()) } })?;
++            let mut error = Some(query_error());
++            Ok(stream(move |_| Poll::Ready(error.take().map(Err))).0)
++        });
++        let mut output = runner.execute(&context, physical).await?;
++        let error = output
++            .next()
++            .await
++            .ok_or("query error missing")?
++            .err()
++            .ok_or("query succeeded")?;
++        if uncertain {
++            assert!(matches!(
++                CommonErrorCause::new::<NoPython>(&error),
++                CommonErrorCause::CommitStateUnknown(_)
++            ));
++            let cleanup = runner
++                .stop()
++                .await
++                .err()
++                .ok_or("uncertain cleanup reported success")?;
++            let cause = CommonErrorCause::new::<NoPython>(&cleanup);
++            assert!(!cause.is_retryable());
++            assert!(matches!(cause, CommonErrorCause::CommitStateUnknown(_)));
++        } else {
++            assert!(matches!(
++                CommonErrorCause::new::<NoPython>(&error),
++                CommonErrorCause::Structured(_)
++            ));
++            runner.stop().await?;
++        }
++        assert!(runner.lock().active.is_empty());
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn reaping_preserves_later_nonretryable_cleanup_after_an_earlier_failure() -> TestResult {
++    let runner = LocalJobRunner::default();
++    let context = SessionContext::new();
++    for uncertain in [false, true] {
++        let physical = plan(move |context| {
++            context
++                .extension::<TaskResourceScope>()?
++                .spawn(move |_| async move {
++                    Err(if uncertain {
++                        unknown()
++                    } else {
++                        DataFusionError::Execution("earlier cleanup failed".into())
++                    })
++                })?;
++            Ok(stream(|_| Poll::Ready(None)).0)
++        });
++        let mut output = runner.execute(&context, physical).await?;
++        assert_eq!(runner.lock().active.len(), 1);
++        assert!(matches!(output.next().await, Some(Err(_))));
++    }
++    let _pending = runner
++        .execute(&context, plan(|_| Ok(stream(|_| Poll::Pending).0)))
++        .await?;
++    assert_eq!(runner.lock().active.len(), 1);
++    assert!(runner.lock().failures.nonretryable.is_some());
++    let error = runner
++        .stop()
++        .await
++        .err()
++        .ok_or("reaping lost cleanup failures")?;
++    assert!(error.to_string().contains("earlier cleanup failed"));
++    assert!(error.to_string().contains("local commit outcome unknown"));
++    let cause = CommonErrorCause::new::<NoPython>(&error);
++    assert!(!cause.is_retryable());
++    assert!(matches!(cause, CommonErrorCause::CommitStateUnknown(_)));
++    assert!(runner.lock().active.is_empty());
++    Ok(())
++}
++
++#[tokio::test]
++async fn completed_history_is_reaped_on_later_admission_and_stop() -> TestResult {
++    let runner = LocalJobRunner::default();
++    let context = SessionContext::new();
++    let mut retained = vec![];
++    for _ in 0..4 {
++        let mut output = runner
++            .execute(&context, plan(|_| Ok(stream(|_| Poll::Ready(None)).0)))
++            .await?;
++        assert_eq!(runner.lock().active.len(), 1);
++        assert!(output.next().await.is_none());
++        retained.push(output);
++    }
++    runner.stop().await?;
++    assert!(runner.lock().active.is_empty());
++    assert_eq!(retained.len(), 4);
++    Ok(())
++}
++
++#[tokio::test]
++async fn abandoning_stop_keeps_admission_sealed_and_cleanup_owned() -> TestResult {
++    let runner = LocalJobRunner::default();
++    let context = SessionContext::new();
++    let (observed, observation) = oneshot::channel();
++    let (release, released) = oneshot::channel();
++    let (source, counts) = stream(|_| Poll::Pending);
++    let _retained = runner
++        .execute(
++            &context,
++            plan(move |context| {
++                delayed_cleanup(
++                    context.extension::<TaskResourceScope>()?.as_ref(),
++                    observed,
++                    released,
++                    Ok(()),
++                )?;
++                Ok(source)
++            }),
++        )
++        .await?;
++    let mut abandoned = Box::pin(runner.stop());
++    assert_pending(abandoned.as_mut());
++    drop(abandoned);
++    observation.await?;
++    assert!(runner.lock().stopped);
++    let calls = Arc::new(AtomicUsize::new(0));
++    let invoked = calls.clone();
++    assert!(
++        runner
++            .execute(
++                &context,
++                plan(move |_| {
++                    invoked.fetch_add(1, Ordering::SeqCst);
++                    Ok(stream(|_| Poll::Pending).0)
++                })
++            )
++            .await
++            .is_err()
++    );
++    assert_eq!(calls.load(Ordering::SeqCst), 0);
++    let mut resumed = Box::pin(runner.stop());
++    assert_pending(resumed.as_mut());
++    release
++        .send(())
++        .map_err(|_| "abandoned stop lost cleanup")?;
++    resumed.await?;
++    assert_eq!(counts.polls.load(Ordering::SeqCst), 0);
++    assert_eq!(counts.drops.load(Ordering::SeqCst), 1);
++    assert!(runner.lock().active.is_empty());
++    Ok(())
++}
++
++#[test]
++fn interrupted_completion_is_retained_until_stop_joins_the_resource_scope() -> TestResult {
++    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
++    let cleanup_runtime = tokio::runtime::Builder::new_current_thread().build()?;
++    let resources = Arc::new(TaskResourceScope::new(runtime.handle().clone()));
++    let (observed, observation) = oneshot::channel();
++    let (release, released) = oneshot::channel();
++    delayed_cleanup(&resources, observed, released, Err(unknown()))?;
++    let (preparation, control) =
++        StreamPreparation::new(resources.clone(), cleanup_runtime.handle().clone());
++    let runner = LocalJobRunner::default();
++    runner.admit(Job {
++        control: control.clone(),
++        resources,
++    })?;
++    preparation.fail(DataFusionError::Execution("prepared query failed".into()));
++    drop(cleanup_runtime);
++    let report = control
++        .completed()
++        .ok_or("interrupted cleanup report missing")?;
++    assert!(!report.resources_drained);
++    runner.reap();
++    assert_eq!(runner.lock().active.len(), 1);
++    runtime.block_on(async {
++        let mut stop = Box::pin(runner.stop());
++        assert_pending(stop.as_mut());
++        observation.await?;
++        assert_eq!(runner.lock().active.len(), 1);
++        release
++            .send(())
++            .map_err(|_| "interrupted cleanup lost supervisor")?;
++        let error = stop
++            .await
++            .err()
++            .ok_or("interrupted cleanup reported success")?;
++        assert!(error.to_string().contains("cleanup interrupted"));
++        let cause = CommonErrorCause::new::<NoPython>(&error);
++        assert!(!cause.is_retryable());
++        assert!(matches!(cause, CommonErrorCause::CommitStateUnknown(_)));
++        assert!(runner.lock().active.is_empty());
++        Ok::<_, Box<dyn std::error::Error>>(())
++    })?;
++    Ok(())
++}
+diff --git a/crates/sail-session/src/session_manager/actor/cleanup.rs b/crates/sail-session/src/session_manager/actor/cleanup.rs
+new file mode 100644
+index 000000000..95aafc3a7
+--- /dev/null
++++ b/crates/sail-session/src/session_manager/actor/cleanup.rs
+@@ -0,0 +1,21 @@
++use datafusion::common::Result;
++use datafusion::execution::runtime_env::RuntimeEnv;
++use sail_cache::remote_checkpoint::RemoteCheckpointRegistry;
++use sail_common_datafusion::session::job::JobRunner;
++
++/// Do not invoke checkpoint cleanup when runner shutdown reports an error.
++pub(super) async fn stop_and_clean_checkpoints(
++    runner: &dyn JobRunner,
++    checkpoints: Option<&RemoteCheckpointRegistry>,
++    runtime: &RuntimeEnv,
++) -> Result<()> {
++    runner.stop().await?;
++    if let Some(checkpoints) = checkpoints {
++        checkpoints.cleanup_session(runtime).await?;
++    }
++    Ok(())
++}
++
++#[cfg(test)]
++#[path = "cleanup_tests.rs"]
++mod tests;
+diff --git a/crates/sail-session/src/session_manager/actor/cleanup_tests.rs b/crates/sail-session/src/session_manager/actor/cleanup_tests.rs
+new file mode 100644
+index 000000000..9c0ec5ae0
+--- /dev/null
++++ b/crates/sail-session/src/session_manager/actor/cleanup_tests.rs
+@@ -0,0 +1,185 @@
++use std::collections::HashMap;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use std::sync::{Arc, Mutex};
++
++use datafusion::arrow::datatypes::Schema;
++use datafusion::common::DataFusionError;
++use datafusion::execution::SendableRecordBatchStream;
++use datafusion::execution::object_store::ObjectStoreUrl;
++use datafusion::physical_expr::Partitioning;
++use datafusion::physical_plan::ExecutionPlan;
++use datafusion::prelude::SessionContext;
++use object_store::path::Path;
++use sail_cache::remote_checkpoint::RemoteCheckpointDescriptor;
++use sail_common_datafusion::error::{
++    CommitStateUnknownError, CommonErrorCause, PythonErrorCause, PythonErrorCauseExtractor,
++    StructuredSparkError,
++};
++use tokio::sync::oneshot;
++
++use super::*;
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++struct TestRunner {
++    error: Option<Arc<DataFusionError>>,
++    release: Mutex<Option<oneshot::Receiver<()>>>,
++    stop_calls: AtomicUsize,
++}
++
++impl TestRunner {
++    fn new(error: Option<Arc<DataFusionError>>, release: Option<oneshot::Receiver<()>>) -> Self {
++        Self {
++            error,
++            release: Mutex::new(release),
++            stop_calls: AtomicUsize::new(0),
++        }
++    }
++}
++
++#[async_trait::async_trait]
++impl JobRunner for TestRunner {
++    async fn execute(
++        &self,
++        _: &SessionContext,
++        _: Arc<dyn ExecutionPlan>,
++    ) -> Result<SendableRecordBatchStream> {
++        Err(DataFusionError::Internal("unused test execution".into()))
++    }
++
++    fn explain(&self, _: Arc<dyn ExecutionPlan>) -> Result<String> {
++        Err(DataFusionError::Internal("unused test explanation".into()))
++    }
++
++    async fn stop(&self) -> Result<()> {
++        self.stop_calls.fetch_add(1, Ordering::SeqCst);
++        let release = self
++            .release
++            .lock()
++            .unwrap_or_else(|error| error.into_inner())
++            .take();
++        if let Some(release) = release {
++            release
++                .await
++                .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        }
++        match &self.error {
++            Some(error) => Err(DataFusionError::Shared(error.clone())),
++            None => Ok(()),
++        }
++    }
++}
++
++struct NoPython;
++
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++
++fn descriptor(name: &str) -> Result<RemoteCheckpointDescriptor> {
++    let schema = Arc::new(Schema::empty());
++    Ok(RemoteCheckpointDescriptor {
++        relation_id: name.into(),
++        object_store_url: ObjectStoreUrl::parse("memory://")?,
++        prefix: Path::from("checkpoint"),
++        logical_schema: schema.clone(),
++        storage_schema: schema,
++        output_partitioning: Partitioning::UnknownPartitioning(1),
++        output_ordering: None,
++        partitions: vec![],
++    })
++}
++
++#[tokio::test]
++async fn failed_stop_preserves_checkpoint_registry_and_typed_causes() -> TestResult {
++    let failures = [
++        DataFusionError::External(Box::new(StructuredSparkError {
++            class: "java.lang.NumberFormatException".into(),
++            condition: "CAST_INVALID_INPUT".into(),
++            sql_state: "22018".into(),
++            message: "invalid stop value".into(),
++            parameters: HashMap::from([("expression".into(), "'bad'".into())]),
++        })),
++        DataFusionError::External(Box::new(CommitStateUnknownError(
++            "checkpoint writer outcome unknown".into(),
++        ))),
++    ];
++    for (index, failure) in failures.into_iter().enumerate() {
++        let failure = Arc::new(failure);
++        let runner = TestRunner::new(Some(failure.clone()), None);
++        let checkpoints = RemoteCheckpointRegistry::new(None, "cleanup-test".into());
++        checkpoints.insert(descriptor("existing")?)?;
++        let original = checkpoints.get("existing")?.ok_or("missing checkpoint")?;
++        let error = stop_and_clean_checkpoints(&runner, Some(&checkpoints), &RuntimeEnv::default())
++            .await
++            .err()
++            .ok_or("failed stop reported success")?;
++        let DataFusionError::Shared(retained) = &error else {
++            return Err("stop error was replaced".into());
++        };
++        assert!(Arc::ptr_eq(retained, &failure));
++        match (index, CommonErrorCause::new::<NoPython>(&error)) {
++            (0, CommonErrorCause::Structured(cause)) => {
++                assert_eq!(cause.class, "java.lang.NumberFormatException");
++                assert_eq!(cause.condition, "CAST_INVALID_INPUT");
++                assert_eq!(cause.sql_state, "22018");
++                assert_eq!(
++                    cause.parameters.get("expression").map(String::as_str),
++                    Some("'bad'"),
++                );
++            }
++            (1, cause @ CommonErrorCause::CommitStateUnknown(_)) => {
++                assert!(!cause.is_retryable());
++            }
++            _ => return Err("typed stop cause was lost".into()),
++        }
++        assert_eq!(runner.stop_calls.load(Ordering::SeqCst), 1);
++        assert!(Arc::ptr_eq(
++            &original,
++            &checkpoints
++                .get("existing")?
++                .ok_or("checkpoint was cleared")?,
++        ));
++        checkpoints.insert(descriptor("after-failed-stop")?)?;
++        assert!(checkpoints.get("after-failed-stop")?.is_some());
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn checkpoint_cleanup_waits_for_successful_stop_then_clears_and_seals() -> TestResult {
++    let (release, pending) = oneshot::channel();
++    let runner = TestRunner::new(None, Some(pending));
++    let checkpoints = RemoteCheckpointRegistry::new(None, "cleanup-test".into());
++    checkpoints.insert(descriptor("existing")?)?;
++    let runtime = RuntimeEnv::default();
++    let cleanup = stop_and_clean_checkpoints(&runner, Some(&checkpoints), &runtime);
++    tokio::pin!(cleanup);
++    assert!(futures::poll!(cleanup.as_mut()).is_pending());
++    assert_eq!(runner.stop_calls.load(Ordering::SeqCst), 1);
++    assert!(checkpoints.get("existing")?.is_some());
++    checkpoints.insert(descriptor("while-stopping")?)?;
++    release.send(()).map_err(|_| "stop was abandoned")?;
++    cleanup.await?;
++    assert!(checkpoints.get("existing")?.is_none());
++    assert!(checkpoints.get("while-stopping")?.is_none());
++    assert!(checkpoints.insert(descriptor("after-cleanup")?).is_err());
++    Ok(())
++}
++
++#[tokio::test]
++async fn missing_checkpoint_registry_does_not_skip_stopping_the_runner() -> TestResult {
++    let error = Arc::new(DataFusionError::External(Box::new(
++        CommitStateUnknownError("stop outcome unknown".into()),
++    )));
++    let runner = TestRunner::new(Some(error.clone()), None);
++    let result = stop_and_clean_checkpoints(&runner, None, &RuntimeEnv::default()).await;
++    let Err(DataFusionError::Shared(retained)) = result else {
++        return Err("missing registry suppressed the stop failure".into());
++    };
++    assert!(Arc::ptr_eq(&retained, &error));
++    assert_eq!(runner.stop_calls.load(Ordering::SeqCst), 1);
++    Ok(())
++}
+diff --git a/crates/sail-session/src/session_manager/actor/handler.rs b/crates/sail-session/src/session_manager/actor/handler.rs
+index 2061e7c87..fed4cffa0 100644
+--- a/crates/sail-session/src/session_manager/actor/handler.rs
++++ b/crates/sail-session/src/session_manager/actor/handler.rs
+@@ -378,14 +378,14 @@ impl SessionManagerActor {
+         let checkpoint_registry = context.extension::<RemoteCheckpointRegistry>().ok();
+         let runtime_env = context.runtime_env();
+         ctx.spawn(async move {
+-            // Stop tasks before deleting the namespace so late attempts cannot recreate objects.
+-            service.runner().stop().await;
+-            if let Some(checkpoint_registry) = checkpoint_registry
+-                && let Err(error) = checkpoint_registry
+-                    .cleanup_session(runtime_env.as_ref())
+-                    .await
++            if let Err(error) = super::cleanup::stop_and_clean_checkpoints(
++                service.runner(),
++                checkpoint_registry.as_deref(),
++                runtime_env.as_ref(),
++            )
++            .await
+             {
+-                warn!("failed to clean checkpoints for session {session_id}: {error}");
++                warn!("failed to clean up session {session_id}: {error}");
+             }
+         });
+     }
+diff --git a/crates/sail-session/src/session_manager/actor/mod.rs b/crates/sail-session/src/session_manager/actor/mod.rs
+index 9061fc33c..3eb2eb28e 100644
+--- a/crates/sail-session/src/session_manager/actor/mod.rs
++++ b/crates/sail-session/src/session_manager/actor/mod.rs
+@@ -1,3 +1,4 @@
++mod cleanup;
+ mod core;
+ mod handler;
+ mod message;

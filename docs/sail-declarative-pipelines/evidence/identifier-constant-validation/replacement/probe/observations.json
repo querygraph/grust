@@ -1,0 +1,97 @@
+{
+  "started_at": "2026-10-31T02:26:11.162396+00:00",
+  "engine": "sail",
+  "harness_sha256": "3d84342654dc0fd19a7699dac4d65658234ce7942ab2e884290157c5be0f50b8",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "Public SQL validation phase, condition/state/parameters and rows; not SDP Scala suite acceptance",
+  "cases": [
+    {
+      "name": "table_dead_typeof_random",
+      "query": "SELECT * FROM IDENTIFIER(CASE WHEN false THEN typeof(rand()) ELSE 'input' END)",
+      "args": null,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "table_typeof_missing_column",
+      "query": "SELECT * FROM IDENTIFIER(typeof(missing))",
+      "args": null,
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] IDENTIFIER expression is unresolved",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_typeof_subquery_missing",
+      "query": "SELECT * FROM IDENTIFIER(typeof((SELECT missing FROM absent)))",
+      "args": null,
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] table identifier subquery is unresolved",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "catalog_typeof_random",
+      "query": "SET CATALOG typeof(rand())",
+      "args": null,
+      "returned": false,
+      "error": "analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_dead_typeof_literal_subquery",
+      "query": "SELECT * FROM IDENTIFIER(CASE WHEN false THEN typeof((SELECT 1)) ELSE 'input' END)",
+      "args": null,
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] table identifier subquery is unresolved",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_dead_typeof_input_subquery",
+      "query": "SELECT * FROM IDENTIFIER(CASE WHEN false THEN typeof((SELECT foo FROM input)) ELSE 'input' END)",
+      "args": null,
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] table identifier subquery is unresolved",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_missing_column",
+      "query": "SELECT * FROM IDENTIFIER(missing)",
+      "args": null,
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] IDENTIFIER expression is unresolved",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    }
+  ],
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "listener_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T02:26:11.705725+00:00"
+}

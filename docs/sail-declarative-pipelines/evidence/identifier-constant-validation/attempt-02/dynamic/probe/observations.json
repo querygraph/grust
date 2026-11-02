@@ -1,0 +1,374 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T02:16:18.933828+00:00",
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "6d3301373543196a05b7d3a69cd63333c2c493129f9ba052e3def91af3122d65",
+  "scope": "Public Connect dynamic binding observations; source pin and installed runtime are recorded separately; no Scala suite verdict",
+  "cases": [
+    {
+      "name": "literal_local_no_conf",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {},
+          false
+        ]
+      ],
+      "query": "SELECT foo FROM IDENTIFIER('z_sensitive')",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 147258000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 155820000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "literal_local_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM IDENTIFIER('z_sensitive')",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 210432000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "dynamic_external_no_conf",
+      "definitions": [],
+      "query": "SELECT Foo FROM IDENTIFIER('external_input')",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 251934000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 262217000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 9
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "dynamic_external_unrelated_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM IDENTIFIER('external_input')",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 311888000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 321301000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 9
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "static_true_dynamic_external",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT ext.Foo FROM z_sensitive CROSS JOIN IDENTIFIER('external_input') ext",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 372360000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `ext`.`Foo` cannot be resolved. Did you mean one of the following? [`ext`.`foo`, `z_sensitive`.`foo`].",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "dynamic_external_static_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT ext.Foo FROM IDENTIFIER('external_input') ext CROSS JOIN z_sensitive",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 419994000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `ext`.`Foo` cannot be resolved. Did you mean one of the following? [`ext`.`foo`, `z_sensitive`.`foo`].",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "computed_external_unrelated_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM IDENTIFIER(concat('external_', 'input'))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 467417000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 477682000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 9
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "computed_cte",
+      "definitions": [],
+      "query": "WITH c AS (SELECT 1 AS foo) SELECT Foo FROM IDENTIFIER(concat('c',''))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 526500000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 534680000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "cast_local",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM IDENTIFIER(CAST('z_sensitive' AS STRING))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 584596000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: z_sensitive",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "literal_sample",
+      "definitions": [],
+      "query": "SELECT Foo FROM IDENTIFIER('external_input') TABLESAMPLE (100 PERCENT)",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 627329000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 642485000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 9
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "concat_local",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM IDENTIFIER(concat('z_', 'sensitive'))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 695673000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: z_sensitive",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "dynamic_cte",
+      "definitions": [],
+      "query": "WITH c AS (SELECT 1 AS foo) SELECT Foo FROM IDENTIFIER('c')",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 737581000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 745153000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "dynamic_table_producer",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          true
+        ]
+      ],
+      "query": "SELECT Foo FROM IDENTIFIER('z_sensitive')",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 795047000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        },
+        {
+          "message": "Pipeline run completed",
+          "protobuf_text": "timestamp {\n  seconds: 1793412979\n  nanos: 810733000\n}\nmessage: \"Pipeline run completed\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    }
+  ],
+  "catalog": "sail",
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "outcome": "observed",
+  "completed_at": "2026-10-31T02:16:19.866650+00:00"
+}

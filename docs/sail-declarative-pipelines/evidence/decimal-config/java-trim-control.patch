@@ -1,0 +1,13 @@
+diff --git a/crates/sail-spark-connect/src/config/boolean.rs b/crates/sail-spark-connect/src/config/boolean.rs
+index f0cf87605..661786bf6 100644
+--- a/crates/sail-spark-connect/src/config/boolean.rs
++++ b/crates/sail-spark-connect/src/config/boolean.rs
+@@ -7,7 +7,7 @@ use crate::error::{SparkError, SparkResult, StructuredSparkError};
+ 
+ /// SQLConf uses Java String.trim before Scala's strict boolean parser.
+ pub(super) fn parse_sql_bool(key: &str, value: &str) -> DataSourceResult<bool> {
+-    parse_spark_bool(key, value.trim_matches(|c| c <= '\u{20}'))
++    parse_spark_bool(key, value.trim())
+ }
+ 
+ pub(super) fn parse_config_bool(key: &str, value: &str) -> SparkResult<bool> {

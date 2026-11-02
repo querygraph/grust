@@ -1,0 +1,201 @@
+{
+  "sail_commit": "7b5667c1fef901c5f6768fd5af222beeed453f15",
+  "scope": "ordinary SQL: exact condition/state/parameters plus success rows; SDP: conditions/rows plus five missing-column first-line messages; not full duplicate-flow parameter/provenance or original Scala acceptance",
+  "ordinary_matched": 12,
+  "ordinary_mismatched": 0,
+  "config_matched": 13,
+  "config_mismatched": 0,
+  "ordinary": [
+    {
+      "name": "one_suggestion",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "objectName": "`Foo`",
+        "proposal": "`foo`"
+      }
+    },
+    {
+      "name": "no_suggestion",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION",
+      "parameters": {
+        "objectName": "`missing`"
+      }
+    },
+    {
+      "name": "join_aliases",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "proposal": "`z1`.`foo`, `z2`.`foo`, `a_insensitive`.`bar`",
+        "objectName": "`z1`.`Foo`"
+      }
+    },
+    {
+      "name": "two_qualifiers",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "proposal": "`ext`.`foo`, `z_sensitive`.`foo`",
+        "objectName": "`ext`.`Foo`"
+      }
+    },
+    {
+      "name": "limit_five",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "objectName": "`missing`",
+        "proposal": "`aaa`, `bbb`, `ccc`, `ddd`, `eee`"
+      }
+    },
+    {
+      "name": "dotted_name",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "objectName": "`A.B`",
+        "proposal": "`a.b`"
+      }
+    },
+    {
+      "name": "escaped_backtick",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "proposal": "`a``b`",
+        "objectName": "`A``B`"
+      }
+    },
+    {
+      "name": "unicode_distance",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "proposal": "`😁`, `a`, `雪`",
+        "objectName": "`😀`"
+      }
+    },
+    {
+      "name": "qualified_missing",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "objectName": "`q`.`Foo`",
+        "proposal": "`q`.`foo`, `q`.`bar`"
+      }
+    },
+    {
+      "name": "unknown_qualifier",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "objectName": "`x`.`foo`",
+        "proposal": "`q`.`foo`, `q`.`bar`"
+      }
+    },
+    {
+      "name": "duplicate_output",
+      "matched": true,
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "parameters": {
+        "proposal": "`q`.`foo`, `b`.`bar`",
+        "objectName": "`Foo`"
+      }
+    },
+    {
+      "name": "case_insensitive_success",
+      "matched": true,
+      "condition": null,
+      "parameters": null
+    }
+  ],
+  "config": [
+    {
+      "name": "upstream_true",
+      "matched": true,
+      "conditions": [
+        "UNRESOLVED_COLUMN.WITH_SUGGESTION"
+      ]
+    },
+    {
+      "name": "upstream_false_over_consumer_true",
+      "matched": true,
+      "conditions": [
+        "DUPLICATE_FLOW_SQL_CONF"
+      ]
+    },
+    {
+      "name": "left_true_right_false",
+      "matched": true,
+      "conditions": [
+        "DUPLICATE_FLOW_SQL_CONF"
+      ]
+    },
+    {
+      "name": "left_false_right_true",
+      "matched": true,
+      "conditions": [
+        "UNRESOLVED_COLUMN.WITH_SUGGESTION"
+      ]
+    },
+    {
+      "name": "repeated_last_true",
+      "matched": true,
+      "conditions": [
+        "UNRESOLVED_COLUMN.WITH_SUGGESTION"
+      ]
+    },
+    {
+      "name": "transitive_raw_conf",
+      "matched": true,
+      "conditions": [
+        "UNRESOLVED_COLUMN.WITH_SUGGESTION"
+      ]
+    },
+    {
+      "name": "table_boundary",
+      "matched": true,
+      "conditions": []
+    },
+    {
+      "name": "same_value_compatible",
+      "matched": true,
+      "conditions": []
+    },
+    {
+      "name": "disjoint_keys_compatible",
+      "matched": true,
+      "conditions": []
+    },
+    {
+      "name": "transitive_conflict",
+      "matched": true,
+      "conditions": [
+        "DUPLICATE_FLOW_SQL_CONF"
+      ]
+    },
+    {
+      "name": "nested_projection_before_last_false",
+      "matched": true,
+      "conditions": [
+        "DUPLICATE_FLOW_SQL_CONF"
+      ]
+    },
+    {
+      "name": "scalar_subquery_last_true",
+      "matched": true,
+      "conditions": [
+        "DUPLICATE_FLOW_SQL_CONF"
+      ]
+    },
+    {
+      "name": "external_read_after_true",
+      "matched": true,
+      "conditions": [
+        "UNRESOLVED_COLUMN.WITH_SUGGESTION"
+      ]
+    }
+  ]
+}

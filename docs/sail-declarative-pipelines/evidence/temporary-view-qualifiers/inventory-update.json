@@ -1,0 +1,43 @@
+{
+  "before": {
+    "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:599",
+    "source": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala",
+    "line": 599,
+    "method": "test",
+    "name_expression": "\"Temporary view cannot be created with multipart identifier\"",
+    "status": "unmapped",
+    "sail_tests": [],
+    "coverage_review": {
+      "phase": "batch-parser",
+      "covered_assertions": "None mapped in this audit.",
+      "remaining_assertions": "Multipart temporary-view name must throw ParseException with INVALID_TEMP_OBJ_QUALIFIER.",
+      "scala_suite_executed": false
+    }
+  },
+  "after": {
+    "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:599",
+    "source": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala",
+    "line": 599,
+    "method": "test",
+    "name_expression": "\"Temporary view cannot be created with multipart identifier\"",
+    "status": "partial-behavioral-port",
+    "sail_tests": [
+      "python/pysail/tests/spark/pipelines/test_temporary_view_qualifiers.py::test_temporary_view_rejects_database_qualifier[pipeline]"
+    ],
+    "coverage_review": {
+      "phase": "batch-parser",
+      "covered_assertions": "The original query-defined temporary view with some_database.tv fails pipeline SQL registration with ParseException and INVALID_TEMP_OBJ_QUALIFIER, unchanged on Spark4.2.1 and Sail. Structured SQLSTATE42602 and all three parameters are also asserted; direct SQL shares the same result. Valid SESSION/SYSTEM.SESSION names and private-view execution are separately checked.",
+      "remaining_assertions": "Original internal Scala suite has not executed against Sail. Public Connect assertion port adapts graph registration; CREATE USING and qualified DROP VIEW follow separate paths and are not qualified by this case.",
+      "scala_suite_executed": false,
+      "sail_evidence": "evidence/temporary-view-qualifiers/native/gate.json"
+    }
+  },
+  "counts_before": {
+    "unmapped": 400,
+    "partial-behavioral-port": 62
+  },
+  "counts_after": {
+    "unmapped": 399,
+    "partial-behavioral-port": 63
+  }
+}

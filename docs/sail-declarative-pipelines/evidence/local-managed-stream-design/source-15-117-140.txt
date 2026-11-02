@@ -1,0 +1,24 @@
+    pub async fn cleanup_session(&self, runtime_env: &RuntimeEnv) -> Result<()> {
+        self.closed.store(true, Ordering::Release);
+        let storage_cleanup = if self.path.is_some() {
+            match self.resolve_root(runtime_env) {
+                Ok(root) => {
+                    delete_object_store_prefix_objects(
+                        root.store().as_ref(),
+                        &self.session_prefix(root.prefix()),
+                    )
+                    .await
+                }
+                Err(error) => Err(error),
+            }
+        } else {
+            Ok(())
+        };
+        let registry_cleanup = self.clear();
+        match (storage_cleanup, registry_cleanup) {
+            (Ok(()), Ok(())) => Ok(()),
+            (Err(error), Ok(())) | (Ok(()), Err(error)) => Err(error),
+            (Err(storage_error), Err(registry_error)) => Err(internal_datafusion_err!(
+                "checkpoint storage cleanup failed: {storage_error}; registry cleanup failed: {registry_error}"
+            )),
+        }

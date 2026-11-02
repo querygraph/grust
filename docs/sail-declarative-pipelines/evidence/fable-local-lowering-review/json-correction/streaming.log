@@ -1,0 +1,56 @@
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 0.65s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-f5f12a0d84ea6c20)
+
+running 44 tests
+test pipelines::streaming::admission::tests::a_scan_is_bound_by_provider_identity_not_by_name ... ok
+test pipelines::streaming::admission::tests::a_filtered_projection_over_one_bound_range_is_admitted_and_replayable ... ok
+test pipelines::streaming::admission::tests::a_join_needs_exactly_one_range_bearing_side ... ok
+test pipelines::streaming::admission::tests::join_kinds_follow_sparks_stream_static_orientation ... ok
+test pipelines::streaming::admission::tests::a_volatile_expression_is_admitted_but_not_replayable ... ok
+test pipelines::streaming::admission::tests::evidence_round_trips_through_serde ... ok
+test pipelines::streaming::admission::tests::stateful_operators_and_unbound_scans_are_rejected_with_evidence ... ok
+test pipelines::streaming::admission::tests::subqueries_count_one_side_each ... ok
+test pipelines::streaming::binding::tests::a_bound_streaming_read_and_a_local_batch_read_are_accepted_and_qualified ... ok
+test pipelines::streaming::binding::tests::codex_review_unbound_scalar_subquery_must_be_refused_before_resolution ... ok
+test pipelines::streaming::binding::tests::one_name_in_both_modes_is_refused_instead_of_renamed ... ok
+test pipelines::streaming::binding::tests::codex_review_unbound_exists_predicate_must_be_refused_before_resolution ... ok
+test pipelines::streaming::binding::tests::a_binding_must_be_compatible_with_its_own_intent_and_descriptor ... ok
+test pipelines::streaming::binding::tests::a_cte_name_is_not_a_table_read_and_its_definition_is_walked ... ok
+test pipelines::streaming::binding::tests::binding_names_must_be_canonical_for_the_flow ... ok
+test pipelines::streaming::binding::tests::duplicate_and_ambiguous_bindings_are_refused ... ok
+test pipelines::streaming::binding::tests::unsupported_read_kinds_are_refused ... ok
+test pipelines::streaming::binding::tests::helper_executing_constructs_are_refused ... ok
+test pipelines::streaming::binding::tests::unbound_reads_are_refused_before_resolution ... ok
+test pipelines::streaming::lower::tests::a_bounded_range_joined_with_a_materialised_local_output_is_admitted ... ok
+test pipelines::streaming::lower::tests::a_local_view_expanding_to_other_leaf_scans_is_not_admitted ... ok
+test pipelines::streaming::lower::tests::an_analysis_placeholder_for_a_local_output_is_not_admitted ... ok
+test pipelines::streaming::lower::tests::codex_lower_snapshot_distinguishes_declared_local_versions ... ok
+test pipelines::streaming::binding::tests::reads_embedded_in_expressions_are_classified_before_resolution ... ok
+test pipelines::streaming::binding::tests::cte_handling_matches_the_resolver ... ok
+test pipelines::streaming::tests::ranges::a_partition_that_disappears_with_an_unprogressed_intent_is_an_error ... ok
+test pipelines::streaming::tests::ranges::a_range_past_the_available_rows_is_not_contiguous ... ok
+test pipelines::streaming::lower::tests::refusals_and_rejections_carry_their_causes ... ok
+test pipelines::streaming::tests::ranges::a_retention_gap_fails_closed ... ok
+test pipelines::streaming::tests::ranges::a_recreated_partition_fails_ranges_captured_under_the_old_incarnation ... ok
+test pipelines::streaming::tests::ranges::a_zero_limit_and_a_stalling_adapter_are_errors_not_caught_up ... ok
+test pipelines::streaming::lower::tests::identity_snapshots_with_dotted_and_quoted_name_parts_round_trip_through_json ... ok
+test pipelines::streaming::lower::tests::the_snapshot_carries_the_declared_static_and_local_identities ... ok
+test pipelines::streaming::tests::ranges::cursors_are_opaque_to_generic_code_and_foreign_tokens_are_rejected ... ok
+test pipelines::streaming::tests::ranges::new_and_empty_partitions_are_handled_by_the_frontier_record ... ok
+test pipelines::streaming::tests::ranges::progress_reached_under_an_old_incarnation_is_refused_not_caught_up ... ok
+test pipelines::streaming::lower::tests::an_empty_recorded_intent_lowers_to_an_empty_relation_with_the_source_schema ... ok
+test pipelines::streaming::lower::tests::codex_lower_local_stream_ignores_analysis_placeholder ... ok
+test pipelines::streaming::lower::tests::codex_lower_local_stream_ignores_materialised_graph_relation ... ok
+test pipelines::streaming::lower::tests::a_streaming_read_lowers_to_exactly_the_intent_ranges ... ok
+test pipelines::streaming::lower::tests::a_streaming_read_of_a_local_streaming_output_uses_its_recorded_ranges ... ok
+test pipelines::streaming::tests::ranges::replaying_recorded_intents_yields_the_same_rows_after_appends ... ok
+test pipelines::streaming::lower::tests::a_static_binding_is_scanned_through_its_pinned_provider ... ok
+test pipelines::streaming::tests::ranges::a_run_reproduces_the_captured_frontier_exactly_and_ignores_later_appends ... ok
+
+test result: ok. 44 passed; 0 failed; 0 ignored; 0 measured; 182 filtered out; finished in 0.02s
+

@@ -1,0 +1,395 @@
+commit 99e31d0f589a1775a7004eb6fbf3ff92f4612a96
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 17:25:15 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 17:25:15 2026 -0700
+
+    Report structured unresolved-column errors with Spark-compatible suggestions
+
+diff --git a/crates/sail-plan/src/resolver/expression/attribute.rs b/crates/sail-plan/src/resolver/expression/attribute.rs
+index d86a77f50..250965278 100644
+--- a/crates/sail-plan/src/resolver/expression/attribute.rs
++++ b/crates/sail-plan/src/resolver/expression/attribute.rs
+@@ -181,17 +181,11 @@ impl PlanResolver<'_> {
+             }
+         }
+         let Some(outer_schema) = state.get_outer_query_schema().cloned() else {
+-            return Err(PlanError::AnalysisError(format!(
+-                // Spark tests expect the error message to start with: "attribute {name:?} is missing"
+-                "attribute {name:?} is missing from the schema: cannot resolve attribute"
+-            )));
++            return Err(self.unresolved_attribute(&name, schema, state)?);
+         };
+         match self.resolve_outer_field(&name, &outer_schema, state)? {
+             Some((name, expr)) => Ok(NamedExpr::new(vec![name], expr)),
+-            None => Err(PlanError::AnalysisError(format!(
+-                // Spark tests expect the error message to start with: "attribute {name:?} is missing"
+-                "attribute {name:?} is missing from the schema: cannot resolve attribute or outer attribute"
+-            ))),
++            None => Err(self.unresolved_attribute(&name, schema, state)?),
+         }
+     }
+ 
+diff --git a/crates/sail-plan/src/resolver/expression/mod.rs b/crates/sail-plan/src/resolver/expression/mod.rs
+index 13484ba17..53bcb2068 100644
+--- a/crates/sail-plan/src/resolver/expression/mod.rs
++++ b/crates/sail-plan/src/resolver/expression/mod.rs
+@@ -21,6 +21,7 @@ mod predicate;
+ mod sort;
+ mod subquery;
+ mod udf;
++mod unresolved;
+ mod wildcard;
+ mod window;
+ 
+diff --git a/crates/sail-plan/src/resolver/expression/unresolved.rs b/crates/sail-plan/src/resolver/expression/unresolved.rs
+new file mode 100644
+index 000000000..5485d7419
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/expression/unresolved.rs
+@@ -0,0 +1,146 @@
++//! Structured missing-column diagnostics after native attribute resolution fails.
++use std::collections::{HashMap, HashSet};
++
++use datafusion_common::{DFSchemaRef, TableReference};
++use sail_common::spec;
++use sail_common_datafusion::error::StructuredSparkError;
++
++use crate::error::{PlanError, PlanResult};
++use crate::resolver::PlanResolver;
++use crate::resolver::state::PlanResolverState;
++
++impl PlanResolver<'_> {
++    pub(super) fn unresolved_attribute(
++        &self,
++        name: &spec::ObjectName,
++        schema: &DFSchemaRef,
++        state: &PlanResolverState,
++    ) -> PlanResult<PlanError> {
++        let mut candidates = vec![];
++        let mut seen = HashSet::new();
++        for (qualifier, field) in schema.iter() {
++            let info = state.get_field_info(field.name())?;
++            if info.is_hidden() || !seen.insert((qualifier.cloned(), info.origin())) {
++                continue;
++            }
++            let mut parts = match qualifier {
++                None => vec![],
++                Some(TableReference::Bare { table }) => vec![table.to_string()],
++                Some(TableReference::Partial { schema, table }) => {
++                    vec![schema.to_string(), table.to_string()]
++                }
++                Some(TableReference::Full {
++                    catalog,
++                    schema,
++                    table,
++                }) => {
++                    vec![catalog.to_string(), schema.to_string(), table.to_string()]
++                }
++            };
++            parts.push(info.name().to_string());
++            candidates.push(parts);
++        }
++        let parts = name
++            .parts()
++            .iter()
++            .map(|p| p.as_ref().to_string())
++            .collect::<Vec<_>>();
++        let object = quoted(&parts);
++        let proposals = suggestions(&parts, &candidates);
++        let mut parameters = HashMap::from([("objectName".into(), object.clone())]);
++        let message = format!(
++            "A column, variable, or function parameter with name {object} cannot be resolved."
++        );
++        let (condition, message) = if proposals.is_empty() {
++            ("UNRESOLVED_COLUMN.WITHOUT_SUGGESTION", message)
++        } else {
++            let proposal = proposals.into_iter().take(5).collect::<Vec<_>>().join(", ");
++            parameters.insert("proposal".into(), proposal.clone());
++            (
++                "UNRESOLVED_COLUMN.WITH_SUGGESTION",
++                format!("{message} Did you mean one of the following? [{proposal}]."),
++            )
++        };
++        Ok(PlanError::Structured(Box::new(StructuredSparkError {
++            class: "org.apache.spark.sql.AnalysisException".into(),
++            condition: condition.into(),
++            sql_state: "42703".into(),
++            message,
++            parameters,
++        })))
++    }
++}
++
++fn quoted(parts: &[String]) -> String {
++    parts
++        .iter()
++        .map(|part| format!("`{}`", part.replace('`', "``")))
++        .collect::<Vec<_>>()
++        .join(".")
++}
++
++fn common_prefix(candidates: &[Vec<String>], tail: usize) -> bool {
++    let Some(first) = candidates.first() else {
++        return false;
++    };
++    let prefix = &first[..first.len().saturating_sub(tail)];
++    candidates
++        .iter()
++        .all(|parts| &parts[..parts.len().saturating_sub(tail)] == prefix)
++}
++
++/// Spark strips shared qualifiers before stable distance ordering, not afterwards.
++fn suggestions(base: &[String], candidates: &[Vec<String>]) -> Vec<String> {
++    let tail = if base.len() == 1 && common_prefix(candidates, 1) {
++        1
++    } else if base.len() <= 2 && common_prefix(candidates, 2) {
++        2
++    } else {
++        usize::MAX
++    };
++    // UnresolvedAttribute.sql quotes only parts that are not plain identifiers.
++    let base = base
++        .iter()
++        .map(|part| {
++            let mut chars = part.chars();
++            let simple = chars
++                .next()
++                .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
++                && chars.all(|c| c.is_ascii_alphanumeric() || c == '_');
++            if simple {
++                part.clone()
++            } else {
++                quoted(std::slice::from_ref(part))
++            }
++        })
++        .collect::<Vec<_>>()
++        .join(".");
++    let mut values = candidates
++        .iter()
++        .map(|parts| quoted(&parts[parts.len().saturating_sub(tail)..]))
++        .collect::<Vec<_>>();
++    values.sort_by_cached_key(|candidate| distance(candidate, &base));
++    values
++}
++
++/// Apache Commons Text's Levenshtein implementation compares Java UTF-16 units.
++fn distance(left: &str, right: &str) -> usize {
++    let right = right.encode_utf16().collect::<Vec<_>>();
++    let mut row = (0..=right.len()).collect::<Vec<_>>();
++    for (i, left) in left.encode_utf16().enumerate() {
++        let mut diagonal = row[0];
++        row[0] = i + 1;
++        for (j, right) in right.iter().enumerate() {
++            let old = row[j + 1];
++            row[j + 1] = (row[j] + 1)
++                .min(old + 1)
++                .min(diagonal + usize::from(left != *right));
++            diagonal = old;
++        }
++    }
++    row[right.len()]
++}
++
++#[cfg(test)]
++#[path = "unresolved_tests.rs"]
++mod tests;
+diff --git a/crates/sail-plan/src/resolver/expression/unresolved_tests.rs b/crates/sail-plan/src/resolver/expression/unresolved_tests.rs
+new file mode 100644
+index 000000000..f65aef495
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/expression/unresolved_tests.rs
+@@ -0,0 +1,157 @@
++use std::sync::Arc;
++
++use datafusion::prelude::{SessionConfig, SessionContext};
++use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::session::plan::PlanService;
++
++use super::*;
++use crate::catalog::SparkCatalogObjectDisplay;
++use crate::config::PlanConfig;
++use crate::formatter::SparkPlanFormatter;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++#[tokio::test]
++async fn native_sql_matches_spark_421_missing_column_parameters() -> TestResult {
++    let context = SessionContext::new_with_config(SessionConfig::new().with_extension(Arc::new(
++        PlanService::new(
++            Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
++            Box::new(SparkPlanFormatter),
++        ),
++    )));
++    let resolver = PlanResolver::new(
++        &context,
++        Arc::new(PlanConfig {
++            case_sensitive: true,
++            ..Default::default()
++        }),
++    );
++    // Exact public Spark 4.2.1 observations, including qualifier stripping,
++    // stable distance ties, five proposals, quoted names and supplementary Unicode.
++    for (sql, object, proposal) in [
++        (
++            "SELECT Foo FROM (SELECT 1 AS foo) a",
++            "`Foo`",
++            Some("`foo`"),
++        ),
++        ("SELECT missing", "`missing`", None),
++        (
++            "SELECT z1.Foo FROM (SELECT 1 AS foo) z1 CROSS JOIN (SELECT 2 AS bar) a_insensitive CROSS JOIN (SELECT 3 AS foo) z2",
++            "`z1`.`Foo`",
++            Some("`z1`.`foo`, `z2`.`foo`, `a_insensitive`.`bar`"),
++        ),
++        (
++            "SELECT ext.Foo FROM (SELECT 1 AS foo) z_sensitive CROSS JOIN (SELECT 2 AS foo) ext",
++            "`ext`.`Foo`",
++            Some("`ext`.`foo`, `z_sensitive`.`foo`"),
++        ),
++        (
++            "SELECT missing FROM (SELECT 1 AS aaa,2 AS bbb,3 AS ccc,4 AS ddd,5 AS eee,6 AS fff,7 AS ggg) q",
++            "`missing`",
++            Some("`aaa`, `bbb`, `ccc`, `ddd`, `eee`"),
++        ),
++        (
++            "SELECT `A.B` FROM (SELECT 1 AS `a.b`) q",
++            "`A.B`",
++            Some("`a.b`"),
++        ),
++        (
++            "SELECT `A``B` FROM (SELECT 1 AS `a``b`) q",
++            "`A``B`",
++            Some("`a``b`"),
++        ),
++        (
++            "SELECT `😀` FROM (SELECT 1 AS `😁`,2 AS a,3 AS `雪`) q",
++            "`😀`",
++            Some("`😁`, `a`, `雪`"),
++        ),
++        (
++            "SELECT q.Foo FROM (SELECT 1 AS foo,2 AS bar) q",
++            "`q`.`Foo`",
++            Some("`q`.`foo`, `q`.`bar`"),
++        ),
++        (
++            "SELECT x.foo FROM (SELECT 1 AS foo,2 AS bar) q",
++            "`x`.`foo`",
++            Some("`q`.`foo`, `q`.`bar`"),
++        ),
++        (
++            "SELECT Foo FROM (SELECT 1 AS foo) q CROSS JOIN (SELECT 2 AS bar) b",
++            "`Foo`",
++            Some("`q`.`foo`, `b`.`bar`"),
++        ),
++    ] {
++        let ast = sail_sql_analyzer::parser::parse_one_statement(sql)?;
++        let plan = sail_sql_analyzer::statement::from_ast_statement(ast)?;
++        let error = resolver
++            .resolve_named_plan(plan)
++            .await
++            .err()
++            .ok_or("missing column accepted")?;
++        let PlanError::Structured(error) = error else {
++            return Err(format!("{sql}: unstructured error: {error}").into());
++        };
++        assert_eq!(
++            error.class, "org.apache.spark.sql.AnalysisException",
++            "{sql}"
++        );
++        assert_eq!(error.sql_state, "42703", "{sql}");
++        assert_eq!(error.parameters["objectName"], object, "{sql}");
++        match proposal {
++            Some(proposal) => {
++                assert_eq!(
++                    error.condition, "UNRESOLVED_COLUMN.WITH_SUGGESTION",
++                    "{sql}"
++                );
++                assert_eq!(error.parameters["proposal"], proposal, "{sql}");
++                assert_eq!(error.parameters.len(), 2);
++            }
++            None => {
++                assert_eq!(
++                    error.condition, "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION",
++                    "{sql}"
++                );
++                assert_eq!(error.parameters.len(), 1);
++            }
++        }
++    }
++    let resolver = PlanResolver::new(
++        &context,
++        Arc::new(PlanConfig {
++            case_sensitive: false,
++            ..Default::default()
++        }),
++    );
++    let ast =
++        sail_sql_analyzer::parser::parse_one_statement("SELECT Foo FROM (SELECT 1 AS foo) q")?;
++    let plan = sail_sql_analyzer::statement::from_ast_statement(ast)?;
++    assert!(resolver.resolve_named_plan(plan).await.is_ok());
++    Ok(())
++}
++
++#[test]
++fn shared_namespace_stripping_respects_requested_qualification() {
++    let candidates = vec![
++        vec!["c".into(), "d".into(), "t".into(), "a".into()],
++        vec!["c".into(), "d".into(), "u".into(), "b".into()],
++    ];
++    assert_eq!(
++        suggestions(&["a".into()], &candidates),
++        ["`t`.`a`", "`u`.`b`"]
++    );
++    assert_eq!(
++        suggestions(&["t".into(), "a".into()], &candidates),
++        ["`t`.`a`", "`u`.`b`"]
++    );
++    assert_eq!(
++        suggestions(&["d".into(), "t".into(), "a".into()], &candidates),
++        ["`c`.`d`.`t`.`a`", "`c`.`d`.`u`.`b`"]
++    );
++}
++
++#[test]
++fn edit_distance_uses_utf16_units() {
++    assert_eq!(distance("😀", "a"), 2);
++    assert_eq!(distance("😀", "😁"), 1);
++    assert_eq!(distance("", "雪😀"), 3);
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs b/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
+index 7c03d93e8..004457f2e 100644
+--- a/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/config/runtime_tests.rs
+@@ -139,11 +139,13 @@ async fn first_semantic_failure_precedes_conflict_and_reversed_reads_change_the_
+             assert_eq!(error.parameters["flowName1"], "a_insensitive");
+             assert_eq!(error.parameters["flowName2"], "z_sensitive");
+         } else {
+-            assert!(matches!(error, SparkError::AnalysisError(_)), "{error}");
+-            assert!(
+-                error.to_string().contains("cannot resolve attribute"),
+-                "{error}"
+-            );
++            let SparkError::Structured(error) = error else {
++                return Err(format!("wrong unresolved-column error: {error}").into());
++            };
++            assert_eq!(error.condition, "UNRESOLVED_COLUMN.WITH_SUGGESTION");
++            assert_eq!(error.sql_state, "42703");
++            assert!(error.parameters["objectName"].contains("Foo"));
++            assert!(error.parameters["proposal"].contains("foo"));
+         }
+     }
+     Ok(())
+diff --git a/crates/sail-spark-connect/tests/gold_data/function/agg.json b/crates/sail-spark-connect/tests/gold_data/function/agg.json
+index ea0b53c21..6fd43d2c5 100644
+--- a/crates/sail-spark-connect/tests/gold_data/function/agg.json
++++ b/crates/sail-spark-connect/tests/gold_data/function/agg.json
+@@ -1145,7 +1145,7 @@
+         }
+       },
+       "output": {
+-        "failure": "analysis error: attribute ObjectName([Identifier(\"dimension_col\")]) is missing from the schema: cannot resolve attribute"
++        "failure": "[UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `dimension_col` cannot be resolved."
+       }
+     },
+     {

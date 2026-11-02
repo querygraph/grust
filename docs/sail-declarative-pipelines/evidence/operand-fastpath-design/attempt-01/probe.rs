@@ -1,0 +1,106 @@
+
+// Prototype only: a data-error test, never standalone permission to replay a body.
+fn native_data_error_policy_probe(error: &(dyn std::error::Error + 'static)) -> bool {
+    use datafusion_common::DataFusionError as D;
+    use datafusion::arrow::error::ArrowError as A;
+    use sail_common_datafusion::error::StructuredSparkError;
+    let mut pending=vec![error];
+    while let Some(error)=pending.pop() {
+        if let Some(error)=error.downcast_ref::<D>() {
+            match error {
+                D::Context(_,inner)|D::Diagnostic(_,inner)=>pending.push(inner.as_ref()),
+                D::Shared(inner)=>pending.push(inner.as_ref()),
+                D::Collection(items) if !items.is_empty()=>pending.extend(items.iter().map(|x|x as &(dyn std::error::Error+'static))),
+                D::External(inner)=>pending.push(inner.as_ref()),
+                D::ArrowError(inner,_)=>pending.push(inner),
+                D::Execution(_)=>{},
+                _=>return false,
+            }
+        } else if let Some(error)=error.downcast_ref::<A>() {
+            match error {
+                A::DivideByZero|A::ArithmeticOverflow(_)|A::CastError(_)|A::ParseError(_)|A::ComputeError(_)|A::InvalidArgumentError(_)=>{},
+                A::ExternalError(inner)=>pending.push(inner.as_ref()),
+                _=>return false,
+            }
+        } else if let Some(error)=error.downcast_ref::<StructuredSparkError>() {
+            match (error.class.as_str(),error.condition.as_str(),error.sql_state.as_str()) {
+                ("org.apache.spark.SparkArithmeticException","DIVIDE_BY_ZERO"|"REMAINDER_BY_ZERO","22012")=>{},
+                ("java.lang.NumberFormatException"|"org.apache.spark.SparkRuntimeException","CAST_INVALID_INPUT","22018")=>{},
+                _=>return false,
+            }
+        } else {return false}
+    }
+    true
+}
+
+#[derive(Debug)]
+struct OpaquePolicyEnvelope(sail_common_datafusion::error::StructuredSparkError);
+impl std::fmt::Display for OpaquePolicyEnvelope {
+    fn fmt(&self,f:&mut std::fmt::Formatter<'_>)->std::fmt::Result {write!(f,"opaque envelope")}
+}
+impl std::error::Error for OpaquePolicyEnvelope {
+    fn source(&self)->Option<&(dyn std::error::Error+'static)> {Some(&self.0)}
+}
+
+struct ReplayNoPython;
+impl sail_common_datafusion::error::PythonErrorCauseExtractor for ReplayNoPython {
+    fn extract(_: &(dyn std::error::Error+'static))->Option<sail_common_datafusion::error::PythonErrorCause> {None}
+}
+
+#[test]
+fn raw_replay_error_policy_matrix_probe()->Result<()> {
+    use datafusion_common::DataFusionError as D;
+    use datafusion::arrow::error::ArrowError as A;
+    use sail_common_datafusion::error::{CommonErrorCause,CommitStateUnknownError,StructuredSparkError};
+    let structured=|class:&str,condition:&str,state:&str|StructuredSparkError{class:class.into(),condition:condition.into(),sql_state:state.into(),message:"test".into(),parameters:std::collections::HashMap::new()};
+    let cases=vec![
+        ("execution",D::Execution("row data".into()),true),
+        ("resource",D::ResourcesExhausted("budget".into()),false),
+        ("internal",D::Internal("bug".into()),false),
+        ("io",D::IoError(std::io::Error::other("io")),false),
+        ("cast",D::ArrowError(A::CastError("bad".into()),None),true),
+        ("parse",D::ArrowError(A::ParseError("bad".into()),None),true),
+        ("compute",D::ArrowError(A::ComputeError("bad".into()),None),true),
+        ("argument",D::ArrowError(A::InvalidArgumentError("bad".into()),None),true),
+        ("memory",D::ArrowError(A::MemoryError("budget".into()),None),false),
+        ("overflow",D::ArrowError(A::ArithmeticOverflow("overflow".into()),None),true),
+        ("context_data",D::Context("ctx".into(),Box::new(D::ArrowError(A::DivideByZero,None))),true),
+        ("shared_resource",D::Shared(Arc::new(D::ResourcesExhausted("budget".into()))),false),
+        ("shared_data",D::Shared(Arc::new(D::Execution("row".into()))),true),
+        ("collection_data",D::Collection(vec![D::Execution("row".into()),D::ArrowError(A::DivideByZero,None)]),true),
+        ("collection_mixed",D::Collection(vec![D::Execution("row".into()),D::ResourcesExhausted("budget".into())]),false),
+        ("collection_empty",D::Collection(vec![]),false),
+        ("opaque_source",D::External(Box::new(OpaquePolicyEnvelope(structured("org.apache.spark.SparkArithmeticException","DIVIDE_BY_ZERO","22012")))),false),
+        ("uncertain",D::External(Box::new(CommitStateUnknownError("published".into()))),false),
+        ("typed_zero",ZeroDivisionKind::Divide.error(),true),
+        ("typed_resource",D::External(Box::new(structured("org.apache.spark.SparkOutOfMemoryError","DIVIDE_BY_ZERO","22012"))),false),
+        ("arrow_boxed_cast",D::ArrowError(A::ExternalError(Box::new(structured("java.lang.NumberFormatException","CAST_INVALID_INPUT","22018"))),None),true),
+        ("known_df_box",D::External(Box::new(D::Context("ctx".into(),Box::new(D::Execution("data".into()))))),true),
+        ("arrow_boxed_io",D::ArrowError(A::ExternalError(Box::new(std::io::Error::other("io"))),None),false),
+        ("plan",D::Plan("bad plan".into()),false),
+        ("config",D::Configuration("bad config".into()),false),
+    ];
+    let count=cases.len();
+    for (name,error,expected) in cases {
+        let actual=native_data_error_policy_probe(&error);
+        let common_execution=matches!(CommonErrorCause::new::<ReplayNoPython>(&error),CommonErrorCause::Execution(_));
+        eprintln!("RAW_POLICY_CASE {name} expected={expected} actual={actual} common_execution={common_execution}");
+        assert_eq!(actual,expected,"{name}: {error}");
+        if name=="resource" {assert!(common_execution)}
+        if name=="opaque_source" {assert!(matches!(CommonErrorCause::new::<ReplayNoPython>(&error),CommonErrorCause::Structured(_)))}
+    }
+    eprintln!("RAW_POLICY_SUMMARY cases={count}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn raw_join_error_is_not_replay_data_probe()->Result<()> {
+    use datafusion_common::DataFusionError as D;
+    use sail_common_datafusion::error::CommonErrorCause;
+    let join=tokio::task::spawn_blocking(||->(){panic!("test join failure")}).await.err().ok_or_else(||exec_datafusion_err!("expected join error"))?;
+    let error=D::ExecutionJoin(Box::new(join));
+    assert!(matches!(CommonErrorCause::new::<ReplayNoPython>(&error),CommonErrorCause::Execution(_)));
+    assert!(!native_data_error_policy_probe(&error));
+    eprintln!("RAW_POLICY_JOIN common_execution=true actual=false");
+    Ok(())
+}

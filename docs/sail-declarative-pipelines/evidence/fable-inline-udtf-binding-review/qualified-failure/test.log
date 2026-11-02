@@ -1,0 +1,28 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 27.27s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-126c4bc054f23652)
+
+running 2 tests
+test pipelines::streaming::binding::tests::static_inline_table_function_keeps_binding_classification ... ok
+test pipelines::streaming::binding::tests::dynamic_inline_table_function_is_refused_before_resolution ... FAILED
+
+failures:
+
+---- pipelines::streaming::binding::tests::dynamic_inline_table_function_is_refused_before_resolution stdout ----
+
+thread 'pipelines::streaming::binding::tests::dynamic_inline_table_function_is_refused_before_resolution' (89689622) panicked at crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs:687:5:
+dynamic schema invokes Python analyze during resolution: Ok(ReadSet { streaming: {}, local: {}, statics: {} })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    pipelines::streaming::binding::tests::dynamic_inline_table_function_is_refused_before_resolution
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 114 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

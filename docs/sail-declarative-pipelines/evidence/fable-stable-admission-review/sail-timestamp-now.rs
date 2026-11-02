@@ -1,0 +1,69 @@
+use std::sync::Arc;
+
+use datafusion::arrow::datatypes::{DataType, TimeUnit};
+use datafusion_common::{Result, ScalarValue, internal_err};
+use datafusion_expr::simplify::{ExprSimplifyResult, SimplifyContext};
+use datafusion_expr::{
+    ColumnarValue, Expr, ScalarFunctionArgs, ScalarUDFImpl, Signature, Volatility,
+};
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct TimestampNow {
+    signature: Signature,
+    session_timezone: Arc<str>,
+    time_unit: TimeUnit,
+}
+
+impl TimestampNow {
+    pub fn new(session_timezone: Arc<str>, time_unit: TimeUnit) -> Self {
+        Self {
+            signature: Signature::nullary(Volatility::Stable),
+            session_timezone,
+            time_unit,
+        }
+    }
+
+    pub fn session_timezone(&self) -> &str {
+        &self.session_timezone
+    }
+
+    pub fn time_unit(&self) -> &TimeUnit {
+        &self.time_unit
+    }
+}
+
+impl ScalarUDFImpl for TimestampNow {
+    fn name(&self) -> &str {
+        "timestamp_now"
+    }
+
+    fn signature(&self) -> &Signature {
+        &self.signature
+    }
+
+    fn return_type(&self, _arg_types: &[DataType]) -> Result<DataType> {
+        Ok(DataType::Timestamp(
+            *self.time_unit(),
+            Some(self.session_timezone().into()),
+        ))
+    }
+
+    fn invoke_with_args(&self, _args: ScalarFunctionArgs) -> Result<ColumnarValue> {
+        internal_err!("invoke should not be called on a simplified timestamp_now() function")
+    }
+
+    fn simplify(&self, _args: Vec<Expr>, info: &SimplifyContext) -> Result<ExprSimplifyResult> {
+        let now = info.query_execution_start_time().unwrap_or_default();
+        let now = match self.time_unit() {
+            TimeUnit::Second => Some(now.timestamp()),
+            TimeUnit::Millisecond => Some(now.timestamp_millis()),
+            TimeUnit::Microsecond => Some(now.timestamp_micros()),
+            TimeUnit::Nanosecond => now.timestamp_nanos_opt(),
+        };
+        let expr = Expr::Cast(datafusion_expr::Cast::new(
+            Box::new(Expr::Literal(ScalarValue::Int64(now), None)),
+            DataType::Timestamp(*self.time_unit(), Some(self.session_timezone().into())),
+        ));
+        Ok(ExprSimplifyResult::Simplified(expr))
+    }
+}

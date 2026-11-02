@@ -1,0 +1,355 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T05:37:02.495234+00:00",
+  "harness_sha256": "65e050931fef0eb29ec856221a5c9a1108c51a9e8623cb773153bcf0d17516f6",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "12 ANSI/legacy NULL, volatile/window and pmod probes with raw Connect metadata; no data writes or full Scala-suite verdict",
+  "cases": [
+    {
+      "name": "ansi_null_input_div",
+      "ansi_mode": true,
+      "query": "SELECT x DIV y AS value FROM VALUES (CAST(NULL AS BIGINT), 0) AS v(x,y)",
+      "returned": false,
+      "error": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "DIVIDE_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "22012",
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "errorClass": "DIVIDE_BY_ZERO"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_null_input_divide",
+      "ansi_mode": true,
+      "query": "SELECT x / y AS value FROM VALUES (CAST(NULL AS DOUBLE), 0.0D) AS v(x,y)",
+      "returned": false,
+      "error": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "DIVIDE_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "sqlState": "22012",
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "errorClass": "DIVIDE_BY_ZERO"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_null_input_mod",
+      "ansi_mode": true,
+      "query": "SELECT x % y AS value FROM VALUES (CAST(NULL AS INT), 0) AS v(x,y)",
+      "returned": false,
+      "error": "[REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "REMAINDER_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "sqlState": "22012",
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "errorClass": "REMAINDER_BY_ZERO"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_volatile_null_divide",
+      "ansi_mode": true,
+      "query": "SELECT (CASE WHEN rand() > -1 THEN CAST(NULL AS DOUBLE) ELSE 1.0D END) / 0 AS value",
+      "returned": false,
+      "error": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "DIVIDE_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "22012",
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "errorClass": "DIVIDE_BY_ZERO"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_window_null_divide",
+      "ansi_mode": true,
+      "query": "SELECT sum(x) OVER () / max(y) OVER () AS value FROM VALUES (CAST(NULL AS DOUBLE), 0.0D) AS v(x,y)",
+      "returned": false,
+      "error": "[DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+      "exception_type": "ArithmeticException",
+      "condition": "DIVIDE_BY_ZERO",
+      "parameters": {
+        "config": "\"spark.sql.ansi.enabled\""
+      },
+      "sql_state": "22012",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkArithmeticException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+            "sqlState": "22012",
+            "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "errorClass": "DIVIDE_BY_ZERO"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "ansi_pmod_zero",
+      "ansi_mode": true,
+      "query": "SELECT pmod(1, 0) AS value",
+      "returned": false,
+      "error": "Divide by zero error",
+      "exception_type": "SparkRuntimeException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.SparkRuntimeException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.SparkRuntimeException\"]"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_null_input_div",
+      "ansi_mode": false,
+      "query": "SELECT x DIV y AS value FROM VALUES (CAST(NULL AS BIGINT), 0) AS v(x,y)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_null_input_divide",
+      "ansi_mode": false,
+      "query": "SELECT x / y AS value FROM VALUES (CAST(NULL AS DOUBLE), 0.0D) AS v(x,y)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_null_input_mod",
+      "ansi_mode": false,
+      "query": "SELECT x % y AS value FROM VALUES (CAST(NULL AS INT), 0) AS v(x,y)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_volatile_null_divide",
+      "ansi_mode": false,
+      "query": "SELECT (CASE WHEN rand() > -1 THEN CAST(NULL AS DOUBLE) ELSE 1.0D END) / 0 AS value",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_window_null_divide",
+      "ansi_mode": false,
+      "query": "SELECT sum(x) OVER () / max(y) OVER () AS value FROM VALUES (CAST(NULL AS DOUBLE), 0.0D) AS v(x,y)",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "legacy_pmod_zero",
+      "ansi_mode": false,
+      "query": "SELECT pmod(1, 0) AS value",
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "returned": true,
+      "connect_errors": [],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    }
+  ],
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "session_namespace": [
+    "sail",
+    "default"
+  ],
+  "listener_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T05:37:02.934823+00:00"
+}

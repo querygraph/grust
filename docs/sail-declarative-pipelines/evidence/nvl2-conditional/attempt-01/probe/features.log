@@ -1,0 +1,72 @@
+..F..                                                                    [100%]
+=================================== FAILURES ===================================
+____________ test_nvl2_returns_the_common_type_of_other_values_utc _____________
+
+fixturefunc = <function query_result at 0x10f42dee0>
+request = <FixtureRequest for <Function test_nvl2_returns_the_common_type_of_other_values_utc>>
+kwargs = {'ordered': '', 'datatable': [['bigint', 'decimal'], ['bigint', 'decimal(11,1)']], 'query': 'SELECT\n  typeof(nvl2(id,...OM timestamp_ntz_common_type\nWHERE id = 0', 'spark': <pyspark.sql.connect.session.SparkSession object at 0x118da3a10>}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+datatable = [['bigint', 'decimal'], ['bigint', 'decimal(11,1)']], ordered = ''
+query = 'SELECT\n  typeof(nvl2(id, 1, CAST(2 AS BIGINT))) AS bigint,\n  typeof(nvl2(id, 1, 2.5)) AS decimal\nFROM timestamp_ntz_common_type\nWHERE id = 0'
+spark = <pyspark.sql.connect.session.SparkSession object at 0x118da3a10>
+
+    @then(parsers.re("query result(?P<ordered>( ordered)?)"))
+    def query_result(datatable, ordered, query, spark):
+        """Execute the SQL query and compare result with expected data table."""
+        header, *rows = datatable
+        df = spark.sql(query)
+        [h, *r] = parse_show_string(df._show_string(n=0x7FFFFFFF, truncate=False))  # noqa: SLF001
+        assert header == h
+        if ordered:
+            assert rows == r
+        else:
+>           assert sorted(rows) == sorted(r)
+E           AssertionError: assert [['bigint', 'decimal(11,1)']] == [['int', 'int']]
+E             
+E             At index 0 diff: ['bigint', 'decimal(11,1)'] != ['int', 'int']
+E             Use -v to get more diff
+
+python/pysail/testing/spark/steps/sql.py:308: AssertionError
+=============================== warnings summary ===============================
+python/pysail/tests/spark/function/test_features.py::test_nvl2_casts_a_date_branch_to_timestamp_at_the_start_of_the_day_in_the_session_time_zone
+python/pysail/tests/spark/function/test_features.py::test_nvl2_casts_a_date_branch_whose_midnight_is_repeated
+python/pysail/tests/spark/function/test_features.py::test_nvl2_returns_the_common_type_of_other_values_utc
+python/pysail/tests/spark/function/test_features.py::test_nvl2_returns_the_common_type_of_other_values_utc
+python/pysail/tests/spark/function/test_features.py::test_a_nonnull_literal_input_to_nvl2_yields_the_schema_spark_declares
+python/pysail/tests/spark/function/test_features.py::test_the_tested_argument_does_not_affect_the_branch_types
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/function/test_features.py::test_nvl2_casts_a_date_branch_to_timestamp_at_the_start_of_the_day_in_the_session_time_zone
+python/pysail/tests/spark/function/test_features.py::test_nvl2_casts_a_date_branch_whose_midnight_is_repeated
+python/pysail/tests/spark/function/test_features.py::test_nvl2_returns_the_common_type_of_other_values_utc
+python/pysail/tests/spark/function/test_features.py::test_nvl2_returns_the_common_type_of_other_values_utc
+python/pysail/tests/spark/function/test_features.py::test_a_nonnull_literal_input_to_nvl2_yields_the_schema_spark_declares
+python/pysail/tests/spark/function/test_features.py::test_the_tested_argument_does_not_affect_the_branch_types
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/function/test_features.py::test_nvl2_returns_the_common_type_of_other_values_utc
+1 failed, 4 passed, 6645 deselected, 12 warnings in 5.64s

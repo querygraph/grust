@@ -1,0 +1,32 @@
+#[tokio::test(start_paused = true)]
+async fn caller_cancellation_cannot_leave_a_hung_operation_forever() {
+    let store = Arc::new(DeadlineSession::default());
+    let operation_started = Arc::new(Notify::new());
+    let operation_dropped = Arc::new(AtomicBool::new(false));
+    let session: Arc<dyn SailCognitionSession> = store.clone();
+    let started = Arc::clone(&operation_started);
+    let dropped = Arc::clone(&operation_dropped);
+    let caller = tokio::spawn(run_with_deadlines(
+        session,
+        "bounded_view".into(),
+        move |_store, _view| async move {
+            let _drop = DropFlag(dropped);
+            started.notify_one();
+            std::future::pending::<Result<(), CognitionError>>().await
+        },
+        short_deadlines(),
+    ));
+    operation_started.notified().await;
+    caller.abort();
+    assert!(
+        caller
+            .await
+            .expect_err("caller is cancelled")
+            .is_cancelled()
+    );
+
+    tokio::time::advance(short_deadlines().operation).await;
+    store.cleanup_finished.notified().await;
+    assert!(operation_dropped.load(Ordering::SeqCst));
+    assert_eq!(store.cleanup_calls.load(Ordering::SeqCst), 1);
+}

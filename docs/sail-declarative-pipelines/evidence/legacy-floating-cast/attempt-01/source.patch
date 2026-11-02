@@ -1,0 +1,266 @@
+diff --git a/crates/sail-plan/src/resolver/expression/cast.rs b/crates/sail-plan/src/resolver/expression/cast.rs
+index c2e718978..0f80dd103 100644
+--- a/crates/sail-plan/src/resolver/expression/cast.rs
++++ b/crates/sail-plan/src/resolver/expression/cast.rs
+@@ -266,6 +266,11 @@ impl PlanResolver<'_> {
+             {
+                 ScalarUDF::new_from_impl(SparkCastStringToInt32::new()).call(vec![expr])
+             }
++            (
++                DataType::Utf8 | DataType::LargeUtf8 | DataType::Utf8View,
++                DataType::Float32 | DataType::Float64,
++                false,
++            ) if !self.config.ansi_mode => try_cast(expr, cast_to_type),
+             (from, DataType::Timestamp(time_unit, _) | DataType::Duration(time_unit), _)
+                 if from.is_numeric() =>
+             {
+diff --git a/crates/sail-plan/src/resolver/expression/cast/tests.rs b/crates/sail-plan/src/resolver/expression/cast/tests.rs
+index 8f5456a40..c43f00290 100644
+--- a/crates/sail-plan/src/resolver/expression/cast/tests.rs
++++ b/crates/sail-plan/src/resolver/expression/cast/tests.rs
+@@ -2,6 +2,8 @@ use datafusion_expr::{cast, col, lit};
+ 
+ use super::*;
+ 
++mod floating;
++
+ #[test]
+ fn ansi_string_cast_preserves_nested_cast_rename_decisions() -> PlanResult<()> {
+     let function = ScalarUDF::from(SparkAnsiStringCast::try_new(DataType::Int32, "INT".into())?);
+diff --git a/crates/sail-plan/src/resolver/expression/cast/tests/floating.rs b/crates/sail-plan/src/resolver/expression/cast/tests/floating.rs
+new file mode 100644
+index 000000000..2d38fc9d3
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/expression/cast/tests/floating.rs
+@@ -0,0 +1,231 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use arrow::array::{Array, ArrayRef, StringArray};
++use arrow::datatypes::{DataType, Field, Schema};
++use arrow::record_batch::RecordBatch;
++use datafusion::execution::SessionStateBuilder;
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_common::{DFSchema, ScalarValue};
++use datafusion_expr::Expr;
++use sail_catalog::manager::{CatalogManager, CatalogManagerOptions};
++use sail_catalog::provider::CatalogProvider;
++use sail_catalog_memory::MemoryCatalogProvider;
++use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::session::plan::PlanService;
++use sail_sql_analyzer::expression::from_ast_expression;
++use sail_sql_analyzer::parser::{parse_expression, parse_one_statement};
++use sail_sql_analyzer::statement::from_ast_statement;
++
++use crate::catalog::SparkCatalogObjectDisplay;
++use crate::config::PlanConfig;
++use crate::formatter::SparkPlanFormatter;
++use crate::resolver::PlanResolver;
++use crate::resolver::state::PlanResolverState;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
++    let provider = MemoryCatalogProvider::new("catalog".into(), vec!["db"].try_into()?, None);
++    let catalog = CatalogManager::try_new(CatalogManagerOptions {
++        catalogs: HashMap::from([(
++            "catalog".into(),
++            Arc::new(provider) as Arc<dyn CatalogProvider>,
++        )]),
++        default_catalog: "catalog".into(),
++        default_database: vec!["db".into()],
++        global_temporary_database: vec!["global_temp".into()],
++    })?;
++    let config = SessionConfig::new()
++        .with_extension(Arc::new(catalog))
++        .with_extension(Arc::new(PlanService::new(
++            Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
++            Box::new(SparkPlanFormatter),
++        )));
++    Ok(SessionContext::new_with_state(
++        SessionStateBuilder::new()
++            .with_config(config)
++            .with_analyzer_rules(sail_logical_optimizer::default_analyzer_rules())
++            .with_optimizer_rules(sail_logical_optimizer::default_optimizer_rules())
++            .build(),
++    ))
++}
++
++#[tokio::test]
++async fn legacy_floating_string_columns_return_null_for_malformed_values() -> TestResult {
++    let ctx = context()?;
++    let resolver = PlanResolver::new(
++        &ctx,
++        Arc::new(PlanConfig {
++            ansi_mode: false,
++            ..Default::default()
++        }),
++    );
++    // Successful values retain native floating semantics, including signed zero,
++    // infinities and overflow/underflow. Malformed values become NULL per row.
++    let source = Arc::new(StringArray::from(vec![
++        Some("1.5"),
++        Some("bad"),
++        None,
++        Some(""),
++        Some("-0.0"),
++        Some("NaN"),
++        Some("Infinity"),
++        Some("-Infinity"),
++        Some("1e1000"),
++        Some("1e-1000"),
++    ])) as ArrayRef;
++    let expected = [
++        Some(1.5_f64),
++        None,
++        None,
++        None,
++        Some(-0.0),
++        Some(f64::NAN),
++        Some(f64::INFINITY),
++        Some(f64::NEG_INFINITY),
++        Some(f64::INFINITY),
++        Some(0.0),
++    ];
++    for string_type in [DataType::Utf8, DataType::LargeUtf8, DataType::Utf8View] {
++        let input = arrow::compute::cast(&source, &string_type)?;
++        let batch = RecordBatch::try_new(
++            Arc::new(Schema::new(vec![Field::new("value", string_type, true)])),
++            vec![input],
++        )?;
++        let schema = Arc::new(DFSchema::try_from(batch.schema())?);
++        for (target, data_type) in [("FLOAT", DataType::Float32), ("DOUBLE", DataType::Float64)] {
++            let expression = resolver
++                .resolve_expression(
++                    from_ast_expression(parse_expression(&format!("CAST(value AS {target})"))?)?,
++                    &schema,
++                    &mut PlanResolverState::new(),
++                )
++                .await?;
++            assert!(matches!(expression, Expr::TryCast(_)));
++            let batches = ctx
++                .read_batch(batch.clone())?
++                .select(vec![expression])?
++                .collect()
++                .await?;
++            assert_eq!(
++                batches.iter().map(RecordBatch::num_rows).sum::<usize>(),
++                expected.len()
++            );
++            let result = arrow::compute::concat(
++                &batches
++                    .iter()
++                    .map(|b| b.column(0).as_ref())
++                    .collect::<Vec<_>>(),
++            )?;
++            assert_eq!(result.data_type(), &data_type);
++            for (row, expected) in expected.iter().enumerate() {
++                let actual = match ScalarValue::try_from_array(&result, row)? {
++                    ScalarValue::Float32(value) => value.map(f64::from),
++                    ScalarValue::Float64(value) => value,
++                    other => panic!("unexpected floating result: {other:?}"),
++                };
++                match (actual, expected) {
++                    (Some(actual), Some(expected)) if expected.is_nan() => assert!(actual.is_nan()),
++                    (Some(actual), Some(expected)) => {
++                        assert_eq!(actual.to_bits(), expected.to_bits())
++                    }
++                    (None, None) => {}
++                    other => panic!("row {row}: {other:?}"),
++                }
++            }
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn legacy_floating_literal_and_conditional_casts_survive_optimization() -> TestResult {
++    let ctx = context()?;
++    let resolver = PlanResolver::new(
++        &ctx,
++        Arc::new(PlanConfig {
++            ansi_mode: false,
++            ..Default::default()
++        }),
++    );
++    for target in ["FLOAT", "DOUBLE"] {
++        for sql in [
++            format!("SELECT CAST('bad' AS {target}) AS value"),
++            format!(
++                "SELECT CAST('bad' AS {target}) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)"
++            ),
++            format!("SELECT CAST('bad' AS {target}) / d AS value FROM VALUES (0) AS v(d)"),
++        ] {
++            let named = resolver
++                .resolve_named_plan(from_ast_statement(parse_one_statement(&sql)?)?)
++                .await?;
++            let batches = ctx
++                .execute_logical_plan(named.plan)
++                .await?
++                .collect()
++                .await?;
++            assert_eq!(
++                batches.iter().map(RecordBatch::num_rows).sum::<usize>(),
++                1,
++                "{sql}"
++            );
++            assert!(
++                batches
++                    .iter()
++                    .all(|b| b.column(0).null_count() == b.num_rows()),
++                "{sql}"
++            );
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn ansi_floating_cast_errors_and_explicit_try_cast_are_preserved() -> TestResult {
++    for ansi_mode in [true, false] {
++        let ctx = context()?;
++        let resolver = PlanResolver::new(
++            &ctx,
++            Arc::new(PlanConfig {
++                ansi_mode,
++                ..Default::default()
++            }),
++        );
++        for target in ["FLOAT", "DOUBLE"] {
++            for is_try in [true, false] {
++                let sql = format!(
++                    "{}('bad' AS {target})",
++                    if is_try { "TRY_CAST" } else { "CAST" }
++                );
++                let expression = resolver
++                    .resolve_expression(
++                        from_ast_expression(parse_expression(&sql)?)?,
++                        &Arc::new(DFSchema::empty()),
++                        &mut PlanResolverState::new(),
++                    )
++                    .await?;
++                assert_eq!(matches!(expression, Expr::TryCast(_)), is_try || !ansi_mode);
++                let result = ctx.read_empty()?.select(vec![expression])?.collect().await;
++                if ansi_mode && !is_try {
++                    let error = result
++                        .expect_err("ANSI malformed cast must fail")
++                        .to_string();
++                    assert!(
++                        error.contains("CAST_INVALID_INPUT") && error.contains("'bad'"),
++                        "{error}"
++                    );
++                } else {
++                    let batches = result?;
++                    assert_eq!(batches.iter().map(RecordBatch::num_rows).sum::<usize>(), 1);
++                    assert!(
++                        batches
++                            .iter()
++                            .all(|b| b.column(0).null_count() == b.num_rows())
++                    );
++                }
++            }
++        }
++    }
++    Ok(())
++}

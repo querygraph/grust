@@ -1,0 +1,6750 @@
+[
+ {
+  "label": "basic_table",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_basic_table/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "basic_path",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_basic_path/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "empty_first",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_empty_first/src'",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "full_refresh",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_full_refresh/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": true,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "sql_stream",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_sql_stream/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   }
+  ]
+ },
+ {
+  "label": "update_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_update_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay "
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_update_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay "
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "update_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'z')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'z')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "update_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_update_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_update_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_update_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_update_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_update_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_update_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_update_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_update_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_update_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_update_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_update_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_update_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "update_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_ignoreDeletes/src/",
+    "events": [
+     "Flow 'sail.d_update_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_update_ignoreDeletes/src/",
+    "events": [
+     "Flow 'sail.d_update_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_part_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_part_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_none/src/. SQLSTA",
+    "events": [
+     "Flow 'sail.d_delete_part_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_part_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_part_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_none/src/. SQLSTA",
+    "events": [
+     "Flow 'sail.d_delete_part_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_part_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_part_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_part_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_part_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_part_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_part_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_part_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_part_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_part_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_part_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_part_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_part_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_part_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_part_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_part_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_part_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_part_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_ignoreDe",
+    "events": [
+     "Flow 'sail.d_delete_part_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_part_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_part_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_part_ignoreDe",
+    "events": [
+     "Flow 'sail.d_delete_part_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_part_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_all_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_all_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_all_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1aa4192d-914f-4751-b300-2da11af4cbb5-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_all_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_delete_all_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_all_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1aa4192d-914f-4751-b300-2da11af4cbb5-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignor"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_all_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1aa4192d-914f-4751-b300-2da11af4cbb5-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_all_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_delete_all_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_all_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1aa4192d-914f-4751-b300-2da11af4cbb5-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignor"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_all_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_all_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_all_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_all_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_all_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_all_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_all_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_all_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_all_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_all_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_all_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_all_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_all_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_all_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_all_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_all_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_all_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_all_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_file_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_file_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 3",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_file_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-3370e31f-87da-457b-a981-563950334515-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_file_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_delete_file_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_file_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-3370e31f-87da-457b-a981-563950334515-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ign"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_delete_file_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-3370e31f-87da-457b-a981-563950334515-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_file_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_delete_file_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_delete_file_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-3370e31f-87da-457b-a981-563950334515-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ign"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_file_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_file_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 3",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_file_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_file_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_file_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_file_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_file_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_file_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 3",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_file_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_file_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_file_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_file_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_delete_file_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_delete_file_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_delete_file_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_delete_file_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_file_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_file_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 3",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "truncate_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_truncate_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "TRUNCATE TABLE src",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_truncate_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-ff576918-3dc2-4034-bbe4-f5eb4656d9bc-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_truncate_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_truncate_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_truncate_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-ff576918-3dc2-4034-bbe4-f5eb4656d9bc-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore de"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_truncate_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-ff576918-3dc2-4034-bbe4-f5eb4656d9bc-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_truncate_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_truncate_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_truncate_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-ff576918-3dc2-4034-bbe4-f5eb4656d9bc-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore de"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "truncate_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_truncate_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "TRUNCATE TABLE src",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "overwrite_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT OVERWRITE src VALUES (9, 'o')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_overwrite_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_none/src/. SQLSTATE: XXKS",
+    "events": [
+     "Flow 'sail.d_overwrite_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_overwrite_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are oka"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_overwrite_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_none/src/. SQLSTATE: XXKS",
+    "events": [
+     "Flow 'sail.d_overwrite_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_overwrite_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are oka"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "overwrite_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT OVERWRITE src VALUES (9, 'o')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')",
+     "(9, 'o')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')",
+     "(9, 'o')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "overwrite_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_overwrite_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_overwrite_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_overwrite_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_overwrite_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT OVERWRITE src VALUES (9, 'o')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_overwrite_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_overwrite_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_overwrite_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_overwrite_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_overwrite_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_overwrite_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_overwrite_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_overwrite_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "overwrite_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT OVERWRITE src VALUES (9, 'o')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_overwrite_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_ignoreDeletes/sr",
+    "events": [
+     "Flow 'sail.d_overwrite_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_overwrite_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regular"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_overwrite_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_overwrite_ignoreDeletes/sr",
+    "events": [
+     "Flow 'sail.d_overwrite_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_overwrite_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example WRITE ({\"mode\": \"\\\"Overwrite\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regular"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "merge_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_merge_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "MERGE INTO src USING (SELECT 1 AS id, 'm' AS v) s ON src.id = s.id WHEN MATCHED THEN UPDATE SET v = s.v WHEN NOT MATCHED THEN INSERT *",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_merge_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example MERGE ({\"matchedPredicates\": \"\\\"[{\\\\\\\"actionType\\\\\\\":\\\\\\\"update\\\\\\\"}]\\\"\", \"mergePredicate\": \"\\\"src . id = s . id \\\"\", \"notMatchedBySourcePredicates\": \"\\\"[]\\\"\", \"notMatchedPredicates\": \"\\\"[{\\\\\\\"actionType\\\\\\\":\\\\\\\"insert\\\\\\\"}]\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The ",
+    "events": [
+     "Flow 'sail.d_merge_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_merge_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example MERGE ({\"matchedPredicates\": \"\\\"[{\\\\\\\"actionType\\\\\\\":\\\\\\\"update\\\\\\\"}]\\\"\", \"mergePredicate\": \"\\\"src . id = s . id \\\"\", \"notMatchedBySourcePredicates\": \"\\\"[]\\\"\", \"n"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_merge_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example MERGE ({\"matchedPredicates\": \"\\\"[{\\\\\\\"actionType\\\\\\\":\\\\\\\"update\\\\\\\"}]\\\"\", \"mergePredicate\": \"\\\"src . id = s . id \\\"\", \"notMatchedBySourcePredicates\": \"\\\"[]\\\"\", \"notMatchedPredicates\": \"\\\"[{\\\\\\\"actionType\\\\\\\":\\\\\\\"insert\\\\\\\"}]\\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The ",
+    "events": [
+     "Flow 'sail.d_merge_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_merge_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example MERGE ({\"matchedPredicates\": \"\\\"[{\\\\\\\"actionType\\\\\\\":\\\\\\\"update\\\\\\\"}]\\\"\", \"mergePredicate\": \"\\\"src . id = s . id \\\"\", \"notMatchedBySourcePredicates\": \"\\\"[]\\\"\", \"n"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "merge_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_merge_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "MERGE INTO src USING (SELECT 1 AS id, 'm' AS v) s ON src.id = s.id WHEN MATCHED THEN UPDATE SET v = s.v WHEN NOT MATCHED THEN INSERT *",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'm')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'm')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "merge_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_merge_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_merge_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_merge_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_merge_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_merge_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "MERGE INTO src USING (SELECT 1 AS id, 'm' AS v) s ON src.id = s.id WHEN MATCHED THEN UPDATE SET v = s.v WHEN NOT MATCHED THEN INSERT *",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_merge_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_merge_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_merge_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_merge_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_merge_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_merge_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_merge_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_merge_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "optimize_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_optimize_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "OPTIMIZE src",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "vacuum_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_vacuum_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "VACUUM src RETAIN 0 HOURS",
+    "error": "AnalysisException",
+    "condition": null,
+    "message": "VACUUM retention is shorter than delta.deletedFileRetentionDuration; set spark.databricks.delta.retentionDurationCheck.enabled=false to explicitly disable the retention check"
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "set_property_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_set_property_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src SET TBLPROPERTIES ('x.y' = '1')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "add_column_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_add_column_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src ADD COLUMN w INT",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "error": "AnalysisException",
+    "condition": null,
+    "message": "input schema for INSERT has 2 fields, but table schema has 3 fields"
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(3, 'c', None)"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(3, 'c', None)"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "add_column_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_add_column_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src ADD COLUMN w INT",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "error": "AnalysisException",
+    "condition": null,
+    "message": "input schema for INSERT has 2 fields, but table schema has 3 fields"
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(3, 'c', None)"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(3, 'c', None)"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delete_partition",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta PARTITIONED BY (v) LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delete_partition/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE v = 'a'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_initial",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_initial/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_after_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_after_none/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_dv_after_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_after_none/src/. SQLSTATE: XX",
+    "events": [
+     "Flow 'sail.d_dv_after_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_dv_after_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are o"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_after_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_after_ignoreChanges/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_after_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_after_skipChangeCommits/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_dv_after_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_dv_after_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_dv_after_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_dv_after_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_dv_after_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_dv_after_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_dv_after_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_dv_after_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_after_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_after_ignoreDeletes/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_dv_after_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_after_ignoreDeletes/",
+    "events": [
+     "Flow 'sail.d_dv_after_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_dv_after_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regul"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "starting_version_0",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_version_0/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (5, 'e')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')",
+     "(5, 'e')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "starting_version_1",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_version_1/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (5, 'e')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')",
+     "(5, 'e')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "starting_version_2",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_version_2/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (5, 'e')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(3, 'c')",
+     "(4, 'd')",
+     "(5, 'e')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "starting_version_latest",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_version_latest/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (5, 'e')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_version_5",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_version_5/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_version_5.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 5. Available versions: [0, 3]. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_version_5.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_version_5.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 5. Available versions: [0, 3]. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (5, 'e')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_version_5.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 5. Available versions: [0, 4]. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_version_5.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_version_5.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 5. Available versions: [0, 4]. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_version_99",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_version_99/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_version_99.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 99. Available versions: [0, 3]. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_version_99.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_version_99.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 99. Available versions: [0, 3]. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (5, 'e')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_version_99.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 99. Available versions: [0, 4]. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_version_99.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_version_99.t] terminated with exception: [DELTA_VERSION_NOT_FOUND] Cannot time travel Delta table to version 99. Available versions: [0, 4]. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_timestamp_2000-01-01",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_timestamp_2000_01_01/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "starting_timestamp_2999-01-01",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_timestamp_2999_01_01/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_timestamp_2999_01_01.t] terminated with exception: [DELTA_TIMESTAMP_GREATER_THAN_COMMIT] Timestamp 2999-01-01 is after the table's latest version (2). SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_timestamp_2999_01_01.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_timestamp_2999_01_01.t] terminated with exception: [DELTA_TIMESTAMP_GREATER_THAN_COMMIT] Timestamp 2999-01-01 is after the table's latest version (2). SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_timestamp_2999_01_01.t] terminated with exception: [DELTA_TIMESTAMP_GREATER_THAN_COMMIT] Timestamp 2999-01-01 is after the table's latest version (3). SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_timestamp_2999_01_01.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_timestamp_2999_01_01.t] terminated with exception: [DELTA_TIMESTAMP_GREATER_THAN_COMMIT] Timestamp 2999-01-01 is after the table's latest version (3). SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_timestamp_garbage",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_timestamp_garbage/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_timestamp_garbage.t] terminated with exception: [DELTA_TIMESTAMP_INVALID] The provided timestamp ('garbage') cannot be converted to a valid timestamp. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_timestamp_garbage.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_timestamp_garbage.t] terminated with exception: [DELTA_TIMESTAMP_INVALID] The provided timestamp ('garbage') cannot be converted to a valid timestamp. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_timestamp_garbage.t] terminated with exception: [DELTA_TIMESTAMP_INVALID] The provided timestamp ('garbage') cannot be converted to a valid timestamp. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_timestamp_garbage.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_timestamp_garbage.t] terminated with exception: [DELTA_TIMESTAMP_INVALID] The provided timestamp ('garbage') cannot be converted to a valid timestamp. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_both",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_both/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_both.t] terminated with exception: [DELTA_STARTING_VERSION_AND_TIMESTAMP_BOTH_SET] Please either provide 'startingVersion' or 'startingTimestamp' SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_both.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_both.t] terminated with exception: [DELTA_STARTING_VERSION_AND_TIMESTAMP_BOTH_SET] Please either provide 'startingVersion' or 'startingTimestamp' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_bad",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_bad/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_bad.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value '-1' for option 'startingVersion', must be greater than or equal to zero SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_bad.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_bad.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value '-1' for option 'startingVersion', must be greater than or equal to zero SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_bad.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'abc' for option 'startingVersion', must be greater than or equal to zero SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_starting_bad.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_bad.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'abc' for option 'startingVersion', must be greater than or equal to zero SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_past_change",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_past_change/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_past_change.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_past_change/src/",
+    "events": [
+     "Flow 'sail.d_starting_past_change.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_past_change.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_starting_past_change.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_past_change/src/",
+    "events": [
+     "Flow 'sail.d_starting_past_change.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_starting_past_change.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "starting_after_change",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_after_change/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "starting_changed_on_rerun",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_starting_changed_on_rerun/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "option_maxFilesPerTrigger_1",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_maxFilesPerTrigger_1/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "option_maxFilesPerTrigger_0",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_maxFilesPerTrigger_0/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_0.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value '0' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_maxFilesPerTrigger_0.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_0.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value '0' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_0.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value '0' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_maxFilesPerTrigger_0.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_0.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value '0' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_maxFilesPerTrigger_x",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_maxFilesPerTrigger_x/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_maxFilesPerTrigger_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_maxFilesPerTrigger_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_maxFilesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxFilesPerTrigger', must be a positive integer SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_maxBytesPerTrigger_1b",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_maxBytesPerTrigger_1b/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "option_maxBytesPerTrigger_x",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_maxBytesPerTrigger_x/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_maxBytesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxBytesPerTrigger', must be a size configuration such as '10g' SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_maxBytesPerTrigger_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_maxBytesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxBytesPerTrigger', must be a size configuration such as '10g' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_maxBytesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxBytesPerTrigger', must be a size configuration such as '10g' SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_maxBytesPerTrigger_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_maxBytesPerTrigger_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'maxBytesPerTrigger', must be a size configuration such as '10g' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_ignoreChanges_x",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_ignoreChanges_x/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_ignoreChanges_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreChanges', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_ignoreChanges_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_ignoreChanges_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreChanges', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_ignoreChanges_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreChanges', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_ignoreChanges_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_ignoreChanges_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreChanges', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_skipChangeCommits_x",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_skipChangeCommits_x/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_skipChangeCommits_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'skipChangeCommits', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow sail.d_option_skipChangeCommits_x.t is QUEUED.",
+     "Flow sail.d_option_skipChangeCommits_x.t is STARTING.",
+     "Flow sail.d_option_skipChangeCommits_x.t is RUNNING.",
+     "Flow 'sail.d_option_skipChangeCommits_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_skipChangeCommits_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'skipChangeCommits', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_skipChangeCommits_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'skipChangeCommits', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow sail.d_option_skipChangeCommits_x.t is QUEUED.",
+     "Flow sail.d_option_skipChangeCommits_x.t is STARTING.",
+     "Flow sail.d_option_skipChangeCommits_x.t is RUNNING.",
+     "Flow 'sail.d_option_skipChangeCommits_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_skipChangeCommits_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'skipChangeCommits', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_ignoreDeletes_x",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_ignoreDeletes_x/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_ignoreDeletes_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreDeletes', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_ignoreDeletes_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_ignoreDeletes_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreDeletes', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_ignoreDeletes_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreDeletes', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_option_ignoreDeletes_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_ignoreDeletes_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'ignoreDeletes', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_failOnDataLoss_x",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_failOnDataLoss_x/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_failOnDataLoss_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'failOnDataLoss', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow sail.d_option_failOnDataLoss_x.t is QUEUED.",
+     "Flow sail.d_option_failOnDataLoss_x.t is STARTING.",
+     "Flow sail.d_option_failOnDataLoss_x.t is RUNNING.",
+     "Flow 'sail.d_option_failOnDataLoss_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_failOnDataLoss_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'failOnDataLoss', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_option_failOnDataLoss_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'failOnDataLoss', must be 'true' or 'false' SQLSTATE: XXKST",
+    "events": [
+     "Flow sail.d_option_failOnDataLoss_x.t is QUEUED.",
+     "Flow sail.d_option_failOnDataLoss_x.t is STARTING.",
+     "Flow sail.d_option_failOnDataLoss_x.t is RUNNING.",
+     "Flow 'sail.d_option_failOnDataLoss_x.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_option_failOnDataLoss_x.t] terminated with exception: [DELTA_ILLEGAL_OPTION] Invalid value 'x' for option 'failOnDataLoss', must be 'true' or 'false' SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_failOnDataLoss_false",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_failOnDataLoss_false/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_option_failOnDataLoss_false.t is QUEUED.",
+     "Flow sail.d_option_failOnDataLoss_false.t is STARTING.",
+     "Flow sail.d_option_failOnDataLoss_false.t is RUNNING.",
+     "Flow sail.d_option_failOnDataLoss_false.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_option_failOnDataLoss_false.t is QUEUED.",
+     "Flow sail.d_option_failOnDataLoss_false.t is STARTING.",
+     "Flow sail.d_option_failOnDataLoss_false.t is RUNNING.",
+     "Flow sail.d_option_failOnDataLoss_false.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "option_excludeRegex_.*",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_excludeRegex___/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "option_no_such_option_x",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_no_such_option_x/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "option_withEventTimeOrder_true",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_option_withEventTimeOrder_true/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "batch_time_travel_option",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_batch_time_travel_option/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "AnalysisException",
+    "condition": "DELTA_UNSUPPORTED_TIME_TRAVEL_VIEWS",
+    "message": "[DELTA_UNSUPPORTED_TIME_TRAVEL_VIEWS] Cannot time travel views, subqueries, streams or change data feed queries.",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "batch_timestamp_option",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_batch_timestamp_option/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "AnalysisException",
+    "condition": "DELTA_UNSUPPORTED_TIME_TRAVEL_VIEWS",
+    "message": "[DELTA_UNSUPPORTED_TIME_TRAVEL_VIEWS] Cannot time travel views, subqueries, streams or change data feed queries.",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "cdf_stream",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_cdf_stream/src' TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": [
+     "(1, 'a', 'insert', 1, datetime.datetime(2026, 11, 1, 9, 41, 0, 488000))",
+     "(2, 'b', 'insert', 1, datetime.datetime(2026, 11, 1, 9, 41, 0, 488000))"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 2",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": [
+     "(1, 'a', 'insert', 1, datetime.datetime(2026, 11, 1, 9, 41, 0, 488000))",
+     "(1, 'a', 'update_preimage', 2, datetime.datetime(2026, 11, 1, 9, 41, 0, 636000))",
+     "(1, 'z', 'update_postimage', 2, datetime.datetime(2026, 11, 1, 9, 41, 0, 636000))",
+     "(2, 'b', 'delete', 3, datetime.datetime(2026, 11, 1, 9, 41, 0, 759000))",
+     "(2, 'b', 'insert', 1, datetime.datetime(2026, 11, 1, 9, 41, 0, 488000))"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": [
+     "(1, 'a', 'insert', 1, datetime.datetime(2026, 11, 1, 9, 41, 0, 488000))",
+     "(1, 'a', 'update_preimage', 2, datetime.datetime(2026, 11, 1, 9, 41, 0, 636000))",
+     "(1, 'z', 'update_postimage', 2, datetime.datetime(2026, 11, 1, 9, 41, 0, 636000))",
+     "(2, 'b', 'delete', 3, datetime.datetime(2026, 11, 1, 9, 41, 0, 759000))",
+     "(2, 'b', 'insert', 1, datetime.datetime(2026, 11, 1, 9, 41, 0, 488000))"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "cdf_starting",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_cdf_starting/src' TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": [
+     "(3, 'c', 'insert', 2, datetime.datetime(2026, 11, 1, 9, 41, 0, 950000))"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": [
+     "(3, 'c', 'insert', 2, datetime.datetime(2026, 11, 1, 9, 41, 0, 950000))",
+     "(4, 'd', 'insert', 3, datetime.datetime(2026, 11, 1, 9, 41, 1, 21000))"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "cdf_not_enabled",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_cdf_not_enabled/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_cdf_not_enabled.t] terminated with exception: [DELTA_MISSING_CHANGE_DATA] Error getting change data for range [1 , 2] as change data was not recorded for version [1]. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_cdf_not_enabled.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_cdf_not_enabled.t] terminated with exception: [DELTA_MISSING_CHANGE_DATA] Error getting change data for range [1 , 2] as change data was not recorded for version [1]. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_cdf_not_enabled.t] terminated with exception: [DELTA_MISSING_CHANGE_DATA] Error getting change data for range [2 , 3] as change data was not recorded for version [2]. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_cdf_not_enabled.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_cdf_not_enabled.t] terminated with exception: [DELTA_MISSING_CHANGE_DATA] Error getting change data for range [2 , 3] as change data was not recorded for version [2]. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "cdf_not_enabled_start",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_cdf_not_enabled_start/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_cdf_not_enabled_start.t] terminated with exception: [DELTA_MISSING_CHANGE_DATA] Error getting change data for range [0 , 2] as change data was not recorded for version [0]. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_cdf_not_enabled_start.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_cdf_not_enabled_start.t] terminated with exception: [DELTA_MISSING_CHANGE_DATA] Error getting change data for range [0 , 2] as change data was not recorded for version [0]. SQLSTATE: XXKST"
+    ],
+    "columns": [
+     "id",
+     "v",
+     "_change_type",
+     "_commit_version",
+     "_commit_timestamp"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "partitioned",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta PARTITIONED BY (v) LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_partitioned/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "mapped",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_mapped/src' TBLPROPERTIES ('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "mapped_rename",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_mapped_rename/src' TBLPROPERTIES ('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src RENAME COLUMN v TO w",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_mapped_rename.t] terminated with exception: [DELTA_STREAMING_INCOMPATIBLE_SCHEMA_CHANGE_USE_SCHEMA_LOG] Streaming read is not supported on tables with read-incompatible schema changes (e.g. rename or drop or datatype changes). Please provide a 'schemaTrackingLocation' to enable non-additive schema evolution for Delta stream processing. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_mapped_rename.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_mapped_rename.t] terminated with exception: [DELTA_STREAMING_INCOMPATIBLE_SCHEMA_CHANGE_USE_SCHEMA_LOG] Streaming read is not supported on tables with read-incompatible schema changes (e.g. rename or drop or datatype changes). Please provide a 'schemaTrackingLocation' to "
+    ],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_mapped_rename.t] terminated with exception: [DELTA_STREAMING_INCOMPATIBLE_SCHEMA_CHANGE_USE_SCHEMA_LOG] Streaming read is not supported on tables with read-incompatible schema changes (e.g. rename or drop or datatype changes). Please provide a 'schemaTrackingLocation' to enable non-additive schema evolution for Delta stream processing. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_mapped_rename.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_mapped_rename.t] terminated with exception: [DELTA_STREAMING_INCOMPATIBLE_SCHEMA_CHANGE_USE_SCHEMA_LOG] Streaming read is not supported on tables with read-incompatible schema changes (e.g. rename or drop or datatype changes). Please provide a 'schemaTrackingLocation' to "
+    ],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "mapped_drop",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_mapped_drop/src' TBLPROPERTIES ('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src DROP COLUMN v",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_mapped_drop.t] terminated with exception: [DELTA_STREAMING_INCOMPATIBLE_SCHEMA_CHANGE_USE_SCHEMA_LOG] Streaming read is not supported on tables with read-incompatible schema changes (e.g. rename or drop or datatype changes). Please provide a 'schemaTrackingLocation' to enable non-additive schema evolution for Delta stream processing. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_mapped_drop.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_mapped_drop.t] terminated with exception: [DELTA_STREAMING_INCOMPATIBLE_SCHEMA_CHANGE_USE_SCHEMA_LOG] Streaming read is not supported on tables with read-incompatible schema changes (e.g. rename or drop or datatype changes). Please provide a 'schemaTrackingLocation' to enab"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "recreated",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_recreated/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DROP TABLE src",
+    "ok": true
+   },
+   {
+    "sql": "CREATE OR REPLACE TABLE delta.`file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_recreated/src` (id INT, v STRING) USING delta",
+    "error": "AnalysisException",
+    "condition": null,
+    "message": "Database not found: delta"
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "replace_table",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_replace_table/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "CREATE OR REPLACE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_replace_table/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_replace_table.t] terminated with exception: [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE] The streaming query was reading from an unexpected Delta table (id = 'a6a73a30-f206-4e95-b6c2-2e3a3856a599'). It used to read from another Delta table (id = '84c796b0-64cf-498c-bdda-2dab573f37c0') according to checkpoint. This may happen when you changed the code to read from a new table or you deleted and re-created a table. Please revert your change or delete your streaming query checkpoint to restart from scratch. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_replace_table.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_replace_table.t] terminated with exception: [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE] The streaming query was reading from an unexpected Delta table (id = 'a6a73a30-f206-4e95-b6c2-2e3a3856a599'). It used to read from another Delta table (id = '84c796b0-64cf-498c-bd"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "not_delta",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_not_delta/src'",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "AnalysisException",
+    "condition": null,
+    "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.d_not_delta.t\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+    "events": [
+     "Failed to resolve flow: 'sail.d_not_delta.t'.\nError: error in DataFusion: Invalid or Unsupported Configuration: Invalid table location: No commit files found in _delta_log"
+    ],
+    "rows": null,
+    "rows_error": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] The table or view `d_not_delta`.`t` cannot be found."
+   }
+  ]
+ },
+ {
+  "label": "plain_parquet_dir",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_plain_parquet_dir/src'",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "AnalysisException",
+    "condition": null,
+    "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.d_plain_parquet_dir.t\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+    "events": [
+     "Failed to resolve flow: 'sail.d_plain_parquet_dir.t'.\nError: error in DataFusion: Invalid or Unsupported Configuration: Invalid table location: No commit files found in _delta_log"
+    ],
+    "rows": null,
+    "rows_error": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] The table or view `d_plain_parquet_dir`.`t` cannot be found."
+   }
+  ]
+ },
+ {
+  "label": "in_view",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_in_view/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stream_static_join",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_stream_static_join/src'",
+    "ok": true
+   },
+   {
+    "sql": "CREATE TABLE dim (id INT, n STRING) USING parquet",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO dim VALUES (1, 'x'), (3, 'y')",
+    "error": "PySparkTypeError",
+    "condition": "UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION",
+    "message": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] uint64 is not supported in conversion to Arrow."
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "n"
+    ],
+    "rows": [
+     "(1, 'a', 'x')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "n"
+    ],
+    "rows": [
+     "(1, 'a', 'x')",
+     "(3, 'c', 'y')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "same_source_twice",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_same_source_twice/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'a')",
+     "(2, 'b')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'a')",
+     "(2, 'b')",
+     "(2, 'b')",
+     "(3, 'c')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "graph_delta_mv",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_graph_delta_mv/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_graph_delta_mv.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-d2d45ac5-32e4-462e-aff4-59b4649bdd7c-c000.snappy.parquet) from streaming source at version 2. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2.server/spark-warehouse/mv-2e7f6574-5a3e-4101-8f00-19c64fe3c068/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_graph_delta_mv.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_graph_delta_mv.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-d2d45ac5-32e4-462e-aff4-59b4649bdd7c-c000.snappy.parquet) from streaming source at version 2. This is currently not supported. If you'd like to ignore "
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(2, 'b')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_graph_delta_mv.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-d2d45ac5-32e4-462e-aff4-59b4649bdd7c-c000.snappy.parquet) from streaming source at version 2. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2.server/spark-warehouse/mv-2e7f6574-5a3e-4101-8f00-19c64fe3c068/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_graph_delta_mv.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_graph_delta_mv.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-d2d45ac5-32e4-462e-aff4-59b4649bdd7c-c000.snappy.parquet) from streaming source at version 2. This is currently not supported. If you'd like to ignore "
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "graph_delta_streaming_table",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_graph_delta_streaming_table/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "delta_target",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_delta_target/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "windowed",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_windowed/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "UnsupportedOperationException",
+    "condition": null,
+    "message": "a watermark on this streaming read",
+    "events": [
+     "Flow 'sail.d_windowed.t' has FAILED more than 0 times and will not be restarted.\nError: not supported: a watermark on this streaming read"
+    ],
+    "columns": [
+     "window",
+     "count"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (9, 'z')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "UnsupportedOperationException",
+    "condition": null,
+    "message": "a watermark on this streaming read",
+    "events": [
+     "Flow 'sail.d_windowed.t' has FAILED more than 0 times and will not be restarted.\nError: not supported: a watermark on this streaming read"
+    ],
+    "columns": [
+     "window",
+     "count"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "schema_add",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_schema_add/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src ADD COLUMN w INT",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd', 7)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(4, 'd', 7)"
+    ]
+   },
+   {
+    "sql": "INSERT INTO src VALUES (5, 'e', 8)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(4, 'd', 7)",
+     "(5, 'e', 8)"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "schema_add_table",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_schema_add_table/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src ADD COLUMN w INT",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd', 7)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(4, 'd', 7)"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "schema_add_before_first",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_schema_add_before_first/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "ALTER TABLE src ADD COLUMN w INT",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd', 7)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v",
+     "w"
+    ],
+    "rows": [
+     "(1, 'a', None)",
+     "(2, 'b', None)",
+     "(4, 'd', 7)"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "schema_drop_not_null",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT NOT NULL, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_schema_drop_not_null/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "ALTER TABLE src ALTER COLUMN id DROP NOT NULL",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_two_versions",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_two_versions/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 2",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_snapshot_after_update",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_snapshot_after_update/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'z')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_delete_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_delete_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_layout_delete_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1e5b5f92-41b1-4158-a421-fb0bc0482d4b-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_delete_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_layout_delete_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_layout_delete_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1e5b5f92-41b1-4158-a421-fb0bc0482d4b-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_layout_delete_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1e5b5f92-41b1-4158-a421-fb0bc0482d4b-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to ignore deletes, set the option 'ignoreDeletes' to 'true'. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_delete_none/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_layout_delete_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_layout_delete_none.t] terminated with exception: [DELTA_SOURCE_IGNORE_DELETE] Detected deleted data (for example part-00001-1e5b5f92-41b1-4158-a421-fb0bc0482d4b-c000.snappy.parquet) from streaming source at version 3. This is currently not supported. If you'd like to"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_delete_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_delete_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_delete_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_delete_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_layout_delete_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_layout_delete_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_layout_delete_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_layout_delete_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_delete_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_delete_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_update_none",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_none/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_layout_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_none/src/. SQ",
+    "events": [
+     "Flow 'sail.d_layout_update_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_layout_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_layout_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_none/src/. SQ",
+    "events": [
+     "Flow 'sail.d_layout_update_none.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_layout_update_none.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_update_ignoreChanges",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_ignoreChanges/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'z')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(1, 'z')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_update_skipChangeCommits",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_skipChangeCommits/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_layout_update_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_layout_update_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_layout_update_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_layout_update_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_layout_update_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_layout_update_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_layout_update_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_layout_update_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_layout_update_skipChangeCommits.t is QUEUED.",
+     "Flow sail.d_layout_update_skipChangeCommits.t is STARTING.",
+     "Flow sail.d_layout_update_skipChangeCommits.t is RUNNING.",
+     "Flow sail.d_layout_update_skipChangeCommits.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')",
+     "(4, 'd')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "layout_update_ignoreDeletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_ignoreDeletes/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "UPDATE src SET v = 'z' WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (4, 'd')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_layout_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_igno",
+    "events": [
+     "Flow 'sail.d_layout_update_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_layout_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to ha"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_layout_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_layout_update_igno",
+    "events": [
+     "Flow 'sail.d_layout_update_ignoreDeletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_layout_update_ignoreDeletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example UPDATE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to ha"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "rewrite_partial_delete",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_rewrite_partial_delete/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src SELECT id, 'x' FROM range(1, 3) ORDER BY id",
+    "ok": true
+   },
+   {
+    "sql": "OPTIMIZE src",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_rewrite_partial_delete.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_rewrite_partial_delete/",
+    "events": [
+     "Flow 'sail.d_rewrite_partial_delete.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_rewrite_partial_delete.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regul"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_layout",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_layout/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_dv_layout.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_layout/src/. SQLSTATE: XXKST",
+    "events": [
+     "Flow 'sail.d_dv_layout.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_dv_layout.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 3. This is currently not supported. If this is going to happen regularly and you are okay to s"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_rewrite_partial",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_rewrite_partial/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src SELECT id, 'x' FROM range(1, 3)",
+    "ok": true
+   },
+   {
+    "sql": "OPTIMIZE src",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_dv_rewrite_partial.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_rewrite_partial/src/. SQ",
+    "events": [
+     "Flow 'sail.d_dv_rewrite_partial.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_dv_rewrite_partial.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_rewrite_skip",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_rewrite_skip/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src SELECT id, 'x' FROM range(1, 3)",
+    "ok": true
+   },
+   {
+    "sql": "OPTIMIZE src",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_dv_rewrite_skip.t is QUEUED.",
+     "Flow sail.d_dv_rewrite_skip.t is STARTING.",
+     "Flow sail.d_dv_rewrite_skip.t is RUNNING.",
+     "Flow sail.d_dv_rewrite_skip.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [
+     "Flow sail.d_dv_rewrite_skip.t is QUEUED.",
+     "Flow sail.d_dv_rewrite_skip.t is STARTING.",
+     "Flow sail.d_dv_rewrite_skip.t is RUNNING.",
+     "Flow sail.d_dv_rewrite_skip.t has COMPLETED."
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_rewrite_deletes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_rewrite_deletes/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src SELECT id, 'x' FROM range(1, 3)",
+    "ok": true
+   },
+   {
+    "sql": "OPTIMIZE src",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "StreamingQueryException",
+    "condition": "STREAM_FAILED",
+    "message": "[STREAM_FAILED] Query [id = sail.d_dv_rewrite_deletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and you are okay to skip changes, set the option 'skipChangeCommits' to 'true'. If you would like the data update to be reflected, please restart this query with a fresh checkpoint directory or do a full refresh. The source table can be found at path file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_rewrite_deletes/src/. SQ",
+    "events": [
+     "Flow 'sail.d_dv_rewrite_deletes.t' has FAILED more than 0 times and will not be restarted.\nError: [STREAM_FAILED] Query [id = sail.d_dv_rewrite_deletes.t] terminated with exception: [DELTA_SOURCE_TABLE_IGNORE_CHANGES] Detected a data update (for example DELETE ({\"predicate\": \"\\\"id = 1 \\\"\"})) in the source table at version 2. This is currently not supported. If this is going to happen regularly and"
+    ],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "dv_rewrite_changes",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_dv_rewrite_changes/src' TBLPROPERTIES ('delta.enableDeletionVectors' = 'true')",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src SELECT id, 'x' FROM range(1, 3)",
+    "ok": true
+   },
+   {
+    "sql": "OPTIMIZE src",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')"
+    ]
+   },
+   {
+    "sql": "DELETE FROM src WHERE id = 1",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (3, 'c')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'x')",
+     "(2, 'x')",
+     "(2, 'x')",
+     "(3, 'c')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "window_table",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (ts TIMESTAMP, id INT) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_table/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (CAST(1 AS TIMESTAMP), 1)",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (CAST(2 AS TIMESTAMP), 2)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "window",
+     "count"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (CAST(9 AS TIMESTAMP), 9)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "window",
+     "count"
+    ],
+    "rows": [
+     "(Row(start=datetime.datetime(1969, 12, 31, 16, 0), end=datetime.datetime(1969, 12, 31, 16, 0, 2)), 1)",
+     "(Row(start=datetime.datetime(1969, 12, 31, 16, 0, 2), end=datetime.datetime(1969, 12, 31, 16, 0, 4)), 1)"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "window_path",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (ts TIMESTAMP, id INT) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_path/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (CAST(1 AS TIMESTAMP), 1)",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (CAST(2 AS TIMESTAMP), 2)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "SparkConnectGrpcException",
+    "condition": null,
+    "message": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.INTERNAL\n\tdetails = \"internal error: unbound stream __sail_data_source.delta.file:///private/tmp/claude-501/-users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_path/src\"\n\tdebug_error_string = \"INTERNAL:internal error: unbound stream __sail_data_source.delta.file:///private/tmp/claude-501/-users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_path/src\"\n>",
+    "events": [
+     "Flow 'sail.d_window_path.t' has FAILED more than 0 times and will not be restarted.\nError: internal error: unbound stream __sail_data_source.delta.file:///private/tmp/claude-501/-users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_path/src"
+    ],
+    "columns": [
+     "window",
+     "count"
+    ],
+    "rows": []
+   },
+   {
+    "sql": "INSERT INTO src VALUES (CAST(9 AS TIMESTAMP), 9)",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "error",
+    "error": "SparkConnectGrpcException",
+    "condition": null,
+    "message": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.INTERNAL\n\tdetails = \"internal error: unbound stream __sail_data_source.delta.file:///private/tmp/claude-501/-users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_path/src\"\n\tdebug_error_string = \"INTERNAL:internal error: unbound stream __sail_data_source.delta.file:///private/tmp/claude-501/-users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_path/src\"\n>",
+    "events": [
+     "Flow 'sail.d_window_path.t' has FAILED more than 0 times and will not be restarted.\nError: internal error: unbound stream __sail_data_source.delta.file:///private/tmp/claude-501/-users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_window_path/src"
+    ],
+    "columns": [
+     "window",
+     "count"
+    ],
+    "rows": []
+   }
+  ]
+ },
+ {
+  "label": "run_twice_mv",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_run_twice_mv/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(2, 'b')"
+    ]
+   }
+  ]
+ },
+ {
+  "label": "run_twice_st_target",
+  "log": [
+   {
+    "sql": "CREATE TABLE src (id INT, v STRING) USING delta LOCATION 'file:///private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/delta-oracle/sail-2/d_run_twice_st_target/src'",
+    "ok": true
+   },
+   {
+    "sql": "INSERT INTO src VALUES (1, 'a'), (2, 'b')",
+    "ok": true
+   },
+   {
+    "run": true,
+    "full": false,
+    "outcome": "ok",
+    "events": [],
+    "columns": [
+     "id",
+     "v"
+    ],
+    "rows": [
+     "(1, 'a')",
+     "(2, 'b')"
+    ]
+   }
+  ]
+ }
+]

@@ -1,0 +1,13 @@
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal.rs b/crates/sail-function/src/scalar/spark_string_to_decimal.rs
+index b27192c3d..4f7ec939d 100644
+--- a/crates/sail-function/src/scalar/spark_string_to_decimal.rs
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal.rs
+@@ -66,7 +66,7 @@ impl SparkStringToDecimal {
+         let Some(value) = value else {
+             return Ok(None);
+         };
+-        match parse::cast(value, self.precision, self.scale, self.allow_negative_scale) {
++        match parse::cast(value, self.precision, self.scale, false) {
+             Ok(result) => Ok(Some(result)),
+             Err(_) if !self.fail_on_error => Ok(None),
+             Err(parse::CastError::Invalid) => Err(super::cast_error::invalid_string_cast(

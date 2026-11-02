@@ -1,0 +1,87 @@
+686:     pub async fn execute_logical_plan(&self, plan: LogicalPlan) -> Result<DataFrame> {
+687:         match plan {
+688:             LogicalPlan::Ddl(ddl) => {
+689:                 // Box async DDL handlers to avoid reserving space for all of their
+690:                 // futures in this function's state machine, decreasing the risk of
+691:                 // stack overflows.
+692:                 match ddl {
+693:                     DdlStatement::CreateExternalTable(cmd) => {
+694:                         (Box::pin(async move { self.create_external_table(&cmd).await })
+695:                             as std::pin::Pin<Box<dyn Future<Output = _> + Send>>)
+696:                             .await
+697:                     }
+698:                     DdlStatement::CreateMemoryTable(cmd) => {
+699:                         Box::pin(self.create_memory_table(cmd)).await
+700:                     }
+701:                     DdlStatement::CreateView(cmd) => {
+702:                         Box::pin(self.create_view(cmd)).await
+703:                     }
+704:                     DdlStatement::CreateCatalogSchema(cmd) => {
+705:                         self.create_catalog_schema(cmd)
+706:                     }
+707:                     DdlStatement::CreateCatalog(cmd) => self.create_catalog(cmd),
+708:                     DdlStatement::DropTable(cmd) => Box::pin(self.drop_table(cmd)).await,
+709:                     DdlStatement::DropView(cmd) => Box::pin(self.drop_view(cmd)).await,
+710:                     DdlStatement::DropCatalogSchema(cmd) => self.drop_schema(cmd),
+711:                     DdlStatement::CreateFunction(cmd) => {
+712:                         Box::pin(self.create_function(*cmd)).await
+713:                     }
+714:                     DdlStatement::DropFunction(cmd) => self.drop_function(&cmd),
+715:                     ddl => Ok(DataFrame::new(self.state(), LogicalPlan::Ddl(ddl))),
+716:                 }
+717:             }
+718:             // TODO what about the other statements (like TransactionStart and TransactionEnd)
+719:             LogicalPlan::Statement(Statement::SetVariable(stmt)) => {
+720:                 self.set_variable(stmt)?;
+721:                 self.return_empty_dataframe()
+722:             }
+723:             LogicalPlan::Statement(Statement::ResetVariable(stmt)) => {
+724:                 self.reset_variable(stmt)?;
+725:                 self.return_empty_dataframe()
+726:             }
+727:             LogicalPlan::Statement(Statement::Prepare(Prepare {
+728:                 name,
+729:                 input,
+730:                 fields,
+731:             })) => {
+732:                 // The number of parameters must match the specified data types length.
+733:                 if !fields.is_empty() {
+734:                     let param_names = input.get_parameter_names()?;
+735:                     if param_names.len() != fields.len() {
+736:                         return plan_err!(
+737:                             "Prepare specifies {} data types but query has {} parameters",
+738:                             fields.len(),
+739:                             param_names.len()
+740:                         );
+741:                     }
+742:                 }
+743:                 // Optimize the plan without evaluating expressions like now()
+744:                 let optimizer_context = OptimizerContext::new_with_config_options(
+745:                     Arc::clone(self.state().config().options()),
+746:                 )
+747:                 .without_query_execution_start_time();
+748:                 let plan = self.state().optimizer().optimize(
+749:                     Arc::unwrap_or_clone(input),
+750:                     &optimizer_context,
+751:                     |_1, _2| {},
+752:                 )?;
+753:                 self.state
+754:                     .write()
+755:                     .store_prepared(name, fields, Arc::new(plan))?;
+756:                 self.return_empty_dataframe()
+757:             }
+758:             LogicalPlan::Statement(Statement::Execute(execute)) => {
+759:                 self.execute_prepared(execute)
+760:             }
+761:             LogicalPlan::Statement(Statement::Deallocate(deallocate)) => {
+762:                 self.state
+763:                     .write()
+764:                     .remove_prepared(deallocate.name.as_str())?;
+765:                 self.return_empty_dataframe()
+766:             }
+767:             plan => Ok(DataFrame::new(self.state(), plan)),
+768:         }
+769:     }
+770: 
+771:     /// Create a [`PhysicalExpr`] from an [`Expr`] after applying type
+772:     /// coercion and function rewrites.

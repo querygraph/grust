@@ -8,16 +8,6 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Pipeline integration
 
-- Add `grust-columns`, a dependency-free crate for column-name selection,
-  reserved-prefix detection and required-name checks. Selection resolves
-  names through a caller-supplied resolver (`resolve(name) -> Option<index>`),
-  so the engine's lookup policy decides duplicates and case collisions as
-  Spark's `StructType` name-to-index map does; the reserved-prefix and
-  required-name checks take a pairwise comparator like Spark's analysis
-  `Resolver`. It mirrors the Spark 4.2.1 primitives behind Auto CDC argument
-  validation (`ColumnSelection.applyToSchema` and the `AutoCdcMergeFlow` key
-  and reserved-name checks) while the engine keeps its own name policy, so
-  Sail can vendor just the kernel and port the upstream assertions one to one.
 - Extract the iterative directed topological sorter into `grust-topology`, a
   crate with no dependencies. Grust retains its projection identity, memory
   reservations, work accounting, cancellation, and cycle-witness API around the

@@ -1,0 +1,319 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.spark.sql.pipelines.graph
+
+import scala.util.Try
+
+import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.catalyst.{AliasIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalyst.analysis.{CTESubstitution, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
+import org.apache.spark.sql.classic.{DataFrame, DataFrameReader, Dataset, DataStreamReader, SparkSession}
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.pipelines.graph.GraphIdentifierManager.{ExternalDatasetIdentifier, InternalDatasetIdentifier}
+
+
+object FlowAnalysis {
+    /**
+     * Creates a [[FlowFunction]] that attempts to analyze the provided LogicalPlan
+     * using the existing resolved inputs.
+     * - If all upstream inputs have been resolved, then analysis succeeds and the
+     *   function returns a [[FlowFunctionResult]] containing the dataframe.
+     * - If any upstream inputs are unresolved, then the function throws an exception.
+     *
+     * @param plan The user-supplied LogicalPlan defining a flow.
+     * @return A FlowFunction that attempts to analyze the provided LogicalPlan.
+     */
+  def createFlowFunctionFromLogicalPlan(plan: LogicalPlan): FlowFunction = {
+    (allInputs: Set[TableIdentifier],
+      availableInputs: Seq[Input],
+      confs: Map[String, String],
+      queryContext: QueryContext,
+      queryOrigin: QueryOrigin) => {
+      // Flows are resolved in parallel on a shared session, so applying per-flow confs by mutating
+      // that session's conf would race across flows. Instead, give each flow a private SQLConf
+      // (a clone of the session's conf plus this flow's overrides) and install it for the analyzing
+      // thread via SQLConf.withExistingConf. Analysis still runs on the shared session, so its
+      // catalog and the resolved DataFrames are unaffected; only the confs the analyzer reads are
+      // isolated per flow.
+      val spark = SparkSession.active
+      val ctx = FlowAnalysisContext(
+        allInputs = allInputs,
+        availableInputs = availableInputs,
+        queryContext = queryContext,
+        spark = spark,
+        flowConf = spark.sessionState.conf.clone()
+      )
+      val df = SQLConf.withExistingConf(ctx.flowConf) {
+        confs.foreach { case (k, v) => ctx.setConf(k, v) }
+        Try(FlowAnalysis.analyze(ctx, plan))
+      }
+      FlowFunctionResult(
+        requestedInputs = ctx.requestedInputs.toSet,
+        batchInputs = ctx.batchInputs.toSet,
+        streamingInputs = ctx.streamingInputs.toSet,
+        usedExternalInputs = ctx.externalInputs.toSet,
+        dataFrame = df,
+        sqlConf = confs
+      )
+    }
+  }
+
+  /**
+   * Constructs an analyzed [[DataFrame]] from a [[LogicalPlan]] by resolving Pipelines specific
+   * TVFs and datasets that cannot be resolved directly by Catalyst.
+   *
+   * This runs on the flow-resolution thread pool, which may differ from the thread that defined
+   * the flow (e.g. in a Python REPL), so it must not depend on ambient singletons or thread-locals
+   * carried over from that defining thread. The one piece of per-flow state it relies on - the
+   * flow's SQL confs - is installed on the analyzing thread by
+   * [[createFlowFunctionFromLogicalPlan]] via `SQLConf.withExistingConf`, so the Catalyst analysis
+   * this triggers reads them through `SQLConf.get`.
+   *
+   * @param plan     The [[LogicalPlan]] defining a flow.
+   * @return An analyzed [[DataFrame]].
+   */
+  private def analyze(
+      context: FlowAnalysisContext,
+      plan: LogicalPlan
+  ): DataFrame = {
+    // Users can define CTEs within their CREATE statements. For example,
+    //
+    // CREATE STREAMING TABLE a
+    // WITH b AS (
+    //    SELECT * FROM STREAM upstream
+    // )
+    // SELECT * FROM b
+    //
+    // The relation defined using the WITH keyword is not included in the children of the main
+    // plan so the specific analysis we do below will not be applied to those relations.
+    // Instead, we call an analyzer rule to inline all of the CTE relations in the main plan before
+    // we do analysis. This rule would be called during analysis anyways, but we just call it
+    // earlier so we only need to apply analysis to a single logical plan.
+    val planWithInlinedCTEs = CTESubstitution(plan)
+
+    val spark = context.spark
+    // Traverse the user's query plan and recursively resolve nodes that reference Pipelines
+    // features that the Spark analyzer is unable to resolve
+    val resolvedPlan = planWithInlinedCTEs transformWithSubqueries {
+        // Streaming read on another dataset
+        // This branch will be hit for the following kinds of queries:
+        // - SELECT ... FROM STREAM(t1)
+        // - SELECT ... FROM STREAM t1
+        case u: UnresolvedRelation if u.isStreaming =>
+          val resolved = readStreamInput(
+            context,
+            name = IdentifierHelper.toQuotedString(u.multipartIdentifier),
+            streamReader = spark.readStream.options(u.options)
+          ).queryExecution.analyzed
+          // Spark Connect requires the PLAN_ID_TAG to be propagated to the resolved plan
+          // to allow correct analysis of the parent plan that contains this subquery
+          resolved.mergeTagsFrom(u)
+          resolved
+        // Batch read on another dataset in the pipeline
+        case u: UnresolvedRelation =>
+          val resolved = readBatchInput(
+            context,
+            name = IdentifierHelper.toQuotedString(u.multipartIdentifier),
+            batchReader = spark.read.options(u.options)
+          ).queryExecution.analyzed
+          // Spark Connect requires the PLAN_ID_TAG to be propagated to the resolved plan
+          // to allow correct analysis of the parent plan that contains this subquery
+          resolved.mergeTagsFrom(u)
+          resolved
+      }
+    Dataset.ofRows(spark, resolvedPlan)
+  }
+
+  /**
+   * Internal helper to reference the batch dataset (i.e., non-streaming dataset) with the given
+   * name.
+   * 1. The dataset can be a table, view, or a named flow.
+   * 2. The dataset can be a dataset defined in the same DataflowGraph or a table in the external
+   * catalog.
+   * All the public APIs that read from a dataset should call this function to read the dataset.
+   *
+   * @param name the name of the Dataset to be read.
+   * @param batchReader the batch dataframe reader, possibly with options, to execute the read
+   *                    with.
+   * @return batch DataFrame that represents data from the specified Dataset.
+   */
+  final private def readBatchInput(
+      context: FlowAnalysisContext,
+      name: String,
+      batchReader: DataFrameReader
+  ): DataFrame = {
+    GraphIdentifierManager.parseAndQualifyInputIdentifier(context, name) match {
+      case inputIdentifier: InternalDatasetIdentifier =>
+        readGraphInput(context, inputIdentifier, isStreamingRead = false)
+
+      case inputIdentifier: ExternalDatasetIdentifier =>
+        readExternalBatchInput(
+          context,
+          inputIdentifier = inputIdentifier,
+          name = name,
+          batchReader = batchReader
+        )
+    }
+  }
+
+  /**
+   * Internal helper to reference the streaming dataset with the given name.
+   * 1. The dataset can be a table, view, or a named flow.
+   * 2. The dataset can be a dataset defined in the same DataflowGraph or a table in the external
+   * catalog.
+   * All the public APIs that read from a dataset should call this function to read the dataset.
+   *
+   * @param name the name of the Dataset to be read.
+   * @param streamReader The [[DataStreamReader]] that may hold read options specified by the user.
+   * @return streaming DataFrame that represents data from the specified Dataset.
+   */
+  final private def readStreamInput(
+      context: FlowAnalysisContext,
+      name: String,
+      streamReader: DataStreamReader
+  ): DataFrame = {
+    GraphIdentifierManager.parseAndQualifyInputIdentifier(context, name) match {
+      case inputIdentifier: InternalDatasetIdentifier =>
+        readGraphInput(
+          context,
+          inputIdentifier,
+          isStreamingRead = true
+        )
+
+      case inputIdentifier: ExternalDatasetIdentifier =>
+        readExternalStreamInput(
+          context,
+          inputIdentifier = inputIdentifier,
+          streamReader = streamReader,
+          name = name
+        )
+    }
+  }
+
+  /**
+   * Internal helper to reference dataset defined in the same [[DataflowGraph]].
+   *
+   * @param inputIdentifier The identifier of the Dataset to be read.
+   * @param isStreamingRead Whether this is a streaming read or batch read.
+   * @return streaming or batch DataFrame that represents data from the specified Dataset.
+   */
+  final private def readGraphInput(
+      ctx: FlowAnalysisContext,
+      inputIdentifier: InternalDatasetIdentifier,
+      isStreamingRead: Boolean
+  ): DataFrame = {
+    val datasetIdentifier = inputIdentifier.identifier
+
+    ctx.requestedInputs += datasetIdentifier
+
+    val input = if (!ctx.allInputs.contains(datasetIdentifier)) {
+      // Dataset not defined in the dataflow graph
+      throw GraphErrors.pipelineLocalDatasetNotDefinedError(datasetIdentifier.unquotedString)
+    } else if (!ctx.availableInput.contains(datasetIdentifier)) {
+      // Dataset defined in the dataflow graph but not yet resolved
+      throw UnresolvedDatasetException(datasetIdentifier)
+    } else {
+      // Dataset is resolved, so we can read from it
+      ctx.availableInput(datasetIdentifier)
+    }
+
+    val inputDF = input.load(asStreaming = isStreamingRead)
+
+    // Validate that the loaded DataFrame's streaming-ness matches the requested read mode. Tables
+    // pass through trivially as their [[VirtualTableInput.load]] honors `asStreaming` by
+    // construction. The check only ever fires for flows.
+    val incompatibleViewReadCheck =
+      ctx.flowConf.getConfString("pipelines.incompatibleViewCheck.enabled", "true").toBoolean
+
+    if (incompatibleViewReadCheck && isStreamingRead && !inputDF.isStreaming) {
+      throw new AnalysisException(
+        "INCOMPATIBLE_BATCH_VIEW_READ",
+        Map("datasetIdentifier" -> datasetIdentifier.toString)
+      )
+    }
+    if (incompatibleViewReadCheck && !isStreamingRead && inputDF.isStreaming) {
+      throw new AnalysisException(
+        "INCOMPATIBLE_STREAMING_VIEW_READ",
+        Map("datasetIdentifier" -> datasetIdentifier.toString)
+      )
+    }
+
+    input match {
+      // If the referenced input is a [[Flow]], because the query plans will be fused
+      // together, we also need to fuse their confs.
+      case f: Flow => f.sqlConf.foreach { case (k, v) => ctx.setConf(k, v) }
+      case _ =>
+    }
+
+    // Wrap the DF in an alias so that columns in the DF can be referenced with
+    // the following in the query:
+    // - <catalog>.<schema>.<dataset>.<column>
+    // - <schema>.<dataset>.<column>
+    // - <dataset>.<column>
+    val aliasIdentifier = AliasIdentifier(
+      name = datasetIdentifier.table,
+      qualifier = Seq(datasetIdentifier.catalog, datasetIdentifier.database).flatten
+    )
+
+    if (isStreamingRead) {
+      ctx.streamingInputs += ResolvedInput(input, aliasIdentifier)
+    } else {
+      ctx.batchInputs += ResolvedInput(input, aliasIdentifier)
+    }
+    Dataset.ofRows(
+      ctx.spark,
+      SubqueryAlias(identifier = aliasIdentifier, child = inputDF.queryExecution.logical)
+    )
+  }
+
+  /**
+   * Internal helper to reference batch dataset (i.e., non-streaming dataset) defined in an external
+   * catalog or as a path.
+   *
+   * @param inputIdentifier The identifier of the dataset to be read.
+   * @return streaming or batch DataFrame that represents data from the specified Dataset.
+   */
+  final private def readExternalBatchInput(
+      context: FlowAnalysisContext,
+      inputIdentifier: ExternalDatasetIdentifier,
+      name: String,
+      batchReader: DataFrameReader): DataFrame = {
+
+    context.externalInputs += inputIdentifier.identifier
+    batchReader.table(inputIdentifier.identifier.quotedString)
+  }
+
+  /**
+   * Internal helper to reference dataset defined in an external catalog or as a path.
+   *
+   * @param inputIdentifier The identifier of the dataset to be read.
+   * @param streamReader The [[DataStreamReader]] that may hold additional read options specified by
+   *                     the user.
+   * @return streaming or batch DataFrame that represents data from the specified Dataset.
+   */
+  final private def readExternalStreamInput(
+      context: FlowAnalysisContext,
+      inputIdentifier: ExternalDatasetIdentifier,
+      streamReader: DataStreamReader,
+      name: String): DataFrame = {
+
+    context.externalInputs += inputIdentifier.identifier
+    streamReader.table(inputIdentifier.identifier.quotedString)
+  }
+}

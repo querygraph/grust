@@ -1,0 +1,62 @@
+[
+  {
+    "label": "positional",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "overwrite",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output BY NAME SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "columns",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output(a) SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "partition",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output PARTITION (p) BY NAME SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "if-not-exists",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output IF NOT EXISTS BY NAME SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "partition-columns",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output PARTITION (p) (a) SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "overwrite-columns",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output(a) SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "partition-overwrite",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output PARTITION (p) BY NAME SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "if-not-exists-positional",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output IF NOT EXISTS SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "overwrite-positional",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT OVERWRITE output SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "valid",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW f AS INSERT INTO output BY NAME SELECT 1",
+    "kind": "INSERT-POLICY"
+  },
+  {
+    "label": "name-first",
+    "sql": "CREATE STREAMING TABLE output;\nCREATE FLOW a.f AS INSERT OVERWRITE output BY NAME SELECT 1",
+    "kind": "INSERT-POLICY"
+  }
+]

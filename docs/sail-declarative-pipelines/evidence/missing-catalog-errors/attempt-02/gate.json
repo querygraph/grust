@@ -1,0 +1,83 @@
+{
+  "sail_commit": "ba7fcba6ff891be2fa9896d0d2db9fac94e7f4e5",
+  "base": "4761d0064b592f66647dec807801c57fcfc546c9",
+  "packages": [
+    "sail-common-datafusion",
+    "sail-physical-plan",
+    "sail-plan",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T04:13:44.127258+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-missing-catalog-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-missing-catalog-clippy.log",
+      "sha256": "8bd7c8fbdba0a97738968be1ebcd313fd15b8c7689c64d789a4e5b6de4f54c2a"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-missing-catalog-rust.log",
+      "sha256": "9fa2b4b9a9d4a5292a3355c1056413f3faef9603cfbeb7e296edbfd97342908e"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-31T04:16:07.525225+00:00",
+  "outcome": "passed"
+}

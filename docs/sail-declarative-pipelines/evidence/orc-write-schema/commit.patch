@@ -1,0 +1,343 @@
+commit 71f24a87a2f2b5b38bd012388e3ce6589c7c6d46
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 21:04:10 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 21:04:10 2026 -0700
+
+    feat: validate primitive ORC write schemas without erasing logical types
+
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index d52530e71..72d50aadc 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -9,6 +9,7 @@ mod schema;
+ mod source;
+ mod timezone;
+ mod write_options;
++mod write_schema;
+ 
+ pub use factory::{OrcDataSource, OrcFormatFactory, OrcWriteFormat};
+ pub use listing_options::{OrcListingSessionDefaults, OrcReadSessionModes};
+@@ -21,6 +22,7 @@ pub use schema::infer_schema as infer_orc_schema;
+ pub use source::OrcSource;
+ pub use timezone::OrcJavaTimeZoneConfig;
+ pub use write_options::{OrcWriteCompression, OrcWriteConfig, OrcWriteSessionDefaults};
++pub use write_schema::OrcWriteSchema;
+ 
+ #[cfg(test)]
+ mod fixture_tests;
+diff --git a/crates/sail-data-source/src/formats/orc/schema.rs b/crates/sail-data-source/src/formats/orc/schema.rs
+index 47d44255e..14fb165b9 100644
+--- a/crates/sail-data-source/src/formats/orc/schema.rs
++++ b/crates/sail-data-source/src/formats/orc/schema.rs
+@@ -13,7 +13,7 @@ use sail_sql_parser::ast::data_type::DataType as AstDataType;
+ 
+ const CATALYST_TYPE: &str = "spark.sql.catalyst.type";
+ const SPARK_VERSION: &str = "org.apache.spark.version";
+-const CHAR_VARCHAR_TYPE: &str = "__CHAR_VARCHAR_TYPE_STRING";
++pub(super) const CHAR_VARCHAR_TYPE: &str = "__CHAR_VARCHAR_TYPE_STRING";
+ 
+ struct LogicalType {
+     data_type: DataType,
+diff --git a/crates/sail-data-source/src/formats/orc/write_schema.rs b/crates/sail-data-source/src/formats/orc/write_schema.rs
+new file mode 100644
+index 000000000..a057092ac
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/write_schema.rs
+@@ -0,0 +1,89 @@
++use arrow::datatypes::{DataType, Field, SchemaRef};
++use datafusion_common::{Result, not_impl_err, plan_datafusion_err, plan_err};
++use sail_common::spec;
++
++use super::schema::CHAR_VARCHAR_TYPE;
++
++/// Schema admitted for the initial primitive ORC writer.
++///
++/// Admission inspects logical metadata as well as storage types, before any
++/// encoder or output is opened. Native physical support alone is insufficient:
++/// TIME/interval/UDT/extension semantics must not disappear into primitive ORC
++/// columns. Temporal, nested and decimal types need separate writer support.
++/// This component does not activate the public writer or guarantee upload cleanup.
++#[derive(Debug, Clone)]
++pub struct OrcWriteSchema {
++    schema: SchemaRef,
++}
++
++impl OrcWriteSchema {
++    pub fn try_new(schema: SchemaRef) -> Result<Self> {
++        if schema.fields().is_empty() {
++            return plan_err!("ORC writing requires a nonempty schema");
++        }
++        for field in schema.fields() {
++            validate_field(field)?;
++        }
++        Ok(Self { schema })
++    }
++
++    /// The original schema, including nullability and non-type annotations.
++    /// Keeping annotations here does not promise their persistence in ORC files.
++    pub fn schema(&self) -> &SchemaRef {
++        &self.schema
++    }
++}
++
++fn validate_field(field: &Field) -> Result<()> {
++    // Reject unknown members of the semantic namespaces too. Checking only a
++    // recognized extension name would admit orphaned/malformed extension metadata.
++    if let Some(key) = field
++        .metadata()
++        .keys()
++        .filter(|key| key.starts_with("ARROW:extension:") || key.starts_with("SAIL::spark::"))
++        .min()
++    {
++        return not_impl_err!(
++            "ORC writing does not support logical metadata {key:?} for field {:?}",
++            field.name()
++        );
++    }
++    if let Some(json) = field.metadata().get(spec::SPARK_METADATA_JSON_KEY) {
++        let metadata: serde_json::Map<String, serde_json::Value> = serde_json::from_str(json)
++            .map_err(|error| {
++                plan_datafusion_err!(
++                    "invalid Spark metadata for ORC write field {:?}: {error}",
++                    field.name()
++                )
++            })?;
++        for key in [CHAR_VARCHAR_TYPE, "__COLLATIONS"] {
++            if metadata.contains_key(key) {
++                return not_impl_err!(
++                    "ORC writing does not support Spark type metadata {key:?} for field {:?}",
++                    field.name()
++                );
++            }
++        }
++    }
++    match field.data_type() {
++        DataType::Boolean
++        | DataType::Int8
++        | DataType::Int16
++        | DataType::Int32
++        | DataType::Int64
++        | DataType::Float32
++        | DataType::Float64
++        | DataType::Utf8
++        | DataType::LargeUtf8
++        | DataType::Binary
++        | DataType::LargeBinary => Ok(()),
++        data_type => not_impl_err!(
++            "ORC writing does not support type {data_type:?} for field {:?}",
++            field.name()
++        ),
++    }
++}
++
++#[cfg(test)]
++#[path = "write_schema_tests.rs"]
++mod tests;
+diff --git a/crates/sail-data-source/src/formats/orc/write_schema_tests.rs b/crates/sail-data-source/src/formats/orc/write_schema_tests.rs
+new file mode 100644
+index 000000000..4a68a2c3b
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/write_schema_tests.rs
+@@ -0,0 +1,201 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use arrow::array::{BinaryArray, BooleanArray, Int64Array, RecordBatch, StringArray};
++use arrow::datatypes::{IntervalUnit, Schema, TimeUnit};
++use datafusion_common::DataFusionError;
++use orc_rust::{ArrowReaderBuilder, ArrowWriterBuilder};
++
++use super::*;
++
++fn with_metadata(data_type: DataType, key: &str, value: &str) -> Field {
++    Field::new("logical_column", data_type, true)
++        .with_metadata(HashMap::from([(key.into(), value.into())]))
++}
++
++fn admit_later_field(field: Field) -> Result<OrcWriteSchema> {
++    OrcWriteSchema::try_new(Arc::new(Schema::new(vec![
++        Field::new("valid_first", DataType::Int64, false),
++        field,
++    ])))
++}
++
++#[test]
++fn logical_metadata_cannot_disappear_into_supported_storage_types() {
++    for key in [
++        spec::SAIL_SPARK_TIME_METADATA_KEY,
++        spec::SAIL_SPARK_INTERVAL_METADATA_KEY,
++        spec::SAIL_SPARK_UDT_METADATA_KEY,
++        "SAIL::spark::future_logical_type",
++        "ARROW:extension:name",
++        "ARROW:extension:metadata",
++        "ARROW:extension:future_property",
++    ] {
++        for value in ["", "{}", "unknown.extension"] {
++            for data_type in [DataType::Int64, DataType::Utf8, DataType::Binary] {
++                let result = admit_later_field(with_metadata(data_type, key, value));
++                assert!(
++                    matches!(result, Err(DataFusionError::NotImplemented(message))
++                    if message.contains("logical_column") && message.contains(key))
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn spark_character_and_collation_annotations_are_not_plain_strings() {
++    for metadata in [
++        serde_json::json!({ (CHAR_VARCHAR_TYPE): "varchar(8)" }),
++        serde_json::json!({ (CHAR_VARCHAR_TYPE): "char(3)" }),
++        serde_json::json!({ "__COLLATIONS": { "logical_column": "spark.UTF8_LCASE" } }),
++        serde_json::json!({ "__COLLATIONS": null }),
++    ] {
++        let result = admit_later_field(with_metadata(
++            DataType::Utf8,
++            spec::SPARK_METADATA_JSON_KEY,
++            &metadata.to_string(),
++        ));
++        assert!(
++            matches!(result, Err(DataFusionError::NotImplemented(message))
++            if message.contains("logical_column") && message.contains("Spark type metadata"))
++        );
++    }
++}
++
++#[test]
++fn malformed_spark_metadata_is_a_planning_error_with_field_context() {
++    for json in ["", "invalid", "null", "[]", "1", "\"text\""] {
++        let result = admit_later_field(with_metadata(
++            DataType::Utf8,
++            spec::SPARK_METADATA_JSON_KEY,
++            json,
++        ));
++        assert!(matches!(result, Err(DataFusionError::Plan(message))
++            if message.contains("logical_column") && message.contains("invalid Spark metadata")));
++    }
++}
++
++#[test]
++fn unsupported_native_and_temporal_types_are_rejected_before_encoding() {
++    for data_type in [
++        DataType::Null,
++        DataType::UInt8,
++        DataType::UInt64,
++        DataType::Float16,
++        DataType::Decimal128(20, 4),
++        DataType::Date32,
++        DataType::Date64,
++        DataType::Timestamp(TimeUnit::Microsecond, None),
++        DataType::Timestamp(TimeUnit::Microsecond, Some("UTC".into())),
++        DataType::Time64(TimeUnit::Nanosecond),
++        DataType::Duration(TimeUnit::Microsecond),
++        DataType::Interval(IntervalUnit::YearMonth),
++        DataType::Utf8View,
++        DataType::BinaryView,
++        DataType::FixedSizeBinary(4),
++        DataType::List(Arc::new(Field::new("item", DataType::Int64, true))),
++        DataType::Struct(vec![Field::new("item", DataType::Int64, true)].into()),
++        DataType::Dictionary(Box::new(DataType::Int32), Box::new(DataType::Utf8)),
++    ] {
++        let result = admit_later_field(Field::new("unsupported", data_type.clone(), true));
++        assert!(
++            matches!(result, Err(DataFusionError::NotImplemented(message))
++            if message.contains("unsupported") && message.contains(&format!("{data_type:?}")))
++        );
++    }
++    assert!(matches!(
++        OrcWriteSchema::try_new(Arc::new(Schema::empty())),
++        Err(DataFusionError::Plan(_))
++    ));
++}
++
++#[test]
++fn primitive_admission_preserves_original_schema_and_builds_native_writers() -> Result<()> {
++    for data_type in [
++        DataType::Boolean,
++        DataType::Int8,
++        DataType::Int16,
++        DataType::Int32,
++        DataType::Int64,
++        DataType::Float32,
++        DataType::Float64,
++        DataType::Utf8,
++        DataType::LargeUtf8,
++        DataType::Binary,
++        DataType::LargeBinary,
++    ] {
++        let field = Field::new("primitive", data_type, false).with_metadata(HashMap::from([
++            (
++                spec::SPARK_METADATA_JSON_KEY.into(),
++                r#"{"comment":"retained annotation","custom":7}"#.into(),
++            ),
++            ("user.attribute".into(), "opaque".into()),
++        ]));
++        let original = Arc::new(Schema::new_with_metadata(
++            vec![field],
++            HashMap::from([("user.schema.attribute".into(), "opaque".into())]),
++        ));
++        let admitted = OrcWriteSchema::try_new(original.clone())?;
++        assert!(Arc::ptr_eq(admitted.schema(), &original));
++        let mut bytes = vec![];
++        ArrowWriterBuilder::new(&mut bytes, admitted.schema().clone())
++            .try_build()
++            .map_err(|error| DataFusionError::External(Box::new(error)))?
++            .close()
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        let reader = ArrowReaderBuilder::try_new(bytes::Bytes::from(bytes))
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        assert_eq!(reader.build().count(), 0);
++    }
++    Ok(())
++}
++
++#[test]
++fn admitted_nullable_primitives_round_trip_multiple_batches_in_one_file() -> Result<()> {
++    let batch = RecordBatch::try_from_iter([
++        (
++            "id",
++            Arc::new(Int64Array::from(vec![Some(-7), None, Some(12)])) as arrow::array::ArrayRef,
++        ),
++        (
++            "label",
++            Arc::new(StringArray::from(vec![Some("é"), None, Some("")])),
++        ),
++        (
++            "bytes",
++            Arc::new(BinaryArray::from(vec![
++                Some(b"\0\xff".as_slice()),
++                None,
++                Some(b"".as_slice()),
++            ])),
++        ),
++        (
++            "flag",
++            Arc::new(BooleanArray::from(vec![Some(true), None, Some(false)])),
++        ),
++    ])?;
++    let admitted = OrcWriteSchema::try_new(batch.schema())?;
++    let mut bytes = vec![];
++    let mut writer = ArrowWriterBuilder::new(&mut bytes, admitted.schema().clone())
++        .with_batch_size(1)
++        .with_stripe_byte_size(1)
++        .try_build()
++        .map_err(|error| DataFusionError::External(Box::new(error)))?;
++    for _ in 0..2 {
++        writer
++            .write(&batch)
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++    }
++    writer
++        .close()
++        .map_err(|error| DataFusionError::External(Box::new(error)))?;
++    let batches = ArrowReaderBuilder::try_new(bytes::Bytes::from(bytes))
++        .map_err(|error| DataFusionError::External(Box::new(error)))?
++        .build()
++        .collect::<std::result::Result<Vec<_>, _>>()?;
++    let actual = arrow::compute::concat_batches(&batch.schema(), &batches)?;
++    let expected = arrow::compute::concat_batches(&batch.schema(), [&batch, &batch])?;
++    assert_eq!(actual, expected);
++    Ok(())
++}

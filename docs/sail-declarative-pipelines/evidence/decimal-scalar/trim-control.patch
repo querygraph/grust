@@ -1,0 +1,13 @@
+diff --git a/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs b/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
+index 553815e2f..5252a5bd9 100644
+--- a/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
++++ b/crates/sail-function/src/scalar/spark_string_to_decimal/parse.rs
+@@ -37,7 +37,7 @@ fn digit(c: char) -> Option<u8> {
+ 
+ impl Decimal {
+     fn parse(input: &str) -> Result<Self, CastError> {
+-        let mut chars = input.trim_matches(|c| c <= '\u{20}').chars().peekable();
++        let mut chars = input.trim().chars().peekable();
+         let negative = match chars.peek() {
+             Some('-') => {
+                 chars.next();

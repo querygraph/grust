@@ -1,0 +1,68 @@
+{
+  "started_at": "2026-10-31T14:02:21.555884+00:00",
+  "mode": "sail",
+  "script_sha256": "e3d587e5af8d642c9e462c7aeb6adad185dab77f709e6e073bf018de558e320a",
+  "cases": [
+    {
+      "kind": "MATERIALIZED VIEW",
+      "sql": "CREATE MATERIALIZED VIEW table1 AS SELECT 1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.",
+      "table_exists": false
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "sql": "CREATE STREAMING TABLE table1 AS SELECT 1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.",
+      "table_exists": false
+    },
+    {
+      "kind": "FLOW",
+      "sql": "CREATE FLOW f AS INSERT INTO table2 SELECT * FROM table1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_FLOW_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {},
+      "message": "[UNSUPPORTED_FEATURE.CREATE_FLOW_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE FLOW statement is not supported. To create a flow, create and execute a pipeline with a SQL file containing your statement attached in the pipeline spec.",
+      "rows": {
+        "table1": [
+          [
+            1
+          ]
+        ],
+        "table2": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6",
+  "cli_sha256": "f230eb7ed20c3f3a9845a4f40b7e3e58811e63795b4bda838c6cb72ec2c0a103",
+  "version": "4.2.1",
+  "test_sha256": "952a41a4a48a15f8cfadc0b6da52a17cb824050299e2c213763ee45dc3eb5041",
+  "test_paths": [
+    "python/pysail/tests/spark/pipelines/test_direct_execution.py",
+    "python/pysail/tests/spark/pipelines/test_direct_execution_policy.py"
+  ],
+  "pytest_exit_code": 0,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T14:02:24.599577+00:00",
+  "remaining_listeners": []
+}

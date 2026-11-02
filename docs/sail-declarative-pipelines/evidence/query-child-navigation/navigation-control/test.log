@@ -1,0 +1,28 @@
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+    Finished `test` profile [unoptimized] target(s) in 8.20s
+     Running unittests src/lib.rs (target/debug/deps/sail_common-7aa2b13aad9a0702)
+
+running 5 tests
+test spec::query_children::tests::named_window_fields_visit_before_the_input_without_resolving_the_window ... ok
+test spec::query_children::tests::expression_subqueries_precede_inputs_and_join_condition_precedes_both_sides ... ok
+test spec::query_children::tests::cte_definitions_and_reference_lists_are_unfiltered_structural_children ... ok
+test spec::query_children::tests::sampling_temporal_dynamic_and_function_fields_expose_their_expressions ... ok
+test spec::query_children::tests::callback_borrows_original_children_and_errors_before_later_inputs ... FAILED
+
+failures:
+
+---- spec::query_children::tests::callback_borrows_original_children_and_errors_before_later_inputs stdout ----
+
+thread 'spec::query_children::tests::callback_borrows_original_children_and_errors_before_later_inputs' (90431903) panicked at crates/sail-common/src/spec/query_child_tests.rs:102:5:
+assertion `left == right` failed
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    spec::query_children::tests::callback_borrows_original_children_and_errors_before_later_inputs
+
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p sail-common --lib`

@@ -1,0 +1,20 @@
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+error[E0308]: mismatched types
+ --> crates/sail-execution/src/owned_store_error.rs:8:70
+  |
+6 |     match error {
+  |           ----- this expression has type `&datafusion::error::DataFusionError`
+7 |         DataFusionError::ObjectStore(error) => Some(error),
+8 |         DataFusionError::Shared(error) | DataFusionError::Context(_, error) => provider(error),
+  |                                 -----                                ^^^^^ expected `&Arc<DataFusionError>`, found `&Box<DataFusionError>`
+  |                                 |
+  |                                 first introduced with type `&std::sync::Arc<datafusion::error::DataFusionError>` here
+  |
+  = note: expected reference `&std::sync::Arc<datafusion::error::DataFusionError>`
+             found reference `&std::boxed::Box<datafusion::error::DataFusionError>`
+  = note: in the same arm, a binding must have the same type in all alternatives
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `sail-execution` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `sail-execution` (lib test) due to 1 previous error

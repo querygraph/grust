@@ -1,18 +1,24 @@
 # Spark SDP acceptance crosswalk
 
-The pinned inventory has 462 static Scala test registration call sites, including
+The reconciled inventory has486 static Scala test registration call sites, including
 helpers and parameter declarations. It is not an expanded runtime denominator.
-Assertion review currently covers 97 registrations; 365 remain unaudited. None
-is fully qualified by executing the original Scala suite against Sail.
+Assertion review currently covers116 registrations;370 remain unaudited. None
+is a full Sail conformance verdict; the [execution design](ORIGINAL-SUITE-EXECUTION-DESIGN.md)
+requires route-specific evidence preserving all original assertions.
 
 | Suite | Reviewed | Partial ports | Unmapped |
 | --- | ---: | ---: | ---: |
 | ViewSuite | 11 | 7 | 4 |
-| MaterializeTablesSuite | 27 | 8 | 19 |
+| MaterializeTablesSuite | 27 | 15 | 12 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 38 | 30 | 8 |
-| Total | 97 | 59 | 38 |
+| SqlPipelineSuite | 38 | 32 | 6 |
+| DDLSuite (both inherited reference profiles) | 3 | 3 | 0 |
+| CreatePipelineDatasetAsSelectParserSuiteBase | 11 | 11 | 0 |
+| CreateFlowCommandSuite | 3 | 3 | 0 |
+| CreateMaterializedViewAsSelectParserSuite | 1 | 1 | 0 |
+| CreateStreamingTableParserSuite | 1 | 1 | 0 |
+| Total | 116 | 87 | 29 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -59,8 +65,19 @@ parameter when no cause exists. These belong to the pending Astra
 ## SQL pipeline assertions
 
 All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
-30 partial ports and 8 unmapped. This is not a complete Scala-suite verdict.
+32 partial ports and 6 unmapped. This is not a complete Scala-suite verdict.
 The reviewed groups include:
+
+- [Temporary-view qualifiers](evidence/temporary-view-qualifiers/README.md):
+  SqlPipelineSuite:599's arbitrary database qualifier produces ParseException/
+  INVALID_TEMP_OBJ_QUALIFIER on both engines. Native analyzer/planner/Connect
+  metadata and pipeline draft rollback are checked, with valid SESSION forms
+  separately exercising private/direct view execution.
+
+- [Multipart outputs](evidence/original-multipart/README.md): SqlPipelineSuite:562's
+  two namespace-qualified materialized views register together; both return Row(1)
+  on Spark 4.2.1 and Sail. Owned graph/table/database cleanup passes. The current
+  memory/memory catalog runner also rechecks the five already-covered :634 answers.
 
 - Basic batch cases: static dataset, escaped names, a four-view dependency chain,
   aggregation and a private-view join. Hyphen resolution matches the original
@@ -156,3 +173,100 @@ execution. Four paired Spark 4.2.1 CTE cases support the shared classifier fix;
 ## Repeated nested materialization schema ports
 
 Recorded 2026-10-30T02:41:33.921674+00:00. [Sail `f6f1328192`](evidence/nested-materialization/README.md) passes two partial ports of MaterializeTablesSuite735/780, preserving six exact nested schemas after two catalog-output refreshes. The original internal fixture remains distinct from fresh public Connect graphs; the failed same-graph attempt is retained. The existing462 registrations now include61 partial ports; no original Scala-suite execution is claimed.
+
+## Internal metadata table ports
+
+[Exact Sail a9eecf5f5 evidence](evidence/internal-table-metadata/README.md) adds
+partial ports for MaterializeTablesSuite:125 and :374 through the private
+metadata seam, preserving streaming Table kinds and batch function schemas.
+Spark production DatasetManager passes the same catalog assertions using the
+original registration helper; no original ScalaTest suite was executed against
+Sail. Native189, production-only control1pass/3fail, fresh public300+67 pass.
+At that increment:65 partial/397 unmapped,97 reviewed/462 static sites.
+Streaming execution, full-reset owned cleanup and remaining metadata contract
+coverage are still open; see the [design](METADATA-TABLE-MATERIALIZATION-DESIGN.md).
+
+## Metadata partition diagnostics
+
+[Sail604a91f8d evidence](evidence/materialization-partition-errors/README.md)
+adds partial ports of MaterializeTablesSuite:467/:1050 and the rejection portion
+of :402. Native structured diagnostics and Connect ErrorInfo retain class,
+condition, SQL state and parameters; catalog transform/target-state assertions
+pass. :402 success/schema assertions, JVM outer materialization wrapper and
+origins remain open. Exact native191, unchanged control0/2, Spark3 cases and fresh
+public300+67 pass; original ScalaTest execution against Sail is still false.
+Current canonical total:68 partial/394 unmapped,97 reviewed/462 static sites.
+
+## Exact basic metadata and matching existing schema
+
+[Test-only Sail807d66b15 evidence](evidence/basic-metadata-refresh/README.md)
+strengthens already partial :42/:236 with exact native integer/comment fixtures
+and two verbatim original Spark test-body references. Native193 and comment-removal
+control0/1 pass. Production paths match publicly qualified parent604; no new public
+run/build is claimed. Totals remain68 partial/394 unmapped,97 reviewed/462 static.
+The original suite has not executed against Sail. Original-suite execution harness
+is the next user-notified Astra design checkpoint.
+
+## Original-suite reference and scope checkpoint
+
+[Exact Grust70a634e2 evidence](evidence/original-suite-substrate/README.md)
+registers554 owned-root runtime names and passes original Default/Hive metadata
+suites29 each on Spark. These are reference outcomes, not Sail acceptance, and
+no native site is promoted. [20 outside-root declarations](spark-4.2.1-scope-expansion.json)
+remain to reconcile, including parser inheritance/direct SQL rejection/session
+cache lifecycle. Neither legacy462 nor owned554 is the complete goal denominator.
+Next: extend collection/inventory, map full fixtures/assertions and implement the
+[declared Sail routes](ORIGINAL-SUITE-EXECUTION-DESIGN.md).
+
+## Current parser/DDL/lifecycle expansion
+
+Canonical scope now includes all24 identified extra declarations:486 sites,100 reviewed,71 partial and415 unmapped. [Expanded reference evidence](evidence/expanded-original-suite-reference/README.md) binds56 source files and595 scoped names;99 original Spark reference executions pass, with no Sail promotion. [Direct declaration diagnostics](evidence/direct-pipeline-execution/README.md) adds partial public ports of DDLSuite2522/2533/2544. Both inherited reference profiles execute, while Sail profile/internal equivalence remains open. Spark's Flow rejection has an observed INSERT effect; row preservation is a separate Sail policy, not an original diagnostic assertion. Earlier count snapshots below are historical.
+
+## Accepted positive parser ports and pending rejection regression
+
+[Test-only19b7e9c05](evidence/pipeline-parser-positive/README.md) adds nine partial assertion ports (six dataset declarations × both syntaxes; three Flow declarations), with40 analyzer tests and strict Clippy/fmt passing. Canonical accounting is486sites109reviewed80partial406unmapped; earlier snapshots are historical. The [separate clause-rejection candidate7d7](evidence/pipeline-dataset-parse-errors/README.md) is **not accepted**:262native and Spark11 pass, but fresh Sail regression fails299/1 because typed pipeline registration loses the SQL filename. Its five forbidden-clause/MV-query/ST-empty sites remain unmapped. User notified of the wrapper/origin design checkpoint; the frozen assertion remains intact.
+
+## Accepted parser restrictions after endpoint-oracle correction
+
+[14eb7766f](evidence/pipeline-dataset-parse-errors/README.md) is accepted:271native/fmt/Clippy,300+67 public,22 diagnostic cases on each engine and both unchanged-test controls pass their intended verdicts. Seven further partial sites bring canonical totals to486sites116reviewed87partial399unmapped. The initial299/1 failure preserved the old Sail filename expectation; actual DefineSqlGraphElements probes show Spark parser errors carry no filename. Exactly that BDD regex is corrected, with stronger typed assertions added; no original Spark assertion is changed. The public harness now binds23 previously omitted BDD/helper inputs while retaining all300 IDs and old hashes. Registration-level wrapper/origin design is still separate and unstarted. Earlier pending-candidate notes are historical.
+
+## Raw Flow identifier registration errors
+
+[Commitc864386cc](evidence/registration-error-boundaries/README.md) strengthens the existing partial SqlPipelineSuite580 port with its original input, both external-table fixtures, raw AnalysisException and exact message/condition/state/parameter. SQL/protocol spellings, four-part raw errors, implicit-flow exception and ordering are independently tested.279native,300+67 public,21 per-engine cases, Unicode4 and all3 controls have their intended passing verdicts. Full original SqlPipelineSuite43 passes on Spark; total reference executions142 remain distinct from Sail acceptance. Canonical counts stay486sites116reviewed87partial399unmapped. [Design](REGISTRATION-ERROR-FIDELITY-DESIGN.md) reuses the existing wrapper/source/ownership machinery; remaining producer wording is subsequent work.
+
+## Unsupported table-as-select producer
+
+[18604c01a](evidence/unsupported-table-as-select/README.md) strengthens existing partial SqlPipelineSuite525 with original input/fixtures, exact wrapper fields and correct CreateTableAsSelect versus ReplaceTableAsSelect mode names.248 selected native,300+67 public,6 cases per engine and two unchanged-test controls qualify the increment. Counts remain116reviewed87partial399unmapped. The captured12-case next INSERT oracle is not a Sail fix: IF NOT EXISTS on INSERT INTO is raw parser error42601 before Flow policy, requiring shared Sail SQL normalization; remaining valid-form messages follow producer precedence.
+
+
+[Shared INSERT-validation cbeec8f93](evidence/insert-mode-validation/README.md)
+qualifies the ordinary/pipeline raw parser boundary before Flow policy, including
+whole-file precedence over catalog evaluation.252 native,300+67 public,paired15
+and three unchanged-test controls pass. One stale Sail golden output corrected
+through the official generator; all32 inputs/Spark exceptions unchanged. This is
+shared support, with no new original-site promotion:486/116/87/399 unchanged.
+Broader parse origins/order and individual valid Flow-policy messages remain open.
+
+
+[Flow INSERT-policy 4fca6f3d4](evidence/flow-insert-policy/README.md) qualifies
+distinct partition/column/overwrite/by-name producers and their precedence over
+target resolution.254 native,300+67 public,paired15,12 vectors and two controls
+pass. Three local BDD expectations corrected against Spark with SQL inputs
+unchanged;297 selected IDs retained plus three explicitly mapped replacements.
+Shared support only:486sites/116reviewed/87partial/399unmapped unchanged.
+
+
+[Generic parser hook8a1a2378b](evidence/variant-parser-hook/README.md) enables
+coupled INSERT grammar while preserving existing AST fields.65 native+syntax,
+fmt/strictClippy/two controls qualify the generic increment; no production SQL
+consumer/public rerun or inventory promotion. Separate062dc4136 repairs an
+existing syntax snapshot with baseline/candidate generation equality proof.
+Counts486/116/87/399 and original reference142 stay unchanged.
+
+
+[Owned parser retentiona690e2ce9](evidence/owned-parser-diagnostics/README.md)
+qualifies394 native+syntax/fmt/strictClippy/three controls while keeping legacy
+Display and error classification. No grammar or new public-runtime verdict.
+Step3 retention precedes grammar/structured transport integration; two failed
+context fixtures are retained with exact consumed-prefix/token-span correction.
+Counts486/116/87/399 and reference142 remain unchanged.

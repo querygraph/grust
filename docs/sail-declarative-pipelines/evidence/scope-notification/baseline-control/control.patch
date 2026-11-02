@@ -1,0 +1,57 @@
+diff --git a/crates/sail-common-datafusion/src/task_resources_tests.rs b/crates/sail-common-datafusion/src/task_resources_tests.rs
+index 7fedb4265..f120567fe 100644
+--- a/crates/sail-common-datafusion/src/task_resources_tests.rs
++++ b/crates/sail-common-datafusion/src/task_resources_tests.rs
+@@ -150,3 +150,52 @@ fn shutdown_runtime_reports_failed_join_without_spawning_a_drainer() -> TestResu
+     assert!(!report.is_clean());
+     Ok(())
+ }
++
++struct ReentrantCancellation {
++    scope: Arc<TaskResourceScope>,
++    calls: AtomicUsize,
++    lock_held: AtomicBool,
++    rejected: AtomicBool,
++}
++
++impl futures::task::ArcWake for ReentrantCancellation {
++    fn wake_by_ref(arc_self: &Arc<Self>) {
++        arc_self.calls.fetch_add(1, Ordering::SeqCst);
++        // Detect the old deadlock without hanging the test process. Only the
++        // successful path invokes the public API reentrantly.
++        if arc_self.scope.state.try_lock().is_err() {
++            arc_self.lock_held.store(true, Ordering::SeqCst);
++            return;
++        }
++        arc_self.rejected.store(
++            arc_self.scope.spawn(|_| async { Ok(()) }).is_err(),
++            Ordering::SeqCst,
++        );
++    }
++}
++
++#[tokio::test]
++async fn cancellation_wakes_reentrant_listeners_after_sealing_and_unlocking() -> TestResult {
++    let scope = Arc::new(TaskResourceScope::new(Handle::current()));
++    let watcher = Arc::new(ReentrantCancellation {
++        scope: scope.clone(),
++        calls: AtomicUsize::new(0),
++        lock_held: AtomicBool::new(false),
++        rejected: AtomicBool::new(false),
++    });
++    let waker = futures::task::waker(watcher.clone());
++    let mut context = std::task::Context::from_waker(&waker);
++    let mut receiver = scope.cancellation.subscribe();
++    for _ in 0..2 {
++        let mut changed = Box::pin(receiver.changed());
++        assert!(changed.as_mut().poll(&mut context).is_pending());
++        scope.cancel()?;
++        assert!(changed.as_mut().poll(&mut context).is_ready());
++    }
++    assert_eq!(watcher.calls.load(Ordering::SeqCst), 2);
++    assert!(!watcher.lock_held.load(Ordering::SeqCst));
++    assert!(watcher.rejected.load(Ordering::SeqCst));
++    assert!(scope.drain().await?.is_clean());
++    Ok(())
++}
++

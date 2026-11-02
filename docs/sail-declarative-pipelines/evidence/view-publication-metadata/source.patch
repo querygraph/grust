@@ -1,0 +1,322 @@
+commit 5717f1c500feaae80f11c71ec4a4db650b135626
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 14:22:33 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 14:22:33 2026 -0700
+
+    Extract persisted view column and namespace metadata conversion
+
+diff --git a/crates/sail-plan/src/resolver/command/catalog/view.rs b/crates/sail-plan/src/resolver/command/catalog/view.rs
+index 70e77893e..67534ce2d 100644
+--- a/crates/sail-plan/src/resolver/command/catalog/view.rs
++++ b/crates/sail-plan/src/resolver/command/catalog/view.rs
+@@ -6,17 +6,16 @@ use sail_catalog::command::CatalogCommand;
+ use sail_catalog::manager::CatalogManager;
+ use sail_catalog::manager::tracker::CatalogLogicalPlanId;
+ use sail_catalog::provider::{
+-    CreateTemporaryViewColumnOptions, CreateTemporaryViewOptions, CreateViewColumnOptions,
+-    CreateViewOptions, DropTemporaryViewOptions, DropViewOptions,
++    CreateTemporaryViewColumnOptions, CreateTemporaryViewOptions, CreateViewOptions,
++    DropTemporaryViewOptions, DropViewOptions,
+ };
+ use sail_common::spec;
+ use sail_common_datafusion::catalog::TemporaryViewSource;
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_common_datafusion::rename::logical_plan::rename_logical_plan;
+ 
+-use crate::error::{PlanError, PlanResult};
++use crate::error::PlanResult;
+ use crate::resolver::PlanResolver;
+-use crate::resolver::scope::{VIEW_NAMESPACE_PART, VIEW_NAMESPACE_SIZE};
+ use crate::resolver::state::PlanResolverState;
+ 
+ impl PlanResolver<'_> {
+@@ -38,40 +37,8 @@ impl PlanResolver<'_> {
+         // Resolve the query plan to register fields in state and extract column types.
+         let resolved_input = self.resolve_query_plan(*input, state).await?;
+         let schema = resolved_input.schema();
+-        let columns = if let Some(columns) = columns {
+-            let field_count = schema.fields().len();
+-            if columns.len() != field_count {
+-                return Err(PlanError::AnalysisError(format!(
+-                    "CREATE VIEW column list has {} columns, but the query produces {} columns",
+-                    columns.len(),
+-                    field_count
+-                )));
+-            }
+-            columns
+-                .into_iter()
+-                .zip(schema.fields().iter())
+-                .map(|(x, field)| {
+-                    let spec::ViewColumnDefinition { name, comment } = x;
+-                    CreateViewColumnOptions {
+-                        name,
+-                        data_type: field.data_type().clone(),
+-                        nullable: field.is_nullable(),
+-                        comment,
+-                    }
+-                })
+-                .collect()
+-        } else {
+-            Self::get_field_names(schema, state)?
+-                .into_iter()
+-                .zip(schema.fields().iter())
+-                .map(|(name, field)| CreateViewColumnOptions {
+-                    name,
+-                    data_type: field.data_type().clone(),
+-                    nullable: field.is_nullable(),
+-                    comment: None,
+-                })
+-                .collect()
+-        };
++        let columns =
++            publication::columns(schema, columns, || Self::get_field_names(schema, state))?;
+         let manager = self.ctx.extension::<CatalogManager>()?;
+         let namespace = match self
+             .relation_scope
+@@ -84,16 +51,7 @@ impl PlanResolver<'_> {
+                 namespace
+             }
+         };
+-        // Use Spark's existing catalog properties, preserving the SQL text.
+-        properties
+-            .retain(|(key, _)| key != VIEW_NAMESPACE_SIZE && !key.starts_with(VIEW_NAMESPACE_PART));
+-        properties.push((VIEW_NAMESPACE_SIZE.to_string(), namespace.len().to_string()));
+-        properties.extend(
+-            namespace
+-                .into_iter()
+-                .enumerate()
+-                .map(|(index, part)| (format!("{VIEW_NAMESPACE_PART}{index}"), part)),
+-        );
++        publication::set_namespace(&mut properties, namespace);
+         let command = CatalogCommand::CreateView {
+             view: view.into(),
+             options: CreateViewOptions {
+@@ -206,3 +164,5 @@ impl PlanResolver<'_> {
+         self.resolve_catalog_command(command)
+     }
+ }
++
++mod publication;
+diff --git a/crates/sail-plan/src/resolver/command/catalog/view/publication.rs b/crates/sail-plan/src/resolver/command/catalog/view/publication.rs
+new file mode 100644
+index 000000000..f6d00bb6c
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/command/catalog/view/publication.rs
+@@ -0,0 +1,67 @@
++//! Pure persisted-view metadata conversion. Resolution and authority stay with
++//! the caller; field names are requested lazily only without an explicit list.
++
++use datafusion_common::DFSchema;
++use sail_catalog::provider::CreateViewColumnOptions;
++use sail_common::spec;
++
++use crate::error::{PlanError, PlanResult};
++use crate::resolver::scope::{VIEW_NAMESPACE_PART, VIEW_NAMESPACE_SIZE};
++
++pub(super) fn columns(
++    schema: &DFSchema,
++    explicit: Option<Vec<spec::ViewColumnDefinition>>,
++    names: impl FnOnce() -> PlanResult<Vec<String>>,
++) -> PlanResult<Vec<CreateViewColumnOptions>> {
++    if let Some(columns) = explicit {
++        let field_count = schema.fields().len();
++        if columns.len() != field_count {
++            return Err(PlanError::AnalysisError(format!(
++                "CREATE VIEW column list has {} columns, but the query produces {} columns",
++                columns.len(),
++                field_count
++            )));
++        }
++        Ok(columns
++            .into_iter()
++            .zip(schema.fields().iter())
++            .map(|(column, field)| {
++                let spec::ViewColumnDefinition { name, comment } = column;
++                CreateViewColumnOptions {
++                    name,
++                    data_type: field.data_type().clone(),
++                    nullable: field.is_nullable(),
++                    comment,
++                }
++            })
++            .collect())
++    } else {
++        Ok(names()?
++            .into_iter()
++            .zip(schema.fields().iter())
++            .map(|(name, field)| CreateViewColumnOptions {
++                name,
++                data_type: field.data_type().clone(),
++                nullable: field.is_nullable(),
++                comment: None,
++            })
++            .collect())
++    }
++}
++
++pub(super) fn set_namespace(properties: &mut Vec<(String, String)>, namespace: Vec<String>) {
++    // Use Spark's existing catalog properties, preserving unrelated entries and
++    // their ordering. Caller resolves the namespace after column validation.
++    properties
++        .retain(|(key, _)| key != VIEW_NAMESPACE_SIZE && !key.starts_with(VIEW_NAMESPACE_PART));
++    properties.push((VIEW_NAMESPACE_SIZE.to_string(), namespace.len().to_string()));
++    properties.extend(
++        namespace
++            .into_iter()
++            .enumerate()
++            .map(|(index, part)| (format!("{VIEW_NAMESPACE_PART}{index}"), part)),
++    );
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-plan/src/resolver/command/catalog/view/publication/tests.rs b/crates/sail-plan/src/resolver/command/catalog/view/publication/tests.rs
+new file mode 100644
+index 000000000..d0f11e978
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/command/catalog/view/publication/tests.rs
+@@ -0,0 +1,143 @@
++use std::cell::Cell;
++use std::collections::HashMap;
++
++use datafusion::arrow::datatypes::{DataType, Field, Schema, TimeUnit};
++
++use super::*;
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++fn schema() -> PlanResult<DFSchema> {
++    Ok(DFSchema::try_from(Schema::new(vec![
++        Field::new("opaque_1", DataType::Int64, false)
++            .with_metadata(HashMap::from([("comment".into(), "input comment".into())])),
++        Field::new("opaque_2", DataType::Decimal128(12, 3), true),
++        Field::new(
++            "opaque_3",
++            DataType::Timestamp(TimeUnit::Microsecond, Some("Europe/Paris".into())),
++            false,
++        ),
++    ]))?)
++}
++fn expected(names: &[&str], comments: Vec<Option<&str>>) -> Vec<CreateViewColumnOptions> {
++    names
++        .iter()
++        .zip(comments)
++        .zip([
++            (DataType::Int64, false),
++            (DataType::Decimal128(12, 3), true),
++            (
++                DataType::Timestamp(TimeUnit::Microsecond, Some("Europe/Paris".into())),
++                false,
++            ),
++        ])
++        .map(
++            |((name, comment), (data_type, nullable))| CreateViewColumnOptions {
++                name: (*name).into(),
++                data_type,
++                nullable,
++                comment: comment.map(str::to_owned),
++            },
++        )
++        .collect()
++}
++#[test]
++fn explicit_view_columns_preserve_types_nullability_and_comments_without_resolving_names()
++-> TestResult {
++    let called = Cell::new(false);
++    let explicit = vec![
++        spec::ViewColumnDefinition {
++            name: "雪".into(),
++            comment: Some("first".into()),
++        },
++        spec::ViewColumnDefinition {
++            name: "MixedCase".into(),
++            comment: None,
++        },
++        spec::ViewColumnDefinition {
++            name: "time".into(),
++            comment: Some("clock".into()),
++        },
++    ];
++    let actual = columns(&schema()?, Some(explicit), || {
++        called.set(true);
++        Err(PlanError::internal(
++            "explicit names must not query resolver state",
++        ))
++    })?;
++    assert_eq!(
++        actual,
++        expected(
++            &["雪", "MixedCase", "time"],
++            vec![Some("first"), None, Some("clock")]
++        )
++    );
++    assert!(!called.get());
++    Ok(())
++}
++#[test]
++fn inferred_view_columns_use_user_names_without_copying_input_comments() -> TestResult {
++    let calls = Cell::new(0);
++    let actual = columns(&schema()?, None, || {
++        calls.set(calls.get() + 1);
++        Ok(vec!["id".into(), "amount".into(), "clock".into()])
++    })?;
++    assert_eq!(
++        actual,
++        expected(&["id", "amount", "clock"], vec![None, None, None])
++    );
++    assert_eq!(calls.get(), 1);
++    Ok(())
++}
++#[test]
++fn view_column_count_error_precedes_name_resolution() -> TestResult {
++    let called = Cell::new(false);
++    let error = columns(&schema()?, Some(vec![]), || {
++        called.set(true);
++        Err(PlanError::internal("name resolution must not win"))
++    })
++    .err()
++    .ok_or("mismatched explicit column list accepted")?;
++    let PlanError::AnalysisError(message) = error else {
++        return Err("column mismatch lost its native analysis error".into());
++    };
++    assert_eq!(
++        message,
++        "CREATE VIEW column list has 0 columns, but the query produces 3 columns"
++    );
++    assert!(!called.get());
++    Ok(())
++}
++#[test]
++fn inferred_name_failure_retains_original_variant() -> TestResult {
++    let error = columns(&schema()?, None, || {
++        Err(PlanError::UnresolvedRelation(vec!["missing".into()]))
++    })
++    .err()
++    .ok_or("field-name failure disappeared")?;
++    assert!(matches!(error, PlanError::UnresolvedRelation(name) if name == ["missing"]));
++    Ok(())
++}
++#[test]
++fn publication_namespace_replaces_reserved_entries_and_preserves_other_properties_in_order() {
++    let mut properties = vec![
++        ("user".into(), "first".into()),
++        (VIEW_NAMESPACE_SIZE.into(), "8".into()),
++        (format!("{VIEW_NAMESPACE_PART}0"), "stale".into()),
++        ("user".into(), "second".into()),
++        (format!("{VIEW_NAMESPACE_PART}invalid"), "stale-too".into()),
++        ("comment".into(), "keep".into()),
++    ];
++    set_namespace(&mut properties, vec!["cat.雪".into(), "db`x".into()]);
++    assert_eq!(
++        properties,
++        vec![
++            ("user".into(), "first".into()),
++            ("user".into(), "second".into()),
++            ("comment".into(), "keep".into()),
++            (VIEW_NAMESPACE_SIZE.into(), "2".into()),
++            (format!("{VIEW_NAMESPACE_PART}0"), "cat.雪".into()),
++            (format!("{VIEW_NAMESPACE_PART}1"), "db`x".into()),
++        ]
++    );
++}

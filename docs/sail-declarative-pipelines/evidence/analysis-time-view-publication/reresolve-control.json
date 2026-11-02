@@ -1,0 +1,16 @@
+{
+  "base": "f0ac099e66d811f97dcc668f1c39366948b7cdf3",
+  "control": "373cd270d1b282be37315436dcf205095a4465f8",
+  "path": "crates/sail-spark-connect/src/pipelines/materialize.rs",
+  "substitution": {
+    "from": "        let mut options = analyzed",
+    "to": "        if let Some(definition) = output.view.clone() {\n            sail_plan::resolver::PlanResolver::new(ctx, ctx.extension::<SparkSession>()?.plan_config()?)\n                .resolve_view_publication(definition).await?;\n        }\n        let mut options = analyzed"
+  },
+  "exit_code": 101,
+  "result": {
+    "passed": 5,
+    "failed": 1
+  },
+  "log_sha256": "5936bef755d21adeb8eb04cce69826431ead3cd226f199234dc06281899fc026",
+  "recorded_at": "2026-10-30T21:58:29.910880+00:00"
+}

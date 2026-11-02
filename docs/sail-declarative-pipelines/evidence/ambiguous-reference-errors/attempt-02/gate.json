@@ -1,0 +1,82 @@
+{
+  "sail_commit": "bb395f206fb3ff9c80754d61f23f30f76d5de763",
+  "base": "005fcb07826321693c937a23f362f2e0212aa441",
+  "packages": [
+    "sail-common-datafusion",
+    "sail-data-source",
+    "sail-plan",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T01:09:07.710233+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-ambiguous-reference-ready-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-ambiguous-reference-ready-clippy.log",
+      "sha256": "5ac526b4f5f5d0d2f23541a1b8a520911ed94a8818b68845baf936e26a1c4879"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 101,
+      "log": "/tmp/sail-sdp-ambiguous-reference-ready-rust.log",
+      "sha256": "8f6ab1a7f6f37d62b31fb9ff47cbeb232c5408198fcbed90931fff79b46f6eac"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-31T01:11:36.259154+00:00"
+}

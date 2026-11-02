@@ -1,0 +1,25 @@
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+    Finished `test` profile [unoptimized] target(s) in 37.97s
+     Running unittests src/lib.rs (target/debug/deps/sail_sql_analyzer-4f04600e3097c8e8)
+
+running 1 test
+test pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes ... FAILED
+
+failures:
+
+---- pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes stdout ----
+
+thread 'pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes' (92973258) panicked at crates/sail-sql-analyzer/src/pipeline/tests/dataset.rs:11:5:
+assertion `left == right` failed
+  left: "org.apache.spark.SparkUnsupportedOperationException"
+ right: "org.apache.spark.sql.catalyst.parser.ParseException"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    pipeline::tests::dataset::forbidden_dataset_clauses_preserve_both_syntaxes_and_lowering_routes
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 42 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p sail-sql-analyzer --lib`

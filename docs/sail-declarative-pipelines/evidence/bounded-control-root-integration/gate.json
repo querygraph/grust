@@ -1,0 +1,69 @@
+{
+  "sail_commit": "853cb6e60ea0261d0d63697025b627233de585eb",
+  "base": "f7c3482506342139cc3efb1267e12f31857a4f8b",
+  "packages": [
+    "sail-common-datafusion",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-30T18:14:45.633302+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-bounded-control-root-integration-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-bounded-control-root-integration-clippy.log",
+      "sha256": "7e03332e5fb3a5cc1d67bb3bdd64206e65636c63032a55ddeada6d4d99b8b0f8"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-bounded-control-root-integration-rust.log",
+      "sha256": "7c12c55dec979cf78914f29046bd0031d7edc92656d67b7bdd2926309516c190"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T18:17:41.712284+00:00",
+  "outcome": "passed"
+}

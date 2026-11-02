@@ -1,0 +1,25 @@
+{
+  "recorded_at": "2026-10-31T12:44:25.485876+00:00",
+  "command": [
+    "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/bin/spark-submit",
+    "--master",
+    "local[2]",
+    "--driver-class-path",
+    "/private/tmp/sail-sdp-scala-suite-substrate/artifacts/*",
+    "--driver-java-options",
+    "-ea -Dspark.testing=1 -Dspark.test.home=/Users/alexy/src/spark-sdp-4.2.1 -Djava.io.tmpdir=/private/tmp/sail-sdp-scala-suite-substrate/materialize-hive-attempt-01/tmp",
+    "--class",
+    "org.scalatest.tools.Runner",
+    "/private/tmp/sail-sdp-scala-suite-substrate/artifacts/scalatest-app_2.13-3.2.19.jar",
+    "-s",
+    "org.apache.spark.sql.pipelines.graph.DefaultMaterializeTablesSuite",
+    "-s",
+    "org.apache.spark.sql.hive.pipelines.HiveMaterializeTablesSuite",
+    "-o",
+    "-u",
+    "/private/tmp/sail-sdp-scala-suite-substrate/materialize-hive-attempt-01/xml"
+  ],
+  "exit_code": 1,
+  "log_sha256": "bf4d79f8ce51a12a17e511ad2e79d1fccc4682f5950ebd91087a00e671bf5265",
+  "scope": "Original unmodified published Spark ScalaTest suite against Spark reference, not Sail"
+}

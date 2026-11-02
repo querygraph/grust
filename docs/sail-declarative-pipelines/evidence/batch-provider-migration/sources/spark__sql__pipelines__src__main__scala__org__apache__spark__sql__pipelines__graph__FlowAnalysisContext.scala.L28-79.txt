@@ -1,0 +1,41 @@
+28:  *
+29:  * @param allInputs            Set of identifiers for all `Input`s defined in the DataflowGraph.
+30:  * @param availableInputs      Inputs available to be referenced with `read` or `readStream`.
+31:  * @param queryContext         The context of the query being evaluated.
+32:  * @param requestedInputs      A mutable buffer populated with names of all inputs that were
+33:  *                             requested.
+34:  * @param spark                The (shared) spark session to be used.
+35:  * @param flowConf             A private [[SQLConf]] holding this flow's per-flow confs. It is
+36:  *                             installed for the analyzing thread via `SQLConf.withExistingConf`
+37:  *                             (see `FlowAnalysis.createFlowFunctionFromLogicalPlan`) so per-flow
+38:  *                             confs stay isolated from concurrently resolving flows and from the
+39:  *                             shared session, without cloning the session.
+40:  * @param externalInputs The names of external inputs that were used to evaluate
+41:  *                                 the flow's query.
+42:  */
+43: private[pipelines] case class FlowAnalysisContext(
+44:     allInputs: Set[TableIdentifier],
+45:     availableInputs: Seq[Input],
+46:     queryContext: QueryContext,
+47:     batchInputs: mutable.HashSet[ResolvedInput] = mutable.HashSet.empty,
+48:     streamingInputs: mutable.HashSet[ResolvedInput] = mutable.HashSet.empty,
+49:     requestedInputs: mutable.HashSet[TableIdentifier] = mutable.HashSet.empty,
+50:     shouldLowerCaseNames: Boolean = false,
+51:     spark: SparkSession,
+52:     flowConf: SQLConf,
+53:     externalInputs: mutable.HashSet[TableIdentifier] = mutable.HashSet.empty
+54: ) {
+55: 
+56:   /** Map from `Input` name to the actual `Input` */
+57:   val availableInput: Map[TableIdentifier, Input] =
+58:     availableInputs.map(i => i.identifier -> i).toMap
+59: 
+60:   /**
+61:    * Sets a Spark conf for this flow's analysis. It is set on the per-flow [[flowConf]], which is
+62:    * active for the analyzing thread only, so it does not leak to other flows or to the shared
+63:    * session.
+64:    */
+65:   def setConf(key: String, value: String): Unit = {
+66:     flowConf.setConfString(key, value)
+67:   }
+68: }

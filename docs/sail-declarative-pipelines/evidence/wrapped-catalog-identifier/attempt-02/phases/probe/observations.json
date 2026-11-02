@@ -1,0 +1,564 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T03:56:01.571494+00:00",
+  "harness_sha256": "22c17bb461e85224474653a9ba23070fcc30c6ca7bacf5a5e6d65a0a2f1e64f1",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "32 observed public/directive bare/wrapped registrations; no flow run or Scala-suite verdict",
+  "cases": [
+    {
+      "name": "public_bare_current_catalog",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG current_catalog()",
+      "returned": false,
+      "error": "analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_bare_typeof_current",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG typeof(current_catalog())",
+      "returned": false,
+      "error": "analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_bare_rand",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG rand(0)",
+      "returned": false,
+      "error": "analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_bare_typeof_rand",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG typeof(rand(0))",
+      "returned": false,
+      "error": "analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_bare_generator",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG explode(array('x'))",
+      "returned": false,
+      "error": "analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_bare_division",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG 1 DIV 0",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_bare_typeof_division",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG typeof(1 DIV 0)",
+      "returned": false,
+      "error": "Catalog not found: bigint",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_bare_assert_true",
+      "site": "public",
+      "wrapped": false,
+      "query": "SET CATALOG assert_true(true)",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_current_catalog",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(current_catalog())",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_typeof_current",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(typeof(current_catalog()))",
+      "returned": false,
+      "error": "Catalog not found: string",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_rand",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(rand(0))",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_typeof_rand",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(typeof(rand(0)))",
+      "returned": false,
+      "error": "Catalog not found: double",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_generator",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(explode(array('x')))",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_division",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(1 DIV 0)",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] IDENTIFIER expression must have STRING type",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_typeof_division",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(typeof(1 DIV 0))",
+      "returned": false,
+      "error": "Catalog not found: bigint",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "public_wrapped_assert_true",
+      "site": "public",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(assert_true(true))",
+      "returned": false,
+      "error": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] IDENTIFIER expression must have STRING type",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_current_catalog",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG current_catalog()",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable\n\nOffending query:\nSET CATALOG current_catalog()\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+        "offendingQuery": "\nOffending query:\nSET CATALOG current_catalog()\n",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_typeof_current",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG typeof(current_catalog())",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable\n\nOffending query:\nSET CATALOG typeof(current_catalog())\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSET CATALOG typeof(current_catalog())\n",
+        "message": "Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_rand",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG rand(0)",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable\n\nOffending query:\nSET CATALOG rand(0)\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+        "offendingQuery": "\nOffending query:\nSET CATALOG rand(0)\n"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_typeof_rand",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG typeof(rand(0))",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable\n\nOffending query:\nSET CATALOG typeof(rand(0))\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+        "message": "Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+        "offendingQuery": "\nOffending query:\nSET CATALOG typeof(rand(0))\n"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_generator",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG explode(array('x'))",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable\n\nOffending query:\nSET CATALOG explode(array('x'))\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSET CATALOG explode(array('x'))\n",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+        "message": "Failed to resolve catalog expression: analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_division",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG 1 DIV 0",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type\n\nOffending query:\nSET CATALOG 1 DIV 0\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type",
+        "offendingQuery": "\nOffending query:\nSET CATALOG 1 DIV 0\n"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_typeof_division",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG typeof(1 DIV 0)",
+      "returned": true,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_bare_assert_true",
+      "site": "directive",
+      "wrapped": false,
+      "query": "SET CATALOG assert_true(true)",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type\n\nOffending query:\nSET CATALOG assert_true(true)\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type",
+        "offendingQuery": "\nOffending query:\nSET CATALOG assert_true(true)\n",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_current_catalog",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(current_catalog())",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable\n\nOffending query:\nSET CATALOG IDENTIFIER(current_catalog())\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+        "offendingQuery": "\nOffending query:\nSET CATALOG IDENTIFIER(current_catalog())\n",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_typeof_current",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(typeof(current_catalog()))",
+      "returned": true,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_rand",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(rand(0))",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable\n\nOffending query:\nSET CATALOG IDENTIFIER(rand(0))\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] expression is not foldable",
+        "offendingQuery": "\nOffending query:\nSET CATALOG IDENTIFIER(rand(0))\n",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_typeof_rand",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(typeof(rand(0)))",
+      "returned": true,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_generator",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(explode(array('x')))",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable\n\nOffending query:\nSET CATALOG IDENTIFIER(explode(array('x')))\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+        "offendingQuery": "\nOffending query:\nSET CATALOG IDENTIFIER(explode(array('x')))\n",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_division",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(1 DIV 0)",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] IDENTIFIER expression must have STRING type\n\nOffending query:\nSET CATALOG IDENTIFIER(1 DIV 0)\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSET CATALOG IDENTIFIER(1 DIV 0)\n",
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] IDENTIFIER expression must have STRING type"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_typeof_division",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(typeof(1 DIV 0))",
+      "returned": true,
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "directive_wrapped_assert_true",
+      "site": "directive",
+      "wrapped": true,
+      "query": "SET CATALOG IDENTIFIER(assert_true(true))",
+      "returned": false,
+      "error": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] IDENTIFIER expression must have STRING type\n\nOffending query:\nSET CATALOG IDENTIFIER(assert_true(true))\n\nQuery defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+      "exception_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "codeLocation": "Query defined at /tmp/sail-sdp-wrapped-catalog-phases/probe/catalog.sql:1",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] IDENTIFIER expression must have STRING type",
+        "offendingQuery": "\nOffending query:\nSET CATALOG IDENTIFIER(assert_true(true))\n"
+      },
+      "sql_state": "42000",
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    }
+  ],
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "session_namespace": [
+    "sail",
+    "default"
+  ],
+  "listener_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T03:56:02.096933+00:00"
+}

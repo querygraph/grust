@@ -1,0 +1,15 @@
+#[tokio::test]
+async fn cancellation_drops_pending_provider_and_returns_one_error() {
+    let execution = context(None);
+    let mut stream = control_stream(pending_input(&execution), execution.clone());
+    assert!(futures::poll!(stream.next()).is_pending());
+    execution.cancel().unwrap();
+    assert!(
+        matches!(stream.next().await, Some(Err(DataFusionError::External(error)))
+        if matches!(error.downcast_ref::<ProcedureError>(), Some(ProcedureError::Cancelled)))
+    );
+    assert_eq!(execution.usage().unwrap().live_bytes, 0);
+    assert!(stream.next().await.is_none());
+    assert!(stream.next().await.is_none());
+    assert_eq!(stream.schema(), schema());
+}

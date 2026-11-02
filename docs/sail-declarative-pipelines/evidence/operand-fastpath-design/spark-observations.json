@@ -1,0 +1,334 @@
+{
+  "started_at": "2026-10-31T07:28:37.485769+00:00",
+  "script_sha256": "df3c6eb27c5d6780e2c5d30eea855cfad458f6a90ae14d00f5cdff0a8c3a2639",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "cases": [
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "INT",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": false,
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "expression": "'bad'",
+        "targetType": "\"INT\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "error": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 1, position 8) ==\nSELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS...\n       ^^^^^^^^^^^^^^^^^^\n\n\nJVM stacktrace:\norg.apache.spark.SparkNumberFormatException\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.invalidInputInCastToNumberError(QueryExecutionErrors.scala:141)\n\tat org.apache.spark.sql.catalyst.util.UTF8StringUtils$.withException(UTF8StringUtils.scala:51)\n\tat org.apache.spark.sql.catalyst.util.UTF8StringUtils$.toIntExact(UTF8StringUtils.scala:34)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$2(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$2$adapted(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.buildCast(Cast.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$1(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.nullSafeEval(Cast.scala:1348)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:610)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:606)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval(arithmetic.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval$(arithmetic.scala:665)\n\tat org.apache.spark.sql.catalyst.expressions.Divide.eval(arithmetic.scala:799)\n\tat org.apache.spark.sql.catalyst.expressions.Alias.eval(namedExpressions.scala:162)\n\tat org.apache.spark.sql.catalyst.expressions.InterpretedMutableProjection.apply(InterpretedMutableProjection.scala:89)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.$anonfun$applyOrElse$90(Optimizer.scala:2626)\n\tat scala.collection.immutable.List.map(List.scala:236)\n\tat scala.collection.immutable.List.map(List.scala:79)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2626)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformDownWithPruning$1(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformDownWithPruning(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.org$apache$spark$sql$catalyst$plans$logical$AnalysisHelper$$super$transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning(AnalysisHelper.scala:360)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning$(AnalysisHelper.scala:356)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformWithPruning(TreeNode.scala:461)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2619)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.immutable.ArraySeq.foldLeft(ArraySeq.scala:222)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$2(QueryExecution.scala:335)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$1(QueryExecution.scala:331)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$optimizedPlan$1(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.optimizedPlan(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.assertOptimized(QueryExecution.scala:349)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyExecutedPlan$1(QueryExecution.scala:372)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executedPlan$1(QueryExecution.scala:387)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.executedPlan(QueryExecution.scala:387)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.processAsArrowBatches(SparkConnectPlanExecution.scala:215)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:88)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)"
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DOUBLE",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": false,
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "expression": "'bad'",
+        "targetType": "\"DOUBLE\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "error": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DOUBLE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 1, position 8) ==\nSELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS...\n       ^^^^^^^^^^^^^^^^^^^^^\n\n\nJVM stacktrace:\norg.apache.spark.SparkNumberFormatException\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.invalidInputInCastToNumberError(QueryExecutionErrors.scala:141)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToDouble$2(Cast.scala:1165)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.buildCast(Cast.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToDouble$1(Cast.scala:1158)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.nullSafeEval(Cast.scala:1348)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:610)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval(arithmetic.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval$(arithmetic.scala:665)\n\tat org.apache.spark.sql.catalyst.expressions.Divide.eval(arithmetic.scala:799)\n\tat org.apache.spark.sql.catalyst.expressions.Alias.eval(namedExpressions.scala:162)\n\tat org.apache.spark.sql.catalyst.expressions.InterpretedMutableProjection.apply(InterpretedMutableProjection.scala:89)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.$anonfun$applyOrElse$90(Optimizer.scala:2626)\n\tat scala.collection.immutable.List.map(List.scala:236)\n\tat scala.collection.immutable.List.map(List.scala:79)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2626)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformDownWithPruning$1(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformDownWithPruning(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.org$apache$spark$sql$catalyst$plans$logical$AnalysisHelper$$super$transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning(AnalysisHelper.scala:360)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning$(AnalysisHelper.scala:356)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformWithPruning(TreeNode.scala:461)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2619)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.immutable.ArraySeq.foldLeft(ArraySeq.scala:222)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$2(QueryExecution.scala:335)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$1(QueryExecution.scala:331)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$optimizedPlan$1(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.optimizedPlan(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.assertOptimized(QueryExecution.scala:349)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyExecutedPlan$1(QueryExecution.scala:372)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executedPlan$1(QueryExecution.scala:387)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.executedPlan(QueryExecution.scala:387)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.processAsArrowBatches(SparkConnectPlanExecution.scala:215)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:88)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)"
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": false,
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "expression": "'bad'",
+        "targetType": "\"DECIMAL(5,2)\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "error": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DECIMAL(5,2)\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 1, position 8) ==\nSELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS...\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n\nJVM stacktrace:\norg.apache.spark.SparkNumberFormatException\n\tat org.apache.spark.sql.errors.DataTypeErrors$.invalidInputInCastToNumberError(DataTypeErrors.scala:237)\n\tat org.apache.spark.sql.types.Decimal$.fromStringANSI(Decimal.scala:698)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToDecimal$4(Cast.scala:1115)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.buildCast(Cast.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToDecimal$3(Cast.scala:1115)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.nullSafeEval(Cast.scala:1348)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:610)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval(arithmetic.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval$(arithmetic.scala:665)\n\tat org.apache.spark.sql.catalyst.expressions.Divide.eval(arithmetic.scala:799)\n\tat org.apache.spark.sql.catalyst.expressions.Alias.eval(namedExpressions.scala:162)\n\tat org.apache.spark.sql.catalyst.expressions.InterpretedMutableProjection.apply(InterpretedMutableProjection.scala:89)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.$anonfun$applyOrElse$90(Optimizer.scala:2626)\n\tat scala.collection.immutable.List.map(List.scala:236)\n\tat scala.collection.immutable.List.map(List.scala:79)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2626)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformDownWithPruning$1(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformDownWithPruning(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.org$apache$spark$sql$catalyst$plans$logical$AnalysisHelper$$super$transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning(AnalysisHelper.scala:360)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning$(AnalysisHelper.scala:356)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformWithPruning(TreeNode.scala:461)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2619)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.immutable.ArraySeq.foldLeft(ArraySeq.scala:222)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$2(QueryExecution.scala:335)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$1(QueryExecution.scala:331)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$optimizedPlan$1(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.optimizedPlan(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.assertOptimized(QueryExecution.scala:349)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyExecutedPlan$1(QueryExecution.scala:372)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executedPlan$1(QueryExecution.scala:387)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.executedPlan(QueryExecution.scala:387)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.processAsArrowBatches(SparkConnectPlanExecution.scala:215)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:88)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)"
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": true,
+      "effective_ansi": "true",
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": false,
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "expression": "'bad'",
+        "targetType": "\"DECIMAL(38,10)\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "error": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DECIMAL(38,10)\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 1, position 8) ==\nSELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS...\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n\nJVM stacktrace:\norg.apache.spark.SparkNumberFormatException\n\tat org.apache.spark.sql.errors.DataTypeErrors$.invalidInputInCastToNumberError(DataTypeErrors.scala:237)\n\tat org.apache.spark.sql.types.Decimal$.fromStringANSI(Decimal.scala:698)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToDecimal$4(Cast.scala:1115)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.buildCast(Cast.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToDecimal$3(Cast.scala:1115)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.nullSafeEval(Cast.scala:1348)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:610)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval(arithmetic.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.DivModLike.eval$(arithmetic.scala:665)\n\tat org.apache.spark.sql.catalyst.expressions.Divide.eval(arithmetic.scala:799)\n\tat org.apache.spark.sql.catalyst.expressions.Alias.eval(namedExpressions.scala:162)\n\tat org.apache.spark.sql.catalyst.expressions.InterpretedMutableProjection.apply(InterpretedMutableProjection.scala:89)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.$anonfun$applyOrElse$90(Optimizer.scala:2626)\n\tat scala.collection.immutable.List.map(List.scala:236)\n\tat scala.collection.immutable.List.map(List.scala:79)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2626)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$$anonfun$apply$46.applyOrElse(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformDownWithPruning$1(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformDownWithPruning(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.org$apache$spark$sql$catalyst$plans$logical$AnalysisHelper$$super$transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning(AnalysisHelper.scala:360)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning$(AnalysisHelper.scala:356)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformWithPruning(TreeNode.scala:461)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2621)\n\tat org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation$.apply(Optimizer.scala:2619)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.immutable.ArraySeq.foldLeft(ArraySeq.scala:222)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$2(QueryExecution.scala:335)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$1(QueryExecution.scala:331)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$optimizedPlan$1(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.optimizedPlan(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.assertOptimized(QueryExecution.scala:349)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyExecutedPlan$1(QueryExecution.scala:372)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executedPlan$1(QueryExecution.scala:387)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.executedPlan(QueryExecution.scala:387)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.processAsArrowBatches(SparkConnectPlanExecution.scala:215)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:88)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)"
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "INT",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS INT) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DOUBLE",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS DOUBLE) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(5,2)",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(16,13)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "zero": false,
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (CAST(NULL AS INT)) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "ansi": false,
+      "effective_ansi": "false",
+      "target": "DECIMAL(38,10)",
+      "zero": true,
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) / d AS value FROM VALUES (0) AS v(d)",
+      "returned": true,
+      "rows": 1,
+      "all_null": true,
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    }
+  ],
+  "spark_version": "4.2.1",
+  "completed_at": "2026-10-31T07:28:45.130352+00:00",
+  "remaining_listener_pids": ""
+}

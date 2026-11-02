@@ -1,0 +1,132 @@
+commit c74a811168b8774c281bba23ff6d0986ace6838a
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 13:45:05 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 13:45:05 2026 -0700
+
+    Add consuming captured preparation contract with explicit unsupported cancellation
+
+diff --git a/crates/sail-common-datafusion/src/session/job.rs b/crates/sail-common-datafusion/src/session/job.rs
+index 7b13f9d3f..6d0704d15 100644
+--- a/crates/sail-common-datafusion/src/session/job.rs
++++ b/crates/sail-common-datafusion/src/session/job.rs
+@@ -2,11 +2,13 @@ use std::sync::Arc;
+ 
+ use datafusion::common::{DataFusionError, Result};
+ use datafusion::execution::SendableRecordBatchStream;
++use datafusion::execution::object_store::ObjectStoreRegistry;
+ use datafusion::physical_plan::ExecutionPlan;
+ use datafusion::prelude::SessionContext;
+ 
+ use crate::extension::SessionExtension;
+ use crate::managed_stream::ManagedStreamControl;
++use crate::session::scoped::ScopedSession;
+ use crate::task_resources::TaskResourceScope;
+ 
+ /// An admitted, move-only preparation bound to the runner that created it.
+@@ -18,12 +20,40 @@ pub trait JobPreparation: Send + Sync {
+     fn control(&self) -> ManagedStreamControl;
+     fn finish(self: Box<Self>) -> ManagedStreamControl;
+     fn cancel(self: Box<Self>) -> ManagedStreamControl;
++
++    /// Consume admission into a query snapshot after authority mutations.
++    /// The optional registry must already have qualified ownership/routing.
++    /// Retain control before this call to observe cleanup if capture fails.
++    /// The default cancels admission and returns the typed capability error to
++    /// the caller; the control reports cancellation and cleanup separately.
++    /// Backends must opt in; legacy execute keeps its existing capture boundary.
++    fn capture<'a>(
++        self: Box<Self>,
++        _registry: Option<Arc<dyn ObjectStoreRegistry>>,
++    ) -> Result<Box<dyn CapturedJobPreparation + 'a>>
++    where
++        Self: 'a,
++    {
++        self.cancel();
++        Err(DataFusionError::NotImplemented(
++            "captured query preparation is not supported by this runner".into(),
++        ))
++    }
++
+     async fn execute(
+         self: Box<Self>,
+         plan: Arc<dyn ExecutionPlan>,
+     ) -> Result<SendableRecordBatchStream>;
+ }
+ 
++/// An admitted executor whose query snapshot is fixed at capture.
++/// The borrowed view and consuming execute belong to the same preparation;
++/// callers cannot supply a different Session at the execution boundary.
++/// This does not make retained providers reusable after their owner closes.
++pub trait CapturedJobPreparation: JobPreparation {
++    fn session(&self) -> &ScopedSession;
++}
++
+ #[tonic::async_trait]
+ pub trait JobRunner: Send + Sync + 'static {
+     /// Admit preparation before the caller invokes planning. The object borrows
+diff --git a/crates/sail-execution/src/job_runner/local/preparation_tests.rs b/crates/sail-execution/src/job_runner/local/preparation_tests.rs
+index 8e4328b2d..ba4ef104a 100644
+--- a/crates/sail-execution/src/job_runner/local/preparation_tests.rs
++++ b/crates/sail-execution/src/job_runner/local/preparation_tests.rs
+@@ -220,3 +220,60 @@ async fn dropping_unpolled_execute_releases_preparation_without_invoking_plan()
+     assert!(runner.lock().active.is_empty());
+     Ok(())
+ }
++
++/// Exercise the default capture capability independently of the local backend's
++/// eventual opt-in implementation, while retaining its real admission cleanup.
++struct LegacyPreparation<'a> {
++    inner: Box<dyn sail_common_datafusion::session::job::JobPreparation + 'a>,
++}
++#[tonic::async_trait]
++impl sail_common_datafusion::session::job::JobPreparation for LegacyPreparation<'_> {
++    fn resources(&self) -> &Arc<TaskResourceScope> {
++        self.inner.resources()
++    }
++    fn control(&self) -> sail_common_datafusion::managed_stream::ManagedStreamControl {
++        self.inner.control()
++    }
++    fn finish(self: Box<Self>) -> sail_common_datafusion::managed_stream::ManagedStreamControl {
++        self.inner.finish()
++    }
++    fn cancel(self: Box<Self>) -> sail_common_datafusion::managed_stream::ManagedStreamControl {
++        self.inner.cancel()
++    }
++    async fn execute(
++        self: Box<Self>,
++        plan: Arc<dyn ExecutionPlan>,
++    ) -> Result<SendableRecordBatchStream> {
++        self.inner.execute(plan).await
++    }
++}
++
++#[tokio::test]
++async fn unsupported_capture_keeps_cleanup_observable_after_consuming_guard() -> TestResult {
++    let runner = LocalJobRunner::default();
++    let context = SessionContext::new();
++    let underlying = (&runner as &dyn JobRunner).begin_preparation(&context)?;
++    let control = underlying.control();
++    let resources = underlying.resources().clone();
++    let preparation: Box<dyn sail_common_datafusion::session::job::JobPreparation + '_> =
++        Box::new(LegacyPreparation { inner: underlying });
++    let error = preparation
++        .capture(None)
++        .err()
++        .ok_or("legacy backend accepted capture")?;
++    assert!(matches!(error, DataFusionError::NotImplemented(_)));
++    let report = timeout(Duration::from_secs(10), control.completion()).await?;
++    assert!(report.resources_drained);
++    assert!(report.cleanup_result().is_ok());
++    let cancellation = report
++        .result()
++        .expect_err("unsupported capture must cancel admission");
++    assert!(cancellation.to_string().contains("canceled"));
++    assert!(!cancellation.to_string().contains("abandoned"));
++    assert_eq!(resources.drain().await?.registered, 0);
++    // The caller retains the typed capability error separately from cleanup.
++    assert!(matches!(error, DataFusionError::NotImplemented(_)));
++    runner.stop().await?;
++    assert!(runner.lock().active.is_empty());
++    Ok(())
++}

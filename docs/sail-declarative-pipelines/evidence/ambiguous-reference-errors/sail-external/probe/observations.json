@@ -1,0 +1,223 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T01:18:42.219470+00:00",
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "8a6028d1f94538958fc9aba0706ff9946fa986b8ba7029b09413bc1ff3c057dc",
+  "scope": "Seven external mixed-case Parquet read configuration observations; source pin and installed runtime are recorded separately; no Scala suite verdict",
+  "cases": [
+    {
+      "name": "external_before_view",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS marker",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT p.Foo AS upper_value, p.foo AS lower_value FROM parquet.`file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input` p CROSS JOIN z_sensitive",
+      "consumer_conf": {},
+      "session_default": "false",
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793409522\n  nanos: 473448000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column.",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "view_before_external",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS marker",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT p.Foo AS upper_value, p.foo AS lower_value FROM z_sensitive CROSS JOIN parquet.`file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input` p",
+      "consumer_conf": {},
+      "session_default": "false",
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793409522\n  nanos: 517048000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column.",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "declared_true_external_before_view",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS marker",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT p.Foo AS upper_value, p.foo AS lower_value FROM parquet.`file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input` p CROSS JOIN z_sensitive",
+      "consumer_conf": {
+        "spark.sql.caseSensitive": "true"
+      },
+      "session_default": "false",
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793409522\n  nanos: 561395000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column.",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "graph_true_default",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS marker",
+          {},
+          false
+        ]
+      ],
+      "query": "SELECT p.Foo AS upper_value, p.foo AS lower_value FROM parquet.`file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input` p CROSS JOIN z_sensitive",
+      "consumer_conf": {},
+      "session_default": "false",
+      "graph_conf": {
+        "spark.sql.caseSensitive": "true"
+      },
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793409522\n  nanos: 606340000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column.",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "external_without_view",
+      "definitions": [],
+      "query": "SELECT p.Foo AS upper_value, p.foo AS lower_value FROM parquet.`file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input` p",
+      "consumer_conf": {},
+      "session_default": "false",
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793409522\n  nanos: 647092000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column.",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "base_true_external_before_view",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS marker",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT p.Foo AS upper_value, p.foo AS lower_value FROM parquet.`file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input` p CROSS JOIN z_sensitive",
+      "consumer_conf": {},
+      "session_default": "true",
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793409522\n  nanos: 691143000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[AMBIGUOUS_REFERENCE] Reference `p`.`Foo` is ambiguous, could be: [`p`.`Foo`, `p`.`Foo`].",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "true"
+    },
+    {
+      "name": "base_true_view_before_external",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS marker",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT p.Foo AS upper_value, p.foo AS lower_value FROM z_sensitive CROSS JOIN parquet.`file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input` p",
+      "consumer_conf": {},
+      "session_default": "true",
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793409522\n  nanos: 734782000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[AMBIGUOUS_REFERENCE] Reference `p`.`Foo` is ambiguous, could be: [`p`.`Foo`, `p`.`Foo`].",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "true"
+    }
+  ],
+  "catalog": "sail",
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "direct_controls": [
+    {
+      "case_sensitive": "true",
+      "rows": [
+        {
+          "upper_value": 1,
+          "lower_value": 2
+        }
+      ]
+    },
+    {
+      "case_sensitive": "false",
+      "error": "[COLUMN_ALREADY_EXISTS] The column `foo` already exists. Choose another name or rename the existing column."
+    }
+  ],
+  "input_uri": "file:///tmp/sail-sdp-ambiguity-sail-external/probe/mixed-case-input",
+  "outcome": "observed",
+  "completed_at": "2026-10-31T01:18:42.784026+00:00"
+}

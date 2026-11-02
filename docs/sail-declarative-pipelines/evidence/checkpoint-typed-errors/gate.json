@@ -1,0 +1,62 @@
+{
+  "sail_commit": "34eb270d0041c2fe4b0801afbdda93ad838c51ab",
+  "base": "36525a06f8d6da69a5c968a0630968690602ad71",
+  "packages": [
+    "sail-physical-plan"
+  ],
+  "started_at": "2026-10-30T07:24:52.973556+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-physical-plan",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-typed-errors-fixed-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-physical-plan",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-typed-errors-fixed-clippy.log",
+      "sha256": "91636be926cfb94c1588f81cf9f5f197e1f2d7d5948da367a3db7cf72c4c2f19"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-physical-plan",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-typed-errors-fixed-rust.log",
+      "sha256": "94d4ed48118c9aaaf87ebb45d656d2b84285f5294528d38c919219b39d082383"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T07:26:40.935370+00:00",
+  "outcome": "passed"
+}

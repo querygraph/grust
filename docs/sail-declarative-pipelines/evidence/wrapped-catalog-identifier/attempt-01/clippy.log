@@ -1,0 +1,23 @@
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+error[E0308]: mismatched types
+   --> crates/sail-plan/src/resolver/constant.rs:35:31
+    |
+ 35 |             parse_object_name(text).map_err(|error| PlanError::analysis(error.to_string()))?,
+    |             ----------------- ^^^^ expected `&str`, found `String`
+    |             |
+    |             arguments to this function are incorrect
+    |
+note: function defined here
+   --> crates/sail-sql-analyzer/src/parser.rs:117:8
+    |
+117 | pub fn parse_object_name(s: &str) -> SqlResult<ObjectName> {
+    |        ^^^^^^^^^^^^^^^^^
+help: consider borrowing here
+    |
+ 35 |             parse_object_name(&text).map_err(|error| PlanError::analysis(error.to_string()))?,
+    |                               +
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `sail-plan` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `sail-plan` (lib test) due to 1 previous error

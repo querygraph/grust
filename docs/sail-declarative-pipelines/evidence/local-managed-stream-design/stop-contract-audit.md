@@ -1,0 +1,44 @@
+# Local stop result and checkpoint deletion: source audit
+
+Read-only Sail pin: `71f24a87a2f2b5b38bd012388e3ce6589c7c6d46`, repository `/Users/alexy/src/sail-pipelines-proposal`. All references below are exact paths and line windows at that commit. No code or runtime changes were made.
+
+**A fallible stop can prevent checkpoint deletion after local cleanup uncertainty, but changing the trait and adding a warning is insufficient to report failure truthfully. Cluster stop currently provides weaker guarantees and must not be described as cleanup-qualified completion.**
+
+## Actual surface and callers
+
+- Trait: `crates/sail-common-datafusion/src/session/job.rs:10–23`; `stop(&self)` returns unit, while execute already uses DataFusion `Result`.
+- Exactly two implementations found by repository search: `LocalJobRunner` and `ClusterJobRunner`, both in `crates/sail-execution/src/job_runner.rs`. Local stop only stores the atomic flag (`84–86`); cluster stop discards `shutdown_and_wait()` (`139–141`). Local execute checks the flag separately from stream construction (`63–81`).
+- Exactly one direct `JobRunner::stop` call: `crates/sail-session/src/session_manager/actor/handler.rs:382`, inside the shared deletion helper (`373–390`). That helper is called from idle expiry (`282`) and explicit deletion (`307`). Other `.stop()` matches are different actor/worker/server APIs.
+- Exactly two `DriverHandle::shutdown_and_wait` callers: cluster runner (`job_runner.rs:140`) and manager-wide shutdown (`session_manager/actor/core.rs:125`). Separate fire-and-forget `driver.shutdown()` paths handle creation/activation/session failures (`handler.rs:113,133,228,353`).
+- The production caller of public `SessionManager::delete_session` is Spark Connect `release_session`, `crates/sail-spark-connect/src/server.rs:450–470`. Its existing error mapping can propagate a real deletion failure.
+
+## Current deletion does not await its advertised outcome
+
+`session_manager/actor/handler.rs:269–330` schedules deletion work, immediately removes the driver from the registry, marks the session `Deleted`, and emits that status. Explicit deletion sends `Ok(())` at `318–329` before the stop task runs. `session_manager/mod.rs:63–72` waits only for this early acknowledgement. A missing `JobService` merely warns and returns (`handler.rs:374–376`); checkpoint deletion errors likewise only warn (`383–388`).
+
+The spawned task owns the cloned job service, checkpoint registry, and runtime until it completes; the manager's `Deleted` state owns none of them. The available states are only Creating/Running/Deleted/Failed (`session_manager/session.rs:11–22`). Thus a stop failure cannot presently be retained as a pending deletion result or retried through the session API. A stopped session must also remain unavailable for new queries; leaving it simply `Running` to retain ownership would misrepresent its state.
+
+The checkpoint ordering has real effects: `crates/sail-cache/src/remote_checkpoint.rs:117–140` seals the registry, deletes the session's object-store prefix, and clears descriptors. A stop failure must branch before calling this method at all. Ordinary query failure/cancellation and cleanup failure are different outcomes: an otherwise completed stop need not fail merely because a query was cancelled, but the original query cause must remain available through its result, and unresolved cleanup must not become stop success.
+
+## Smallest truthful local contract
+
+The existing dependency boundary supports `async fn stop(&self) -> datafusion::common::Result<()>`; no execution-specific error dependency is needed in the common trait. For the local implementation, `Ok(())` must be produced only after admission is sealed, admitted preparation has reached an owned disposition, query streams cannot perform further work, and required resource completion/cleanup is confirmed. Pending cleanup remains pending or produces an explicit typed failure; neither logging nor dropping a waiter creates success. The controller design owns how that guarantee is achieved.
+
+The deletion helper must consume the result and skip namespace cleanup on `Err`. To avoid swallowing the new failure, explicit deletion must receive the terminal result rather than today's early `Ok`; idle deletion needs a retained/reportable failure outcome despite having no waiting RPC. Ownership must survive a dropped requester and remain sufficient for unresolved jobs. This requires deliberate manager outcome/ownership handling beyond the signature, but does not by itself require rewriting the general actor framework. Existing actor patterns support background work followed by a completion message; selecting that mechanism is outside this audit.
+
+Keep the typed path: `SessionError::DataFusionError(#[from] DataFusionError)` (`crates/sail-session/src/error.rs:11–14`) and its conversion to `SparkError::DataFusionError` (`crates/sail-spark-connect/src/error.rs:153–160`) already preserve the underlying error. Avoid converting stop errors to `SessionError::internal(error.to_string())`. For repeated callers, Sail's error classifier already understands `DataFusionError::Shared`, `Collection`, and nested source chains; collections prioritize a nonretryable cause (`crates/sail-common-datafusion/src/error.rs:167–215`). `CommitStateUnknown` is explicitly nonretryable (`119–122`). Preserve typed cleanup causes and secondary diagnostics rather than replacing them with a generic stop message.
+
+## Cluster boundary: a Result signature does not strengthen shutdown
+
+- `crates/sail-execution/src/driver/registry.rs:60–72` ignores both shutdown-send and acknowledgement failures and always returns `Ok(())`. A closed mailbox is not a shared-completion acknowledgement: `crates/sail-common/src/actor.rs:436–441` closes the mailbox **before** awaiting the stop hook. A later caller can therefore return while an earlier stop is still running.
+- The winning driver stop hook (`crates/sail-execution/src/driver/actor/core.rs:197–212`) stops scheduling, sends task-runner shutdown, closes workers, and joins child actors, but ignores stop-send/lifecycle errors and only logs worker-pool errors. `ActorSystem::join` itself logs join failures (`sail-common/src/actor.rs:274–285`).
+- Normal task-monitor termination drains resources (`crates/sail-execution/src/task_runner/monitor.rs:85–146`). Task-runner shutdown instead immediately stops its actor (`task_runner/actor/handler.rs:441–442`); its stop hook only stops stream infrastructure (`task_runner/actor/core.rs:120–124`). Remaining actor tasks are aborted on context destruction (`sail-common/src/actor.rs:442–450`). `TaskResourceScope::Drop` only requests cancellation and cannot await drainage (`sail-common-datafusion/src/task_resources.rs:172–176`). These normal task-terminal guarantees cannot be promoted into whole-cluster shutdown guarantees.
+- Worker stop RPCs acknowledge enqueueing (`crates/sail-execution/src/worker/server.rs:94–119,150–163`); the pool marks workers completed before RPC acknowledgement (`driver/worker_pool/core.rs:159–219`). Kubernetes stop awaits a delete request without an explicit pod-termination/cleanup wait (`worker_manager/kubernetes.rs:450–459`).
+
+There are two distinct scopes to name honestly. A narrow local change can introduce failure reporting and block **local** uncertain deletion while explicitly retaining the cluster path's existing best-effort semantics; its generic `Ok` cannot then be documented as universal cleanup certification. If checkpoint deletion requires that strong guarantee across every runner, simply mapping the existing cluster `Ok` is insufficient: cluster completion must be qualified or unconfirmed shutdown must fail closed until the stronger guarantee exists. This audit does not select that broader behavior or claim it is already implemented.
+
+## Manager-wide shutdown is a separate caller obligation
+
+`crates/sail-session/src/session_manager/actor/core.rs:120–136` drains the driver registry, warns on errors, joins child actors, stops the gateway, then sends a unit acknowledgement. It does **not** call the runners of live local sessions. The gateway stop also discards its server task outcome (`crates/sail-execution/src/driver/gateway.rs:169–175`). The shutdown API (`session_manager/mod.rs:74–83`) therefore reports message/hook completion, not successful cleanup of every local or remote session.
+
+Deletion tasks are `ActorContext::spawn` tasks, whose handles are aborted when the actor context drops (`sail-common/src/actor.rs:103–113,133–137,442–450`); `children_mut().join()` does not join those ordinary spawned tasks. The local deletion change must not claim to solve manager-wide shutdown or dropped-manager ownership without addressing this separate path. Source review only; no shutdown stress or integration result is asserted here.

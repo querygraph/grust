@@ -1,0 +1,103 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 22.72s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 67 tests
+test formatter::tests::test_time_data_type_to_string ... ok
+test formatter::tests::test_csv_function_to_string_omits_options ... ok
+test function::tests::spark_compatible_arrow_fixed_offset_matrix ... ok
+test function::aggregate::tests::string_sum_uses_mode_specific_cast_for_all_string_types ... ok
+test formatter::tests::test_literal_to_string ... ok
+test function::aggregate::tests::ansi_string_sum_masks_filter_before_cast_and_preserves_clauses ... ok
+test function::window::tests::string_sum_window_reuses_mode_specific_coercion_and_window_spec ... ok
+test resolver::constant::tests::constant_mode_does_not_leak_into_ordinary_resolution ... ok
+test resolver::constant::tests::constant_mode_rejects_registered_functions_before_invocation ... ok
+test resolver::constant::tests::non_foldable_annotation_prevents_builder_invocation ... ok
+test resolver::constant::tests::catalog_time_expressions_use_query_scoped_simplification ... ok
+test resolver::expression::cast::tests::ansi_string_cast_preserves_nested_cast_rename_decisions ... ok
+test function::scalar::array::tests::test_slice ... ok
+test resolver::constant::tests::subqueries_are_rejected_before_requiring_session_extensions ... ok
+test resolver::constant::tests::catalog_expression_command_emits_the_existing_catalog_operation ... ok
+test resolver::expression::tests::test_resolve_expression_with_name ... ok
+test resolver::expression::tests::test_st_geogfromwkb_returns_geography_metadata ... ok
+test resolver::expression::tests::test_st_geomfromwkb_returns_geometry_metadata ... ok
+test explain::tests::explain_stops_after_contextual_physical_errors_without_replay ... ok
+test resolver::constant::tests::catalog_scalar_errors_follow_the_selected_ansi_mode ... ok
+test resolver::query::session_tests::delta_metadata::delta_path_metadata_keeps_legacy_authority ... ok
+test resolver::query::session_tests::delta_metadata::delta_path_metadata_uses_selected_session ... ok
+test explain::tests::explain_preserves_initial_variants_and_runs_context_rules_once ... ok
+test resolver::query::session_tests::factories::native_table_function_lookup_stays_authoritative_but_factory_gets_view ... ok
+test resolver::query::session_tests::factories::format_path_factory_gets_captured_session ... ok
+test resolver::query::session_tests::factories::source_factory_without_view_keeps_authoritative_session ... ok
+test resolver::query::session_tests::absent_query_session_keeps_legacy_collection_path ... ok
+test resolver::query::session_tests::factories::source_factory_gets_captured_session_before_physical_planning ... ok
+test resolver::constant::tests::catalog_names_use_shared_expression_and_identifier_resolution ... ok
+test resolver::constant::tests::catalog_validation_preserves_foldability_type_and_null_priority ... ok
+test resolver::query::session_tests::lake_metadata::row_target_metadata_uses_selected_session ... ok
+test explain::tests::explain_repairs_join_distribution_before_executable_validation ... ok
+test resolver::query::session_tests::lake_metadata::row_target_metadata_without_view_keeps_authority ... ok
+test resolver::query::session_tests::lake_metadata::catalog_properties_without_view_keep_authority ... ok
+test resolver::query::session_tests::lake_metadata::catalog_properties_use_selected_session ... ok
+test resolver::query::session_tests::lake_metadata::path_properties_without_view_keep_authority ... ok
+test resolver::query::session_tests::lake_metadata::path_properties_use_selected_session ... ok
+test resolver::query::session_tests::row_factories::delete_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::truncate_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::merge_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::delete_factory_uses_selected_session ... ok
+test resolver::query::session_tests::crosstab_distinct_values_use_supplied_session ... ok
+test resolver::query::session_tests::row_factories::merge_factory_uses_selected_session ... ok
+test resolver::query::session_tests::row_factories::truncate_factory_uses_selected_session ... ok
+test resolver::query::session_tests::row_factories::update_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::writers::writer_factory_without_view_preserves_authority ... ok
+test resolver::query::session_tests::writers::writer_factory_uses_selected_session_before_execution ... ok
+test resolver::query::session_tests::writers::empty_catalog_schema_and_writer_share_selected_session ... ok
+test resolver::query::session_tests::row_factories::update_factory_uses_selected_session ... ok
+test resolver::time_tests::casts::spark_time_cast_rejects_metadata_on_non_nanosecond_storage ... ok
+test resolver::query::session_tests::time_travel_scalar_uses_supplied_session ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_name_uses_declared_precision ... ok
+test resolver::query::session_tests::pivot_inference_uses_supplied_session ... ok
+test resolver::query::session_tests::tail_count_uses_supplied_session ... ok
+test resolver::time_tests::casts::spark_time_casts_replace_precision_and_clear_annotations_when_casting_away ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_changes_map_keys_without_truncating_identity_values ... ok
+test resolver::time_tests::casts::spark_time_cast_string_column_preserves_fraction_at_every_precision ... ok
+test resolver::time_tests::spark_time_nested_typed_nulls_preserve_element_fields ... ok
+test resolver::time_tests::spark_time_list_literals_preserve_metadata_and_nanoseconds ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_precedes_struct_rename_and_other_leaf_casts ... ok
+test resolver::time_tests::spark_time_resolver_validates_semantic_precision_and_preserves_raw_types ... ok
+test resolver::time_tests::spark_time_typed_null_and_alias_preserve_precision ... ok
+test resolver::time_tests::nested_casts::nested_time_cast_preserves_null_lists_structs_and_elements ... ok
+test resolver::query::session_tests::delta_metadata::delta_catalog_metadata_uses_selected_session ... FAILED
+test resolver::query::session_tests::delta_metadata::delta_catalog_metadata_keeps_legacy_authority ... FAILED
+test resolver::time_tests::casts::spark_time_cast_column_preserves_legacy_source_units ... ok
+test resolver::time_tests::casts::spark_time_cast_column_preserves_identity_and_truncates_changed_precision ... ok
+
+failures:
+
+---- resolver::query::session_tests::delta_metadata::delta_catalog_metadata_uses_selected_session stdout ----
+
+thread 'resolver::query::session_tests::delta_metadata::delta_catalog_metadata_uses_selected_session' (89855873) panicked at crates/sail-plan/src/resolver/query/delta_metadata_session_tests.rs:127:5:
+assertion `left == right` failed: path feature or catalog constraint metadata
+  left: 2
+ right: 1
+
+---- resolver::query::session_tests::delta_metadata::delta_catalog_metadata_keeps_legacy_authority stdout ----
+
+thread 'resolver::query::session_tests::delta_metadata::delta_catalog_metadata_keeps_legacy_authority' (89855872) panicked at crates/sail-plan/src/resolver/query/delta_metadata_session_tests.rs:127:5:
+assertion `left == right` failed: path feature or catalog constraint metadata
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    resolver::query::session_tests::delta_metadata::delta_catalog_metadata_keeps_legacy_authority
+    resolver::query::session_tests::delta_metadata::delta_catalog_metadata_uses_selected_session
+
+test result: FAILED. 65 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

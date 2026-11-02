@@ -1,0 +1,64 @@
+...............................F........................................ [ 24%]
+........................................................................ [ 48%]
+........................................................................ [ 72%]
+........................................................................ [ 96%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+______________ test_analysis_fails_before_any_output_is_published ______________
+
+fixturefunc = <function run_pipeline_with_error at 0x10e7299e0>
+request = <FixtureRequest for <Function test_analysis_fails_before_any_output_is_published>>
+kwargs = {'condition': 'missing', 'pipeline': ('b5e4f0f8-d54e-4f1a-ba8d-6ef18b95d4f3', <pyspark.pipelines.spark_connect_graph_e...tGraphElementRegistry object at 0x115d52990>, <function pipeline_factory.<locals>.create.<locals>.run at 0x115d54360>)}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = 'missing'
+pipeline = ('b5e4f0f8-d54e-4f1a-ba8d-6ef18b95d4f3', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115d52990>, <function pipeline_factory.<locals>.create.<locals>.run at 0x115d54360>)
+
+    @when(parsers.parse("the pipeline fails with {condition}"), target_fixture="pipeline_error")
+    def run_pipeline_with_error(condition, pipeline):
+        _, _, run = pipeline
+>       with pytest.raises(AnalysisException, match=condition) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'missing'
+E         Actual message: '\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: sail.default.invalid\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.'
+
+python/pysail/testing/spark/steps/pipelines.py:47: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-31 19:08:10: Starting pipeline analysis
+2026-10-31 19:08:10: Failed to resolve flow: 'sail.default.invalid'.
+Error: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`id`].
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 74 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 74 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_features.py::test_analysis_fails_before_any_output_is_published
+1 failed, 299 passed, 174 warnings in 15.20s

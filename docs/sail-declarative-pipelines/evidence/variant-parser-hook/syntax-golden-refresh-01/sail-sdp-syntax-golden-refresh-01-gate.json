@@ -1,0 +1,70 @@
+{
+  "sail_commit": "062dc4136d741ecae1db7e5a43e2a2ef1b461a44",
+  "base": "4fca6f3d4982e2639061094ededdd12a50f8ad1c",
+  "packages": [
+    "sail-sql-parser"
+  ],
+  "started_at": "2026-10-31T16:43:48.814316+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-sql-parser",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-syntax-golden-refresh-01-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-sql-parser",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-syntax-golden-refresh-01-clippy.log",
+      "sha256": "3db497732332de8741c6bb9a54ae0173dea975eda6f58109df24c3af9b04981f"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-sql-parser",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-syntax-golden-refresh-01-rust.log",
+      "sha256": "9df906cf3ad1b8dad18b9ba2ea6f8b860c2c698420369df84e100aedc30f5e2e"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "environment_overrides": {
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_DEV_INCREMENTAL": "false",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "PYTHONPATH": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "/Users/alexy/src/sail-pipelines-proposal/.venv"
+  },
+  "recorded_at": "2026-10-31T16:44:08.552765+00:00",
+  "outcome": "passed"
+}

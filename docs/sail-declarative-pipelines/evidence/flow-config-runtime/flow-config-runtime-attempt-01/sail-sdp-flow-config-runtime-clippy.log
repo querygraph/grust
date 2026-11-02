@@ -1,0 +1,51 @@
+    Checking sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+error[E0433]: cannot find type `HashMap` in this scope
+   --> crates/sail-spark-connect/src/pipelines/reanalysis/tests.rs:157:14
+    |
+157 |             &HashMap::new(),
+    |              ^^^^^^^ use of undeclared type `HashMap`
+    |
+help: consider importing one of these structs
+    |
+  1 + use crate::pipelines::HashMap;
+    |
+  1 + use std::collections::HashMap;
+    |
+
+error[E0433]: cannot find type `HashMap` in this scope
+   --> crates/sail-spark-connect/src/pipelines/reanalysis/tests.rs:207:10
+    |
+207 |         &HashMap::new(),
+    |          ^^^^^^^ use of undeclared type `HashMap`
+    |
+help: consider importing one of these structs
+    |
+  1 + use crate::pipelines::HashMap;
+    |
+  1 + use std::collections::HashMap;
+    |
+
+error: large size difference between variants
+  --> crates/sail-spark-connect/src/pipelines/config/resolve.rs:27:1
+   |
+27 | / pub(in crate::pipelines) enum FlowResolution {
+28 | |     Resolved(ResolvedFlow),
+   | |     ---------------------- the largest variant contains at least 384 bytes
+29 | |     Pending(BTreeSet<Name>),
+   | |     ----------------------- the second-largest variant contains at least 24 bytes
+30 | | }
+   | |_^ the entire enum is at least 384 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#large_enum_variant
+   = note: `-D clippy::large-enum-variant` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::large_enum_variant)]`
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+28 -     Resolved(ResolvedFlow),
+28 +     Resolved(Box<ResolvedFlow>),
+   |
+
+error: could not compile `sail-spark-connect` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `sail-spark-connect` (lib test) due to 2 previous errors

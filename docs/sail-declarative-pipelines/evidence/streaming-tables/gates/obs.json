@@ -1,0 +1,165 @@
+[
+ {
+  "name": "first",
+  "sql": "CREATE STREAMING TABLE b AS SELECT id, id*10 AS x FROM STREAM(src)",
+  "events": [
+   "Flow spark_catalog.default.b is QUEUED.",
+   "Flow spark_catalog.default.b is STARTING.",
+   "Flow spark_catalog.default.b is RUNNING.",
+   "Flow spark_catalog.default.b has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "again",
+  "sql": "CREATE STREAMING TABLE b AS SELECT id, id*10 AS x FROM STREAM(src)",
+  "events": [
+   "Flow spark_catalog.default.b is QUEUED.",
+   "Flow spark_catalog.default.b is STARTING.",
+   "Flow spark_catalog.default.b is RUNNING.",
+   "Flow spark_catalog.default.b has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "incr",
+  "sql": "CREATE STREAMING TABLE b AS SELECT id, id*10 AS x FROM STREAM(src)",
+  "events": [
+   "Flow spark_catalog.default.b is QUEUED.",
+   "Flow spark_catalog.default.b is STARTING.",
+   "Flow spark_catalog.default.b is RUNNING.",
+   "Flow spark_catalog.default.b has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "full",
+  "sql": "CREATE STREAMING TABLE b AS SELECT id, id*10 AS x FROM STREAM(src)",
+  "events": [
+   "Flow spark_catalog.default.b is QUEUED.",
+   "Flow spark_catalog.default.b is STARTING.",
+   "Flow spark_catalog.default.b is RUNNING.",
+   "Flow spark_catalog.default.b has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "stream-of-mv",
+  "sql": "CREATE MATERIALIZED VIEW mv AS SELECT id FROM src; CREATE STREAMING TABLE c AS SELECT id FROM STREAM(mv)",
+  "events": [
+   "Flow spark_catalog.default.mv is QUEUED.",
+   "Flow spark_catalog.default.c is QUEUED.",
+   "Flow spark_catalog.default.mv is PLANNING.",
+   "Flow spark_catalog.default.mv is STARTING.",
+   "Flow spark_catalog.default.mv is RUNNING.",
+   "Flow spark_catalog.default.mv has COMPLETED.",
+   "Flow spark_catalog.default.c is STARTING.",
+   "Flow spark_catalog.default.c is RUNNING.",
+   "Flow spark_catalog.default.c has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "chain",
+  "sql": "CREATE STREAMING TABLE d AS SELECT id FROM STREAM(src); CREATE STREAMING TABLE e AS SELECT id FROM STREAM(d)",
+  "events": [
+   "Flow spark_catalog.default.d is QUEUED.",
+   "Flow spark_catalog.default.e is QUEUED.",
+   "Flow spark_catalog.default.d is STARTING.",
+   "Flow spark_catalog.default.d is RUNNING.",
+   "Flow spark_catalog.default.d has COMPLETED.",
+   "Flow spark_catalog.default.e is STARTING.",
+   "Flow spark_catalog.default.e is RUNNING.",
+   "Flow spark_catalog.default.e has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "two-flows",
+  "sql": "CREATE STREAMING TABLE f; CREATE FLOW f1 AS INSERT INTO f BY NAME SELECT id FROM STREAM(src); CREATE FLOW f2 AS INSERT INTO f BY NAME SELECT id+100 AS id FROM STREAM(src)",
+  "events": [
+   "Flow spark_catalog.default.f1 is QUEUED.",
+   "Flow spark_catalog.default.f2 is QUEUED.",
+   "Flow spark_catalog.default.f1 is STARTING.",
+   "Flow spark_catalog.default.f1 is RUNNING.",
+   "Flow spark_catalog.default.f2 is STARTING.",
+   "Flow spark_catalog.default.f2 is RUNNING.",
+   "Flow spark_catalog.default.f2 has COMPLETED.",
+   "Flow spark_catalog.default.f1 has COMPLETED.",
+   "Flow 'spark_catalog.default.f2' has FAILED.\nError: [STREAM_FAILED] Query [id = 745436b0-62cb-4a22-816e-0ee7a733b694, runId = 1a43a4e9-a888-4907-bd0b-77e6d6d5ad8f] terminated with exception: Race while writing batch 0 SQLSTATE: XXKST\n=== Streaming Query ===\nIdentifier: spark_catalog.default.f2 [id = 745436b0-62cb-4a22-816e-0ee7a733b694, runId = 1a43a4e9-a888-4907-bd0b-77e6d6d5ad8f]\nCurrent Committed Offsets: {}\nCurrent Available Offsets: {FileStreamSource[file:/private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/stream/p1/wh/src]: {\"logOffset\":0}}\n\nCurrent State: ACTIVE\nThread State: RUNNABLE\n\nLogical Plan:\n~WriteToMicroBatchDataSourceV1 `spark_catalog`.`default`.`f`, FileSink[file:/private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/stream/p1/wh/f], 745436b0-62cb-4a22-816e-0ee7a733b694, [queryName=spark_catalog.default.f2, checkpointLocation=file:/private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/stream/p1/st4/_checkpoints/spark_catalog/default/f/f2/0, path=file:/private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/stream/p1/wh/f], Append\n+- ~Project [(id#146 + 100) AS id#135]\n   +- ~SubqueryAlias spark_catalog.default.src\n      +- ~StreamingExecutionRelation FileStreamSource[file:/private/tmp/claude-501/-Users-alexy-src-sail/92ef6651-4d7e-4eab-8a92-f71ce373d0d8/scratchpad/stream/p1/wh/src], [id#146], `spark_catalog`.`default`.`src`, name=<Unassigned>\n\nRace while writing batch 0",
+   "Flow spark_catalog.default.f2 is STARTING.",
+   "Flow spark_catalog.default.f2 is RUNNING.",
+   "Flow spark_catalog.default.f2 has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "batch-into-st",
+  "sql": "CREATE STREAMING TABLE g AS SELECT id FROM src",
+  "events": [],
+  "outcome": "error",
+  "type": "AnalysisException",
+  "condition": "INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE",
+  "message": "[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] Flow `spark_catalog`.`default`.`g` returns an invalid relation type. Streaming tables may only be defined by streaming relations, but the flow `spark_catalog`.`default`.`g` attempts to write a batch relation to the streaming table `spark_catalog`.`default`.`g`. Consider using the STREAM operator in Spark-SQL to convert the batch relation into a streaming relation, or populating the streaming table with an append once-flow instead. SQLSTATE: 42000"
+ },
+ {
+  "name": "aggregate",
+  "sql": "CREATE STREAMING TABLE h AS SELECT id, count(*) c FROM STREAM(src) GROUP BY id",
+  "events": [
+   "Flow spark_catalog.default.h is QUEUED.",
+   "Flow spark_catalog.default.h is STARTING.",
+   "Flow 'spark_catalog.default.h' has FAILED.\nError: [STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION] Invalid streaming output mode: append. This output mode is not supported for streaming aggregations without watermark on streaming DataFrames/DataSets. SQLSTATE: 42KDE",
+   "Flow 'spark_catalog.default.h' has FAILED.\nError: [STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION] Invalid streaming output mode: append. This output mode is not supported for streaming aggregations without watermark on streaming DataFrames/DataSets. SQLSTATE: 42KDE",
+   "Flow spark_catalog.default.h is STARTING.",
+   "Flow 'spark_catalog.default.h' has FAILED.\nError: [STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION] Invalid streaming output mode: append. This output mode is not supported for streaming aggregations without watermark on streaming DataFrames/DataSets. SQLSTATE: 42KDE",
+   "Flow 'spark_catalog.default.h' has FAILED.\nError: [STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION] Invalid streaming output mode: append. This output mode is not supported for streaming aggregations without watermark on streaming DataFrames/DataSets. SQLSTATE: 42KDE",
+   "Flow spark_catalog.default.h is STARTING.",
+   "Flow 'spark_catalog.default.h' has FAILED.\nError: [STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION] Invalid streaming output mode: append. This output mode is not supported for streaming aggregations without watermark on streaming DataFrames/DataSets. SQLSTATE: 42KDE",
+   "Flow 'spark_catalog.default.h' has FAILED more than 2 times and will not be restarted.\nError: [STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION] Invalid streaming output mode: append. This output mode is not supported for streaming aggregations without watermark on streaming DataFrames/DataSets. SQLSTATE: 42KDE"
+  ],
+  "outcome": "error",
+  "type": "AnalysisException",
+  "condition": "STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION",
+  "message": "[STREAMING_OUTPUT_MODE.UNSUPPORTED_OPERATION] Invalid streaming output mode: append. This output mode is not supported for streaming aggregations without watermark on streaming DataFrames/DataSets. SQLSTATE: 42KDE"
+ },
+ {
+  "name": "stream-range",
+  "sql": "CREATE STREAMING TABLE i AS SELECT * FROM STREAM(RANGE(3))",
+  "events": [],
+  "outcome": "error",
+  "type": "AnalysisException",
+  "condition": "INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE",
+  "message": "[INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] Flow `spark_catalog`.`default`.`i` returns an invalid relation type. Streaming tables may only be defined by streaming relations, but the flow `spark_catalog`.`default`.`i` attempts to write a batch relation to the streaming table `spark_catalog`.`default`.`i`. Consider using the STREAM operator in Spark-SQL to convert the batch relation into a streaming relation, or populating the streaming table with an append once-flow instead. SQLSTATE: 42000"
+ },
+ {
+  "name": "stream-static",
+  "sql": "CREATE STREAMING TABLE j AS SELECT s.id, t.id t FROM STREAM(src) s JOIN src t ON s.id=t.id",
+  "events": [
+   "Flow spark_catalog.default.j is QUEUED.",
+   "Flow spark_catalog.default.j is STARTING.",
+   "Flow spark_catalog.default.j is RUNNING.",
+   "Flow spark_catalog.default.j has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ },
+ {
+  "name": "after-overwrite",
+  "sql": "CREATE STREAMING TABLE b AS SELECT id, id*10 AS x FROM STREAM(src)",
+  "events": [
+   "Flow spark_catalog.default.b is QUEUED.",
+   "Flow spark_catalog.default.b is STARTING.",
+   "Flow spark_catalog.default.b is RUNNING.",
+   "Flow spark_catalog.default.b has COMPLETED.",
+   "Run is COMPLETED."
+  ],
+  "outcome": "ok"
+ }
+]

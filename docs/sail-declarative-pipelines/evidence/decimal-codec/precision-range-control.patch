@@ -1,0 +1,15 @@
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 3deb460b0..139d7c30c 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -3892,9 +3892,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                         "decimal string cast payload has mismatched function name: {name}"
+                     );
+                 }
+-                let precision = u8::try_from(precision).map_err(|_| {
+-                    plan_datafusion_err!("decimal precision out of range: {precision}")
+-                })?;
++                let precision = precision as u8;
+                 let scale = i8::try_from(scale)
+                     .map_err(|_| plan_datafusion_err!("decimal scale out of range: {scale}"))?;
+                 return Ok(Arc::new(ScalarUDF::from(SparkStringToDecimal::try_new(

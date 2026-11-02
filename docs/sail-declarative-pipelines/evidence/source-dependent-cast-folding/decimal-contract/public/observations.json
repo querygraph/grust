@@ -1,0 +1,4473 @@
+{
+  "started_at": "2026-10-31T08:12:14.703259+00:00",
+  "sail_commit": "63f5bd3b3f0f8bd9b23607161d5988df853a738c",
+  "cli_sha256": "55ad2fbec05019596fb8c893e7d3daf40c03b914ce7c7fcaf1882501871e3cd2",
+  "script_sha256": "f1d4be175a76adeadcdc31aa314e9e57aa7de1517e2fbfc79e6a8002b79cdcf8",
+  "spark_oracle_sha256": "777afd5eaadcc8310602cd762a3cba6ec73c50a5dc2ec204504db940e9685d0d",
+  "cases": [
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1.235",
+      "query": "SELECT CAST('1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1.245",
+      "query": "SELECT CAST('1.245' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.25"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "-1.235",
+      "query": "SELECT CAST('-1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "-1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "999.994",
+      "query": "SELECT CAST('999.994' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "999.99"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "999.995",
+      "query": "SELECT CAST('999.995' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "99999.999",
+      "query": "SELECT CAST('99999.999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1e3",
+      "query": "SELECT CAST('1e3' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "123456",
+      "query": "SELECT CAST('123456' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1e400",
+      "query": "SELECT CAST('1e400' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT CAST('9999999999999999999999999999999999999999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT CAST('\u00a01.2\u00a0' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.20"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT CAST('\uff11\uff12.\uff13' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT CAST('\u0661\u0662.\u0663' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1e\u0662",
+      "query": "SELECT CAST('1e\u0662' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0e2147483647",
+      "query": "SELECT CAST('0e2147483647' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0e2147483648",
+      "query": "SELECT CAST('0e2147483648' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "0.00"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT CAST('\u00001.2\u0000' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1.235",
+      "query": "SELECT TRY_CAST('1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1.245",
+      "query": "SELECT TRY_CAST('1.245' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.25"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "-1.235",
+      "query": "SELECT TRY_CAST('-1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "-1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "999.994",
+      "query": "SELECT TRY_CAST('999.994' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "999.99"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "999.995",
+      "query": "SELECT TRY_CAST('999.995' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "99999.999",
+      "query": "SELECT TRY_CAST('99999.999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1e3",
+      "query": "SELECT TRY_CAST('1e3' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "123456",
+      "query": "SELECT TRY_CAST('123456' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1e400",
+      "query": "SELECT TRY_CAST('1e400' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT TRY_CAST('9999999999999999999999999999999999999999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT TRY_CAST('\u00a01.2\u00a0' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.20"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT TRY_CAST('\uff11\uff12.\uff13' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT TRY_CAST('\u0661\u0662.\u0663' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1e\u0662",
+      "query": "SELECT TRY_CAST('1e\u0662' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0e2147483647",
+      "query": "SELECT TRY_CAST('0e2147483647' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0e2147483648",
+      "query": "SELECT TRY_CAST('0e2147483648' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT TRY_CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "0.00"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT TRY_CAST('\u00001.2\u0000' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1.235",
+      "query": "SELECT CAST('1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1.245",
+      "query": "SELECT CAST('1.245' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.2450000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "-1.235",
+      "query": "SELECT CAST('-1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "-1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "999.994",
+      "query": "SELECT CAST('999.994' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "999.9940000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "999.995",
+      "query": "SELECT CAST('999.995' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "999.9950000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "99999.999",
+      "query": "SELECT CAST('99999.999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "99999.9990000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1e3",
+      "query": "SELECT CAST('1e3' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "123456",
+      "query": "SELECT CAST('123456' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "123456.0000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1e400",
+      "query": "SELECT CAST('1e400' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT CAST('9999999999999999999999999999999999999999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT CAST('\u00a01.2\u00a0' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.2000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT CAST('\uff11\uff12.\uff13' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT CAST('\u0661\u0662.\u0663' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1e\u0662",
+      "query": "SELECT CAST('1e\u0662' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0e2147483647",
+      "query": "SELECT CAST('0e2147483647' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0e2147483648",
+      "query": "SELECT CAST('0e2147483648' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "0E-10"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": false
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT CAST('\u00001.2\u0000' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": false,
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "behavior_match": false,
+      "schema_match": null
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1.235",
+      "query": "SELECT TRY_CAST('1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1.245",
+      "query": "SELECT TRY_CAST('1.245' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.2450000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "-1.235",
+      "query": "SELECT TRY_CAST('-1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "-1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "999.994",
+      "query": "SELECT TRY_CAST('999.994' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "999.9940000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "999.995",
+      "query": "SELECT TRY_CAST('999.995' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "999.9950000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "99999.999",
+      "query": "SELECT TRY_CAST('99999.999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "99999.9990000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1e3",
+      "query": "SELECT TRY_CAST('1e3' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "123456",
+      "query": "SELECT TRY_CAST('123456' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "123456.0000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1e400",
+      "query": "SELECT TRY_CAST('1e400' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT TRY_CAST('9999999999999999999999999999999999999999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT TRY_CAST('\u00a01.2\u00a0' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "1.2000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT TRY_CAST('\uff11\uff12.\uff13' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT TRY_CAST('\u0661\u0662.\u0663' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1e\u0662",
+      "query": "SELECT TRY_CAST('1e\u0662' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0e2147483647",
+      "query": "SELECT TRY_CAST('0e2147483647' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0e2147483648",
+      "query": "SELECT TRY_CAST('0e2147483648' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT TRY_CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        "0E-10"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": true,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT TRY_CAST('\u00001.2\u0000' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "true",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1.235",
+      "query": "SELECT CAST('1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1.245",
+      "query": "SELECT CAST('1.245' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.25"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "-1.235",
+      "query": "SELECT CAST('-1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "-1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "999.994",
+      "query": "SELECT CAST('999.994' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "999.99"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "999.995",
+      "query": "SELECT CAST('999.995' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "99999.999",
+      "query": "SELECT CAST('99999.999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1e3",
+      "query": "SELECT CAST('1e3' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "123456",
+      "query": "SELECT CAST('123456' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1e400",
+      "query": "SELECT CAST('1e400' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT CAST('9999999999999999999999999999999999999999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT CAST('\u00a01.2\u00a0' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.20"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT CAST('\uff11\uff12.\uff13' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT CAST('\u0661\u0662.\u0663' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "1e\u0662",
+      "query": "SELECT CAST('1e\u0662' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0e2147483647",
+      "query": "SELECT CAST('0e2147483647' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0e2147483648",
+      "query": "SELECT CAST('0e2147483648' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "0.00"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": false,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT CAST('\u00001.2\u0000' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1.235",
+      "query": "SELECT TRY_CAST('1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1.245",
+      "query": "SELECT TRY_CAST('1.245' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.25"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "-1.235",
+      "query": "SELECT TRY_CAST('-1.235' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "-1.24"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "999.994",
+      "query": "SELECT TRY_CAST('999.994' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "999.99"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "999.995",
+      "query": "SELECT TRY_CAST('999.995' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "99999.999",
+      "query": "SELECT TRY_CAST('99999.999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1e3",
+      "query": "SELECT TRY_CAST('1e3' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "123456",
+      "query": "SELECT TRY_CAST('123456' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1e400",
+      "query": "SELECT TRY_CAST('1e400' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT TRY_CAST('9999999999999999999999999999999999999999' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT TRY_CAST('\u00a01.2\u00a0' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.20"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT TRY_CAST('\uff11\uff12.\uff13' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT TRY_CAST('\u0661\u0662.\u0663' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "1e\u0662",
+      "query": "SELECT TRY_CAST('1e\u0662' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0e2147483647",
+      "query": "SELECT TRY_CAST('0e2147483647' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0e2147483648",
+      "query": "SELECT TRY_CAST('0e2147483648' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT TRY_CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "0.00"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(5,2)",
+      "is_try": true,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT TRY_CAST('\u00001.2\u0000' AS DECIMAL(5,2)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(5,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": null,
+      "query": "SELECT CAST(NULL AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "bad",
+      "query": "SELECT CAST('bad' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "",
+      "query": "SELECT CAST('' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1.235",
+      "query": "SELECT CAST('1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1.245",
+      "query": "SELECT CAST('1.245' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.2450000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "-1.235",
+      "query": "SELECT CAST('-1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "-1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "999.994",
+      "query": "SELECT CAST('999.994' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "999.9940000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "999.995",
+      "query": "SELECT CAST('999.995' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "999.9950000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "99999.999",
+      "query": "SELECT CAST('99999.999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "99999.9990000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1e3",
+      "query": "SELECT CAST('1e3' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "123456",
+      "query": "SELECT CAST('123456' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "123456.0000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1e400",
+      "query": "SELECT CAST('1e400' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT CAST('9999999999999999999999999999999999999999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "NaN",
+      "query": "SELECT CAST('NaN' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1.0f",
+      "query": "SELECT CAST('1.0f' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0x1.0p2",
+      "query": "SELECT CAST('0x1.0p2' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT CAST('\u00a01.2\u00a0' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.2000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT CAST('\uff11\uff12.\uff13' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT CAST('\u0661\u0662.\u0663' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "1e\u0662",
+      "query": "SELECT CAST('1e\u0662' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0e2147483647",
+      "query": "SELECT CAST('0e2147483647' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0e2147483648",
+      "query": "SELECT CAST('0e2147483648' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "0E-10"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": false,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT CAST('\u00001.2\u0000' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": null,
+      "query": "SELECT TRY_CAST(NULL AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "bad",
+      "query": "SELECT TRY_CAST('bad' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "",
+      "query": "SELECT TRY_CAST('' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1.235",
+      "query": "SELECT TRY_CAST('1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1.245",
+      "query": "SELECT TRY_CAST('1.245' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.2450000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "-1.235",
+      "query": "SELECT TRY_CAST('-1.235' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "-1.2350000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "999.994",
+      "query": "SELECT TRY_CAST('999.994' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "999.9940000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "999.995",
+      "query": "SELECT TRY_CAST('999.995' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "999.9950000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "99999.999",
+      "query": "SELECT TRY_CAST('99999.999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "99999.9990000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1e3",
+      "query": "SELECT TRY_CAST('1e3' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "123456",
+      "query": "SELECT TRY_CAST('123456' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "123456.0000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1e400",
+      "query": "SELECT TRY_CAST('1e400' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "9999999999999999999999999999999999999999",
+      "query": "SELECT TRY_CAST('9999999999999999999999999999999999999999' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "NaN",
+      "query": "SELECT TRY_CAST('NaN' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1.0f",
+      "query": "SELECT TRY_CAST('1.0f' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0x1.0p2",
+      "query": "SELECT TRY_CAST('0x1.0p2' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\u00a01.2\u00a0",
+      "query": "SELECT TRY_CAST('\u00a01.2\u00a0' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "1.2000000000"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\uff11\uff12.\uff13",
+      "query": "SELECT TRY_CAST('\uff11\uff12.\uff13' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\u0661\u0662.\u0663",
+      "query": "SELECT TRY_CAST('\u0661\u0662.\u0663' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "1e\u0662",
+      "query": "SELECT TRY_CAST('1e\u0662' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0e2147483647",
+      "query": "SELECT TRY_CAST('0e2147483647' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0e2147483648",
+      "query": "SELECT TRY_CAST('0e2147483648' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "0.00000000000000000000000000000000000000001",
+      "query": "SELECT TRY_CAST('0.00000000000000000000000000000000000000001' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        "0E-10"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": true,
+      "schema_match": true
+    },
+    {
+      "ansi": false,
+      "target": "DECIMAL(38,10)",
+      "is_try": true,
+      "source": "\u00001.2\u0000",
+      "query": "SELECT TRY_CAST('\u00001.2\u0000' AS DECIMAL(38,10)) AS value",
+      "effective_ansi": "false",
+      "returned": true,
+      "values": [
+        null
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "decimal(38,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "behavior_match": false,
+      "schema_match": true
+    }
+  ],
+  "server_pid": 53135,
+  "spark_version": "4.2.1",
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T08:12:18.187473+00:00",
+  "remaining_listener_pids": []
+}

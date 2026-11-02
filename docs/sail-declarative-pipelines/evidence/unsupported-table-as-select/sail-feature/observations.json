@@ -1,0 +1,92 @@
+{
+  "started_at": "2026-10-31T15:40:54.438550+00:00",
+  "mode": "sail",
+  "script_sha256": "c87ef9dade508fe11ec694efe9f5827f8f507c2695ab693737c037ffef1d9d45",
+  "cases": [
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "original",
+      "sql": "CREATE TABLE t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE TABLE t AS SELECT 1\n",
+        "message": "Unsupported plan CreateTableAsSelect parsed from SQL query"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan CreateTableAsSelect parsed from SQL query\n\nOffending query:\nCREATE TABLE t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "if-not-exists",
+      "sql": "CREATE TABLE IF NOT EXISTS t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unsupported plan CreateTableAsSelect parsed from SQL query",
+        "offendingQuery": "\nOffending query:\nCREATE TABLE IF NOT EXISTS t AS SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan CreateTableAsSelect parsed from SQL query\n\nOffending query:\nCREATE TABLE IF NOT EXISTS t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "create-or-replace",
+      "sql": "CREATE OR REPLACE TABLE t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "Unsupported plan ReplaceTableAsSelect parsed from SQL query",
+        "offendingQuery": "\nOffending query:\nCREATE OR REPLACE TABLE t AS SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ReplaceTableAsSelect parsed from SQL query\n\nOffending query:\nCREATE OR REPLACE TABLE t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "TABLE-AS-SELECT",
+      "label": "replace",
+      "sql": "REPLACE TABLE t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "Unsupported plan ReplaceTableAsSelect parsed from SQL query",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nREPLACE TABLE t AS SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ReplaceTableAsSelect parsed from SQL query\n\nOffending query:\nREPLACE TABLE t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "18604c01a2b59a619e2432f77c2c690b64463065",
+  "cli_sha256": "b131b8e33fd7f34fbbcd1b1578f97fdef66ffebf9fecaa0bc7a2faf0847b4d8c",
+  "version": "4.2.1",
+  "test_sha256": "0311ab6c439af84a56963449a06cb59f2abc352c069600e7629db2a6632c9d1b",
+  "pytest_exit_code": 0,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T15:40:57.753035+00:00",
+  "remaining_listeners": []
+}

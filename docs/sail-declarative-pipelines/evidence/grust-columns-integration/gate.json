@@ -1,0 +1,62 @@
+{
+  "sail_commit": "02d39b5fead46b694725c97de1b2341793100ca2",
+  "base": "cae618d7ff4661cb126333ad109f275b32bcad4b",
+  "packages": [
+    "grust-columns"
+  ],
+  "started_at": "2026-10-30T10:25:20.916674+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "grust-columns",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-grust-columns-integration-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "grust-columns",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-grust-columns-integration-clippy.log",
+      "sha256": "bdc7d303fd945b643daa5215d83f022888898acb5c1aa853b21364d960632732"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "grust-columns",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-grust-columns-integration-rust.log",
+      "sha256": "ed23636399513b23d05166e4dbff9632ded5ccdcb027224879aebb4ec87e68ef"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T10:25:22.085052+00:00",
+  "outcome": "passed"
+}

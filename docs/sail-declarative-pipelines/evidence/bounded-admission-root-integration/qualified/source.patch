@@ -1,0 +1,1121 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/admission.rs b/crates/sail-spark-connect/src/pipelines/streaming/admission.rs
+new file mode 100644
+index 000000000..e28351c68
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/admission.rs
+@@ -0,0 +1,493 @@
++//! Admission of a resolved, bound plan to the stateless bounded subset
++//! (BOUNDED-PLAN-ADMISSION-DESIGN §4 as narrowed in §10 after CF-0136).
++//!
++//! The visitor classifies every operator of the resolved `LogicalPlan` and
++//! returns evidence, not only a verdict: which operators were admitted or
++//! rejected and why, which bound sources, static sides and local outputs
++//! were scanned (each with its provider identity verified against the
++//! bindings, never by name alone), whether every scan was bound, and
++//! whether the plan is replayable in content. At most one range-bearing
++//! side may meet any operator, counted per subquery and per join input,
++//! through projections, aliases, unions, nested joins and subquery
++//! expressions; join kinds follow Spark's stream-static orientation rules
++//! (`UnsupportedOperationChecker.scala:498–545`). A schema-only
++//! `EmptyRelation` is an analysis placeholder and never stands in for rows.
++
++use std::collections::BTreeSet;
++use std::sync::Arc;
++
++use datafusion::common::JoinType;
++use datafusion::common::tree_node::{TreeNode, TreeNodeRecursion};
++use datafusion::datasource::{TableProvider, source_as_provider};
++use datafusion::logical_expr::{Expr, LogicalPlan, Volatility, WindowFunctionDefinition};
++use serde::{Deserialize, Serialize};
++
++use super::binding::{LocalBinding, ReadSet, SourceBinding, StaticBinding};
++use crate::pipelines::graph::Name;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub enum Decision {
++    Admit,
++    Reject,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub struct OperatorEvidence {
++    pub operator: String,
++    pub decision: Decision,
++    pub reason: String,
++}
++
++/// Serialisable admission evidence, recorded next to the intent.
++#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
++pub struct AdmissionEvidence {
++    pub admitted: bool,
++    pub operators: Vec<OperatorEvidence>,
++    /// Bound streaming sources the plan scans.
++    pub sources_read: BTreeSet<Name>,
++    /// Local outputs and static bindings the plan scans.
++    pub static_read: BTreeSet<Name>,
++    /// Scans that match no binding, or whose provider is not the bound one,
++    /// rendered as the resolver named them.
++    pub unbound_scans: Vec<String>,
++    /// `true` when every admitted scan's provider was verified by identity
++    /// against the bindings; `false` never admits.
++    pub provenance_verified: bool,
++    /// `false` once a volatile expression was met: the same plan can yield
++    /// different rows on re-evaluation, so the batch is non-replayable in
++    /// content and must be materialised once.
++    pub replayable: bool,
++}
++
++/// What a subtree carries, for the join rule.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++struct Side {
++    range_bearing: bool,
++}
++
++/// The bindings the lowering was built from; admission verifies every scan
++/// against the providers they hold. Local outputs are bound too: the
++/// materialised relation the flow reads, with its provenance, never a
++/// schema-only placeholder.
++pub struct Bindings<'a> {
++    pub sources: &'a [SourceBinding],
++    pub statics: &'a [StaticBinding],
++    pub locals: &'a [LocalBinding],
++    /// Empty scans the lowering minted for sources whose recorded intent has
++    /// no range, one per such source; identity-checked like any other scan.
++    pub empty_scans: &'a [(Name, Arc<dyn TableProvider>)],
++}
++
++/// Classifies `plan` against the reads the binding step accepted and the
++/// providers the bindings hold.
++pub fn admit(plan: &LogicalPlan, reads: &ReadSet, bindings: &Bindings<'_>) -> AdmissionEvidence {
++    let mut visitor = Visitor {
++        reads,
++        bindings,
++        evidence: AdmissionEvidence {
++            admitted: true,
++            replayable: true,
++            provenance_verified: true,
++            ..Default::default()
++        },
++    };
++    visitor.visit(plan);
++    visitor.evidence
++}
++
++struct Visitor<'a> {
++    reads: &'a ReadSet,
++    bindings: &'a Bindings<'a>,
++    evidence: AdmissionEvidence,
++}
++
++fn same_provider(a: &Arc<dyn TableProvider>, b: &Arc<dyn TableProvider>) -> bool {
++    Arc::ptr_eq(a, b)
++}
++
++impl Visitor<'_> {
++    fn record(&mut self, operator: &str, decision: Decision, reason: impl Into<String>) {
++        if decision == Decision::Reject {
++            self.evidence.admitted = false;
++        }
++        self.evidence.operators.push(OperatorEvidence {
++            operator: operator.to_string(),
++            decision,
++            reason: reason.into(),
++        });
++    }
++
++    fn admit(&mut self, operator: &str, reason: &str) {
++        self.record(operator, Decision::Admit, reason);
++    }
++
++    fn reject(&mut self, operator: &str, reason: &str) {
++        self.record(operator, Decision::Reject, reason);
++    }
++
++    /// Functions whose signature is not `Immutable` make the batch
++    /// non-replayable; each subquery embedded in an expression is visited as
++    /// a plan and contributes its own side to the join rule, so two
++    /// range-bearing subqueries under one operator count as two.
++    fn expressions(&mut self, operator: &str, exprs: &[Expr]) -> Vec<Side> {
++        let mut sides = vec![];
++        for expr in exprs {
++            for (name, volatility) in non_immutable_functions(expr) {
++                let class = match volatility {
++                    Volatility::Volatile => "volatile",
++                    Volatility::Stable => "stable",
++                    Volatility::Immutable => continue,
++                };
++                self.evidence.replayable = false;
++                self.record(
++                    operator,
++                    Decision::Admit,
++                    format!(
++                        "function `{name}` is {class}, not immutable: evaluated once, not replayable in content"
++                    ),
++                );
++            }
++            let mut subqueries = vec![];
++            let _ = expr.apply(|node| {
++                match node {
++                    Expr::ScalarSubquery(subquery) => subqueries.push(subquery.subquery.clone()),
++                    Expr::InSubquery(in_subquery) => {
++                        subqueries.push(in_subquery.subquery.subquery.clone())
++                    }
++                    Expr::Exists(exists) => subqueries.push(exists.subquery.subquery.clone()),
++                    _ => {}
++                }
++                Ok(TreeNodeRecursion::Continue)
++            });
++            for subquery in subqueries {
++                sides.push(self.visit(&subquery));
++            }
++        }
++        sides
++    }
++
++    /// The join rule over any set of sides: more than one range-bearing side
++    /// needs cross-batch state and is rejected.
++    fn combine(&mut self, operator: &str, sides: &[Side]) -> Side {
++        let range_bearing = sides.iter().filter(|side| side.range_bearing).count();
++        match range_bearing {
++            0 => {
++                self.admit(operator, "static sides only");
++                Side {
++                    range_bearing: false,
++                }
++            }
++            1 => {
++                self.admit(operator, "one range-bearing side and static sides");
++                Side {
++                    range_bearing: true,
++                }
++            }
++            _ => {
++                self.reject(
++                    operator,
++                    "more than one range-bearing side needs cross-batch state",
++                );
++                Side {
++                    range_bearing: true,
++                }
++            }
++        }
++    }
++
++    /// Spark's stream-static orientation rules for one range-bearing side
++    /// (`UnsupportedOperationChecker.scala:498–545`), applied to DataFusion's
++    /// join kinds; kinds without a pinned Spark counterpart are rejected.
++    fn join(&mut self, join_type: JoinType, left: Side, right: Side, condition: &[Side]) -> Side {
++        let condition_ranges = condition.iter().filter(|side| side.range_bearing).count();
++        let ranges =
++            usize::from(left.range_bearing) + usize::from(right.range_bearing) + condition_ranges;
++        if ranges == 0 {
++            self.admit("Join", "static sides only");
++            return Side::default();
++        }
++        if ranges > 1 {
++            self.reject(
++                "Join",
++                "more than one range-bearing side needs cross-batch state",
++            );
++            return Side {
++                range_bearing: true,
++            };
++        }
++        if condition_ranges == 1 {
++            self.reject("Join", "range-bearing subquery in a join condition");
++            return Side {
++                range_bearing: true,
++            };
++        }
++        let stream_left = left.range_bearing;
++        let verdict: Result<&str, &str> = match join_type {
++            JoinType::Inner => Ok("inner join, one range-bearing side"),
++            JoinType::Left | JoinType::LeftSemi | JoinType::LeftAnti if stream_left => {
++                Ok("range-bearing side on the left, static on the right")
++            }
++            JoinType::Left | JoinType::LeftSemi => Err(
++                "left outer or left semi join with the static side on the left and the range-bearing side on the right",
++            ),
++            JoinType::LeftAnti => Err("left anti join with the range-bearing side on the right"),
++            JoinType::Right if !stream_left => {
++                Ok("range-bearing side on the right, static on the left")
++            }
++            JoinType::Right => Err("right outer join with the range-bearing side on the left"),
++            JoinType::Full => Err("full outer join between a range-bearing and a static side"),
++            JoinType::RightSemi
++            | JoinType::RightAnti
++            | JoinType::LeftMark
++            | JoinType::RightMark => Err("join kind without a pinned Spark streaming rule"),
++        };
++        match verdict {
++            Ok(reason) => self.admit("Join", reason),
++            Err(reason) => self.reject("Join", reason),
++        }
++        Side {
++            range_bearing: true,
++        }
++    }
++
++    fn visit(&mut self, plan: &LogicalPlan) -> Side {
++        match plan {
++            LogicalPlan::TableScan(scan) => {
++                let name: Name = [
++                    scan.table_name.catalog(),
++                    scan.table_name.schema(),
++                    Some(scan.table_name.table()),
++                ]
++                .into_iter()
++                .flatten()
++                .map(str::to_string)
++                .collect();
++                let filter_sides = self.expressions("TableScan", &scan.filters);
++                if filter_sides.iter().any(|side| side.range_bearing) {
++                    self.reject("TableScan", "range-bearing subquery in a pushed filter");
++                }
++                let provider = source_as_provider(&scan.source).ok();
++                let matches = |candidate: &Arc<dyn TableProvider>| {
++                    provider
++                        .as_ref()
++                        .is_some_and(|p| same_provider(candidate, p))
++                };
++                if self.reads.streaming.contains(&name)
++                    && self
++                        .bindings
++                        .sources
++                        .iter()
++                        .any(|binding| binding.name == name && binding.scans.iter().any(&matches))
++                {
++                    self.evidence.sources_read.insert(name);
++                    self.admit(
++                        "TableScan",
++                        "bound range of a recorded source, provider verified",
++                    );
++                    return Side {
++                        range_bearing: true,
++                    };
++                }
++                if self.reads.streaming.contains(&name)
++                    && self
++                        .bindings
++                        .empty_scans
++                        .iter()
++                        .any(|(bound, provider)| bound == &name && matches(provider))
++                {
++                    self.evidence.sources_read.insert(name);
++                    self.admit(
++                        "TableScan",
++                        "empty recorded intent of a bound source, minted scan verified",
++                    );
++                    return Side {
++                        range_bearing: true,
++                    };
++                }
++                if self.reads.statics.contains(&name)
++                    && self
++                        .bindings
++                        .statics
++                        .iter()
++                        .any(|binding| binding.name == name && matches(&binding.provider))
++                {
++                    self.evidence.static_read.insert(name);
++                    self.admit("TableScan", "pinned static binding, provider verified");
++                    return Side::default();
++                }
++                if self.reads.local.contains(&name)
++                    && self
++                        .bindings
++                        .locals
++                        .iter()
++                        .any(|binding| binding.name == name && matches(&binding.provider))
++                {
++                    self.evidence.static_read.insert(name);
++                    self.admit("TableScan", "materialised local output, provider verified");
++                    return Side::default();
++                }
++                self.evidence
++                    .unbound_scans
++                    .push(scan.table_name.to_string());
++                self.evidence.provenance_verified = false;
++                self.reject(
++                    "TableScan",
++                    "scan outside the binding set or with a provider that is not the bound one",
++                );
++                Side::default()
++            }
++            // Only analysis installs schema-only placeholders; rows cannot be
++            // read from one, so a lowering that meets it is not over
++            // materialised inputs.
++            LogicalPlan::EmptyRelation(_) => {
++                self.evidence.provenance_verified = false;
++                self.reject(
++                    "EmptyRelation",
++                    "schema-only analysis placeholder cannot stand in for rows",
++                );
++                Side::default()
++            }
++            LogicalPlan::Values(values) => {
++                let exprs: Vec<Expr> = values.values.iter().flatten().cloned().collect();
++                let sides = self.expressions("Values", &exprs);
++                self.combine("Values", &sides)
++            }
++            LogicalPlan::Projection(_)
++            | LogicalPlan::Filter(_)
++            | LogicalPlan::SubqueryAlias(_)
++            | LogicalPlan::Repartition(_)
++            | LogicalPlan::Unnest(_) => {
++                let operator = operator_name(plan);
++                let mut sides = self.expressions(operator, &plan.expressions());
++                for input in plan.inputs() {
++                    sides.push(self.visit(input));
++                }
++                self.combine(operator, &sides)
++            }
++            LogicalPlan::Union(union) => {
++                let sides: Vec<Side> = union.inputs.iter().map(|input| self.visit(input)).collect();
++                let range_bearing = sides.iter().any(|side| side.range_bearing);
++                self.admit("Union", "row-local union of its inputs");
++                Side { range_bearing }
++            }
++            LogicalPlan::Join(join) => {
++                let condition_sides = self.expressions("Join", &plan.expressions());
++                let left = self.visit(&join.left);
++                let right = self.visit(&join.right);
++                self.join(join.join_type, left, right, &condition_sides)
++            }
++            LogicalPlan::Subquery(subquery) => self.visit(&subquery.subquery),
++            LogicalPlan::Aggregate(_)
++            | LogicalPlan::Window(_)
++            | LogicalPlan::Sort(_)
++            | LogicalPlan::Limit(_)
++            | LogicalPlan::Distinct(_)
++            | LogicalPlan::RecursiveQuery(_) => {
++                let operator = operator_name(plan);
++                self.reject(
++                    operator,
++                    "needs durable cross-batch state under AvailableNow semantics",
++                );
++                let mut side = Side::default();
++                for input in plan.inputs() {
++                    side.range_bearing |= self.visit(input).range_bearing;
++                }
++                side
++            }
++            LogicalPlan::Extension(extension) => {
++                self.reject(
++                    &format!("Extension({})", extension.node.name()),
++                    "extension node without qualified semantics",
++                );
++                let mut side = Side::default();
++                for input in plan.inputs() {
++                    side.range_bearing |= self.visit(input).range_bearing;
++                }
++                side
++            }
++            LogicalPlan::Statement(_)
++            | LogicalPlan::Explain(_)
++            | LogicalPlan::Analyze(_)
++            | LogicalPlan::Dml(_)
++            | LogicalPlan::Ddl(_)
++            | LogicalPlan::Copy(_)
++            | LogicalPlan::DescribeTable(_) => {
++                self.reject(operator_name(plan), "not a query over bound inputs");
++                Side::default()
++            }
++        }
++    }
++}
++
++fn operator_name(plan: &LogicalPlan) -> &'static str {
++    match plan {
++        LogicalPlan::Projection(_) => "Projection",
++        LogicalPlan::Filter(_) => "Filter",
++        LogicalPlan::Window(_) => "Window",
++        LogicalPlan::Aggregate(_) => "Aggregate",
++        LogicalPlan::Sort(_) => "Sort",
++        LogicalPlan::Join(_) => "Join",
++        LogicalPlan::Repartition(_) => "Repartition",
++        LogicalPlan::Union(_) => "Union",
++        LogicalPlan::TableScan(_) => "TableScan",
++        LogicalPlan::EmptyRelation(_) => "EmptyRelation",
++        LogicalPlan::Subquery(_) => "Subquery",
++        LogicalPlan::SubqueryAlias(_) => "SubqueryAlias",
++        LogicalPlan::Limit(_) => "Limit",
++        LogicalPlan::Statement(_) => "Statement",
++        LogicalPlan::Values(_) => "Values",
++        LogicalPlan::Explain(_) => "Explain",
++        LogicalPlan::Analyze(_) => "Analyze",
++        LogicalPlan::Extension(_) => "Extension",
++        LogicalPlan::Distinct(_) => "Distinct",
++        LogicalPlan::Dml(_) => "Dml",
++        LogicalPlan::Ddl(_) => "Ddl",
++        LogicalPlan::Copy(_) => "Copy",
++        LogicalPlan::DescribeTable(_) => "DescribeTable",
++        LogicalPlan::Unnest(_) => "Unnest",
++        LogicalPlan::RecursiveQuery(_) => "RecursiveQuery",
++    }
++}
++
++/// Every function an expression calls whose signature is not `Immutable`,
++/// with its declared volatility. Only an `Immutable` function is guaranteed
++/// to yield the same value across separately planned attempts. `Stable`
++/// means stable within one query execution: clock functions such as `now`,
++/// `current_date` and `current_timestamp` are `Stable` and are fixed at
++/// each attempt's planning time, so once a batch is re-planned they are as
++/// non-replayable in content as a `Volatile` call. Scalar, aggregate and
++/// window signatures are all inspected; no function is special-cased by
++/// name.
++fn non_immutable_functions(expr: &Expr) -> Vec<(String, Volatility)> {
++    let mut found = vec![];
++    let _ = expr.apply(|node| {
++        let signature = match node {
++            Expr::ScalarFunction(function) => {
++                Some((function.func.name(), function.func.signature()))
++            }
++            Expr::AggregateFunction(function) => {
++                Some((function.func.name(), function.func.signature()))
++            }
++            Expr::WindowFunction(window) => Some(match &window.fun {
++                WindowFunctionDefinition::AggregateUDF(function) => {
++                    (function.name(), function.signature())
++                }
++                WindowFunctionDefinition::WindowUDF(function) => {
++                    (function.name(), function.signature())
++                }
++            }),
++            _ => None,
++        };
++        if let Some((name, signature)) =
++            signature.filter(|(_, signature)| signature.volatility != Volatility::Immutable)
++        {
++            found.push((name.to_string(), signature.volatility));
++        }
++        Ok(TreeNodeRecursion::Continue)
++    });
++    found
++}
++
++#[cfg(test)]
++#[path = "admission_tests.rs"]
++mod tests;
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs b/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs
+new file mode 100644
+index 000000000..c4318a2ba
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/admission_tests.rs
+@@ -0,0 +1,578 @@
++//! Tests for bounded logical-plan admission.
++
++use std::sync::Arc;
++
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::common::{Result as DFResult, TableReference};
++use datafusion::datasource::{MemTable, provider_as_source};
++use datafusion::logical_expr::{
++    ColumnarValue, Expr, JoinType, LogicalPlanBuilder, ScalarFunctionArgs, ScalarUDF,
++    ScalarUDFImpl, Signature, Volatility, col, exists, lit, scalar_subquery,
++};
++
++use super::super::intent::BatchIntent;
++use super::super::source::SourceDescriptor;
++use super::*;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++fn name(parts: &[&str]) -> Name {
++    parts.iter().map(|part| part.to_string()).collect()
++}
++
++fn table_schema() -> Arc<Schema> {
++    Arc::new(Schema::new(vec![
++        Field::new("id", DataType::Int64, false),
++        Field::new("v", DataType::Int64, true),
++    ]))
++}
++
++fn provider() -> DFResult<Arc<dyn TableProvider>> {
++    Ok(Arc::new(MemTable::try_new(table_schema(), vec![vec![]])?))
++}
++
++fn scan_with(parts: &[&str], provider: Arc<dyn TableProvider>) -> DFResult<LogicalPlanBuilder> {
++    let reference = TableReference::full(parts[0], parts[1], parts[2]);
++    LogicalPlanBuilder::scan(reference, provider_as_source(provider), None)
++}
++
++/// The bindings of the tests: `clicks` and `views` are bound sources
++/// with one range provider each, `dim` a static binding, `events` a
++/// materialised local output; `scan` uses the bound providers.
++struct Fixture {
++    sources: Vec<SourceBinding>,
++    statics: Vec<StaticBinding>,
++    locals: Vec<LocalBinding>,
++    reads: ReadSet,
++}
++
++impl Fixture {
++    fn new() -> DFResult<Self> {
++        let source = |parts: &[&str]| -> DFResult<SourceBinding> {
++            Ok(SourceBinding {
++                name: name(parts),
++                schema: table_schema(),
++                descriptor: SourceDescriptor {
++                    kind: "test".into(),
++                    descriptor: serde_json::json!({}),
++                    partitions: vec![],
++                },
++                intent: BatchIntent { ranges: vec![] },
++                scans: vec![provider()?],
++            })
++        };
++        Ok(Self {
++            sources: vec![
++                source(&["c", "d", "clicks"])?,
++                source(&["c", "d", "views"])?,
++            ],
++            statics: vec![StaticBinding {
++                name: name(&["c", "d", "dim"]),
++                identity: "version:7".into(),
++                provider: provider()?,
++            }],
++            locals: vec![LocalBinding {
++                name: name(&["c", "d", "events"]),
++                identity: "run:1".into(),
++                provider: provider()?,
++            }],
++            reads: ReadSet {
++                streaming: BTreeSet::from([
++                    name(&["c", "d", "clicks"]),
++                    name(&["c", "d", "views"]),
++                ]),
++                local: BTreeSet::from([name(&["c", "d", "events"])]),
++                statics: BTreeSet::from([name(&["c", "d", "dim"])]),
++            },
++        })
++    }
++
++    fn admit(&self, plan: &LogicalPlan) -> AdmissionEvidence {
++        admit(
++            plan,
++            &self.reads,
++            &Bindings {
++                sources: &self.sources,
++                statics: &self.statics,
++                locals: &self.locals,
++                empty_scans: &[],
++            },
++        )
++    }
++
++    /// A scan over the provider bound to `parts`, or over a fresh,
++    /// unbound provider for any other name.
++    fn scan(&self, parts: &[&str]) -> DFResult<LogicalPlanBuilder> {
++        let target = name(parts);
++        let bound = self
++            .sources
++            .iter()
++            .find(|b| b.name == target)
++            .and_then(|b| b.scans.first().cloned())
++            .or_else(|| {
++                self.statics
++                    .iter()
++                    .find(|b| b.name == target)
++                    .map(|b| b.provider.clone())
++            })
++            .or_else(|| {
++                self.locals
++                    .iter()
++                    .find(|b| b.name == target)
++                    .map(|b| b.provider.clone())
++            });
++        match bound {
++            Some(provider) => scan_with(parts, provider),
++            None => scan_with(parts, provider()?),
++        }
++    }
++}
++
++#[derive(Debug, PartialEq, Eq, Hash)]
++struct Volatile {
++    signature: Signature,
++}
++
++impl ScalarUDFImpl for Volatile {
++    fn name(&self) -> &str {
++        "volatile_test"
++    }
++    fn signature(&self) -> &Signature {
++        &self.signature
++    }
++    fn return_type(&self, _: &[DataType]) -> DFResult<DataType> {
++        Ok(DataType::Int64)
++    }
++    fn invoke_with_args(&self, _: ScalarFunctionArgs) -> DFResult<ColumnarValue> {
++        Ok(ColumnarValue::Scalar(
++            datafusion::common::ScalarValue::Int64(Some(4)),
++        ))
++    }
++}
++
++fn volatile() -> Expr {
++    ScalarUDF::from(Volatile {
++        signature: Signature::nullary(Volatility::Volatile),
++    })
++    .call(vec![])
++}
++
++/// A `Stable` nullary function with the signature class of Sail's
++/// `TimestampNow` (`current_timestamp`/`now`), which this crate cannot
++/// name directly.
++#[derive(Debug, PartialEq, Eq, Hash)]
++struct StableClock {
++    signature: Signature,
++}
++
++impl ScalarUDFImpl for StableClock {
++    fn name(&self) -> &str {
++        "stable_clock_test"
++    }
++    fn signature(&self) -> &Signature {
++        &self.signature
++    }
++    fn return_type(&self, _: &[DataType]) -> DFResult<DataType> {
++        Ok(DataType::Int64)
++    }
++    fn invoke_with_args(&self, _: ScalarFunctionArgs) -> DFResult<ColumnarValue> {
++        Ok(ColumnarValue::Scalar(
++            datafusion::common::ScalarValue::Int64(Some(1_700_000_000)),
++        ))
++    }
++}
++
++fn stable_clock() -> Expr {
++    ScalarUDF::from(StableClock {
++        signature: Signature::nullary(Volatility::Stable),
++    })
++    .call(vec![])
++}
++
++/// Shared body of the stable-clock cases: the function must be declared
++/// `Stable` (not merely assumed so), the plan is admitted, and it is not
++/// replayable in content, with the evidence naming the function.
++fn assert_stable_clock_not_replayable(clock: Expr) -> TestResult {
++    let f = Fixture::new()?;
++    let Expr::ScalarFunction(function) = &clock else {
++        return Err("clock fixture must remain a scalar function".into());
++    };
++    assert_eq!(function.func.signature().volatility, Volatility::Stable);
++    let name = function.func.name().to_string();
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .project(vec![col("id"), clock.alias("clock")])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(
++        !evidence.replayable,
++        "stable clock can change on replay: {evidence:?}"
++    );
++    assert!(
++        evidence
++            .operators
++            .iter()
++            .any(|op| op.reason.contains(&format!("`{name}` is stable"))),
++        "{evidence:?}"
++    );
++    Ok(())
++}
++
++fn using(builder: LogicalPlanBuilder, right: LogicalPlan, kind: JoinType) -> DFResult<LogicalPlan> {
++    builder
++        .join(right, kind, (vec!["id"], vec!["id"]), None)?
++        .build()
++}
++
++#[test]
++fn a_filtered_projection_over_one_bound_range_is_admitted_and_replayable() -> TestResult {
++    let f = Fixture::new()?;
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .filter(col("v").gt(lit(1)))?
++        .project(vec![col("id")])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(evidence.replayable);
++    assert!(evidence.provenance_verified);
++    assert_eq!(
++        evidence.sources_read,
++        BTreeSet::from([name(&["c", "d", "clicks"])])
++    );
++    assert!(evidence.unbound_scans.is_empty());
++    assert!(
++        evidence
++            .operators
++            .iter()
++            .all(|op| op.decision == Decision::Admit)
++    );
++    Ok(())
++}
++
++#[test]
++fn a_join_needs_exactly_one_range_bearing_side() -> TestResult {
++    let f = Fixture::new()?;
++    let stream_static = using(
++        f.scan(&["c", "d", "clicks"])?,
++        f.scan(&["c", "d", "dim"])?.build()?,
++        JoinType::Inner,
++    )?;
++    let evidence = f.admit(&stream_static);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert_eq!(
++        evidence.static_read,
++        BTreeSet::from([name(&["c", "d", "dim"])])
++    );
++
++    let stream_stream = using(
++        f.scan(&["c", "d", "clicks"])?,
++        f.scan(&["c", "d", "views"])?.build()?,
++        JoinType::Inner,
++    )?;
++    let evidence = f.admit(&stream_stream);
++    assert!(!evidence.admitted);
++    assert!(evidence.operators.iter().any(|op| op.operator == "Join"
++        && op.decision == Decision::Reject
++        && op.reason.contains("cross-batch")));
++
++    // Through an alias and a projection, nested under another join with
++    // a materialised local side: still two range-bearing sides.
++    let nested = f
++        .scan(&["c", "d", "clicks"])?
++        .alias("a")?
++        .project(vec![col("a.id")])?
++        .join(
++            f.scan(&["c", "d", "views"])?.alias("b")?.build()?,
++            JoinType::Inner,
++            (vec!["a.id"], vec!["b.id"]),
++            None,
++        )?
++        .join(
++            f.scan(&["c", "d", "events"])?.build()?,
++            JoinType::Inner,
++            (vec!["a.id"], vec!["id"]),
++            None,
++        )?
++        .build()?;
++    assert!(!f.admit(&nested).admitted);
++    Ok(())
++}
++
++#[test]
++fn join_kinds_follow_sparks_stream_static_orientation() -> TestResult {
++    let f = Fixture::new()?;
++    let cases: Vec<(JoinType, bool, bool)> = vec![
++        // kind, admitted with the range side on the left, on the right
++        (JoinType::Inner, true, true),
++        (JoinType::Left, true, false),
++        (JoinType::LeftSemi, true, false),
++        (JoinType::LeftAnti, true, false),
++        (JoinType::Right, false, true),
++        (JoinType::Full, false, false),
++        (JoinType::RightSemi, false, false),
++        (JoinType::RightAnti, false, false),
++        (JoinType::LeftMark, false, false),
++        (JoinType::RightMark, false, false),
++    ];
++    for (kind, left_ok, right_ok) in cases {
++        let stream_left = using(
++            f.scan(&["c", "d", "clicks"])?,
++            f.scan(&["c", "d", "dim"])?.build()?,
++            kind,
++        )?;
++        let left = f.admit(&stream_left);
++        assert_eq!(left.admitted, left_ok, "{kind:?} range left: {left:?}");
++        let stream_right = using(
++            f.scan(&["c", "d", "dim"])?,
++            f.scan(&["c", "d", "clicks"])?.build()?,
++            kind,
++        )?;
++        let right = f.admit(&stream_right);
++        assert_eq!(right.admitted, right_ok, "{kind:?} range right: {right:?}");
++    }
++    // Static with static: every kind is admitted.
++    let static_static = using(
++        f.scan(&["c", "d", "dim"])?,
++        f.scan(&["c", "d", "events"])?.build()?,
++        JoinType::Full,
++    )?;
++    assert!(f.admit(&static_static).admitted);
++    Ok(())
++}
++
++#[test]
++fn stateful_operators_and_unbound_scans_are_rejected_with_evidence() -> TestResult {
++    let f = Fixture::new()?;
++    let aggregate = f
++        .scan(&["c", "d", "clicks"])?
++        .aggregate(vec![col("id")], Vec::<Expr>::new())?
++        .build()?;
++    let evidence = f.admit(&aggregate);
++    assert!(!evidence.admitted);
++    assert!(
++        evidence
++            .operators
++            .iter()
++            .any(|op| op.operator == "Aggregate" && op.decision == Decision::Reject)
++    );
++    let limited = f.scan(&["c", "d", "clicks"])?.limit(0, Some(5))?.build()?;
++    assert!(!f.admit(&limited).admitted);
++    let sorted = f
++        .scan(&["c", "d", "clicks"])?
++        .sort(vec![col("id").sort(true, true)])?
++        .build()?;
++    assert!(!f.admit(&sorted).admitted);
++    let distinct = f.scan(&["c", "d", "clicks"])?.distinct()?.build()?;
++    assert!(!f.admit(&distinct).admitted);
++
++    let unbound = f.scan(&["c", "d", "elsewhere"])?.build()?;
++    let evidence = f.admit(&unbound);
++    assert!(!evidence.admitted);
++    assert!(!evidence.provenance_verified);
++    assert_eq!(evidence.unbound_scans, vec!["c.d.elsewhere".to_string()]);
++    Ok(())
++}
++
++#[test]
++fn a_scan_is_bound_by_provider_identity_not_by_name() -> TestResult {
++    let f = Fixture::new()?;
++    // Same name as a bound source, a different provider.
++    let impostor = scan_with(&["c", "d", "clicks"], provider()?)?.build()?;
++    let evidence = f.admit(&impostor);
++    assert!(!evidence.admitted, "{evidence:?}");
++    assert!(!evidence.provenance_verified);
++    assert_eq!(evidence.unbound_scans, vec!["c.d.clicks".to_string()]);
++    assert!(evidence.sources_read.is_empty());
++    // Same name as the materialised local output, a substituted provider.
++    let substituted = scan_with(&["c", "d", "events"], provider()?)?.build()?;
++    let evidence = f.admit(&substituted);
++    assert!(!evidence.admitted, "{evidence:?}");
++    assert!(evidence.static_read.is_empty());
++    // Same name as the static binding, a different provider.
++    let other_dim = scan_with(&["c", "d", "dim"], provider()?)?.build()?;
++    assert!(!f.admit(&other_dim).admitted);
++    // The analysis placeholder cannot stand in for the rows of a local
++    // output, while the materialised provider can.
++    let placeholder = LogicalPlanBuilder::empty(false).build()?;
++    let evidence = f.admit(&placeholder);
++    assert!(!evidence.admitted, "{evidence:?}");
++    assert!(
++        evidence
++            .operators
++            .iter()
++            .any(|op| op.operator == "EmptyRelation" && op.decision == Decision::Reject)
++    );
++    assert!(f.admit(&f.scan(&["c", "d", "events"])?.build()?).admitted);
++    Ok(())
++}
++
++#[test]
++fn stable_now_is_not_content_replayable() -> TestResult {
++    assert_stable_clock_not_replayable(datafusion::functions::datetime::expr_fn::now())
++}
++
++#[test]
++fn stable_current_date_is_not_content_replayable() -> TestResult {
++    assert_stable_clock_not_replayable(datafusion::functions::datetime::expr_fn::current_date())
++}
++
++#[test]
++fn a_stable_nullary_function_is_not_content_replayable() -> TestResult {
++    assert_stable_clock_not_replayable(stable_clock())
++}
++
++#[test]
++fn a_stable_function_inside_a_filter_is_not_content_replayable() -> TestResult {
++    // Stability is audited on every operator's expressions, not only on
++    // projections.
++    let f = Fixture::new()?;
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .filter(col("id").lt(stable_clock()))?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(!evidence.replayable, "{evidence:?}");
++    Ok(())
++}
++
++#[test]
++fn immutable_projection_remains_content_replayable() -> TestResult {
++    let f = Fixture::new()?;
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .project(vec![(col("id") + lit(1_i64)).alias("next")])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(evidence.replayable, "{evidence:?}");
++    Ok(())
++}
++
++#[test]
++fn immutable_builtin_functions_remain_content_replayable() -> TestResult {
++    // A real Immutable DataFusion function is the control for the
++    // signature check: nothing about being a function call is penalised.
++    let f = Fixture::new()?;
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .project(vec![
++            datafusion::functions::math::expr_fn::abs(col("v")).alias("a"),
++        ])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(evidence.replayable, "{evidence:?}");
++    Ok(())
++}
++
++#[test]
++fn a_volatile_expression_is_admitted_but_not_replayable() -> TestResult {
++    let f = Fixture::new()?;
++    let plan = f
++        .scan(&["c", "d", "clicks"])?
++        .project(vec![col("id"), volatile().alias("r")])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(!evidence.replayable);
++    assert!(
++        evidence
++            .operators
++            .iter()
++            .any(|op| op.reason.contains("volatile"))
++    );
++    // Volatility inside literal rows is audited too.
++    let values = LogicalPlanBuilder::values(vec![vec![volatile()]])?.build()?;
++    assert!(!f.admit(&values).replayable);
++    Ok(())
++}
++
++#[test]
++fn subqueries_count_one_side_each() -> TestResult {
++    let f = Fixture::new()?;
++    // Union of ranges is row-local.
++    let union = f
++        .scan(&["c", "d", "clicks"])?
++        .union(f.scan(&["c", "d", "views"])?.build()?)?
++        .build()?;
++    let evidence = f.admit(&union);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert_eq!(evidence.sources_read.len(), 2);
++    // EXISTS over a range-bearing subquery under a range-bearing input.
++    let two = f
++        .scan(&["c", "d", "clicks"])?
++        .filter(exists(Arc::new(f.scan(&["c", "d", "views"])?.build()?)))?
++        .build()?;
++    assert!(!f.admit(&two).admitted);
++    // EXISTS over a static subquery under a range-bearing input.
++    let one = f
++        .scan(&["c", "d", "clicks"])?
++        .filter(exists(Arc::new(f.scan(&["c", "d", "dim"])?.build()?)))?
++        .build()?;
++    assert!(f.admit(&one).admitted);
++    // Two range-bearing scalar subqueries under a static input, one of
++    // them nested inside a function: two sides, rejected.
++    let plan = f
++        .scan(&["c", "d", "dim"])?
++        .project(vec![
++            scalar_subquery(Arc::new(f.scan(&["c", "d", "clicks"])?.build()?)).alias("a"),
++            // Nested inside an arithmetic expression and a cast.
++            datafusion::logical_expr::cast(
++                scalar_subquery(Arc::new(f.scan(&["c", "d", "views"])?.build()?)) + lit(0_i64),
++                DataType::Int64,
++            )
++            .alias("b"),
++        ])?
++        .build()?;
++    let evidence = f.admit(&plan);
++    assert!(!evidence.admitted, "{evidence:?}");
++    assert!(
++        evidence
++            .operators
++            .iter()
++            .any(|op| op.operator == "Projection"
++                && op.decision == Decision::Reject
++                && op.reason.contains("cross-batch"))
++    );
++    // One range-bearing scalar subquery under a static input is admitted.
++    let single = f
++        .scan(&["c", "d", "dim"])?
++        .project(vec![
++            scalar_subquery(Arc::new(f.scan(&["c", "d", "clicks"])?.build()?)).alias("a"),
++        ])?
++        .build()?;
++    assert!(f.admit(&single).admitted);
++    // A range-bearing subquery in a join condition is rejected.
++    let in_condition = f
++        .scan(&["c", "d", "dim"])?
++        .join_on(
++            f.scan(&["c", "d", "events"])?.build()?,
++            JoinType::Inner,
++            vec![exists(Arc::new(f.scan(&["c", "d", "clicks"])?.build()?))],
++        )?
++        .build()?;
++    assert!(!f.admit(&in_condition).admitted);
++    // Literal rows holding a range-bearing subquery are range-bearing.
++    let values = LogicalPlanBuilder::values(vec![vec![scalar_subquery(Arc::new(
++        f.scan(&["c", "d", "clicks"])?.build()?,
++    ))]])?
++    .build()?;
++    let evidence = f.admit(&values);
++    assert!(evidence.admitted, "{evidence:?}");
++    assert!(evidence.sources_read.contains(&name(&["c", "d", "clicks"])));
++    Ok(())
++}
++
++#[test]
++fn evidence_round_trips_through_serde() -> TestResult {
++    let f = Fixture::new()?;
++    let plan = f.scan(&["c", "d", "clicks"])?.build()?;
++    let evidence = f.admit(&plan);
++    let json = serde_json::to_string(&evidence)?;
++    let decoded: AdmissionEvidence = serde_json::from_str(&json)?;
++    assert_eq!(decoded, evidence);
++    Ok(())
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+index 134a03d1c..daf9ff9d8 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+@@ -47,10 +47,6 @@ pub struct SourceBinding {
+ pub struct StaticBinding {
+     pub name: Name,
+     pub identity: String,
+-    #[cfg_attr(
+-        test,
+-        expect(dead_code, reason = "read by the admission integration unit")
+-    )]
+     pub provider: Arc<dyn TableProvider>,
+ }
+ 
+@@ -64,10 +60,6 @@ pub struct StaticBinding {
+ pub struct LocalBinding {
+     pub name: Name,
+     pub identity: String,
+-    #[cfg_attr(
+-        test,
+-        expect(dead_code, reason = "read by the admission integration unit")
+-    )]
+     pub provider: Arc<dyn TableProvider>,
+ }
+ 
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/mod.rs b/crates/sail-spark-connect/src/pipelines/streaming/mod.rs
+index 9ac57a03b..ec7265d31 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/mod.rs
+@@ -12,6 +12,7 @@
+     expect(dead_code, reason = "wired by the streaming admission unit")
+ )]
+ 
++pub(super) mod admission;
+ pub(super) mod binding;
+ pub(super) mod intent;
+ pub(super) mod source;

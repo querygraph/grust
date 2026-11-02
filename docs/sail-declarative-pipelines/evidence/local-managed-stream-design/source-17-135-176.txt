@@ -1,0 +1,42 @@
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| internal_datafusion_err!("task resource scope lock poisoned"))?;
+        if cancel {
+            self.cancellation.send_replace(true);
+        }
+        let resources = match &mut *state {
+            State::Closing(drain) => return Ok(drain.clone()),
+            State::Open { resources, .. } => std::mem::take(resources),
+        };
+        let drain = async move {
+            let registered = resources.len();
+            let results = join_all(resources.into_iter().map(|resource| async move {
+                let result = resource
+                    .handle
+                    .await
+                    .unwrap_or_else(|error| Err(DataFusionError::External(Box::new(error))));
+                (resource.id, result)
+            }))
+            .await;
+            let failures = results
+                .into_iter()
+                .filter_map(|(id, result)| result.err().map(|error| ResourceFailure { id, error }))
+                .collect();
+            Arc::new(ResourceDrainReport {
+                registered,
+                failures,
+            })
+        }
+        .boxed()
+        .shared();
+        *state = State::Closing(drain.clone());
+        Ok(drain)
+    }
+}
+
+impl Drop for TaskResourceScope {
+    fn drop(&mut self) {
+        // Best effort only. Runtime/actor owners must explicitly await drain.
+        self.cancellation.send_replace(true);
+    }

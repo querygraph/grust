@@ -1,0 +1,306 @@
+diff --git a/crates/sail-plan/src/resolver/mod.rs b/crates/sail-plan/src/resolver/mod.rs
+index 2e41d11f3..6eb2d2dd8 100644
+--- a/crates/sail-plan/src/resolver/mod.rs
++++ b/crates/sail-plan/src/resolver/mod.rs
+@@ -47,10 +47,11 @@ impl<'a> PlanResolver<'a> {
+         self
+     }
+ 
+-    /// Use a caller-captured Session for queries executed during resolution.
++    /// Use a caller-captured Session for read factories and queries executed
++    /// during resolution.
+     /// The caller retains admission/cleanup and chooses the capture boundary;
+     /// authoritative session commands and catalog name resolution still use ctx.
+-    /// Provider factories and final execution require their own propagation.
++    /// Write/procedure factories and final execution require their own propagation.
+     pub fn with_query_session(mut self, session: &'a dyn Session) -> Self {
+         self.query_session = Some(session);
+         self
+diff --git a/crates/sail-plan/src/resolver/query/factory_session_tests.rs b/crates/sail-plan/src/resolver/query/factory_session_tests.rs
+new file mode 100644
+index 000000000..01a100455
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/query/factory_session_tests.rs
+@@ -0,0 +1,173 @@
++use datafusion::catalog::{TableFunctionArgs, TableFunctionImpl};
++use datafusion_expr::TableSource;
++use sail_common_datafusion::datasource::{DataSource, SinkInfo, SourceInfo};
++
++use super::*;
++
++fn empty_table() -> Result<Arc<dyn TableProvider>> {
++    Ok(Arc::new(MemTable::try_new(
++        Arc::new(Schema::new(vec![Field::new("id", DataType::Int64, false)])),
++        vec![vec![]],
++    )?))
++}
++struct CheckingSource {
++    resources: Option<Arc<TaskResourceScope>>,
++}
++#[tonic::async_trait]
++impl DataSource for CheckingSource {
++    fn name(&self) -> &str {
++        "read_probe"
++    }
++    async fn create_source(
++        &self,
++        session: &dyn Session,
++        info: SourceInfo,
++    ) -> Result<Arc<dyn TableSource>> {
++        assert_eq!(info.paths, ["input"]);
++        let store = session
++            .runtime_env()
++            .object_store(ObjectStoreUrl::parse("memory://resolver")?)?;
++        if let Some(expected) = &self.resources {
++            let scope = session.extension::<TaskResourceScope>()?;
++            assert!(Arc::ptr_eq(&scope, expected));
++            assert!(Arc::ptr_eq(
++                &session.task_ctx().extension::<TaskResourceScope>()?,
++                expected
++            ));
++            assert_eq!(session.config().target_partitions(), 7);
++            let value =
++                scope
++                    .run(move |_| async move {
++                        Ok(store.get(&Path::from("input")).await?.bytes().await?)
++                    })
++                    .await?;
++            assert_eq!(value.as_ref(), b"admitted");
++        } else {
++            assert!(session.extension::<TaskResourceScope>().is_err());
++            assert_eq!(session.config().target_partitions(), 9);
++            assert_eq!(
++                store
++                    .get(&Path::from("input"))
++                    .await?
++                    .bytes()
++                    .await?
++                    .as_ref(),
++                b"parent"
++            );
++        }
++        Ok(provider_as_source(empty_table()?))
++    }
++    async fn create_writer(&self, _: &dyn Session, _: SinkInfo) -> Result<LogicalPlan> {
++        datafusion_common::internal_err!("read-only test source")
++    }
++}
++async fn source_read(scoped: bool, format_path: bool) -> TestResult {
++    let fixture = Fixture::new().await?;
++    fixture
++        .ctx
++        .extension::<DataSourceRegistry>()?
++        .register_data_source(Arc::new(CheckingSource {
++            resources: scoped.then(|| fixture.resources.clone()),
++        }))?;
++    let resolver = if scoped {
++        fixture.resolver()
++    } else {
++        PlanResolver::new(&fixture.ctx, Arc::new(PlanConfig::default()))
++    };
++    let plan = if format_path {
++        resolver
++            .resolve_query_read_named_table(
++                spec::ReadNamedTable {
++                    name: vec!["read_probe", "input"].into(),
++                    temporal: None,
++                    sample: None,
++                    options: vec![],
++                },
++                &mut PlanResolverState::new(),
++            )
++            .await?
++    } else {
++        resolver
++            .resolve_query_read_data_source(
++                spec::ReadDataSource {
++                    format: Some("read_probe".into()),
++                    schema: None,
++                    options: vec![],
++                    paths: vec!["input".into()],
++                    predicates: vec![],
++                },
++                &mut PlanResolverState::new(),
++            )
++            .await?
++    };
++    assert_eq!(plan.schema().fields().len(), 1);
++    assert_eq!(
++        fixture.calls.load(Ordering::SeqCst),
++        0,
++        "factory must run before physical planning"
++    );
++    assert_eq!(
++        fixture.resources.drain().await?.registered,
++        usize::from(scoped)
++    );
++    assert!(fixture.ctx.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
++#[tokio::test]
++async fn source_factory_gets_captured_session_before_physical_planning() -> TestResult {
++    source_read(true, false).await
++}
++#[tokio::test]
++async fn format_path_factory_gets_captured_session() -> TestResult {
++    source_read(true, true).await
++}
++#[tokio::test]
++async fn source_factory_without_view_keeps_authoritative_session() -> TestResult {
++    source_read(false, false).await
++}
++#[derive(Debug)]
++struct CheckingFunction(Arc<TaskResourceScope>);
++impl TableFunctionImpl for CheckingFunction {
++    fn call_with_args(&self, args: TableFunctionArgs) -> Result<Arc<dyn TableProvider>> {
++        let session = args.session();
++        let scope = session.extension::<TaskResourceScope>()?;
++        assert!(Arc::ptr_eq(&scope, &self.0));
++        assert_eq!(session.config().target_partitions(), 7);
++        let store = session
++            .runtime_env()
++            .object_store(ObjectStoreUrl::parse("memory://resolver")?)?;
++        scope.spawn(move |_| async move {
++            let value = store.get(&Path::from("input")).await?.bytes().await?;
++            assert_eq!(value.as_ref(), b"admitted");
++            Ok(())
++        })?;
++        empty_table()
++    }
++}
++#[tokio::test]
++async fn native_table_function_lookup_stays_authoritative_but_factory_gets_view() -> TestResult {
++    let fixture = Fixture::new().await?;
++    // Lookup deliberately stays authoritative: register after the view captured
++    // its state. Only the provider callback receives the selected Session.
++    fixture.ctx.register_udtf(
++        "read_probe",
++        Arc::new(CheckingFunction(fixture.resources.clone())),
++    );
++    let plan = fixture
++        .resolver()
++        .resolve_query_read_udtf(
++            spec::ReadUdtf {
++                name: spec::ObjectName::bare("read_probe"),
++                arguments: vec![],
++                named_arguments: vec![],
++                options: vec![],
++            },
++            &mut PlanResolverState::new(),
++        )
++        .await?;
++    assert_eq!(plan.schema().fields().len(), 1);
++    assert_eq!(fixture.calls.load(Ordering::SeqCst), 0);
++    assert_eq!(fixture.resources.drain().await?.registered, 1);
++    assert!(fixture.ctx.extension::<TaskResourceScope>().is_err());
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/query/read.rs b/crates/sail-plan/src/resolver/query/read.rs
+index 169761c7b..69f8a47e7 100644
+--- a/crates/sail-plan/src/resolver/query/read.rs
++++ b/crates/sail-plan/src/resolver/query/read.rs
+@@ -250,13 +250,13 @@ impl PlanResolver<'_> {
+                 let table_source = match lake_relation {
+                     Some((relation_provider, relation)) => {
+                         relation_provider
+-                            .create_relation(&self.ctx.state(), info, relation)
++                            .create_relation(self.provider_session().as_session(), info, relation)
+                             .await?
+                     }
+                     None => {
+                         data_source_registry
+                             .get_data_source(&format)?
+-                            .create_source(&self.ctx.state(), info)
++                            .create_source(self.provider_session().as_session(), info)
+                             .await?
+                     }
+                 };
+@@ -583,9 +583,9 @@ impl PlanResolver<'_> {
+                         }
+                     },
+                 };
+-                let session_state = self.ctx.state();
++                let session = self.provider_session();
+                 let table_provider = table_function.create_table_provider_with_args(
+-                    TableFunctionArgs::new(&arguments, &session_state),
++                    TableFunctionArgs::new(&arguments, session.as_session()),
+                 )?;
+                 self.resolve_table_provider_with_rename(
+                     table_provider,
+@@ -636,7 +636,7 @@ impl PlanResolver<'_> {
+         let registry = self.ctx.extension::<DataSourceRegistry>()?;
+         let table_source = registry
+             .get_data_source(&format)?
+-            .create_source(&self.ctx.state(), info)
++            .create_source(self.provider_session().as_session(), info)
+             .await?;
+         self.resolve_table_source_with_rename(
+             table_source,
+diff --git a/crates/sail-plan/src/resolver/query/session_tests.rs b/crates/sail-plan/src/resolver/query/session_tests.rs
+index b77d481fb..6876b1f71 100644
+--- a/crates/sail-plan/src/resolver/query/session_tests.rs
++++ b/crates/sail-plan/src/resolver/query/session_tests.rs
+@@ -24,6 +24,7 @@ use sail_catalog::provider::CatalogProvider;
+ use sail_catalog_memory::MemoryCatalogProvider;
+ use sail_common::spec;
+ use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::datasource::DataSourceRegistry;
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_common_datafusion::session::plan::PlanService;
+ use sail_common_datafusion::session::scoped::ScopedSession;
+@@ -141,6 +142,7 @@ impl Fixture {
+             .with_target_partitions(7)
+             .with_create_default_catalog_and_schema(false)
+             .with_extension(Arc::new(catalog))
++            .with_extension(Arc::new(DataSourceRegistry::new()))
+             .with_extension(Arc::new(PlanService::new(
+                 Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
+                 Box::new(SparkPlanFormatter),
+@@ -311,3 +313,6 @@ async fn absent_query_session_keeps_legacy_collection_path() -> TestResult {
+     assert!(ctx.extension::<TaskResourceScope>().is_err());
+     Ok(())
+ }
++
++#[path = "factory_session_tests.rs"]
++mod factories;
+diff --git a/crates/sail-plan/src/resolver/session.rs b/crates/sail-plan/src/resolver/session.rs
+index 3168bdceb..c04d518e2 100644
+--- a/crates/sail-plan/src/resolver/session.rs
++++ b/crates/sail-plan/src/resolver/session.rs
+@@ -1,11 +1,36 @@
+ use arrow::array::RecordBatch;
++use datafusion::catalog::Session;
++use datafusion::execution::SessionState;
+ use datafusion::physical_plan::collect;
+ use datafusion_expr::LogicalPlan;
+ 
+ use super::PlanResolver;
+ use crate::error::PlanResult;
+ 
++/// Keep a legacy snapshot alive across a factory call, or borrow the caller's
++/// captured view. Only the legacy branch captures state, at the old call phase.
++pub(super) enum ProviderSession<'a> {
++    Captured(&'a dyn Session),
++    Legacy(Box<SessionState>),
++}
++
++impl ProviderSession<'_> {
++    pub(super) fn as_session(&self) -> &dyn Session {
++        match self {
++            Self::Captured(session) => *session,
++            Self::Legacy(state) => state.as_ref(),
++        }
++    }
++}
++
+ impl PlanResolver<'_> {
++    pub(super) fn provider_session(&self) -> ProviderSession<'_> {
++        match self.query_session {
++            Some(session) => ProviderSession::Captured(session),
++            None => ProviderSession::Legacy(Box::new(self.ctx.state())),
++        }
++    }
++
+     /// Execute a query used by resolution, preserving the legacy path unless
+     /// the caller supplied its admitted query Session. This never dispatches
+     /// authoritative session commands through a private state snapshot.

@@ -1,0 +1,28 @@
+{
+  "recorded_at": "2026-10-30T06:45:01.473804+00:00",
+  "scope": "Archive checks only; no new product tests, builds, servers or gates.",
+  "initial_attempt": {
+    "command": [
+      "python3",
+      "/tmp/sail-sdp-verify-checkpoint-registry.py",
+      "/Users/alexy/src/grust-sdp",
+      "--sail-repo",
+      "/Users/alexy/src/sail-pipelines-proposal"
+    ],
+    "exit_code": 1,
+    "stage": "ElementTree.parse(public/pytest.xml)",
+    "environment_failure": "Homebrew Python 3.15 pyexpat failed to load symbol _XML_SetAllocTrackerActivationThreshold from /usr/lib/libexpat.1.dylib; XMLParser raised ImportError: No module named expat; use SimpleXMLTreeBuilder instead",
+    "verdict": null
+  },
+  "successful_attempt": {
+    "command": [
+      "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+      "/tmp/sail-sdp-verify-checkpoint-registry.py",
+      "/Users/alexy/src/grust-sdp",
+      "--sail-repo",
+      "/Users/alexy/src/sail-pipelines-proposal"
+    ],
+    "exit_code": 0,
+    "stdout": "PASS checkpoint registry exact-source archive: cba833ae08a4844afcb4e5edef0cc894231d0d82\n51 library; 4 optimized under CPU load; 300 public; 67 upstream (63 unique); expected control failure retained\n"
+  }
+}

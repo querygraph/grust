@@ -1,0 +1,584 @@
+commit e02e4f712f2b597d2aba0d0f49138da60b40e5d3
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 20:51:27 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 20:51:27 2026 -0700
+
+    fix: drain task resources before reporting distributed task completion
+
+diff --git a/crates/sail-execution/src/task_runner/actor/handler.rs b/crates/sail-execution/src/task_runner/actor/handler.rs
+index 20a37c4fc..72f7524a2 100644
+--- a/crates/sail-execution/src/task_runner/actor/handler.rs
++++ b/crates/sail-execution/src/task_runner/actor/handler.rs
+@@ -8,6 +8,8 @@ use log::{error, warn};
+ use prost::Message;
+ use sail_common::actor::{ActorAction, ActorContext};
+ use sail_common_datafusion::error::CommonErrorCause;
++use sail_common_datafusion::task_resources::ScopedTaskContext;
++use tokio::runtime::Handle;
+ use tokio::sync::oneshot;
+ 
+ use crate::driver::{DriverMessage, TaskStatus};
+@@ -65,6 +67,7 @@ impl TaskRunnerActor {
+         self.tasks.record_batch(job_id, stage, &tasks);
+         for task in tasks {
+             let key = task.task_key(job_id, stage);
++            let scoped = ScopedTaskContext::new(context.as_ref(), Handle::current());
+             let stream = TaskPreparation {
+                 session_id: self.session_id.clone(),
+                 handle: ctx.handle().clone(),
+@@ -74,11 +77,14 @@ impl TaskRunnerActor {
+                 key.clone(),
+                 definition.clone(),
+                 proto.clone(),
+-                context.clone(),
++                scoped.context,
+             );
+             let (tx, rx) = oneshot::channel();
+             self.signals.insert(key.clone(), tx);
+-            ctx.spawn(TaskMonitor::new(ctx.handle().clone(), key, stream, rx).supervise());
++            ctx.spawn(
++                TaskMonitor::new(ctx.handle().clone(), key, stream, rx, scoped.resources)
++                    .supervise(),
++            );
+         }
+         Ok(())
+     }
+diff --git a/crates/sail-execution/src/task_runner/monitor.rs b/crates/sail-execution/src/task_runner/monitor.rs
+index 9fabe7758..62b16c4ac 100644
+--- a/crates/sail-execution/src/task_runner/monitor.rs
++++ b/crates/sail-execution/src/task_runner/monitor.rs
+@@ -1,12 +1,16 @@
+ use std::any::Any;
++use std::panic::AssertUnwindSafe;
++use std::sync::Arc;
+ 
++use datafusion::common::DataFusionError;
+ use datafusion::execution::SendableRecordBatchStream;
+ use fastrace::Span;
+ use fastrace::future::FutureExt;
+-use futures::StreamExt;
++use futures::{FutureExt as _, StreamExt};
+ use sail_common::actor::ActorHandle;
+ use sail_common::telemetry::SpanAttribute;
+ use sail_common_datafusion::error::CommonErrorCause;
++use sail_common_datafusion::task_resources::TaskResourceScope;
+ use sail_python_udf::error::PyErrExtractor;
+ use tokio::sync::oneshot;
+ use tokio_util::task::AbortOnDropHandle;
+@@ -20,6 +24,7 @@ pub struct TaskMonitor {
+     key: TaskKey,
+     stream: SendableRecordBatchStream,
+     signal: oneshot::Receiver<()>,
++    resources: Arc<TaskResourceScope>,
+ }
+ 
+ impl TaskMonitor {
+@@ -28,12 +33,14 @@ impl TaskMonitor {
+         key: TaskKey,
+         stream: SendableRecordBatchStream,
+         signal: oneshot::Receiver<()>,
++        resources: Arc<TaskResourceScope>,
+     ) -> Self {
+         Self {
+             handle,
+             key,
+             stream,
+             signal,
++            resources,
+         }
+     }
+ 
+@@ -43,18 +50,17 @@ impl TaskMonitor {
+             key,
+             stream,
+             signal,
++            resources,
+         } = self;
+         let _ = handle.send(Self::running(key.clone())).await;
+-        let message = tokio::select! {
+-            x = Self::execute(key.clone(), stream) => x,
+-            x = Self::cancel(key.clone(), signal) => x,
+-        };
++        let message = Self::run_to_terminal(key, stream, signal, &resources).await;
+         let _ = handle.send(message).await;
+     }
+ 
+     pub async fn supervise(self) {
+         let handle = self.handle.clone();
+         let key = self.key.clone();
++        let resources = self.resources.clone();
+         // Admission now has one span per batch. Preserve task identity on the monitor
+         // so preparation and execution spans can still be attributed to each attempt.
+         let span = Span::enter_with_local_parent("TaskMonitor::run").with_properties(|| {
+@@ -70,10 +76,105 @@ impl TaskMonitor {
+         });
+         let monitor = AbortOnDropHandle::new(tokio::spawn(self.run().in_span(span)));
+         if let Some(message) = Self::monitor_failure(key, monitor).await {
++            // Retain ownership even when the monitor panics outside execution.
++            let message = Self::drain_resources(message, &resources).await;
+             let _ = handle.send(message).await;
+         }
+     }
+ 
++    async fn run_to_terminal(
++        key: TaskKey,
++        stream: SendableRecordBatchStream,
++        mut signal: oneshot::Receiver<()>,
++        resources: &TaskResourceScope,
++    ) -> TaskRunnerMessage {
++        // Catch both stream polling and destruction of the losing select future.
++        let message = AssertUnwindSafe(async {
++            tokio::select! {
++                x = Self::execute(key.clone(), stream) => x,
++                x = Self::cancel(key.clone(), &mut signal) => x,
++            }
++        })
++        .catch_unwind()
++        .await
++        .unwrap_or_else(|payload| Self::panicked(key.clone(), payload));
++
++        if matches!(
++            message,
++            TaskRunnerMessage::ReportTaskStatus {
++                status: TaskStatus::Succeeded,
++                ..
++            }
++        ) {
++            // EOF can precede resource completion. StopTask must still interrupt
++            // that wait, signal the supervisors, and await their cleanup reports.
++            tokio::select! {
++                x = Self::drain_resources(message, resources) => x,
++                x = Self::cancel(key, &mut signal) => Self::drain_resources(x, resources).await,
++            }
++        } else {
++            Self::drain_resources(message, resources).await
++        }
++    }
++
++    async fn drain_resources(
++        mut message: TaskRunnerMessage,
++        resources: &TaskResourceScope,
++    ) -> TaskRunnerMessage {
++        if !matches!(
++            message,
++            TaskRunnerMessage::ReportTaskStatus {
++                status: TaskStatus::Succeeded,
++                ..
++            }
++        ) && let Err(error) = resources.cancel()
++        {
++            Self::resource_error(&mut message, "resource cancellation", &error);
++        }
++        match resources.drain().await {
++            Ok(report) => {
++                for failure in &report.failures {
++                    Self::resource_error(
++                        &mut message,
++                        &format!("resource {} completion or cleanup", failure.id.0),
++                        &failure.error,
++                    );
++                }
++            }
++            Err(error) => Self::resource_error(&mut message, "resource drainage", &error),
++        }
++        message
++    }
++
++    fn resource_error(message: &mut TaskRunnerMessage, context: &str, error: &DataFusionError) {
++        if let TaskRunnerMessage::ReportTaskStatus {
++            status,
++            message,
++            cause,
++            ..
++        } = message
++        {
++            *status = TaskStatus::Failed;
++            let secondary = CommonErrorCause::new::<PyErrExtractor>(error);
++            // Match error-collection precedence: preserve the primary cause,
++            // except that an uncertain commit must prohibit automatic replay.
++            if cause
++                .as_ref()
++                .is_none_or(|primary| primary.is_retryable() && !secondary.is_retryable())
++            {
++                *cause = Some(secondary);
++            }
++            let detail = format!("{context}: {error}");
++            match message {
++                Some(message) => {
++                    message.push_str("; ");
++                    message.push_str(&detail);
++                }
++                None => *message = Some(detail),
++            }
++        }
++    }
++
+     async fn monitor_failure(
+         key: TaskKey,
+         monitor: AbortOnDropHandle<()>,
+@@ -81,15 +182,7 @@ impl TaskMonitor {
+         match monitor.await {
+             Ok(()) => None,
+             Err(error) if error.is_cancelled() => None,
+-            Err(error) if error.is_panic() => {
+-                let message = format!("task panicked: {}", Self::panic_message(error.into_panic()));
+-                Some(Self::status(
+-                    key,
+-                    TaskStatus::Failed,
+-                    Some(message.clone()),
+-                    Some(CommonErrorCause::Internal(message)),
+-                ))
+-            }
++            Err(error) if error.is_panic() => Some(Self::panicked(key, error.into_panic())),
+             Err(error) => {
+                 let message = format!("task monitor failed: {error}");
+                 Some(Self::status(
+@@ -131,8 +224,18 @@ impl TaskMonitor {
+         }
+     }
+ 
++    fn panicked(key: TaskKey, payload: Box<dyn Any + Send>) -> TaskRunnerMessage {
++        let message = format!("task panicked: {}", Self::panic_message(payload));
++        Self::status(
++            key,
++            TaskStatus::Failed,
++            Some(message.clone()),
++            Some(CommonErrorCause::Internal(message)),
++        )
++    }
++
+     /// Waits for a cancellation signal and builds a canceled status message.
+-    async fn cancel(key: TaskKey, signal: oneshot::Receiver<()>) -> TaskRunnerMessage {
++    async fn cancel(key: TaskKey, signal: &mut oneshot::Receiver<()>) -> TaskRunnerMessage {
+         let _ = signal.await;
+         Self::status(
+             key.clone(),
+@@ -159,6 +262,10 @@ impl TaskMonitor {
+     }
+ }
+ 
++#[cfg(test)]
++#[path = "monitor_resource_tests.rs"]
++mod resource_tests;
++
+ #[cfg(test)]
+ mod tests {
+     use futures::future;
+diff --git a/crates/sail-execution/src/task_runner/monitor_resource_tests.rs b/crates/sail-execution/src/task_runner/monitor_resource_tests.rs
+new file mode 100644
+index 000000000..a1abb2911
+--- /dev/null
++++ b/crates/sail-execution/src/task_runner/monitor_resource_tests.rs
+@@ -0,0 +1,311 @@
++use std::collections::HashMap;
++use std::pin::Pin;
++use std::task::{Context, Poll};
++
++use datafusion::arrow::datatypes::{Schema, SchemaRef};
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::common::Result;
++use datafusion::execution::RecordBatchStream;
++use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
++use futures::{Stream, stream};
++use sail_common_datafusion::error::{CommitStateUnknownError, StructuredSparkError};
++use tokio::runtime::Handle;
++
++use super::*;
++use crate::id::JobId;
++
++type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
++
++fn key() -> TaskKey {
++    TaskKey {
++        job_id: JobId::from(1),
++        stage: 2,
++        partition: 3,
++        attempt: 4,
++    }
++}
++
++fn batches(
++    inner: impl Stream<Item = Result<RecordBatch>> + Send + 'static,
++) -> SendableRecordBatchStream {
++    Box::pin(RecordBatchStreamAdapter::new(
++        Arc::new(Schema::empty()),
++        inner,
++    ))
++}
++
++fn scope() -> TaskResourceScope {
++    TaskResourceScope::new(Handle::current())
++}
++
++/// A supervisor that acknowledges cancellation separately from completing cleanup.
++fn delayed_cleanup(
++    resources: &TaskResourceScope,
++    result: Result<()>,
++) -> Result<(oneshot::Receiver<()>, oneshot::Sender<()>)> {
++    let (observed, observation) = oneshot::channel();
++    let (complete, completion) = oneshot::channel();
++    resources.spawn(|mut canceled| async move {
++        canceled
++            .wait_for(|value| *value)
++            .await
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        let _ = observed.send(());
++        completion
++            .await
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        result
++    })?;
++    Ok((observation, complete))
++}
++
++fn status(message: TaskRunnerMessage) -> (TaskStatus, Option<String>, Option<CommonErrorCause>) {
++    let TaskRunnerMessage::ReportTaskStatus {
++        key: actual,
++        status,
++        message,
++        cause,
++    } = message
++    else {
++        unreachable!("monitor must return a status report")
++    };
++    assert_eq!(actual, key());
++    (status, message, cause)
++}
++
++fn unknown(message: &str) -> DataFusionError {
++    DataFusionError::External(Box::new(CommitStateUnknownError(message.into())))
++}
++
++#[tokio::test]
++async fn success_waits_for_resource_completion_without_canceling_it() -> TestResult {
++    let resources = scope();
++    let (complete, completion) = oneshot::channel();
++    resources.spawn(|canceled| async move {
++        completion
++            .await
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        assert!(!*canceled.borrow());
++        Ok(())
++    })?;
++    let (_stop, signal) = oneshot::channel();
++    let terminal =
++        TaskMonitor::run_to_terminal(key(), batches(stream::empty()), signal, &resources);
++    tokio::pin!(terminal);
++    assert!(futures::poll!(terminal.as_mut()).is_pending());
++    assert!(
++        resources.spawn(|_| async { Ok(()) }).is_err(),
++        "EOF must seal admission"
++    );
++    complete.send(()).map_err(|_| "completion receiver lost")?;
++    let (state, message, cause) = status(terminal.await);
++    assert!(matches!(state, TaskStatus::Succeeded));
++    assert!(message.is_none() && cause.is_none());
++    assert_eq!(resources.drain().await?.registered, 1);
++    Ok(())
++}
++
++#[tokio::test]
++async fn cancellation_and_closed_signal_wait_for_cleanup() -> TestResult {
++    for close_sender in [false, true] {
++        let resources = scope();
++        let (observation, complete) = delayed_cleanup(&resources, Ok(()))?;
++        let (stop, signal) = oneshot::channel();
++        if close_sender {
++            drop(stop);
++        } else {
++            stop.send(()).map_err(|_| "stop receiver lost")?;
++        }
++        let terminal =
++            TaskMonitor::run_to_terminal(key(), batches(stream::pending()), signal, &resources);
++        tokio::pin!(terminal);
++        assert!(futures::poll!(terminal.as_mut()).is_pending());
++        observation.await?;
++        assert!(futures::poll!(terminal.as_mut()).is_pending());
++        complete.send(()).map_err(|_| "cleanup receiver lost")?;
++        let (state, message, cause) = status(terminal.await);
++        assert!(matches!(state, TaskStatus::Canceled));
++        assert!(message.is_some_and(|message| message.contains("canceled")));
++        assert!(cause.is_none());
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn cancellation_after_eof_interrupts_drain_but_waits_for_cleanup() -> TestResult {
++    let resources = scope();
++    let (observation, complete) = delayed_cleanup(&resources, Ok(()))?;
++    let (stop, signal) = oneshot::channel();
++    let terminal =
++        TaskMonitor::run_to_terminal(key(), batches(stream::empty()), signal, &resources);
++    tokio::pin!(terminal);
++    assert!(futures::poll!(terminal.as_mut()).is_pending());
++    assert!(resources.spawn(|_| async { Ok(()) }).is_err());
++    stop.send(())
++        .map_err(|_| "stop receiver was dropped at EOF")?;
++    assert!(futures::poll!(terminal.as_mut()).is_pending());
++    observation.await?;
++    assert!(futures::poll!(terminal.as_mut()).is_pending());
++    complete.send(()).map_err(|_| "cleanup receiver lost")?;
++    assert!(matches!(status(terminal.await).0, TaskStatus::Canceled));
++    Ok(())
++}
++
++#[tokio::test]
++async fn cleanup_failure_preserves_structured_execution_cause_and_waits_for_siblings() -> TestResult
++{
++    let resources = scope();
++    resources.spawn(|_| async { Err(DataFusionError::Execution("cleanup failed".into())) })?;
++    let (observation, complete) = delayed_cleanup(&resources, Ok(()))?;
++    let error = StructuredSparkError {
++        class: "java.lang.NumberFormatException".into(),
++        condition: "CAST_INVALID_INPUT".into(),
++        sql_state: "22018".into(),
++        message: "malformed value".into(),
++        parameters: HashMap::from([("expression".into(), "'bad'".into())]),
++    };
++    let expected = serde_json::to_value(&error)?;
++    let (_stop, signal) = oneshot::channel();
++    let input = batches(stream::iter([Err(DataFusionError::External(Box::new(
++        error,
++    )))]));
++    let terminal = TaskMonitor::run_to_terminal(key(), input, signal, &resources);
++    tokio::pin!(terminal);
++    assert!(futures::poll!(terminal.as_mut()).is_pending());
++    observation.await?;
++    assert!(futures::poll!(terminal.as_mut()).is_pending());
++    complete.send(()).map_err(|_| "cleanup receiver lost")?;
++    let (state, message, cause) = status(terminal.await);
++    assert!(matches!(state, TaskStatus::Failed));
++    let Some(CommonErrorCause::Structured(error)) = cause else {
++        return Err("structured execution cause lost".into());
++    };
++    assert_eq!(serde_json::to_value(error)?, expected);
++    let message = message.ok_or("missing diagnostics")?;
++    assert!(message.contains("malformed value") && message.contains("cleanup failed"));
++    assert_eq!(resources.drain().await?.registered, 2);
++    Ok(())
++}
++
++#[tokio::test]
++async fn unknown_cleanup_outcome_prevents_retry_after_execution_failure_or_cancel() -> TestResult {
++    for cancel in [false, true] {
++        let resources = scope();
++        let (observation, complete) =
++            delayed_cleanup(&resources, Err(unknown("upload reply lost")))?;
++        let (stop, signal) = oneshot::channel();
++        let input = if cancel {
++            stop.send(()).map_err(|_| "stop receiver lost")?;
++            batches(stream::pending())
++        } else {
++            batches(stream::iter([Err(DataFusionError::Execution(
++                "query failed".into(),
++            ))]))
++        };
++        let terminal = TaskMonitor::run_to_terminal(key(), input, signal, &resources);
++        tokio::pin!(terminal);
++        assert!(futures::poll!(terminal.as_mut()).is_pending());
++        observation.await?;
++        assert!(futures::poll!(terminal.as_mut()).is_pending());
++        complete.send(()).map_err(|_| "cleanup receiver lost")?;
++        let (state, message, cause) = status(terminal.await);
++        assert!(matches!(state, TaskStatus::Failed));
++        let cause = cause.ok_or("unknown commit cause lost")?;
++        assert!(!cause.is_retryable());
++        assert!(
++            matches!(cause, CommonErrorCause::CommitStateUnknown(message) if message.contains("upload reply lost"))
++        );
++        let message = message.ok_or("missing diagnostics")?;
++        assert!(message.contains(if cancel { "canceled" } else { "query failed" }));
++        assert!(message.contains("upload reply lost"));
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn primary_unknown_commit_survives_another_unknown_cleanup_outcome() -> TestResult {
++    let resources = scope();
++    resources.spawn(|_| async { Err(unknown("secondary upload")) })?;
++    let (_stop, signal) = oneshot::channel();
++    let input = batches(stream::iter([Err(unknown("primary mutation"))]));
++    let (state, message, cause) =
++        status(TaskMonitor::run_to_terminal(key(), input, signal, &resources).await);
++    assert!(matches!(state, TaskStatus::Failed));
++    assert!(
++        matches!(cause, Some(CommonErrorCause::CommitStateUnknown(message)) if message.contains("primary mutation"))
++    );
++    assert!(message.is_some_and(
++        |message| message.contains("primary mutation") && message.contains("secondary upload")
++    ));
++    Ok(())
++}
++
++#[tokio::test]
++async fn resource_failure_turns_success_into_failed_status() -> TestResult {
++    let resources = scope();
++    resources.spawn(|_| async { Err(unknown("complete response lost")) })?;
++    let (_stop, signal) = oneshot::channel();
++    let (state, _, cause) = status(
++        TaskMonitor::run_to_terminal(key(), batches(stream::empty()), signal, &resources).await,
++    );
++    assert!(matches!(state, TaskStatus::Failed));
++    assert!(
++        matches!(cause, Some(CommonErrorCause::CommitStateUnknown(message)) if message.contains("complete response lost"))
++    );
++    Ok(())
++}
++
++struct PanicOnDrop;
++
++impl Stream for PanicOnDrop {
++    type Item = Result<RecordBatch>;
++
++    fn poll_next(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Option<Self::Item>> {
++        Poll::Pending
++    }
++}
++
++impl RecordBatchStream for PanicOnDrop {
++    fn schema(&self) -> SchemaRef {
++        Arc::new(Schema::empty())
++    }
++}
++
++impl Drop for PanicOnDrop {
++    fn drop(&mut self) {
++        std::panic::resume_unwind(Box::new("stream drop panic"));
++    }
++}
++
++#[tokio::test]
++async fn stream_poll_and_canceled_stream_drop_panics_wait_for_cleanup() -> TestResult {
++    for drop_panic in [false, true] {
++        let resources = scope();
++        let (observation, complete) = delayed_cleanup(&resources, Ok(()))?;
++        let (stop, signal) = oneshot::channel();
++        let input = if drop_panic {
++            stop.send(()).map_err(|_| "stop receiver lost")?;
++            Box::pin(PanicOnDrop) as SendableRecordBatchStream
++        } else {
++            batches(stream::poll_fn(|_| {
++                std::panic::resume_unwind(Box::new("stream poll panic"))
++            }))
++        };
++        let terminal = TaskMonitor::run_to_terminal(key(), input, signal, &resources);
++        tokio::pin!(terminal);
++        assert!(futures::poll!(terminal.as_mut()).is_pending());
++        observation.await?;
++        assert!(futures::poll!(terminal.as_mut()).is_pending());
++        complete.send(()).map_err(|_| "cleanup receiver lost")?;
++        let (state, message, cause) = status(terminal.await);
++        assert!(matches!(state, TaskStatus::Failed));
++        let expected = if drop_panic {
++            "task panicked: stream drop panic"
++        } else {
++            "task panicked: stream poll panic"
++        };
++        assert_eq!(message.as_deref(), Some(expected));
++        assert!(matches!(cause, Some(CommonErrorCause::Internal(message)) if message == expected));
++    }
++    Ok(())
++}

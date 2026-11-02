@@ -1,0 +1,18 @@
+    async fn stop(mut self, ctx: &mut ActorContext<Self>) {
+        self.job_scheduler.stop();
+        if let Some(task_runner) = self.task_runner.take() {
+            let _ = task_runner.send(TaskRunnerMessage::Shutdown).await;
+        }
+        if let Err(e) = self.worker_pool.close(ctx).await {
+            error!("encountered error while stopping workers: {e}");
+        }
+        if let Some(lifecycle_manager) = self.extensions.lifecycle_manager.take() {
+            let _ = lifecycle_manager.stop().await;
+        }
+        ctx.children_mut().join().await;
+        if let Some(result) = self.shutdown_notifier.take() {
+            let _ = result.send(());
+        }
+        info!("driver {} has stopped", self.options.driver_id);
+    }
+}

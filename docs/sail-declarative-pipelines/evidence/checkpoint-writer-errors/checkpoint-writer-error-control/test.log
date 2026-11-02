@@ -1,0 +1,52 @@
+   Compiling sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+   Compiling sail-catalog v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog)
+   Compiling sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+   Compiling sail-cache v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-cache)
+   Compiling sail-system-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-system-store)
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-telemetry v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-telemetry)
+   Compiling sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+   Compiling sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+   Compiling sail-catalog-system v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-system)
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+   Compiling sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+   Compiling sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-execution` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 1m 16s
+     Running unittests src/lib.rs (target/debug/deps/sail_execution-9043b9ee02adf4dd)
+
+running 4 tests
+
+thread 'checkpoint_writer_error_tests::parallel_put_keeps_unknown_commit' (88817922) panicked at crates/sail-execution/src/checkpoint_writer_error_tests.rs:179:5:
+published checkpoint became retryable: IoError(Custom { kind: Other, error: Generic { store: "checkpoint-test", source: Collection([External(LostResponse), External(CommitStateUnknownError("published response lost"))]) } }); Io("Generic checkpoint-test error: External error: published response lost")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'checkpoint_writer_error_tests::sequential_put_keeps_unknown_commit' (88817924) panicked at crates/sail-execution/src/checkpoint_writer_error_tests.rs:179:5:
+published checkpoint became retryable: ParquetError(External(Custom { kind: Other, error: Generic { store: "checkpoint-test", source: Collection([External(LostResponse), External(CommitStateUnknownError("published response lost"))]) } })); FormatParquet("External: Generic checkpoint-test error: External error: published response lost")
+
+thread 'checkpoint_writer_error_tests::parallel_multipart_keeps_unknown_commit' (88817921) panicked at crates/sail-execution/src/checkpoint_writer_error_tests.rs:179:5:
+published checkpoint became retryable: IoError(Custom { kind: Other, error: Generic { store: "checkpoint-test", source: Collection([External(LostResponse), External(CommitStateUnknownError("published response lost"))]) } }); Io("Generic checkpoint-test error: External error: published response lost")
+
+thread 'checkpoint_writer_error_tests::sequential_multipart_keeps_unknown_commit' (88817923) panicked at crates/sail-execution/src/checkpoint_writer_error_tests.rs:179:5:
+published checkpoint became retryable: ParquetError(External(Custom { kind: Other, error: Generic { store: "checkpoint-test", source: Collection([External(LostResponse), External(CommitStateUnknownError("published response lost"))]) } })); FormatParquet("External: Generic checkpoint-test error: External error: published response lost")
+test checkpoint_writer_error_tests::parallel_put_keeps_unknown_commit ... FAILED
+test checkpoint_writer_error_tests::sequential_multipart_keeps_unknown_commit ... FAILED
+test checkpoint_writer_error_tests::sequential_put_keeps_unknown_commit ... FAILED
+test checkpoint_writer_error_tests::parallel_multipart_keeps_unknown_commit ... FAILED
+
+failures:
+
+failures:
+    checkpoint_writer_error_tests::parallel_multipart_keeps_unknown_commit
+    checkpoint_writer_error_tests::parallel_put_keeps_unknown_commit
+    checkpoint_writer_error_tests::sequential_multipart_keeps_unknown_commit
+    checkpoint_writer_error_tests::sequential_put_keeps_unknown_commit
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 198 filtered out; finished in 0.08s
+
+error: test failed, to rerun pass `-p sail-execution --lib`

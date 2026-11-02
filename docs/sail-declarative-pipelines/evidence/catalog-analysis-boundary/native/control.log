@@ -1,0 +1,29 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 24.81s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-1aad231f7fc0cda4)
+
+running 1 test
+test pipelines::sql::tests::preparation::structured_catalog_errors_preserve_registration_boundary ... FAILED
+
+failures:
+
+---- pipelines::sql::tests::preparation::structured_catalog_errors_preserve_registration_boundary stdout ----
+
+thread 'pipelines::sql::tests::preparation::structured_catalog_errors_preserve_registration_boundary' (91325756) panicked at crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs:315:13:
+assertion `left == right` failed
+  left: "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION"
+ right: "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    pipelines::sql::tests::preparation::structured_catalog_errors_preserve_registration_boundary
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 177 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

@@ -1,0 +1,1436 @@
+{
+  "started_at": "2026-10-31T21:05:56.652575+00:00",
+  "version": "4.2.1",
+  "framework_default": "false",
+  "cases": [
+    {
+      "label": "metadata_real",
+      "sql": "CREATE MATERIALIZED VIEW source (id INT NOT NULL COMMENT 'top', s STRUCT<x: INT NOT NULL COMMENT 'nested'>, a ARRAY<STRUCT<y: INT COMMENT 'element'>>, m MAP<STRING, STRUCT<z: INT COMMENT 'value'>>) AS SELECT 1 AS id, named_struct('x', 1) AS s, array(named_struct('y', 1)) AS a, map('k', named_struct('z', 1)) AS m;CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(source);CREATE MATERIALIZED VIEW batch_consumer AS SELECT * FROM source",
+      "dry": false,
+      "confs": {},
+      "events": [
+        "Flow spark_catalog.pmetadata_real.source is QUEUED.",
+        "Flow spark_catalog.pmetadata_real.batch_consumer is QUEUED.",
+        "Flow spark_catalog.pmetadata_real.consumer is QUEUED.",
+        "Flow spark_catalog.pmetadata_real.source is PLANNING.",
+        "Flow spark_catalog.pmetadata_real.source is STARTING.",
+        "Flow spark_catalog.pmetadata_real.source is RUNNING.",
+        "Flow spark_catalog.pmetadata_real.source has COMPLETED.",
+        "Flow spark_catalog.pmetadata_real.consumer is STARTING.",
+        "Flow spark_catalog.pmetadata_real.consumer is RUNNING.",
+        "Flow spark_catalog.pmetadata_real.batch_consumer is PLANNING.",
+        "Flow spark_catalog.pmetadata_real.batch_consumer is STARTING.",
+        "Flow spark_catalog.pmetadata_real.batch_consumer is RUNNING.",
+        "Flow spark_catalog.pmetadata_real.batch_consumer has COMPLETED.",
+        "Flow spark_catalog.pmetadata_real.consumer has COMPLETED.",
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted",
+      "consumer": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "s",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "x",
+                  "type": "integer",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": {
+              "type": "array",
+              "elementType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "y",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "m",
+            "type": {
+              "type": "map",
+              "keyType": "string",
+              "valueType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "z",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {}
+                  }
+                ]
+              },
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "batch_consumer": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {
+              "comment": "top"
+            }
+          },
+          {
+            "name": "s",
+            "type": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "x",
+                  "type": "integer",
+                  "nullable": true,
+                  "metadata": {
+                    "comment": "nested"
+                  }
+                }
+              ]
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": {
+              "type": "array",
+              "elementType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "y",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {
+                      "comment": "element"
+                    }
+                  }
+                ]
+              },
+              "containsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "m",
+            "type": {
+              "type": "map",
+              "keyType": "string",
+              "valueType": {
+                "type": "struct",
+                "fields": [
+                  {
+                    "name": "z",
+                    "type": "integer",
+                    "nullable": true,
+                    "metadata": {
+                      "comment": "value"
+                    }
+                  }
+                ]
+              },
+              "valueContainsNull": true
+            },
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "label": "nullable_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id INT NOT NULL) AS SELECT 1 AS id;CREATE STREAMING TABLE consumer (id INT NOT NULL) AS SELECT id FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "nullable_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id INT NOT NULL) AS SELECT 1 AS id;CREATE MATERIALIZED VIEW consumer (id INT NOT NULL) AS SELECT id FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_false_0_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_0_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(6)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#154))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_0_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@467c6e81, [], [id#154], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_0_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_0_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_0_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#160))]\n+- SubqueryAlias spark_catalog.ptypes_false_0_False_batch.source\n   +- LocalRelation <empty>, [id#160]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_0_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_0_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, TIME(3)>) AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_0_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(6)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#167))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_0_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@ca31a4d, [], [id#167], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_0_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_0_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, TIME(3)>) AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_0_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#173))]\n+- SubqueryAlias spark_catalog.ptypes_false_0_True_batch.source\n   +- LocalRelation <empty>, [id#173]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_0_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_1_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_1_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(6), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#180))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_1_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@735b43a3, [], [id#180], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_1_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_1_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_1_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(3), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#186))]\n+- SubqueryAlias spark_catalog.ptypes_false_1_False_batch.source\n   +- LocalRelation <empty>, [id#186]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_1_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_1_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<TIME(3), STRING>) AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_1_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(6), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#193))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_1_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@449863a5, [], [id#193], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_1_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_1_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<TIME(3), STRING>) AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_1_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(3), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#199))]\n+- SubqueryAlias spark_catalog.ptypes_false_1_True_batch.source\n   +- LocalRelation <empty>, [id#199]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_1_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_2_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_2_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR TO MONTH>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#206))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_2_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@498f7689, [], [id#206], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_2_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_2_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_2_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#212))]\n+- SubqueryAlias spark_catalog.ptypes_false_2_False_batch.source\n   +- LocalRelation <empty>, [id#212]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_2_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_2_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, INTERVAL YEAR>) AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_2_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR TO MONTH>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#219))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_2_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@481b560b, [], [id#219], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_2_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_2_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, INTERVAL YEAR>) AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_2_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#225))]\n+- SubqueryAlias spark_catalog.ptypes_false_2_True_batch.source\n   +- LocalRelation <empty>, [id#225]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_2_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_3_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_3_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL DAY TO SECOND, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#232))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_3_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@888a0f9, [], [id#232], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_3_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_3_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_3_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL HOUR, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#238))]\n+- SubqueryAlias spark_catalog.ptypes_false_3_False_batch.source\n   +- LocalRelation <empty>, [id#238]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_3_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_3_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<INTERVAL HOUR, STRING>) AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_3_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL DAY TO SECOND, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#245))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_3_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@16801b13, [], [id#245], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_3_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_3_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<INTERVAL HOUR, STRING>) AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_3_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL HOUR, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#251))]\n+- SubqueryAlias spark_catalog.ptypes_false_3_True_batch.source\n   +- LocalRelation <empty>, [id#251]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_3_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_4_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_4_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(6)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#258))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_4_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@49227515, [], [id#258], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_4_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_4_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_4_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#264))]\n+- SubqueryAlias spark_catalog.ptypes_false_4_False_batch.source\n   +- LocalRelation <empty>, [id#264]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_4_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_4_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_4_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(6)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#271))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_4_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@6b31e7d1, [], [id#271], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_4_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_4_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_4_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#277))]\n+- SubqueryAlias spark_catalog.ptypes_false_4_True_batch.source\n   +- LocalRelation <empty>, [id#277]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_4_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_5_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_false_5_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_false_5_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_false_5_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_false_5_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_false_5_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id CHAR(3)) AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_5_True_stream.consumer'.\nError: [UNSUPPORTED_DATA_TYPE_FOR_ENCODER] Cannot create encoder for \"CHAR(3)\". Please use a different output data type for your UDF or DataFrame. SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_5_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_5_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id CHAR(3)) AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_5_True_batch.consumer'.\nError: [UNSUPPORTED_CHAR_OR_VARCHAR_AS_STRING] The char/varchar type can't be used in the table schema.\nIf you want Spark treat them as string type as same as Spark 3.0 and earlier, please set \"spark.sql.legacy.charVarcharAsString\" to \"true\". SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_5_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_6_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_false_6_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_false_6_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_false_6_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_false_6_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_false_6_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id VARCHAR(3)) AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_6_True_stream.consumer'.\nError: [UNSUPPORTED_DATA_TYPE_FOR_ENCODER] Cannot create encoder for \"VARCHAR(3)\". Please use a different output data type for your UDF or DataFrame. SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_6_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_6_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id VARCHAR(3)) AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_6_True_batch.consumer'.\nError: [UNSUPPORTED_CHAR_OR_VARCHAR_AS_STRING] The char/varchar type can't be used in the table schema.\nIf you want Spark treat them as string type as same as Spark 3.0 and earlier, please set \"spark.sql.legacy.charVarcharAsString\" to \"true\". SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_6_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_7_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_false_7_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_false_7_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_false_7_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_false_7_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_false_7_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id STRING COLLATE UTF8_LCASE) AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_false_7_True_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_false_7_True_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_false_7_True_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_false_7_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id STRING COLLATE UTF8_LCASE) AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_false_8_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_8_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#364))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_8_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@71846dab, [], [id#364], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_8_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_8_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_8_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#370))]\n+- SubqueryAlias spark_catalog.ptypes_false_8_False_batch.source\n   +- LocalRelation <empty>, [id#370]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_8_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_8_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<VARCHAR(3)>) AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_8_True_stream.consumer'.\nError: [UNSUPPORTED_DATA_TYPE_FOR_ENCODER] Cannot create encoder for \"VARCHAR(3)\". Please use a different output data type for your UDF or DataFrame. SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_8_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_8_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<VARCHAR(3)>) AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_8_True_batch.consumer'.\nError: [UNSUPPORTED_CHAR_OR_VARCHAR_AS_STRING] The char/varchar type can't be used in the table schema.\nIf you want Spark treat them as string type as same as Spark 3.0 and earlier, please set \"spark.sql.legacy.charVarcharAsString\" to \"true\". SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_8_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_9_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_9_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#387))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_9_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@6f38f1e3, [], [id#387], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_9_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_9_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_9_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#393))]\n+- SubqueryAlias spark_catalog.ptypes_false_9_False_batch.source\n   +- LocalRelation <empty>, [id#393]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_9_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_9_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id TIMESTAMP_NTZ) AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_9_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#400))]\n+- ~SubqueryAlias spark_catalog.ptypes_false_9_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@6ddef13, [], [id#400], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_9_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_9_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id TIMESTAMP_NTZ) AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_false_9_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#406))]\n+- SubqueryAlias spark_catalog.ptypes_false_9_True_batch.source\n   +- LocalRelation <empty>, [id#406]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_false_9_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_false_10_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_false_10_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_false_10_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_false_10_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_false_10_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_false_10_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id DECIMAL(10, 2)) AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_false_10_True_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_false_10_True_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_false_10_True_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_false_10_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id DECIMAL(10, 2)) AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_true_0_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_0_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#443))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_0_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@757f2fec, [], [id#443], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_0_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_0_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_0_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#449))]\n+- SubqueryAlias spark_catalog.ptypes_true_0_False_batch.source\n   +- LocalRelation <empty>, [id#449]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_0_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_0_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, TIME(3)>) AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_0_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#456))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_0_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@4119e0f3, [], [id#456], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_0_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_0_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, TIME(3)>) AS SELECT CAST(NULL AS MAP<STRING, TIME(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_0_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, TIME(3)>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#462))]\n+- SubqueryAlias spark_catalog.ptypes_true_0_True_batch.source\n   +- LocalRelation <empty>, [id#462]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_0_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_1_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_1_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(3), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#469))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_1_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@66d60e79, [], [id#469], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_1_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_1_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_1_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(3), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#475))]\n+- SubqueryAlias spark_catalog.ptypes_true_1_False_batch.source\n   +- LocalRelation <empty>, [id#475]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_1_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_1_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<TIME(3), STRING>) AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_1_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(3), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#482))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_1_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@3fd040a5, [], [id#482], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_1_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_1_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<TIME(3), STRING>) AS SELECT CAST(NULL AS MAP<TIME(3), STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_1_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<TIME(3), STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#488))]\n+- SubqueryAlias spark_catalog.ptypes_true_1_True_batch.source\n   +- LocalRelation <empty>, [id#488]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_1_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_2_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_2_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR TO MONTH>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#495))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_2_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@b5bc5f3, [], [id#495], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_2_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_2_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_2_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#501))]\n+- SubqueryAlias spark_catalog.ptypes_true_2_False_batch.source\n   +- LocalRelation <empty>, [id#501]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_2_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_2_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, INTERVAL YEAR>) AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_2_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR TO MONTH>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#508))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_2_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@298e0164, [], [id#508], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_2_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_2_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<STRING, INTERVAL YEAR>) AS SELECT CAST(NULL AS MAP<STRING, INTERVAL YEAR>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_2_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<STRING, INTERVAL YEAR>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#514))]\n+- SubqueryAlias spark_catalog.ptypes_true_2_True_batch.source\n   +- LocalRelation <empty>, [id#514]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_2_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_3_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_3_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL DAY TO SECOND, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#521))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_3_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@7fe036f2, [], [id#521], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_3_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_3_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_3_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL HOUR, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#527))]\n+- SubqueryAlias spark_catalog.ptypes_true_3_False_batch.source\n   +- LocalRelation <empty>, [id#527]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_3_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_3_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<INTERVAL HOUR, STRING>) AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_3_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL DAY TO SECOND, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#534))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_3_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@337f4ce, [], [id#534], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_3_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_3_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id MAP<INTERVAL HOUR, STRING>) AS SELECT CAST(NULL AS MAP<INTERVAL HOUR, STRING>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_3_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"MAP<INTERVAL HOUR, STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#540))]\n+- SubqueryAlias spark_catalog.ptypes_true_3_True_batch.source\n   +- LocalRelation <empty>, [id#540]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_3_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_4_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_4_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#547))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_4_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@752ab0c7, [], [id#547], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_4_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_4_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_4_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#553))]\n+- SubqueryAlias spark_catalog.ptypes_true_4_False_batch.source\n   +- LocalRelation <empty>, [id#553]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_4_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_4_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_4_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#560))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_4_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@75b08c06, [], [id#560], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_4_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_4_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS SELECT CAST(NULL AS ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_4_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<MAP<STRING, STRUCT<t: TIME(3)>>>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#566))]\n+- SubqueryAlias spark_catalog.ptypes_true_4_True_batch.source\n   +- LocalRelation <empty>, [id#566]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_4_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_5_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_true_5_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_true_5_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_true_5_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_true_5_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_true_5_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id CHAR(3)) AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_5_True_stream.consumer'.\nError: [UNSUPPORTED_DATA_TYPE_FOR_ENCODER] Cannot create encoder for \"CHAR(3)\". Please use a different output data type for your UDF or DataFrame. SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_5_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_5_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id CHAR(3)) AS SELECT CAST(NULL AS CHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_5_True_batch.consumer'.\nError: [UNSUPPORTED_CHAR_OR_VARCHAR_AS_STRING] The char/varchar type can't be used in the table schema.\nIf you want Spark treat them as string type as same as Spark 3.0 and earlier, please set \"spark.sql.legacy.charVarcharAsString\" to \"true\". SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_5_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_6_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_true_6_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_true_6_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_true_6_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_true_6_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_true_6_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id VARCHAR(3)) AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_6_True_stream.consumer'.\nError: [UNSUPPORTED_DATA_TYPE_FOR_ENCODER] Cannot create encoder for \"VARCHAR(3)\". Please use a different output data type for your UDF or DataFrame. SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_6_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_6_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id VARCHAR(3)) AS SELECT CAST(NULL AS VARCHAR(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_6_True_batch.consumer'.\nError: [UNSUPPORTED_CHAR_OR_VARCHAR_AS_STRING] The char/varchar type can't be used in the table schema.\nIf you want Spark treat them as string type as same as Spark 3.0 and earlier, please set \"spark.sql.legacy.charVarcharAsString\" to \"true\". SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_6_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_7_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_true_7_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_true_7_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_true_7_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_true_7_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_true_7_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id STRING COLLATE UTF8_LCASE) AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_true_7_True_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_true_7_True_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_true_7_True_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_true_7_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id STRING COLLATE UTF8_LCASE) AS SELECT CAST(NULL AS STRING COLLATE UTF8_LCASE) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_true_8_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_8_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#653))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_8_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@453d1772, [], [id#653], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_8_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_8_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_8_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"ARRAY<STRING>\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#659))]\n+- SubqueryAlias spark_catalog.ptypes_true_8_False_batch.source\n   +- LocalRelation <empty>, [id#659]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_8_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_8_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<VARCHAR(3)>) AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_8_True_stream.consumer'.\nError: [UNSUPPORTED_DATA_TYPE_FOR_ENCODER] Cannot create encoder for \"VARCHAR(3)\". Please use a different output data type for your UDF or DataFrame. SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_8_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_8_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id ARRAY<VARCHAR(3)>) AS SELECT CAST(NULL AS ARRAY<VARCHAR(3)>) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_8_True_batch.consumer'.\nError: [UNSUPPORTED_CHAR_OR_VARCHAR_AS_STRING] The char/varchar type can't be used in the table schema.\nIf you want Spark treat them as string type as same as Spark 3.0 and earlier, please set \"spark.sql.legacy.charVarcharAsString\" to \"true\". SQLSTATE: 0A000"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_8_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_9_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_9_False_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#676))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_9_False_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@6849f319, [], [id#676], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_9_False_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_9_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_9_False_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#682))]\n+- SubqueryAlias spark_catalog.ptypes_true_9_False_batch.source\n   +- LocalRelation <empty>, [id#682]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_9_False_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_9_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id TIMESTAMP_NTZ) AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_9_True_stream.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#689))]\n+- ~SubqueryAlias spark_catalog.ptypes_true_9_True_stream.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@3cd8e29e, [], [id#689], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_9_True_stream.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_9_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id TIMESTAMP_NTZ) AS SELECT CAST(NULL AS TIMESTAMP_NTZ) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.ptypes_true_9_True_batch.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIMESTAMP_NTZ\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#695))]\n+- SubqueryAlias spark_catalog.ptypes_true_9_True_batch.source\n   +- LocalRelation <empty>, [id#695]\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.ptypes_true_9_True_batch.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "types_true_10_False_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_true_10_False_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_true_10_False_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_true_10_False_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_true_10_False_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "types_true_10_True_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (id DECIMAL(10, 2)) AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW",
+      "message": "[INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_MATERIALIZED_VIEW] Flow `spark_catalog`.`ptypes_true_10_True_stream`.`consumer` returns an invalid relation type. Materialized views may only be defined by a batch relation, but the flow `spark_catalog`.`ptypes_true_10_True_stream`.`consumer` attempts to write a streaming relation to the materialized view `spark_catalog`.`ptypes_true_10_True_stream`.`consumer`. SQLSTATE: 42000"
+    },
+    {
+      "label": "types_true_10_True_batch",
+      "sql": "CREATE MATERIALIZED VIEW source (id DECIMAL(10, 2)) AS SELECT CAST(NULL AS DECIMAL(10, 2)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "precedence_false_None_None",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_false_None_None.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#732))]\n+- ~SubqueryAlias spark_catalog.pprecedence_false_None_None.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@665f77c5, [], [id#732], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_false_None_None.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "precedence_true_None_None",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_true_None_None.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#739))]\n+- ~SubqueryAlias spark_catalog.pprecedence_true_None_None.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@4efe731a, [], [id#739], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_true_None_None.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "precedence_false_true_None",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {
+        "spark.sql.types.framework.enabled": "true"
+      },
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_false_true_None.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#746))]\n+- ~SubqueryAlias spark_catalog.pprecedence_false_true_None.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@3694dc6f, [], [id#746], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_false_true_None.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "precedence_true_false_None",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {
+        "spark.sql.types.framework.enabled": "false"
+      },
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_true_false_None.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#753))]\n+- ~SubqueryAlias spark_catalog.pprecedence_true_false_None.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@6aeee6b5, [], [id#753], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_true_false_None.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "precedence_false_None_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=true;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_false_None_true.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#762))]\n+- ~SubqueryAlias spark_catalog.pprecedence_false_None_true.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@60b435d, [], [id#762], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_false_None_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "precedence_true_None_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=false;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_true_None_false.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#771))]\n+- ~SubqueryAlias spark_catalog.pprecedence_true_None_false.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@71800325, [], [id#771], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_true_None_false.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "precedence_false_false_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=true;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {
+        "spark.sql.types.framework.enabled": "false"
+      },
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_false_false_true.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#780))]\n+- ~SubqueryAlias spark_catalog.pprecedence_false_false_true.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@4cc41dc3, [], [id#780], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_false_false_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "precedence_true_true_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=false;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id) FROM STREAM(source)",
+      "dry": true,
+      "confs": {
+        "spark.sql.types.framework.enabled": "true"
+      },
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pprecedence_true_true_false.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#789))]\n+- ~SubqueryAlias spark_catalog.pprecedence_true_true_false.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@7090952a, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@7e433319, [], [id#789], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pprecedence_true_true_false.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_second_call_true_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k;RESET spark.sql.types.framework.enabled;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ResetCommand parsed from SQL query\n\nOffending query:\nRESET spark.sql.types.framework.enabled\n\nQuery defined at pview_second_call_true_true.sql:1 SQLSTATE: 42000"
+    },
+    {
+      "label": "view_second_call_true_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k;RESET spark.sql.types.framework.enabled;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ResetCommand parsed from SQL query\n\nOffending query:\nRESET spark.sql.types.framework.enabled\n\nQuery defined at pview_second_call_true_false.sql:1 SQLSTATE: 42000"
+    },
+    {
+      "label": "view_second_call_false_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k;RESET spark.sql.types.framework.enabled;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ResetCommand parsed from SQL query\n\nOffending query:\nRESET spark.sql.types.framework.enabled\n\nQuery defined at pview_second_call_false_true.sql:1 SQLSTATE: 42000"
+    },
+    {
+      "label": "view_second_call_false_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k;RESET spark.sql.types.framework.enabled;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported plan ResetCommand parsed from SQL query\n\nOffending query:\nRESET spark.sql.types.framework.enabled\n\nQuery defined at pview_second_call_false_false.sql:1 SQLSTATE: 42000"
+    }
+  ],
+  "completed_at": "2026-10-31T21:06:08.577928+00:00"
+}

@@ -1,0 +1,12 @@
+diff --git a/crates/sail-common/src/spec/subqueries.rs b/crates/sail-common/src/spec/subqueries.rs
+index 51978c6b0..6e2b56eed 100644
+--- a/crates/sail-common/src/spec/subqueries.rs
++++ b/crates/sail-common/src/spec/subqueries.rs
+@@ -162,6 +162,7 @@ fn visit_exprs<'a, E>(
+ ) -> Result<(), E> {
+     exprs
+         .iter()
++        .rev()
+         .try_for_each(|expr| expr.visit_subqueries(visitor))
+ }
+ 

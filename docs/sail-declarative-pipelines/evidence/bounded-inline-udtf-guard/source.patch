@@ -1,0 +1,95 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+index daf9ff9d8..b80a4f8be 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+@@ -597,6 +597,20 @@ impl Walker<'_> {
+             | N::Empty { .. } => Ok(()),
+             N::Values(rows) => rows.iter().try_for_each(|row| self.exprs(row, cte_scope)),
+             N::CommonInlineUserDefinedTableFunction(function) => {
++                // Without a declared return type the schema comes from the
++                // UDTF's `analyze`, which `resolve_python_udtf_plan` runs in
++                // Python during resolution (`query/udtf.rs`): an unowned
++                // helper, refused here until Python analysis has an owner.
++                // A declared return type resolves without it, so the
++                // arguments keep their classification.
++                if let spec::TableFunctionDefinition::PythonUdtf {
++                    return_type: None, ..
++                } = &function.function
++                {
++                    return Err(BindingError::UnsupportedRead(
++                        "dynamic inline table function",
++                    ));
++                }
+                 self.exprs(&function.arguments, cte_scope)
+             }
+             // Constructs whose resolution executes a helper plan.
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
+index 94daaa643..1d4e7d8b4 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
+@@ -664,3 +664,65 @@ fn binding_names_must_be_canonical_for_the_flow() -> TestResult {
+     assert_eq!(reads.local, BTreeSet::from([name(&["c", "d", "events"])]));
+     Ok(())
+ }
++
++fn inline_table_function(return_type: Option<spec::DataType>) -> spec::QueryPlan {
++    spec::QueryPlan::new(spec::QueryNode::CommonInlineUserDefinedTableFunction(
++        spec::CommonInlineUserDefinedTableFunction {
++            function_name: "probe".into(),
++            deterministic: true,
++            arguments: vec![],
++            function: spec::TableFunctionDefinition::PythonUdtf {
++                return_type,
++                eval_type: spec::PySparkUdfType::Table,
++                command: vec![],
++                python_version: "3.12".into(),
++            },
++        },
++    ))
++}
++
++#[test]
++fn dynamic_inline_table_function_is_refused_before_resolution() {
++    let result = validate(inline_table_function(None), &[], &[]);
++    assert!(
++        matches!(result, Err(BindingError::UnsupportedRead(_))),
++        "dynamic schema invokes Python analyze during resolution: {result:?}"
++    );
++}
++
++#[test]
++fn static_inline_table_function_keeps_binding_classification() {
++    let result = validate(
++        inline_table_function(Some(spec::DataType::Struct {
++            fields: spec::Fields::default(),
++        })),
++        &[],
++        &[],
++    );
++    assert!(
++        result.is_ok(),
++        "static schema does not invoke dynamic analyze: {result:?}"
++    );
++}
++
++#[test]
++fn a_static_inline_table_function_still_classifies_reads_in_its_arguments() -> TestResult {
++    // The guard is only about dynamic schema analysis: with a declared
++    // return type the arguments are walked as before, so an unbound streaming
++    // read inside a scalar subquery argument is still refused by name.
++    let mut function = inline_table_function(Some(spec::DataType::Struct {
++        fields: spec::Fields::default(),
++    }));
++    let spec::QueryNode::CommonInlineUserDefinedTableFunction(udtf) = &mut function.node else {
++        return Err("fixture must remain an inline table function".into());
++    };
++    udtf.arguments = vec![spec::Expr::ScalarSubquery {
++        subquery: Box::new(read("nowhere", true)),
++    }];
++    let result = validate(function, &[], &[]);
++    assert!(
++        matches!(result, Err(BindingError::UnboundStreamingRead(_))),
++        "{result:?}"
++    );
++    Ok(())
++}

@@ -1,0 +1,45 @@
+I1031 13:36:07.801213 94312651 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(13, generation: 1)
+................F..                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_final_merge_reports_enclosing_field_types[TIME(3)-TIME(6)] ________
+
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x1198abd80>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-434/test_final_merge_reports_enclo4')
+left = 'TIME(3)', right = 'TIME(6)', time_type_enabled = None
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY<INT>", "ARRAY<STRING>"),
+            ("STRUCT<x: INT>", "STRUCT<x: STRING>"),
+            ("MAP<STRING, INT>", "MAP<STRING, STRING>"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("TIME(3)", "TIME(6)"),
+            ("INTERVAL YEAR", "INTERVAL DAY"),
+            ("STRUCT<`Mixed Case`: INT>", "STRUCT<`Mixed Case`: STRING>"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right, time_type_enabled):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+>       with pytest.raises(SparkException) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SparkException
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:100: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-31 20:36:11: Run is COMPLETED.
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py::test_final_merge_reports_enclosing_field_types[TIME(3)-TIME(6)]
+1 failed, 18 passed in 3.28s

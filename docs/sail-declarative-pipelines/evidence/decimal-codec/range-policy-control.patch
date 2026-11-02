@@ -1,0 +1,13 @@
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 3deb460b0..a8173335c 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -3901,7 +3901,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                     precision,
+                     scale,
+                     fail_on_error,
+-                    allow_negative_scale,
++                    allow_negative_scale & false,
+                 )?)));
+             }
+             UdfKind::SparkStructRename(r#gen::SparkStructRenameUdf { target_type }) => {

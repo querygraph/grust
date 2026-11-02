@@ -1,0 +1,423 @@
+commit fa78d067cd20c9ca3a3d1c29055eeb53633a22bd
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 17:13:18 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 17:13:18 2026 -0700
+
+    Discover ordered graph inputs before semantic flow analysis
+
+diff --git a/crates/sail-spark-connect/src/pipelines/analysis.rs b/crates/sail-spark-connect/src/pipelines/analysis.rs
+index aab39190e..5cdaa17ea 100644
+--- a/crates/sail-spark-connect/src/pipelines/analysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/analysis.rs
+@@ -42,16 +42,19 @@ impl<'a> GraphScope<'a> {
+             flow,
+         }
+     }
++    pub fn input_name(&self, name: &[String]) -> PlanResult<Name> {
++        let raw: Name = name.iter().map(|x| x.to_ascii_lowercase()).collect();
++        if self.graph.outputs.iter().any(|x| x.name == raw) {
++            Ok(raw)
++        } else {
++            self.qualify(&raw)
++        }
++    }
+ }
+ 
+ impl RelationScope for GraphScope<'_> {
+     fn resolve(&self, name: &[String]) -> PlanResult<Option<LogicalPlan>> {
+-        let raw: Name = name.iter().map(|x| x.to_ascii_lowercase()).collect();
+-        let name = if self.graph.outputs.iter().any(|x| x.name == raw) {
+-            raw
+-        } else {
+-            self.qualify(&raw)?
+-        };
++        let name = self.input_name(name)?;
+         if self.graph.outputs.iter().any(|x| x.name == name) {
+             self.reads
+                 .lock()
+diff --git a/crates/sail-spark-connect/src/pipelines/config/mod.rs b/crates/sail-spark-connect/src/pipelines/config/mod.rs
+index b73144c52..77e7265e7 100644
+--- a/crates/sail-spark-connect/src/pipelines/config/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/config/mod.rs
+@@ -1,10 +1,5 @@
+-//! Pure flow-configuration arithmetic for Spark 4.2.1 Declarative Pipelines
+-//! parity: the first-pass private configuration a flow is analyzed under, and
+-//! the post-success merge of a flow's declared configuration with the accepted
+-//! configurations of the graph views it read.
+-//!
+-//! Everything here is std-only and operates on raw SQL-conf strings. Binding
+-//! order, name display, table exclusion, resolver wiring and the conversion of
+-//! a conflict into a Spark error belong to the callers.
++//! Raw flow-configuration arithmetic and ordered graph-input discovery.
++//! Resolver-side activation is kept in a separate unit.
+ 
+ pub mod merge;
++mod trace;
+diff --git a/crates/sail-spark-connect/src/pipelines/config/trace.rs b/crates/sail-spark-connect/src/pipelines/config/trace.rs
+new file mode 100644
+index 000000000..6ac6b55c4
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/config/trace.rs
+@@ -0,0 +1,176 @@
++//! Ordered graph input discovery before semantic column resolution.
++use std::collections::{BTreeMap, HashSet};
++
++use sail_common::spec;
++use sail_plan::error::{PlanError, PlanResult};
++
++use crate::pipelines::analysis::GraphScope;
++use crate::pipelines::graph::{Flow, GraphDefinition, Name};
++
++/// Discover local reads, preserving occurrences and structural binding order.
++/// CTE matching uses the initial call configuration, before view overwrites.
++/// This performs no provider/catalog lookup, semantic analysis or helper query.
++/// The caller filters tables from view configuration contributions.
++pub(super) fn ordered_inputs(
++    graph: &GraphDefinition,
++    flow: &Flow,
++    query: &spec::QueryPlan,
++    case_sensitive: bool,
++    is_source_format: impl Fn(&str) -> bool,
++) -> PlanResult<Vec<Name>> {
++    let resolved = BTreeMap::new();
++    let scope = GraphScope::new(graph, &resolved, flow);
++    let mut trace = Trace {
++        scope,
++        case_sensitive,
++        is_source_format,
++        reads: vec![],
++    };
++    trace.query(query, &HashSet::new())?;
++    Ok(trace.reads)
++}
++
++struct Trace<'a, F> {
++    scope: GraphScope<'a>,
++    case_sensitive: bool,
++    is_source_format: F,
++    reads: Vec<Name>,
++}
++impl<F: Fn(&str) -> bool> Trace<'_, F> {
++    fn key(&self, value: &str) -> String {
++        if self.case_sensitive {
++            value.to_string()
++        } else {
++            value.to_ascii_lowercase()
++        }
++    }
++    fn expression(&mut self, expr: &spec::Expr, ctes: &HashSet<String>) -> PlanResult<()> {
++        if matches!(expr, spec::Expr::Subquery { .. }) {
++            return Err(PlanError::unsupported(
++                "configuration trace of plan-ID subquery references",
++            ));
++        }
++        expr.visit_subqueries(&mut |query| self.query(query, ctes))
++    }
++    fn query(&mut self, query: &spec::QueryPlan, ctes: &HashSet<String>) -> PlanResult<()> {
++        use spec::QueryNode as N;
++        match &query.node {
++            N::WithCtes {
++                input,
++                recursive,
++                ctes: definitions,
++            } => {
++                let mut kept = vec![];
++                let mut seen = HashSet::new();
++                for (name, definition) in definitions.iter().rev() {
++                    if seen.insert(self.key(name.as_ref())) {
++                        kept.push((name, definition));
++                    }
++                }
++                let mut inner = ctes.clone();
++                for (name, definition) in kept.into_iter().rev() {
++                    let key = self.key(name.as_ref());
++                    if *recursive {
++                        inner.insert(key.clone());
++                    }
++                    self.query(definition, &inner)?;
++                    inner.insert(key);
++                }
++                return self.query(input, &inner);
++            }
++            N::WithRelations { .. } => {
++                return Err(PlanError::unsupported(
++                    "configuration trace of WithRelations bindings",
++                ));
++            }
++            N::Read { read_type, .. } => match read_type {
++                spec::ReadType::NamedTable(table) => {
++                    let parts: Name = table.name.clone().into();
++                    let format_path = matches!(parts.as_slice(), [format, _] if (self.is_source_format)(&format.to_ascii_lowercase()));
++                    let cte = matches!(parts.as_slice(), [name] if ctes.contains(&self.key(name)));
++                    if !format_path && !cte {
++                        let name = self.scope.input_name(&parts)?;
++                        if self
++                            .scope
++                            .graph
++                            .outputs
++                            .iter()
++                            .any(|output| output.name == name)
++                        {
++                            self.reads.push(name);
++                        }
++                    }
++                }
++                spec::ReadType::DynamicTable(_) => {
++                    return Err(PlanError::unsupported(
++                        "configuration trace of dynamic table identifiers",
++                    ));
++                }
++                spec::ReadType::DataSource(_) | spec::ReadType::Udtf(_) => {}
++            },
++            N::Project { .. }
++            | N::Filter { .. }
++            | N::Join(_)
++            | N::SetOperation(_)
++            | N::Sort { .. }
++            | N::Limit { .. }
++            | N::Aggregate(_)
++            | N::LocalRelation { .. }
++            | N::Sample(_)
++            | N::TableSample { .. }
++            | N::Deduplicate(_)
++            | N::Range(_)
++            | N::SubqueryAlias { .. }
++            | N::Repartition { .. }
++            | N::ToDf { .. }
++            | N::WithColumnsRenamed { .. }
++            | N::Drop { .. }
++            | N::Tail { .. }
++            | N::WithColumns { .. }
++            | N::Hint { .. }
++            | N::Pivot(_)
++            | N::Unpivot(_)
++            | N::ToSchema { .. }
++            | N::RepartitionByExpression { .. }
++            | N::MapPartitions { .. }
++            | N::CollectMetrics { .. }
++            | N::Parse(_)
++            | N::GroupMap(_)
++            | N::CoGroupMap(_)
++            | N::WithWatermark(_)
++            | N::ApplyInPandasWithState(_)
++            | N::CachedLocalRelation { .. }
++            | N::CachedRemoteRelation { .. }
++            | N::CommonInlineUserDefinedTableFunction(_)
++            | N::FillNa { .. }
++            | N::DropNa { .. }
++            | N::Replace { .. }
++            | N::StatSummary { .. }
++            | N::StatDescribe { .. }
++            | N::StatCrosstab { .. }
++            | N::StatCov { .. }
++            | N::StatCorr { .. }
++            | N::StatApproxQuantile { .. }
++            | N::StatFreqItems { .. }
++            | N::StatSampleBy { .. }
++            | N::Empty { .. }
++            | N::WithParameters { .. }
++            | N::Values(_)
++            | N::TableAlias { .. }
++            | N::NamedWindows { .. }
++            | N::LateralView { .. }
++            | N::LateralJoin { .. } => {}
++        }
++        query.visit_children(&mut |child| match child {
++            spec::QueryChild::Expression(expr) => self.expression(expr, ctes),
++            spec::QueryChild::Window(window) => {
++                window.visit_subqueries(&mut |query| self.query(query, ctes))
++            }
++            spec::QueryChild::Query(query) => self.query(query, ctes),
++        })
++    }
++}
++
++#[cfg(test)]
++#[path = "trace_tests.rs"]
++mod tests;
+diff --git a/crates/sail-spark-connect/src/pipelines/config/trace_tests.rs b/crates/sail-spark-connect/src/pipelines/config/trace_tests.rs
+new file mode 100644
+index 000000000..9a5b5c123
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/config/trace_tests.rs
+@@ -0,0 +1,179 @@
++use std::collections::HashMap;
++
++use super::*;
++use crate::pipelines::graph::Output;
++use crate::spark::connect::OutputType;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++fn graph() -> GraphDefinition {
++    GraphDefinition {
++        catalog: "c".into(),
++        database: "d".into(),
++        sql_conf: HashMap::new(),
++        flows: vec![],
++        outputs: [
++            vec!["z_sensitive"],
++            vec!["a_insensitive"],
++            vec!["c", "d", "table"],
++            vec!["c", "d.a", "b"],
++            vec!["c", "d", "a.b"],
++            vec!["probe", "input"],
++        ]
++        .into_iter()
++        .map(|name| Output {
++            name: name.into_iter().map(str::to_string).collect(),
++            kind: OutputType::TemporaryView,
++            definition: Default::default(),
++            schema: None,
++            view: None,
++        })
++        .collect(),
++    }
++}
++fn parse(sql: &str) -> Result<spec::QueryPlan, Box<dyn std::error::Error>> {
++    let ast = sail_sql_analyzer::parser::parse_one_statement(sql)?;
++    match sail_sql_analyzer::statement::from_ast_statement(ast)? {
++        spec::Plan::Query(query) => Ok(query),
++        _ => Err("test statement is not a query".into()),
++    }
++}
++fn trace(sql: &str, sensitive: bool) -> Result<Vec<Name>, Box<dyn std::error::Error>> {
++    let query = parse(sql)?;
++    let flow = Flow {
++        name: vec!["result".into()],
++        target: vec!["result".into()],
++        query: query.clone(),
++        sql_conf: HashMap::new(),
++        catalog: "c".into(),
++        database: "d".into(),
++    };
++    Ok(ordered_inputs(
++        &graph(),
++        &flow,
++        &query,
++        sensitive,
++        |name| name == "probe",
++    )?)
++}
++fn expected(names: &[&[&str]]) -> Vec<Name> {
++    names
++        .iter()
++        .map(|parts| parts.iter().map(|s| s.to_string()).collect())
++        .collect()
++}
++
++#[test]
++fn real_sql_traces_views_before_semantic_resolution_in_reference_order() -> TestResult {
++    for (sql, names) in [
++        (
++            "SELECT Foo FROM (SELECT Foo FROM z_sensitive) nested CROSS JOIN a_insensitive",
++            vec!["z_sensitive", "a_insensitive"],
++        ),
++        (
++            "SELECT Bar, (SELECT foo FROM z_sensitive) AS nested FROM a_insensitive",
++            vec!["z_sensitive", "a_insensitive"],
++        ),
++        (
++            "SELECT Foo FROM a_insensitive CROSS JOIN z_sensitive",
++            vec!["a_insensitive", "z_sensitive"],
++        ),
++        (
++            "SELECT z1.Foo FROM z_sensitive z1 CROSS JOIN a_insensitive CROSS JOIN z_sensitive z2",
++            vec!["z_sensitive", "a_insensitive", "z_sensitive"],
++        ),
++        (
++            "SELECT Bar FROM a_insensitive WHERE EXISTS (SELECT foo FROM z_sensitive)",
++            vec!["z_sensitive", "a_insensitive"],
++        ),
++    ] {
++        assert_eq!(
++            trace(sql, false)?,
++            names
++                .into_iter()
++                .map(|name| vec![name.to_string()])
++                .collect::<Vec<_>>(),
++            "{sql}"
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn cte_definitions_shadow_graph_names_and_unused_definitions_are_visited() -> TestResult {
++    assert_eq!(
++        trace(
++            "WITH staged AS (SELECT Foo FROM z_sensitive) SELECT Bar FROM a_insensitive",
++            false
++        )?,
++        expected(&[&["z_sensitive"], &["a_insensitive"]])
++    );
++    assert!(
++        trace(
++            "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM Z_SENSITIVE",
++            false
++        )?
++        .is_empty()
++    );
++    assert_eq!(
++        trace(
++            "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM Z_SENSITIVE",
++            true
++        )?,
++        expected(&[&["z_sensitive"]])
++    );
++    assert_eq!(
++        trace(
++            "WITH c AS (SELECT * FROM z_sensitive) SELECT * FROM (WITH c AS (SELECT * FROM a_insensitive) SELECT * FROM c)",
++            false
++        )?,
++        expected(&[&["z_sensitive"], &["a_insensitive"]])
++    );
++    Ok(())
++}
++
++#[test]
++fn qualification_keeps_canonical_identity_and_registered_format_paths_are_external() -> TestResult {
++    assert_eq!(
++        trace(
++            "SELECT * FROM table CROSS JOIN c.d.table CROSS JOIN unrelated",
++            false
++        )?,
++        expected(&[&["c", "d", "table"], &["c", "d", "table"]])
++    );
++    let reads = trace("SELECT * FROM c.`d.a`.b CROSS JOIN c.d.`a.b`", false)?;
++    assert_eq!(reads, expected(&[&["c", "d.a", "b"], &["c", "d", "a.b"]]));
++    assert_eq!(reads[0].join("."), reads[1].join("."));
++    assert_ne!(reads[0], reads[1]);
++    assert!(trace("SELECT * FROM probe.input", false)?.is_empty());
++    Ok(())
++}
++
++#[test]
++fn deferred_binding_forms_are_explicit_errors_instead_of_silently_missing_reads() -> TestResult {
++    let graph = graph();
++    let query = spec::QueryPlan::new(spec::QueryNode::Read {
++        read_type: spec::ReadType::DynamicTable(Box::new(spec::ReadDynamicTable {
++            name: spec::Expr::Literal(spec::Literal::Utf8 {
++                value: Some("z_sensitive".into()),
++            }),
++            sample: None,
++            options: vec![],
++        })),
++        is_streaming: false,
++    });
++    let flow = Flow {
++        name: vec!["result".into()],
++        target: vec!["result".into()],
++        query: query.clone(),
++        sql_conf: HashMap::new(),
++        catalog: "c".into(),
++        database: "d".into(),
++    };
++    assert!(ordered_inputs(&graph, &flow, &query, false, |_| false).is_err());
++    let references = spec::QueryPlan::new(spec::QueryNode::WithRelations {
++        root: Box::new(query),
++        references: vec![],
++    });
++    assert!(ordered_inputs(&graph, &flow, &references, false, |_| false).is_err());
++    Ok(())
++}

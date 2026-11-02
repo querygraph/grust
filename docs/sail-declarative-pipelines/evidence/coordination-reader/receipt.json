@@ -1,0 +1,66 @@
+{
+  "commit": "b7290eb1ed624cc68e4ad52cbefe07b5c066ea5b",
+  "recorded_at": "2026-10-30T06:51:34.155885+00:00",
+  "scope": "Temporary-log unit tests; optimized Python concurrency run with one owned busy process per logical CPU",
+  "checks": [
+    {
+      "name": "docs",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "/tmp/sail-sdp-evidence-gate.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "880af27e95133527728303cf57628689b1da45e3895f698359d50c4f3d5e6857"
+    },
+    {
+      "name": "tests",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "-B",
+        "scripts/sdp-coordination-append-tests.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "log_sha256": "1cb8f367d360c6ba7d0455fc42c3cc597850035585136a4d8d00220f2b23b1e5"
+    },
+    {
+      "name": "optimized_load",
+      "command": [
+        "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+        "-B",
+        "-O",
+        "scripts/sdp-coordination-append-tests.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "log_sha256": "86bec290a411273c0a38101e1017343c55cb3ef56329366e9c2bf2cf87266a94"
+    }
+  ],
+  "load_pids": [
+    9243,
+    9244,
+    9245,
+    9246,
+    9247,
+    9248,
+    9249,
+    9250,
+    9251,
+    9252
+  ],
+  "logical_cpus": 10,
+  "load_exit_codes": [
+    -15,
+    -15,
+    -15,
+    -15,
+    -15,
+    -15,
+    -15,
+    -15,
+    -15,
+    -15
+  ],
+  "outcome": "passed",
+  "completed_at": "2026-10-30T06:51:37.906575+00:00"
+}

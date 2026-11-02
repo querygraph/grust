@@ -1,0 +1,84 @@
+{
+  "sail_commit": "7d7c3640fd780499cfa9658a4501c97d82c11f29",
+  "base": "f9982230d4efb6d8f03108b8d14fea30cee83da2",
+  "packages": [
+    "sail-common",
+    "sail-sql-analyzer",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T14:10:33.548811+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-pipeline-dataset-clauses-01-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-pipeline-dataset-clauses-01-clippy.log",
+      "sha256": "ac68c1ac61c993f256a446d40e12e08541ff9078a3bdf1ac4c6a9ec0dcc300ba"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-pipeline-dataset-clauses-01-rust.log",
+      "sha256": "0876b66b79bce41059538bc624e3619638c04ba5ee11290fb623f425c8bbdd59"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "environment_overrides": {
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_DEV_INCREMENTAL": "false",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "PYTHONPATH": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "/Users/alexy/src/sail-pipelines-proposal/.venv"
+  },
+  "recorded_at": "2026-10-31T14:13:49.249462+00:00",
+  "outcome": "passed"
+}

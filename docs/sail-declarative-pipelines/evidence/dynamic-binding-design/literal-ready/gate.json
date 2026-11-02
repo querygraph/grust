@@ -1,0 +1,97 @@
+{
+  "sail_commit": "ccb6fb21240b1b4d2962da833a74a17ade5e84c3",
+  "base": "95c32c055712995e06a56fc5c0a86d09bc3c954f",
+  "packages": [
+    "sail-sql-parser",
+    "sail-sql-analyzer",
+    "sail-common-datafusion",
+    "sail-data-source",
+    "sail-plan",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T01:28:34.749409+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-sql-parser",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-literal-identifier-ready-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-sql-parser",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-literal-identifier-ready-clippy.log",
+      "sha256": "36a85afc1f75b69e3c2d28b5f8b9f8af633c488aa645803c63b0426f4fe9408f"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-sql-parser",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-literal-identifier-ready-rust.log",
+      "sha256": "ca21870609719c486369a638cdc42e295aba54c3ad61595eacfb4c1775d5e0cd"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-31T01:32:09.709482+00:00",
+  "outcome": "passed"
+}

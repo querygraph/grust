@@ -1,0 +1,371 @@
+{
+  "started_at": "2026-10-31T02:08:16.155444+00:00",
+  "engine": "sail",
+  "harness_sha256": "743b01987e99be4e970c8ca7f04b0e19e4b1280612b2759a7868cbec80540ff7",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "Public SQL validation phase, condition/state/parameters and rows; not SDP Scala suite acceptance",
+  "cases": [
+    {
+      "name": "table_concat",
+      "query": "SELECT * FROM IDENTIFIER(concat('in', 'put'))",
+      "args": null,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "table_cast",
+      "query": "SELECT * FROM IDENTIFIER(CAST('input' AS STRING))",
+      "args": null,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "table_null",
+      "query": "SELECT * FROM IDENTIFIER(NULL)",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must evaluate to a string",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_typed_null",
+      "query": "SELECT * FROM IDENTIFIER(CAST(NULL AS STRING))",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must evaluate to a string",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_integer",
+      "query": "SELECT * FROM IDENTIFIER(1)",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must evaluate to a string",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_integer_division",
+      "query": "SELECT * FROM IDENTIFIER(1 DIV 0)",
+      "args": null,
+      "returned": false,
+      "error": "divide by zero",
+      "exception_type": "ArithmeticException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_string_division",
+      "query": "SELECT * FROM IDENTIFIER(CAST(1 DIV 0 AS STRING))",
+      "args": null,
+      "returned": false,
+      "error": "divide by zero",
+      "exception_type": "ArithmeticException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_random",
+      "query": "SELECT * FROM IDENTIFIER(rand())",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must evaluate to a string",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_random_cast",
+      "query": "SELECT * FROM IDENTIFIER(CAST(rand() AS STRING))",
+      "args": null,
+      "returned": false,
+      "error": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: 5132379791249957",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_dead_random",
+      "query": "SELECT * FROM IDENTIFIER(CASE WHEN false THEN CAST(rand() AS STRING) ELSE 'input' END)",
+      "args": null,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "table_subquery",
+      "query": "SELECT * FROM IDENTIFIER((SELECT foo FROM input))",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must be a constant: This feature is not implemented: Physical plan does not support logical expression ScalarSubquery(<subquery>)",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_subquery_missing_column",
+      "query": "SELECT * FROM IDENTIFIER((SELECT missing FROM input))",
+      "args": null,
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`foo`",
+        "objectName": "`missing`"
+      }
+    },
+    {
+      "name": "table_subquery_missing_table",
+      "query": "SELECT * FROM IDENTIFIER((SELECT foo FROM absent))",
+      "args": null,
+      "returned": false,
+      "error": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: absent",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_named",
+      "query": "SELECT * FROM IDENTIFIER(:tab)",
+      "args": {
+        "tab": "input"
+      },
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "table_named_concat",
+      "query": "SELECT * FROM IDENTIFIER(:prefix || 'put')",
+      "args": {
+        "prefix": "in"
+      },
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "table_positional",
+      "query": "SELECT * FROM IDENTIFIER(?)",
+      "args": [
+        "input"
+      ],
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "table_named_null",
+      "query": "SELECT * FROM IDENTIFIER(:tab)",
+      "args": {
+        "tab": null
+      },
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must evaluate to a string",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_unbound",
+      "query": "SELECT * FROM IDENTIFIER(:tab)",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must be a constant: Execution error: Placeholder ':tab' was not provided a value for execution.",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "scalar_named",
+      "query": "SELECT IDENTIFIER(:col) AS value FROM input",
+      "args": {
+        "col": "foo"
+      },
+      "rows": [
+        {
+          "value": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "scalar_positional",
+      "query": "SELECT IDENTIFIER(?) AS value FROM input",
+      "args": [
+        "foo"
+      ],
+      "rows": [
+        {
+          "value": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "scalar_concat",
+      "query": "SELECT IDENTIFIER(concat('f','oo')) AS value FROM input",
+      "args": null,
+      "rows": [
+        {
+          "value": 9
+        }
+      ],
+      "returned": true
+    },
+    {
+      "name": "scalar_column",
+      "query": "SELECT IDENTIFIER(foo) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must be a constant: Schema error: No field named input.\"#0\".",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "scalar_missing_column",
+      "query": "SELECT IDENTIFIER(missing) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "objectName": "`missing`",
+        "proposal": "`foo`"
+      }
+    },
+    {
+      "name": "scalar_subquery",
+      "query": "SELECT IDENTIFIER((SELECT foo FROM input)) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must be a constant: This feature is not implemented: Physical plan does not support logical expression ScalarSubquery(<subquery>)",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "scalar_subquery_missing_column",
+      "query": "SELECT IDENTIFIER((SELECT missing FROM input)) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "exception_type": "AnalysisException",
+      "condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+      "sql_state": "42703",
+      "parameters": {
+        "proposal": "`foo`",
+        "objectName": "`missing`"
+      }
+    },
+    {
+      "name": "scalar_null",
+      "query": "SELECT IDENTIFIER(CAST(NULL AS STRING)) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must evaluate to a string",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "scalar_integer",
+      "query": "SELECT IDENTIFIER(1) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must evaluate to a string",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "scalar_unbound",
+      "query": "SELECT IDENTIFIER(:col) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must be a constant: Execution error: Placeholder ':col' was not provided a value for execution.",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "table_positional_unbound",
+      "query": "SELECT * FROM IDENTIFIER(?)",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must be a constant: Execution error: Placeholder '?' was not provided a value for execution.",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    },
+    {
+      "name": "scalar_positional_unbound",
+      "query": "SELECT IDENTIFIER(?) AS value FROM input",
+      "args": null,
+      "returned": false,
+      "error": "invalid argument: IDENTIFIER expression must be a constant: Execution error: Placeholder '?' was not provided a value for execution.",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null
+    }
+  ],
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "listener_after_stop": {
+    "exit_code": 0,
+    "stdout": "p97009\nf325\n"
+  },
+  "completed_at": "2026-10-31T02:08:16.948097+00:00"
+}

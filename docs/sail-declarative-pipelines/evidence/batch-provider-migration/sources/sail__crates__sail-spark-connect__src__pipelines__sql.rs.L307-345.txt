@@ -1,0 +1,39 @@
+307:         PipelineStatement::Command(spec::CommandNode::CreateTemporaryView {
+308:             view,
+309:             is_global: false,
+310:             definition,
+311:         }) => {
+312:             let name = graph.define_output(pc::DefineOutput {
+313:                 output_name: Some(quoted(&[view.as_ref().to_string()])),
+314:                 output_type: Some(OutputType::TemporaryView as i32),
+315:                 comment: definition.comment,
+316:                 ..Default::default()
+317:             })?;
+318:             let query = with_view_columns(*definition.input, definition.columns);
+319:             add_flow(graph, name.clone(), name, query);
+320:         }
+321:         PipelineStatement::Command(spec::CommandNode::CreateView {
+322:             view,
+323:             mut definition,
+324:         }) => {
+325:             let name = graph.define_output(pc::DefineOutput {
+326:                 output_name: Some(quoted(&Vec::<String>::from(view))),
+327:                 output_type: Some(OutputType::MaterializedView as i32),
+328:                 ..Default::default()
+329:             })?;
+330:             definition.input = Box::new(with_view_columns(
+331:                 *definition.input,
+332:                 definition.columns.clone(),
+333:             ));
+334:             add_flow(graph, name.clone(), name, *definition.input.clone());
+335:             if let Some(output) = graph.definition.outputs.last_mut() {
+336:                 output.view = Some(definition);
+337:             }
+338:         }
+339:         _ => {
+340:             return Err(SparkError::unsupported(
+341:                 "SQL statement in pipeline definitions",
+342:             ));
+343:         }
+344:     }
+345:     Ok(())

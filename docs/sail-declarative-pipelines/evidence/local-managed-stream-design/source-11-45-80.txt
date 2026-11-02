@@ -1,0 +1,36 @@
+    pub async fn activate(&self) -> ExecutionResult<()> {
+        let (result, receiver) = oneshot::channel();
+        self.send(DriverMessage::Activate { result })
+            .await
+            .map_err(ExecutionError::from)?;
+        receiver.await.map_err(ExecutionError::from)?
+    }
+
+    pub async fn shutdown(&self) -> ExecutionResult<()> {
+        // A closed channel means that the driver actor has already stopped.
+        // Shutdown is intentionally idempotent, so this is still a success.
+        let _ = self.send(DriverMessage::Shutdown { result: None }).await;
+        Ok(())
+    }
+
+    /// Stop the driver and wait for its shutdown hook to complete.
+    pub async fn shutdown_and_wait(&self) -> ExecutionResult<()> {
+        let (tx, rx) = oneshot::channel();
+        if self
+            .send(DriverMessage::Shutdown { result: Some(tx) })
+            .await
+            .is_ok()
+        {
+            // A closed result channel means another shutdown request won the race.
+            // In either case, the driver actor is no longer running.
+            let _ = rx.await;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct DriverRegistry {
+    drivers: HashMap<DriverId, DriverHandle>,
+}
+

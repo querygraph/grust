@@ -1,0 +1,497 @@
+diff --git a/crates/sail-common/src/spec/mod.rs b/crates/sail-common/src/spec/mod.rs
+index 9c68c6c08..798f27acd 100644
+--- a/crates/sail-common/src/spec/mod.rs
++++ b/crates/sail-common/src/spec/mod.rs
+@@ -4,6 +4,7 @@ mod expression;
+ mod literal;
+ mod plan;
+ mod snapshot_reference;
++mod subqueries;
+ mod time;
+ 
+ pub use column_change::*;
+diff --git a/crates/sail-common/src/spec/subqueries.rs b/crates/sail-common/src/spec/subqueries.rs
+new file mode 100644
+index 000000000..51978c6b0
+--- /dev/null
++++ b/crates/sail-common/src/spec/subqueries.rs
+@@ -0,0 +1,179 @@
++//! Pure traversal of queries embedded in expressions, independent of resolution.
++use super::{Expr, QueryPlan, SortOrder, Window, WindowFrameBoundary};
++
++impl Expr {
++    /// Visit queries embedded in this expression and its expression children.
++    ///
++    /// Preserve field/list order and repeated occurrences, stopping at the first
++    /// callback error. The callback decides how to descend into each query and
++    /// how to interpret its scope; this method neither resolves nor visits the
++    /// query's contents. `Subquery` plan-ID references are not expanded here.
++    /// This is typed spec traversal, not a guarantee of Catalyst plan order.
++    pub fn visit_subqueries<'a, E>(
++        &'a self,
++        visitor: &mut impl FnMut(&'a QueryPlan) -> Result<(), E>,
++    ) -> Result<(), E> {
++        use Expr as Node;
++        match self {
++            Node::Literal(_)
++            | Node::UnresolvedAttribute { .. }
++            | Node::UnresolvedRegex { .. }
++            | Node::UnresolvedNamedLambdaVariable(_)
++            | Node::DefaultColumnValue
++            | Node::Placeholder(_)
++            | Node::UnresolvedDate { .. }
++            | Node::UnresolvedTime { .. }
++            | Node::UnresolvedTimestamp { .. } => Ok(()),
++            Node::UnresolvedStar {
++                wildcard_options, ..
++            } => {
++                for replacement in wildcard_options.replace_columns.iter().flatten() {
++                    replacement.expression.visit_subqueries(visitor)?;
++                }
++                Ok(())
++            }
++            Node::UnresolvedFunction(function) => {
++                visit_exprs(&function.arguments, visitor)?;
++                for (_, argument) in &function.named_arguments {
++                    argument.visit_subqueries(visitor)?;
++                }
++                if let Some(filter) = &function.filter {
++                    filter.visit_subqueries(visitor)?;
++                }
++                if let Some(order_by) = &function.order_by {
++                    visit_sort_orders(order_by, visitor)?;
++                }
++                Ok(())
++            }
++            Node::CommonInlineUserDefinedFunction(function) => {
++                visit_exprs(&function.arguments, visitor)
++            }
++            Node::Alias { expr, .. }
++            | Node::Cast { expr, .. }
++            | Node::Table { expr }
++            | Node::IdentifierClause { expr }
++            | Node::IsFalse(expr)
++            | Node::IsNotFalse(expr)
++            | Node::IsTrue(expr)
++            | Node::IsNotTrue(expr)
++            | Node::IsNull(expr)
++            | Node::IsNotNull(expr)
++            | Node::IsUnknown(expr)
++            | Node::IsNotUnknown(expr) => expr.visit_subqueries(visitor),
++            Node::NamedArgument { value, .. } => value.visit_subqueries(visitor),
++            Node::SortOrder(order) => order.child.visit_subqueries(visitor),
++            Node::LambdaFunction { function, .. } => function.visit_subqueries(visitor),
++            Node::Window {
++                window_function,
++                window,
++            } => {
++                window_function.visit_subqueries(visitor)?;
++                window.visit_subqueries(visitor)
++            }
++            Node::UnresolvedExtractValue { child, extraction } => {
++                child.visit_subqueries(visitor)?;
++                extraction.visit_subqueries(visitor)
++            }
++            Node::UpdateFields {
++                struct_expression,
++                value_expression,
++                ..
++            } => {
++                struct_expression.visit_subqueries(visitor)?;
++                match value_expression {
++                    Some(value) => value.visit_subqueries(visitor),
++                    None => Ok(()),
++                }
++            }
++            Node::CallFunction { arguments, .. }
++            | Node::Rollup(arguments)
++            | Node::Cube(arguments) => visit_exprs(arguments, visitor),
++            Node::GroupingSets(sets) => sets.iter().try_for_each(|set| visit_exprs(set, visitor)),
++            Node::InSubquery { expr, subquery, .. } => {
++                expr.visit_subqueries(visitor)?;
++                visitor(subquery)
++            }
++            Node::ScalarSubquery { subquery } | Node::Exists { subquery, .. } => visitor(subquery),
++            Node::Subquery {
++                in_subquery_values, ..
++            } => visit_exprs(in_subquery_values, visitor),
++            Node::InList { expr, list, .. } => {
++                expr.visit_subqueries(visitor)?;
++                visit_exprs(list, visitor)
++            }
++            Node::Between {
++                expr, low, high, ..
++            } => {
++                expr.visit_subqueries(visitor)?;
++                low.visit_subqueries(visitor)?;
++                high.visit_subqueries(visitor)
++            }
++            Node::IsDistinctFrom { left, right } | Node::IsNotDistinctFrom { left, right } => {
++                left.visit_subqueries(visitor)?;
++                right.visit_subqueries(visitor)
++            }
++            Node::SimilarTo { expr, pattern, .. } => {
++                expr.visit_subqueries(visitor)?;
++                pattern.visit_subqueries(visitor)
++            }
++        }
++    }
++}
++
++impl Window {
++    /// Visit queries in the window's expressions, including frame bounds.
++    /// Uses the same callback/error contract as [`Expr::visit_subqueries`].
++    pub fn visit_subqueries<'a, E>(
++        &'a self,
++        visitor: &mut impl FnMut(&'a QueryPlan) -> Result<(), E>,
++    ) -> Result<(), E> {
++        match self {
++            Window::Named(_) => Ok(()),
++            Window::Unnamed {
++                cluster_by,
++                partition_by,
++                order_by,
++                frame,
++            } => {
++                visit_exprs(cluster_by, visitor)?;
++                visit_exprs(partition_by, visitor)?;
++                visit_sort_orders(order_by, visitor)?;
++                if let Some(frame) = frame {
++                    for boundary in [&frame.lower, &frame.upper] {
++                        match boundary {
++                            WindowFrameBoundary::Preceding(expr)
++                            | WindowFrameBoundary::Following(expr)
++                            | WindowFrameBoundary::Value(expr) => {
++                                expr.visit_subqueries(visitor)?;
++                            }
++                            _ => {}
++                        }
++                    }
++                }
++                Ok(())
++            }
++        }
++    }
++}
++
++fn visit_exprs<'a, E>(
++    exprs: &'a [Expr],
++    visitor: &mut impl FnMut(&'a QueryPlan) -> Result<(), E>,
++) -> Result<(), E> {
++    exprs
++        .iter()
++        .try_for_each(|expr| expr.visit_subqueries(visitor))
++}
++
++fn visit_sort_orders<'a, E>(
++    orders: &'a [SortOrder],
++    visitor: &mut impl FnMut(&'a QueryPlan) -> Result<(), E>,
++) -> Result<(), E> {
++    orders
++        .iter()
++        .try_for_each(|order| order.child.visit_subqueries(visitor))
++}
++
++#[cfg(test)]
++#[path = "subquery_tests.rs"]
++mod tests;
+diff --git a/crates/sail-common/src/spec/subquery_tests.rs b/crates/sail-common/src/spec/subquery_tests.rs
+new file mode 100644
+index 000000000..89df3c7be
+--- /dev/null
++++ b/crates/sail-common/src/spec/subquery_tests.rs
+@@ -0,0 +1,139 @@
++use std::convert::Infallible;
++use std::sync::Arc;
++
++use super::super::{
++    ObjectName, QueryNode, UnresolvedFunction, WildcardOptions, WildcardReplaceColumn,
++};
++use super::*;
++
++fn subquery(id: i64) -> Expr {
++    Expr::ScalarSubquery {
++        subquery: Box::new(QueryPlan {
++            node: QueryNode::Empty {
++                produce_one_row: false,
++            },
++            plan_id: Some(id),
++        }),
++    }
++}
++
++fn sort(child: Expr) -> SortOrder {
++    SortOrder {
++        child: Box::new(child),
++        direction: super::super::SortDirection::Ascending,
++        null_ordering: super::super::NullOrdering::NullsFirst,
++    }
++}
++
++#[test]
++fn expression_lists_preserve_order_repetition_and_query_identity() -> Result<(), Infallible> {
++    let expr = Expr::UnresolvedFunction(UnresolvedFunction {
++        function_name: ObjectName::bare("f"),
++        arguments: vec![subquery(8), subquery(3), subquery(8)],
++        named_arguments: vec![("named".into(), subquery(2))],
++        filter: Some(Box::new(subquery(5))),
++        order_by: Some(vec![sort(subquery(1))]),
++        is_user_defined_function: false,
++        is_distinct: false,
++        is_internal: None,
++        ignore_nulls: None,
++    });
++    // Borrow the actual queries; the traversal need not clone/resolve/rewrite
++    // anything and must not deduplicate equal queries or sort their plan IDs.
++    let mut seen = vec![];
++    expr.visit_subqueries(&mut |query| {
++        seen.push(query);
++        Ok::<_, Infallible>(())
++    })?;
++    assert_eq!(
++        seen.iter().map(|query| query.plan_id).collect::<Vec<_>>(),
++        vec![Some(8), Some(3), Some(8), Some(2), Some(5), Some(1)]
++    );
++    let Expr::UnresolvedFunction(function) = &expr else {
++        unreachable!()
++    };
++    let Expr::ScalarSubquery { subquery } = &function.arguments[0] else {
++        unreachable!()
++    };
++    assert!(std::ptr::eq(seen[0], subquery.as_ref()));
++    Ok(())
++}
++
++#[test]
++fn first_callback_error_stops_traversal_and_keeps_the_original_error() {
++    let error = Arc::new("stop at the second occurrence");
++    let expr = Expr::Rollup(vec![subquery(9), subquery(2), subquery(1)]);
++    let mut seen = vec![];
++    let result = expr.visit_subqueries(&mut |query| {
++        seen.push(query.plan_id);
++        if query.plan_id == Some(2) {
++            Err(Arc::clone(&error))
++        } else {
++            Ok(())
++        }
++    });
++    assert_eq!(seen, vec![Some(9), Some(2)]);
++    assert!(result.is_err_and(|actual| Arc::ptr_eq(&actual, &error)));
++}
++
++#[test]
++fn wildcard_replacements_and_window_bounds_are_expression_children() -> Result<(), Infallible> {
++    let expr = Expr::UnresolvedStar {
++        target: None,
++        plan_id: None,
++        wildcard_options: WildcardOptions {
++            replace_columns: Some(vec![WildcardReplaceColumn {
++                expression: Box::new(Expr::Window {
++                    window_function: Box::new(subquery(7)),
++                    window: Window::Unnamed {
++                        cluster_by: vec![subquery(6)],
++                        partition_by: vec![subquery(5)],
++                        order_by: vec![sort(subquery(4))],
++                        frame: Some(super::super::WindowFrame {
++                            frame_type: super::super::WindowFrameType::Range,
++                            lower: WindowFrameBoundary::Preceding(Box::new(subquery(3))),
++                            upper: WindowFrameBoundary::Following(Box::new(subquery(2))),
++                        }),
++                    },
++                }),
++                column_name: "result".into(),
++                as_keyword: true,
++            }]),
++            ..Default::default()
++        },
++    };
++    let mut seen = vec![];
++    expr.visit_subqueries(&mut |query| {
++        seen.push(query.plan_id);
++        Ok::<_, Infallible>(())
++    })?;
++    assert_eq!(seen, (2..=7).rev().map(Some).collect::<Vec<_>>());
++    Ok(())
++}
++
++#[test]
++fn query_contents_and_plan_id_references_remain_the_callers_responsibility()
++-> Result<(), Infallible> {
++    let expr = Expr::Subquery {
++        plan_id: 90,
++        subquery_type: super::super::SubqueryType::In,
++        in_subquery_values: vec![Expr::ScalarSubquery {
++            subquery: Box::new(QueryPlan {
++                node: QueryNode::Project {
++                    input: None,
++                    expressions: vec![subquery(12)],
++                },
++                plan_id: Some(6),
++            }),
++        }],
++        negated: false,
++    };
++    let mut seen = vec![];
++    expr.visit_subqueries(&mut |query| {
++        seen.push(query.plan_id);
++        Ok::<_, Infallible>(())
++    })?;
++    // No invented lookup for reference 90 or automatic descent into query 6.
++    assert_eq!(seen, vec![Some(6)]);
++    Ok(())
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+index 286371514..5f8b1109b 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding.rs
+@@ -442,146 +442,13 @@ impl Walker<'_> {
+         window: &spec::Window,
+         cte_scope: &HashSet<String>,
+     ) -> Result<(), BindingError> {
+-        match window {
+-            spec::Window::Named(_) => Ok(()),
+-            spec::Window::Unnamed {
+-                cluster_by,
+-                partition_by,
+-                order_by,
+-                frame,
+-            } => {
+-                self.exprs(cluster_by, cte_scope)?;
+-                self.exprs(partition_by, cte_scope)?;
+-                self.sort_orders(order_by, cte_scope)?;
+-                if let Some(frame) = frame {
+-                    for boundary in [&frame.lower, &frame.upper] {
+-                        match boundary {
+-                            spec::WindowFrameBoundary::Preceding(expr)
+-                            | spec::WindowFrameBoundary::Following(expr)
+-                            | spec::WindowFrameBoundary::Value(expr) => {
+-                                self.expr(expr, cte_scope)?;
+-                            }
+-                            _ => {}
+-                        }
+-                    }
+-                }
+-                Ok(())
+-            }
+-        }
++        window.visit_subqueries(&mut |query| self.walk(query, cte_scope))
+     }
+ 
+-    /// Every expression variant, exhaustively: child expressions are
+-    /// followed and embedded queries (`InSubquery`, `ScalarSubquery`,
+-    /// `Exists`) are walked as plans under the enclosing CTE scope, so a
+-    /// read hidden in a predicate, a function argument, a case branch, a
+-    /// cast, a window or a join condition is classified before resolution.
++    /// Follow embedded queries through the shared typed expression traversal.
++    /// Query/CTE scope and admission policy remain this walker's responsibility.
+     fn expr(&mut self, expr: &spec::Expr, cte_scope: &HashSet<String>) -> Result<(), BindingError> {
+-        use spec::Expr as E;
+-        match expr {
+-            E::Literal(_)
+-            | E::UnresolvedAttribute { .. }
+-            | E::UnresolvedRegex { .. }
+-            | E::UnresolvedNamedLambdaVariable(_)
+-            | E::DefaultColumnValue
+-            | E::Placeholder(_)
+-            | E::UnresolvedDate { .. }
+-            | E::UnresolvedTime { .. }
+-            | E::UnresolvedTimestamp { .. } => Ok(()),
+-            E::UnresolvedStar {
+-                wildcard_options, ..
+-            } => {
+-                for replacement in wildcard_options.replace_columns.iter().flatten() {
+-                    self.expr(&replacement.expression, cte_scope)?;
+-                }
+-                Ok(())
+-            }
+-            E::UnresolvedFunction(function) => {
+-                self.exprs(&function.arguments, cte_scope)?;
+-                for (_, argument) in &function.named_arguments {
+-                    self.expr(argument, cte_scope)?;
+-                }
+-                if let Some(filter) = &function.filter {
+-                    self.expr(filter, cte_scope)?;
+-                }
+-                if let Some(order_by) = &function.order_by {
+-                    self.sort_orders(order_by, cte_scope)?;
+-                }
+-                Ok(())
+-            }
+-            E::CommonInlineUserDefinedFunction(function) => {
+-                self.exprs(&function.arguments, cte_scope)
+-            }
+-            E::Alias { expr, .. }
+-            | E::Cast { expr, .. }
+-            | E::Table { expr }
+-            | E::IdentifierClause { expr }
+-            | E::IsFalse(expr)
+-            | E::IsNotFalse(expr)
+-            | E::IsTrue(expr)
+-            | E::IsNotTrue(expr)
+-            | E::IsNull(expr)
+-            | E::IsNotNull(expr)
+-            | E::IsUnknown(expr)
+-            | E::IsNotUnknown(expr) => self.expr(expr, cte_scope),
+-            E::NamedArgument { value, .. } => self.expr(value, cte_scope),
+-            E::SortOrder(order) => self.expr(&order.child, cte_scope),
+-            E::LambdaFunction { function, .. } => self.expr(function, cte_scope),
+-            E::Window {
+-                window_function,
+-                window,
+-            } => {
+-                self.expr(window_function, cte_scope)?;
+-                self.window(window, cte_scope)
+-            }
+-            E::UnresolvedExtractValue { child, extraction } => {
+-                self.expr(child, cte_scope)?;
+-                self.expr(extraction, cte_scope)
+-            }
+-            E::UpdateFields {
+-                struct_expression,
+-                value_expression,
+-                ..
+-            } => {
+-                self.expr(struct_expression, cte_scope)?;
+-                match value_expression {
+-                    Some(value) => self.expr(value, cte_scope),
+-                    None => Ok(()),
+-                }
+-            }
+-            E::CallFunction { arguments, .. } | E::Rollup(arguments) | E::Cube(arguments) => {
+-                self.exprs(arguments, cte_scope)
+-            }
+-            E::GroupingSets(sets) => sets.iter().try_for_each(|set| self.exprs(set, cte_scope)),
+-            E::InSubquery { expr, subquery, .. } => {
+-                self.expr(expr, cte_scope)?;
+-                self.walk(subquery, cte_scope)
+-            }
+-            E::ScalarSubquery { subquery } | E::Exists { subquery, .. } => {
+-                self.walk(subquery, cte_scope)
+-            }
+-            E::Subquery {
+-                in_subquery_values, ..
+-            } => self.exprs(in_subquery_values, cte_scope),
+-            E::InList { expr, list, .. } => {
+-                self.expr(expr, cte_scope)?;
+-                self.exprs(list, cte_scope)
+-            }
+-            E::Between {
+-                expr, low, high, ..
+-            } => {
+-                self.expr(expr, cte_scope)?;
+-                self.expr(low, cte_scope)?;
+-                self.expr(high, cte_scope)
+-            }
+-            E::IsDistinctFrom { left, right } | E::IsNotDistinctFrom { left, right } => {
+-                self.expr(left, cte_scope)?;
+-                self.expr(right, cte_scope)
+-            }
+-            E::SimilarTo { expr, pattern, .. } => {
+-                self.expr(expr, cte_scope)?;
+-                self.expr(pattern, cte_scope)
+-            }
+-        }
++        expr.visit_subqueries(&mut |query| self.walk(query, cte_scope))
+     }
+ 
+     fn walk(

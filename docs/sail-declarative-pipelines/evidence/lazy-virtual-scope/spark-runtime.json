@@ -1,0 +1,221 @@
+{
+  "started_at": "2026-10-31T19:33:30.401654+00:00",
+  "mode": "spark",
+  "script_sha256": "69b53b4a19b16074716b40d9aeee1468f5479d255428ca6640fd2967441a7c7b",
+  "version": "4.2.1",
+  "namespace": "spark_catalog.default",
+  "cases": [
+    {
+      "declared": false,
+      "read": false,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [],
+      "outcome": "error",
+      "error_type": "SparkException",
+      "condition": "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE",
+      "sql_state": "42825",
+      "parameters": {
+        "right": "\"INT\"",
+        "left": "\"STRING\""
+      },
+      "message": "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"STRING\" and \"INT\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": false,
+      "read": false,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": false,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.consumer'.\nError: [UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] Failed to infer the schema for table spark_catalog.default.merged from its upstream flows.\nPlease modify the flows that write to this table to make their schemas compatible.\n\nInferred schema so far:\nroot\n-- id: integer (nullable = false)\n\n\nIncompatible schema:\nroot\n-- id: string (nullable = false)\n SQLSTATE: 42KD9\n[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "consumer",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n",
+        "Failed to resolve flow: 'spark_catalog.default.consumer'.\nError: [UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] Failed to infer the schema for table spark_catalog.default.merged from its upstream flows.\nPlease modify the flows that write to this table to make their schemas compatible.\n\nInferred schema so far:\nroot\n-- id: integer (nullable = false)\n\n\nIncompatible schema:\nroot\n-- id: string (nullable = false)\n SQLSTATE: 42KD9\n[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.consumer, spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "consumer, late",
+      "downstream": ""
+    },
+    {
+      "declared": false,
+      "read": true,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged;CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged;CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n",
+        "Failed to resolve flow: 'spark_catalog.default.consumer'.\nError: [UNABLE_TO_INFER_PIPELINE_TABLE_SCHEMA] Failed to infer the schema for table spark_catalog.default.merged from its upstream flows.\nPlease modify the flows that write to this table to make their schemas compatible.\n\nInferred schema so far:\nroot\n-- id: integer (nullable = false)\n\n\nIncompatible schema:\nroot\n-- id: string (nullable = false)\n SQLSTATE: 42KD9\n[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.consumer, spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "consumer, late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [],
+      "outcome": "error",
+      "error_type": "SparkException",
+      "condition": "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE",
+      "sql_state": "42825",
+      "parameters": {
+        "right": "\"INT\"",
+        "left": "\"STRING\""
+      },
+      "message": "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"STRING\" and \"INT\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": false,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "none",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [],
+      "outcome": "error",
+      "error_type": "SparkException",
+      "condition": "CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE",
+      "sql_state": "42825",
+      "parameters": {
+        "right": "\"STRING\"",
+        "left": "\"INT\""
+      },
+      "message": "[CANNOT_MERGE_INCOMPATIBLE_DATA_TYPE] Failed to merge incompatible data types \"INT\" and \"STRING\". Please check the data types of the columns being merged and ensure that they are compatible. If necessary, consider casting the columns to compatible data types before attempting the merge. SQLSTATE: 42825",
+      "direct": null,
+      "downstream": null
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "first",
+      "sql": "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source;CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    },
+    {
+      "declared": true,
+      "read": true,
+      "missing": "last",
+      "sql": "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id;CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id;CREATE STREAMING TABLE merged (id INT);CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int);CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str);CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged;CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source",
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.default.late'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`missing_source` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 47;\n'UnresolvedRelation [spark_catalog, default, missing_source], [], false\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.default.late\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.",
+      "direct": "late",
+      "downstream": ""
+    }
+  ],
+  "probe_completed": true,
+  "completed_at": "2026-10-31T19:33:39.394202+00:00",
+  "remaining_listeners": []
+}

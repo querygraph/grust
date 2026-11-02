@@ -1,0 +1,98 @@
+138:   private def materializeViews(
+139:       virtualizedConnectedGraphWithTables: DataflowGraph,
+140:       context: PipelineUpdateContext): Unit = {
+141:     var viewsToPublish: Set[PersistedView] =
+142:       virtualizedConnectedGraphWithTables.persistedViews.toSet
+143:     var publishedViews: Set[TableIdentifier] = Set.empty
+144:     var failedViews: Set[TableIdentifier] = Set.empty
+145: 
+146:     // To publish a view, it is required that all the input sources must exist in the metastore.
+147:     //  Thereby, if a Persisted View target reads another Persisted View source, the source must be
+148:     //  published first.
+149:     //  Here we make sure all the persisted views are published in correct order
+150:     val persistedViewIdentifiers =
+151:       virtualizedConnectedGraphWithTables.persistedViews.map(_.identifier).toSet
+152:     val viewToFlowMap =
+153:       ViewHelpers.persistedViewIdentifierToFlow(graph = virtualizedConnectedGraphWithTables)
+154:     val materializationDependencies =
+155:       virtualizedConnectedGraphWithTables.persistedViews.map { v =>
+156:         val flow = viewToFlowMap(v.identifier)
+157:         val inputs = flow.inputs.intersect(persistedViewIdentifiers)
+158:         (v.identifier, inputs)
+159:       }.toMap
+160: 
+161:     // As long as all views are not materialized, we try to materialize them
+162:     while (viewsToPublish.nonEmpty) {
+163:       // Mark any views with failed inputs as skipped
+164:       viewsToPublish
+165:         .filter { v =>
+166:           materializationDependencies(v.identifier)
+167:             .exists(failedViews.contains)
+168:         }
+169:         .foreach { v =>
+170:           val flowToView = viewToFlowMap(v.identifier)
+171:           context.flowProgressEventLogger.recordSkipped(flowToView)
+172: 
+173:           failedViews += v.identifier
+174:           viewsToPublish -= v
+175:         }
+176: 
+177:       // Persist any views without pending inputs
+178:       viewsToPublish
+179:         .filter { v =>
+180:           val pendingInputs =
+181:             materializationDependencies(v.identifier).diff(publishedViews)
+182: 
+183:           pendingInputs.isEmpty
+184:         }
+185:         .foreach { v =>
+186:           val flowToView = viewToFlowMap(v.identifier)
+187:           try {
+188:             materializeView(v, flowToView, context.spark)
+189:             publishedViews += v.identifier
+190:             viewsToPublish -= v
+191:           } catch {
+192:             case NonFatal(ex) =>
+193:               context.flowProgressEventLogger.recordFailed(
+194:                 flowToView,
+195:                 ex,
+196:                 logAsWarn = false
+197:               )
+198:               failedViews += v.identifier
+199:               viewsToPublish -= v
+200:           }
+201:         }
+202:     }
+203:   }
+204: 
+205:   private def materializeView(view: View, flow: ResolvedFlow, spark: SparkSession): Unit = {
+206:     val command = CreateViewCommand(
+207:       name = view.identifier,
+208:       userSpecifiedColumns = Nil,
+209:       viewType = PersistedView,
+210:       comment = view.comment,
+211:       collation = None,
+212:       properties = view.properties,
+213:       originalText = view.sqlText,
+214:       plan = flow.df.logicalPlan,
+215:       allowExisting = true,
+216:       replace = true,
+217:       isAnalyzed = true
+218:     )
+219: 
+220:     val queryContext = flow.queryContext
+221: 
+222:     val catalogManager = spark.sessionState.catalogManager
+223:     val currentCatalogName = catalogManager.currentCatalog.name()
+224:     val currentNamespace = catalogManager.currentNamespace
+225:     try {
+226:       // Using the catalog and database from the flow ensures that reads within the view are
+227:       // directed to the right catalog/database.
+228:       queryContext.currentCatalog.foreach(catalogManager.setCurrentCatalog)
+229:       queryContext.currentDatabase.map(d => Array(d)).foreach(catalogManager.setCurrentNamespace)
+230:       command.run(spark)
+231:     } finally {
+232:       catalogManager.setCurrentCatalog(currentCatalogName)
+233:       catalogManager.setCurrentNamespace(currentNamespace)
+234:     }
+235:   }

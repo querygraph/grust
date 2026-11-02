@@ -1,0 +1,145 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T01:18:39.664522+00:00",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "c67899cd2e1d74bf1e43af57a63dd0bfd1280b42d87493f9858db897e3ed5882",
+  "scope": "ordinary public SQL ambiguity metadata; not Scala acceptance",
+  "cases": [
+    {
+      "name": "unqualified",
+      "sql": "SELECT Foo FROM (SELECT 1 AS Foo, 2 AS foo) q",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "AMBIGUOUS_REFERENCE",
+      "sql_state": "42704",
+      "parameters": {
+        "referenceNames": "[`q`.`Foo`, `q`.`Foo`]",
+        "name": "`Foo`"
+      },
+      "message": "[AMBIGUOUS_REFERENCE] Reference `Foo` is ambiguous, could be: [`q`.`Foo`, `q`.`Foo`]."
+    },
+    {
+      "name": "qualified",
+      "sql": "SELECT p.Foo FROM (SELECT 1 AS Foo, 2 AS foo) p",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "AMBIGUOUS_REFERENCE",
+      "sql_state": "42704",
+      "parameters": {
+        "name": "`p`.`Foo`",
+        "referenceNames": "[`p`.`Foo`, `p`.`Foo`]"
+      },
+      "message": "[AMBIGUOUS_REFERENCE] Reference `p`.`Foo` is ambiguous, could be: [`p`.`Foo`, `p`.`Foo`]."
+    },
+    {
+      "name": "join",
+      "sql": "SELECT foo FROM (SELECT 1 AS foo) z CROSS JOIN (SELECT 2 AS foo) a",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "AMBIGUOUS_REFERENCE",
+      "sql_state": "42704",
+      "parameters": {
+        "referenceNames": "[`a`.`foo`, `z`.`foo`]",
+        "name": "`foo`"
+      },
+      "message": "[AMBIGUOUS_REFERENCE] Reference `foo` is ambiguous, could be: [`a`.`foo`, `z`.`foo`]."
+    },
+    {
+      "name": "nested",
+      "sql": "SELECT q.s.x FROM (SELECT named_struct('x',1) AS s,named_struct('x',2) AS s) q",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "AMBIGUOUS_REFERENCE",
+      "sql_state": "42704",
+      "parameters": {
+        "referenceNames": "[`q`.`s`, `q`.`s`]",
+        "name": "`q`.`s`.`x`"
+      },
+      "message": "[AMBIGUOUS_REFERENCE] Reference `q`.`s`.`x` is ambiguous, could be: [`q`.`s`, `q`.`s`]."
+    },
+    {
+      "name": "dotted",
+      "sql": "SELECT `A.B` FROM (SELECT 1 AS `A.B`,2 AS `a.b`) q",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "AMBIGUOUS_REFERENCE",
+      "sql_state": "42704",
+      "parameters": {
+        "name": "`A.B`",
+        "referenceNames": "[`q`.`A.B`, `q`.`A.B`]"
+      },
+      "message": "[AMBIGUOUS_REFERENCE] Reference `A.B` is ambiguous, could be: [`q`.`A.B`, `q`.`A.B`]."
+    },
+    {
+      "name": "backtick",
+      "sql": "SELECT `A``B` FROM (SELECT 1 AS `A``B`,2 AS `a``b`) q",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+      "sql_state": "42601",
+      "parameters": {
+        "name": "A`B"
+      },
+      "message": "[INVALID_ATTRIBUTE_NAME_SYNTAX] Syntax error in the attribute name: A`B. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts."
+    },
+    {
+      "name": "unicode_qualifiers",
+      "sql": "SELECT foo FROM (SELECT 1 AS foo) `` CROSS JOIN (SELECT 2 AS foo) `𐀀`",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "AMBIGUOUS_REFERENCE",
+      "sql_state": "42704",
+      "parameters": {
+        "name": "`foo`",
+        "referenceNames": "[`𐀀`.`foo`, ``.`foo`]"
+      },
+      "message": "[AMBIGUOUS_REFERENCE] Reference `foo` is ambiguous, could be: [`𐀀`.`foo`, ``.`foo`]."
+    },
+    {
+      "name": "generated_alias",
+      "sql": "SELECT Foo FROM (SELECT 1 AS Foo,2 AS foo)",
+      "case_sensitive": false,
+      "outcome": "error",
+      "exception_type": "AnalysisException",
+      "condition": "AMBIGUOUS_REFERENCE",
+      "sql_state": "42704",
+      "parameters": {
+        "name": "`Foo`",
+        "referenceNames": "[`Foo`, `Foo`]"
+      },
+      "message": "[AMBIGUOUS_REFERENCE] Reference `Foo` is ambiguous, could be: [`Foo`, `Foo`]."
+    },
+    {
+      "name": "same_attribute_twice",
+      "sql": "SELECT foo FROM (SELECT a.foo,a.foo FROM (SELECT 1 AS foo) a) q",
+      "case_sensitive": false,
+      "rows": [
+        {
+          "foo": 1
+        }
+      ],
+      "outcome": "success"
+    },
+    {
+      "name": "case_sensitive_success",
+      "sql": "SELECT Foo FROM (SELECT 1 AS Foo,2 AS foo) q",
+      "case_sensitive": true,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "outcome": "success"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "pyspark_version": "4.2.1",
+  "completed_at": "2026-10-31T01:18:40.168033+00:00"
+}

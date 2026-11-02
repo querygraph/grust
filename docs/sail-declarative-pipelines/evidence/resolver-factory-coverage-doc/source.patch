@@ -1,0 +1,19 @@
+diff --git a/crates/sail-plan/src/resolver/mod.rs b/crates/sail-plan/src/resolver/mod.rs
+index 07bc95f44..8e7c1047c 100644
+--- a/crates/sail-plan/src/resolver/mod.rs
++++ b/crates/sail-plan/src/resolver/mod.rs
+@@ -47,11 +47,11 @@ impl<'a> PlanResolver<'a> {
+         self
+     }
+ 
+-    /// Use a caller-captured Session for read/write factories and queries executed
+-    /// during resolution.
++    /// Use a caller-captured Session for read/write, row-operation, and procedure
++    /// planning callbacks and queries executed during resolution.
+     /// The caller retains admission/cleanup and chooses the capture boundary;
+     /// authoritative session commands and catalog name resolution still use ctx.
+-    /// Procedure/row-level factories and final execution require their own propagation.
++    /// Native command analysis and final execution require their own propagation.
+     pub fn with_query_session(mut self, session: &'a dyn Session) -> Self {
+         self.query_session = Some(session);
+         self

@@ -1,0 +1,105 @@
+{
+  "sail_commit": "c0a82405326628c282992f6325aaa4bca0023141",
+  "base": "0cc165ab3c1edc19cd9fe98955415fabcf5469b1",
+  "packages": [
+    "sail-common",
+    "sail-sql-macro",
+    "sail-sql-parser",
+    "sail-sql-analyzer",
+    "sail-plan",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T17:52:19.535898+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common",
+        "-p",
+        "sail-sql-macro",
+        "-p",
+        "sail-sql-parser",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-replace-where-by-name-02-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common",
+        "-p",
+        "sail-sql-macro",
+        "-p",
+        "sail-sql-parser",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-replace-where-by-name-02-clippy.log",
+      "sha256": "ca04c31de94fb0e9a600bfd838331aa1e0abcb3346a175fc7dab278cb10bb20e"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common",
+        "-p",
+        "sail-sql-macro",
+        "-p",
+        "sail-sql-parser",
+        "-p",
+        "sail-sql-analyzer",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-replace-where-by-name-02-rust.log",
+      "sha256": "5d5d6e7cb760ab5ace64f4230565b94edc7f20e85ee0ceb27088fe0cf83f80b2"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "environment_overrides": {
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_DEV_INCREMENTAL": "false",
+    "CARGO_INCREMENTAL": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "PYTHONPATH": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "/Users/alexy/src/sail-pipelines-proposal/.venv"
+  },
+  "recorded_at": "2026-10-31T17:52:37.227962+00:00",
+  "outcome": "passed"
+}

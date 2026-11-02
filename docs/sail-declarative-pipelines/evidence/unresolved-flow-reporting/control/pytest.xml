@@ -1,0 +1,535 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="12" time="0.617" timestamp="2026-10-31T12:05:26.902649-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[None-False-False]" time="0.076"><failure message="AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'&#10;  &#10;  + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source&#10;  - &#10;  - Failed to resolve flows in the pipeline.&#10;  - &#10;  - A flow can fail to resolve because the flow itself contains errors or because it reads&#10;  - from an upstream flow which failed to resolve....&#10;  &#10;  ...Full output truncated (6 lines hidden), use '-vv' to show">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11800bcb0&gt;
+pipeline = ('f650a404-3289-4915-9b34-5424a9c60120', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117fdbf50&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x118042d40&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e0')
+dry = False, reverse = False, extra_query = None
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+&gt;       assert error.value.getMessage().split("\n\nJVM stacktrace:")[0] == summary(direct, downstream)
+E       AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'
+E         
+E         + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source
+E         - 
+E         - Failed to resolve flows in the pipeline.
+E         - 
+E         - A flow can fail to resolve because the flow itself contains errors or because it reads
+E         - from an upstream flow which failed to resolve....
+E         
+E         ...Full output truncated (6 lines hidden), use '-vv' to show
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:52: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[None-False-True]" time="0.034"><failure message="AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'&#10;  &#10;  + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source&#10;  - &#10;  - Failed to resolve flows in the pipeline.&#10;  - &#10;  - A flow can fail to resolve because the flow itself contains errors or because it reads&#10;  - from an upstream flow which failed to resolve....&#10;  &#10;  ...Full output truncated (6 lines hidden), use '-vv' to show">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1180556d0&gt;
+pipeline = ('ca82fc0f-a920-4173-b7a5-59603d9c33ee', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x118056db0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1180b8860&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e1')
+dry = True, reverse = False, extra_query = None
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+&gt;       assert error.value.getMessage().split("\n\nJVM stacktrace:")[0] == summary(direct, downstream)
+E       AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'
+E         
+E         + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source
+E         - 
+E         - Failed to resolve flows in the pipeline.
+E         - 
+E         - A flow can fail to resolve because the flow itself contains errors or because it reads
+E         - from an upstream flow which failed to resolve....
+E         
+E         ...Full output truncated (6 lines hidden), use '-vv' to show
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:52: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[None-True-False]" time="0.032"><failure message="AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None&#10; +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()&#10; +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition&#10; +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118056c00&gt;
+pipeline = ('46ef0282-1647-4b3a-a824-fc06f53abc7a', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1180c9340&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1180ba840&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e2')
+dry = False, reverse = True, extra_query = None
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None
+E        +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()
+E        +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition
+E        +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[None-True-True]" time="0.031"><failure message="AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None&#10; +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()&#10; +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition&#10; +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1180c91f0&gt;
+pipeline = ('91186f88-e226-4d67-bfec-62c2103a7624', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1180cbef0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1180e07c0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e3')
+dry = True, reverse = True, extra_query = None
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None
+E        +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()
+E        +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition
+E        +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT 1 AS id-False-False]" time="0.031"><failure message="AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'&#10;  &#10;  + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source&#10;  - &#10;  - Failed to resolve flows in the pipeline.&#10;  - &#10;  - A flow can fail to resolve because the flow itself contains errors or because it reads&#10;  - from an upstream flow which failed to resolve....&#10;  &#10;  ...Full output truncated (6 lines hidden), use '-vv' to show">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1180f1f70&gt;
+pipeline = ('acf645c7-3043-47c3-94f9-5bd36a519de0', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1180f2810&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1180e2520&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e4')
+dry = False, reverse = False, extra_query = 'SELECT 1 AS id'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+&gt;       assert error.value.getMessage().split("\n\nJVM stacktrace:")[0] == summary(direct, downstream)
+E       AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'
+E         
+E         + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source
+E         - 
+E         - Failed to resolve flows in the pipeline.
+E         - 
+E         - A flow can fail to resolve because the flow itself contains errors or because it reads
+E         - from an upstream flow which failed to resolve....
+E         
+E         ...Full output truncated (6 lines hidden), use '-vv' to show
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:52: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT 1 AS id-False-True]" time="0.033"><failure message="AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'&#10;  &#10;  + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source&#10;  - &#10;  - Failed to resolve flows in the pipeline.&#10;  - &#10;  - A flow can fail to resolve because the flow itself contains errors or because it reads&#10;  - from an upstream flow which failed to resolve....&#10;  &#10;  ...Full output truncated (6 lines hidden), use '-vv' to show">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1180f26c0&gt;
+pipeline = ('e33d7bbc-a0d8-41f5-9ac0-4c8b5f3803e6', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11810ce60&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x118130680&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e5')
+dry = True, reverse = False, extra_query = 'SELECT 1 AS id'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+&gt;       assert error.value.getMessage().split("\n\nJVM stacktrace:")[0] == summary(direct, downstream)
+E       AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'
+E         
+E         + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source
+E         - 
+E         - Failed to resolve flows in the pipeline.
+E         - 
+E         - A flow can fail to resolve because the flow itself contains errors or because it reads
+E         - from an upstream flow which failed to resolve....
+E         
+E         ...Full output truncated (6 lines hidden), use '-vv' to show
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:52: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT 1 AS id-True-False]" time="0.034"><failure message="AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None&#10; +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()&#10; +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition&#10; +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11810cd10&gt;
+pipeline = ('b12985c3-4e6e-4765-a806-e3208d24ec51', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11810f9b0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1181322a0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e6')
+dry = False, reverse = True, extra_query = 'SELECT 1 AS id'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None
+E        +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()
+E        +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition
+E        +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT 1 AS id-True-True]" time="0.035"><failure message="AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None&#10; +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()&#10; +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition&#10; +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11810fa10&gt;
+pipeline = ('6cc06071-128a-4906-89e5-db4e5a110a48', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1180f3c80&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1180baf20&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e7')
+dry = True, reverse = True, extra_query = 'SELECT 1 AS id'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None
+E        +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()
+E        +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition
+E        +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT * FROM missing_extra_source-False-False]" time="0.031"><failure message="AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'&#10;  &#10;  + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source&#10;  - &#10;  - Failed to resolve flows in the pipeline.&#10;  - &#10;  - A flow can fail to resolve because the flow itself contains errors or because it reads&#10;  - from an upstream flow which failed to resolve....&#10;  &#10;  ...Full output truncated (6 lines hidden), use '-vv' to show">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1180f3a10&gt;
+pipeline = ('b4f0e2e8-368e-425f-838c-7b4ce90b2f45', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1180c86b0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1181327a0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e8')
+dry = False, reverse = False, extra_query = 'SELECT * FROM missing_extra_source'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+&gt;       assert error.value.getMessage().split("\n\nJVM stacktrace:")[0] == summary(direct, downstream)
+E       AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'
+E         
+E         + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source
+E         - 
+E         - Failed to resolve flows in the pipeline.
+E         - 
+E         - A flow can fail to resolve because the flow itself contains errors or because it reads
+E         - from an upstream flow which failed to resolve....
+E         
+E         ...Full output truncated (6 lines hidden), use '-vv' to show
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:52: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT * FROM missing_extra_source-False-True]" time="0.034"><failure message="AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'&#10;  &#10;  + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source&#10;  - &#10;  - Failed to resolve flows in the pipeline.&#10;  - &#10;  - A flow can fail to resolve because the flow itself contains errors or because it reads&#10;  - from an upstream flow which failed to resolve....&#10;  &#10;  ...Full output truncated (6 lines hidden), use '-vv' to show">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118055b80&gt;
+pipeline = ('04700c76-08e7-4135-a0f2-f80fc564a30f', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x118145610&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11812c540&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e9')
+dry = True, reverse = False, extra_query = 'SELECT * FROM missing_extra_source'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+&gt;       assert error.value.getMessage().split("\n\nJVM stacktrace:")[0] == summary(direct, downstream)
+E       AssertionError: assert 'Table not fo...issing_source' == '\nFailed to ...ede this log.'
+E         
+E         + Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: missing_source
+E         - 
+E         - Failed to resolve flows in the pipeline.
+E         - 
+E         - A flow can fail to resolve because the flow itself contains errors or because it reads
+E         - from an upstream flow which failed to resolve....
+E         
+E         ...Full output truncated (6 lines hidden), use '-vv' to show
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:52: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT * FROM missing_extra_source-True-False]" time="0.032"><failure message="AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None&#10; +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()&#10; +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition&#10; +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118144f50&gt;
+pipeline = ('d3b1c72e-379f-49a7-ac02-a0aa11aa0c7b', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x118147860&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11812e200&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e10')
+dry = False, reverse = True, extra_query = 'SELECT * FROM missing_extra_source'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None
+E        +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()
+E        +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition
+E        +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_resolution_failures" name="test_unresolved_flows_report_every_failure_before_terminal_error[SELECT * FROM missing_extra_source-True-True]" time="0.030"><failure message="AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None&#10; +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()&#10; +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition&#10; +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118155040&gt;
+pipeline = ('a1e91313-54a9-46f3-bd3e-6c6eaf5e89e0', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x118155ee0&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1181605e0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-404/test_unresolved_flows_report_e11')
+dry = True, reverse = True, extra_query = 'SELECT * FROM missing_extra_source'
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("extra_query", [None, "SELECT 1 AS id", "SELECT * FROM missing_extra_source"])
+    def test_unresolved_flows_report_every_failure_before_terminal_error(
+        pipeline_spark, pipeline, tmp_path, dry, reverse, extra_query
+    ):
+        graph_id, registry, _ = pipeline
+        statements = [
+            "CREATE MATERIALIZED VIEW healthy AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW bad AS SELECT * FROM missing_source",
+            "CREATE MATERIALIZED VIEW middle AS SELECT * FROM bad",
+            "CREATE MATERIALIZED VIEW leaf AS SELECT * FROM middle",
+            "CREATE MATERIALIZED VIEW other_bad AS SELECT missing_column FROM range(1)",
+        ]
+        if reverse:
+            statements.reverse()
+        if extra_query is not None:
+            statements.append(f"CREATE FLOW secondary_flow AS INSERT INTO bad BY NAME {extra_query}")
+        registry.register_sql(";".join(statements), tmp_path / "failures.sql")
+        messages = []
+        with pytest.raises(AnalysisException) as error:
+            for result in start_run(pipeline_spark, graph_id, None, False, None, dry, (tmp_path / "state").as_uri()):
+                if "pipeline_event_result" in result:
+                    messages.append(result["pipeline_event_result"].event.message)
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        direct = {f"{namespace}.bad", f"{namespace}.other_bad"}
+        downstream = {f"{namespace}.leaf", f"{namespace}.middle"}
+        if extra_query == "SELECT * FROM missing_extra_source":
+            direct.add(f"{namespace}.secondary_flow")
+&gt;       assert error.value.getCondition() is None
+E       AssertionError: assert 'UNRESOLVED_COLUMN.WITH_SUGGESTION' is None
+E        +  where 'UNRESOLVED_COLUMN.WITH_SUGGESTION' = getCondition()
+E        +    where getCondition = AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].').getCondition
+E        +      where AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') = &lt;ExceptionInfo AnalysisException('[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `missing_column` cannot be resolved. Did you mean one of the following? [`id`].') tblen=5&gt;.value
+
+python/pysail/tests/spark/pipelines/test_resolution_failures.py:49: AssertionError</failure></testcase></testsuite></testsuites>

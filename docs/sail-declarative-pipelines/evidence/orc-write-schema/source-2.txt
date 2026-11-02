@@ -1,0 +1,25 @@
+14: 
+15: /// Spark column metadata key for Arrow field metadata.
+16: ///
+17: /// Spark stores the entire column metadata dictionary as a JSON-encoded object
+18: /// under this single key to avoid collisions with other Arrow field metadata
+19: /// (e.g. extension type keys).
+20: pub const SPARK_METADATA_JSON_KEY: &str = "SPARK::metadata::json";
+21: 
+22: /// Sail metadata key for Spark UDT information stored in Arrow field metadata.
+23: ///
+24: /// This is internal to Sail and should not be exposed as Spark column metadata.
+25: pub const SAIL_SPARK_UDT_METADATA_KEY: &str = "SAIL::spark::udt";
+26: 
+27: #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+28: pub struct SparkUdtMetadata {
+29:     #[serde(default, skip_serializing_if = "Option::is_none")]
+30:     pub jvm_class: Option<String>,
+31:     #[serde(default, skip_serializing_if = "Option::is_none")]
+32:     pub python_class: Option<String>,
+33:     #[serde(default, skip_serializing_if = "Option::is_none")]
+34:     pub serialized_python_class: Option<String>,
+35: }
+36: 
+37: /// Field name for list type.
+38: pub const SAIL_LIST_FIELD_NAME: &str = "item";

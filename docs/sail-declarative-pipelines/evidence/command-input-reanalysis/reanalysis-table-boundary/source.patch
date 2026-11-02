@@ -1,0 +1,28 @@
+commit 0659b467816260dfa654c11853bdfd7793d073ed
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 15:12:11 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 15:12:11 2026 -0700
+
+    Negative control: reanalysis-table-boundary
+
+diff --git a/crates/sail-spark-connect/src/pipelines/reanalysis.rs b/crates/sail-spark-connect/src/pipelines/reanalysis.rs
+index 78a64dc13..41061940e 100644
+--- a/crates/sail-spark-connect/src/pipelines/reanalysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/reanalysis.rs
+@@ -40,7 +40,7 @@ fn inputs(
+             .iter()
+             .find(|output| output.name == name)
+             .ok_or_else(|| SparkError::internal("analyzed dependency output missing"))?;
+-        if output.kind == OutputType::TemporaryView || output.view.is_some() {
++        if true {
+             pending.extend(
+                 analyzed
+                     .dependencies
+@@ -121,4 +121,4 @@ pub(super) async fn resolve_inputs(
+ }
+ 
+ #[cfg(test)]
+-mod tests;
++mod tests;
+\ No newline at end of file

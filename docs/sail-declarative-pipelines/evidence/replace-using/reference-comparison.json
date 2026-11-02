@@ -1,0 +1,82 @@
+[
+  {
+    "label": "overwrite-ifne",
+    "sql": "INSERT OVERWRITE output IF NOT EXISTS SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "overwrite-ifne-by-name",
+    "sql": "INSERT OVERWRITE output IF NOT EXISTS BY NAME SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-overwrite-ifne",
+    "sql": "CREATE FLOW f AS INSERT OVERWRITE output IF NOT EXISTS BY NAME SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-query",
+    "sql": "CREATE FLOW f AS SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-with",
+    "sql": "CREATE FLOW f AS WITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s",
+    "matched": true
+  },
+  {
+    "label": "flow-ddl",
+    "sql": "CREATE FLOW f AS CREATE TABLE output AS SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-explain",
+    "sql": "CREATE FLOW f AS EXPLAIN INSERT INTO output BY NAME SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-nested",
+    "sql": "CREATE FLOW f AS CREATE FLOW g AS INSERT INTO output BY NAME SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "ordinary-with",
+    "sql": "WITH s AS (SELECT 1) INSERT INTO output BY NAME SELECT * FROM s",
+    "matched": true
+  },
+  {
+    "label": "flow-query-with",
+    "sql": "CREATE FLOW f AS INSERT INTO output BY NAME WITH s AS (SELECT 1) SELECT * FROM s",
+    "matched": true
+  },
+  {
+    "label": "overwrite-partition-ifne",
+    "sql": "INSERT OVERWRITE output PARTITION(p=1) IF NOT EXISTS SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-identity-first",
+    "sql": "CREATE FLOW a.f AS INSERT OVERWRITE output IF NOT EXISTS SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-directory-using",
+    "sql": "CREATE FLOW f AS INSERT OVERWRITE DIRECTORY '/tmp/sdp-grammar-unwritten' USING parquet SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-directory-hive",
+    "sql": "CREATE FLOW f AS INSERT OVERWRITE LOCAL DIRECTORY '/tmp/sdp-grammar-unwritten' STORED AS PARQUET SELECT 1",
+    "matched": true
+  },
+  {
+    "label": "flow-replace-where",
+    "sql": "CREATE FLOW f AS INSERT INTO output BY NAME REPLACE WHERE true SELECT 1 AS id",
+    "matched": true
+  },
+  {
+    "label": "flow-replace-using",
+    "sql": "CREATE FLOW f AS INSERT INTO output REPLACE USING (id) SELECT 1 AS id",
+    "matched": true
+  }
+]

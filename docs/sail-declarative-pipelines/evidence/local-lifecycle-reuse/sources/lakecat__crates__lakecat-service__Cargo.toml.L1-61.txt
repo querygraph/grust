@@ -1,0 +1,61 @@
+[package]
+name = "lakecat-service"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "LakeCat Axum service: request routing, auth, middleware, and catalog endpoint handlers"
+
+[features]
+default = []
+grust-local = ["dep:grust-graph", "lakecat-graph/grust-local"]
+grust-turso-local = ["grust-local", "dep:grust-turso", "lakecat-graph/grust-turso-local"]
+sail-local = ["dep:lakecat-sail", "lakecat-sail/catalog-provider", "lakecat-sail/sail-local"]
+turso-local = ["lakecat-store/turso-local"]
+typesec-local = ["dep:reqwest", "dep:typesec", "typesec/integrations", "typesec/rbac", "lakecat-security/typesec-local"]
+
+[dependencies]
+async-trait = { workspace = true }
+axum = { workspace = true }
+http = { workspace = true }
+lakecat-api = { workspace = true }
+lakecat-core = { workspace = true }
+lakecat-graph = { workspace = true }
+lakecat-lineage = { workspace = true }
+lakecat-querygraph = { workspace = true }
+lakecat-sail = { workspace = true, optional = true }
+lakecat-security = { workspace = true }
+lakecat-store = { workspace = true }
+chrono = { workspace = true }
+grust-graph = { workspace = true, optional = true, features = ["cypher", "memory"] }
+grust-turso = { workspace = true, optional = true }
+object_store = { workspace = true }
+reqwest = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sail-iceberg = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+typesec = { workspace = true, optional = true }
+url = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+sail-catalog-iceberg = { workspace = true }
+sail-iceberg = { workspace = true }
+tempfile = { workspace = true }
+trybuild = { workspace = true }
+
+[[bench]]
+name = "commit_path"
+harness = false
+required-features = ["sail-local", "turso-local"]
+
+[[bench]]
+name = "scan_path"
+harness = false
+
+[[bench]]
+name = "querygraph_path"
+harness = false

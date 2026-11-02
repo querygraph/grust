@@ -1,0 +1,91 @@
+20: use crate::resolver::state::PlanResolverState;
+21: 
+22: impl PlanResolver<'_> {
+23:     pub(in super::super) async fn resolve_catalog_create_view(
+24:         &self,
+25:         view: spec::ObjectName,
+26:         definition: spec::ViewDefinition,
+27:         state: &mut PlanResolverState,
+28:     ) -> PlanResult<LogicalPlan> {
+29:         let spec::ViewDefinition {
+30:             definition,
+31:             input,
+32:             columns,
+33:             if_not_exists,
+34:             replace,
+35:             comment,
+36:             mut properties,
+37:         } = definition;
+38:         // Resolve the query plan to register fields in state and extract column types.
+39:         let resolved_input = self.resolve_query_plan(*input, state).await?;
+40:         let schema = resolved_input.schema();
+41:         let columns = if let Some(columns) = columns {
+42:             let field_count = schema.fields().len();
+43:             if columns.len() != field_count {
+44:                 return Err(PlanError::AnalysisError(format!(
+45:                     "CREATE VIEW column list has {} columns, but the query produces {} columns",
+46:                     columns.len(),
+47:                     field_count
+48:                 )));
+49:             }
+50:             columns
+51:                 .into_iter()
+52:                 .zip(schema.fields().iter())
+53:                 .map(|(x, field)| {
+54:                     let spec::ViewColumnDefinition { name, comment } = x;
+55:                     CreateViewColumnOptions {
+56:                         name,
+57:                         data_type: field.data_type().clone(),
+58:                         nullable: field.is_nullable(),
+59:                         comment,
+60:                     }
+61:                 })
+62:                 .collect()
+63:         } else {
+64:             Self::get_field_names(schema, state)?
+65:                 .into_iter()
+66:                 .zip(schema.fields().iter())
+67:                 .map(|(name, field)| CreateViewColumnOptions {
+68:                     name,
+69:                     data_type: field.data_type().clone(),
+70:                     nullable: field.is_nullable(),
+71:                     comment: None,
+72:                 })
+73:                 .collect()
+74:         };
+75:         let manager = self.ctx.extension::<CatalogManager>()?;
+76:         let namespace = match self
+77:             .relation_scope
+78:             .and_then(|scope| scope.default_namespace())
+79:         {
+80:             Some(namespace) => namespace,
+81:             None => {
+82:                 let mut namespace = vec![manager.default_catalog()?.to_string()];
+83:                 namespace.extend(Vec::<String>::from(manager.default_database()?));
+84:                 namespace
+85:             }
+86:         };
+87:         // Use Spark's existing catalog properties, preserving the SQL text.
+88:         properties
+89:             .retain(|(key, _)| key != VIEW_NAMESPACE_SIZE && !key.starts_with(VIEW_NAMESPACE_PART));
+90:         properties.push((VIEW_NAMESPACE_SIZE.to_string(), namespace.len().to_string()));
+91:         properties.extend(
+92:             namespace
+93:                 .into_iter()
+94:                 .enumerate()
+95:                 .map(|(index, part)| (format!("{VIEW_NAMESPACE_PART}{index}"), part)),
+96:         );
+97:         let command = CatalogCommand::CreateView {
+98:             view: view.into(),
+99:             options: CreateViewOptions {
+100:                 definition,
+101:                 columns,
+102:                 comment,
+103:                 if_not_exists,
+104:                 replace,
+105:                 properties,
+106:             },
+107:         };
+108:         self.resolve_catalog_command(command)
+109:     }
+110: 

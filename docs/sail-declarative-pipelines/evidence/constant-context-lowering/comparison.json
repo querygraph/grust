@@ -1,0 +1,991 @@
+{
+  "sail_commit": "3ffb497d3e5dcbb48c56a5dd06687044ef994508",
+  "scope": "outcome/condition/rows; complete metadata counted separately; bare catalog and error-function failures retained",
+  "baseline14": {
+    "behavior_matched": 2,
+    "metadata_matched": 2,
+    "cases": [
+      {
+        "name": "scalar_divide_type",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_integral_type",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_remainder_type",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_divide_string",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "DIVIDE_BY_ZERO",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "typeof_integral",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": null
+      },
+      {
+        "name": "ordinary_integral",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "DIVIDE_BY_ZERO",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_raise",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_raise_cast",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_assert",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "typeof_raise",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "typeof_assert",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "catalog_typeof_raise",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "CATALOG_NOT_FOUND",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "catalog_typeof_assert",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "CATALOG_NOT_FOUND",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "catalog_typeof_catalog",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "CATALOG_NOT_FOUND",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      }
+    ]
+  },
+  "candidate14": {
+    "behavior_matched": 6,
+    "metadata_matched": 3,
+    "cases": [
+      {
+        "name": "scalar_divide_type",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_integral_type",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_remainder_type",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_divide_string",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "DIVIDE_BY_ZERO",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "typeof_integral",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "ordinary_integral",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "DIVIDE_BY_ZERO",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_raise",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_raise_cast",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_assert",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "typeof_raise",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "typeof_assert",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "catalog_typeof_raise",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "CATALOG_NOT_FOUND",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "catalog_typeof_assert",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "CATALOG_NOT_FOUND",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "catalog_typeof_catalog",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "CATALOG_NOT_FOUND",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      }
+    ]
+  },
+  "provenance20": {
+    "behavior_matched": 19,
+    "metadata_matched": 11,
+    "cases": [
+      {
+        "name": "catalog_dead",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "database_dead",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "timezone_dead",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "user_dead",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "typeof_catalog",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "typeof_catalog_nested",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "typeof_after_nonfoldable",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "nonfoldable_after_typeof",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "missing_after_catalog",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "missing_before_catalog",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "typeof_missing",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "missing_subquery_after_catalog",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "typeof_scalar_subquery",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "typeof_scalar_missing_subquery",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "bound_parameter_after_catalog",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "bound_parameter_typeof",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "udf_typeof",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "udf_typeof_missing",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "udf_unique",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "udf_unique_missing",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      }
+    ]
+  },
+  "validation34": {
+    "behavior_matched": 29,
+    "metadata_matched": 11,
+    "cases": [
+      {
+        "name": "table_concat",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "foo": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "foo": 9
+          }
+        ]
+      },
+      {
+        "name": "table_cast",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "foo": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "foo": 9
+          }
+        ]
+      },
+      {
+        "name": "table_null",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_typed_null",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NULL",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NULL",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_integer",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_integer_division",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_string_division",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "DIVIDE_BY_ZERO",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_random",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_random_cast",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_dead_random",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_subquery",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_subquery_missing_column",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_subquery_missing_table",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_named",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "foo": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "foo": 9
+          }
+        ]
+      },
+      {
+        "name": "table_named_concat",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "foo": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "foo": 9
+          }
+        ]
+      },
+      {
+        "name": "table_positional",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "foo": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "foo": 9
+          }
+        ]
+      },
+      {
+        "name": "table_named_null",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_unbound",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "UNBOUND_SQL_PARAMETER",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_named",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "scalar_positional",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "scalar_concat",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      },
+      {
+        "name": "scalar_column",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_missing_column",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_subquery",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_subquery_missing_column",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "sail_condition": "UNRESOLVED_COLUMN.WITH_SUGGESTION",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_null",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NULL",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NULL",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_integer",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "sail_condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_unbound",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "UNBOUND_SQL_PARAMETER",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_positional_unbound",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "UNBOUND_SQL_PARAMETER",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_positional_unbound",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "UNBOUND_SQL_PARAMETER",
+        "sail_condition": null,
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_current_catalog",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_dead_current_catalog",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_dead_random",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "scalar_dead_typeof_random",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "value": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "value": 9
+          }
+        ]
+      }
+    ]
+  },
+  "replacement7": {
+    "behavior_matched": 6,
+    "metadata_matched": 1,
+    "cases": [
+      {
+        "name": "table_dead_typeof_random",
+        "behavior_matched": true,
+        "metadata_matched": true,
+        "spark_condition": null,
+        "sail_condition": null,
+        "spark_rows": [
+          {
+            "foo": 9
+          }
+        ],
+        "sail_rows": [
+          {
+            "foo": 9
+          }
+        ]
+      },
+      {
+        "name": "table_typeof_missing_column",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_typeof_subquery_missing",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "catalog_typeof_random",
+        "behavior_matched": false,
+        "metadata_matched": false,
+        "spark_condition": "INVALID_NON_DETERMINISTIC_EXPRESSIONS",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_dead_typeof_literal_subquery",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_dead_typeof_input_subquery",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      },
+      {
+        "name": "table_missing_column",
+        "behavior_matched": true,
+        "metadata_matched": false,
+        "spark_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "sail_condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT",
+        "spark_rows": null,
+        "sail_rows": null
+      }
+    ]
+  }
+}

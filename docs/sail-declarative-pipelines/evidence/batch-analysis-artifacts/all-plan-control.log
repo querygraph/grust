@@ -1,0 +1,48 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 22.22s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-1aad231f7fc0cda4)
+
+running 4 tests
+test pipelines::analysis::artifact_tests::analysis_temporary_clock_remains_unfolded ... ok
+test pipelines::analysis::artifact_tests::analysis_temporary_view_retains_provider_until_artifact_drop ... FAILED
+test pipelines::analysis::artifact_tests::analysis_materialized_table_exports_schema_without_provider ... FAILED
+test pipelines::analysis::artifact_tests::analysis_persisted_view_exports_schema_without_provider ... FAILED
+
+failures:
+
+---- pipelines::analysis::artifact_tests::analysis_temporary_view_retains_provider_until_artifact_drop stdout ----
+
+thread 'pipelines::analysis::artifact_tests::analysis_temporary_view_retains_provider_until_artifact_drop' (90146745) panicked at crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs:127:9:
+assertion `left == right` failed
+  left: false
+ right: true
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- pipelines::analysis::artifact_tests::analysis_materialized_table_exports_schema_without_provider stdout ----
+
+thread 'pipelines::analysis::artifact_tests::analysis_materialized_table_exports_schema_without_provider' (90146742) panicked at crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs:119:5:
+assertion `left == right` failed
+  left: true
+ right: false
+
+---- pipelines::analysis::artifact_tests::analysis_persisted_view_exports_schema_without_provider stdout ----
+
+thread 'pipelines::analysis::artifact_tests::analysis_persisted_view_exports_schema_without_provider' (90146743) panicked at crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs:119:5:
+assertion `left == right` failed
+  left: true
+ right: false
+
+
+failures:
+    pipelines::analysis::artifact_tests::analysis_materialized_table_exports_schema_without_provider
+    pipelines::analysis::artifact_tests::analysis_persisted_view_exports_schema_without_provider
+    pipelines::analysis::artifact_tests::analysis_temporary_view_retains_provider_until_artifact_drop
+
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 135 filtered out; finished in 0.20s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

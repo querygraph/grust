@@ -1,0 +1,62 @@
+{
+  "sail_commit": "590fc2f9d3cbd489d430d04af0cce0255a5b2da0",
+  "base": "34eb270d0041c2fe4b0801afbdda93ad838c51ab",
+  "packages": [
+    "sail-common-datafusion"
+  ],
+  "started_at": "2026-10-30T09:41:03.189526+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common-datafusion",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-owned-put-qualified-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common-datafusion",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-owned-put-qualified-clippy.log",
+      "sha256": "12696fbe80870a61be969f5b1b67f9c00ffe72135a053d8d11d554ef1eac9b9a"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common-datafusion",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-owned-put-qualified-rust.log",
+      "sha256": "ebfcc4e5555a14cadfc20195d905aece5b57574396a2309f634d43759e8e0a04"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T09:41:20.720999+00:00",
+  "outcome": "passed"
+}

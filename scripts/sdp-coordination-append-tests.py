@@ -240,6 +240,23 @@ class ReadSinceTests(unittest.TestCase):
                 APPENDER.read_since(self.log, reference)
         self.assertEqual(self.log.read_bytes(), original)
 
+    def test_reader_preserves_crlf_body_bytes(self) -> None:
+        body = "  third λ body\r\nsecond line\r\n"
+        third = APPENDER.append_message(self.log, "Codex", body)
+        original = self.log.read_bytes()
+        text, boundary = APPENDER.read_since(self.log, self.second)
+        self.assertEqual(boundary, third)
+        self.assertTrue(text.endswith(body))
+        self.assertTrue(original.endswith(text.encode("utf-8")))
+        self.assertEqual(self.log.read_bytes(), original)
+
+    def test_reader_accepts_timestamp_aliases_accepted_by_append(self) -> None:
+        entries = list(APPENDER.ENTRY_HEADER.finditer(self.log.read_text(encoding="utf-8")))
+        first_alias = f"legacy:{entries[-2]['timestamp']}"
+        last_alias = f"legacy:{entries[-1]['timestamp']}"
+        self.assertEqual(APPENDER.read_since(self.log, first_alias), APPENDER.read_since(self.log, self.first))
+        self.assertEqual(APPENDER.read_since(self.log, last_alias), ("", self.second))
+
     def test_cli_since_prints_entries_without_appending_and_rejects_append_options(self) -> None:
         original = self.log.read_bytes()
         output = StringIO()
@@ -255,7 +272,7 @@ class ReadSinceTests(unittest.TestCase):
         self.assertEqual(output.getvalue(), APPENDER.read_since(self.log, self.first)[0])
         self.assertEqual(errors.getvalue(), f"read-through: {self.second}\n")
         self.assertEqual(self.log.read_bytes(), original)
-        for extra in (["--author", "Fable"], ["--seen-through", self.first]):
+        for extra in (["--author", "Fable"], ["--seen-through", self.first], ["--seen-through", ""]):
             with (
                 self.subTest(extra=extra),
                 patch.object(APPENDER, "CANONICAL_LOG", self.log),

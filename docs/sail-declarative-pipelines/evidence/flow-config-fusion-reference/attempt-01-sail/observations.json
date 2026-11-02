@@ -1,0 +1,299 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-30T22:30:11.236280+00:00",
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "984a3c6ca088f047fd9417b6fc2268f8ca794cafb7e7fc6f4880d560ea4b33cd",
+  "scope": "Public Connect graph observations; source pin and installed runtime are recorded separately; no Scala suite verdict",
+  "cases": [
+    {
+      "name": "upstream_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "upstream_false_over_consumer_true",
+      "definitions": [
+        [
+          "a_insensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM a_insensitive",
+      "consumer_conf": {
+        "spark.sql.caseSensitive": "true"
+      },
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "left_true_right_false",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive CROSS JOIN a_insensitive",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "left_false_right_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM a_insensitive CROSS JOIN z_sensitive",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "repeated_last_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT z1.Foo FROM z_sensitive z1 CROSS JOIN a_insensitive CROSS JOIN z_sensitive z2",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "transitive_raw_conf",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "middle",
+          "SELECT foo FROM z_sensitive",
+          {},
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM middle",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "table_boundary",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          true
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "same_value_compatible",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive CROSS JOIN a_insensitive",
+      "consumer_conf": {
+        "spark.sql.caseSensitive": "false"
+      },
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "disjoint_keys_compatible",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.ansi.enabled": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT foo FROM z_sensitive CROSS JOIN a_insensitive",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "transitive_conflict",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "middle",
+          "SELECT foo FROM z_sensitive",
+          {},
+          false
+        ]
+      ],
+      "query": "SELECT foo FROM middle",
+      "consumer_conf": {
+        "spark.sql.caseSensitive": "false"
+      },
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "nested_projection_before_last_false",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM (SELECT Foo FROM z_sensitive) nested CROSS JOIN a_insensitive",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "scalar_subquery_last_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Bar, (SELECT foo FROM z_sensitive) AS nested FROM a_insensitive",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    },
+    {
+      "name": "external_read_after_true",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT ext.Foo FROM z_sensitive CROSS JOIN external_input ext",
+      "consumer_conf": {},
+      "probe_error": "Traceback (most recent call last):\n  File \"/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/flow-config-fusion-reference/reference.py\", line 131, in <module>\n    graph = create_dataflow_graph(spark, 'spark_catalog', namespace, None)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py\", line 45, in create_dataflow_graph\n    _, properties, _ = cast(Any, spark).client.execute_command(command)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1219, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1754, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1731, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2093, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 2177, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: Catalog not found: spark_catalog\n"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "outcome": "probe_error",
+  "completed_at": "2026-10-30T22:30:11.833513+00:00"
+}

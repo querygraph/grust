@@ -1,0 +1,18 @@
+{
+  "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:525",
+  "source": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala",
+  "line": 525,
+  "method": "test",
+  "name_expression": "\"Unsupported SQL statements throws error\"",
+  "status": "partial-behavioral-port",
+  "sail_tests": [
+    "python/pysail/tests/spark/pipelines/test_features.py::test_a_failed_sql_file_registers_no_partial_definitions"
+  ],
+  "coverage_review": {
+    "phase": "batch-parser",
+    "covered_assertions": "Ordinary CREATE TABLE AS SELECT is rejected in pipeline SQL; port also checks failed-file registration is atomic and later valid definition succeeds.",
+    "remaining_assertions": "Original SqlGraphElementRegistrationException class and Unsupported plan substring are not checked; port has an earlier valid statement in the same file. Original Scala suite remains unexecuted.",
+    "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+    "scala_suite_executed": false
+  }
+}

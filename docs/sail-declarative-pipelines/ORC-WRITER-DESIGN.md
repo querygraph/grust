@@ -158,3 +158,35 @@ Recorded 2026-10-30T03:18:06.059062+00:00. The [ownership proposal](ORC-WRITER-O
 ## Resource scope foundation implementation
 
 Recorded 2026-10-30T03:27:01.046755+00:00. [Sail `76dd36983f`](evidence/task-resource-scope/README.md) adds owned supervisor admission, synchronous cancellation sealing and cancel-safe shared drainage. All83 common-datafusion tests, formatting and strict Clippy pass, with seven new deterministic lifecycle tests. No dependencies change. Owners must explicitly retain/drain the scope; Drop is cancellation-only. This is W2a groundwork, with actual local/distributed runner integration, upload cleanup and memory accounting still open.
+
+## Primitive writer semantic schema preflight
+
+Recorded 2026-10-30T04:09:02.782340+00:00. [Sail `71f24a87a2`](evidence/orc-write-schema/README.md) adds OrcWriteSchema with storage-type and semantic-metadata admission, preserving the original schema. Six new tests include orphaned/unknown logical metadata, later-field rejection and native nullable multi-batch round trips. All237 data-source library tests, formatting and strict Clippy pass. Public writing remains rejected; the future sink/worker must invoke the preflight before opening output. Temporal/nested/decimal parity, local ownership, native accounting, graph/flow write defaults and public activation remain open. No new Spark suite or public SDP coverage is claimed.
+
+## Flow ORC configuration assumption withdrawn
+
+Recorded 2026-10-30T04:33:40.204528+00:00. [Candidate `42c65ecf64`](evidence/flow-orc-config-withdrawal/README.md)
+was withdrawn before branch advancement. Real Spark4.2.1 ignores graph/flow
+mergeSchema overrides for this direct-read registration fixture; the SQL-path
+variant instead fails with differing initial and execution schemas. The evidence
+retains the candidate, baseline failures, reference mismatch and incomplete probe.
+Read, analyzer and write-time settings require separate phase-specific evidence;
+blanket graph/flow ORC override propagation is not an approved implementation unit.
+Sail remains at `71f24a87a2` with no new coverage claim. Write-time configuration
+and public ORC writing remain open.
+
+## Resource-scope sealing and cancellation notification
+
+Recorded 2026-10-30T05:08:27.823650+00:00. [Sail `5fc71b3792`](evidence/scope-notification/README.md)
+passes 87 library tests, formatting and strict Clippy; 9 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.
+
+## Prepared-stream ownership and registered cleanup
+
+Recorded 2026-10-30T05:08:27.857230+00:00. [Sail `f3d32b8959`](evidence/managed-stream/README.md)
+passes 99 library tests, formatting and strict Clippy; 12 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.

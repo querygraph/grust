@@ -1,0 +1,39 @@
+    Checking sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+error: use of deprecated associated function `datafusion_expr::expr::Placeholder::new`: Use new_with_field instead
+   --> crates/sail-plan/src/resolver/identifier/tests.rs:124:67
+    |
+124 |             Expr::Placeholder(datafusion_expr::expr::Placeholder::new("$1")),
+    |                                                                   ^^^
+    |
+    = note: `-D deprecated` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(deprecated)]`
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+    --> crates/sail-plan/src/resolver/identifier/tests.rs:124:31
+     |
+ 124 |             Expr::Placeholder(datafusion_expr::expr::Placeholder::new("$1")),
+     |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------
+     |                                                                      ||
+     |                                                                      |expected `String`, found `&str`
+     |                                                                      argument #2 of type `std::option::Option<arrow_schema::DataType>` is missing
+     |
+note: associated function defined here
+    --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-expr-55.2.0/src/expr.rs:1419:12
+     |
+1419 |     pub fn new(id: String, data_type: Option<DataType>) -> Self {
+     |            ^^^
+help: try using a conversion method
+     |
+ 124 |             Expr::Placeholder(datafusion_expr::expr::Placeholder::new("$1".to_string())),
+     |                                                                           ++++++++++++
+help: provide the argument
+     |
+ 124 -             Expr::Placeholder(datafusion_expr::expr::Placeholder::new("$1")),
+ 124 +             Expr::Placeholder(datafusion_expr::expr::Placeholder::new(/* std::string::String */, /* std::option::Option<arrow_schema::DataType> */)),
+     |
+
+    Checking sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+    Checking sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+For more information about this error, try `rustc --explain E0061`.
+error: could not compile `sail-plan` (lib test) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...

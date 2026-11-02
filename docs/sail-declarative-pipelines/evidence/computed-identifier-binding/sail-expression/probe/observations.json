@@ -1,0 +1,70 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T02:02:16.770390+00:00",
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "9c65fe7325bc07d90a5d885154b69fafcb50518254c35400cd761f2747044530",
+  "scope": "Public Connect dynamic binding observations; source pin and installed runtime are recorded separately; no Scala suite verdict",
+  "cases": [
+    {
+      "name": "expression_graph_subquery",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT * FROM IDENTIFIER((SELECT Foo FROM z_sensitive))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412136\n  nanos: 973740000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`].",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "expression_graph_subquery_exact",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT * FROM IDENTIFIER((SELECT foo FROM z_sensitive))",
+      "consumer_conf": {},
+      "events": [
+        {
+          "message": "Starting pipeline analysis",
+          "protobuf_text": "timestamp {\n  seconds: 1793412137\n  nanos: 19281000\n}\nmessage: \"Starting pipeline analysis\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "invalid argument: IDENTIFIER expression must be a constant: This feature is not implemented: Physical plan does not support logical expression ScalarSubquery(<subquery>)",
+      "run_exception_type": "IllegalArgumentException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    }
+  ],
+  "catalog": "sail",
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "outcome": "observed",
+  "completed_at": "2026-10-31T02:02:17.068307+00:00"
+}

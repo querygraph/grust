@@ -1,0 +1,53 @@
+commit abadcd8b068d10429ca550dcb51c9a36bf3f42c6
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 17:20:25 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 17:20:25 2026 -0700
+
+    Preserve structured planner errors through Spark Connect
+
+diff --git a/crates/sail-plan/src/error.rs b/crates/sail-plan/src/error.rs
+index 6d294d4f3..ab192b9ef 100644
+--- a/crates/sail-plan/src/error.rs
++++ b/crates/sail-plan/src/error.rs
+@@ -2,6 +2,7 @@ use datafusion::arrow::error::ArrowError;
+ use datafusion::common::DataFusionError;
+ use sail_catalog::error::CatalogError;
+ use sail_common::error::CommonError;
++use sail_common_datafusion::error::StructuredSparkError;
+ use sail_python_udf::error::PyUdfError;
+ use sail_sql_analyzer::error::SqlError;
+ use thiserror::Error;
+@@ -43,6 +44,8 @@ pub enum PlanError {
+     InternalError(String),
+     #[error("analysis error: {0}")]
+     AnalysisError(String),
++    #[error(transparent)]
++    Structured(#[from] Box<StructuredSparkError>),
+     /// A relation owned by the caller's scope has not been resolved yet.
+     #[error("unresolved scoped relation: {0:?}")]
+     UnresolvedRelation(Vec<String>),
+diff --git a/crates/sail-spark-connect/src/error.rs b/crates/sail-spark-connect/src/error.rs
+index 6c0b595c1..f0d3f4fd5 100644
+--- a/crates/sail-spark-connect/src/error.rs
++++ b/crates/sail-spark-connect/src/error.rs
+@@ -115,6 +115,7 @@ impl From<PlanError> for SparkError {
+             PlanError::InternalError(message) => SparkError::InternalError(message),
+             PlanError::NotImplemented(message) => SparkError::NotImplemented(message),
+             PlanError::AnalysisError(message) => SparkError::AnalysisError(message),
++            PlanError::Structured(error) => SparkError::Structured(error),
+             PlanError::UnresolvedRelation(name) => {
+                 SparkError::AnalysisError(format!("unresolved scoped relation: {name:?}"))
+             }
+diff --git a/crates/sail-spark-connect/src/error/structured/tests.rs b/crates/sail-spark-connect/src/error/structured/tests.rs
+index a011fc1bd..9377b5ec1 100644
+--- a/crates/sail-spark-connect/src/error/structured/tests.rs
++++ b/crates/sail-spark-connect/src/error/structured/tests.rs
+@@ -50,6 +50,7 @@ fn assert_status(status: Status) -> TestResult {
+ #[test]
+ fn direct_and_wrapped_structured_errors_preserve_complete_connect_metadata() -> TestResult {
+     let errors = [
++        sail_plan::error::PlanError::Structured(Box::new(fixture())).into(),
+         SparkError::Structured(Box::new(fixture())),
+         SparkError::DataFusionError(DataFusionError::External(Box::new(fixture()))),
+         SparkError::ArrowError(ArrowError::ExternalError(Box::new(fixture()))),

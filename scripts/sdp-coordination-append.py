@@ -36,13 +36,14 @@ def entry_reference(entry: re.Match[str]) -> str | None:
 def entries_after(history: str, reference: str) -> tuple[str, str]:
     """Every entry appended after the one carrying `reference`, verbatim and in order,
     with the reference of the last entry returned: the boundary a reader may cite as
-    Seen-Through. Nothing new returns ("", reference)."""
+    Seen-Through. Nothing new returns empty text and the entry's preferred reference."""
     entries = list(ENTRY_HEADER.finditer(history))
     for index, entry in enumerate(entries):
-        if entry_reference(entry) == reference:
+        preferred = entry_reference(entry)
+        if preferred is not None and reference in (preferred, f"legacy:{entry['timestamp']}"):
             later = [candidate for candidate in entries[index + 1 :] if entry_reference(candidate) is not None]
             if not later:
-                return "", reference
+                return "", preferred
             boundary = entry_reference(later[-1])
             if boundary is None:  # unreachable after the filter above; keeps the type honest
                 raise ValueError("coordination entry without a usable reference")
@@ -55,7 +56,8 @@ def read_since(log: Path, reference: str) -> tuple[str, str]:
     The boundary refers to that snapshot only, so an entry appended afterwards is not covered."""
     with log.with_suffix(".lock").open("a+") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_SH)
-        history = log.read_text(encoding="utf-8")
+        with log.open(encoding="utf-8", newline="") as source:
+            history = source.read()
     return entries_after(history, reference)
 
 
@@ -124,7 +126,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     if args.since is not None:
-        if args.author or args.body_file or args.reply_to or args.seen_through:
+        if args.author is not None or args.body_file is not None or args.reply_to or args.seen_through is not None:
             parser.error("--since reads the log and takes no append options")
         try:
             entries, boundary = read_since(CANONICAL_LOG, args.since)

@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="9" time="0.492" timestamp="2026-10-31T13:27:47.098707-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-first]" time="0.150"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117443f60&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11741f620&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio0')
+declared = False, read = False, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-last]" time="0.030"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1174d2340&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x117498680&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio1')
+declared = False, read = False, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-none]" time="0.032"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1175100e0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x117499e80&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio2')
+declared = False, read = True, missing = 'none'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-first]" time="0.032"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117511da0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x117519cd0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio3')
+declared = False, read = True, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-last]" time="0.030"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117513880&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11751b830&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio4')
+declared = False, read = True, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-first]" time="0.027"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117541760&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x117535a30&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio5')
+declared = True, read = False, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-last]" time="0.028"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117543240&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11755c8f0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio6')
+declared = True, read = False, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-first]" time="0.028"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117574fe0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x11755e3c0&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio7')
+declared = True, read = True, missing = 'first'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-last]" time="0.029"><failure message="StopIteration">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117576ac0&gt;
+pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x117582e40&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-429/test_virtual_schema_acquisitio8')
+declared = True, read = True, missing = 'last'
+
+    @pytest.mark.parametrize(("declared", "read", "missing"), CASES)
+    def test_virtual_schema_acquisition_does_not_mask_unresolved_flows(
+        pipeline_factory, pipeline_spark, tmp_path, declared, read, missing
+    ):
+        _, registry, run = pipeline_factory()
+        statements = [
+            "CREATE MATERIALIZED VIEW events_int AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW events_str AS SELECT 'x' AS id",
+            "CREATE STREAMING TABLE merged" + (" (id INT)" if declared else ""),
+            "CREATE FLOW merged_int AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_int)",
+            "CREATE FLOW merged_str AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_str)",
+        ]
+        if read:
+            statements.append("CREATE MATERIALIZED VIEW consumer AS SELECT id FROM merged")
+        bad = "CREATE MATERIALIZED VIEW late AS SELECT * FROM missing_source"
+        if missing == "first":
+            statements.insert(0, bad)
+        elif missing == "last":
+            statements.append(bad)
+        registry.register_sql(";".join(statements), tmp_path / "schema.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+        assert error.value.getCondition() is None
+        assert error.value.getSqlState() is None
+        assert error.value.getMessageParameters() is None
+        namespace = f"{pipeline_spark.catalog.currentCatalog()}.{pipeline_spark.catalog.currentDatabase()}"
+        expected = []
+        if read and not declared:
+            expected.append(f"{namespace}.consumer")
+        if missing != "none":
+            expected.append(f"{namespace}.late")
+        message = error.value.getMessage()
+&gt;       direct = next(line for line in message.splitlines() if line.startswith("Flows with errors: "))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:47: StopIteration</failure></testcase></testsuite></testsuites>

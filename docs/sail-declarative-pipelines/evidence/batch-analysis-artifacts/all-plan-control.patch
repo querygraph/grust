@@ -1,0 +1,28 @@
+commit 4b49628623205f73bdafc59def2f597e89b3014d
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 14:16:03 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 14:16:03 2026 -0700
+
+    Negative control: export full plans for every analysis artifact
+
+diff --git a/crates/sail-spark-connect/src/pipelines/analysis.rs b/crates/sail-spark-connect/src/pipelines/analysis.rs
+index 6036a08c6..f4b8a297d 100644
+--- a/crates/sail-spark-connect/src/pipelines/analysis.rs
++++ b/crates/sail-spark-connect/src/pipelines/analysis.rs
+@@ -171,7 +171,7 @@ pub(super) async fn analyze(
+                 })
+                 .into());
+             }
+-            let plan = if output.kind == OutputType::TemporaryView {
++            let plan = if true {
+                 if plans.len() != 1 {
+                     return Err(analysis("MULTIPLE_QUERIES_FOR_VIEW", quoted(&output.name)));
+                 }
+@@ -217,4 +217,4 @@ pub(super) async fn analyze(
+ 
+ #[cfg(test)]
+ #[path = "analysis_artifact_tests.rs"]
+-mod artifact_tests;
++mod artifact_tests;
+\ No newline at end of file

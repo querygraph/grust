@@ -1,0 +1,33 @@
+1758: }
+1759: 
+1760: /// Execute the [ExecutionPlan] and return a single stream of `RecordBatch`es.
+1761: ///
+1762: /// See [collect] to buffer the `RecordBatch`es in memory.
+1763: ///
+1764: /// # Aborting Execution
+1765: ///
+1766: /// Dropping the stream will abort the execution of the query, and free up
+1767: /// any allocated resources
+1768: #[expect(
+1769:     clippy::needless_pass_by_value,
+1770:     reason = "Public API that historically takes owned Arcs"
+1771: )]
+1772: pub fn execute_stream(
+1773:     plan: Arc<dyn ExecutionPlan>,
+1774:     context: Arc<TaskContext>,
+1775: ) -> Result<SendableRecordBatchStream> {
+1776:     match plan.output_partitioning().partition_count() {
+1777:         0 => Ok(Box::pin(EmptyRecordBatchStream::new(plan.schema()))),
+1778:         1 => plan.execute(0, context),
+1779:         2.. => {
+1780:             // merge into a single partition
+1781:             let plan = CoalescePartitionsExec::new(Arc::clone(&plan));
+1782:             // CoalescePartitionsExec must produce a single partition
+1783:             assert_eq!(1, plan.properties().output_partitioning().partition_count());
+1784:             plan.execute(0, context)
+1785:         }
+1786:     }
+1787: }
+1788: 
+1789: /// Execute the [ExecutionPlan] and collect the results in memory
+1790: pub async fn collect_partitioned(

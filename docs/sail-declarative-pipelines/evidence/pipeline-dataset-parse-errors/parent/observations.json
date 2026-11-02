@@ -1,0 +1,157 @@
+{
+  "started_at": "2026-10-31T14:08:24.725805+00:00",
+  "mode": "sail",
+  "script_sha256": "9cb92180b544b454610e8e0d154d95461b245f6b9d502ba81422d04127a7a875",
+  "cases": [
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "location",
+      "sql": "CREATE MATERIALIZED VIEW table1 LOCATION 'dbfs:/path/to/table' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "stored",
+      "sql": "CREATE MATERIALIZED VIEW table1 STORED AS TEXTFILE AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "serde",
+      "sql": "CREATE MATERIALIZED VIEW table1 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "bucket",
+      "sql": "CREATE MATERIALIZED VIEW table1 CLUSTERED BY (a) INTO 5 BUCKETS AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "options",
+      "sql": "CREATE MATERIALIZED VIEW table1 OPTIONS ('key' = 'value') AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "location",
+      "sql": "CREATE STREAMING TABLE table1 LOCATION 'dbfs:/path/to/table' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "stored",
+      "sql": "CREATE STREAMING TABLE table1 STORED AS TEXTFILE AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "serde",
+      "sql": "CREATE STREAMING TABLE table1 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "bucket",
+      "sql": "CREATE STREAMING TABLE table1 CLUSTERED BY (a) INTO 5 BUCKETS AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "label": "options",
+      "sql": "CREATE STREAMING TABLE table1 OPTIONS ('key' = 'value') AS SELECT * FROM input",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    },
+    {
+      "kind": "MATERIALIZED VIEW",
+      "label": "missing-query",
+      "sql": "CREATE MATERIALIZED VIEW table",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition."
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "c50ef22530a42a48aac330252a4d14ab239527e6",
+  "cli_sha256": "f230eb7ed20c3f3a9845a4f40b7e3e58811e63795b4bda838c6cb72ec2c0a103",
+  "version": "4.2.1",
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T14:08:26.525590+00:00",
+  "remaining_listeners": []
+}

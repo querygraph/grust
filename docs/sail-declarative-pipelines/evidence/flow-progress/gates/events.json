@@ -1,0 +1,77 @@
+{
+ "mv": {
+  "outcome": "ok",
+  "events": [
+   "Flow spark_catalog.default.m1 is QUEUED.",
+   "Flow spark_catalog.default.m1 is PLANNING.",
+   "Flow spark_catalog.default.m1 is STARTING.",
+   "Flow spark_catalog.default.m1 is RUNNING.",
+   "Flow spark_catalog.default.m1 has COMPLETED.",
+   "Run is COMPLETED."
+  ]
+ },
+ "dry": {
+  "outcome": "ok",
+  "events": [
+   "Run is COMPLETED."
+  ]
+ },
+ "chain": {
+  "outcome": "ok",
+  "events": [
+   "Flow spark_catalog.default.m3 is QUEUED.",
+   "Flow spark_catalog.default.m4 is QUEUED.",
+   "Flow spark_catalog.default.m5 is QUEUED.",
+   "Flow spark_catalog.default.m3 is PLANNING.",
+   "Flow spark_catalog.default.m3 is STARTING.",
+   "Flow spark_catalog.default.m3 is RUNNING.",
+   "Flow spark_catalog.default.m3 has COMPLETED.",
+   "Flow spark_catalog.default.m4 is PLANNING.",
+   "Flow spark_catalog.default.m4 is STARTING.",
+   "Flow spark_catalog.default.m4 is RUNNING.",
+   "Flow spark_catalog.default.m4 has COMPLETED.",
+   "Flow spark_catalog.default.m5 is PLANNING.",
+   "Flow spark_catalog.default.m5 is STARTING.",
+   "Flow spark_catalog.default.m5 is RUNNING.",
+   "Flow spark_catalog.default.m5 has COMPLETED.",
+   "Run is COMPLETED."
+  ]
+ },
+ "fail": {
+  "outcome": "ArithmeticException DIVIDE_BY_ZERO [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error. SQLSTATE: 22012\n== S",
+  "events": [
+   "Flow spark_catalog.default.f3 is QUEUED.",
+   "Flow spark_catalog.default.f1 is QUEUED.",
+   "Flow spark_catalog.default.f2 is QUEUED.",
+   "Flow spark_catalog.default.f1 is PLANNING.",
+   "Flow spark_catalog.default.f1 is STARTING.",
+   "Flow spark_catalog.default.f1 is RUNNING.",
+   "Flow spark_catalog.default.f3 is PLANNING.",
+   "Flow spark_catalog.default.f3 is STARTING.",
+   "Flow spark_catalog.default.f3 is RUNNING.",
+   "Flow spark_catalog.default.f3 has COMPLETED.",
+   "Flow 'spark_catalog.default.f1' has FAILED.\nError: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+   "Flow spark_catalog.default.f1 is PLANNING.",
+   "Flow spark_catalog.default.f1 is STARTING.",
+   "Flow spark_catalog.default.f1 is RUNNING.",
+   "Flow 'spark_catalog.default.f1' has FAILED.\nError: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+   "Flow spark_catalog.default.f1 is PLANNING.",
+   "Flow spark_catalog.default.f1 is STARTING.",
+   "Flow spark_catalog.default.f1 is RUNNING.",
+   "Flow 'spark_catalog.default.f1' has FAILED.\nError: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.",
+   "Flow 'spark_catalog.default.f2' SKIPPED due to upstream failure(s)."
+  ]
+ },
+ "select": {
+  "outcome": "ok",
+  "events": [
+   "Flow spark_catalog.default.e1 is QUEUED.",
+   "Flow 'spark_catalog.default.e2' is EXCLUDED.",
+   "Flow spark_catalog.default.e1 is PLANNING.",
+   "Flow spark_catalog.default.e1 is STARTING.",
+   "Flow spark_catalog.default.e1 is RUNNING.",
+   "Flow spark_catalog.default.e1 has COMPLETED.",
+   "Run is COMPLETED."
+  ]
+ }
+}

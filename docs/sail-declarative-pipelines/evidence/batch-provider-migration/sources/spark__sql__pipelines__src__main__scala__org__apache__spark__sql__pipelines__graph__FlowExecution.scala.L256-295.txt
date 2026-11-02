@@ -1,0 +1,40 @@
+256: class BatchTableWrite(
+257:     val identifier: TableIdentifier,
+258:     val flow: ResolvedFlow,
+259:     val graph: DataflowGraph,
+260:     val destination: Table,
+261:     val updateContext: PipelineUpdateContext,
+262:     val sqlConf: Map[String, String]
+263: ) extends FlowExecution {
+264: 
+265:   override final def isStreaming: Boolean = false
+266:   override def getOrigin: QueryOrigin = flow.origin
+267: 
+268:   def executeInternal(): Future[Unit] = {
+269:     SparkSessionUtils.withSqlConf(spark, sqlConf.toList: _*) {
+270:       updateContext.flowProgressEventLogger.recordRunning(flow = flow)
+271:       val data = graph.reanalyzeFlow(flow).df
+272:       Future {
+273:         val dataFrameWriter = data.write
+274:         destination.format.foreach(dataFrameWriter.format)
+275: 
+276:         // In "append" mode with saveAsTable, partition/cluster columns must be specified in query
+277:         // because the format and options of the existing table is used, and the table could
+278:         // have been created with partition columns.
+279:         destination.clusterCols.foreach { clusterCols =>
+280:           dataFrameWriter.clusterBy(clusterCols.head, clusterCols.tail: _*)
+281:         }
+282:         destination.partitionCols.foreach { partitionCols =>
+283:           dataFrameWriter.partitionBy(partitionCols: _*)
+284:         }
+285: 
+286:         dataFrameWriter
+287:           .mode("append")
+288:           .saveAsTable(destination.identifier.unquotedString)
+289:       }
+290:     }
+291:   }
+292: }
+293: 
+294: /** A `StreamingFlowExecution` that writes a streaming `DataFrame` to a `Sink`. */
+295: class SinkWrite(

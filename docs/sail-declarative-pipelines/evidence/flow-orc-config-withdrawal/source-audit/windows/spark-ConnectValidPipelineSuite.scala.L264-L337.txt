@@ -1,0 +1,74 @@
+  test("Connect retains and fuses confs") {
+    val session = spark
+    import session.implicits._
+
+    // a -> b \
+    //          d
+    //      c /
+    val p = new TestGraphRegistrationContext(spark) {
+      registerPersistedView("a", query = dfFlowFunc(Seq(1).toDF("x")), Map("a" -> "a-val"))
+      registerPersistedView("b", query = readFlowFunc("a"), Map("b" -> "b-val"))
+      registerPersistedView("c", query = dfFlowFunc(Seq(2).toDF("x")), Map("c" -> "c-val"))
+      registerTable(
+        "d",
+        query = Option(sqlFlowFunc(spark, "SELECT * FROM b UNION SELECT * FROM c")),
+        Map("d" -> "d-val")
+      )
+    }
+    val graph = p.resolveToDataflowGraph()
+    assert(
+      graph
+        .flow(fullyQualifiedIdentifier("d"))
+        .sqlConf == Map("a" -> "a-val", "b" -> "b-val", "c" -> "c-val", "d" -> "d-val")
+    )
+  }
+
+  test("Confs aren't fused past materialization points") {
+    val session = spark
+    import session.implicits._
+
+    val p = new TestGraphRegistrationContext(spark) {
+      registerPersistedView("a", query = dfFlowFunc(Seq(1).toDF("x")), Map("a" -> "a-val"))
+      registerTable("b", query = Option(readFlowFunc("a")), Map("b" -> "b-val"))
+      registerPersistedView(
+        "c",
+        query = dfFlowFunc(Seq(2).toDF("x")),
+        sqlConf = Map("c" -> "c-val")
+      )
+      registerTable(
+        "d",
+        query = Option(sqlFlowFunc(spark, "SELECT * FROM b UNION SELECT * FROM c")),
+        Map("d" -> "d-val")
+      )
+    }
+    val graph = p.resolveToDataflowGraph()
+    assert(graph.flow(fullyQualifiedIdentifier("a")).sqlConf == Map("a" -> "a-val"))
+    assert(
+      graph
+        .flow(fullyQualifiedIdentifier("b"))
+        .sqlConf == Map("a" -> "a-val", "b" -> "b-val")
+    )
+    assert(graph.flow(fullyQualifiedIdentifier("c")).sqlConf == Map("c" -> "c-val"))
+    assert(
+      graph
+        .flow(fullyQualifiedIdentifier("d"))
+        .sqlConf == Map("c" -> "c-val", "d" -> "d-val")
+    )
+  }
+
+  test("Setting the same conf with the same value is totally cool") {
+    val session = spark
+    import session.implicits._
+
+    val p = new TestGraphRegistrationContext(spark) {
+      registerPersistedView("a", query = dfFlowFunc(Seq(1, 2, 3).toDF("x")), Map("key" -> "val"))
+      registerPersistedView("b", query = dfFlowFunc(Seq(1, 2, 3).toDF("x")), Map("key" -> "val"))
+      registerTable(
+        "c",
+        query = Option(sqlFlowFunc(spark, "SELECT * FROM a UNION SELECT * FROM b")),
+        Map("key" -> "val")
+      )
+    }
+    val graph = p.resolveToDataflowGraph()
+    assert(graph.flow(fullyQualifiedIdentifier("c")).sqlConf == Map("key" -> "val"))
+  }

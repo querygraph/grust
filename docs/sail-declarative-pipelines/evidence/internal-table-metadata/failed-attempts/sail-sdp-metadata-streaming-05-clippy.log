@@ -1,0 +1,14 @@
+    Checking sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+error[E0624]: method `validate_registration` is private
+   --> crates/sail-spark-connect/src/pipelines/materialize/tests.rs:291:11
+    |
+291 |     graph.validate_registration()?;
+    |           ^^^^^^^^^^^^^^^^^^^^^ private method
+    |
+   ::: crates/sail-spark-connect/src/pipelines/graph.rs:273:5
+    |
+273 |     fn validate_registration(&self) -> SparkResult<()> {
+    |     -------------------------------------------------- private method defined here
+
+For more information about this error, try `rustc --explain E0624`.
+error: could not compile `sail-spark-connect` (lib test) due to 1 previous error

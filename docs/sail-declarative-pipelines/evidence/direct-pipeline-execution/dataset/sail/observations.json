@@ -1,0 +1,42 @@
+{
+  "started_at": "2026-10-31T13:36:05.436393+00:00",
+  "mode": "sail",
+  "script_sha256": "3a10c5506f48b2868b74c8ef39fff1c1000e753ea7c3f86bb9f9ded4fd3df0d1",
+  "cases": [
+    {
+      "kind": "MATERIALIZED VIEW",
+      "sql": "CREATE MATERIALIZED VIEW table1 AS SELECT 1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "MATERIALIZED VIEW"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... MATERIALIZED VIEW query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.",
+      "table_exists": false
+    },
+    {
+      "kind": "STREAMING TABLE",
+      "sql": "CREATE STREAMING TABLE table1 AS SELECT 1",
+      "outcome": "error",
+      "error_type": "UnsupportedOperationException",
+      "condition": "UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION",
+      "sql_state": "0A000",
+      "parameters": {
+        "pipelineDatasetType": "STREAMING TABLE"
+      },
+      "message": "[UNSUPPORTED_FEATURE.CREATE_PIPELINE_DATASET_QUERY_EXECUTION] The feature is not supported: Direct execution of a CREATE ... STREAMING TABLE query. To create a pipeline dataset, create and execute a pipeline with a SQL file containing your query attached in the pipeline definition.",
+      "table_exists": false
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "25173ed903162e0f9928b4501a3eac98c999b291",
+  "cli_sha256": "ac6e0f881c5c07b9cacac36a7afc3a41aaf7c3c4237ca46eca77f098b75bb365",
+  "version": "4.2.1",
+  "test_sha256": "0190217fea0ae93608e2a06ce76c12ca31cca98b82bf04bd8a0cadfd2e92e350",
+  "pytest_exit_code": 0,
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T13:36:08.374308+00:00",
+  "remaining_listeners": []
+}

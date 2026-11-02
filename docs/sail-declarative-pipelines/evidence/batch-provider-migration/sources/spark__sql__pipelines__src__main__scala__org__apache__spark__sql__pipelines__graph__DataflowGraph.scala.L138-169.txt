@@ -1,0 +1,32 @@
+138:   }
+139: 
+140:   /**
+141:    * Used to reanalyze the flow's DF for a given table or sink. This is done by finding all upstream
+142:    * flows (until a table is reached) for the specified source and reanalyzing all upstream
+143:    * flows.
+144:    *
+145:    * @param srcFlow The flow that writes into the table that we will start from when finding
+146:    *                upstream flows
+147:    * @return The reanalyzed flow
+148:    */
+149:   protected[graph] def reanalyzeFlow(srcFlow: Flow): ResolvedFlow = {
+150:     val upstreamDatasetIdentifiers = dfsInternal(
+151:       flowNodes(srcFlow.identifier).output,
+152:       downstream = false,
+153:       stopAtMaterializationPoints = true
+154:     )
+155:     val upstreamFlows =
+156:       resolvedFlows
+157:         .filter(f => upstreamDatasetIdentifiers.contains(f.destinationIdentifier))
+158:         .map(_.flow)
+159:     val upstreamViews = upstreamDatasetIdentifiers.flatMap(identifier => view.get(identifier)).toSeq
+160: 
+161:     val subgraph = new DataflowGraph(
+162:       flows = upstreamFlows,
+163:       views = upstreamViews,
+164:       tables = table.get(srcFlow.destinationIdentifier).toSeq,
+165:       sinks = sink.get(srcFlow.destinationIdentifier).toSeq
+166:     )
+167:     subgraph.resolve().resolvedFlow(srcFlow.identifier)
+168:   }
+169: 

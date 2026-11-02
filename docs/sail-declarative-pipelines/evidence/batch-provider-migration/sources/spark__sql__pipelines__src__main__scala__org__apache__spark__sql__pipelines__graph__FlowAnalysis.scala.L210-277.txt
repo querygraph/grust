@@ -1,0 +1,68 @@
+210:    * Internal helper to reference dataset defined in the same [[DataflowGraph]].
+211:    *
+212:    * @param inputIdentifier The identifier of the Dataset to be read.
+213:    * @param isStreamingRead Whether this is a streaming read or batch read.
+214:    * @return streaming or batch DataFrame that represents data from the specified Dataset.
+215:    */
+216:   final private def readGraphInput(
+217:       ctx: FlowAnalysisContext,
+218:       inputIdentifier: InternalDatasetIdentifier,
+219:       isStreamingRead: Boolean
+220:   ): DataFrame = {
+221:     val datasetIdentifier = inputIdentifier.identifier
+222: 
+223:     ctx.requestedInputs += datasetIdentifier
+224: 
+225:     val input = if (!ctx.allInputs.contains(datasetIdentifier)) {
+226:       // Dataset not defined in the dataflow graph
+227:       throw GraphErrors.pipelineLocalDatasetNotDefinedError(datasetIdentifier.unquotedString)
+228:     } else if (!ctx.availableInput.contains(datasetIdentifier)) {
+229:       // Dataset defined in the dataflow graph but not yet resolved
+230:       throw UnresolvedDatasetException(datasetIdentifier)
+231:     } else {
+232:       // Dataset is resolved, so we can read from it
+233:       ctx.availableInput(datasetIdentifier)
+234:     }
+235: 
+236:     val inputDF = input.load(asStreaming = isStreamingRead)
+237: 
+238:     // Validate that the loaded DataFrame's streaming-ness matches the requested read mode. Tables
+239:     // pass through trivially as their [[VirtualTableInput.load]] honors `asStreaming` by
+240:     // construction. The check only ever fires for flows.
+241:     val incompatibleViewReadCheck =
+242:       ctx.flowConf.getConfString("pipelines.incompatibleViewCheck.enabled", "true").toBoolean
+243: 
+244:     if (incompatibleViewReadCheck && isStreamingRead && !inputDF.isStreaming) {
+245:       throw new AnalysisException(
+246:         "INCOMPATIBLE_BATCH_VIEW_READ",
+247:         Map("datasetIdentifier" -> datasetIdentifier.toString)
+248:       )
+249:     }
+250:     if (incompatibleViewReadCheck && !isStreamingRead && inputDF.isStreaming) {
+251:       throw new AnalysisException(
+252:         "INCOMPATIBLE_STREAMING_VIEW_READ",
+253:         Map("datasetIdentifier" -> datasetIdentifier.toString)
+254:       )
+255:     }
+256: 
+257:     input match {
+258:       // If the referenced input is a [[Flow]], because the query plans will be fused
+259:       // together, we also need to fuse their confs.
+260:       case f: Flow => f.sqlConf.foreach { case (k, v) => ctx.setConf(k, v) }
+261:       case _ =>
+262:     }
+263: 
+264:     // Wrap the DF in an alias so that columns in the DF can be referenced with
+265:     // the following in the query:
+266:     // - <catalog>.<schema>.<dataset>.<column>
+267:     // - <schema>.<dataset>.<column>
+268:     // - <dataset>.<column>
+269:     val aliasIdentifier = AliasIdentifier(
+270:       name = datasetIdentifier.table,
+271:       qualifier = Seq(datasetIdentifier.catalog, datasetIdentifier.database).flatten
+272:     )
+273: 
+274:     if (isStreamingRead) {
+275:       ctx.streamingInputs += ResolvedInput(input, aliasIdentifier)
+276:     } else {
+277:       ctx.batchInputs += ResolvedInput(input, aliasIdentifier)

@@ -1,0 +1,484 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T04:26:09.546669+00:00",
+  "harness_sha256": "bb35389119f37ffb3daf50c6862a8d67b794b86f3a4d75105fc0b6faccfb2165",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "generic SQL and Catalog API missing lookup; raw Connect metadata; no writes or full Scala-suite verdict",
+  "cases": [
+    {
+      "name": "api_'missing_catalog'",
+      "site": "api",
+      "input": "missing_catalog",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `missing_catalog` not found. Consider to set the SQL config \"spark.sql.catalog.missing_catalog\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "catalogName": "`missing_catalog`",
+        "config": "\"spark.sql.catalog.missing_catalog\""
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "42P08",
+            "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}",
+            "errorClass": "CATALOG_NOT_FOUND"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "api_'a.b'",
+      "site": "api",
+      "input": "a.b",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `a`.`b` not found. Consider to set the SQL config \"spark.sql.catalog.a.b\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "config": "\"spark.sql.catalog.a.b\"",
+        "catalogName": "`a`.`b`"
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "42P08",
+            "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.a.b\\\"\",\"catalogName\":\"`a`.`b`\"}",
+            "errorClass": "CATALOG_NOT_FOUND"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "api_'a\"b'",
+      "site": "api",
+      "input": "a\"b",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `a\"b` not found. Consider to set the SQL config \"spark.sql.catalog.a\"b\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "config": "\"spark.sql.catalog.a\"b\"",
+        "catalogName": "`a\"b`"
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "errorClass": "CATALOG_NOT_FOUND",
+            "sqlState": "42P08",
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.a\\\"b\\\"\",\"catalogName\":\"`a\\\"b`\"}"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "api_'a`b'",
+      "site": "api",
+      "input": "a`b",
+      "returned": false,
+      "error": "[INVALID_ATTRIBUTE_NAME_SYNTAX] Syntax error in the attribute name: a`b. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts.",
+      "exception_type": "AnalysisException",
+      "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+      "parameters": {
+        "name": "a`b"
+      },
+      "sql_state": "42601",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.AnalysisException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.AnalysisException\"]",
+            "sqlState": "42601",
+            "errorClass": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+            "messageParameters": "{\"name\":\"a`b\"}"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "api_'雪'",
+      "site": "api",
+      "input": "雪",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `雪` not found. Consider to set the SQL config \"spark.sql.catalog.雪\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "config": "\"spark.sql.catalog.雪\"",
+        "catalogName": "`雪`"
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.雪\\\"\",\"catalogName\":\"`雪`\"}",
+            "sqlState": "42P08",
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "errorClass": "CATALOG_NOT_FOUND"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "api_''",
+      "site": "api",
+      "input": "",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `` not found. Consider to set the SQL config \"spark.sql.catalog.\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "catalogName": "``",
+        "config": "\"spark.sql.catalog.\""
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"catalogName\":\"``\",\"config\":\"\\\"spark.sql.catalog.\\\"\"}",
+            "sqlState": "42P08",
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "errorClass": "CATALOG_NOT_FOUND"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "api_'`a.b`'",
+      "site": "api",
+      "input": "`a.b`",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `a.b` not found. Consider to set the SQL config \"spark.sql.catalog.`a.b`\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "catalogName": "`a.b`",
+        "config": "\"spark.sql.catalog.`a.b`\""
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "42P08",
+            "messageParameters": "{\"catalogName\":\"`a.b`\",\"config\":\"\\\"spark.sql.catalog.`a.b`\\\"\"}",
+            "errorClass": "CATALOG_NOT_FOUND"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_SET CATALOG missing_catalog",
+      "site": "sql",
+      "input": "SET CATALOG missing_catalog",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `missing_catalog` not found. Consider to set the SQL config \"spark.sql.catalog.missing_catalog\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "catalogName": "`missing_catalog`",
+        "config": "\"spark.sql.catalog.missing_catalog\""
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "42P08",
+            "errorClass": "CATALOG_NOT_FOUND",
+            "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_SET CATALOG 'missing_catalog'",
+      "site": "sql",
+      "input": "SET CATALOG 'missing_catalog'",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `missing_catalog` not found. Consider to set the SQL config \"spark.sql.catalog.missing_catalog\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "catalogName": "`missing_catalog`",
+        "config": "\"spark.sql.catalog.missing_catalog\""
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "errorClass": "CATALOG_NOT_FOUND",
+            "sqlState": "42P08",
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_SET CATALOG IDENTIFIER('missing_catalog')",
+      "site": "sql",
+      "input": "SET CATALOG IDENTIFIER('missing_catalog')",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `missing_catalog` not found. Consider to set the SQL config \"spark.sql.catalog.missing_catalog\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "config": "\"spark.sql.catalog.missing_catalog\"",
+        "catalogName": "`missing_catalog`"
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\",\"catalogName\":\"`missing_catalog`\"}",
+            "sqlState": "42P08",
+            "errorClass": "CATALOG_NOT_FOUND",
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_USE CATALOG missing_catalog",
+      "site": "sql",
+      "input": "USE CATALOG missing_catalog",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `missing_catalog` not found. Consider to set the SQL config \"spark.sql.catalog.missing_catalog\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "catalogName": "`missing_catalog`",
+        "config": "\"spark.sql.catalog.missing_catalog\""
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+            "sqlState": "42P08",
+            "errorClass": "CATALOG_NOT_FOUND",
+            "messageParameters": "{\"catalogName\":\"`missing_catalog`\",\"config\":\"\\\"spark.sql.catalog.missing_catalog\\\"\"}"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_USE missing_catalog.db",
+      "site": "sql",
+      "input": "USE missing_catalog.db",
+      "returned": false,
+      "error": "Database not found: missing_catalog.db",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.AnalysisException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_SELECT * FROM missing_catalog.db.input",
+      "site": "sql",
+      "input": "SELECT * FROM missing_catalog.db.input",
+      "returned": false,
+      "error": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: input",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.AnalysisException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_SHOW TABLES IN missing_catalog.db",
+      "site": "sql",
+      "input": "SHOW TABLES IN missing_catalog.db",
+      "returned": false,
+      "error": "Database not found: missing_catalog.db",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.AnalysisException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_SET CATALOG '`a.b`'",
+      "site": "sql",
+      "input": "SET CATALOG '`a.b`'",
+      "returned": false,
+      "error": "[CATALOG_NOT_FOUND] The catalog `a`.`b` not found. Consider to set the SQL config \"spark.sql.catalog.a.b\" to a catalog plugin.",
+      "exception_type": "SparkException",
+      "condition": "CATALOG_NOT_FOUND",
+      "parameters": {
+        "config": "\"spark.sql.catalog.a.b\"",
+        "catalogName": "`a`.`b`"
+      },
+      "sql_state": "42P08",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.connector.catalog.CatalogNotFoundException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"config\":\"\\\"spark.sql.catalog.a.b\\\"\",\"catalogName\":\"`a`.`b`\"}",
+            "sqlState": "42P08",
+            "errorClass": "CATALOG_NOT_FOUND",
+            "classes": "[\"org.apache.spark.sql.connector.catalog.CatalogNotFoundException\",\"org.apache.spark.SparkException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    },
+    {
+      "name": "sql_SET CATALOG '`a``b`'",
+      "site": "sql",
+      "input": "SET CATALOG '`a``b`'",
+      "returned": false,
+      "error": "[INVALID_ATTRIBUTE_NAME_SYNTAX] Syntax error in the attribute name: a`b. Check that backticks appear in pairs, a quoted string is a complete name part and use a backtick only inside quoted name parts.",
+      "exception_type": "AnalysisException",
+      "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+      "parameters": {
+        "name": "a`b"
+      },
+      "sql_state": "42601",
+      "connect_errors": [
+        {
+          "reason": "org.apache.spark.sql.AnalysisException",
+          "domain": "org.apache.spark",
+          "metadata": {
+            "messageParameters": "{\"name\":\"a`b\"}",
+            "sqlState": "42601",
+            "errorClass": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+            "classes": "[\"org.apache.spark.sql.AnalysisException\"]"
+          }
+        }
+      ],
+      "session_namespace": [
+        "sail",
+        "default"
+      ]
+    }
+  ],
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "session_namespace": [
+    "sail",
+    "default"
+  ],
+  "listener_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-31T04:26:09.871347+00:00"
+}

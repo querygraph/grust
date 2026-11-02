@@ -1,0 +1,34 @@
+  test("Pipeline level default spark confs are applied with correct precedence") {
+    val session = spark
+    import session.implicits._
+
+    val P = new TestGraphRegistrationContext(
+      spark,
+      Map("default.conf" -> "value")
+    ) {
+      registerTable(
+        "a",
+        query = Option(dfFlowFunc(Seq(1, 2, 3).toDF("x"))),
+        sqlConf = Map("other.conf" -> "value")
+      )
+      registerTable(
+        "b",
+        query = Option(sqlFlowFunc(spark, "SELECT x as y FROM a")),
+        sqlConf = Map("default.conf" -> "other-value")
+      )
+    }
+    val p = P.resolveToDataflowGraph()
+
+    assert(
+      p.flow(fullyQualifiedIdentifier("a")).sqlConf == Map(
+        "default.conf" -> "value",
+        "other.conf" -> "value"
+      )
+    )
+
+    assert(
+      p.flow(fullyQualifiedIdentifier("b")).sqlConf == Map(
+        "default.conf" -> "other-value"
+      )
+    )
+  }

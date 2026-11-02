@@ -1,0 +1,31 @@
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+warning: unused variable: `expects_end_of_input`
+  --> crates/sail-sql-analyzer/src/error/parser/spark.rs:16:13
+   |
+16 |             expects_end_of_input,
+   |             ^^^^^^^^^^^^^^^^^^^^ help: try ignoring the field: `expects_end_of_input: _`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `sail-sql-analyzer` (lib test) generated 1 warning (run `cargo fix --lib -p sail-sql-analyzer --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized] target(s) in 34.03s
+     Running unittests src/lib.rs (target/debug/deps/sail_sql_analyzer-4f04600e3097c8e8)
+
+running 1 test
+test error::parser::tests::trailing_statement_token_does_not_invent_an_empty_recovery_hint ... FAILED
+
+failures:
+
+---- error::parser::tests::trailing_statement_token_does_not_invent_an_empty_recovery_hint stdout ----
+
+thread 'error::parser::tests::trailing_statement_token_does_not_invent_an_empty_recovery_hint' (93492093) panicked at crates/sail-sql-analyzer/src/error/parser/tests.rs:114:5:
+assertion failed: diagnostic.spark_syntax_error().is_none()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    error::parser::tests::trailing_statement_token_does_not_invent_an_empty_recovery_hint
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 59 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p sail-sql-analyzer --lib`

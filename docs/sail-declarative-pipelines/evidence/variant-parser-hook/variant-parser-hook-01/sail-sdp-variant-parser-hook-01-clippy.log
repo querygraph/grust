@@ -1,0 +1,210 @@
+    Checking proc-macro2 v1.0.107
+   Compiling sail-sql-macro v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-macro)
+    Checking sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+    Checking quote v1.0.47
+    Checking syn v3.0.9
+    Checking sail-sql-parser v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-parser)
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:45:10
+   |
+44 |     Fixture::parser(Ident::parser((), &options), &options)
+   |     ------------------------------------------------------ type must be known at this point
+45 |         .parse(input)
+   |          ^^^^^
+   |
+   = note: the type must implement `ParserExtra<'_, MappedInput<'_, Token<'_>, SimpleSpan, &[...], ...>>`
+help: the trait `chumsky::extra::ParserExtra<'a, I>` is implemented for `chumsky::extra::Full<E, S, C>`
+  --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/chumsky-0.13.0/src/extra.rs:63:1
+   |
+63 | / impl<'a, I, E, S, C> ParserExtra<'a, I> for Full<E, S, C>
+64 | | where
+65 | |     I: Input<'a>,
+66 | |     E: Error<'a, I>,
+67 | |     S: Inspector<'a, I>,
+68 | |     C: 'a,
+   | |__________^
+note: required by a bound in `tree::parser::TreeParser::parser`
+  --> crates/sail-sql-parser/src/tree/parser.rs:11:8
+   |
+11 |     E: ParserExtra<'a, I> + 'a,
+   |        ^^^^^^^^^^^^^^^^^^ required by this bound in `TreeParser::parser`
+...
+25 |     fn parser(args: A, options: &'a ParserOptions) -> impl Parser<'a, I, Self, E> + Clone;
+   |        ------ required by a bound in this associated function
+   = note: the full name for the type has been written to '/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_sql_parser-694d6f9360374432.long-type-9496834604670132391.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:44:5
+   |
+44 |     Fixture::parser(Ident::parser((), &options), &options)
+   |     ^^^^^^^ cannot infer type
+   |
+   = note: multiple `impl`s satisfying `_: chumsky::error::LabelError<'_, chumsky::input::MappedInput<'_, token::Token<'_>, chumsky::span::SimpleSpan, &[(token::Token<'_>, chumsky::span::SimpleSpan)], {closure@crates/sail-sql-parser/src/tree/parser/tests.rs:43:45: 43:60}>, token::TokenLabel>` found in the `chumsky` crate:
+           - impl<'a, I, L, C> chumsky::error::LabelError<'a, I, L> for chumsky::error::Rich<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span, C>
+             where I: chumsky::input::Input<'a>, <I as chumsky::input::Input<'a>>::Token: std::cmp::PartialEq, L: std::convert::TryInto<chumsky::error::RichPattern<'a, <I as chumsky::input::Input<'a>>::Token>>, <I as chumsky::input::Input<'a>>::Token: ?Sized;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Cheap<<I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::EmptyErr
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Simple<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+note: required for `tree::parser::tests::Fixture` to implement `TreeParser<'_, MappedInput<'_, Token<'_>, ..., ..., ...>, _, ...>`
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:15:6
+   |
+13 | #[derive(Debug, Clone, TreeParser)]
+   |                        ---------- type parameter would need to implement `TreeParser<'_, MappedInput<'_, Token<'_>, ..., ..., ...>, _, ...>`
+14 | #[parser(dependency = "Ident")]
+15 | enum Fixture {
+   |      ^^^^^^^
+   = help: consider manually implementing `TreeParser<'_, MappedInput<'_, Token<'_>, ..., ..., ...>, _, ...>` to avoid undesired bounds
+   = note: the full name for the type has been written to '/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_sql_parser-694d6f9360374432.long-type-14205457595524560079.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:44:5
+   |
+44 |     Fixture::parser(Ident::parser((), &options), &options)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+   |
+   = note: multiple `impl`s satisfying `_: chumsky::error::LabelError<'_, chumsky::input::MappedInput<'_, token::Token<'_>, chumsky::span::SimpleSpan, &[(token::Token<'_>, chumsky::span::SimpleSpan)], {closure@crates/sail-sql-parser/src/tree/parser/tests.rs:43:45: 43:60}>, token::TokenLabel>` found in the `chumsky` crate:
+           - impl<'a, I, L, C> chumsky::error::LabelError<'a, I, L> for chumsky::error::Rich<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span, C>
+             where I: chumsky::input::Input<'a>, <I as chumsky::input::Input<'a>>::Token: std::cmp::PartialEq, L: std::convert::TryInto<chumsky::error::RichPattern<'a, <I as chumsky::input::Input<'a>>::Token>>, <I as chumsky::input::Input<'a>>::Token: ?Sized;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Cheap<<I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::EmptyErr
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Simple<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+note: required for `tree::parser::tests::Fixture` to implement `TreeParser<'_, MappedInput<'_, Token<'_>, ..., ..., ...>, _, ...>`
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:15:6
+   |
+13 | #[derive(Debug, Clone, TreeParser)]
+   |                        ---------- type parameter would need to implement `TreeParser<'_, MappedInput<'_, Token<'_>, ..., ..., ...>, _, ...>`
+14 | #[parser(dependency = "Ident")]
+15 | enum Fixture {
+   |      ^^^^^^^
+   = help: consider manually implementing `TreeParser<'_, MappedInput<'_, Token<'_>, ..., ..., ...>, _, ...>` to avoid undesired bounds
+   = note: the full name for the type has been written to '/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_sql_parser-694d6f9360374432.long-type-14205457595524560079.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:44:21
+   |
+44 |     Fixture::parser(Ident::parser((), &options), &options)
+   |                     ^^^^^ cannot infer type
+   |
+   = note: multiple `impl`s satisfying `_: chumsky::error::LabelError<'_, chumsky::input::MappedInput<'_, token::Token<'_>, chumsky::span::SimpleSpan, &[(token::Token<'_>, chumsky::span::SimpleSpan)], {closure@crates/sail-sql-parser/src/tree/parser/tests.rs:43:45: 43:60}>, token::TokenLabel>` found in the `chumsky` crate:
+           - impl<'a, I, L, C> chumsky::error::LabelError<'a, I, L> for chumsky::error::Rich<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span, C>
+             where I: chumsky::input::Input<'a>, <I as chumsky::input::Input<'a>>::Token: std::cmp::PartialEq, L: std::convert::TryInto<chumsky::error::RichPattern<'a, <I as chumsky::input::Input<'a>>::Token>>, <I as chumsky::input::Input<'a>>::Token: ?Sized;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Cheap<<I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::EmptyErr
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Simple<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+note: required for `ast::identifier::Ident` to implement `TreeParser<'_, MappedInput<'_, Token<'_>, SimpleSpan, &[...], ...>, _>`
+  --> crates/sail-sql-parser/src/ast/identifier.rs:70:16
+   |
+70 | impl<'a, I, E> TreeParser<'a, I, E> for Ident
+   |                ^^^^^^^^^^^^^^^^^^^^     ^^^^^
+...
+75 |     E::Error: LabelError<'a, I, TokenLabel>,
+   |               ----------------------------- unsatisfied trait bound introduced here
+   = note: the full name for the type has been written to '/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_sql_parser-694d6f9360374432.long-type-13489469728290167197.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:44:21
+   |
+44 |     Fixture::parser(Ident::parser((), &options), &options)
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+   |
+   = note: multiple `impl`s satisfying `_: chumsky::error::LabelError<'_, chumsky::input::MappedInput<'_, token::Token<'_>, chumsky::span::SimpleSpan, &[(token::Token<'_>, chumsky::span::SimpleSpan)], {closure@crates/sail-sql-parser/src/tree/parser/tests.rs:43:45: 43:60}>, token::TokenLabel>` found in the `chumsky` crate:
+           - impl<'a, I, L, C> chumsky::error::LabelError<'a, I, L> for chumsky::error::Rich<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span, C>
+             where I: chumsky::input::Input<'a>, <I as chumsky::input::Input<'a>>::Token: std::cmp::PartialEq, L: std::convert::TryInto<chumsky::error::RichPattern<'a, <I as chumsky::input::Input<'a>>::Token>>, <I as chumsky::input::Input<'a>>::Token: ?Sized;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Cheap<<I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::EmptyErr
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Simple<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+note: required for `ast::identifier::Ident` to implement `TreeParser<'_, MappedInput<'_, Token<'_>, SimpleSpan, &[...], ...>, _>`
+  --> crates/sail-sql-parser/src/ast/identifier.rs:70:16
+   |
+70 | impl<'a, I, E> TreeParser<'a, I, E> for Ident
+   |                ^^^^^^^^^^^^^^^^^^^^     ^^^^^
+...
+75 |     E::Error: LabelError<'a, I, TokenLabel>,
+   |               ----------------------------- unsatisfied trait bound introduced here
+   = note: the full name for the type has been written to '/Users/alexy/src/sail-sdp-gate/target/debug/deps/sail_sql_parser-694d6f9360374432.long-type-13489469728290167197.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:44:5
+   |
+44 |     Fixture::parser(Ident::parser((), &options), &options)
+   |     ^^^^^^^^^^^^^^^ cannot infer type
+   |
+   = note: multiple `impl`s satisfying `_: chumsky::error::LabelError<'_, chumsky::input::MappedInput<'_, token::Token<'_>, chumsky::span::SimpleSpan, &[(token::Token<'_>, chumsky::span::SimpleSpan)], {closure@crates/sail-sql-parser/src/tree/parser/tests.rs:43:45: 43:60}>, token::TokenLabel>` found in the `chumsky` crate:
+           - impl<'a, I, L, C> chumsky::error::LabelError<'a, I, L> for chumsky::error::Rich<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span, C>
+             where I: chumsky::input::Input<'a>, <I as chumsky::input::Input<'a>>::Token: std::cmp::PartialEq, L: std::convert::TryInto<chumsky::error::RichPattern<'a, <I as chumsky::input::Input<'a>>::Token>>, <I as chumsky::input::Input<'a>>::Token: ?Sized;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Cheap<<I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::EmptyErr
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Simple<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+note: required by a bound in `<ast::identifier::Ident as tree::parser::TreeParser<'a, I, E>>`
+  --> crates/sail-sql-parser/src/ast/identifier.rs:75:15
+   |
+75 |     E::Error: LabelError<'a, I, TokenLabel>,
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `<Ident as TreeParser<'a, I, E>>`
+
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:44:5
+   |
+44 | /     Fixture::parser(Ident::parser((), &options), &options)
+45 | |         .parse(input)
+   | |_____________________^ cannot infer type
+   |
+   = note: multiple `impl`s satisfying `_: chumsky::error::LabelError<'_, chumsky::input::MappedInput<'_, token::Token<'_>, chumsky::span::SimpleSpan, &[(token::Token<'_>, chumsky::span::SimpleSpan)], {closure@crates/sail-sql-parser/src/tree/parser/tests.rs:43:45: 43:60}>, token::TokenLabel>` found in the `chumsky` crate:
+           - impl<'a, I, L, C> chumsky::error::LabelError<'a, I, L> for chumsky::error::Rich<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span, C>
+             where I: chumsky::input::Input<'a>, <I as chumsky::input::Input<'a>>::Token: std::cmp::PartialEq, L: std::convert::TryInto<chumsky::error::RichPattern<'a, <I as chumsky::input::Input<'a>>::Token>>, <I as chumsky::input::Input<'a>>::Token: ?Sized;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Cheap<<I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::EmptyErr
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Simple<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+note: required by a bound in `<tree::parser::tests::Fixture as tree::parser::TreeParser<'a, I, E, P>>`
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:13:24
+   |
+13 | #[derive(Debug, Clone, TreeParser)]
+   |                        ^^^^^^^^^^ required by this bound in `<Fixture as TreeParser<'a, I, E, P>>`
+   = note: this error originates in the derive macro `TreeParser` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0283]: type annotations needed
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:45:10
+   |
+45 |         .parse(input)
+   |          ^^^^^ cannot infer type
+   |
+   = note: multiple `impl`s satisfying `_: chumsky::error::LabelError<'_, chumsky::input::MappedInput<'_, token::Token<'_>, chumsky::span::SimpleSpan, &[(token::Token<'_>, chumsky::span::SimpleSpan)], {closure@crates/sail-sql-parser/src/tree/parser/tests.rs:43:45: 43:60}>, token::TokenLabel>` found in the `chumsky` crate:
+           - impl<'a, I, L, C> chumsky::error::LabelError<'a, I, L> for chumsky::error::Rich<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span, C>
+             where I: chumsky::input::Input<'a>, <I as chumsky::input::Input<'a>>::Token: std::cmp::PartialEq, L: std::convert::TryInto<chumsky::error::RichPattern<'a, <I as chumsky::input::Input<'a>>::Token>>, <I as chumsky::input::Input<'a>>::Token: ?Sized;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Cheap<<I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::EmptyErr
+             where I: chumsky::input::Input<'a>;
+           - impl<'a, I, L> chumsky::error::LabelError<'a, I, L> for chumsky::error::Simple<'a, <I as chumsky::input::Input<'a>>::Token, <I as chumsky::input::Input<'a>>::Span>
+             where I: chumsky::input::Input<'a>;
+note: required by a bound in `<tree::parser::tests::Fixture as tree::parser::TreeParser<'a, I, E, P>>`
+  --> crates/sail-sql-parser/src/tree/parser/tests.rs:13:24
+   |
+13 | #[derive(Debug, Clone, TreeParser)]
+   |                        ^^^^^^^^^^ required by this bound in `<Fixture as TreeParser<'a, I, E, P>>`
+   = note: this error originates in the derive macro `TreeParser` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0283`.
+error: could not compile `sail-sql-parser` (lib test) due to 8 previous errors

@@ -1,0 +1,16 @@
+{
+  "base": "17b8ac254139e9213327dfcc7fc8badb4fdd27b2",
+  "control": "26a1c234316c174c9110779627d760421872ccc3",
+  "path": "crates/sail-plan/src/resolver/session.rs",
+  "substitution": {
+    "from": "Some(QuerySession::Scoped(session)) => Ok(session.analyze(plan)?),",
+    "to": "Some(QuerySession::Scoped(_session)) => {\n                let state = self.ctx.state();\n                Ok(state.analyzer().execute_and_check(\n                    plan,\n                    state.config_options().as_ref(),\n                    |_, _| {},\n                )?)\n            }"
+  },
+  "exit_code": 101,
+  "result": {
+    "passed": 2,
+    "failed": 5
+  },
+  "recorded_at": "2026-10-30T21:04:37.114055+00:00",
+  "log_sha256": "de7478c56ac67b768be470552a897a75f495c803f8ec71818605b48d4c2164bf"
+}

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.262" timestamp="2026-10-31T11:29:34.108605-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_analysis_order" name="test_unresolved_query_precedes_batch_flow_for_streaming_table[table]" time="0.136"><failure message="AssertionError: assert 'BATCH_RELAT...EAMING_TABLE' not in '[INVALID_FL...lt`.`output`'&#10;  &#10;  'BATCH_RELATION_FOR_STREAMING_TABLE' is contained here:&#10;    [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`output`&#10;  ?                          ++++++++++++++++++++++++++++++++++">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x117e8a030&gt;
+pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117eb14e0&gt;
+missing = 'table'
+
+    @pytest.mark.parametrize("missing", ["table", "column"])
+    def test_unresolved_query_precedes_batch_flow_for_streaming_table(pipeline_spark, pipeline_factory, missing):
+        failures = []
+        for define in (dp.materialized_view, dp.table):
+            _, registry, run = pipeline_factory()
+            with graph_element_registration_context(registry):
+    
+                @define(name="output")
+                def output():
+                    if missing == "table":
+                        return pipeline_spark.table("missing_source")
+                    return pipeline_spark.range(1).selectExpr("missing_column")
+    
+            with pytest.raises(AnalysisException) as error:
+                run(dry=True)
+            # Spark reports the underlying query through flow events and raises an
+            # UnresolvedPipelineException. Preserve that failure when changing the
+            # destination type; streamingness must not mask unsuccessful analysis.
+            failures.append(
+                (
+                    type(error.value),
+                    error.value.getCondition(),
+                    error.value.getSqlState(),
+                    error.value.getMessageParameters(),
+                )
+            )
+&gt;           assert "BATCH_RELATION_FOR_STREAMING_TABLE" not in str(error.value)
+E           AssertionError: assert 'BATCH_RELAT...EAMING_TABLE' not in '[INVALID_FL...lt`.`output`'
+E             
+E             'BATCH_RELATION_FOR_STREAMING_TABLE' is contained here:
+E               [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`output`
+E             ?                          ++++++++++++++++++++++++++++++++++
+
+python/pysail/tests/spark/pipelines/test_analysis_order.py:35: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_analysis_order" name="test_unresolved_query_precedes_batch_flow_for_streaming_table[column]" time="0.037"><failure message="AssertionError: assert 'BATCH_RELAT...EAMING_TABLE' not in '[INVALID_FL...lt`.`output`'&#10;  &#10;  'BATCH_RELATION_FOR_STREAMING_TABLE' is contained here:&#10;    [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`output`&#10;  ?                          ++++++++++++++++++++++++++++++++++">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x117eb9eb0&gt;
+pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x117fdfba0&gt;
+missing = 'column'
+
+    @pytest.mark.parametrize("missing", ["table", "column"])
+    def test_unresolved_query_precedes_batch_flow_for_streaming_table(pipeline_spark, pipeline_factory, missing):
+        failures = []
+        for define in (dp.materialized_view, dp.table):
+            _, registry, run = pipeline_factory()
+            with graph_element_registration_context(registry):
+    
+                @define(name="output")
+                def output():
+                    if missing == "table":
+                        return pipeline_spark.table("missing_source")
+                    return pipeline_spark.range(1).selectExpr("missing_column")
+    
+            with pytest.raises(AnalysisException) as error:
+                run(dry=True)
+            # Spark reports the underlying query through flow events and raises an
+            # UnresolvedPipelineException. Preserve that failure when changing the
+            # destination type; streamingness must not mask unsuccessful analysis.
+            failures.append(
+                (
+                    type(error.value),
+                    error.value.getCondition(),
+                    error.value.getSqlState(),
+                    error.value.getMessageParameters(),
+                )
+            )
+&gt;           assert "BATCH_RELATION_FOR_STREAMING_TABLE" not in str(error.value)
+E           AssertionError: assert 'BATCH_RELAT...EAMING_TABLE' not in '[INVALID_FL...lt`.`output`'
+E             
+E             'BATCH_RELATION_FOR_STREAMING_TABLE' is contained here:
+E               [INVALID_FLOW_QUERY_TYPE.BATCH_RELATION_FOR_STREAMING_TABLE] `sail`.`default`.`output`
+E             ?                          ++++++++++++++++++++++++++++++++++
+
+python/pysail/tests/spark/pipelines/test_analysis_order.py:35: AssertionError</failure></testcase></testsuite></testsuites>

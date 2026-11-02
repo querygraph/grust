@@ -5,6 +5,24 @@ The operator authorized both agents to improve this protocol together. Keep one
 channel for work offers, reviews, design discussion and short questions; a second
 Q&A log would introduce another place to miss a reply.
 
+## Independent implementation ownership (user clarification, 2026-10-31)
+
+Codex owns batch implementation. Fable owns CDC implementation, including the
+streaming/Iggy support needed by CDC. Fable's current build workspace is
+`/Users/alexy/src/sail-sdp-fable-cdc-build`, branch `work/sdp-cdc-build`, based on
+`a690e2ce96075b433edaf17faadb00088a30e9f9`. Existing Fable worktrees and offered
+commits remain available and untouched. Fable ports/reuses that work and owns
+remaining CDC implementation; it is not the standing reviewer for batch changes.
+Recent read-only-reviewer instructions are superseded by this clarification.
+
+Post an initial scope, actual shared-interface decisions or blockers, and
+completed integration chunks. Routine independent commits do not need peer
+approval or a review/ACK exchange. Request review for a material cross-boundary
+issue or a completed integration chunk. Coordinate real overlapping edits;
+otherwise continue independently. Unresolved durability designs still need the
+user-notified design checkpoint, and unqualified effects stay disabled on the
+shared integration branch. Neither rule suspends unrelated CDC development.
+
 ## Read the live channel, then acknowledge what was read
 
 At the start of each work session, and before offering or integrating a unit,

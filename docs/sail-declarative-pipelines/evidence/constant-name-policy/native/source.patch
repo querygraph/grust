@@ -1,0 +1,335 @@
+diff --git a/crates/sail-plan/src/function/aggregate.rs b/crates/sail-plan/src/function/aggregate.rs
+index 5f7fc138f..35e3dbcdc 100644
+--- a/crates/sail-plan/src/function/aggregate.rs
++++ b/crates/sail-plan/src/function/aggregate.rs
+@@ -1090,6 +1090,7 @@ mod tests {
+     use super::*;
+     use crate::config::PlanConfig;
+     use crate::function::common::FunctionContextInput;
++    use crate::function::constant_context::ConstantContext;
+ 
+     fn sum_test_schema(data_type: DataType) -> PlanResult<Arc<DFSchema>> {
+         Ok(Arc::new(DFSchema::try_from(Schema::new(vec![
+@@ -1132,7 +1133,7 @@ mod tests {
+             preserve_count_argument_columns: false,
+             function_context: FunctionContextInput {
+                 require_foldable: false,
+-                constant_context: false,
++                constant_context: ConstantContext::Ordinary,
+                 argument_display_names: &argument_display_names,
+                 plan_config: &plan_config,
+                 session_context: &session_context,
+diff --git a/crates/sail-plan/src/function/common.rs b/crates/sail-plan/src/function/common.rs
+index 25d2b488b..5a7b0687c 100644
+--- a/crates/sail-plan/src/function/common.rs
++++ b/crates/sail-plan/src/function/common.rs
+@@ -16,6 +16,7 @@ use sail_function::sketch::{DEFAULT_HLL_LG_CONFIG_K, DEFAULT_THETA_LG_NOM_ENTRIE
+ 
+ use crate::config::PlanConfig;
+ use crate::error::{IntoPlanResult, PlanError, PlanResult};
++use crate::function::constant_context::ConstantContext;
+ 
+ pub struct FunctionContextInput<'a> {
+     /// The names of function arguments.
+@@ -31,7 +32,7 @@ pub struct FunctionContextInput<'a> {
+     /// Require foldability before a builder can erase function provenance.
+     pub require_foldable: bool,
+     /// Preserve non-foldability in the lowered expression in constant-name contexts.
+-    pub constant_context: bool,
++    pub constant_context: ConstantContext,
+ }
+ 
+ pub struct ScalarFunctionInput<'a> {
+@@ -52,7 +53,10 @@ impl ScalarFunctionBuilder {
+                     "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable",
+                 ));
+             }
+-            let preserve = input.function_context.constant_context;
++            let preserve = input
++                .function_context
++                .constant_context
++                .retain_function_foldability();
+             let expression = function(input)?;
+             Ok(if preserve {
+                 Self::mark_non_foldable(expression)
+diff --git a/crates/sail-plan/src/function/constant_context.rs b/crates/sail-plan/src/function/constant_context.rs
+new file mode 100644
+index 000000000..cdea0d596
+--- /dev/null
++++ b/crates/sail-plan/src/function/constant_context.rs
+@@ -0,0 +1,25 @@
++/// Controls lowering while resolving SQL constant-name expressions.
++#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
++pub enum ConstantContext {
++    #[default]
++    Ordinary,
++    Identifier,
++}
++
++impl ConstantContext {
++    /// Retain function provenance until the identifier's foldability check.
++    pub(crate) fn retain_function_foldability(self) -> bool {
++        match self {
++            Self::Ordinary => false,
++            Self::Identifier => true,
++        }
++    }
++
++    /// Validate the identifier's type before evaluating constant arithmetic.
++    pub(crate) fn defer_arithmetic_evaluation(self) -> bool {
++        match self {
++            Self::Ordinary => false,
++            Self::Identifier => true,
++        }
++    }
++}
+diff --git a/crates/sail-plan/src/function/mod.rs b/crates/sail-plan/src/function/mod.rs
+index 1cc9192c0..0cead313f 100644
+--- a/crates/sail-plan/src/function/mod.rs
++++ b/crates/sail-plan/src/function/mod.rs
+@@ -14,6 +14,7 @@ use crate::function::common::ScalarFunction;
+ 
+ mod aggregate;
+ pub(crate) mod common;
++pub(crate) mod constant_context;
+ pub(crate) mod datetime_utils;
+ mod generator;
+ mod metadata;
+diff --git a/crates/sail-plan/src/function/scalar/math.rs b/crates/sail-plan/src/function/scalar/math.rs
+index d34ba30de..b0adb9dce 100644
+--- a/crates/sail-plan/src/function/scalar/math.rs
++++ b/crates/sail-plan/src/function/scalar/math.rs
+@@ -375,7 +375,11 @@ fn spark_divide(input: ScalarFunctionInput) -> PlanResult<Expr> {
+ 
+     // Constant-name resolution must validate the result type before evaluation.
+     // Ordinary queries keep the existing literal-zero fast path.
+-    if !function_context.constant_context && is_zero_literal(&divisor) {
++    if !function_context
++        .constant_context
++        .defer_arithmetic_evaluation()
++        && is_zero_literal(&divisor)
++    {
+         if function_context.plan_config.ansi_mode {
+             return Err(PlanError::ArrowError(ArrowError::DivideByZero));
+         } else {
+@@ -441,7 +445,11 @@ fn spark_div(input: ScalarFunctionInput) -> PlanResult<Expr> {
+     let (dividend, divisor) = arguments.two()?;
+ 
+     // Constant-name resolution defers evaluation until after type validation.
+-    if !function_context.constant_context && is_zero_literal(&divisor) {
++    if !function_context
++        .constant_context
++        .defer_arithmetic_evaluation()
++        && is_zero_literal(&divisor)
++    {
+         if function_context.plan_config.ansi_mode {
+             return Err(PlanError::ArrowError(ArrowError::DivideByZero));
+         } else {
+@@ -630,7 +638,11 @@ fn spark_modulo(input: ScalarFunctionInput) -> PlanResult<Expr> {
+     let (dividend, divisor) = arguments.two()?;
+ 
+     // Constant-name resolution defers evaluation until after type validation.
+-    if !function_context.constant_context && is_zero_literal(&divisor) {
++    if !function_context
++        .constant_context
++        .defer_arithmetic_evaluation()
++        && is_zero_literal(&divisor)
++    {
+         if function_context.plan_config.ansi_mode {
+             return Err(PlanError::ArrowError(ArrowError::ArithmeticOverflow(
+                 "Remainder by zero".to_string(),
+diff --git a/crates/sail-plan/src/function/window.rs b/crates/sail-plan/src/function/window.rs
+index 97db692af..361ad491b 100644
+--- a/crates/sail-plan/src/function/window.rs
++++ b/crates/sail-plan/src/function/window.rs
+@@ -875,6 +875,7 @@ mod tests {
+     use super::*;
+     use crate::config::PlanConfig;
+     use crate::function::common::FunctionContextInput;
++    use crate::function::constant_context::ConstantContext;
+ 
+     #[test]
+     fn string_sum_window_reuses_mode_specific_coercion_and_window_spec() -> PlanResult<()> {
+@@ -904,7 +905,7 @@ mod tests {
+                 distinct: false,
+                 function_context: FunctionContextInput {
+                     require_foldable: false,
+-                    constant_context: false,
++                    constant_context: ConstantContext::Ordinary,
+                     argument_display_names: &argument_display_names,
+                     plan_config: &plan_config,
+                     session_context: &session_context,
+diff --git a/crates/sail-plan/src/resolver/constant.rs b/crates/sail-plan/src/resolver/constant.rs
+index 5cd8a428e..abed880a7 100644
+--- a/crates/sail-plan/src/resolver/constant.rs
++++ b/crates/sail-plan/src/resolver/constant.rs
+@@ -13,6 +13,7 @@ use sail_sql_analyzer::expression::from_ast_object_name;
+ use sail_sql_analyzer::parser::parse_object_name;
+ 
+ use crate::error::{PlanError, PlanResult};
++use crate::function::constant_context::ConstantContext;
+ use crate::resolver::PlanResolver;
+ use crate::resolver::state::PlanResolverState;
+ 
+@@ -32,7 +33,7 @@ impl PlanResolver<'_> {
+         let schema = Arc::new(DFSchema::empty());
+         let mut state = PlanResolverState::new();
+         state.config_mut().require_foldable = true;
+-        state.config_mut().constant_context = true;
++        state.config_mut().constant_context = ConstantContext::Identifier;
+         let resolved = self
+             .resolve_expression(expression, &schema, &mut state)
+             .await
+diff --git a/crates/sail-plan/src/resolver/constant/tests.rs b/crates/sail-plan/src/resolver/constant/tests.rs
+index 5b586cb59..c077a29e5 100644
+--- a/crates/sail-plan/src/resolver/constant/tests.rs
++++ b/crates/sail-plan/src/resolver/constant/tests.rs
+@@ -22,6 +22,7 @@ use crate::catalog::SparkCatalogObjectDisplay;
+ use crate::config::PlanConfig;
+ use crate::formatter::SparkPlanFormatter;
+ use crate::function::common::{FunctionContextInput, ScalarFunctionBuilder, ScalarFunctionInput};
++use crate::function::constant_context::ConstantContext;
+ 
+ type TestResult = Result<(), Box<dyn std::error::Error>>;
+ 
+@@ -305,7 +306,7 @@ fn non_foldable_annotation_prevents_builder_invocation() -> TestResult {
+             arguments: vec![],
+             function_context: FunctionContextInput {
+                 require_foldable,
+-                constant_context: false,
++                constant_context: ConstantContext::Ordinary,
+                 argument_display_names: &[],
+                 plan_config: &config,
+                 session_context: &context,
+diff --git a/crates/sail-plan/src/resolver/expression/function.rs b/crates/sail-plan/src/resolver/expression/function.rs
+index 8204c3e64..cb0a5ceef 100644
+--- a/crates/sail-plan/src/resolver/expression/function.rs
++++ b/crates/sail-plan/src/resolver/expression/function.rs
+@@ -288,7 +288,12 @@ impl PlanResolver<'_> {
+             func
+         };
+ 
+-        let func = if non_foldable && state.config().constant_context {
++        let func = if non_foldable
++            && state
++                .config()
++                .constant_context
++                .retain_function_foldability()
++        {
+             ScalarFunctionBuilder::mark_non_foldable(func)
+         } else {
+             func
+diff --git a/crates/sail-plan/src/resolver/identifier.rs b/crates/sail-plan/src/resolver/identifier.rs
+index cc916f44c..cdebd13b6 100644
+--- a/crates/sail-plan/src/resolver/identifier.rs
++++ b/crates/sail-plan/src/resolver/identifier.rs
+@@ -10,6 +10,7 @@ use sail_common::spec;
+ use sail_common_datafusion::literal::LiteralEvaluator;
+ 
+ use crate::error::{PlanError, PlanResult};
++use crate::function::constant_context::ConstantContext;
+ use crate::resolver::PlanResolver;
+ use crate::resolver::state::PlanResolverState;
+ 
+@@ -23,7 +24,7 @@ impl PlanResolver<'_> {
+     ) -> PlanResult<String> {
+         let mut scope = state.enter_config_scope();
+         scope.state().config_mut().require_foldable = true;
+-        scope.state().config_mut().constant_context = true;
++        scope.state().config_mut().constant_context = ConstantContext::Identifier;
+         scope.state().config_mut().table_identifier = true;
+         let resolved = self
+             .resolve_expression(expression, &Arc::new(DFSchema::empty()), scope.state())
+@@ -51,7 +52,7 @@ impl PlanResolver<'_> {
+         state: &mut PlanResolverState,
+     ) -> PlanResult<String> {
+         let mut scope = state.enter_config_scope();
+-        scope.state().config_mut().constant_context = true;
++        scope.state().config_mut().constant_context = ConstantContext::Identifier;
+         let resolved = self
+             .resolve_expression(expression, schema, scope.state())
+             .await?;
+diff --git a/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs b/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
+index 33ca196ec..5b34ac826 100644
+--- a/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
++++ b/crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs
+@@ -6,6 +6,7 @@ use datafusion_common::DFSchema;
+ use super::tests::{context, expression};
+ use super::*;
+ use crate::config::PlanConfig;
++use crate::function::constant_context::ConstantContext;
+ 
+ type TestResult = Result<(), Box<dyn std::error::Error>>;
+ 
+@@ -34,7 +35,7 @@ async fn constant_type_validation_precedes_arithmetic_and_restores_ordinary_poli
+                     .contains("NOT_A_CONSTANT_STRING.WRONG_TYPE"),
+                 "ansi={ansi_mode} {sql}: {error}"
+             );
+-            assert!(!state.config().constant_context);
++            assert_eq!(state.config().constant_context, ConstantContext::Ordinary);
+             assert!(!state.config().require_foldable);
+         }
+         // The datatype must remain BIGINT even when ANSI mode would evaluate
+@@ -51,7 +52,7 @@ async fn constant_type_validation_precedes_arithmetic_and_restores_ordinary_poli
+                 .await?,
+             "foo"
+         );
+-        assert!(!state.config().constant_context);
++        assert_eq!(state.config().constant_context, ConstantContext::Ordinary);
+         let plan = sail_sql_analyzer::statement::from_ast_statement(
+             sail_sql_analyzer::parser::parse_one_statement("SELECT 1 DIV 0")?,
+         )?;
+diff --git a/crates/sail-plan/src/resolver/identifier/provenance_tests.rs b/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
+index 784754120..f7030cd35 100644
+--- a/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
++++ b/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
+@@ -13,6 +13,7 @@ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use super::tests::{context, expression};
+ use super::*;
+ use crate::config::PlanConfig;
++use crate::function::constant_context::ConstantContext;
+ 
+ type TestResult = Result<(), Box<dyn std::error::Error>>;
+ 
+@@ -138,7 +139,10 @@ async fn identifier_constant_context_restores_parameters_and_state_after_errors(
+         } else {
+             assert!(result.is_err());
+         }
+-        assert!(!params.state().config().constant_context);
++        assert_eq!(
++            params.state().config().constant_context,
++            ConstantContext::Ordinary
++        );
+         assert!(!params.state().config().require_foldable);
+         assert!(!params.state().config().table_identifier);
+         assert!(params.state().config().arrow_allow_large_var_types);
+@@ -146,7 +150,7 @@ async fn identifier_constant_context_restores_parameters_and_state_after_errors(
+     }
+     drop(params);
+     assert!(state.get_param_value("col").is_none());
+-    assert!(!state.config().constant_context);
++    assert_eq!(state.config().constant_context, ConstantContext::Ordinary);
+     Ok(())
+ }
+ 
+diff --git a/crates/sail-plan/src/resolver/state.rs b/crates/sail-plan/src/resolver/state.rs
+index f032ef732..14a1cf4a0 100644
+--- a/crates/sail-plan/src/resolver/state.rs
++++ b/crates/sail-plan/src/resolver/state.rs
+@@ -6,6 +6,7 @@ use datafusion_expr::LogicalPlan;
+ use sail_common::spec;
+ 
+ use crate::error::{PlanError, PlanResult};
++use crate::function::constant_context::ConstantContext;
+ use crate::resolver::PlanResolver;
+ use crate::resolver::expression::NamedExpr;
+ use crate::resolver::query::{CteInfo, CteKind, MissingInputBoundaries, MissingInputResolution};
+@@ -58,7 +59,7 @@ pub(super) struct PlanResolverStateConfig {
+     /// Reject non-foldable expressions before lowering can erase their provenance.
+     pub require_foldable: bool,
+     /// Lower constant-name arguments without losing their function foldability.
+-    pub constant_context: bool,
++    pub constant_context: ConstantContext,
+     /// Table IDENTIFIER keeps subqueries unresolved while allowing type-only replacements.
+     pub table_identifier: bool,
+     pub arrow_allow_large_var_types: bool,

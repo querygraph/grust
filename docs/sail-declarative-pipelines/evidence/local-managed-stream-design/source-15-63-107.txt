@@ -1,0 +1,45 @@
+        &self,
+        runtime_env: &RuntimeEnv,
+        relation_id: &str,
+    ) -> Result<(ObjectStoreUrl, Path)> {
+        if self.closed.load(Ordering::Acquire) {
+            return Err(DataFusionError::Plan(
+                "checkpoint session is stopping".to_string(),
+            ));
+        }
+        let root = self.resolve_root(runtime_env)?;
+        let prefix = self.session_prefix(root.prefix()).join(relation_id);
+        Ok((root.object_store_url().clone(), prefix))
+    }
+
+    pub fn insert(&self, descriptor: RemoteCheckpointDescriptor) -> Result<()> {
+        if self.closed.load(Ordering::Acquire) {
+            return Err(DataFusionError::Plan(
+                "checkpoint session is stopping".to_string(),
+            ));
+        }
+        let relation_id = descriptor.relation_id.clone();
+        let mut relations = self.relations.write().map_err(|error| {
+            internal_datafusion_err!("checkpoint registry is poisoned: {error}")
+        })?;
+        match relations.entry(relation_id.clone()) {
+            Entry::Occupied(_) => {
+                return Err(internal_datafusion_err!(
+                    "checkpoint relation already exists: {relation_id}"
+                ));
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(Arc::new(descriptor));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn get(&self, relation_id: &str) -> Result<Option<Arc<RemoteCheckpointDescriptor>>> {
+        let relations = self.relations.read().map_err(|error| {
+            internal_datafusion_err!("checkpoint registry is poisoned: {error}")
+        })?;
+        Ok(relations.get(relation_id).cloned())
+    }
+
+    pub async fn cleanup_relation(

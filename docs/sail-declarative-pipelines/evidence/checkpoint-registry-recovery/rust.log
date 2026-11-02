@@ -1,0 +1,89 @@
+   Compiling sail-cache v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-cache)
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+   Compiling sail-physical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-optimizer)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-physical-plan` (lib test) generated 1 warning
+   Compiling sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+   Compiling sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+   Compiling sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+   Compiling sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+   Compiling sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+warning: `sail-session` (lib test) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized] target(s) in 1m 08s
+     Running unittests src/lib.rs (target/debug/deps/sail_cache-d511b1ee9aca6b84)
+
+running 9 tests
+test remote_checkpoint::tests::registry_uses_the_provided_session_id_for_storage_paths ... ok
+test remote_checkpoint::tests::registry_owns_only_ready_descriptors ... ok
+test file_listing_cache::tests::test_file_listing_cache ... ok
+test file_metadata_cache::tests::test_file_metadata_cache ... ok
+test remote_checkpoint::cleanup_tests::paused_deletion_seals_admission_without_holding_the_registry_lock ... ok
+test remote_checkpoint::cleanup_tests::successful_cleanup_is_session_scoped_and_remains_closed ... ok
+test remote_checkpoint::cleanup_tests::canceled_cleanup_retains_closed_metadata_for_explicit_retry ... ok
+test remote_checkpoint::cleanup_tests::partial_delete_failure_retains_descriptor_for_explicit_retry ... ok
+test file_statistics_cache::tests::test_file_statistics_cache ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (target/debug/deps/sail_physical_plan-aa4a4ff5df270dbd)
+
+running 13 tests
+test coalesce::tests::test_coalesced_input_range_even_groups ... ok
+test coalesce::tests::test_coalesced_input_range_uneven_groups ... ok
+test remote_checkpoint::tests::storage_schema_uses_positional_names_and_preserves_metadata ... ok
+test range::tests::exact_row_counts_match_execution_for_each_partition ... ok
+test coalesce::tests::test_coalesce_exec_rejects_partition_increase ... ok
+test coalesce::tests::test_coalesce_exec_rejects_out_of_range_partition ... ok
+test coalesce::tests::test_coalesce_exec_reads_contiguous_input_ranges ... ok
+test coalesce::tests::test_coalesce_exec_merges_uneven_partition_groups ... ok
+test coalesce::tests::test_coalesce_exec_merges_even_partition_groups ... ok
+test remote_checkpoint::tests::empty_partition_does_not_create_an_object ... ok
+test remote_checkpoint::tests::zero_column_partition_records_rows_without_an_object ... ok
+test remote_checkpoint::tests::commit_publishes_checkpoint_and_registry_cleans_it ... ok
+test remote_checkpoint::tests::writes_a_partition_directly_to_object_storage ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (target/debug/deps/sail_session-f9fee4b8508c561c)
+
+running 29 tests
+test catalog::tests::iceberg_credentials_fall_back_to_the_oauth_token ... ok
+test catalog::tests::iceberg_credentials_use_the_static_bearer_token ... ok
+test catalog::tests::iceberg_credentials_are_empty_without_any_token ... ok
+test optimizer::tests::default_rules_skip_leaf_projection_pushdown ... ok
+test formats::tests::separates_data_sources_from_lake_sources ... ok
+test catalog::tests::iceberg_credentials_prefer_the_token_file ... ok
+test planner::tests::checkpoint_properties_map_columns_to_target_schema_by_position ... ok
+test catalog::tests::test_session_catalog_cache ... ok
+test catalog::tests::test_shared_catalog_cache ... ok
+test catalog::tests::test_create_catalog_manager_with_cache ... ok
+test planner::tests::scalar_subquery_projection_allows_zero_row_null ... ok
+test planner::tests::test_plan_explicit_partitioning_returns_round_robin_without_expressions ... ok
+test planner::tests::test_plan_explicit_partitioning_returns_single_round_robin_without_expressions ... ok
+test planner::tests::test_plan_explicit_partitioning_caps_coalesce_to_input_partition_count ... ok
+test planner::tests::test_plan_explicit_partitioning_returns_hash_for_single_partition_with_expressions ... ok
+test planner::tests::test_plan_explicit_partitioning_returns_hash_for_expressions ... ok
+test planner::tests::test_plan_explicit_partitioning_returns_error_for_zero_partitions ... ok
+test planner::tests::test_plan_explicit_partitioning_returns_error_without_partition_count ... ok
+test planner::tests::test_plan_explicit_partitioning_uses_input_partition_count_for_hash_without_explicit_count ... ok
+test session_manager::actor::cleanup::tests::missing_checkpoint_registry_does_not_skip_stopping_the_runner ... ok
+test session_manager::actor::cleanup::tests::checkpoint_cleanup_waits_for_successful_stop_then_clears_and_seals ... ok
+test session_manager::actor::cleanup::tests::failed_stop_preserves_checkpoint_registry_and_typed_causes ... ok
+test formats::tests::registered_orc_source_rejects_writing ... ok
+test session_factory::worker::tests::worker_applies_parquet_config ... ok
+test tests::test_system_table_schema_validity ... ok
+test planner::tests::zero_column_checkpoint_scan_preserves_partition_rows ... ok
+test planner::tests::checkpoint_scan_uses_data_source_properties ... ok
+test planner::tests::checkpoint_command_optimizer_coalesces_writer_before_commit ... ok
+test tests::test_system_metric_attribute_predicate_extraction_from_sql ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+

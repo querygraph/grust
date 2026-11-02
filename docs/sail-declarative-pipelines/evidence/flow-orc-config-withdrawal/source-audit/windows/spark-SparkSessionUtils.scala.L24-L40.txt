@@ -1,0 +1,17 @@
+  /**
+   * Sets all SQL configurations specified in `pairs`, calls `f`, and then restores all SQL
+   * configurations.
+   */
+  def withSqlConf[T](spark: SparkSession, pairs: (String, String)*)(f: => T): T = {
+    val conf = spark.conf
+    val (keys, values) = pairs.unzip
+    val currentValues = keys.map(conf.getOption)
+    keys.lazyZip(values).foreach((k, v) => conf.set(k, v))
+    try f
+    finally {
+      keys.zip(currentValues).foreach {
+        case (key, Some(value)) => conf.set(key, value)
+        case (key, None) => conf.unset(key)
+      }
+    }
+  }

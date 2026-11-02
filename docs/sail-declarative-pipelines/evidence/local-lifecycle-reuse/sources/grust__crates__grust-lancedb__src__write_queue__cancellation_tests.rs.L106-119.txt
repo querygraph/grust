@@ -1,0 +1,14 @@
+#[test]
+fn cancelled_waiters_are_skipped_without_recursive_handoff() {
+    let queue = WriteQueue::default();
+    let mut leader = Box::pin(queue.submit(vec![0], key, |_| pending::<Result<()>>()));
+    assert!(poll(leader.as_mut()).is_pending());
+    for _ in 0..10_000 {
+        let mut cancelled = Box::pin(queue.submit(vec![1], key, |_| ready(Ok(()))));
+        assert!(poll(cancelled.as_mut()).is_pending());
+        drop(cancelled);
+    }
+    drop(leader);
+    let mut next = Box::pin(queue.submit(vec![2], key, |_| ready(Ok(()))));
+    assert!(matches!(poll(next.as_mut()), Poll::Ready(Ok(()))));
+}

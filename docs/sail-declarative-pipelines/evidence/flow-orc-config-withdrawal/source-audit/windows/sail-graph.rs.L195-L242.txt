@@ -1,0 +1,48 @@
+        let raw_name = definition.flow_name.as_deref().required("flow name")?;
+        let raw_target = definition
+            .target_dataset_name
+            .as_deref()
+            .required("target dataset name")?;
+        let name = parse_name(raw_name)?;
+        if raw_name != raw_target && name.len() != 1 {
+            return Err(analysis("MULTIPART_FLOW_NAME_NOT_SUPPORTED", raw_name));
+        }
+        let target = parse_name(raw_target)?;
+        let private = self.definition.outputs.iter().any(|x| {
+            x.name == target
+                && matches!(x.kind, sc::OutputType::TemporaryView | sc::OutputType::Sink)
+        });
+        let (name, target) = if private {
+            (name, target)
+        } else {
+            (
+                self.definition.qualify(&name)?,
+                self.definition.qualify(&target)?,
+            )
+        };
+        let query = match definition.details.required("flow details")? {
+            pc::define_flow::Details::RelationFlowDetails(details) => {
+                let plan: spec::Plan = details.relation.required("flow relation")?.try_into()?;
+                match plan {
+                    spec::Plan::Query(query) => query,
+                    spec::Plan::Command(_) => {
+                        return Err(analysis(
+                            "UNSUPPORTED_PIPELINE_SPARK_SQL_COMMAND",
+                            "flow must return a query",
+                        ));
+                    }
+                }
+            }
+            _ => return Err(SparkError::unsupported("pipeline Auto CDC flow")),
+        };
+        let mut sql_conf = self.definition.sql_conf.clone();
+        sql_conf.extend(definition.sql_conf);
+        self.definition.flows.push(Flow {
+            name: name.clone(),
+            target,
+            query,
+            sql_conf,
+            catalog: self.definition.catalog.clone(),
+            database: self.definition.database.clone(),
+        });
+        Ok(name)

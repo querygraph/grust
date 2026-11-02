@@ -1527,3 +1527,325 @@ Recorded 2026-10-30T03:27:01.046755+00:00. [Sail `76dd36983f`](evidence/task-res
 ## Scoped task context adapter
 
 Recorded 2026-10-30T03:34:56.255104+00:00. [Sail `779cb136d9`](evidence/scoped-task-context/README.md) preserves all function registries, runtime/pool, IDs and configuration while installing a fresh task-resource scope. All85 common-datafusion tests and formatting/strict Clippy pass; two new tests require nonempty registries and sibling/parent isolation. Actual task-monitor and runner integration remains the next execution unit.
+
+## Distributed task monitor resource drainage
+
+Recorded 2026-10-30T03:54:50.229850+00:00. [Sail `e02e4f712f`](evidence/task-monitor-resources/README.md) installs fresh per-attempt scopes and drains supervisors before distributed terminal reports, retaining cancellation after stream EOF. Eight new channel-controlled tests cover cleanup waiting, typed/unknown-commit cause precedence and poll/Drop panics. All183 execution and85 common-datafusion library tests, formatting and strict Clippy pass. This completes the monitor portion of W2b; local execution, CloseJob/driver acknowledgments, graceful shutdown, native accounting and public ORC writing remain open. No new original Spark suite or public SDP coverage is claimed.
+
+## Primitive writer semantic schema preflight
+
+Recorded 2026-10-30T04:09:02.782340+00:00. [Sail `71f24a87a2`](evidence/orc-write-schema/README.md) adds OrcWriteSchema with storage-type and semantic-metadata admission, preserving the original schema. Six new tests include orphaned/unknown logical metadata, later-field rejection and native nullable multi-batch round trips. All237 data-source library tests, formatting and strict Clippy pass. Public writing remains rejected; the future sink/worker must invoke the preflight before opening output. Temporal/nested/decimal parity, local ownership, native accounting, graph/flow write defaults and public activation remain open. No new Spark suite or public SDP coverage is claimed.
+
+## Flow ORC configuration assumption withdrawn
+
+Recorded 2026-10-30T04:33:40.204528+00:00. [Candidate `42c65ecf64`](evidence/flow-orc-config-withdrawal/README.md)
+was withdrawn before branch advancement. Real Spark4.2.1 ignores graph/flow
+mergeSchema overrides for this direct-read registration fixture; the SQL-path
+variant instead fails with differing initial and execution schemas. The evidence
+retains the candidate, baseline failures, reference mismatch and incomplete probe.
+Read, analyzer and write-time settings require separate phase-specific evidence;
+blanket graph/flow ORC override propagation is not an approved implementation unit.
+Sail remains at `71f24a87a2` with no new coverage claim. Write-time configuration
+and public ORC writing remain open.
+
+## Resource-scope sealing and cancellation notification
+
+Recorded 2026-10-30T05:08:27.823650+00:00. [Sail `5fc71b3792`](evidence/scope-notification/README.md)
+passes 87 library tests, formatting and strict Clippy; 9 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.
+
+## Prepared-stream ownership and registered cleanup
+
+Recorded 2026-10-30T05:08:27.857230+00:00. [Sail `f3d32b8959`](evidence/managed-stream/README.md)
+passes 99 library tests, formatting and strict Clippy; 12 focused tests
+also pass in an optimized build under CPU load. Exact receipts and limitations
+are retained. This is a lifecycle foundation; local runner/session/cluster
+integration, public ORC writing and full streaming/CDC acceptance remain open.
+
+## Preparation ownership prerequisite
+
+Recorded 2026-10-30T05:35:47.971635+00:00. [Sail `30f943ef91`](evidence/stream-preparation/README.md)
+adds a preparation guard, nonblocking completion inspection and explicit resource
+drainage qualification. All 103 common-datafusion tests and 16 optimized tests
+under CPU load pass, with formatting and strict Clippy. The component is committed
+separately from runner admission, stop results and session deletion changes.
+
+## Local runner integration
+
+Recorded 2026-10-30T05:58:33.244769+00:00. [Sail `ec8e74d57d`](evidence/local-runner-ownership/README.md)
+owns preparation before factories, seals admission against stop, waits for stream
+disposal and registered supervisors, retires joined history and retains typed
+cleanup failures. Fallible stop now gates the existing checkpoint-cleanup helper.
+All 324 affected library tests, 12 optimized stress tests, 300 selected public
+cases and 67 upstream Python executions pass at the same commit; formatting and
+strict Clippy pass. The initial fixture failure and aborted build are retained.
+
+Session Deleted/RPC acknowledgement still occurs too early. Failed-deletion
+ownership, global shutdown, legacy task/effect joins and cluster acknowledgements
+remain separate required work. These results do not qualify full streaming/CDC,
+public ORC writing or the original Scala SDP suites.
+
+## Checkpoint registry recovery metadata
+
+Recorded 2026-10-30T06:46:19.148655+00:00. [Sail `cba833ae08a4`](evidence/checkpoint-registry-recovery/README.md)
+orders registry seal/publication under one lock, hides closed descriptors and
+retains them until prefix cleanup succeeds. Typed storage failure and explicit
+registry retry are preserved. The partial-deletion regression fails on unchanged
+production source and passes after the fix. All 51 affected library tests,
+4 optimized tests under CPU load, 300 public cases and 67 upstream Python
+executions pass, with formatting and strict Clippy. Exact artifacts, source pins,
+binary hashes and the expected failing control are retained.
+
+This is in-memory metadata recovery. It does not fence outstanding storage effects,
+retain the whole session after failed deletion, add a cleanup retry supervisor or
+qualify session/cluster shutdown. Full ORC writing and streaming/CDC remain open.
+
+## Session cleanup design checkpoint
+
+Recorded 2026-10-30T06:47:38.137851+00:00. The [incomplete design checkpoint](SESSION-CLEANUP-LIFECYCLE-DESIGN.md)
+selects retained session cleanup ownership and manager Closing while lifecycle
+messages continue to be serviced. Four source audits cover creation/deletion,
+actors/transport, storage effects and operation ownership. Proposed failure
+schedules are source-derived, not executed runtime observations. The operation
+admission seam, effect adapter and cleanup-driver mechanism remain open; no full
+session/cluster barrier is implemented by this document. Its ec8e74d57de5 source
+baseline is preserved separately from the completed cba833ae08a4 registry fix.
+
+## Typed checkpoint and cleanup errors
+
+Recorded 2026-10-30T07:31:50.165417+00:00. [Sail `34eb270d00`](evidence/checkpoint-typed-errors/README.md) preserves both original typed causes after a checkpoint failure and compensating-cleanup failure, keeping unknown-commit classification nonretryable. All 15 library tests, formatting, strict Clippy, 300 public cases and 67 upstream executions pass. The unchanged-production control fails the same nonretryable-cause regression. The initial test-style gate failure is retained. Effect ownership, session barriers and full SDP acceptance remain open.
+
+## Retained PUT result ownership
+
+Recorded 2026-10-30T09:51:07.982628+00:00. [Sail `590fc2f9d3`](evidence/owned-put/README.md) adds TaskResourceScope.run and an owned PUT helper using existing admission/join machinery. All107 library tests,4 optimized tests under CPU load, fmt and strict Clippy pass. Lost callers do not abandon the admitted future; typed provider errors are shared with drainage. No dependencies change. Whole multipart lifetime, provider-error qualification, isolated routing and checkpoint/ORC/session integration remain open.
+
+
+## 2026-10-30T10:22:52.972054+00:00 — ROOT lowercase common integration
+
+Sail `cae618d7ff4661cb126333ad109f275b32bcad4b` imports the independently reviewed
+Fable common helper. All24 common library tests, fmt/strict Clippy and68,588 JVM
+corpus cases pass; missing/malformed explicit corpus controls fail as expected.
+[Exact component evidence](evidence/root-lowercase-integration/README.md). No CDC
+caller, streaming activation or dependency change; original-suite acceptance remains open.
+
+
+## 2026-10-30T10:26:37.320656+00:00 — minimal column kernel integration
+
+Sail `02d39b5fead46b694725c97de1b2341793100ca2` imports exact Grust727baa3e
+column-selection primitives with all16 tests/fmt/strict Clippy passing. Only the
+workspace member and its own lock package are added; no Connect consumer yet.
+[Evidence](evidence/grust-columns-integration/README.md). C5 schema-inference
+precedence remains open and has been sent to Fable for a focused proposal.
+
+
+## 2026-10-30T10:47:34.190530+00:00 — retained multipart component
+
+Sail `4cb9aec14cd8aa8725e79326c968a5672dc4dd0e` adds the whole lifetime
+supervisor in sail-object-store, with33 library tests/fmt/strict Clippy and16
+optimized multipart tests under ten joined CPU-load workers passing. It owns
+creation/parts/settlement independently of observers. A deterministic notification
+control fails unchanged assertions; original typed part/abort causes are retained.
+[Evidence](evidence/owned-multipart/README.md), [design](OWNED-MULTIPART-SUPERVISOR-DESIGN.md).
+No new dependency, legacy-wrapper change, installed owner adapter or checkpoint
+routing. Complete errors remain uncertain; nested/provider/session guarantees
+remain open. C5 review CF-0064/0066 preserves the original per-flow wrapper/maps
+contract instead of the proposed first-error shortcut.
+
+
+## 2026-10-30T11:00:40.336281+00:00 — execution-owned multipart adapter
+
+Sail `beebb83d0df5aff947bd1e20e0a69626c98c14bc` registers the multipart
+supervisor in the existing TaskResourceScope before provider creation. Failed
+completion retains original typed causes and nonretryable unknown-commit
+classification. All197 execution library tests/fmt/strict Clippy and five
+optimized adapter tests under ten joined CPU-load workers pass. The unchanged
+classification regression fails with the marker removed. [Evidence](evidence/execution-owned-multipart/README.md).
+No dependency, checkpoint routing or session change. Runtime loss and nested
+provider work remain unqualified.
+
+
+## 2026-10-30T11:35:20.666649+00:00 — mutation supervisor runtime-loss classification
+
+Sail `9d83baa8ba77b947dcadbb8b2921309a667c8f97` keeps interrupted owned PUT/
+multipart supervisors nonretryable while retaining typed JoinError. A real
+publication-before-runtime-loss control failed the unchanged desired regression.
+All111 common-datafusion and198 execution library tests/fmt/strict Clippy pass;
+111 and6 optimized tests pass under ten joined workers per run. Generic resources,
+cooperative settlement and returned factory errors retain their prior semantics.
+[Evidence](evidence/owned-mutation-runtime-loss/README.md),
+[provider/runtime checkpoint](PROVIDER-RUNTIME-OWNERSHIP-DESIGN.md). No dependency,
+registry, writer or session activation. Hook alternatives remain unselected.
+
+
+## 2026-10-30T12:20:28.361241+00:00 — runtime-wrapper Drop disposition
+
+Sail `a2cee8f0037af5910deac0f0473e4387caa7c9cf`: 38 object-store library/optimized tests, fmt/strict Clippy and300 selected public +67 upstream Python tests pass. Native Drop stops aborting after complete admission; explicit abort/unpolled cleanup remain. [Evidence](evidence/uncertain-runtime-drop/README.md).
+No dependency or checkpoint/session activation; full barrier/SDP acceptance remains open.
+
+
+## 2026-10-30T12:20:28.361470+00:00 — interrupted mutation observers
+
+Sail `070caa80b6695942318dbc24c90dae6e6bc0dfd7`: 112 common +198 execution library tests/fmt/strict Clippy and112+6 optimized tests pass. Interrupted mutation observers classify uncertainty before drainage; typed observer/join errors remain. Two unchanged real-publication controls fail before the fix. [Evidence](evidence/interrupted-mutation-observers/README.md).
+No dependency or checkpoint/session activation; full barrier/SDP acceptance remains open.
+
+
+## 2026-10-30T12:43:35.573716+00:00 — isolated registry task context
+
+Sail `9579a7e8db8e4f6d08713690a88ecf30702886b5` preserves the existing resource owner while deriving a context with a supplied object-store registry. Actual sibling/store/cache preservation tests pass; original tests moved unchanged. Exact fmt/strict Clippy,115 library and115 optimized CPU-load tests pass. [Evidence](evidence/registry-task-context/README.md), including retained earlier compile/module failures. No dependency, checkpoint writer, session or resolver activation; operation routing/planning ownership and full SDP acceptance remain open.
+
+
+## 2026-10-30T14:45:09.978142+00:00 — checkpoint writer error policy
+
+Sail `47c473e6b9af7b5e2e5fbe30070ab2fe407def49` retains nested nonretryable causes through storage/Parquet/I/O classification, preserving ordinary categories. Four unchanged actual-publication writer controls fail before the fix and pass after. Exact fmt/strict Clippy,117 common +202 execution library,117+4 optimized CPU-load,300 public +67 upstream tests pass. [Evidence](evidence/checkpoint-writer-errors/README.md) retains the initially wrong ordinary fixture and unchanged-production baseline probe. No registry/session/writer-routing activation; pre-planning ownership and full original SDP acceptance remain incomplete.
+
+
+## 2026-10-30T15:16:11.162904+00:00 — operation-local store facade
+
+Sail `bebabdb9e7ef7d072ea39f9ec9ac536af86a3f50` retains mutation futures and multipart lifetime through an existing scope while preserving ordinary provider conditions.214 library and12 optimized CPU-load tests pass with fmt/strict Clippy. Actual checkpoint sequential/parallel ownership and real conditional-operation controls fail unchanged tests when the corresponding adapter is bypassed. [Evidence](evidence/owned-store-facade/README.md) retains all compile/fixture/capacity failures and superseded gates. No production registry/routing/session activation; next user-notified design checkpoint covers pre-planning ownership, bursts/byte bounds and handled conflict outcomes. Public verdict remains47c473e6b; full original SDP acceptance remains incomplete.
+
+
+## 2026-10-30T15:38:50.348948+00:00 — pre-planning context experiment and cancellation observation
+
+[Design checkpoint](PRE-PLANNING-OWNERSHIP-DESIGN.md) selects finite runner-visible preparation ownership and caller-polled cancellation direction; exact API/context/outcome/memory decisions remain open. [Dependency probe](evidence/planning-context-design-probe/README.md) proves cloned config/UDF state with shared catalogs and the pre-build config-restore catalog overwrite. Sail `97f9983d5310c8ef8c7818e3f4177fd577951312` adds a latched cancellation observer: fmt/strict Clippy,120 library and120 optimized tests pass; changed-only control fails unchanged late-observer assertion. [Evidence](evidence/planning-cancellation-observer/README.md) retains the passing executable/rejected initial substring wrapper and fresh corrected run. No runner/planning/registry/session activation or widened public/Scala verdict.
+
+
+## 2026-10-30T15:49:48.826808+00:00 — registered I/O after cancellation of its borrowed waiter
+
+Test-only Sail `d8e5213c6461a64874d59ef565c07eb943b8d3fb` qualifies CF-0127's combined model: actual I/O entry precedes stop; dropping the caller does not end the registered task; scope drainage stays pending until known settlement and preserves primary cancellation separately.121 library/121 optimized tests plus fmt/strict Clippy pass. [Packet](evidence/planning-cancellation-observer/README.md) retains the earlier positive variant and exact final qualification. The design incorporates Fable's three owners, authority and typed-error constraints, plus resolver helper queries that execute during planning. Exact runner/context/outcome/memory APIs remain open; no production routing or whole SDK/session verdict.
+
+
+## 2026-10-30T16:07:36.969625+00:00 — no-stream preparation exits and bound-executor API
+
+Sail `f9adaaf41653a38b8dfb0f32684428ea0b0ef8de` adds finish/cancel exits without consuming the caller result.124 library/124 optimized tests plus fmt/strict Clippy pass; monotonic-cancellation control fails unchanged assertion. [Evidence](evidence/preparation-no-stream/README.md). [Design](PRE-PLANNING-OWNERSHIP-DESIGN.md) selects a move-only preparation executor bound to its runner, avoiding cross-runner ticket handoff; CF-0131 confirms compatibility with unit4 lowering. Exact context capture after authoritative config mutation and simultaneous-error transport remain open; no runner/registry/protocol activation.
+
+
+## 2026-10-30T16:32:35.536477+00:00 — existing owner and local bound preparation
+
+Sail `18bfee751f61c06a1597ead382de72f11ceae4dd` attaches an existing exact scope ([helper evidence](evidence/task-context-existing-owner/README.md));125 library/125 optimized tests pass. Sail `a0a369baada5b3b78d66c11c6694191da72d6fe8` adds common JobPreparation and the local runner-bound implementation, preserving authoritative shared state with late execution capture.375 library/16 optimized tests, fmt/strict Clippy and rebuilt CLI300 public+67 upstream pass; unchanged admission-bypass control fails. [Evidence](evidence/local-bound-preparation/README.md). No planning callers are migrated; cluster preparation, context overlay/routing, outcome/byte/recovery policy and full original SDP acceptance remain open.
+
+
+## 2026-10-30T16:38:04.335292+00:00 — state-registry preservation experiment and unit4 scope
+
+[Design-only probe](evidence/planning-state-registry-probe/README.md)1c1c4abcd passes fmt/two native tests: direct state clone retains prepared statements/UDF Arcs; rebuilding loses prepared statements and can bind a custom UDF to temporary config despite post-build restoration. No product activation. CF-0136 approves separate Fable binding/admission/lowering components on its existing base with explicit corrections for spellable synthetic names, source identity, hidden joins and pre-admission resolver I/O. General operation-state/cluster/routing and full original SDP acceptance remain open.
+
+
+## 2026-10-30T16:51:51.068075+00:00 — captured Session view and binding review
+
+Sail `b90c4fbbef8ed16dc59f2348898852e78e71d798` preserves captured SessionState through DataFusion Session, attaches the exact scope and optionally overlays the provider/planner/task registry.129 library/129 optimized tests and fmt/strict Clippy pass; unchanged builder and actual wrong-store controls fail. [Evidence](evidence/scoped-session/README.md) retains compile/lint failures, earlier positives and the earlier pointer-only control. No resolver/runner/context routing activation; latest public verdict remainsa0. [Fable binding review](evidence/fable-binding-source-review/README.md), CF-0140, identifies ignored expression subqueries and requests CTE/binding identity fixes. Full original SDP acceptance, cluster/session joins and effect policy remain open.
+
+
+## 2026-10-30T16:55:39.743927+00:00 — independent bounded-binding counterexamples
+
+[Detached review](evidence/fable-binding-expression-review/README.md)3e6ca3c34 appends only two tests to Fable offer ebf631edd: both compile and fail as expected (exit101,0 passed/2 failed), confirming unbound scalar/EXISTS subquery reads escape pre-resolution validation. This is validator-boundary evidence, not provider/RPC execution. CF-0142 acknowledges the correction; CF-0143 supplies exact replay fixtures. Product remainsb90c4fbbe, Fable offer unintegrated, full original SDP acceptance open.
+
+
+## 2026-10-30T17:07:33.120581+00:00 — admission source review; resolver Session unit in gate
+
+[Fable admission review](evidence/fable-admission-source-review/README.md), CF-0146/0148, pins Spark join-orientation rules and identifies range-subquery count/provenance gaps in2e9f098b2; Fable acknowledges corrections. No independent visitor runtime verdict or integration. Codex resolver candidate2e7beda829a107768d0bb00f6d526c6d4d268b30 passes fmt/strict Clippy/42 plan libraries; four unchanged helper tests fail on Session bypass while legacy fallback passes. Optimized/public gates remain running; no product advancement.
+
+
+## 2026-10-30T17:16:01.021618+00:00 — resolver helper Session propagation
+
+Sail `2e7beda829a107768d0bb00f6d526c6d4d268b30` routes four actual resolution-time queries through an optional borrowed Session and propagates it in nested view resolution; default authoritative collection stays intact.42 library/42 optimized, fmt/strict Clippy and fresh CLI300 public+67 upstream pass; unchanged bypass fails all four helper tests while fallback passes. [Evidence](evidence/resolver-query-session/README.md) retains initial missing-import failure, the qualifier extension-name correction and all source/log/binary receipts. No provider-factory/public-caller/final-execution migration or full original SDP verdict.
+
+
+## 2026-10-30T17:17:54.385630+00:00 — binding correction independently replayed
+
+[Exact replay](evidence/fable-binding-correction-review/README.md) on offered41f09ec47 passes both earlier scalar/EXISTS validator counterexamples (exit0,2 passed/0 failed, immutable clean source); original ebf failure remains retained. CF-0151 reports the narrow closure. No integration or whole visitor/provider/RPC verdict; CF-0146/0148 admission/provenance work and full original SDP acceptance remain open.
+
+
+## 2026-10-30T17:48:12.396459+00:00 — read factory Session propagation and lowerer review
+
+Sail `ddd83d815c0bcb1ffaa6da2909b7328d91bca122` passes the selected Session to read/native-UDTF provider creation, retaining authoritative lookup and legacy snapshots.46 library/46 optimized, fmt/strict Clippy and rebuilt CLI300+67 pass; unchanged bypass fails three scoped factories while fallback passes. [Packet](evidence/resolver-read-session/README.md). [Lowerer review](evidence/fable-local-lowering-review/README.md) confirms original three failures, intermediate JSON failure, then three fixtures/all44 pure streaming tests pass on afb. CF-0167/0168 scope a separate root-based four-unit integration bundle, still unintegrated. Write/procedure/context-transfer/effect/cluster and full original acceptance remain open.
+
+
+## 2026-10-30 — writer Session and first two streaming units integrated; stable clock review
+
+[Writer/schema Session propagation](evidence/resolver-writer-session/README.md),
+7723dc4de, passed49 library/49 optimized and300+67 public regressions; separate
+unchanged writer/schema bypasses fail. [Neutral bounded contract](evidence/bounded-contract-root-integration/README.md)
+f7 passed134+49 libraries; [pure control model](evidence/bounded-control-root-integration/README.md)
+853 passed134+83 libraries, each exact fmt/strict Clippy and byte-identical offered
+blobs. [Rustdoc correction](evidence/resolver-session-coverage-doc/README.md) b30 has
+identical non-doc code. Public pin remains772. No durable streaming/CDC activation.
+
+[Stable-clock admission review](evidence/fable-stable-admission-review/README.md)
+confirms d77 marks now/current_date replayable: independent test-only ca2038b94
+9pass/2fail; immutable control passes, initial loop failure retained. CF-0181 review
+and CF-0182 ACK require correction before remaining component imports. Full
+original Spark4.2.1 acceptance remains unproven; inventory counts unchanged.
+
+
+## 2026-10-30 — lake metadata, split binding and corrected admission integrated
+
+[Lake metadata/property callbacks](evidence/lake-metadata-session-callbacks/README.md)
+d6d802d22 pass55 libraries/6 optimized CPU-load cases; unchanged three-site bypass
+fails3 scoped cases and passes3 legacy cases. [Independent unchanged clock replay](evidence/fable-stable-admission-correction-review/README.md)
+81de92a01 passes3 cases against Fable8f after original clock failures.
+
+[Binding integration](evidence/bounded-binding-root-integration/README.md)2d3f9d499
+passes134+96 libraries; [corrected admission](evidence/bounded-admission-root-integration/README.md)
+d0db48308 passes134+110, both exact fmt/strict Clippy. The second removes two
+transient field lint expectations, restores exact binding and extracts peer tests
+with only dedent/header/one declaration rewrap. Initial failures are retained.
+Fable aggregate/window and actual-resolver clock fixtures remain pending; lowering/
+error-chain are separate next imports. No durable streaming/CDC/public activation
+or full original Scala acceptance. Public CLI pin remains7723dc4de; inventory unchanged.
+
+
+## 2026-10-30 — pure lowerer/typed causes and actual Sail clocks integrated
+
+[Signature fixtures](evidence/admission-signature-fixtures/README.md)0e pass134+114
+libraries. [Inline UDTF review](evidence/fable-inline-udtf-binding-review/README.md)
+confirms dynamic Python analyze bypasses pre-resolution helper exclusion; original
+1pass/1fail and initial Fields compile failure retained. [Guard](evidence/bounded-inline-udtf-guard/README.md)
+7b passes134+117 libraries and unchanged independent2-case replay against peer.
+Owned dynamic Python analysis remains required, not permanently excluded.
+
+[Pure lowerer](evidence/bounded-lowerer-root-integration/README.md)bc imports40b
+(all5 blobs),134+130 libraries; [typed causes](evidence/bounded-lower-error-chain/README.md)
+ae imports dea (both blobs),134+131 libraries, provider downcast preserved.
+[Actual Sail clock tests/final public gate](evidence/bounded-resolved-clocks/README.md)
+09d2f0cb8 passes324 combined libraries, strict Clippy/fmt and fresh300 public+67
+upstream Python, Spark4.2.1, owned server exit0/no listeners, before conditional
+advancement. Snapshot identities are declared, scope unused, no public lowerer,
+broker/target/durable CDC or C0 authority activation. Full original Scala suite and
+inventory coverage unchanged. CF-0199 requests peer batch C5/event import manifest.
+
+
+## 2026-10-30 — remaining provider callbacks routed; next design checkpoint announced
+
+[Row factories](evidence/row-factory-session/README.md)1a pass63 libraries/8 optimized,
+unchanged4scopedfail/4legacy controls. [Delta metadata](evidence/delta-metadata-session/README.md)
+63b passes67/4 optimized, independent3pass/1fail controls; initial schema/count
+fixtures retained. [Procedures](evidence/procedure-factory-session/README.md)417
+passes71/4 optimized; factory2pass/2fail and metadata3pass/1fail unchanged controls.
+Strict all-target/all-feature Clippy/fmt for each, ten load workers joined; no
+physical/mutation implementation planned by probes. [Rustdoc0af](evidence/resolver-factory-coverage-doc/README.md)
+non-doc code identical, fmt/diff only. Public CLI remains09, no SDK/public migration.
+
+[C5 manifest review](evidence/fable-c5-integration-manifest-review/README.md) narrows
+root-change claim and separates clean application from buildability. Only A–D
+preparation authorized on09; peer offers posted, detached gates pending. E′/F–K,
+Status policy and CDC reintegration obligations remain open. User notified before
+next capture/execution-transfer/analyzer API phase; no new API selected. Full
+original Spark4.2.1 objective/inventory unchanged.
+
+
+## 2026-10-30 — capture boundary characterized; exact native analyzer primitive
+
+[Boundary](evidence/capture-execution-boundary/README.md)e42e1be96 is test-only:
+planner sees captured7/child registry; legacy execution sees9/parent, same owner.
+134+222 libraries/one optimized under ten joined CPU workers, strict Clippy/fmt.
+[Captured analyzer](evidence/scoped-native-analyzer/README.md)ece5b6aed uses native
+execute_and_check/config, no optimize,136+71 libraries; unchanged optimizer control
+1pass/1fail, typed error preserved. No caller/execution/cluster/effect activation.
+[Source/lifetime audit](evidence/capture-transfer-source-audit/README.md) pins native
+provider phases, DataFusion state() timing and standalone object-lifetime/escape
+proof (not a Sail API verdict). [Draft](CAPTURE-EXECUTION-TRANSFER-DESIGN.md) prefers
+consuming bound capture with legacy unchanged; exact API and migration unresolved.
+CF-0207/0208 request/ACK read-only peer review. CF-0206 posts peer A–D exact gates
+and discloses prior self-matching pgrep wait-loop delay; no root A–D integration.
+Latest public CLI remains09d2f0cb8; full original Spark inventory unchanged.

@@ -1,0 +1,23 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/30 15:38:00 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///tmp/sail-sdp-config-cte-reference/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                {"name": "cte_shadows_graph", "query": "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM z_sensitive", "consumer_conf": {}, "graph_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 1}], "session_case_sensitive": "false"}
+{"name": "cte_case_insensitive_shadow", "query": "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM Z_SENSITIVE", "consumer_conf": {}, "graph_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 1}], "session_case_sensitive": "false"}
+{"name": "cte_unused_definition", "query": "WITH staged AS (SELECT Foo FROM z_sensitive) SELECT Bar FROM a_insensitive", "consumer_conf": {}, "graph_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "cte_used_definition", "query": "WITH staged AS (SELECT foo FROM z_sensitive) SELECT Foo FROM staged", "consumer_conf": {}, "graph_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "cte_qualified_bypasses_shadow", "query": "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM fusion_cte_qualified_bypasses_shadow.z_sensitive", "consumer_conf": {}, "graph_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "cte_nested_shadow_unused_outer", "query": "WITH c AS (SELECT foo FROM z_sensitive) SELECT Foo FROM (WITH c AS (SELECT 1 AS foo) SELECT foo FROM c)", "consumer_conf": {}, "graph_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "filter_subquery_before_child", "query": "SELECT Bar FROM a_insensitive WHERE EXISTS(SELECT foo FROM z_sensitive)", "consumer_conf": {}, "graph_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "union_left_then_right", "query": "SELECT Foo FROM z_sensitive UNION ALL SELECT Foo FROM a_insensitive", "consumer_conf": {}, "graph_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "union_right_then_left", "query": "SELECT Foo FROM a_insensitive UNION ALL SELECT Foo FROM z_sensitive", "consumer_conf": {}, "graph_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "defaults_overridden_every_flow", "query": "SELECT Foo FROM z_sensitive", "consumer_conf": {"spark.sql.caseSensitive": "false"}, "graph_conf": {"spark.sql.caseSensitive": "true"}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 1}], "session_case_sensitive": "false"}
+{"name": "defaults_conflict_view_table", "query": "SELECT foo FROM z_sensitive", "consumer_conf": {}, "graph_conf": {"spark.sql.caseSensitive": "false"}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "defaults_same_value", "query": "SELECT foo FROM z_sensitive", "consumer_conf": {}, "graph_conf": {"spark.sql.caseSensitive": "true"}, "run_returned": true, "result_exists": true, "rows": [{"foo": 1}], "session_case_sensitive": "false"}
+Reference observations recorded

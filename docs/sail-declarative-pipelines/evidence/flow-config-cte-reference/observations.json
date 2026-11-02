@@ -1,0 +1,456 @@
+{
+  "engine": "spark",
+  "started_at": "2026-10-30T22:37:57.873703+00:00",
+  "source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "harness_sha256": "dfb1c71089e7a046849149ec31b37c983f89dadda0ac42ae14467180a2c559ed",
+  "scope": "Twelve CTE/default public Connect graph observations; source pin and installed runtime are recorded separately; no Scala suite verdict",
+  "cases": [
+    {
+      "name": "cte_shadows_graph",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 7 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM z_sensitive",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Flow spark_catalog.fusion_cte_shadows_graph.result is QUEUED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399885\n  nanos: 855720000\n}\nmessage: \"Flow spark_catalog.fusion_cte_shadows_graph.result is QUEUED.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_shadows_graph.result is PLANNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399885\n  nanos: 860950000\n}\nmessage: \"Flow spark_catalog.fusion_cte_shadows_graph.result is PLANNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_shadows_graph.result is STARTING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399885\n  nanos: 862122000\n}\nmessage: \"Flow spark_catalog.fusion_cte_shadows_graph.result is STARTING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_shadows_graph.result is RUNNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399885\n  nanos: 863143000\n}\nmessage: \"Flow spark_catalog.fusion_cte_shadows_graph.result is RUNNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_shadows_graph.result has COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399886\n  nanos: 50751000\n}\nmessage: \"Flow spark_catalog.fusion_cte_shadows_graph.result has COMPLETED.\"\n"
+        },
+        {
+          "message": "Run is COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399887\n  nanos: 881009000\n}\nmessage: \"Run is COMPLETED.\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "cte_case_insensitive_shadow",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 7 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM Z_SENSITIVE",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is QUEUED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399888\n  nanos: 342888000\n}\nmessage: \"Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is QUEUED.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is PLANNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399888\n  nanos: 343469000\n}\nmessage: \"Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is PLANNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is STARTING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399888\n  nanos: 343511000\n}\nmessage: \"Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is STARTING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is RUNNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399888\n  nanos: 343538000\n}\nmessage: \"Flow spark_catalog.fusion_cte_case_insensitive_shadow.result is RUNNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_cte_case_insensitive_shadow.result has COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399888\n  nanos: 451991000\n}\nmessage: \"Flow spark_catalog.fusion_cte_case_insensitive_shadow.result has COMPLETED.\"\n"
+        },
+        {
+          "message": "Run is COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399890\n  nanos: 366438000\n}\nmessage: \"Run is COMPLETED.\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "cte_unused_definition",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "WITH staged AS (SELECT Foo FROM z_sensitive) SELECT Bar FROM a_insensitive",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.fusion_cte_unused_definition.result': 'spark.sql.caseSensitive' is defined by both 'a_insensitive' and 'z_sensitive' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:69)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "cte_used_definition",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "WITH staged AS (SELECT foo FROM z_sensitive) SELECT Foo FROM staged",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Failed to resolve flow: 'spark_catalog.fusion_cte_used_definition.result'.\nError: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`]. SQLSTATE: 42703; line 1 pos 52;\n'Project ['Foo]\n+- SubqueryAlias staged\n   +- SubqueryAlias staged\n      +- Project [foo#93]\n         +- SubqueryAlias z_sensitive\n            +- Project [1 AS foo#93]\n               +- OneRowRelation\n",
+          "protobuf_text": "timestamp {\n  seconds: 1793399890\n  nanos: 877448000\n}\nmessage: \"Failed to resolve flow: \\'spark_catalog.fusion_cte_used_definition.result\\'.\\nError: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`]. SQLSTATE: 42703; line 1 pos 52;\\n\\'Project [\\'Foo]\\n+- SubqueryAlias staged\\n   +- SubqueryAlias staged\\n      +- Project [foo#93]\\n         +- SubqueryAlias z_sensitive\\n            +- Project [1 AS foo#93]\\n               +- OneRowRelation\\n\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.fusion_cte_used_definition.result\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "cte_qualified_bypasses_shadow",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 7 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "WITH z_sensitive AS (SELECT 1 AS foo) SELECT Foo FROM fusion_cte_qualified_bypasses_shadow.z_sensitive",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Failed to resolve flow: 'spark_catalog.fusion_cte_qualified_bypasses_shadow.result'.\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`fusion_cte_qualified_bypasses_shadow`.`z_sensitive` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`fusion_cte_qualified_bypasses_shadow`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 54;\n'UnresolvedRelation [spark_catalog, fusion_cte_qualified_bypasses_shadow, z_sensitive], [], false\n",
+          "protobuf_text": "timestamp {\n  seconds: 1793399891\n  nanos: 943717000\n}\nmessage: \"Failed to resolve flow: \\'spark_catalog.fusion_cte_qualified_bypasses_shadow.result\\'.\\nError: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`fusion_cte_qualified_bypasses_shadow`.`z_sensitive` cannot be found. Verify the spelling and correctness of the schema and catalog.\\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`fusion_cte_qualified_bypasses_shadow`].\\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 54;\\n\\'UnresolvedRelation [spark_catalog, fusion_cte_qualified_bypasses_shadow, z_sensitive], [], false\\n\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.fusion_cte_qualified_bypasses_shadow.result\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "cte_nested_shadow_unused_outer",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 7 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "WITH c AS (SELECT foo FROM z_sensitive) SELECT Foo FROM (WITH c AS (SELECT 1 AS foo) SELECT foo FROM c)",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Failed to resolve flow: 'spark_catalog.fusion_cte_nested_shadow_unused_outer.result'.\nError: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`]. SQLSTATE: 42703; line 1 pos 47;\n'WithCTE\n:- CTERelationDef 11, false\n:  +- SubqueryAlias c\n:     +- Project [foo#134]\n:        +- SubqueryAlias z_sensitive\n:           +- Project [7 AS foo#134]\n:              +- OneRowRelation\n+- 'Project ['Foo]\n   +- SubqueryAlias __auto_generated_subquery_name\n      +- Project [foo#137]\n         +- SubqueryAlias c\n            +- SubqueryAlias c\n               +- Project [1 AS foo#137]\n                  +- OneRowRelation\n",
+          "protobuf_text": "timestamp {\n  seconds: 1793399892\n  nanos: 146660000\n}\nmessage: \"Failed to resolve flow: \\'spark_catalog.fusion_cte_nested_shadow_unused_outer.result\\'.\\nError: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`]. SQLSTATE: 42703; line 1 pos 47;\\n\\'WithCTE\\n:- CTERelationDef 11, false\\n:  +- SubqueryAlias c\\n:     +- Project [foo#134]\\n:        +- SubqueryAlias z_sensitive\\n:           +- Project [7 AS foo#134]\\n:              +- OneRowRelation\\n+- \\'Project [\\'Foo]\\n   +- SubqueryAlias __auto_generated_subquery_name\\n      +- Project [foo#137]\\n         +- SubqueryAlias c\\n            +- SubqueryAlias c\\n               +- Project [1 AS foo#137]\\n                  +- OneRowRelation\\n\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.fusion_cte_nested_shadow_unused_outer.result\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "filter_subquery_before_child",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS bar",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Bar FROM a_insensitive WHERE EXISTS(SELECT foo FROM z_sensitive)",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.fusion_filter_subquery_before_child.result': 'spark.sql.caseSensitive' is defined by both 'a_insensitive' and 'z_sensitive' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:68)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "union_left_then_right",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive UNION ALL SELECT Foo FROM a_insensitive",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.fusion_union_left_then_right.result': 'spark.sql.caseSensitive' is defined by both 'a_insensitive' and 'z_sensitive' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:69)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "union_right_then_left",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ],
+        [
+          "a_insensitive",
+          "SELECT 2 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM a_insensitive UNION ALL SELECT Foo FROM z_sensitive",
+      "consumer_conf": {},
+      "graph_conf": {},
+      "events": [
+        {
+          "message": "Failed to resolve flow: 'spark_catalog.fusion_union_right_then_left.result'.\nError: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`]. SQLSTATE: 42703; line 1 pos 7;\n'Union false, false\n:- 'Project ['Foo]\n:  +- SubqueryAlias a_insensitive\n:     +- Project [2 AS foo#205]\n:        +- OneRowRelation\n+- 'Project ['Foo]\n   +- SubqueryAlias z_sensitive\n      +- Project [1 AS foo#202]\n         +- OneRowRelation\n",
+          "protobuf_text": "timestamp {\n  seconds: 1793399892\n  nanos: 780846000\n}\nmessage: \"Failed to resolve flow: \\'spark_catalog.fusion_union_right_then_left.result\\'.\\nError: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `Foo` cannot be resolved. Did you mean one of the following? [`foo`]. SQLSTATE: 42703; line 1 pos 7;\\n\\'Union false, false\\n:- \\'Project [\\'Foo]\\n:  +- SubqueryAlias a_insensitive\\n:     +- Project [2 AS foo#205]\\n:        +- OneRowRelation\\n+- \\'Project [\\'Foo]\\n   +- SubqueryAlias z_sensitive\\n      +- Project [1 AS foo#202]\\n         +- OneRowRelation\\n\"\n"
+        }
+      ],
+      "run_returned": false,
+      "run_error": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.fusion_union_right_then_left.result\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log.\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "defaults_overridden_every_flow",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "false"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT Foo FROM z_sensitive",
+      "consumer_conf": {
+        "spark.sql.caseSensitive": "false"
+      },
+      "graph_conf": {
+        "spark.sql.caseSensitive": "true"
+      },
+      "events": [
+        {
+          "message": "Flow spark_catalog.fusion_defaults_overridden_every_flow.result is QUEUED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399892\n  nanos: 954614000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_overridden_every_flow.result is QUEUED.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_overridden_every_flow.result is PLANNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399892\n  nanos: 955283000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_overridden_every_flow.result is PLANNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_overridden_every_flow.result is STARTING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399892\n  nanos: 955314000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_overridden_every_flow.result is STARTING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_overridden_every_flow.result is RUNNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399892\n  nanos: 955380000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_overridden_every_flow.result is RUNNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_overridden_every_flow.result has COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399893\n  nanos: 50071000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_overridden_every_flow.result has COMPLETED.\"\n"
+        },
+        {
+          "message": "Run is COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399894\n  nanos: 972660000\n}\nmessage: \"Run is COMPLETED.\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "Foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "defaults_conflict_view_table",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {
+            "spark.sql.caseSensitive": "true"
+          },
+          false
+        ]
+      ],
+      "query": "SELECT foo FROM z_sensitive",
+      "consumer_conf": {},
+      "graph_conf": {
+        "spark.sql.caseSensitive": "false"
+      },
+      "events": [],
+      "run_returned": false,
+      "run_error": "[DUPLICATE_FLOW_SQL_CONF] Found duplicate sql conf for dataset 'spark_catalog.fusion_defaults_conflict_view_table.result': 'spark.sql.caseSensitive' is defined by both 'spark_catalog.fusion_defaults_conflict_view_table.result' and 'z_sensitive' SQLSTATE: 42710\n\nJVM stacktrace:\norg.apache.spark.sql.AnalysisException\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.$anonfun$attemptResolveFlow$7(CoreDataflowNodeProcessor.scala:160)\n\tat scala.Option.foreach(Option.scala:437)\n\tat org.apache.spark.sql.pipelines.graph.FlowResolver.attemptResolveFlow(CoreDataflowNodeProcessor.scala:151)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processUnresolvedFlow(CoreDataflowNodeProcessor.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.CoreDataflowNodeProcessor.processNode(CoreDataflowNodeProcessor.scala:69)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$resolve$2(DataflowGraph.scala:236)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1(DataflowGraphTransformer.scala:170)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.$anonfun$transformDownNodes$1$adapted(DataflowGraphTransformer.scala:166)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.lang.Thread.run(Thread.java:1623)",
+      "run_exception_type": "AnalysisException",
+      "result_exists": false,
+      "session_case_sensitive": "false"
+    },
+    {
+      "name": "defaults_same_value",
+      "definitions": [
+        [
+          "z_sensitive",
+          "SELECT 1 AS foo",
+          {},
+          false
+        ]
+      ],
+      "query": "SELECT foo FROM z_sensitive",
+      "consumer_conf": {},
+      "graph_conf": {
+        "spark.sql.caseSensitive": "true"
+      },
+      "events": [
+        {
+          "message": "Flow spark_catalog.fusion_defaults_same_value.result is QUEUED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399895\n  nanos: 414958000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_same_value.result is QUEUED.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_same_value.result is PLANNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399895\n  nanos: 415488000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_same_value.result is PLANNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_same_value.result is STARTING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399895\n  nanos: 415518000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_same_value.result is STARTING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_same_value.result is RUNNING.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399895\n  nanos: 415581000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_same_value.result is RUNNING.\"\n"
+        },
+        {
+          "message": "Flow spark_catalog.fusion_defaults_same_value.result has COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399895\n  nanos: 620137000\n}\nmessage: \"Flow spark_catalog.fusion_defaults_same_value.result has COMPLETED.\"\n"
+        },
+        {
+          "message": "Run is COMPLETED.",
+          "protobuf_text": "timestamp {\n  seconds: 1793399897\n  nanos: 436920000\n}\nmessage: \"Run is COMPLETED.\"\n"
+        }
+      ],
+      "run_returned": true,
+      "result_exists": true,
+      "rows": [
+        {
+          "foo": 1
+        }
+      ],
+      "session_case_sensitive": "false"
+    }
+  ],
+  "catalog": "spark_catalog",
+  "spark_version": "4.2.1",
+  "installed_client_jars": {
+    "spark-pipelines_2.13-4.2.1.jar": "66bd2108db1889fa6e6c414272ca113602aaf48e28bc13091e7e9a634921b4ca",
+    "spark-connect_2.13-4.2.1.jar": "1a8a72fd0a9df0f3d092a4b91283cfe613a4b3a8c056f1d1f6575f7710083d9f",
+    "spark-sql_2.13-4.2.1.jar": "492c4f1fa06fb3244f41e0ab5b040b4f38b93a630e2d4d6e9b2fd520e2e9c476"
+  },
+  "outcome": "observed",
+  "listener_probe_after_stop": {
+    "exit_code": 1,
+    "stdout": ""
+  },
+  "completed_at": "2026-10-30T22:38:18.095652+00:00"
+}

@@ -1,0 +1,52 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/lower_tests.rs b/crates/sail-spark-connect/src/pipelines/streaming/lower_tests.rs
+index 034ad03d2..c1c4420a3 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/lower_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/lower_tests.rs
+@@ -652,3 +652,47 @@ async fn a_local_view_expanding_to_other_leaf_scans_is_not_admitted() -> TestRes
+     }
+     Ok(())
+ }
++
++async fn codex_local_streaming_case(placeholder: bool) -> TestResult {
++    let ctx = SessionContext::new();
++    let scope = TaskResourceScope::new(Handle::current());
++    let (_source, mut binding) = bind_clicks(100)?;
++    binding.name = name(&["c", "d", "events"]);
++    let graph = graph();
++    let selected_flow = flow(read("events", true), &[]);
++    let installed = if placeholder { placeholder_relations()? } else { relations()? };
++    let lowered = lower(&ctx, Arc::new(PlanConfig::default()), &scope, &Inputs {
++        graph: &graph, flow: &selected_flow, relations: &installed,
++        sources: std::slice::from_ref(&binding), statics: &[], locals: &[],
++    }).await?;
++    assert_eq!(ids(&ctx, lowered.plan).await?, vec![0, 1, 2, 10, 11]);
++    Ok(())
++}
++#[tokio::test]
++async fn codex_lower_local_stream_ignores_analysis_placeholder() -> TestResult {
++    codex_local_streaming_case(true).await
++}
++#[tokio::test]
++async fn codex_lower_local_stream_ignores_materialised_graph_relation() -> TestResult {
++    codex_local_streaming_case(false).await
++}
++#[tokio::test]
++async fn codex_lower_snapshot_distinguishes_declared_local_versions() -> TestResult {
++    let ctx = SessionContext::new();
++    let (_source, binding) = bind_clicks(100)?;
++    let (installed, mut local) = materialised_events()?;
++    let graph = graph();
++    let selected_flow = flow(join(read("clicks", true), read("events", false)), &[]);
++    let mut snapshots = vec![];
++    for version in ["version:1", "version:2"] {
++        let scope = TaskResourceScope::new(Handle::current());
++        local.identity = version.into();
++        let lowered = lower(&ctx, Arc::new(PlanConfig::default()), &scope, &Inputs {
++            graph: &graph, flow: &selected_flow, relations: &installed,
++            sources: std::slice::from_ref(&binding), statics: &[], locals: std::slice::from_ref(&local),
++        }).await?;
++        snapshots.push(serde_json::to_value(lowered.snapshot)?);
++    }
++    assert_ne!(snapshots[0], snapshots[1], "different declared local versions have the same lowering snapshot");
++    Ok(())
++}

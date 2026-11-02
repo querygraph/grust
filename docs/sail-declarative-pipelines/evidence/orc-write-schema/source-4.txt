@@ -1,0 +1,57 @@
+85: 
+86:     /// Construct an [`ArrowWriter`] ready to encode [`RecordBatch`]es into
+87:     /// an ORC file.
+88:     pub fn try_build(mut self) -> Result<ArrowWriter<W>> {
+89:         ensure!(
+90:             self.batch_size > 0,
+91:             UnexpectedSnafu {
+92:                 msg: "writer batch size must be greater than zero"
+93:             }
+94:         );
+95:         for field in self.schema.fields() {
+96:             let supported = match field.data_type() {
+97:                 ArrowDataType::Float32
+98:                 | ArrowDataType::Float64
+99:                 | ArrowDataType::Int8
+100:                 | ArrowDataType::Int16
+101:                 | ArrowDataType::Int32
+102:                 | ArrowDataType::Int64
+103:                 | ArrowDataType::Date32
+104:                 | ArrowDataType::Utf8
+105:                 | ArrowDataType::LargeUtf8
+106:                 | ArrowDataType::Binary
+107:                 | ArrowDataType::LargeBinary
+108:                 | ArrowDataType::Boolean => true,
+109:                 ArrowDataType::Timestamp(_, timezone) => {
+110:                     matches!(timezone.as_deref(), None | Some("UTC"))
+111:                 }
+112:                 _ => false,
+113:             };
+114:             ensure!(
+115:                 supported,
+116:                 UnexpectedSnafu {
+117:                     msg: format!(
+118:                         "unsupported writer type {:?} for field {:?}",
+119:                         field.data_type(),
+120:                         field.name()
+121:                     )
+122:                 }
+123:             );
+124:         }
+125:         let timezone = self
+126:             .schema
+127:             .fields()
+128:             .iter()
+129:             .any(|field| matches!(field.data_type(), ArrowDataType::Timestamp(_, None)))
+130:             .then(|| "UTC".to_owned());
+131:         let compressor = Compressor::new(self.compression, self.compression_block_size)?;
+132:         // Required magic "ORC" bytes at start of file
+133:         self.writer.write_all(b"ORC").context(IoSnafu)?;
+134:         let writer = StripeWriter::new(self.writer, &self.schema, compressor, timezone);
+135:         Ok(ArrowWriter {
+136:             writer,
+137:             schema: self.schema,
+138:             batch_size: self.batch_size,
+139:             stripe_byte_size: self.stripe_byte_size,
+140:             written_stripes: vec![],
+141:             // Accounting for the 3 magic bytes above

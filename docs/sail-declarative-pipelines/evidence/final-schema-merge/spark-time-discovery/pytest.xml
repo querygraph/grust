@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="19" time="3.281" timestamp="2026-10-31T13:36:08.645988-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-first]" time="1.755" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-False-last]" time="0.122" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-none]" time="0.108" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-first]" time="0.117" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[False-True-last]" time="0.132" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-first]" time="0.105" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-False-last]" time="0.086" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-first]" time="0.102" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_virtual_schema_acquisition_does_not_mask_unresolved_flows[True-True-last]" time="0.082" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[False-False]" time="0.043" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[True-False]" time="0.040" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_schema_merge_preserves_structured_error[True-True]" time="0.048" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[ARRAY&lt;INT&gt;-ARRAY&lt;STRING&gt;]" time="0.096" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[STRUCT&lt;x: INT&gt;-STRUCT&lt;x: STRING&gt;]" time="0.065" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[MAP&lt;STRING, INT&gt;-MAP&lt;STRING, STRING&gt;]" time="0.068" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[DECIMAL(8,2)-DECIMAL(9,3)]" time="0.048" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[TIME(3)-TIME(6)]" time="0.047"><failure message="Failed: DID NOT RAISE SparkException">pipeline_factory = &lt;function pipeline_factory.&lt;locals&gt;.create at 0x1198abd80&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-434/test_final_merge_reports_enclo4')
+left = 'TIME(3)', right = 'TIME(6)', time_type_enabled = None
+
+    @pytest.mark.parametrize(
+        ("left", "right"),
+        [
+            ("ARRAY&lt;INT&gt;", "ARRAY&lt;STRING&gt;"),
+            ("STRUCT&lt;x: INT&gt;", "STRUCT&lt;x: STRING&gt;"),
+            ("MAP&lt;STRING, INT&gt;", "MAP&lt;STRING, STRING&gt;"),
+            ("DECIMAL(8,2)", "DECIMAL(9,3)"),
+            ("TIME(3)", "TIME(6)"),
+            ("INTERVAL YEAR", "INTERVAL DAY"),
+            ("STRUCT&lt;`Mixed Case`: INT&gt;", "STRUCT&lt;`Mixed Case`: STRING&gt;"),
+        ],
+    )
+    def test_final_merge_reports_enclosing_field_types(pipeline_factory, tmp_path, left, right, time_type_enabled):
+        _, registry, run = pipeline_factory()
+        registry.register_sql(
+            ";".join(
+                [
+                    f"CREATE MATERIALIZED VIEW events_left AS SELECT CAST(NULL AS {left}) AS id",
+                    f"CREATE MATERIALIZED VIEW events_right AS SELECT CAST(NULL AS {right}) AS id",
+                    "CREATE STREAMING TABLE merged",
+                    "CREATE FLOW merged_left AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_left)",
+                    "CREATE FLOW merged_right AS INSERT INTO merged BY NAME SELECT * FROM STREAM(events_right)",
+                ]
+            ),
+            tmp_path / "nested-schema.sql",
+        )
+&gt;       with pytest.raises(SparkException) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SparkException
+
+python/pysail/tests/spark/pipelines/test_virtual_schema_resolution.py:100: Failed</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[INTERVAL YEAR-INTERVAL DAY]" time="0.059" /><testcase classname="python.pysail.tests.spark.pipelines.test_virtual_schema_resolution" name="test_final_merge_reports_enclosing_field_types[STRUCT&lt;`Mixed Case`: INT&gt;-STRUCT&lt;`Mixed Case`: STRING&gt;]" time="0.054" /></testsuite></testsuites>

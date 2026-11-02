@@ -1,0 +1,154 @@
+{
+  "engine": "sail",
+  "started_at": "2026-10-31T00:55:03.153996+00:00",
+  "harness_sha256": "c7465a0e8f3809fb5a84ecfc1ec3e859883274baae02875fd04e85d1e83dbf34",
+  "scope": "actual Parquet partition-shadow schemas and rows; no Scala acceptance",
+  "cases": [
+    {
+      "file_columns": [
+        "p"
+      ],
+      "case_sensitive": false,
+      "outcome": "success",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "p",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        {
+          "p": "directory-value"
+        }
+      ]
+    },
+    {
+      "file_columns": [
+        "p"
+      ],
+      "case_sensitive": true,
+      "outcome": "success",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "p",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        {
+          "p": "directory-value"
+        }
+      ]
+    },
+    {
+      "file_columns": [
+        "P"
+      ],
+      "case_sensitive": false,
+      "outcome": "success",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "p",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        {
+          "p": "directory-value"
+        }
+      ]
+    },
+    {
+      "file_columns": [
+        "P"
+      ],
+      "case_sensitive": true,
+      "outcome": "success",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "P",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "p",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        {
+          "P": "file-value-0",
+          "p": "directory-value"
+        }
+      ]
+    },
+    {
+      "file_columns": [
+        "P",
+        "p"
+      ],
+      "case_sensitive": false,
+      "outcome": "error",
+      "condition": "COLUMN_ALREADY_EXISTS",
+      "sql_state": "42711",
+      "parameters": {
+        "columnName": "`p`"
+      },
+      "message": "[COLUMN_ALREADY_EXISTS] The column `p` already exists. Choose another name or rename the existing column."
+    },
+    {
+      "file_columns": [
+        "P",
+        "p"
+      ],
+      "case_sensitive": true,
+      "outcome": "success",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "P",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "p",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        {
+          "P": "file-value-0",
+          "p": "directory-value"
+        }
+      ]
+    }
+  ],
+  "spark_version": "4.2.1",
+  "completed_at": "2026-10-31T00:55:03.555746+00:00"
+}

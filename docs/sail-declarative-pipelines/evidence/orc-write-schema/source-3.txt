@@ -1,0 +1,35 @@
+14: const CATALYST_TYPE: &str = "spark.sql.catalyst.type";
+15: const SPARK_VERSION: &str = "org.apache.spark.version";
+16: pub(super) const CHAR_VARCHAR_TYPE: &str = "__CHAR_VARCHAR_TYPE_STRING";
+17: 
+18: struct LogicalType {
+19:     data_type: DataType,
+20:     metadata: HashMap<String, String>,
+21:     catalog_type: String,
+22:     has_char_varchar: bool,
+23: }
+24: 
+25: impl LogicalType {
+26:     fn new(data_type: DataType, catalog_type: impl Into<String>) -> Self {
+27:         Self {
+28:             data_type,
+29:             metadata: HashMap::new(),
+30:             catalog_type: catalog_type.into(),
+31:             has_char_varchar: false,
+32:         }
+33:     }
+34: 
+35:     fn with_char_varchar(mut self, present: bool) -> Self {
+36:         self.has_char_varchar = present;
+37:         self
+38:     }
+39: 
+40:     fn into_field(mut self, name: &str, nullable: bool, preserve_char_type: bool) -> Field {
+41:         if preserve_char_type && self.has_char_varchar {
+42:             self.metadata.insert(
+43:                 spec::SPARK_METADATA_JSON_KEY.to_string(),
+44:                 serde_json::json!({ (CHAR_VARCHAR_TYPE): self.catalog_type }).to_string(),
+45:             );
+46:         }
+47:         Field::new(name, self.data_type, nullable).with_metadata(self.metadata)
+48:     }

@@ -1,0 +1,61 @@
+{
+  "sail_commit": "d6fbebc8c0d197061031e7924c91dc4b42bb3190",
+  "base": "55c237c489d551bb82b1aa9da3d6b035ab4a57ca",
+  "packages": [
+    "sail-function",
+    "sail-plan",
+    "sail-execution",
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T04:37:35.489183+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-deferred-arithmetic-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "log": "/tmp/sail-sdp-deferred-arithmetic-clippy.log",
+      "sha256": "54ebc88df148ceabfdb0aef374459487ca7a4998667c1f2af17cf94c3072eb6d"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-31T04:38:21.650160+00:00"
+}

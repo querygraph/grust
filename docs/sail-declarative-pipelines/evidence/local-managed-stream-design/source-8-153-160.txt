@@ -1,0 +1,8 @@
+impl From<SessionError> for SparkError {
+    fn from(error: SessionError) -> Self {
+        match error {
+            SessionError::DataFusionError(e) => SparkError::DataFusionError(e),
+            SessionError::IoError(e) => SparkError::IoError(e),
+            SessionError::InvalidArgument(message) => SparkError::InvalidArgument(message),
+            SessionError::InternalError(message) => SparkError::InternalError(message),
+        }

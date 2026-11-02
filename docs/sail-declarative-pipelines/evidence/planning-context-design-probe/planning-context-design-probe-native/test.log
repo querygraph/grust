@@ -1,0 +1,19 @@
+   Compiling sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-common-datafusion` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 11.32s
+     Running unittests src/lib.rs (target/debug/deps/sail_common_datafusion-20ecac8d8c7980a2)
+
+running 3 tests
+DESIGN_PROBE {"case":"prebuild_config_restore","shared_default_catalog_replaced":true,"parent_anchor_retained":false}
+test planning_context_design_probe::restoring_create_default_before_build_replaces_the_shared_catalog ... ok
+DESIGN_PROBE {"case":"postbuild_config_restore","catalog_retained":true,"session_id_retained":true,"runtime_shared":true,"udf_arc_shared":true,"state_arc_shared":false,"parent_set_after_child_set":7}
+DESIGN_PROBE {"case":"snapshot_mutations","catalog_shared":true,"child_table_visible_in_parent":true,"child_set":9,"parent_set":7,"child_udf_visible_in_parent":false,"session_id_preserved_by_default":false}
+test planning_context_design_probe::postbuild_config_restore_preserves_catalog_but_still_has_separate_state ... ok
+test planning_context_design_probe::snapshot_catalog_sharing_does_not_make_session_mutations_authoritative ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.02s
+

@@ -1,0 +1,20 @@
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+    Finished `test` profile [unoptimized] target(s) in 37.98s
+     Running unittests src/lib.rs (target/debug/deps/sail_sql_analyzer-4f04600e3097c8e8)
+
+running 1 test
+test statement::temporary_view::tests::query_view_names_use_spark_session_namespace_normalization ... FAILED
+
+failures:
+
+---- statement::temporary_view::tests::query_view_names_use_spark_session_namespace_normalization stdout ----
+Error: Structured(StructuredSparkError { class: "org.apache.spark.sql.catalyst.parser.ParseException", condition: "INVALID_TEMP_OBJ_QUALIFIER", sql_state: "42602", message: "Temporary VIEW `v` cannot be qualified with `session`. Temporary objects can only be qualified with SESSION or SYSTEM.SESSION.", parameters: {"objectType": "VIEW", "qualifier": "`session`", "objectName": "`v`"} })
+
+
+failures:
+    statement::temporary_view::tests::query_view_names_use_spark_session_namespace_normalization
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p sail-sql-analyzer --lib`

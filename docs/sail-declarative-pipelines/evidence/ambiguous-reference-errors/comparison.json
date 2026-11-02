@@ -1,0 +1,155 @@
+{
+  "sail_commit": "95c32c055712995e06a56fc5c0a86d09bc3c954f",
+  "scope": "10 ordinary SQL outcomes with complete error metadata or rows; original-byte metadata9/9 conditions/rows and two ambiguity first-line messages; not complete origin/provenance or original Scala acceptance",
+  "ordinary_matched": 10,
+  "metadata_matched": 9,
+  "mismatched": 0,
+  "ordinary": [
+    {
+      "name": "unqualified",
+      "matched": true,
+      "condition": "AMBIGUOUS_REFERENCE",
+      "parameters": {
+        "referenceNames": "[`q`.`Foo`, `q`.`Foo`]",
+        "name": "`Foo`"
+      }
+    },
+    {
+      "name": "qualified",
+      "matched": true,
+      "condition": "AMBIGUOUS_REFERENCE",
+      "parameters": {
+        "name": "`p`.`Foo`",
+        "referenceNames": "[`p`.`Foo`, `p`.`Foo`]"
+      }
+    },
+    {
+      "name": "join",
+      "matched": true,
+      "condition": "AMBIGUOUS_REFERENCE",
+      "parameters": {
+        "referenceNames": "[`a`.`foo`, `z`.`foo`]",
+        "name": "`foo`"
+      }
+    },
+    {
+      "name": "nested",
+      "matched": true,
+      "condition": "AMBIGUOUS_REFERENCE",
+      "parameters": {
+        "referenceNames": "[`q`.`s`, `q`.`s`]",
+        "name": "`q`.`s`.`x`"
+      }
+    },
+    {
+      "name": "dotted",
+      "matched": true,
+      "condition": "AMBIGUOUS_REFERENCE",
+      "parameters": {
+        "name": "`A.B`",
+        "referenceNames": "[`q`.`A.B`, `q`.`A.B`]"
+      }
+    },
+    {
+      "name": "backtick",
+      "matched": true,
+      "condition": "INVALID_ATTRIBUTE_NAME_SYNTAX",
+      "parameters": {
+        "name": "A`B"
+      }
+    },
+    {
+      "name": "unicode_qualifiers",
+      "matched": true,
+      "condition": "AMBIGUOUS_REFERENCE",
+      "parameters": {
+        "name": "`foo`",
+        "referenceNames": "[`𐀀`.`foo`, ``.`foo`]"
+      }
+    },
+    {
+      "name": "generated_alias",
+      "matched": true,
+      "condition": "AMBIGUOUS_REFERENCE",
+      "parameters": {
+        "name": "`Foo`",
+        "referenceNames": "[`Foo`, `Foo`]"
+      }
+    },
+    {
+      "name": "same_attribute_twice",
+      "matched": true,
+      "condition": null,
+      "parameters": null
+    },
+    {
+      "name": "case_sensitive_success",
+      "matched": true,
+      "condition": null,
+      "parameters": null
+    }
+  ],
+  "metadata": [
+    {
+      "name": "direct_true",
+      "matched": true,
+      "conditions": []
+    },
+    {
+      "name": "direct_false",
+      "matched": true,
+      "conditions": [
+        "COLUMN_ALREADY_EXISTS"
+      ]
+    },
+    {
+      "name": "external_before_view",
+      "matched": true,
+      "conditions": [
+        "COLUMN_ALREADY_EXISTS"
+      ]
+    },
+    {
+      "name": "view_before_external",
+      "matched": true,
+      "conditions": [
+        "COLUMN_ALREADY_EXISTS"
+      ]
+    },
+    {
+      "name": "declared_true_external_before_view",
+      "matched": true,
+      "conditions": [
+        "COLUMN_ALREADY_EXISTS"
+      ]
+    },
+    {
+      "name": "graph_true_default",
+      "matched": true,
+      "conditions": [
+        "COLUMN_ALREADY_EXISTS"
+      ]
+    },
+    {
+      "name": "external_without_view",
+      "matched": true,
+      "conditions": [
+        "COLUMN_ALREADY_EXISTS"
+      ]
+    },
+    {
+      "name": "base_true_external_before_view",
+      "matched": true,
+      "conditions": [
+        "AMBIGUOUS_REFERENCE"
+      ]
+    },
+    {
+      "name": "base_true_view_before_external",
+      "matched": true,
+      "conditions": [
+        "AMBIGUOUS_REFERENCE"
+      ]
+    }
+  ]
+}

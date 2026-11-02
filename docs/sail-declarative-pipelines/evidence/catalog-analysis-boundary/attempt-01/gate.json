@@ -1,0 +1,46 @@
+{
+  "sail_commit": "19d57e262e769f3f3b65986ee0de6af2680cdde1",
+  "base": "4ab0d74bfa8d02c3a9486f4aaa8bf15e174f1091",
+  "packages": [
+    "sail-spark-connect"
+  ],
+  "started_at": "2026-10-31T04:02:09.992299+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-spark-connect",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-catalog-analysis-boundary-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "log": "/tmp/sail-sdp-catalog-analysis-boundary-clippy.log",
+      "sha256": "d2ea710d11b3d651a8118ad4d7df75955331d0c136a17d6c202444201e9bbde7"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-31T04:02:32.689250+00:00"
+}

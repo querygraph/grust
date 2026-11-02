@@ -1,0 +1,199 @@
+    Checking tokio-util v0.7.20
+    Checking either v1.19.0
+    Checking tokio-rustls v0.26.4
+    Checking half v2.7.1
+    Checking num-bigint v0.5.1
+   Compiling memchr v2.8.3
+    Checking digest v0.11.3
+    Checking aws-smithy-async v1.3.1
+    Checking prost v0.14.4
+    Checking fastrace-futures v0.7.19
+    Checking itertools v0.14.0
+    Checking itertools v0.15.0
+    Checking sha2 v0.11.0
+    Checking bytes-utils v0.1.4
+    Checking md-5 v0.11.0
+   Compiling object v0.39.1
+    Checking aws-smithy-types v1.9.1
+    Checking hmac v0.13.0
+    Checking prost-types v0.14.4
+    Checking h2 v0.4.20
+    Checking tower v0.5.3
+    Checking tokio-stream v0.1.19
+    Checking aws-smithy-runtime-api v1.19.2
+    Checking arrow-buffer v59.2.0
+    Checking hdfs-native v0.13.5
+    Checking arrow-data v59.2.0
+    Checking aws-smithy-schema v1.1.0
+    Checking aws-smithy-http v0.64.3
+    Checking aws-credential-types v1.3.1
+    Checking aws-smithy-observability v0.3.0
+    Checking tower-http v0.6.11
+    Checking arrow-array v59.2.0
+    Checking aws-sigv4 v1.6.4
+    Checking aws-types v1.7.0
+    Checking aws-smithy-json v0.65.1
+    Checking aws-smithy-xml v0.64.1
+    Checking aws-smithy-query v0.64.0
+   Compiling ar_archive_writer v0.5.3
+    Checking arrow-select v59.2.0
+    Checking arrow-row v59.2.0
+    Checking arrow-arith v59.2.0
+    Checking arrow-avro v59.2.0
+    Checking hyper v1.12.0
+   Compiling psm v0.1.32
+    Checking arrow-ord v59.2.0
+    Checking arrow-ipc v59.2.0
+    Checking arrow-string v59.2.0
+    Checking hyper-util v0.1.21
+    Checking arrow-cast v59.2.0
+    Checking stacker v0.1.25
+    Checking recursive v0.1.1
+    Checking hyper-rustls v0.27.10
+    Checking hyper-timeout v0.5.2
+    Checking axum v0.8.9
+    Checking arrow-csv v59.2.0
+    Checking arrow-json v59.2.0
+    Checking reqwest v0.12.28
+    Checking aws-smithy-http-client v1.5.2
+    Checking arrow v59.2.0
+    Checking object_store v0.13.2
+    Checking hf-hub v0.5.0
+    Checking aws-smithy-runtime v1.16.2
+    Checking tonic v0.14.6
+    Checking tonic-prost v0.14.6
+    Checking aws-runtime v1.10.2
+    Checking tonic-reflection v0.14.6
+    Checking tonic-health v0.14.6
+    Checking sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+    Checking aws-sdk-sts v1.123.0
+    Checking aws-sdk-sso v1.118.0
+    Checking aws-sdk-ssooidc v1.120.0
+    Checking parquet v59.2.0
+    Checking hdfs-native-object-store v0.16.0
+    Checking aws-config v1.13.0
+    Checking datafusion-common v55.2.0
+    Checking datafusion-expr-common v55.2.0
+    Checking datafusion-physical-expr-common v55.2.0
+    Checking datafusion-functions-window-common v55.2.0
+    Checking datafusion-functions-aggregate-common v55.2.0
+    Checking datafusion-expr v55.2.0
+    Checking datafusion-physical-expr v55.2.0
+    Checking datafusion-execution v55.2.0
+    Checking datafusion-functions v55.2.0
+    Checking datafusion-functions-aggregate v55.2.0
+    Checking datafusion-functions-window v55.2.0
+    Checking datafusion-optimizer v55.2.0
+    Checking datafusion-physical-plan v55.2.0
+    Checking datafusion-physical-expr-adapter v55.2.0
+    Checking datafusion-functions-nested v55.2.0
+    Checking datafusion-session v55.2.0
+    Checking datafusion-datasource v55.2.0
+    Checking datafusion-pruning v55.2.0
+    Checking datafusion-catalog v55.2.0
+    Checking datafusion-datasource-arrow v55.2.0
+    Checking datafusion-datasource-csv v55.2.0
+    Checking datafusion-datasource-avro v55.2.0
+    Checking datafusion-datasource-json v55.2.0
+    Checking datafusion-physical-optimizer v55.2.0
+    Checking datafusion-datasource-parquet v55.2.0
+    Checking datafusion-functions-table v55.2.0
+    Checking datafusion-catalog-listing v55.2.0
+    Checking datafusion v55.2.0
+    Checking sail-object-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-object-store)
+error: unused import: `ObjectStore`
+ --> crates/sail-object-store/src/layers/runtime_effect_tests.rs:9:37
+  |
+9 | use object_store::{MultipartUpload, ObjectStore, PutPayload, PutResult, Result, UploadPart};
+  |                                     ^^^^^^^^^^^
+  |
+  = note: `-D unused-imports` implied by `-D warnings`
+  = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error[E0599]: no method named `put` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-object-store/src/layers/runtime_effect_tests.rs:56:20
+     |
+  56 |         self.store.put(&self.path, "late publication".into()).await
+     |                    ^^^ method not found in `std::sync::Arc<object_store::memory::InMemory>`
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1226:8
+     |
+1226 |     fn put(&self, location: &Path, payload: PutPayload) -> impl Future<Output = Result<PutResult>>;
+     |        --- the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `ObjectStoreExt` which provides `put` is implemented but not in scope; perhaps you want to import it
+     |
+   3 + use object_store::ObjectStoreExt;
+     |
+
+error[E0599]: no method named `put` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-object-store/src/layers/runtime_effect_tests.rs:70:11
+     |
+  70 |     store.put(&path, "old publication".into()).await?;
+     |           ^^^ method not found in `std::sync::Arc<object_store::memory::InMemory>`
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1226:8
+     |
+1226 |     fn put(&self, location: &Path, payload: PutPayload) -> impl Future<Output = Result<PutResult>>;
+     |        --- the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `ObjectStoreExt` which provides `put` is implemented but not in scope; perhaps you want to import it
+     |
+   3 + use object_store::ObjectStoreExt;
+     |
+
+error[E0599]: no method named `delete` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-object-store/src/layers/runtime_effect_tests.rs:90:11
+     |
+  90 |     store.delete(&path).await?;
+     |           ^^^^^^ method not found in `std::sync::Arc<object_store::memory::InMemory>`
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1310:8
+     |
+1310 |     fn delete(&self, location: &Path) -> impl Future<Output = Result<()>>;
+     |        ------ the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `ObjectStoreExt` which provides `delete` is implemented but not in scope; perhaps you want to import it
+     |
+   3 + use object_store::ObjectStoreExt;
+     |
+
+error[E0599]: no method named `head` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-object-store/src/layers/runtime_effect_tests.rs:92:15
+     |
+  92 |         store.head(&path).await,
+     |               ^^^^ method not found in `std::sync::Arc<object_store::memory::InMemory>`
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1307:8
+     |
+1307 |     fn head(&self, location: &Path) -> impl Future<Output = Result<ObjectMeta>>;
+     |        ---- the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `ObjectStoreExt` which provides `head` is implemented but not in scope; perhaps you want to import it
+     |
+   3 + use object_store::ObjectStoreExt;
+     |
+
+error[E0599]: no method named `get` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-object-store/src/layers/runtime_effect_tests.rs:97:22
+     |
+  97 |     assert_eq!(store.get(&path).await?.bytes().await?, "late publication");
+     |                      ^^^ method not found in `std::sync::Arc<object_store::memory::InMemory>`
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1267:8
+     |
+1267 |     fn get(&self, location: &Path) -> impl Future<Output = Result<GetResult>>;
+     |        --- the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `ObjectStoreExt` which provides `get` is implemented but not in scope; perhaps you want to import it
+     |
+   3 + use object_store::ObjectStoreExt;
+     |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-object-store` (lib test) due to 6 previous errors

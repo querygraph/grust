@@ -1,0 +1,69 @@
+{
+  "sail_commit": "47c473e6b9af7b5e2e5fbe30070ab2fe407def49",
+  "base": "9579a7e8db8e4f6d08713690a88ecf30702886b5",
+  "packages": [
+    "sail-common-datafusion",
+    "sail-execution"
+  ],
+  "started_at": "2026-10-30T12:51:47.023377+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-execution",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-writer-errors-qualified-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-writer-errors-qualified-clippy.log",
+      "sha256": "8a94c837f7f95e6345e8837161d64b41f3ae62bf2db51aa7173fb9ce1be556de"
+    },
+    {
+      "name": "rust",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-execution",
+        "--lib",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-checkpoint-writer-errors-qualified-rust.log",
+      "sha256": "a5a277e774e3a932635d9fd56cf01e7f690bf79315757e29d578eb77c6ba3f59"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-30T12:53:38.674774+00:00",
+  "outcome": "passed"
+}

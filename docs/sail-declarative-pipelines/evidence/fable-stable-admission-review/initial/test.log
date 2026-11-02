@@ -1,0 +1,38 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+   Compiling sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 38.84s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-126c4bc054f23652)
+
+running 10 tests
+test pipelines::streaming::admission::tests::a_scan_is_bound_by_provider_identity_not_by_name ... ok
+test pipelines::streaming::admission::tests::a_filtered_projection_over_one_bound_range_is_admitted_and_replayable ... ok
+test pipelines::streaming::admission::tests::a_volatile_expression_is_admitted_but_not_replayable ... ok
+test pipelines::streaming::admission::tests::join_kinds_follow_sparks_stream_static_orientation ... ok
+test pipelines::streaming::admission::tests::a_join_needs_exactly_one_range_bearing_side ... ok
+test pipelines::streaming::admission::tests::immutable_projection_remains_content_replayable ... ok
+test pipelines::streaming::admission::tests::subqueries_count_one_side_each ... ok
+test pipelines::streaming::admission::tests::evidence_round_trips_through_serde ... ok
+test pipelines::streaming::admission::tests::stateful_operators_and_unbound_scans_are_rejected_with_evidence ... ok
+test pipelines::streaming::admission::tests::stable_clock_functions_are_not_content_replayable ... FAILED
+
+failures:
+
+---- pipelines::streaming::admission::tests::stable_clock_functions_are_not_content_replayable stdout ----
+
+thread 'pipelines::streaming::admission::tests::stable_clock_functions_are_not_content_replayable' (89605945) panicked at crates/sail-spark-connect/src/pipelines/streaming/admission.rs:812:13:
+stable clock can change on replay: AdmissionEvidence { admitted: true, operators: [OperatorEvidence { operator: "TableScan", decision: Admit, reason: "bound range of a recorded source, provider verified" }, OperatorEvidence { operator: "Projection", decision: Admit, reason: "one range-bearing side and static sides" }], sources_read: {["c", "d", "clicks"]}, static_read: {}, unbound_scans: [], provenance_verified: true, replayable: true }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    pipelines::streaming::admission::tests::stable_clock_functions_are_not_content_replayable
+
+test result: FAILED. 9 passed; 1 failed; 0 ignored; 0 measured; 96 filtered out; finished in 0.10s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

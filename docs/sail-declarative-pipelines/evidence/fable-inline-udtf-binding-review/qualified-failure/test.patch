@@ -1,0 +1,37 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs b/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
+index 94daaa643..23038aff3 100644
+--- a/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/streaming/binding_tests.rs
+@@ -664,3 +664,32 @@ fn binding_names_must_be_canonical_for_the_flow() -> TestResult {
+     assert_eq!(reads.local, BTreeSet::from([name(&["c", "d", "events"])]));
+     Ok(())
+ }
++
++fn inline_table_function(return_type: Option<spec::DataType>) -> spec::QueryPlan {
++    spec::QueryPlan::new(spec::QueryNode::CommonInlineUserDefinedTableFunction(
++        spec::CommonInlineUserDefinedTableFunction {
++            function_name: "probe".into(),
++            deterministic: true,
++            arguments: vec![],
++            function: spec::TableFunctionDefinition::PythonUdtf {
++                return_type,
++                eval_type: spec::PySparkUdfType::Table,
++                command: vec![],
++                python_version: "3.12".into(),
++            },
++        },
++    ))
++}
++
++#[test]
++fn dynamic_inline_table_function_is_refused_before_resolution() {
++    let result = validate(inline_table_function(None), &[], &[]);
++    assert!(matches!(result, Err(BindingError::UnsupportedRead(_))),
++        "dynamic schema invokes Python analyze during resolution: {result:?}");
++}
++
++#[test]
++fn static_inline_table_function_keeps_binding_classification() {
++    let result = validate(inline_table_function(Some(spec::DataType::Struct { fields: spec::Fields::default() })), &[], &[]);
++    assert!(result.is_ok(), "static schema does not invoke dynamic analyze: {result:?}");
++}

@@ -1,0 +1,29 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 25.63s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 1 test
+test resolver::identifier::arithmetic_tests::volatile_divisor_is_evaluated_once_regression_probe ... FAILED
+
+failures:
+
+---- resolver::identifier::arithmetic_tests::volatile_divisor_is_evaluated_once_regression_probe stdout ----
+
+thread 'resolver::identifier::arithmetic_tests::volatile_divisor_is_evaluated_once_regression_probe' (91507175) panicked at crates/sail-plan/src/resolver/identifier/arithmetic_tests.rs:225:5:
+assertion `left == right` failed: a divisor must be evaluated once; result=Err(External(StructuredSparkError { class: "org.apache.spark.SparkArithmeticException", condition: "DIVIDE_BY_ZERO", sql_state: "22012", message: "Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error.", parameters: {"config": "\"spark.sql.ansi.enabled\""} }))
+  left: 6
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    resolver::identifier::arithmetic_tests::volatile_divisor_is_evaluated_once_regression_probe
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 106 filtered out; finished in 0.08s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

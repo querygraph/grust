@@ -1,0 +1,184 @@
+{
+  "started_at": "2026-10-31T10:09:19.679274+00:00",
+  "mode": "spark",
+  "script_sha256": "8384d48740b7802b31611254ccb4aba3e4586af9fb16f1276e39d0ff1da9bb31",
+  "cases": [
+    {
+      "ansi": true,
+      "expression": "typeof(IF(TRUE, 1, CAST(2 AS BIGINT)))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "bigint"
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "typeof(CASE WHEN TRUE THEN 1 ELSE CAST(2 AS BIGINT) END)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "bigint"
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "typeof(IF(TRUE, 1, 2.5))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "decimal(11,1)"
+        ]
+      ]
+    },
+    {
+      "ansi": true,
+      "expression": "typeof(CASE WHEN TRUE THEN 1 ELSE 2.5 END)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "decimal(11,1)"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "typeof(IF(TRUE, 1, CAST(2 AS BIGINT)))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "bigint"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "typeof(CASE WHEN TRUE THEN 1 ELSE CAST(2 AS BIGINT) END)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "bigint"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "typeof(IF(TRUE, 1, 2.5))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "decimal(11,1)"
+        ]
+      ]
+    },
+    {
+      "ansi": false,
+      "expression": "typeof(CASE WHEN TRUE THEN 1 ELSE 2.5 END)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "string",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "decimal(11,1)"
+        ]
+      ]
+    }
+  ],
+  "sail_test_commit": "a51bef4ce1b1b18b025fc697ace4b03c891380e8",
+  "feature_sha256": "f9b5c0c433f7bcb648f0a316ba0c2c5a7213edefeb619f6caa286496a8bc59a3",
+  "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "version": "4.2.1",
+  "feature_command": [
+    "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "python/pysail/tests/spark/function/test_features.py",
+    "-k",
+    "nvl2 or if_coerces or case_coerces or ansi_case_widens or common_branch_type or coerced_branches",
+    "--junitxml=/tmp/sail-sdp-conditional-types-spark/features.xml"
+  ],
+  "feature_exit_code": 0,
+  "remaining_listeners": [],
+  "completed_at": "2026-10-31T10:09:38.375388+00:00"
+}

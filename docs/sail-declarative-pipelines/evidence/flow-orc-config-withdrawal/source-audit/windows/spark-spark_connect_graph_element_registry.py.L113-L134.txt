@@ -1,0 +1,22 @@
+    def register_flow(self, flow: Flow) -> None:
+        with add_pipeline_analysis_context(
+            spark=self._spark, dataflow_graph_id=self._dataflow_graph_id, flow_name=flow.name
+        ):
+            df = flow.func()
+        relation = cast(ConnectDataFrame, df)._plan.plan(self._client)
+
+        relation_flow_details = pb2.PipelineCommand.DefineFlow.WriteRelationFlowDetails(
+            relation=relation,
+        )
+
+        inner_command = pb2.PipelineCommand.DefineFlow(
+            dataflow_graph_id=self._dataflow_graph_id,
+            flow_name=flow.name,
+            target_dataset_name=flow.target,
+            relation_flow_details=relation_flow_details,
+            sql_conf=flow.spark_conf,
+            source_code_location=source_code_location_to_proto(flow.source_code_location),
+        )
+        command = pb2.Command()
+        command.pipeline_command.define_flow.CopyFrom(inner_command)
+        self._client.execute_command(command)

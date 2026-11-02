@@ -1,0 +1,92 @@
+    Checking sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+error[E0282]: type annotations needed
+  --> crates/sail-common/src/spec/subquery_tests.rs:46:9
+   |
+46 |         Ok(())
+   |         ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+   |
+help: consider specifying the generic arguments
+   |
+46 |         Ok::<(), E>(())
+   |           +++++++++
+
+error[E0283]: type annotations needed
+  --> crates/sail-common/src/spec/subquery_tests.rs:46:9
+   |
+46 |         Ok(())
+   |         ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+47 |     })?;
+   |       - type must be known at this point
+   |
+   = note: multiple `impl`s satisfying `std::convert::Infallible: std::convert::From<_>` found in the following crates: `core`, `zerocopy`:
+           - impl std::convert::From<!> for std::convert::Infallible;
+           - impl<Src, Dst> std::convert::From<zerocopy::error::AlignmentError<Src, Dst>> for std::convert::Infallible
+             where Dst: zerocopy::Unaligned, Dst: ?Sized;
+           - impl<T> std::convert::From<T> for T;
+help: consider specifying the generic arguments
+   |
+46 |         Ok::<(), E>(())
+   |           +++++++++
+
+error[E0282]: type annotations needed
+   --> crates/sail-common/src/spec/subquery_tests.rs:108:9
+    |
+108 |         Ok(())
+    |         ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+    |
+help: consider specifying the generic arguments
+    |
+108 |         Ok::<(), E>(())
+    |           +++++++++
+
+error[E0283]: type annotations needed
+   --> crates/sail-common/src/spec/subquery_tests.rs:108:9
+    |
+108 |         Ok(())
+    |         ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+109 |     })?;
+    |       - type must be known at this point
+    |
+    = note: multiple `impl`s satisfying `std::convert::Infallible: std::convert::From<_>` found in the following crates: `core`, `zerocopy`:
+            - impl std::convert::From<!> for std::convert::Infallible;
+            - impl<Src, Dst> std::convert::From<zerocopy::error::AlignmentError<Src, Dst>> for std::convert::Infallible
+              where Dst: zerocopy::Unaligned, Dst: ?Sized;
+            - impl<T> std::convert::From<T> for T;
+help: consider specifying the generic arguments
+    |
+108 |         Ok::<(), E>(())
+    |           +++++++++
+
+error[E0282]: type annotations needed
+   --> crates/sail-common/src/spec/subquery_tests.rs:134:9
+    |
+134 |         Ok(())
+    |         ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+    |
+help: consider specifying the generic arguments
+    |
+134 |         Ok::<(), E>(())
+    |           +++++++++
+
+error[E0283]: type annotations needed
+   --> crates/sail-common/src/spec/subquery_tests.rs:134:9
+    |
+134 |         Ok(())
+    |         ^^ cannot infer type of the type parameter `E` declared on the enum `Result`
+135 |     })?;
+    |       - type must be known at this point
+    |
+    = note: multiple `impl`s satisfying `std::convert::Infallible: std::convert::From<_>` found in the following crates: `core`, `zerocopy`:
+            - impl std::convert::From<!> for std::convert::Infallible;
+            - impl<Src, Dst> std::convert::From<zerocopy::error::AlignmentError<Src, Dst>> for std::convert::Infallible
+              where Dst: zerocopy::Unaligned, Dst: ?Sized;
+            - impl<T> std::convert::From<T> for T;
+help: consider specifying the generic arguments
+    |
+134 |         Ok::<(), E>(())
+    |           +++++++++
+
+Some errors have detailed explanations: E0282, E0283.
+For more information about an error, try `rustc --explain E0282`.
+error: could not compile `sail-common` (lib test) due to 6 previous errors
+warning: build failed, waiting for other jobs to finish...

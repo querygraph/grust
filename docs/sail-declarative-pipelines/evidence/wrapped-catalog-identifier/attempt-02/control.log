@@ -1,0 +1,31 @@
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 29.02s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 2 tests
+test resolver::constant::tests::wrapped_catalog_type_only_udf_never_invokes_the_function ... FAILED
+test resolver::constant::tests::wrapped_catalog_type_only_arguments_use_analyzer_identifier_policy ... FAILED
+
+failures:
+
+---- resolver::constant::tests::wrapped_catalog_type_only_udf_never_invokes_the_function stdout ----
+Error: AnalysisError("analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] user-defined or higher-order function is not foldable")
+
+---- resolver::constant::tests::wrapped_catalog_type_only_arguments_use_analyzer_identifier_policy stdout ----
+Error: AnalysisError("analysis error: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] function is not foldable")
+
+
+failures:
+    resolver::constant::tests::wrapped_catalog_type_only_arguments_use_analyzer_identifier_policy
+    resolver::constant::tests::wrapped_catalog_type_only_udf_never_invokes_the_function
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 101 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

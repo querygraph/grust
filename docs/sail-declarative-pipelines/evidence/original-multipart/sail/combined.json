@@ -1,0 +1,165 @@
+{
+  "runner_commit": "8e5e06ff48a5458fb6d68e4d82ca147f634e406e",
+  "upstream": "SqlPipelineSuite:634:Use database and set catalog works",
+  "scope": "Assertion port through public Connect, not original Scala suite execution",
+  "adapter_changes": [
+    "unique namespaces",
+    "preconfigured catalogs",
+    "explicit storage providers"
+  ],
+  "outputs": [
+    {
+      "name": "`spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_pipeline`.`mv`",
+      "expected": [
+        0,
+        1,
+        2
+      ],
+      "upstream_assertion": false,
+      "provider": "parquet",
+      "query": "SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_pipeline`.`mv`",
+      "rows": [
+        0,
+        1,
+        2
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "`spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv2`",
+      "expected": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "upstream_assertion": false,
+      "provider": "parquet",
+      "query": "SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv2`",
+      "rows": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "`spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv3`",
+      "expected": [
+        1,
+        2
+      ],
+      "upstream_assertion": true,
+      "provider": "parquet",
+      "query": "SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv3`",
+      "rows": [
+        1,
+        2
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "`c_bb3e5598_be3c_4250_a3e1_92c2a75bd3ce`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_secondary`.`mv4`",
+      "expected": [
+        2,
+        4
+      ],
+      "upstream_assertion": true,
+      "provider": "parquet",
+      "query": "SELECT * FROM `c_bb3e5598_be3c_4250_a3e1_92c2a75bd3ce`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_secondary`.`mv4`",
+      "rows": [
+        2,
+        4
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "`spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv5`",
+      "expected": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "upstream_assertion": true,
+      "provider": "parquet",
+      "query": "SELECT * FROM `sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv5`",
+      "rows": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "`spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv6`",
+      "expected": [
+        0,
+        1,
+        2
+      ],
+      "upstream_assertion": true,
+      "provider": "parquet",
+      "query": "SELECT * FROM `sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.`mv6`",
+      "rows": [
+        0,
+        1,
+        2
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "`spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_pipeline`.`mv6`",
+      "expected": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "upstream_assertion": true,
+      "provider": "parquet",
+      "query": "SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_pipeline`.`mv6`",
+      "rows": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "outcome": "passed"
+    }
+  ],
+  "server_spark_version": "4.2.1",
+  "namespaces": {
+    "pipeline": [
+      "spark_catalog",
+      "sdp_scope_22841fd569004c5db6d2bd060c0901ba_pipeline"
+    ],
+    "database": [
+      "spark_catalog",
+      "sdp_scope_22841fd569004c5db6d2bd060c0901ba_other"
+    ],
+    "catalog": [
+      "c_bb3e5598_be3c_4250_a3e1_92c2a75bd3ce",
+      "sdp_scope_22841fd569004c5db6d2bd060c0901ba_secondary"
+    ]
+  },
+  "files": [
+    {
+      "path": "file1.sql",
+      "sql": "\nCREATE MATERIALIZED VIEW mv USING parquet AS SELECT * FROM RANGE(3);\nUSE DATABASE `sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`;\nCREATE MATERIALIZED VIEW mv2 USING parquet AS SELECT * FROM RANGE(1, 5);\nCREATE MATERIALIZED VIEW mv3 USING parquet AS\nWITH mv AS (SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_pipeline`.mv)\nSELECT mv2.id FROM mv JOIN mv2 ON mv.id=mv2.id;\nSET CATALOG `c_bb3e5598_be3c_4250_a3e1_92c2a75bd3ce`;\nUSE DATABASE `sdp_scope_22841fd569004c5db6d2bd060c0901ba_secondary`;\nCREATE TEMPORARY VIEW tv AS SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_pipeline`.mv;\nCREATE MATERIALIZED VIEW mv4 USING parquet AS\nWITH mv2 AS (SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.mv2)\nSELECT * FROM STREAM(mv2) WHERE mv2.id % 2 == 0;\nUSE NAMESPACE `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`;\nCREATE MATERIALIZED VIEW mv5 USING parquet AS SELECT * FROM mv2;\nCREATE MATERIALIZED VIEW mv6 USING parquet AS SELECT * FROM tv;\n"
+    },
+    {
+      "path": "file2.sql",
+      "sql": "CREATE MATERIALIZED VIEW mv6 USING parquet AS SELECT * FROM `spark_catalog`.`sdp_scope_22841fd569004c5db6d2bd060c0901ba_other`.mv5;"
+    }
+  ],
+  "private_view_hidden": true,
+  "session_defaults_preserved": true,
+  "cleanup": {
+    "outcome": "passed",
+    "errors": []
+  },
+  "outcome": "passed"
+}

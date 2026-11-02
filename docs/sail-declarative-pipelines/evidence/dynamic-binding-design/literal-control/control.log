@@ -1,0 +1,52 @@
+   Compiling arrow-array v59.2.0
+   Compiling phf_generator v0.14.0
+   Compiling prettyplease v0.3.0
+   Compiling sail-sql-macro v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-macro)
+   Compiling phf_macros v0.14.0
+   Compiling sail-sql-parser v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-parser)
+   Compiling phf v0.14.0
+   Compiling arrow-select v59.2.0
+   Compiling arrow-row v59.2.0
+   Compiling arrow-arith v59.2.0
+   Compiling arrow-ord v59.2.0
+   Compiling arrow-string v59.2.0
+   Compiling arrow-ipc v59.2.0
+   Compiling arrow-cast v59.2.0
+   Compiling arrow-json v59.2.0
+   Compiling arrow-csv v59.2.0
+   Compiling arrow v59.2.0
+   Compiling sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+warning: unused variable: `sample`
+   --> crates/sail-sql-analyzer/src/query.rs:607:17
+    |
+607 |             let sample = sample.map(|s| from_ast_table_sample(*s)).transpose()?;
+    |                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_sample`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `sail-sql-analyzer` (lib test) generated 1 warning (run `cargo fix --lib -p sail-sql-analyzer --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized] target(s) in 44.28s
+     Running unittests src/lib.rs (target/debug/deps/sail_sql_analyzer-4f04600e3097c8e8)
+
+running 2 tests
+test query::identifier_tests::literal_identifier_is_the_same_named_relation_before_binding ... FAILED
+test query::identifier_tests::computed_and_null_identifiers_remain_late_bound ... ok
+
+failures:
+
+---- query::identifier_tests::literal_identifier_is_the_same_named_relation_before_binding stdout ----
+
+thread 'query::identifier_tests::literal_identifier_is_the_same_named_relation_before_binding' (90876867) panicked at crates/sail-sql-analyzer/src/query_identifier_tests.rs:24:9:
+assertion `left == right` failed: SELECT * FROM IDENTIFIER('c.t')
+  left: Query(QueryPlan { node: Project { input: Some(QueryPlan { node: Read { read_type: DynamicTable(ReadDynamicTable { name: Literal(Utf8 { value: Some("c.t") }), sample: None, options: [] }), is_streaming: false }, plan_id: None }), expressions: [UnresolvedStar { target: None, plan_id: None, wildcard_options: WildcardOptions { ilike_pattern: None, exclude_columns: None, except_columns: None, replace_columns: None, rename_columns: None } }] }, plan_id: None })
+ right: Query(QueryPlan { node: Project { input: Some(QueryPlan { node: Read { read_type: NamedTable(ReadNamedTable { name: ObjectName([Identifier("c"), Identifier("t")]), temporal: None, sample: None, options: [] }), is_streaming: false }, plan_id: None }), expressions: [UnresolvedStar { target: None, plan_id: None, wildcard_options: WildcardOptions { ilike_pattern: None, exclude_columns: None, except_columns: None, replace_columns: None, rename_columns: None } }] }, plan_id: None })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    query::identifier_tests::literal_identifier_is_the_same_named_relation_before_binding
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p sail-sql-analyzer --lib`

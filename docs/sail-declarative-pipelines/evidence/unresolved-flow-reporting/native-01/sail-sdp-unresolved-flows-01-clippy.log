@@ -1,0 +1,16 @@
+    Checking sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+error: unnecessary use of `clone` to create a slice from a reference
+   --> crates/sail-spark-connect/src/pipelines/analysis_artifact_tests.rs:353:9
+    |
+353 | /         assert_eq!(
+354 | |             actual,
+355 | |             [expected.clone()],
+356 | |             "flow type masked query analysis: {query}"
+357 | |         );
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#cloned_ref_to_slice_refs
+    = note: `-D clippy::cloned-ref-to-slice-refs` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::cloned_ref_to_slice_refs)]`
+
+error: could not compile `sail-spark-connect` (lib test) due to 1 previous error

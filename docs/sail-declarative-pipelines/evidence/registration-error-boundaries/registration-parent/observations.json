@@ -1,0 +1,243 @@
+{
+  "started_at": "2026-10-31T14:37:24.290698+00:00",
+  "mode": "sail",
+  "script_sha256": "6df48a6c28573effdc2437bf4c044c92d2e37e017b7d091e153ee1415ffabaa1",
+  "cases": [
+    {
+      "kind": "REGISTRATION",
+      "label": "ctas",
+      "sql": "CREATE TABLE t AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "not supported: SQL statement in pipeline definitions",
+        "offendingQuery": "\nOffending query:\nCREATE TABLE t AS SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] not supported: SQL statement in pipeline definitions\n\nOffending query:\nCREATE TABLE t AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "select",
+      "sql": "-- \u96ea\nSELECT '\u00e9;\u96ea' /* trailing ; */;",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSELECT '\u00e9;\u96ea' /* trailing ; */\n",
+        "message": "analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions",
+        "codeLocation": "Query defined at \u00e9;origin.sql:2"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions\n\nOffending query:\nSELECT '\u00e9;\u96ea' /* trailing ; */\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "second",
+      "sql": "SET marker = 1;\n\n-- source\nSELECT 2 -- trailing\n;",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSELECT 2 -- trailing\n\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:4",
+        "message": "analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Unsupported query statement in pipeline definitions\n\nOffending query:\nSELECT 2 -- trailing\n\n\nQuery defined at \u00e9;origin.sql:4",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "partition-year",
+      "sql": "\nCREATE MATERIALIZED VIEW a\nPARTITIONED BY (year(id1))\nAS SELECT id as id1, id as id2 FROM range(1,2)",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "invalid argument: Only identity partition columns are supported in pipelines",
+        "offendingQuery": "\nOffending query:\nCREATE MATERIALIZED VIEW a\nPARTITIONED BY (year(id1))\nAS SELECT id as id1, id as id2 FROM range(1,2)\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:2"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: Only identity partition columns are supported in pipelines\n\nOffending query:\nCREATE MATERIALIZED VIEW a\nPARTITIONED BY (year(id1))\nAS SELECT id as id1, id as id2 FROM range(1,2)\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "partition-multipart",
+      "sql": "CREATE MATERIALIZED VIEW a PARTITIONED BY (a.b) AS SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE MATERIALIZED VIEW a PARTITIONED BY (a.b) AS SELECT 1\n",
+        "message": "invalid argument: Only identity partition columns are supported in pipelines"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] invalid argument: Only identity partition columns are supported in pipelines\n\nOffending query:\nCREATE MATERIALIZED VIEW a PARTITIONED BY (a.b) AS SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "flow-multipart",
+      "sql": "\nCREATE STREAMING TABLE st;\nCREATE FLOW some_database.f AS INSERT INTO st BY NAME\nSELECT * FROM STREAM external_t1;\n",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nCREATE FLOW some_database.f AS INSERT INTO st BY NAME\nSELECT * FROM STREAM external_t1\n",
+        "message": "analysis error: [MULTIPART_FLOW_NAME_NOT_SUPPORTED] `some_database`.`f`",
+        "codeLocation": "Query defined at \u00e9;origin.sql:3"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: [MULTIPART_FLOW_NAME_NOT_SUPPORTED] `some_database`.`f`\n\nOffending query:\nCREATE FLOW some_database.f AS INSERT INTO st BY NAME\nSELECT * FROM STREAM external_t1\n\nQuery defined at \u00e9;origin.sql:3",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "flow-positional",
+      "sql": "CREATE FLOW f AS INSERT INTO st SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO st SELECT 1\n",
+        "message": "analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed."
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed.\n\nOffending query:\nCREATE FLOW f AS INSERT INTO st SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "flow-overwrite",
+      "sql": "CREATE FLOW f AS INSERT OVERWRITE st BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE st BY NAME SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "message": "analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed."
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed.\n\nOffending query:\nCREATE FLOW f AS INSERT OVERWRITE st BY NAME SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "flow-partition",
+      "sql": "CREATE FLOW f AS INSERT INTO st PARTITION (p) BY NAME SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed.",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO st PARTITION (p) BY NAME SELECT 1\n",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed.\n\nOffending query:\nCREATE FLOW f AS INSERT INTO st PARTITION (p) BY NAME SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "flow-columns",
+      "sql": "CREATE FLOW f AS INSERT INTO st (a) SELECT 1",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "message": "analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed.",
+        "codeLocation": "Query defined at \u00e9;origin.sql:1",
+        "offendingQuery": "\nOffending query:\nCREATE FLOW f AS INSERT INTO st (a) SELECT 1\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: [PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Only INSERT INTO by name flows supported; partition specifications and target column lists are not allowed.\n\nOffending query:\nCREATE FLOW f AS INSERT INTO st (a) SELECT 1\n\nQuery defined at \u00e9;origin.sql:1",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "catalog-null",
+      "sql": "-- source\nSET CATALOG CAST(NULL AS STRING)",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "sql_state": "42000",
+      "parameters": {
+        "codeLocation": "Query defined at \u00e9;origin.sql:2",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+        "offendingQuery": "\nOffending query:\nSET CATALOG CAST(NULL AS STRING)\n"
+      },
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL\n\nOffending query:\nSET CATALOG CAST(NULL AS STRING)\n\nQuery defined at \u00e9;origin.sql:2",
+      "contains_filename": true,
+      "table_exists": false
+    },
+    {
+      "kind": "REGISTRATION",
+      "label": "evaluation",
+      "sql": "SET CATALOG CAST(CAST('bad' AS INT) AS STRING)",
+      "file": "\u00e9;origin.sql",
+      "api": "DefineSqlGraphElements",
+      "outcome": "error",
+      "error_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "targetType": "\"INT\"",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'"
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead.",
+      "contains_filename": false,
+      "table_exists": false
+    }
+  ],
+  "cleanup_errors": [],
+  "runtime_commit": "14eb7766f7efc3c39b1df0df396d13cd9551dc7d",
+  "cli_sha256": "470362d64c70954ffac2860f904274dc5a01957eb028a0cabcec34e0a9050b3f",
+  "version": "4.2.1",
+  "server_exit_code": 0,
+  "completed_at": "2026-10-31T14:37:26.175662+00:00",
+  "remaining_listeners": []
+}

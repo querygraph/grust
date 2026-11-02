@@ -1,0 +1,9 @@
+    val defaultSqlConf = cmd.getSqlConfMap.asScala.toMap
+
+    sessionHolder.session.catalog.setCurrentCatalog(defaultCatalog)
+    sessionHolder.session.catalog.setCurrentDatabase(defaultDatabase)
+
+    sessionHolder.dataflowGraphRegistry.createDataflowGraph(
+      defaultCatalog = defaultCatalog,
+      defaultDatabase = defaultDatabase,
+      defaultSqlConf = defaultSqlConf)

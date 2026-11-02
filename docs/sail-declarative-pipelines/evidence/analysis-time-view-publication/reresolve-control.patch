@@ -1,0 +1,30 @@
+commit 373cd270d1b282be37315436dcf205095a4465f8
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Fri Oct 30 14:45:27 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Fri Oct 30 14:45:27 2026 -0700
+
+    Negative control: resolve persisted view again during publication
+
+diff --git a/crates/sail-spark-connect/src/pipelines/materialize.rs b/crates/sail-spark-connect/src/pipelines/materialize.rs
+index 109671c76..aad057be1 100644
+--- a/crates/sail-spark-connect/src/pipelines/materialize.rs
++++ b/crates/sail-spark-connect/src/pipelines/materialize.rs
+@@ -256,6 +256,10 @@ pub(super) async fn views(
+         if output.view.is_none() {
+             continue;
+         }
++        if let Some(definition) = output.view.clone() {
++            sail_plan::resolver::PlanResolver::new(ctx, ctx.extension::<SparkSession>()?.plan_config()?)
++                .resolve_view_publication(definition).await?;
++        }
+         let mut options = analyzed
+             .publications
+             .get(name)
+@@ -273,4 +277,4 @@ pub(super) async fn views(
+         .await?;
+     }
+     Ok(())
+-}
++}
+\ No newline at end of file

@@ -1,0 +1,56 @@
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 20.38s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 8 tests
+test resolver::query::session_tests::row_factories::truncate_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::delete_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::update_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::merge_factory_keeps_legacy_authority ... ok
+test resolver::query::session_tests::row_factories::merge_factory_uses_selected_session ... FAILED
+test resolver::query::session_tests::row_factories::truncate_factory_uses_selected_session ... FAILED
+test resolver::query::session_tests::row_factories::delete_factory_uses_selected_session ... FAILED
+test resolver::query::session_tests::row_factories::update_factory_uses_selected_session ... FAILED
+
+failures:
+
+---- resolver::query::session_tests::row_factories::merge_factory_uses_selected_session stdout ----
+
+thread 'resolver::query::session_tests::row_factories::merge_factory_uses_selected_session' (89795451) panicked at crates/sail-plan/src/resolver/query/row_factory_session_tests.rs:132:5:
+Merge: error in DataFusion: Internal error: session extension not found: task resource scope.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues
+
+---- resolver::query::session_tests::row_factories::truncate_factory_uses_selected_session stdout ----
+
+thread 'resolver::query::session_tests::row_factories::truncate_factory_uses_selected_session' (89795453) panicked at crates/sail-plan/src/resolver/query/row_factory_session_tests.rs:132:5:
+Truncate: error in DataFusion: Internal error: session extension not found: task resource scope.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues
+
+---- resolver::query::session_tests::row_factories::delete_factory_uses_selected_session stdout ----
+
+thread 'resolver::query::session_tests::row_factories::delete_factory_uses_selected_session' (89795449) panicked at crates/sail-plan/src/resolver/query/row_factory_session_tests.rs:132:5:
+Delete: error in DataFusion: Internal error: session extension not found: task resource scope.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- resolver::query::session_tests::row_factories::update_factory_uses_selected_session stdout ----
+
+thread 'resolver::query::session_tests::row_factories::update_factory_uses_selected_session' (89795455) panicked at crates/sail-plan/src/resolver/query/row_factory_session_tests.rs:132:5:
+Update: error in DataFusion: Internal error: session extension not found: task resource scope.
+This issue was likely caused by a bug in DataFusion's code. Please help us to resolve this by filing a bug report in our issue tracker: https://github.com/apache/datafusion/issues
+
+
+failures:
+    resolver::query::session_tests::row_factories::delete_factory_uses_selected_session
+    resolver::query::session_tests::row_factories::merge_factory_uses_selected_session
+    resolver::query::session_tests::row_factories::truncate_factory_uses_selected_session
+    resolver::query::session_tests::row_factories::update_factory_uses_selected_session
+
+test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 measured; 55 filtered out; finished in 0.08s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

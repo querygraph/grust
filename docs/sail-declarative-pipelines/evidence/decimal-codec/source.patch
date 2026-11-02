@@ -1,0 +1,423 @@
+diff --git a/crates/sail-execution/proto/sail/plan/physical.proto b/crates/sail-execution/proto/sail/plan/physical.proto
+index f1bcfe2c2..af00ca63f 100644
+--- a/crates/sail-execution/proto/sail/plan/physical.proto
++++ b/crates/sail-execution/proto/sail/plan/physical.proto
+@@ -296,6 +296,7 @@ message ExtendedScalarUdf {
+     SparkToStringUdf spark_to_string = 40;
+     SparkAnsiStringCastUdf spark_ansi_string_cast = 41;
+     SparkTimePrecisionCastUdf spark_time_precision_cast = 42;
++    SparkStringToDecimalUdf spark_string_to_decimal = 43;
+   }
+ }
+ 
+@@ -1370,3 +1371,10 @@ message SparkAnsiStringCastUdf {
+   bytes target_type = 1;
+   string sql_target = 2;
+ }
++
++message SparkStringToDecimalUdf {
++  uint32 precision = 1;
++  int32 scale = 2;
++  bool fail_on_error = 3;
++  bool allow_negative_scale = 4;
++}
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index d3c88d862..3deb460b0 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -242,6 +242,7 @@ use sail_function::scalar::normalize_float_keys::NormalizeFloatKeys;
+ use sail_function::scalar::predicate::rewrite_like_pattern::RewriteLikePatternFunc;
+ use sail_function::scalar::spark_ansi_string_cast::SparkAnsiStringCast;
+ use sail_function::scalar::spark_cast_string_to_int32::SparkCastStringToInt32;
++use sail_function::scalar::spark_string_to_decimal::SparkStringToDecimal;
+ use sail_function::scalar::spark_struct_rename::SparkStructRename;
+ use sail_function::scalar::spark_time_precision_cast::SparkTimePrecisionCast;
+ use sail_function::scalar::spark_to_string::{SparkToLargeUtf8, SparkToUtf8, SparkToUtf8View};
+@@ -3880,6 +3881,29 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                     sql_target,
+                 )?)));
+             }
++            UdfKind::SparkStringToDecimal(r#gen::SparkStringToDecimalUdf {
++                precision,
++                scale,
++                fail_on_error,
++                allow_negative_scale,
++            }) => {
++                if name != "spark_string_to_decimal" {
++                    return plan_err!(
++                        "decimal string cast payload has mismatched function name: {name}"
++                    );
++                }
++                let precision = u8::try_from(precision).map_err(|_| {
++                    plan_datafusion_err!("decimal precision out of range: {precision}")
++                })?;
++                let scale = i8::try_from(scale)
++                    .map_err(|_| plan_datafusion_err!("decimal scale out of range: {scale}"))?;
++                return Ok(Arc::new(ScalarUDF::from(SparkStringToDecimal::try_new(
++                    precision,
++                    scale,
++                    fail_on_error,
++                    allow_negative_scale,
++                )?)));
++            }
+             UdfKind::SparkStructRename(r#gen::SparkStructRenameUdf { target_type }) => {
+                 let target_type = self.try_decode_data_type(&target_type)?;
+                 return Ok(Arc::new(ScalarUDF::from(SparkStructRename::new(
+@@ -4493,6 +4517,13 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                 target_type: self.try_encode_data_type(func.target_type())?,
+                 sql_target: func.sql_target().into(),
+             })
++        } else if let Some(func) = node.inner().downcast_ref::<SparkStringToDecimal>() {
++            UdfKind::SparkStringToDecimal(r#gen::SparkStringToDecimalUdf {
++                precision: u32::from(func.precision()),
++                scale: i32::from(func.scale()),
++                fail_on_error: func.fail_on_error(),
++                allow_negative_scale: func.allow_negative_scale(),
++            })
+         } else if let Some(func) = node.inner().downcast_ref::<SparkStructRename>() {
+             let target_type = self.try_encode_data_type(func.target_type())?;
+             UdfKind::SparkStructRename(r#gen::SparkStructRenameUdf { target_type })
+@@ -9344,6 +9375,9 @@ mod tests {
+ #[cfg(test)]
+ mod ansi_string_cast_tests;
+ 
++#[cfg(test)]
++mod decimal_string_cast_tests;
++
+ #[cfg(test)]
+ mod time_precision_cast_tests;
+ 
+diff --git a/crates/sail-execution/src/proto/codec/decimal_string_cast_tests.rs b/crates/sail-execution/src/proto/codec/decimal_string_cast_tests.rs
+new file mode 100644
+index 000000000..a33a6d8b6
+--- /dev/null
++++ b/crates/sail-execution/src/proto/codec/decimal_string_cast_tests.rs
+@@ -0,0 +1,328 @@
++use datafusion::arrow::array::{Array, Decimal128Array, Int32Array, RecordBatch, StringArray};
++use datafusion::common::DFSchema;
++use datafusion::common::config::ConfigOptions;
++use datafusion::logical_expr::execution_props::ExecutionProps;
++use datafusion::logical_expr::expr::{HigherOrderFunction, LambdaVariable};
++use datafusion::logical_expr::physical_planning_context::PhysicalPlanningContext;
++use datafusion::logical_expr::{
++    ColumnarValue, Expr, HigherOrderUDF, ScalarFunctionArgs, col, lambda,
++};
++use datafusion::physical_expr::create_physical_expr;
++use sail_common_datafusion::error::{
++    CommonErrorCause, PythonErrorCause, PythonErrorCauseExtractor, StructuredSparkError,
++};
++use sail_function::scalar::math::div_mod_lazy::SparkDivModLazy;
++
++use super::*;
++
++struct NoPython;
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++
++fn round_trip(precision: u8, scale: i8, fail: bool, allow: bool) -> Result<Arc<ScalarUDF>> {
++    let original = ScalarUDF::from(SparkStringToDecimal::try_new(
++        precision, scale, fail, allow,
++    )?);
++    let mut bytes = vec![];
++    RemoteExecutionCodec.try_encode_udf(&original, &mut bytes)?;
++    let definition =
++        ExtendedScalarUdf::decode(bytes.as_slice()).map_err(|e| plan_datafusion_err!("{e}"))?;
++    assert!(
++        matches!(definition.udf_kind,Some(UdfKind::SparkStringToDecimal(ref p))
++        if p.precision==u32::from(precision) && p.scale==i32::from(scale)
++        && p.fail_on_error==fail && p.allow_negative_scale==allow)
++    );
++    let decoded = RemoteExecutionCodec.try_decode_udf(original.name(), &bytes)?;
++    let implementation = decoded
++        .inner()
++        .downcast_ref::<SparkStringToDecimal>()
++        .ok_or_else(|| plan_datafusion_err!("decoded wrong decimal implementation"))?;
++    assert_eq!(
++        (
++            implementation.precision(),
++            implementation.scale(),
++            implementation.fail_on_error(),
++            implementation.allow_negative_scale()
++        ),
++        (precision, scale, fail, allow)
++    );
++    assert_eq!(decoded.signature(), original.signature());
++    Ok(decoded)
++}
++
++fn invoke(function: &ScalarUDF, p: u8, s: i8, input: ColumnarValue) -> Result<ColumnarValue> {
++    let rows = match &input {
++        ColumnarValue::Array(a) => a.len(),
++        _ => 1,
++    };
++    function.invoke_with_args(ScalarFunctionArgs {
++        arg_fields: vec![Arc::new(Field::new("source", input.data_type(), true))],
++        args: vec![input],
++        number_rows: rows,
++        return_field: Arc::new(Field::new("result", DataType::Decimal128(p, s), true)),
++        config_options: Arc::new(ConfigOptions::default()),
++    })
++}
++
++fn structured(result: Result<ColumnarValue>) -> Result<Box<StructuredSparkError>> {
++    let error = result
++        .err()
++        .ok_or_else(|| plan_datafusion_err!("expected typed decimal failure"))?;
++    let CommonErrorCause::Structured(error) = CommonErrorCause::new::<NoPython>(&error) else {
++        return plan_err!("lost structured decimal failure: {error}");
++    };
++    Ok(error)
++}
++
++#[test]
++fn decimal_codec_preserves_all_captured_fields_and_values() -> Result<()> {
++    for (p, s, source, value) in [
++        (5, 2, "1.235", 124_i128),
++        (38, 10, "1.235", 12_350_000_000),
++        (5, -2, "150", 2),
++    ] {
++        for fail in [true, false] {
++            for allow in [true, false] {
++                let decoded = round_trip(p, s, fail, allow)?;
++                for data_type in [DataType::Utf8, DataType::LargeUtf8, DataType::Utf8View] {
++                    let input = ColumnarValue::Scalar(ScalarValue::Utf8(Some(source.into())))
++                        .cast_to(&data_type, None)?;
++                    let ColumnarValue::Scalar(actual) = invoke(&decoded, p, s, input)? else {
++                        return plan_err!("scalar became array");
++                    };
++                    assert_eq!(actual, ScalarValue::Decimal128(Some(value), p, s));
++                    let input =
++                        ColumnarValue::Array(Arc::new(StringArray::from(vec![None, Some(source)])))
++                            .cast_to(&data_type, None)?;
++                    let actual = invoke(&decoded, p, s, input)?.into_array(2)?;
++                    assert_eq!(
++                        actual.as_ref(),
++                        &Decimal128Array::from(vec![None, Some(value)])
++                            .with_precision_and_scale(p, s)? as &dyn Array
++                    );
++                }
++            }
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn decimal_codec_preserves_typed_error_vocabulary() -> Result<()> {
++    for fail in [true, false] {
++        for allow in [true, false] {
++            let decoded = round_trip(5, 2, fail, allow)?;
++            for source in ["bad", "999.995", "1e39"] {
++                let input = ColumnarValue::Scalar(ScalarValue::Utf8(Some(source.into())));
++                let result = invoke(&decoded, 5, 2, input);
++                if !fail {
++                    assert!(matches!(
++                        result?,
++                        ColumnarValue::Scalar(ScalarValue::Decimal128(None, 5, 2))
++                    ));
++                    continue;
++                }
++                let error = structured(result)?;
++                if source == "bad" {
++                    assert_eq!(error.class, "java.lang.NumberFormatException");
++                    assert_eq!(error.condition, "CAST_INVALID_INPUT");
++                    assert_eq!(error.sql_state, "22018");
++                    assert_eq!(
++                        error.parameters,
++                        HashMap::from([
++                            ("expression".into(), "'bad'".into()),
++                            ("sourceType".into(), "\"STRING\"".into()),
++                            ("targetType".into(), "\"DECIMAL(5,2)\"".into()),
++                            ("ansiConfig".into(), "\"spark.sql.ansi.enabled\"".into()),
++                        ])
++                    );
++                } else {
++                    assert_eq!(error.class, "org.apache.spark.SparkArithmeticException");
++                    assert_eq!(error.sql_state, "22003");
++                    if source == "1e39" && !allow {
++                        assert_eq!(error.condition, "NUMERIC_OUT_OF_SUPPORTED_RANGE");
++                        assert_eq!(
++                            error.parameters,
++                            HashMap::from([("value".into(), source.into())])
++                        );
++                    } else {
++                        assert_eq!(
++                            error.condition,
++                            "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION"
++                        );
++                        let value = if source == "1e39" {
++                            format!("1{}", "0".repeat(39))
++                        } else {
++                            source.into()
++                        };
++                        assert_eq!(
++                            error.parameters,
++                            HashMap::from([
++                                ("value".into(), value),
++                                ("precision".into(), "5".into()),
++                                ("scale".into(), "2".into()),
++                                ("config".into(), "\"spark.sql.ansi.enabled\"".into()),
++                            ])
++                        );
++                    }
++                }
++            }
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn decimal_codec_preserves_lazy_thunks_in_full_physical_round_trip() -> Result<()> {
++    for data_type in [DataType::Utf8, DataType::LargeUtf8, DataType::Utf8View] {
++        let schema = Arc::new(Schema::new(vec![
++            Field::new("text", data_type.clone(), true),
++            Field::new("right", DataType::Int32, true),
++        ]));
++        let strings = ColumnarValue::Array(Arc::new(StringArray::from(vec![
++            Some("bad"),
++            Some("1.235"),
++            None,
++        ])))
++        .cast_to(&data_type, None)?
++        .into_array(3)?;
++        let batch = RecordBatch::try_new(
++            Arc::clone(&schema),
++            vec![
++                strings,
++                Arc::new(Int32Array::from(vec![None, Some(2), Some(0)])),
++            ],
++        )?;
++        for fail in [true, false] {
++            for allow in [true, false] {
++                let cast = ScalarUDF::from(SparkStringToDecimal::try_new(5, 2, fail, allow)?)
++                    .call(vec![col("text")]);
++                for ansi in [true, false] {
++                    // The operation returns the left value to isolate lazy casting;
++                    // this fixture is not a SQL division/coercion parity assertion.
++                    let operation = Expr::LambdaVariable(LambdaVariable::new(
++                        "lv".into(),
++                        Some(Arc::new(Field::new("lv", DataType::Decimal128(5, 2), true))),
++                    ));
++                    let logical = Expr::HigherOrderFunction(HigherOrderFunction::new(
++                        Arc::new(HigherOrderUDF::new_from_impl(SparkDivModLazy::new(ansi))),
++                        vec![
++                            lambda(["unused_r"], col("right")),
++                            lambda(["unused_l"], cast.clone()),
++                            lambda(["lv", "rv"], operation),
++                        ],
++                    ));
++                    let original = create_physical_expr(
++                        &logical,
++                        &DFSchema::try_from(schema.as_ref().clone())?,
++                        &ExecutionProps::new(),
++                        &PhysicalPlanningContext::default(),
++                    )?;
++                    let bytes = try_encode_physical_expr(&RemoteExecutionCodec, &original)?;
++                    let decoded = try_decode_physical_expr(
++                        &TaskContext::default(),
++                        &RemoteExecutionCodec,
++                        &bytes,
++                        schema.as_ref(),
++                    )?;
++                    for expr in [&original, &decoded] {
++                        assert_eq!(expr.data_type(schema.as_ref())?, DataType::Decimal128(5, 2));
++                        assert!(expr.nullable(schema.as_ref())?);
++                        let actual = expr.evaluate(&batch)?.into_array(3)?;
++                        assert_eq!(
++                            actual.as_ref(),
++                            &Decimal128Array::from(vec![None, Some(124), None])
++                                .with_precision_and_scale(5, 2)?
++                                as &dyn Array
++                        );
++                        let empty = batch.slice(0, 0);
++                        assert!(expr.evaluate(&empty)?.into_array(0)?.is_empty());
++                        let bad = RecordBatch::try_new(
++                            Arc::clone(&schema),
++                            vec![
++                                batch.column(0).slice(0, 1),
++                                Arc::new(Int32Array::from(vec![2])),
++                            ],
++                        )?;
++                        let result = expr.evaluate(&bad);
++                        if fail {
++                            let error = structured(result)?;
++                            assert_eq!(error.condition, "CAST_INVALID_INPUT");
++                            assert_eq!(error.sql_state, "22018");
++                            assert_eq!(
++                                error.parameters.get("expression").map(String::as_str),
++                                Some("'bad'")
++                            );
++                        } else {
++                            assert!(result?.into_array(1)?.is_null(0));
++                        }
++                    }
++                }
++            }
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn decimal_codec_rejects_malformed_and_out_of_range_fields() -> Result<()> {
++    for (precision, scale, name) in [
++        (0, 0, "spark_string_to_decimal"),
++        (39, 0, "spark_string_to_decimal"),
++        (256, 0, "spark_string_to_decimal"),
++        (257, 0, "spark_string_to_decimal"),
++        (u32::MAX, 0, "spark_string_to_decimal"),
++        (5, 6, "spark_string_to_decimal"),
++        (5, 128, "spark_string_to_decimal"),
++        (5, 258, "spark_string_to_decimal"),
++        (5, -256, "spark_string_to_decimal"),
++        (5, -129, "spark_string_to_decimal"),
++        (5, i32::MAX, "spark_string_to_decimal"),
++        (5, i32::MIN, "spark_string_to_decimal"),
++        (5, 2, "another_function"),
++    ] {
++        let bytes = ExtendedScalarUdf {
++            udf_kind: Some(UdfKind::SparkStringToDecimal(
++                r#gen::SparkStringToDecimalUdf {
++                    precision,
++                    scale,
++                    fail_on_error: true,
++                    allow_negative_scale: true,
++                },
++            )),
++        }
++        .encode_to_vec();
++        assert!(
++            RemoteExecutionCodec.try_decode_udf(name, &bytes).is_err(),
++            "{precision},{scale},{name}"
++        );
++    }
++    for bytes in [vec![], vec![0xff]] {
++        assert!(
++            RemoteExecutionCodec
++                .try_decode_udf("spark_string_to_decimal", &bytes)
++                .is_err()
++        );
++    }
++    let mut bytes = ExtendedScalarUdf {
++        udf_kind: Some(UdfKind::SparkStringToDecimal(
++            r#gen::SparkStringToDecimalUdf {
++                precision: 5,
++                scale: 2,
++                fail_on_error: true,
++                allow_negative_scale: true,
++            },
++        )),
++    }
++    .encode_to_vec();
++    bytes.pop();
++    assert!(
++        RemoteExecutionCodec
++            .try_decode_udf("spark_string_to_decimal", &bytes)
++            .is_err()
++    );
++    Ok(())
++}

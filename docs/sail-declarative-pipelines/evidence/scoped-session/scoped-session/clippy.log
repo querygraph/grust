@@ -1,0 +1,31 @@
+    Checking sail-common-datafusion v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common-datafusion)
+error[E0283]: type annotations needed
+   --> crates/sail-common-datafusion/src/session/scoped/tests.rs:230:38
+    |
+230 |         assert_eq!(response.as_ref().as_ref(), b"child");
+    |                                      ^^^^^^
+    |
+    = note: multiple `impl`s satisfying `[u8]: std::convert::AsRef<_>` found in the following crates: `core`, `winnow`:
+            - impl std::convert::AsRef<winnow::stream::bstr::BStr> for [u8];
+            - impl std::convert::AsRef<winnow::stream::bytes::Bytes> for [u8];
+            - impl<T> std::convert::AsRef<[T]> for [T];
+help: try using a fully qualified path to specify the expected types
+    |
+230 -         assert_eq!(response.as_ref().as_ref(), b"child");
+230 +         assert_eq!(<[u8] as std::convert::AsRef<T>>::as_ref(response.as_ref()), b"child");
+    |
+
+error: use of a disallowed method `datafusion::execution::session_state::SessionState::catalog_list`
+  --> crates/sail-common-datafusion/src/session/scoped.rs:74:20
+   |
+74 |         self.state.catalog_list().clone()
+   |                    ^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#disallowed_methods
+   = note: `-D clippy::disallowed-methods` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::disallowed_methods)]`
+
+error: could not compile `sail-common-datafusion` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+For more information about this error, try `rustc --explain E0283`.
+error: could not compile `sail-common-datafusion` (lib test) due to 1 previous error

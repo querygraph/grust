@@ -1,0 +1,82 @@
+# Spark SDP Scala reference substrate
+
+This tool registers and executes the original published Spark4.2.1 ScalaTest
+binaries **on Spark**, outside Sail's runtime/dependency graph. It provides an
+expanded reference manifest and oracle results. It never claims Sail acceptance.
+
+`artifacts.json` pins twenty-one Maven Central test/framework artifacts by SHA256.
+Published test-source JARs must byte-match every Scala source in the three owned roots and all explicitly scoped parser/lifecycle sources at
+Spark commit617618396087429b5627a86ce933bb0f5d6645cb, including the inherited Hive
+materialization suite. Unexpected or changed cached JARs fail verification.
+No binaries are committed. The supplied Spark distribution's runtime JAR hashes
+are recorded and checked again after execution.
+
+Use the existing Python3.12 environment and Java17. Supply absolute paths:
+
+```sh
+python scripts/sdp-scala-reference/run.py \
+  --spark-source /path/to/spark-source \
+  --spark-home /path/to/pyspark \
+  --java-home /path/to/jdk17 \
+  --python /path/to/python3.12 \
+  --cache /tmp/sdp-scala-artifacts --output /tmp/sdp-scala-collection collect
+
+python scripts/sdp-scala-reference/run.py \
+  --spark-source /path/to/spark-source \
+  --spark-home /path/to/pyspark \
+  --java-home /path/to/jdk17 \
+  --python /path/to/python3.12 \
+  --cache /tmp/sdp-scala-artifacts --output /tmp/sdp-scala-materialize run \
+  --registration /tmp/sdp-scala-collection/suites.json \
+  --suite org.apache.spark.sql.pipelines.graph.DefaultMaterializeTablesSuite
+```
+
+Output directories must be fresh. Each `run` starts one JVM for one suite.
+Reference bootstrap experiments found that combining default and Hive suites
+in one JVM aborted at Hive initialization with SparkEnv=null; the same Hive
+suite passed all29 tests in a fresh JVM. The combined failure is retained.
+The default materialization suite also passed all29 original tests.
+
+Collection inspects every top-level class in the pipelines, Connect-pipelines
+and Hive-pipelines test packages. It reports non-suites, abstract suites, concrete
+registration, unresolved classes, tags, nested-suite IDs and source positions.
+Unresolved classes or unexpanded nested suites fail collection; registration is
+not execution. The observed dependency-complete profile has35 nonempty suites
+and554 registered names, plus one empty concrete fixture base. These numbers
+are distinct from the462 static declaration inventory.
+
+A run requires a successful registration from the identical tool/runtime profile
+and verifies its bytes. XML names/count must match all registered tests, with no
+failure/error/skipped children. Missing tests or a JVM abort fail qualification.
+Timeouts terminate the owned JVM process group and remain failed attempts.
+
+The supplied PySpark distribution contains a shaded Connect server while the
+published Connect tests refer to unshaded gRPC/protobuf. Registration succeeds
+with pinned test dependencies; full Connect server reference execution has not
+been qualified. A suitable unshaded build/profile is still needed before claiming
+that tier executes. Source positions inside generic grid helpers also need
+explicit mapping to their caller declarations; do not invent a mapping by name.
+
+See the original-suite execution design for the separate Sail conformance routes.
+
+The owned-root manifest is not the whole goal denominator. The design checkpoint
+identified additional parser and session-lifecycle SDP declarations elsewhere in
+Spark; they remain explicit scope-expansion obligations until this tool and the
+canonical inventory are extended. Do not treat554 registered names as all SDP
+tests or as a Sail pass count.
+
+The checked-in scope.json adds dedicated dataset/Flow parser suites and only the
+SDP declarations in shared DDL/session suites. Named selections are part of the
+reviewed source scope, not free-form CLI deselection. Collection retains both
+allTestNames/allTags and the scoped names/tags; execution receipts label named
+selection and count both sets. Each declared name must exist. Dedicated parser
+suites execute in full, while shared-suite runs use only their fixed SDP names.
+The extended runtime count is established by the new collection receipt; the
+554 count above is the preserved v1 owned-root baseline.
+
+Qualified expanded profile:43 nonempty suites,595 scoped runtime names,56 source
+bindings and99 original Spark reference executions (including2 lifecycle cases).
+See the expanded-original-suite-reference evidence packet. Hive SlowHiveTest
+tags are retained and executed; Ignore/skipped outcomes remain disallowed.
+Canonical declaration scope is486 sites, including24 additions to the legacy462.
+All counts refer to their stated layer and do not establish Sail acceptance.

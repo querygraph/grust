@@ -1,0 +1,86 @@
+........................................................................ [ 24%]
+........................................................................ [ 48%]
+........................................................................ [ 72%]
+................FF...................................................... [ 96%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+____________________ test_signed_zero_divisors[-0.0-float] _____________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x11b417a10>
+data_type = 'float', zero = -0.0
+
+    @pytest.mark.parametrize("data_type", ["float", "double"])
+    @pytest.mark.parametrize("zero", [0.0, -0.0])
+    def test_signed_zero_divisors(spark, data_type, zero):
+        previous_ansi = spark.conf.get("spark.sql.ansi.enabled")
+        spark.conf.set("spark.sql.ansi.enabled", "false")
+        try:
+            divisor = F.lit(zero).cast(data_type)
+            rows = (
+                spark.range(2)
+                .select(
+                    (F.lit(1) / divisor).alias("literal_division"),
+                    (F.lit(1) % divisor).alias("literal_remainder"),
+                    (F.col("id") / divisor).alias("column_division"),
+                    (F.col("id") % divisor).alias("column_remainder"),
+                )
+                .collect()
+            )
+>           assert (
+                rows
+                == [Row(literal_division=None, literal_remainder=None, column_division=None, column_remainder=None)] * 2
+            )
+E           assert [Row(literal_...emainder=nan)] == [Row(literal_...mainder=None)]
+E             
+E             At index 0 diff: Row(literal_division=-inf, literal_remainder=nan, column_division=nan, column_remainder=nan) != Row(literal_division=None, literal_remainder=None, column_division=None, column_remainder=None)
+E             Use -v to get more diff
+
+python/pysail/tests/spark/dataframe/test_math.py:143: AssertionError
+____________________ test_signed_zero_divisors[-0.0-double] ____________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x11b417a10>
+data_type = 'double', zero = -0.0
+
+    @pytest.mark.parametrize("data_type", ["float", "double"])
+    @pytest.mark.parametrize("zero", [0.0, -0.0])
+    def test_signed_zero_divisors(spark, data_type, zero):
+        previous_ansi = spark.conf.get("spark.sql.ansi.enabled")
+        spark.conf.set("spark.sql.ansi.enabled", "false")
+        try:
+            divisor = F.lit(zero).cast(data_type)
+            rows = (
+                spark.range(2)
+                .select(
+                    (F.lit(1) / divisor).alias("literal_division"),
+                    (F.lit(1) % divisor).alias("literal_remainder"),
+                    (F.col("id") / divisor).alias("column_division"),
+                    (F.col("id") % divisor).alias("column_remainder"),
+                )
+                .collect()
+            )
+>           assert (
+                rows
+                == [Row(literal_division=None, literal_remainder=None, column_division=None, column_remainder=None)] * 2
+            )
+E           assert [Row(literal_...emainder=nan)] == [Row(literal_...mainder=None)]
+E             
+E             At index 0 diff: Row(literal_division=-inf, literal_remainder=nan, column_division=nan, column_remainder=nan) != Row(literal_division=None, literal_remainder=None, column_division=None, column_remainder=None)
+E             Use -v to get more diff
+
+python/pysail/tests/spark/dataframe/test_math.py:143: AssertionError
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/dataframe/test_math.py::test_signed_zero_divisors[-0.0-float]
+FAILED python/pysail/tests/spark/dataframe/test_math.py::test_signed_zero_divisors[-0.0-double]
+2 failed, 298 passed, 176 warnings in 10.77s

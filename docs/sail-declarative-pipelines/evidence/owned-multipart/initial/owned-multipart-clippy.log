@@ -1,0 +1,31 @@
+    Checking sail-common v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-common)
+    Checking sail-object-store v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-object-store)
+error[E0599]: no method named `put_multipart_opts` found for struct `std::sync::Arc<object_store::memory::InMemory>` in the current scope
+    --> crates/sail-object-store/src/owned_multipart/test_upload.rs:73:14
+     |
+  72 |           let inner = store
+     |  _____________________-
+  73 | |             .put_multipart_opts(&path, PutMultipartOptions::default())
+     | |_____________-^^^^^^^^^^^^^^^^^^
+     |
+    ::: /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:765:14
+     |
+ 765 |       async fn put_multipart_opts(
+     |                ------------------ the method is available for `std::sync::Arc<object_store::memory::InMemory>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: there is a method `put_multipart` with a similar name, but with different arguments
+    --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/object_store-0.13.2/src/lib.rs:1234:5
+     |
+1234 | /     fn put_multipart(
+1235 | |         &self,
+1236 | |         location: &Path,
+1237 | |     ) -> impl Future<Output = Result<Box<dyn MultipartUpload>>>;
+     | |________________________________________________________________^
+help: trait `ObjectStore` which provides `put_multipart_opts` is implemented but not in scope; perhaps you want to import it
+     |
+   1 + use object_store::ObjectStore;
+     |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-object-store` (lib test) due to 1 previous error

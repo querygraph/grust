@@ -1,0 +1,426 @@
+diff --git a/crates/sail-common-datafusion/src/streaming/bounded.rs b/crates/sail-common-datafusion/src/streaming/bounded.rs
+new file mode 100644
+index 000000000..3aebde190
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/streaming/bounded.rs
+@@ -0,0 +1,412 @@
++//! The bounded streaming source contract, protocol-neutral: an adapter
++//! describes partitions with immutable incarnations and opaque cursors,
++//! plans a range end in its own terms, and scans exactly `[start, end)` or
++//! fails closed. Generic code stores, compares for equality, serialises and
++//! passes cursors and incarnations through; it never parses, orders or does
++//! arithmetic on them. Moved here from Sail's Spark Connect pipelines module
++//! so adapters in lower crates can implement it; the Connect module keeps
++//! its Spark error conversions and the run-record types. Method shapes are
++//! unchanged by the move.
++
++use std::fmt;
++use std::sync::Arc;
++
++use datafusion::arrow::datatypes::SchemaRef;
++use datafusion::datasource::TableProvider;
++use serde::{Deserialize, Serialize};
++
++/// An opaque position token minted by one adapter for one partition.
++#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
++pub struct Cursor(pub String);
++
++/// The identity of a partition's current existence. A reused partition id
++/// with new data has a different incarnation; ranges captured under the old
++/// one can no longer be scanned.
++#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
++pub struct Incarnation(pub String);
++
++#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
++pub struct PartitionId(pub String);
++
++impl fmt::Display for PartitionId {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.write_str(&self.0)
++    }
++}
++
++/// A partition as the adapter currently sees it.
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub struct Partition {
++    pub id: PartitionId,
++    pub incarnation: Incarnation,
++}
++
++/// `describe()`: an opaque, serialisable description of the source and its
++/// partitions. `descriptor` is the adapter's own; the run record stores it
++/// so a replay can rebuild the same adapter.
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub struct SourceDescriptor {
++    pub kind: String,
++    pub descriptor: serde_json::Value,
++    pub partitions: Vec<Partition>,
++}
++
++/// One partition's bounded `[start, end)` under a captured incarnation.
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub struct Range {
++    pub partition: PartitionId,
++    pub incarnation: Incarnation,
++    pub start: Cursor,
++    pub end: Cursor,
++}
++
++/// Why a scan refused to produce a range. Every variant fails closed: no
++/// partial rows are returned.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum ScanError {
++    /// The partition's earliest retained position is past `start`.
++    RetentionGap {
++        partition: PartitionId,
++        expected: Cursor,
++        first_retained: Cursor,
++    },
++    /// The partition was recreated since the range was captured.
++    IncarnationMismatch {
++        partition: PartitionId,
++        expected: Incarnation,
++        actual: Incarnation,
++    },
++    /// Positions inside the range are not consecutive.
++    NonContiguous {
++        partition: PartitionId,
++        expected: Cursor,
++        actual: Cursor,
++    },
++    /// The partition no longer exists.
++    UnknownPartition { partition: PartitionId },
++    /// The adapter cannot interpret a cursor it did not mint.
++    ForeignCursor {
++        partition: PartitionId,
++        cursor: Cursor,
++    },
++}
++
++impl fmt::Display for ScanError {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        match self {
++            Self::RetentionGap {
++                partition,
++                expected,
++                first_retained,
++            } => write!(
++                f,
++                "retention gap on partition {partition}: expected {} but the first retained position is {}",
++                expected.0, first_retained.0
++            ),
++            Self::IncarnationMismatch {
++                partition,
++                expected,
++                actual,
++            } => write!(
++                f,
++                "partition {partition} was recreated: captured incarnation {} but the source reports {}",
++                expected.0, actual.0
++            ),
++            Self::NonContiguous {
++                partition,
++                expected,
++                actual,
++            } => write!(
++                f,
++                "non-contiguous page on partition {partition}: expected {} but read {}",
++                expected.0, actual.0
++            ),
++            Self::UnknownPartition { partition } => {
++                write!(f, "partition {partition} no longer exists")
++            }
++            Self::ForeignCursor { partition, cursor } => write!(
++                f,
++                "cursor {} was not minted for partition {partition}",
++                cursor.0
++            ),
++        }
++    }
++}
++
++impl std::error::Error for ScanError {}
++
++/// A provider's own error, boxed as a standard error so the control model
++/// can read, log and chain it without naming any provider type.
++pub type Cause = Box<dyn std::error::Error + Send + Sync + 'static>;
++
++/// Why a source call did not return its value. `source()` returns the
++/// provider cause where one exists; the deterministic refusals keep their
++/// `ScanError` value and messages. Causes are opaque, so this type promises
++/// neither `Clone` nor `Eq`.
++#[derive(Debug)]
++pub enum SourceError {
++    /// The request itself cannot be served; a [`ScanError`] as before.
++    Refused(ScanError),
++    /// The source could not be reached, did not answer within the caller's
++    /// deadline, or closed the connection. The call may or may not have
++    /// executed on the source. It is retry-eligible only because a bounded
++    /// read mutates no target and no position: the identical intent
++    /// (descriptor, incarnation, range) can be issued again, provided the
++    /// adapter keeps automatic position and consumer-group commits disabled.
++    Unavailable {
++        partition: Option<PartitionId>,
++        cause: Cause,
++    },
++    /// Authentication or authorization failed; operator action, not retry.
++    Denied { cause: Cause },
++    /// The named stream, topic or equivalent container does not exist. Not
++    /// [`ScanError::UnknownPartition`], which is reserved for a partition
++    /// missing from a container that `describe` did find.
++    NotFound { object: String, cause: Cause },
++    /// The source returned bytes the adapter could not decode as a message.
++    /// Fails closed; not retryable.
++    Corrupt {
++        partition: PartitionId,
++        cause: Cause,
++    },
++    /// The owning scope cancelled the call before it returned. This says
++    /// nothing about the provider's own background work, which the owner
++    /// qualifies separately.
++    Cancelled,
++    /// The adapter's own invariant failed.
++    Internal { cause: Cause },
++}
++
++impl SourceError {
++    /// `true` only for [`SourceError::Unavailable`]: the one class a control
++    /// loop may retry with the identical intent. Retry eligibility is a
++    /// property of the stateless captured-range read, never a claim that the
++    /// previous call did not execute.
++    pub fn retryable(&self) -> bool {
++        matches!(self, Self::Unavailable { .. })
++    }
++}
++
++impl From<ScanError> for SourceError {
++    fn from(error: ScanError) -> Self {
++        Self::Refused(error)
++    }
++}
++
++impl fmt::Display for SourceError {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        match self {
++            Self::Refused(error) => write!(f, "{error}"),
++            Self::Unavailable {
++                partition: Some(partition),
++                cause,
++            } => write!(f, "source unavailable for partition {partition}: {cause}"),
++            Self::Unavailable {
++                partition: None,
++                cause,
++            } => write!(f, "source unavailable: {cause}"),
++            Self::Denied { cause } => write!(f, "source denied the request: {cause}"),
++            Self::NotFound { object, cause } => {
++                write!(f, "source object {object} not found: {cause}")
++            }
++            Self::Corrupt { partition, cause } => {
++                write!(f, "corrupt message on partition {partition}: {cause}")
++            }
++            Self::Cancelled => write!(f, "source call cancelled by its owner"),
++            Self::Internal { cause } => write!(f, "source adapter invariant failed: {cause}"),
++        }
++    }
++}
++
++impl std::error::Error for SourceError {
++    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
++        match self {
++            Self::Refused(error) => Some(error),
++            Self::Unavailable { cause, .. }
++            | Self::Denied { cause }
++            | Self::NotFound { cause, .. }
++            | Self::Corrupt { cause, .. }
++            | Self::Internal { cause } => Some(cause.as_ref()),
++            Self::Cancelled => None,
++        }
++    }
++}
++
++/// The three operations a bounded source exposes, plus the range planning
++/// that keeps position arithmetic inside the adapter.
++pub trait BoundedSource: Send + Sync + fmt::Debug {
++    fn schema(&self) -> SchemaRef;
++
++    /// The source and its partitions now.
++    fn describe(&self) -> SourceDescriptor;
++
++    /// The earliest position of a partition now: where a partition first
++    /// seen by a run starts.
++    fn earliest(&self, partition: &PartitionId) -> Result<Cursor, ScanError>;
++
++    /// The end position of a partition now (`prepareForTriggerAvailableNow`).
++    /// Captured once per run; later batches read it from the run record.
++    fn frontier(&self, partition: &PartitionId) -> Result<Cursor, ScanError>;
++
++    /// The end of the next range from `start` towards `frontier`, holding at
++    /// most `max_rows` rows: `min(frontier, start + max_rows)` in the
++    /// adapter's own terms. Returns `start` itself when nothing remains.
++    fn plan_end(
++        &self,
++        partition: &PartitionId,
++        start: &Cursor,
++        frontier: &Cursor,
++        max_rows: usize,
++    ) -> Result<Cursor, ScanError>;
++
++    /// A bounded provider yielding exactly the range, or a [`ScanError`].
++    fn scan(&self, range: &Range) -> Result<Arc<dyn TableProvider>, ScanError>;
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn range_and_descriptor_round_trip_through_serde() {
++        let descriptor = SourceDescriptor {
++            kind: "test".into(),
++            descriptor: serde_json::json!({ "name": "events" }),
++            partitions: vec![Partition {
++                id: PartitionId("p0".into()),
++                incarnation: Incarnation("inc:1".into()),
++            }],
++        };
++        let json = serde_json::to_string(&descriptor).unwrap_or_default();
++        let decoded: Result<SourceDescriptor, _> = serde_json::from_str(&json);
++        assert_eq!(decoded.ok(), Some(descriptor));
++        let range = Range {
++            partition: PartitionId("p0".into()),
++            incarnation: Incarnation("inc:1".into()),
++            start: Cursor("pos:0".into()),
++            end: Cursor("pos:2".into()),
++        };
++        let json = serde_json::to_string(&range).unwrap_or_default();
++        let decoded: Result<Range, _> = serde_json::from_str(&json);
++        assert_eq!(decoded.ok(), Some(range));
++    }
++
++    #[test]
++    fn scan_errors_name_the_partition_and_positions() {
++        let error = ScanError::RetentionGap {
++            partition: PartitionId("p0".into()),
++            expected: Cursor("pos:1".into()),
++            first_retained: Cursor("pos:3".into()),
++        };
++        assert_eq!(
++            error.to_string(),
++            "retention gap on partition p0: expected pos:1 but the first retained position is pos:3"
++        );
++        let error = ScanError::IncarnationMismatch {
++            partition: PartitionId("p0".into()),
++            expected: Incarnation("inc:1".into()),
++            actual: Incarnation("inc:2".into()),
++        };
++        assert!(error.to_string().contains("recreated"));
++    }
++
++    /// A provider error type the control model must never name.
++    #[derive(Debug)]
++    struct ProviderError {
++        code: u32,
++    }
++
++    impl fmt::Display for ProviderError {
++        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++            write!(f, "provider code {}", self.code)
++        }
++    }
++
++    impl std::error::Error for ProviderError {}
++
++    fn cause(code: u32) -> Cause {
++        Box::new(ProviderError { code })
++    }
++
++    #[test]
++    fn source_errors_keep_their_variant_metadata_and_the_provider_cause() {
++        let p0 = || PartitionId("p0".into());
++        let errors = [
++            SourceError::Unavailable {
++                partition: Some(p0()),
++                cause: cause(8),
++            },
++            SourceError::Unavailable {
++                partition: None,
++                cause: cause(9),
++            },
++            SourceError::Denied { cause: cause(40) },
++            SourceError::NotFound {
++                object: "stream events/topic clicks".into(),
++                cause: cause(2010),
++            },
++            SourceError::Corrupt {
++                partition: p0(),
++                cause: cause(4011),
++            },
++            SourceError::Internal { cause: cause(1) },
++        ];
++        let expected = [
++            (
++                true,
++                "source unavailable for partition p0: provider code 8",
++                8,
++            ),
++            (true, "source unavailable: provider code 9", 9),
++            (false, "source denied the request: provider code 40", 40),
++            (
++                false,
++                "source object stream events/topic clicks not found: provider code 2010",
++                2010,
++            ),
++            (
++                false,
++                "corrupt message on partition p0: provider code 4011",
++                4011,
++            ),
++            (false, "source adapter invariant failed: provider code 1", 1),
++        ];
++        for (error, (retryable, message, code)) in errors.iter().zip(expected) {
++            assert_eq!(error.retryable(), retryable, "{error}");
++            assert_eq!(error.to_string(), message);
++            // The cause is the provider's own value, reachable through the
++            // standard chain and still downcastable.
++            let source = std::error::Error::source(error);
++            let provider = source.and_then(|source| source.downcast_ref::<ProviderError>());
++            assert_eq!(provider.map(|provider| provider.code), Some(code));
++        }
++        assert!(matches!(
++            &errors[3],
++            SourceError::NotFound { object, .. } if object == "stream events/topic clicks"
++        ));
++    }
++
++    #[test]
++    fn cancelled_has_no_cause_and_is_not_retryable() {
++        let error = SourceError::Cancelled;
++        assert!(!error.retryable());
++        assert!(std::error::Error::source(&error).is_none());
++        assert_eq!(error.to_string(), "source call cancelled by its owner");
++    }
++
++    #[test]
++    fn a_refusal_keeps_the_scan_error_value_and_message() {
++        let scan = ScanError::UnknownPartition {
++            partition: PartitionId("p9".into()),
++        };
++        let error = SourceError::from(scan.clone());
++        assert!(!error.retryable());
++        assert_eq!(error.to_string(), scan.to_string());
++        assert!(matches!(&error, SourceError::Refused(inner) if *inner == scan));
++        let source = std::error::Error::source(&error);
++        assert_eq!(
++            source.and_then(|source| source.downcast_ref::<ScanError>()),
++            Some(&scan)
++        );
++    }
++}
+diff --git a/crates/sail-common-datafusion/src/streaming/mod.rs b/crates/sail-common-datafusion/src/streaming/mod.rs
+index e322c1fc5..28b3faee2 100644
+--- a/crates/sail-common-datafusion/src/streaming/mod.rs
++++ b/crates/sail-common-datafusion/src/streaming/mod.rs
+@@ -1,2 +1,3 @@
++pub mod bounded;
+ pub mod event;
+ pub mod source;

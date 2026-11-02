@@ -1,0 +1,17 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/30 17:44:30 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+26/10/30 17:44:34 WARN DataSource: [COLUMN_ALREADY_EXISTS] The column `p` already exists. Choose another name or rename the existing column. SQLSTATE: 42711
+26/10/30 17:44:35 WARN DataSource: [COLUMN_ALREADY_EXISTS] The column `p` already exists. Choose another name or rename the existing column. SQLSTATE: 42711
+Traceback (most recent call last):
+  File "/Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/evidence/parquet-column-validation/partition-reference.py", line 19, in <module>
+    folder=OUT/('input-'+''.join(columns));file=folder/'p=directory-value'/'part.parquet';file.parent.mkdir(parents=True)
+                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/pathlib.py", line 1311, in mkdir
+    os.mkdir(self, mode)
+FileExistsError: [Errno 17] File exists: '/tmp/sail-sdp-partition-shadow-spark/input-P/p=directory-value'

@@ -1,0 +1,281 @@
+diff --git a/crates/sail-plan/src/resolver/constant.rs b/crates/sail-plan/src/resolver/constant.rs
+index abed880a7..eacc274d4 100644
+--- a/crates/sail-plan/src/resolver/constant.rs
++++ b/crates/sail-plan/src/resolver/constant.rs
+@@ -21,13 +21,42 @@ impl PlanResolver<'_> {
+     /// Resolve SQL's catalog-name expression without selecting a catalog or
+     /// executing a query. Direct Catalog API names do not need this SQL parsing.
+     pub async fn resolve_catalog_name(&self, expression: spec::Expr) -> PlanResult<String> {
++        let text = match expression {
++            spec::Expr::IdentifierClause { expr } => {
++                let mut state = PlanResolverState::new();
++                state.config_mut().analyzer_identifier = true;
++                // Catalog IDENTIFIER resolves scalar arguments before foldability;
++                // table identifiers alone remap unresolved columns to NOT_CONSTANT.
++                self.resolve_scalar_identifier_expr(*expr, &Arc::new(DFSchema::empty()), &mut state)
++                    .await?
++            }
++            expression => {
++                self.resolve_unwrapped_catalog_expression(expression)
++                    .await?
++            }
++        };
++        let name = from_ast_object_name(
++            parse_object_name(&text).map_err(|error| PlanError::analysis(error.to_string()))?,
++        )?;
++        match Vec::<String>::from(name).as_slice() {
++            [name] => Ok(name.clone()),
++            _ => Err(PlanError::analysis(
++                "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name",
++            )),
++        }
++    }
++
++    /// Unwrapped directives validate the analyzed expression without optimization.
++    async fn resolve_unwrapped_catalog_expression(
++        &self,
++        expression: spec::Expr,
++    ) -> PlanResult<String> {
+         let expression = match expression {
+             spec::Expr::UnresolvedAttribute { name, .. } => {
+                 spec::Expr::Literal(spec::Literal::Utf8 {
+                     value: Some(quote_names_if_needed(name.parts())),
+                 })
+             }
+-            spec::Expr::IdentifierClause { expr } => *expr,
+             expression => expression,
+         };
+         let schema = Arc::new(DFSchema::empty());
+@@ -63,16 +92,7 @@ impl PlanResolver<'_> {
+                 "[NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+             ));
+         }
+-        let text = LiteralValue(&scalar).try_to_string()?;
+-        let name = from_ast_object_name(
+-            parse_object_name(text).map_err(|error| PlanError::analysis(error.to_string()))?,
+-        )?;
+-        match Vec::<String>::from(name).as_slice() {
+-            [name] => Ok(name.clone()),
+-            _ => Err(PlanError::analysis(
+-                "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name",
+-            )),
+-        }
++        Ok(LiteralValue(&scalar).try_to_string()?.to_string())
+     }
+ 
+     /// Check before simplification or physical evaluation can erase a volatile
+diff --git a/crates/sail-plan/src/resolver/constant/tests.rs b/crates/sail-plan/src/resolver/constant/tests.rs
+index c077a29e5..c3e000248 100644
+--- a/crates/sail-plan/src/resolver/constant/tests.rs
++++ b/crates/sail-plan/src/resolver/constant/tests.rs
+@@ -318,3 +318,130 @@ fn non_foldable_annotation_prevents_builder_invocation() -> TestResult {
+     }
+     Ok(())
+ }
++
++#[tokio::test]
++async fn wrapped_catalog_type_only_arguments_use_analyzer_identifier_policy() -> TestResult {
++    let context = context()?;
++    for ansi_mode in [true, false] {
++        let resolver = PlanResolver::new(
++            &context,
++            Arc::new(PlanConfig {
++                ansi_mode,
++                ..Default::default()
++            }),
++        );
++        for (sql, expected) in [
++            ("IDENTIFIER(typeof(current_catalog()))", "string"),
++            ("IDENTIFIER(typeof(rand(0)))", "double"),
++            ("IDENTIFIER(typeof(1 DIV 0))", "bigint"),
++            ("IDENTIFIER(typeof(raise_error('unused')))", "void"),
++            ("IDENTIFIER(typeof(assert_true(true)))", "void"),
++            ("IDENTIFIER('`test.cat`')", "test.cat"),
++        ] {
++            assert_eq!(
++                resolver.resolve_catalog_name(expression(sql)?).await?,
++                expected,
++                "ansi={ansi_mode} {sql}"
++            );
++        }
++        for (sql, condition) in [
++            ("IDENTIFIER(current_catalog())", "NOT_CONSTANT"),
++            ("IDENTIFIER(rand(0))", "NOT_CONSTANT"),
++            ("IDENTIFIER(1 DIV 0)", "WRONG_TYPE"),
++            ("IDENTIFIER('test.cat')", "MULTI_PART_NAME"),
++            ("typeof(current_catalog())", "NOT_CONSTANT"),
++            ("typeof(rand(0))", "NOT_CONSTANT"),
++        ] {
++            let error = resolver
++                .resolve_catalog_name(expression(sql)?)
++                .await
++                .err()
++                .ok_or_else(|| PlanError::internal(format!("expected rejection: {sql}")))?;
++            assert!(
++                error.to_string().contains(condition),
++                "ansi={ansi_mode} {sql}: {error}"
++            );
++        }
++    }
++    let catalog = context.extension::<CatalogManager>()?;
++    assert_eq!(catalog.default_catalog()?.as_ref(), "catalog");
++    assert_eq!(Vec::<String>::from(catalog.default_database()?), vec!["db"]);
++    Ok(())
++}
++
++#[tokio::test]
++async fn wrapped_catalog_type_only_udf_never_invokes_the_function() -> TestResult {
++    let context = context()?;
++    let calls = Arc::new(AtomicUsize::new(0));
++    let observed = calls.clone();
++    context
++        .extension::<CatalogManager>()?
++        .register_function(create_udf(
++            "catalog_type_canary",
++            vec![],
++            DataType::Utf8,
++            Volatility::Immutable,
++            Arc::new(move |_| {
++                observed.fetch_add(1, Ordering::SeqCst);
++                Ok(ColumnarValue::Scalar(ScalarValue::Utf8(Some(
++                    "catalog".into(),
++                ))))
++            }),
++        ))?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    assert_eq!(
++        resolver
++            .resolve_catalog_name(expression("IDENTIFIER(typeof(catalog_type_canary()))")?)
++            .await?,
++        "string"
++    );
++    let error = resolver
++        .resolve_catalog_name(expression("IDENTIFIER(catalog_type_canary())")?)
++        .await
++        .err()
++        .ok_or_else(|| PlanError::internal("registered function was accepted"))?;
++    assert!(error.to_string().contains("NOT_CONSTANT"), "{error}");
++    assert_eq!(calls.load(Ordering::SeqCst), 0);
++    Ok(())
++}
++
++#[tokio::test]
++async fn wrapped_catalog_identifier_preserves_scalar_missing_column_precedence() -> TestResult {
++    let context = context()?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    for sql in [
++        "missing",
++        "concat(current_catalog(), missing)",
++        "typeof(missing)",
++    ] {
++        let error = resolver
++            .resolve_catalog_name(expression(&format!("IDENTIFIER({sql})"))?)
++            .await
++            .err()
++            .ok_or_else(|| PlanError::internal("missing column was accepted"))?;
++        let PlanError::Structured(details) = error else {
++            return Err(PlanError::internal(format!(
++                "expected structured column error: {sql}: {error}"
++            ))
++            .into());
++        };
++        assert_eq!(
++            details.condition, "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION",
++            "{sql}"
++        );
++        assert_eq!(
++            details.parameters.get("objectName").map(String::as_str),
++            Some("`missing`")
++        );
++        let table_error = resolver
++            .resolve_table_identifier_expr(expression(sql)?, &mut PlanResolverState::new())
++            .await
++            .err()
++            .ok_or_else(|| PlanError::internal("table missing column was accepted"))?;
++        assert!(
++            table_error.to_string().contains("NOT_CONSTANT"),
++            "{sql}: {table_error}"
++        );
++    }
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/expression/function.rs b/crates/sail-plan/src/resolver/expression/function.rs
+index cb0a5ceef..2e3a226f5 100644
+--- a/crates/sail-plan/src/resolver/expression/function.rs
++++ b/crates/sail-plan/src/resolver/expression/function.rs
+@@ -91,7 +91,7 @@ impl PlanResolver<'_> {
+                 "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] user-defined or higher-order function is not foldable",
+             ));
+         }
+-        if state.config().table_identifier
++        if state.config().analyzer_identifier
+             && canonical_function_name == "typeof"
+             && catalog_manager
+                 .get_function(&canonical_function_name)?
+diff --git a/crates/sail-plan/src/resolver/expression/mod.rs b/crates/sail-plan/src/resolver/expression/mod.rs
+index a2881032a..372688724 100644
+--- a/crates/sail-plan/src/resolver/expression/mod.rs
++++ b/crates/sail-plan/src/resolver/expression/mod.rs
+@@ -108,7 +108,7 @@ impl PlanResolver<'_> {
+     ) -> PlanResult<NamedExpr> {
+         use spec::Expr;
+ 
+-        if state.config().table_identifier
++        if state.config().analyzer_identifier
+             && matches!(
+                 &expr,
+                 Expr::InSubquery { .. }
+diff --git a/crates/sail-plan/src/resolver/identifier.rs b/crates/sail-plan/src/resolver/identifier.rs
+index cdebd13b6..3162b4d6e 100644
+--- a/crates/sail-plan/src/resolver/identifier.rs
++++ b/crates/sail-plan/src/resolver/identifier.rs
+@@ -25,7 +25,7 @@ impl PlanResolver<'_> {
+         let mut scope = state.enter_config_scope();
+         scope.state().config_mut().require_foldable = true;
+         scope.state().config_mut().constant_context = ConstantContext::Identifier;
+-        scope.state().config_mut().table_identifier = true;
++        scope.state().config_mut().analyzer_identifier = true;
+         let resolved = self
+             .resolve_expression(expression, &Arc::new(DFSchema::empty()), scope.state())
+             .await
+diff --git a/crates/sail-plan/src/resolver/identifier/provenance_tests.rs b/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
+index f7030cd35..2f36432e6 100644
+--- a/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
++++ b/crates/sail-plan/src/resolver/identifier/provenance_tests.rs
+@@ -144,7 +144,7 @@ async fn identifier_constant_context_restores_parameters_and_state_after_errors(
+             ConstantContext::Ordinary
+         );
+         assert!(!params.state().config().require_foldable);
+-        assert!(!params.state().config().table_identifier);
++        assert!(!params.state().config().analyzer_identifier);
+         assert!(params.state().config().arrow_allow_large_var_types);
+         assert!(params.state().get_param_value("col").is_some());
+     }
+diff --git a/crates/sail-plan/src/resolver/identifier/tests.rs b/crates/sail-plan/src/resolver/identifier/tests.rs
+index d5c1f4153..0aa5c3cda 100644
+--- a/crates/sail-plan/src/resolver/identifier/tests.rs
++++ b/crates/sail-plan/src/resolver/identifier/tests.rs
+@@ -86,7 +86,7 @@ async fn table_validation_precedes_subquery_analysis_type_evaluation_and_folding
+             "{sql}: {error}"
+         );
+         assert!(!state.config().require_foldable);
+-        assert!(!state.config().table_identifier);
++        assert!(!state.config().analyzer_identifier);
+         assert!(state.config().arrow_allow_large_var_types);
+     }
+     assert_eq!(
+diff --git a/crates/sail-plan/src/resolver/state.rs b/crates/sail-plan/src/resolver/state.rs
+index 14a1cf4a0..5bbe459b2 100644
+--- a/crates/sail-plan/src/resolver/state.rs
++++ b/crates/sail-plan/src/resolver/state.rs
+@@ -60,8 +60,8 @@ pub(super) struct PlanResolverStateConfig {
+     pub require_foldable: bool,
+     /// Lower constant-name arguments without losing their function foldability.
+     pub constant_context: ConstantContext,
+-    /// Table IDENTIFIER keeps subqueries unresolved while allowing type-only replacements.
+-    pub table_identifier: bool,
++    /// Analyzer-time identifiers keep subqueries unresolved and allow type-only replacements.
++    pub analyzer_identifier: bool,
+     pub arrow_allow_large_var_types: bool,
+     /// Keep source columns in COUNT arguments while resolving SQL PIVOT aggregates.
+     /// Implicit pivot grouping needs those references before the aggregate is rewritten.

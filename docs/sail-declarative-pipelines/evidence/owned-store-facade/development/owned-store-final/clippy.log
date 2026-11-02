@@ -1,0 +1,17 @@
+    Checking sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+error[E0603]: module `layers` is private
+ --> crates/sail-execution/src/owned_store_provider_tests.rs:2:24
+  |
+2 | use sail_object_store::layers::runtime::RuntimeAwareObjectStore;
+  |                        ^^^^^^           ----------------------- struct `RuntimeAwareObjectStore` is not publicly re-exported
+  |                        |
+  |                        private module
+  |
+note: the module `layers` is defined here
+ --> crates/sail-object-store/src/lib.rs:2:1
+  |
+2 | mod layers;
+  | ^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0603`.
+error: could not compile `sail-execution` (lib test) due to 1 previous error

@@ -1,0 +1,24 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/30 18:33:31 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///tmp/sail-sdp-dynamic-binding-spark-expanded/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                {"name": "literal_local_no_conf", "query": "SELECT foo FROM IDENTIFIER('z_sensitive')", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"foo": 1}], "session_case_sensitive": "false"}
+{"name": "literal_local_true", "query": "SELECT Foo FROM IDENTIFIER('z_sensitive')", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "dynamic_external_no_conf", "query": "SELECT Foo FROM IDENTIFIER('external_input')", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 9}], "session_case_sensitive": "false"}
+{"name": "dynamic_external_unrelated_true", "query": "SELECT Foo FROM IDENTIFIER('external_input')", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 9}], "session_case_sensitive": "false"}
+{"name": "static_true_dynamic_external", "query": "SELECT ext.Foo FROM z_sensitive CROSS JOIN IDENTIFIER('external_input') ext", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "dynamic_external_static_true", "query": "SELECT ext.Foo FROM IDENTIFIER('external_input') ext CROSS JOIN z_sensitive", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "computed_external_unrelated_true", "query": "SELECT Foo FROM IDENTIFIER(concat('external_', 'input'))", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 9}], "session_case_sensitive": "false"}
+{"name": "computed_cte", "query": "WITH c AS (SELECT 1 AS foo) SELECT Foo FROM IDENTIFIER(concat('c',''))", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 1}], "session_case_sensitive": "false"}
+{"name": "cast_local", "query": "SELECT Foo FROM IDENTIFIER(CAST('z_sensitive' AS STRING))", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "literal_sample", "query": "SELECT Foo FROM IDENTIFIER('external_input') TABLESAMPLE (100 PERCENT)", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 9}], "session_case_sensitive": "false"}
+{"name": "concat_local", "query": "SELECT Foo FROM IDENTIFIER(concat('z_', 'sensitive'))", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "dynamic_cte", "query": "WITH c AS (SELECT 1 AS foo) SELECT Foo FROM IDENTIFIER('c')", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 1}], "session_case_sensitive": "false"}
+{"name": "dynamic_table_producer", "query": "SELECT Foo FROM IDENTIFIER('z_sensitive')", "consumer_conf": {}, "run_returned": true, "result_exists": true, "rows": [{"Foo": 1}], "session_case_sensitive": "false"}
+Reference observations recorded

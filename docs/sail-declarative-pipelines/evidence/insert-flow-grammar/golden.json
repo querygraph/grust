@@ -1,0 +1,56 @@
+{
+  "sail_commit": "09d18d9710d549cadcbb5f6a486a383cd0f635db",
+  "checks": [
+    {
+      "name": "native-analyzer",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-sql-analyzer",
+        "--lib",
+        "--locked"
+      ],
+      "update": false,
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-insert-flow-native-analyzer.log",
+      "sha256": "d0721286610a6a83167e3b784f22b3d581f27f985da44d7c838a0240978d7d32"
+    },
+    {
+      "name": "plan-generate",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked",
+        "proto::plan::tests::test_sql_to_plan"
+      ],
+      "update": true,
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-insert-flow-plan-generate.log",
+      "sha256": "40b1f171fd30981186a226dbe089bbe1abc4933c1cb1d55554ffd74e3970d0e0"
+    },
+    {
+      "name": "function-generate",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "-p",
+        "sail-spark-connect",
+        "--lib",
+        "--locked",
+        "proto::function::tests::test_sql_function"
+      ],
+      "update": true,
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-insert-flow-function-generate.log",
+      "sha256": "6042627c3e6ed4d6514f9eaf56e31aa26b5107b7def236ef1f0ed26340da1396"
+    }
+  ],
+  "recorded_at": "2026-10-31T17:12:23.272918+00:00"
+}

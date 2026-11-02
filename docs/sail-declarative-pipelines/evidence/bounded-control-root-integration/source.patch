@@ -1,0 +1,890 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/mod.rs b/crates/sail-spark-connect/src/pipelines/mod.rs
+index 849e30d66..30e4609bc 100644
+--- a/crates/sail-spark-connect/src/pipelines/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/mod.rs
+@@ -7,6 +7,7 @@ mod schema;
+ mod schema_merge;
+ mod selection;
+ mod sql;
++mod streaming;
+ mod topology;
+ 
+ use std::collections::HashMap;
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/intent.rs b/crates/sail-spark-connect/src/pipelines/streaming/intent.rs
+new file mode 100644
+index 000000000..67cd4adab
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/intent.rs
+@@ -0,0 +1,171 @@
++//! The run record's two streaming entries: the frontier captured once per
++//! run, and the per-batch intent of explicit ranges. Both are serialisable
++//! so a replay re-plans exactly the recorded ranges and nothing else; output
++//! row counts never enter progress.
++
++use std::collections::BTreeMap;
++
++use serde::{Deserialize, Serialize};
++
++use super::source::{BoundedSource, Cursor, Incarnation, PartitionId, Range, ScanError};
++
++/// The per-partition end captured at the start of a run, with the
++/// incarnation it was captured under.
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub struct RunFrontier {
++    pub partitions: BTreeMap<PartitionId, (Incarnation, Cursor)>,
++}
++
++impl RunFrontier {
++    /// `frontier(partitions)` for every partition the source describes now.
++    pub fn capture(source: &dyn BoundedSource) -> Result<Self, ScanError> {
++        let mut partitions = BTreeMap::new();
++        for partition in source.describe().partitions {
++            let end = source.frontier(&partition.id)?;
++            partitions.insert(partition.id, (partition.incarnation, end));
++        }
++        Ok(Self { partitions })
++    }
++}
++
++/// Where each partition's next range starts, bound to the incarnation the
++/// position was reached under: a position means nothing under another
++/// incarnation. A partition absent here is one the run has not seen: its
++/// first range starts at the source's earliest position at planning time.
++#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
++pub struct Progress {
++    pub positions: BTreeMap<PartitionId, (Incarnation, Cursor)>,
++}
++
++impl Progress {
++    /// Every range of a completed intent advances its partition to the
++    /// range's end under the range's incarnation.
++    pub fn advance(mut self, intent: &BatchIntent) -> Self {
++        for range in &intent.ranges {
++            self.positions.insert(
++                range.partition.clone(),
++                (range.incarnation.clone(), range.end.clone()),
++            );
++        }
++        self
++    }
++}
++
++/// Why an intent could not be planned. Both fail closed: neither is "caught up".
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum PlanError {
++    Scan(ScanError),
++    /// A limit of zero rows per partition can never advance.
++    ZeroLimit,
++    /// The adapter returned a range end equal to its start although the
++    /// partition has not reached the captured frontier.
++    Stalled {
++        partition: PartitionId,
++        start: Cursor,
++        frontier: Cursor,
++    },
++    /// Progress was reached under another incarnation of the partition.
++    IncarnationChanged {
++        partition: PartitionId,
++        progressed: Incarnation,
++        captured: Incarnation,
++    },
++}
++
++impl From<ScanError> for PlanError {
++    fn from(error: ScanError) -> Self {
++        Self::Scan(error)
++    }
++}
++
++impl std::fmt::Display for PlanError {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        match self {
++            Self::Scan(error) => write!(f, "{error}"),
++            Self::ZeroLimit => f.write_str("max rows per partition must be at least one"),
++            Self::Stalled {
++                partition,
++                start,
++                frontier,
++            } => write!(
++                f,
++                "planning stalled on partition {partition}: no range from {} towards {}",
++                start.0, frontier.0
++            ),
++            Self::IncarnationChanged {
++                partition,
++                progressed,
++                captured,
++            } => write!(
++                f,
++                "progress on partition {partition} was reached under incarnation {} but the run captured {}",
++                progressed.0, captured.0
++            ),
++        }
++    }
++}
++
++impl From<PlanError> for crate::error::SparkError {
++    fn from(error: PlanError) -> Self {
++        crate::error::SparkError::invalid(format!("streaming intent: {error}"))
++    }
++}
++
++/// The ranges one batch covers, decided before the batch runs and replayed
++/// unchanged after a failure.
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub struct BatchIntent {
++    pub ranges: Vec<Range>,
++}
++
++/// Plans the next intent against the captured frontier: one range per
++/// partition that has not reached its captured end, each bounded by the
++/// adapter's `plan_end`. `None` once every partition is caught up. Generic
++/// code decides only "caught up" by cursor equality under the same
++/// incarnation; the adapter decides how far a range reaches. A progress
++/// entry from another incarnation, a zero limit and a non-advancing
++/// `plan_end` are errors, never "caught up".
++pub fn next_intent(
++    source: &dyn BoundedSource,
++    frontier: &RunFrontier,
++    progress: &Progress,
++    max_rows_per_partition: usize,
++) -> Result<Option<BatchIntent>, PlanError> {
++    if max_rows_per_partition == 0 {
++        return Err(PlanError::ZeroLimit);
++    }
++    let mut ranges = Vec::new();
++    for (partition, (incarnation, end)) in &frontier.partitions {
++        let start = match progress.positions.get(partition) {
++            Some((progressed, start)) => {
++                if progressed != incarnation {
++                    return Err(PlanError::IncarnationChanged {
++                        partition: partition.clone(),
++                        progressed: progressed.clone(),
++                        captured: incarnation.clone(),
++                    });
++                }
++                start.clone()
++            }
++            None => source.earliest(partition)?,
++        };
++        if &start == end {
++            continue;
++        }
++        let range_end = source.plan_end(partition, &start, end, max_rows_per_partition)?;
++        if range_end == start {
++            return Err(PlanError::Stalled {
++                partition: partition.clone(),
++                start,
++                frontier: end.clone(),
++            });
++        }
++        ranges.push(Range {
++            partition: partition.clone(),
++            incarnation: incarnation.clone(),
++            start,
++            end: range_end,
++        });
++    }
++    Ok((!ranges.is_empty()).then_some(BatchIntent { ranges }))
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/mod.rs b/crates/sail-spark-connect/src/pipelines/streaming/mod.rs
+new file mode 100644
+index 000000000..5ef4a7ebf
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/mod.rs
+@@ -0,0 +1,20 @@
++//! Bounded streaming input for declarative pipelines, following the design
++//! review's repeatable-range contract (SDP-FABLE-DESIGN-REVIEW §5.2): a source
++//! adapter describes partitions with immutable incarnations and opaque
++//! cursors, the frontier is captured once per run and read back from the run
++//! record afterwards, each batch is an intent of explicit `[start, end)`
++//! ranges that the adapter planned, and a scan yields exactly that range or
++//! fails closed. Nothing here runs a flow, writes a sink, persists a record
++//! or talks to a broker; the in-process [`test_source::DeterministicSource`]
++//! exists so Spark assertions can run without one.
++#![cfg_attr(
++    not(test),
++    expect(dead_code, reason = "wired by the streaming admission unit")
++)]
++
++pub(super) mod intent;
++pub(super) mod source;
++pub(super) mod test_source;
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/source.rs b/crates/sail-spark-connect/src/pipelines/streaming/source.rs
+new file mode 100644
+index 000000000..f47d2f1fc
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/source.rs
+@@ -0,0 +1,15 @@
++//! The bounded source contract lives in `sail_common_datafusion::streaming::bounded`
++//! so adapters in lower crates can implement it; this module re-exports it for
++//! the pipeline control model and keeps the Spark-facing error conversion.
++
++pub use sail_common_datafusion::streaming::bounded::{
++    BoundedSource, Cursor, Incarnation, Partition, PartitionId, Range, ScanError, SourceDescriptor,
++};
++
++use crate::error::SparkError;
++
++impl From<ScanError> for SparkError {
++    fn from(error: ScanError) -> Self {
++        SparkError::invalid(format!("streaming source: {error}"))
++    }
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/test_source.rs b/crates/sail-spark-connect/src/pipelines/streaming/test_source.rs
+new file mode 100644
+index 000000000..1c946f691
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/test_source.rs
+@@ -0,0 +1,233 @@
++//! An in-process bounded source whose every behaviour is chosen by the test:
++//! partitions with immutable incarnations, rows at consecutive positions,
++//! retention that can expire a prefix, appends after a frontier was
++//! captured, and partition recreation under a new incarnation. Cursors are
++//! minted as `pos:<n>` tokens that only this adapter parses.
++
++use std::collections::BTreeMap;
++use std::sync::{Arc, Mutex};
++
++use datafusion::arrow::array::ArrayRef;
++use datafusion::arrow::datatypes::SchemaRef;
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::common::ScalarValue;
++use datafusion::datasource::{MemTable, TableProvider};
++
++use super::source::{
++    BoundedSource, Cursor, Incarnation, Partition, PartitionId, Range, ScanError, SourceDescriptor,
++};
++
++#[derive(Debug, Clone)]
++struct PartitionState {
++    incarnation: u64,
++    /// Position of the first retained row.
++    earliest: u64,
++    /// Rows at positions `earliest .. earliest + rows.len()`.
++    rows: Vec<Vec<ScalarValue>>,
++}
++
++#[derive(Debug)]
++pub struct DeterministicSource {
++    name: String,
++    schema: SchemaRef,
++    partitions: Mutex<BTreeMap<PartitionId, PartitionState>>,
++}
++
++impl DeterministicSource {
++    pub fn new(name: &str, schema: SchemaRef) -> Self {
++        Self {
++            name: name.into(),
++            schema,
++            partitions: Mutex::new(BTreeMap::new()),
++        }
++    }
++
++    fn with_partitions<T>(
++        &self,
++        f: impl FnOnce(&mut BTreeMap<PartitionId, PartitionState>) -> T,
++    ) -> T {
++        let mut guard = match self.partitions.lock() {
++            Ok(guard) => guard,
++            Err(poisoned) => poisoned.into_inner(),
++        };
++        f(&mut guard)
++    }
++
++    /// Creates an empty partition under incarnation 1, or recreates an
++    /// existing one empty under the next incarnation.
++    pub fn create_partition(&self, id: &str) -> Incarnation {
++        self.with_partitions(|partitions| {
++            let id = PartitionId(id.into());
++            let incarnation = partitions.get(&id).map_or(1, |state| state.incarnation + 1);
++            partitions.insert(
++                id,
++                PartitionState {
++                    incarnation,
++                    earliest: 0,
++                    rows: Vec::new(),
++                },
++            );
++            Incarnation(format!("inc:{incarnation}"))
++        })
++    }
++
++    /// Appends rows at the next positions of an existing partition.
++    pub fn append(&self, id: &str, rows: Vec<Vec<ScalarValue>>) {
++        self.with_partitions(|partitions| {
++            if let Some(state) = partitions.get_mut(&PartitionId(id.into())) {
++                state.rows.extend(rows);
++            }
++        });
++    }
++
++    /// Drops every row before `position`, as retention would.
++    pub fn expire_before(&self, id: &str, position: u64) {
++        self.with_partitions(|partitions| {
++            if let Some(state) = partitions.get_mut(&PartitionId(id.into()))
++                && position > state.earliest
++            {
++                let drop = usize::try_from(position - state.earliest).unwrap_or(usize::MAX);
++                let drop = drop.min(state.rows.len());
++                state.rows.drain(..drop);
++                state.earliest += u64::try_from(drop).unwrap_or(0);
++            }
++        });
++    }
++
++    pub fn remove_partition(&self, id: &str) {
++        self.with_partitions(|partitions| {
++            partitions.remove(&PartitionId(id.into()));
++        });
++    }
++
++    fn cursor(position: u64) -> Cursor {
++        Cursor(format!("pos:{position}"))
++    }
++
++    fn position(partition: &PartitionId, cursor: &Cursor) -> Result<u64, ScanError> {
++        cursor
++            .0
++            .strip_prefix("pos:")
++            .and_then(|digits| digits.parse().ok())
++            .ok_or_else(|| ScanError::ForeignCursor {
++                partition: partition.clone(),
++                cursor: cursor.clone(),
++            })
++    }
++
++    fn state(&self, partition: &PartitionId) -> Result<PartitionState, ScanError> {
++        self.with_partitions(|partitions| partitions.get(partition).cloned())
++            .ok_or_else(|| ScanError::UnknownPartition {
++                partition: partition.clone(),
++            })
++    }
++
++    fn end_of(state: &PartitionState) -> u64 {
++        state.earliest + u64::try_from(state.rows.len()).unwrap_or(0)
++    }
++}
++
++impl BoundedSource for DeterministicSource {
++    fn schema(&self) -> SchemaRef {
++        self.schema.clone()
++    }
++
++    fn describe(&self) -> SourceDescriptor {
++        let partitions = self.with_partitions(|partitions| {
++            partitions
++                .iter()
++                .map(|(id, state)| Partition {
++                    id: id.clone(),
++                    incarnation: Incarnation(format!("inc:{}", state.incarnation)),
++                })
++                .collect()
++        });
++        SourceDescriptor {
++            kind: "deterministic".into(),
++            descriptor: serde_json::json!({ "name": self.name }),
++            partitions,
++        }
++    }
++
++    fn earliest(&self, partition: &PartitionId) -> Result<Cursor, ScanError> {
++        Ok(Self::cursor(self.state(partition)?.earliest))
++    }
++
++    fn frontier(&self, partition: &PartitionId) -> Result<Cursor, ScanError> {
++        Ok(Self::cursor(Self::end_of(&self.state(partition)?)))
++    }
++
++    fn plan_end(
++        &self,
++        partition: &PartitionId,
++        start: &Cursor,
++        frontier: &Cursor,
++        max_rows: usize,
++    ) -> Result<Cursor, ScanError> {
++        let start = Self::position(partition, start)?;
++        let frontier = Self::position(partition, frontier)?;
++        let step = u64::try_from(max_rows).unwrap_or(u64::MAX);
++        Ok(Self::cursor(
++            start.saturating_add(step).min(frontier).max(start),
++        ))
++    }
++
++    fn scan(&self, range: &Range) -> Result<Arc<dyn TableProvider>, ScanError> {
++        let state = self.state(&range.partition)?;
++        let actual = Incarnation(format!("inc:{}", state.incarnation));
++        if actual != range.incarnation {
++            return Err(ScanError::IncarnationMismatch {
++                partition: range.partition.clone(),
++                expected: range.incarnation.clone(),
++                actual,
++            });
++        }
++        let start = Self::position(&range.partition, &range.start)?;
++        let end = Self::position(&range.partition, &range.end)?;
++        if start < state.earliest {
++            return Err(ScanError::RetentionGap {
++                partition: range.partition.clone(),
++                expected: range.start.clone(),
++                first_retained: Self::cursor(state.earliest),
++            });
++        }
++        let available = Self::end_of(&state);
++        if end > available {
++            // The range reaches past what the partition holds: the page is
++            // not contiguous up to `end`.
++            return Err(ScanError::NonContiguous {
++                partition: range.partition.clone(),
++                expected: range.end.clone(),
++                actual: Self::cursor(available),
++            });
++        }
++        let first = usize::try_from(start - state.earliest).unwrap_or(usize::MAX);
++        let last = usize::try_from(end - state.earliest).unwrap_or(usize::MAX);
++        let rows = &state.rows[first.min(state.rows.len())..last.min(state.rows.len())];
++        let columns: Result<Vec<ArrayRef>, _> = (0..self.schema.fields().len())
++            .map(|column| {
++                let values = rows.iter().map(|row| row[column].clone());
++                ScalarValue::iter_to_array(values).or_else(|_| {
++                    ScalarValue::try_from(self.schema.field(column).data_type())
++                        .and_then(|null| null.to_array_of_size(0))
++                })
++            })
++            .collect();
++        let columns = columns.map_err(|_| ScanError::ForeignCursor {
++            partition: range.partition.clone(),
++            cursor: range.start.clone(),
++        })?;
++        let batch = RecordBatch::try_new(self.schema.clone(), columns).map_err(|_| {
++            ScanError::ForeignCursor {
++                partition: range.partition.clone(),
++                cursor: range.start.clone(),
++            }
++        })?;
++        let table = MemTable::try_new(self.schema.clone(), vec![vec![batch]]).map_err(|_| {
++            ScanError::UnknownPartition {
++                partition: range.partition.clone(),
++            }
++        })?;
++        Ok(Arc::new(table))
++    }
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/tests/mod.rs b/crates/sail-spark-connect/src/pipelines/streaming/tests/mod.rs
+new file mode 100644
+index 000000000..3e2ee52ec
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/tests/mod.rs
+@@ -0,0 +1,95 @@
++//! Component tests for the bounded source contract over the deterministic
++//! source. Nothing here is wired into a flow; each test states what the
++//! source reproduces.
++
++use std::sync::Arc;
++
++use datafusion::arrow::array::AsArray;
++use datafusion::arrow::datatypes::{DataType, Field, Int64Type, Schema, SchemaRef};
++use datafusion::common::ScalarValue;
++use datafusion::datasource::provider_as_source;
++use datafusion::logical_expr::LogicalPlanBuilder;
++use datafusion::prelude::SessionContext;
++
++use super::intent::{BatchIntent, PlanError, Progress, RunFrontier, next_intent};
++use super::source::{BoundedSource, Cursor, Incarnation, PartitionId, Range, ScanError};
++use super::test_source::DeterministicSource;
++use crate::error::SparkResult;
++
++mod ranges;
++
++fn schema() -> SchemaRef {
++    Arc::new(Schema::new(vec![
++        Field::new("id", DataType::Int64, true),
++        Field::new("value", DataType::Utf8, true),
++    ]))
++}
++
++fn row(id: i64, value: &str) -> Vec<ScalarValue> {
++    vec![
++        ScalarValue::Int64(Some(id)),
++        ScalarValue::Utf8(Some(value.into())),
++    ]
++}
++
++fn source() -> DeterministicSource {
++    DeterministicSource::new("events", schema())
++}
++
++fn partition(id: &str) -> PartitionId {
++    PartitionId(id.into())
++}
++
++/// The `id` values a scan of `range` produces, in scan order.
++async fn ids(source: &dyn BoundedSource, range: &Range) -> SparkResult<Vec<i64>> {
++    let ctx = SessionContext::new();
++    let provider = source.scan(range)?;
++    let plan = LogicalPlanBuilder::scan("range", provider_as_source(provider), None)?.build()?;
++    let batches = ctx.execute_logical_plan(plan).await?.collect().await?;
++    Ok(batches
++        .iter()
++        .flat_map(|batch| {
++            batch
++                .column(0)
++                .as_primitive::<Int64Type>()
++                .iter()
++                .flatten()
++                .collect::<Vec<_>>()
++        })
++        .collect())
++}
++
++/// Plans and advances every intent of one run without scanning.
++fn drain_sync(
++    source: &dyn BoundedSource,
++    frontier: &RunFrontier,
++    mut progress: Progress,
++    max_rows: usize,
++) -> SparkResult<(Vec<BatchIntent>, (), Progress)> {
++    let mut intents = Vec::new();
++    while let Some(intent) = next_intent(source, frontier, &progress, max_rows)? {
++        progress = progress.advance(&intent);
++        intents.push(intent);
++    }
++    Ok((intents, (), progress))
++}
++
++/// Runs every intent of one run to completion, returning the intents and the
++/// ids each range produced, in order.
++async fn drain(
++    source: &dyn BoundedSource,
++    frontier: &RunFrontier,
++    mut progress: Progress,
++    max_rows: usize,
++) -> SparkResult<(Vec<BatchIntent>, Vec<Vec<i64>>, Progress)> {
++    let mut intents = Vec::new();
++    let mut outputs = Vec::new();
++    while let Some(intent) = next_intent(source, frontier, &progress, max_rows)? {
++        for range in &intent.ranges {
++            outputs.push(ids(source, range).await?);
++        }
++        progress = progress.advance(&intent);
++        intents.push(intent);
++    }
++    Ok((intents, outputs, progress))
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/streaming/tests/ranges.rs b/crates/sail-spark-connect/src/pipelines/streaming/tests/ranges.rs
+new file mode 100644
+index 000000000..b8f08bbed
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/streaming/tests/ranges.rs
+@@ -0,0 +1,308 @@
++use super::*;
++
++#[tokio::test]
++async fn a_run_reproduces_the_captured_frontier_exactly_and_ignores_later_appends()
++-> SparkResult<()> {
++    let source = source();
++    source.create_partition("p0");
++    source.create_partition("p1");
++    source.append("p0", (0..5).map(|i| row(i, "p0")).collect());
++    source.append("p1", vec![row(100, "p1")]);
++    let frontier = RunFrontier::capture(&source)?;
++    // Rows appended after capture belong to the next run.
++    source.append("p0", vec![row(99, "late")]);
++    let (intents, outputs, progress) = drain(&source, &frontier, Progress::default(), 2).await?;
++    assert_eq!(intents.len(), 3);
++    assert_eq!(
++        intents[0].ranges,
++        vec![
++            Range {
++                partition: partition("p0"),
++                incarnation: Incarnation("inc:1".into()),
++                start: Cursor("pos:0".into()),
++                end: Cursor("pos:2".into()),
++            },
++            Range {
++                partition: partition("p1"),
++                incarnation: Incarnation("inc:1".into()),
++                start: Cursor("pos:0".into()),
++                end: Cursor("pos:1".into()),
++            },
++        ]
++    );
++    assert_eq!(outputs, vec![vec![0, 1], vec![100], vec![2, 3], vec![4]]);
++    assert_eq!(
++        progress.positions.get(&partition("p0")),
++        Some(&(Incarnation("inc:1".into()), Cursor("pos:5".into())))
++    );
++    // The next run starts where this one stopped and sees the late row.
++    let next = RunFrontier::capture(&source)?;
++    let (_, outputs, _) = drain(&source, &next, progress, 10).await?;
++    assert_eq!(outputs, vec![vec![99]]);
++    Ok(())
++}
++
++#[tokio::test]
++async fn replaying_recorded_intents_yields_the_same_rows_after_appends() -> SparkResult<()> {
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", (0..4).map(|i| row(i, "a")).collect());
++    let frontier = RunFrontier::capture(&source)?;
++    let (intents, first, _) = drain(&source, &frontier, Progress::default(), 3).await?;
++    source.append("p0", vec![row(4, "later"), row(5, "later")]);
++    // A replay re-plans nothing: it scans the recorded ranges.
++    let mut replay = Vec::new();
++    for intent in &intents {
++        for range in &intent.ranges {
++            replay.push(ids(&source, range).await?);
++        }
++    }
++    assert_eq!(replay, first);
++    assert_eq!(replay, vec![vec![0, 1, 2], vec![3]]);
++    // The records round-trip through serde unchanged.
++    let json = serde_json::to_string(&(&frontier, &intents))?;
++    let decoded: (RunFrontier, Vec<BatchIntent>) = serde_json::from_str(&json)?;
++    assert_eq!(decoded.0, frontier);
++    assert_eq!(decoded.1, intents);
++    Ok(())
++}
++
++#[test]
++fn a_retention_gap_fails_closed() {
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", (0..6).map(|i| row(i, "a")).collect());
++    source.expire_before("p0", 3);
++    let range = Range {
++        partition: partition("p0"),
++        incarnation: Incarnation("inc:1".into()),
++        start: Cursor("pos:1".into()),
++        end: Cursor("pos:4".into()),
++    };
++    assert_eq!(
++        source.scan(&range).err(),
++        Some(ScanError::RetentionGap {
++            partition: partition("p0"),
++            expected: Cursor("pos:1".into()),
++            first_retained: Cursor("pos:3".into()),
++        })
++    );
++    // A new run starts at the first retained position, not at zero.
++    assert_eq!(
++        source.earliest(&partition("p0")),
++        Ok(Cursor("pos:3".into()))
++    );
++}
++
++#[test]
++fn a_recreated_partition_fails_ranges_captured_under_the_old_incarnation() {
++    let source = source();
++    let old = source.create_partition("p0");
++    source.append("p0", vec![row(1, "old")]);
++    let range = Range {
++        partition: partition("p0"),
++        incarnation: old.clone(),
++        start: Cursor("pos:0".into()),
++        end: Cursor("pos:1".into()),
++    };
++    assert!(source.scan(&range).is_ok());
++    let new = source.create_partition("p0");
++    assert_ne!(old, new);
++    assert_eq!(
++        source.scan(&range).err(),
++        Some(ScanError::IncarnationMismatch {
++            partition: partition("p0"),
++            expected: old,
++            actual: new,
++        })
++    );
++}
++
++#[test]
++fn a_range_past_the_available_rows_is_not_contiguous() {
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", vec![row(1, "a"), row(2, "b")]);
++    let range = Range {
++        partition: partition("p0"),
++        incarnation: Incarnation("inc:1".into()),
++        start: Cursor("pos:1".into()),
++        end: Cursor("pos:5".into()),
++    };
++    assert_eq!(
++        source.scan(&range).err(),
++        Some(ScanError::NonContiguous {
++            partition: partition("p0"),
++            expected: Cursor("pos:5".into()),
++            actual: Cursor("pos:2".into()),
++        })
++    );
++}
++
++#[test]
++fn a_partition_that_disappears_with_an_unprogressed_intent_is_an_error() -> SparkResult<()> {
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", vec![row(1, "a")]);
++    let frontier = RunFrontier::capture(&source)?;
++    source.remove_partition("p0");
++    assert_eq!(
++        next_intent(&source, &frontier, &Progress::default(), 10).err(),
++        Some(PlanError::Scan(ScanError::UnknownPartition {
++            partition: partition("p0")
++        }))
++    );
++    Ok(())
++}
++
++#[test]
++fn progress_reached_under_an_old_incarnation_is_refused_not_caught_up() -> SparkResult<()> {
++    // Old run reaches pos:2; the partition is recreated and filled back to
++    // pos:2; the new frontier captures the new incarnation. Old progress must
++    // not make the replacement data look already consumed.
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", vec![row(1, "old"), row(2, "old")]);
++    let first = RunFrontier::capture(&source)?;
++    let (_, _, progress) = drain_sync(&source, &first, Progress::default(), 10)?;
++    assert_eq!(
++        progress.positions.get(&partition("p0")),
++        Some(&(Incarnation("inc:1".into()), Cursor("pos:2".into())))
++    );
++    source.create_partition("p0");
++    source.append("p0", vec![row(10, "new"), row(20, "new")]);
++    let second = RunFrontier::capture(&source)?;
++    assert_eq!(
++        next_intent(&source, &second, &progress, 10),
++        Err(PlanError::IncarnationChanged {
++            partition: partition("p0"),
++            progressed: Incarnation("inc:1".into()),
++            captured: Incarnation("inc:2".into()),
++        })
++    );
++    // A run that starts over under the new incarnation reads the new rows.
++    let intent = next_intent(&source, &second, &Progress::default(), 10)?;
++    assert_eq!(
++        intent.map(|i| i.ranges),
++        Some(vec![Range {
++            partition: partition("p0"),
++            incarnation: Incarnation("inc:2".into()),
++            start: Cursor("pos:0".into()),
++            end: Cursor("pos:2".into()),
++        }])
++    );
++    Ok(())
++}
++
++#[test]
++fn a_zero_limit_and_a_stalling_adapter_are_errors_not_caught_up() -> SparkResult<()> {
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", vec![row(1, "a")]);
++    let frontier = RunFrontier::capture(&source)?;
++    assert_eq!(
++        next_intent(&source, &frontier, &Progress::default(), 0),
++        Err(PlanError::ZeroLimit)
++    );
++    let stalled = Stalling(&source);
++    assert_eq!(
++        next_intent(&stalled, &frontier, &Progress::default(), 10),
++        Err(PlanError::Stalled {
++            partition: partition("p0"),
++            start: Cursor("pos:0".into()),
++            frontier: Cursor("pos:1".into()),
++        })
++    );
++    Ok(())
++}
++
++/// An adapter whose `plan_end` never advances.
++#[derive(Debug)]
++struct Stalling<'a>(&'a DeterministicSource);
++
++impl BoundedSource for Stalling<'_> {
++    fn schema(&self) -> SchemaRef {
++        self.0.schema()
++    }
++    fn describe(&self) -> super::super::source::SourceDescriptor {
++        self.0.describe()
++    }
++    fn earliest(&self, partition: &PartitionId) -> Result<Cursor, ScanError> {
++        self.0.earliest(partition)
++    }
++    fn frontier(&self, partition: &PartitionId) -> Result<Cursor, ScanError> {
++        self.0.frontier(partition)
++    }
++    fn plan_end(
++        &self,
++        _partition: &PartitionId,
++        start: &Cursor,
++        _frontier: &Cursor,
++        _max_rows: usize,
++    ) -> Result<Cursor, ScanError> {
++        Ok(start.clone())
++    }
++    fn scan(
++        &self,
++        range: &Range,
++    ) -> Result<Arc<dyn datafusion::datasource::TableProvider>, ScanError> {
++        self.0.scan(range)
++    }
++}
++
++#[test]
++fn new_and_empty_partitions_are_handled_by_the_frontier_record() -> SparkResult<()> {
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", vec![row(1, "a")]);
++    let first = RunFrontier::capture(&source)?;
++    let progress = Progress::default().advance(&BatchIntent {
++        ranges: vec![Range {
++            partition: partition("p0"),
++            incarnation: Incarnation("inc:1".into()),
++            start: Cursor("pos:0".into()),
++            end: Cursor("pos:1".into()),
++        }],
++    });
++    assert_eq!(next_intent(&source, &first, &progress, 10)?, None);
++    // An empty partition contributes no range; a new one starts at earliest.
++    source.create_partition("empty");
++    source.create_partition("p1");
++    source.append("p1", vec![row(7, "new")]);
++    let second = RunFrontier::capture(&source)?;
++    assert_eq!(second.partitions.len(), 3);
++    let intent = next_intent(&source, &second, &progress, 10)?;
++    assert_eq!(
++        intent.map(|i| i.ranges),
++        Some(vec![Range {
++            partition: partition("p1"),
++            incarnation: Incarnation("inc:1".into()),
++            start: Cursor("pos:0".into()),
++            end: Cursor("pos:1".into()),
++        }])
++    );
++    Ok(())
++}
++
++#[test]
++fn cursors_are_opaque_to_generic_code_and_foreign_tokens_are_rejected() {
++    let source = source();
++    source.create_partition("p0");
++    source.append("p0", vec![row(1, "a")]);
++    // The intent planner only compares cursors for equality; the adapter
++    // does the arithmetic and refuses tokens it did not mint.
++    let foreign = Cursor("offset=1".into());
++    assert_eq!(
++        source.plan_end(&partition("p0"), &foreign, &Cursor("pos:1".into()), 1),
++        Err(ScanError::ForeignCursor {
++            partition: partition("p0"),
++            cursor: foreign,
++        })
++    );
++    assert_eq!(source.schema().fields().len(), 2);
++    let descriptor = source.describe();
++    assert_eq!(descriptor.kind, "deterministic");
++    assert_eq!(descriptor.partitions.len(), 1);
++    let json = serde_json::to_string(&descriptor).unwrap_or_default();
++    assert!(json.contains("\"name\":\"events\""));
++}

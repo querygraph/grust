@@ -1,0 +1,142 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/30 15:27:15 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///tmp/sail-sdp-config-fusion-reference-01/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                26/10/30 15:27:21 WARN ExecuteGrpcResponseSender: Got detached from opId=9eb4614d-5d0b-4f59-a2f7-7dae61063204 at index 2.totalTime=57.1395 ms waitingForResults=56.733958 ms waitingForSend=0.0 ms
+26/10/30 15:27:21 ERROR ErrorUtils: Spark Connect RPC error during: async-grpc-response-sender. UserId: alexy. SessionId: 39c6ff9e-21b3-4b10-bd81-af63b548f3b4.
+org.apache.spark.SparkSQLException: [INVALID_CURSOR.DISCONNECTED] The cursor is invalid. The cursor has been disconnected by the server. SQLSTATE: HY109
+	at org.apache.spark.sql.connect.execution.ExecuteGrpcResponseSender.execute(ExecuteGrpcResponseSender.scala:295)
+	at org.apache.spark.sql.connect.execution.ExecuteGrpcResponseSender$$anon$1.run(ExecuteGrpcResponseSender.scala:102)
+Exception in thread "SparkConnectExecuteThread_opId=9eb4614d-5d0b-4f59-a2f7-7dae61063204" org.apache.spark.SparkIllegalStateException: [SPARK_CONNECT_ILLEGAL_STATE.STREAM_LIFECYCLE_ALREADY_COMPLETED] Spark Connect encountered an illegal state condition. Stream onError can't be called after stream completed SQLSTATE: XXSC0
+	at org.apache.spark.sql.connect.IllegalStateErrors$.streamLifecycleAlreadyCompleted(IllegalStateErrors.scala:26)
+	at org.apache.spark.sql.connect.execution.ExecuteResponseObserver.onError(ExecuteResponseObserver.scala:153)
+	at org.apache.spark.sql.connect.utils.ErrorUtils$$anonfun$handleError$1.applyOrElse(ErrorUtils.scala:408)
+	at org.apache.spark.sql.connect.utils.ErrorUtils$$anonfun$handleError$1.applyOrElse(ErrorUtils.scala:405)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:35)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:175)
+	at org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)
+{"name": "upstream_true", "query": "SELECT Foo FROM z_sensitive", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AttributeError", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "upstream_false_over_consumer_true", "query": "SELECT Foo FROM a_insensitive", "consumer_conf": {"spark.sql.caseSensitive": "true"}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "left_true_right_false", "query": "SELECT Foo FROM z_sensitive CROSS JOIN a_insensitive", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AnalysisException", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "left_false_right_true", "query": "SELECT Foo FROM a_insensitive CROSS JOIN z_sensitive", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AttributeError", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "repeated_last_true", "query": "SELECT z1.Foo FROM z_sensitive z1 CROSS JOIN a_insensitive CROSS JOIN z_sensitive z2", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AttributeError", "result_exists": false, "session_case_sensitive": "false"}
+{"name": "transitive_raw_conf", "query": "SELECT Foo FROM middle", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AttributeError", "result_exists": false, "session_case_sensitive": "false"}
+26/10/30 15:27:22 WARN ExecuteGrpcResponseSender: Got detached from opId=42de7432-a6b3-4717-a4aa-67f9850f2f92 at index 4.totalTime=79.284458 ms waitingForResults=78.978541 ms waitingForSend=0.0 ms
+26/10/30 15:27:22 ERROR ErrorUtils: Spark Connect RPC error during: async-grpc-response-sender. UserId: alexy. SessionId: 39c6ff9e-21b3-4b10-bd81-af63b548f3b4.
+org.apache.spark.SparkSQLException: [INVALID_CURSOR.DISCONNECTED] The cursor is invalid. The cursor has been disconnected by the server. SQLSTATE: HY109
+	at org.apache.spark.sql.connect.execution.ExecuteGrpcResponseSender.execute(ExecuteGrpcResponseSender.scala:295)
+	at org.apache.spark.sql.connect.execution.ExecuteGrpcResponseSender$$anon$1.run(ExecuteGrpcResponseSender.scala:102)
+Exception in thread "Topological Execution" org.apache.spark.SparkIllegalStateException: [SPARK_CONNECT_ILLEGAL_STATE.STREAM_LIFECYCLE_EVENT_SEND_AFTER_SHUTDOWN] Spark Connect encountered an illegal state condition. Cannot send event after shutdown for session SessionKey(alexy,39c6ff9e-21b3-4b10-bd81-af63b548f3b4). SQLSTATE: XXSC0
+	at org.apache.spark.sql.connect.IllegalStateErrors$.eventSendAfterShutdown(IllegalStateErrors.scala:117)
+	at org.apache.spark.sql.connect.pipelines.PipelineEventSender.sendEvent(PipelineEventSender.scala:90)
+	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$2(PipelinesHandler.scala:543)
+	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$2$adapted(PipelinesHandler.scala:533)
+	at org.apache.spark.sql.pipelines.logging.FlowProgressEventLogger.recordPlanningForBatchFlow(FlowProgressEventLogger.scala:80)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.startFlow$1(TriggeredGraphExecution.scala:225)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$topologicalExecution$8(TriggeredGraphExecution.scala:250)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$topologicalExecution$8$adapted(TriggeredGraphExecution.scala:250)
+	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+	at scala.collection.AbstractIterable.foreach(Iterable.scala:936)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.org$apache$spark$sql$pipelines$graph$TriggeredGraphExecution$$topologicalExecution(TriggeredGraphExecution.scala:250)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution$$anon$1.run(TriggeredGraphExecution.scala:87)
+26/10/30 15:27:22 WARN TriggeredGraphExecution: Flow `spark_catalog`.`fusion_table_boundary`.`result` SKIPPED due to upstream failure(s).
+26/10/30 15:27:22 ERROR TriggeredGraphExecution: Exception thrown while stopping the update...
+org.apache.spark.SparkIllegalStateException: [SPARK_CONNECT_ILLEGAL_STATE.STREAM_LIFECYCLE_EVENT_SEND_AFTER_SHUTDOWN] Spark Connect encountered an illegal state condition. Cannot send event after shutdown for session SessionKey(alexy,39c6ff9e-21b3-4b10-bd81-af63b548f3b4). SQLSTATE: XXSC0
+	at org.apache.spark.sql.connect.IllegalStateErrors$.eventSendAfterShutdown(IllegalStateErrors.scala:117)
+	at org.apache.spark.sql.connect.pipelines.PipelineEventSender.sendEvent(PipelineEventSender.scala:90)
+	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$2(PipelinesHandler.scala:543)
+	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$2$adapted(PipelinesHandler.scala:533)
+	at org.apache.spark.sql.pipelines.logging.FlowProgressEventLogger.recordSkippedOnUpStreamFailure(FlowProgressEventLogger.scala:169)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.recordSkippedIfSelected(TriggeredGraphExecution.scala:350)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$stopInternal$3(TriggeredGraphExecution.scala:387)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$stopInternal$3$adapted(TriggeredGraphExecution.scala:387)
+	at scala.collection.immutable.Set$Set2.foreach(Set.scala:210)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.stopInternal(TriggeredGraphExecution.scala:387)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$start$3(TriggeredGraphExecution.scala:117)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$start$3$adapted(TriggeredGraphExecution.scala:113)
+	at org.apache.spark.sql.pipelines.graph.UncaughtExceptionHandler.uncaughtException(UncaughtExceptionHandler.scala:33)
+	at java.base/java.lang.Thread.dispatchUncaughtException(Thread.java:2971)
+{"name": "table_boundary", "query": "SELECT Foo FROM z_sensitive", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AttributeError", "result_exists": true, "rows": [], "session_case_sensitive": "false"}
+{"name": "external_read_after_true", "query": "SELECT ext.Foo FROM z_sensitive CROSS JOIN external_input ext", "consumer_conf": {}, "run_returned": false, "run_exception_type": "AttributeError", "result_exists": false, "session_case_sensitive": "false"}
+26/10/30 15:27:23 WARN TriggeredGraphExecution: Flow `spark_catalog`.`fusion_table_boundary`.`z_sensitive` SKIPPED due to upstream failure(s).
+26/10/30 15:27:23 WARN ErrorUtils: SessionHolder not found during error handling for releaseSession. UserId: alexy, SessionId: 39c6ff9e-21b3-4b10-bd81-af63b548f3b4. Error details will not be available for FetchErrorDetails.
+26/10/30 15:27:23 ERROR ErrorUtils: Spark Connect RPC error during: releaseSession. UserId: alexy. SessionId: 39c6ff9e-21b3-4b10-bd81-af63b548f3b4.
+org.apache.spark.SparkIllegalStateException: [SPARK_CONNECT_ILLEGAL_STATE.STREAM_LIFECYCLE_EVENT_SEND_AFTER_SHUTDOWN] Spark Connect encountered an illegal state condition. Cannot send event after shutdown for session SessionKey(alexy,39c6ff9e-21b3-4b10-bd81-af63b548f3b4). SQLSTATE: XXSC0
+	at org.apache.spark.sql.connect.IllegalStateErrors$.eventSendAfterShutdown(IllegalStateErrors.scala:117)
+	at org.apache.spark.sql.connect.pipelines.PipelineEventSender.sendEvent(PipelineEventSender.scala:90)
+	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$2(PipelinesHandler.scala:543)
+	at org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$2$adapted(PipelinesHandler.scala:533)
+	at org.apache.spark.sql.pipelines.logging.FlowProgressEventLogger.recordSkippedOnUpStreamFailure(FlowProgressEventLogger.scala:169)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.recordSkippedIfSelected(TriggeredGraphExecution.scala:350)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$stopInternal$3(TriggeredGraphExecution.scala:387)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.$anonfun$stopInternal$3$adapted(TriggeredGraphExecution.scala:387)
+	at scala.collection.immutable.Set$Set1.foreach(Set.scala:177)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.stopInternal(TriggeredGraphExecution.scala:387)
+	at org.apache.spark.sql.pipelines.graph.TriggeredGraphExecution.stop(TriggeredGraphExecution.scala:412)
+	at org.apache.spark.sql.pipelines.graph.PipelineExecution.stopPipeline(PipelineExecution.scala:166)
+	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$removeCachedPipelineExecution$1(SessionHolder.scala:558)
+	at java.base/java.util.concurrent.ConcurrentHashMap.compute(ConcurrentHashMap.java:1940)
+	at org.apache.spark.sql.connect.service.SessionHolder.removeCachedPipelineExecution(SessionHolder.scala:556)
+	at org.apache.spark.sql.connect.service.SessionHolder.$anonfun$removeAllPipelineExecutions$1(SessionHolder.scala:568)
+	at java.base/java.util.concurrent.ConcurrentHashMap.forEach(ConcurrentHashMap.java:1603)
+	at org.apache.spark.sql.connect.service.SessionHolder.removeAllPipelineExecutions(SessionHolder.scala:567)
+	at org.apache.spark.sql.connect.service.SessionHolder.close(SessionHolder.scala:407)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.shutdownSessionHolder(SparkConnectSessionManager.scala:255)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.$anonfun$closeSession$1(SparkConnectSessionManager.scala:265)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.$anonfun$closeSession$1$adapted(SparkConnectSessionManager.scala:265)
+	at scala.Option.foreach(Option.scala:437)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.closeSession(SparkConnectSessionManager.scala:265)
+	at org.apache.spark.sql.connect.service.SparkConnectReleaseSessionHandler.handle(SparkConnectReleaseSessionHandler.scala:41)
+	at org.apache.spark.sql.connect.service.SparkConnectService.releaseSession(SparkConnectService.scala:213)
+	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1278)
+	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1623)
+26/10/30 15:27:23 WARN ErrorUtils: SessionHolder not found during error handling for config. UserId: alexy, SessionId: 39c6ff9e-21b3-4b10-bd81-af63b548f3b4. Error details will not be available for FetchErrorDetails.
+26/10/30 15:27:23 ERROR ErrorUtils: Spark Connect RPC error during: config. UserId: alexy. SessionId: 39c6ff9e-21b3-4b10-bd81-af63b548f3b4.
+org.apache.spark.SparkSQLException: [INVALID_HANDLE.SESSION_CLOSED] The handle 39c6ff9e-21b3-4b10-bd81-af63b548f3b4 is invalid. Session was closed. SQLSTATE: HY000
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.validateSessionCreate(SparkConnectSessionManager.scala:380)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.$anonfun$getOrCreateIsolatedSession$1(SparkConnectSessionManager.scala:98)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.$anonfun$getSession$1(SparkConnectSessionManager.scala:213)
+	at java.base/java.util.concurrent.ConcurrentHashMap.computeIfAbsent(ConcurrentHashMap.java:1708)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.getSession(SparkConnectSessionManager.scala:213)
+	at org.apache.spark.sql.connect.service.SparkConnectSessionManager.getOrCreateIsolatedSession(SparkConnectSessionManager.scala:97)
+	at org.apache.spark.sql.connect.service.SparkConnectService$.getOrCreateIsolatedSession(SparkConnectService.scala:357)
+	at org.apache.spark.sql.connect.service.SparkConnectConfigHandler.handle(SparkConnectConfigHandler.scala:46)
+	at org.apache.spark.sql.connect.service.SparkConnectService.config(SparkConnectService.scala:122)
+	at org.apache.spark.connect.proto.SparkConnectServiceGrpc$MethodHandlers.invoke(SparkConnectServiceGrpc.java:1258)
+	at org.sparkproject.connect.grpc.stub.ServerCalls$UnaryServerCallHandler$UnaryServerCallListener.onHalfClose(ServerCalls.java:182)
+	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at org.sparkproject.connect.grpc.Contexts$ContextualizedServerCallListener.onHalfClose(Contexts.java:86)
+	at org.sparkproject.connect.grpc.PartialForwardingServerCallListener.onHalfClose(PartialForwardingServerCallListener.java:35)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:23)
+	at org.sparkproject.connect.grpc.ForwardingServerCallListener$SimpleForwardingServerCallListener.onHalfClose(ForwardingServerCallListener.java:40)
+	at org.sparkproject.connect.grpc.internal.ServerCallImpl$ServerStreamListenerImpl.halfClosed(ServerCallImpl.java:356)
+	at org.sparkproject.connect.grpc.internal.ServerImpl$JumpToApplicationThreadServerStreamListener$1HalfClosed.runInContext(ServerImpl.java:861)
+	at org.sparkproject.connect.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+	at org.sparkproject.connect.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1623)
+Reference observations recorded

@@ -1,0 +1,133 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/30 21:43:41 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///tmp/sail-sdp-deferred-arithmetic-runtime-spark/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+26/10/30 21:43:46 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:46 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:46 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:46 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:46 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+{"ts": "2026-10-30 21:43:46.824", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error. SQLSTATE: 22012\n== SQL (line 1, position 8) ==\nSELECT pmod(1, 0) AS value\n       ^^^^^^^^^^\n\n\nJVM stacktrace:\norg.apache.spark.SparkArithmeticException\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.remainderByZeroError(QueryExecutionErrors.scala:207)\n\tat org.apache.spark.sql.catalyst.expressions.Pmod.eval(arithmetic.scala:1104)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$.tryFold(expressions.scala:65)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$.constantFolding(expressions.scala:95)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$.$anonfun$constantFolding$4(expressions.scala:108)\n\tat org.apache.spark.sql.catalyst.trees.UnaryLike.mapChildren(TreeNode.scala:1268)\n\tat org.apache.spark.sql.catalyst.trees.UnaryLike.mapChildren$(TreeNode.scala:1267)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.mapChildren(Expression.scala:596)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$.constantFolding(expressions.scala:108)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$$anonfun$apply$1.$anonfun$applyOrElse$1(expressions.scala:117)\n\tat org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$1(QueryPlan.scala:264)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpression$1(QueryPlan.scala:264)\n\tat org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:276)\n\tat org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$4(QueryPlan.scala:282)\n\tat scala.collection.immutable.List.map(List.scala:236)\n\tat scala.collection.immutable.List.map(List.scala:79)\n\tat org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:282)\n\tat org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$5(QueryPlan.scala:287)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator(TreeNode.scala:337)\n\tat org.apache.spark.sql.catalyst.plans.QueryPlan.mapExpressions(QueryPlan.scala:287)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$$anonfun$apply$1.applyOrElse(expressions.scala:117)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$$anonfun$apply$1.applyOrElse(expressions.scala:116)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformDownWithPruning$1(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(origin.scala:107)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformDownWithPruning(TreeNode.scala:495)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.org$apache$spark$sql$catalyst$plans$logical$AnalysisHelper$$super$transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning(AnalysisHelper.scala:360)\n\tat org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper.transformDownWithPruning$(AnalysisHelper.scala:356)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.plans.logical.LogicalPlan.transformDownWithPruning(LogicalPlan.scala:37)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.transformWithPruning(TreeNode.scala:461)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$.apply(expressions.scala:116)\n\tat org.apache.spark.sql.catalyst.optimizer.ConstantFolding$.apply(expressions.scala:50)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$2(RuleExecutor.scala:248)\n\tat scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)\n\tat scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)\n\tat scala.collection.immutable.List.foldLeft(List.scala:79)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1(RuleExecutor.scala:245)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$execute$1$adapted(RuleExecutor.scala:237)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.execute(RuleExecutor.scala:237)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.$anonfun$executeAndTrack$1(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker$.withTracker(QueryPlanningTracker.scala:89)\n\tat org.apache.spark.sql.catalyst.rules.RuleExecutor.executeAndTrack(RuleExecutor.scala:207)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$2(QueryExecution.scala:335)\n\tat org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:148)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$3(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution.withQueryExecutionId(QueryExecution.scala:445)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$2(QueryExecution.scala:426)\n\tat org.apache.spark.sql.execution.QueryExecution$.withInternalError(QueryExecution.scala:903)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:425)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:424)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyOptimizedPlan$1(QueryExecution.scala:331)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$optimizedPlan$1(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.optimizedPlan(QueryExecution.scala:346)\n\tat org.apache.spark.sql.execution.QueryExecution.assertOptimized(QueryExecution.scala:349)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$lazyExecutedPlan$1(QueryExecution.scala:372)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.util.Utils$.doTryWithCallerStacktrace(Utils.scala:1407)\n\tat org.apache.spark.util.Utils$.getTryWithCallerStacktrace(Utils.scala:1457)\n\tat org.apache.spark.util.LazyTry.get(LazyTry.scala:61)\n\tat org.apache.spark.sql.execution.QueryExecution.$anonfun$executedPlan$1(QueryExecution.scala:387)\n\tat org.apache.spark.sql.execution.QueryExecution.withAbortTransactionOnFailure(QueryExecution.scala:648)\n\tat org.apache.spark.sql.execution.QueryExecution.executedPlan(QueryExecution.scala:387)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.processAsArrowBatches(SparkConnectPlanExecution.scala:215)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:88)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)", "context": {"errorClass": "REMAINDER_BY_ZERO"}, "exception": {"class": "_MultiThreadedRendezvous", "msg": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.INTERNAL\n\tdetails = \"[REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error. SQLSTATE: 22012\n== SQL (line 1, position 8) ==\nSELECT pmod(1, 0) AS value\n       ^^^^^^^^^^\n\"\n\tdebug_error_string = \"INTERNAL:[REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error. SQLSTATE: 22012\n== SQL (line 1, position 8) ==\nSELECT pmod(1, 0) AS value\n       ^^^^^^^^^^\n\"\n>", "stacktrace": [{"class": null, "method": "_execute_and_fetch_as_iterator", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", "line": "1705"}, {"class": null, "method": "__next__", "file": "<frozen _collections_abc>", "line": "356"}, {"class": null, "method": "send", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "145"}, {"class": null, "method": "_has_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "197"}, {"class": null, "method": "_has_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "169"}, {"class": null, "method": "_call_iter", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "292"}, {"class": null, "method": "_call_iter", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "264"}, {"class": null, "method": "<lambda>", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "170"}, {"class": null, "method": "__next__", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/grpc/_channel.py", "line": "547"}, {"class": null, "method": "_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/grpc/_channel.py", "line": "965"}]}}
+26/10/30 21:43:47 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:47 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:47 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:47 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/10/30 21:43:47 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[
+  {
+    "name": "ansi_null_input_div",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "ansi_null_input_divide",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "ansi_null_input_mod",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "ansi_volatile_null_divide",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "ansi_window_null_divide",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "ansi_pmod_zero",
+    "returned": false,
+    "condition": "REMAINDER_BY_ZERO",
+    "exception_type": "ArithmeticException",
+    "parameters": {
+      "config": "\"spark.sql.ansi.enabled\""
+    },
+    "connect_errors": [
+      {
+        "reason": "org.apache.spark.SparkArithmeticException",
+        "domain": "org.apache.spark",
+        "metadata": {
+          "classes": "[\"org.apache.spark.SparkArithmeticException\",\"java.lang.ArithmeticException\",\"java.lang.RuntimeException\",\"java.lang.Exception\",\"java.lang.Throwable\",\"java.lang.Object\"]",
+          "sqlState": "22012",
+          "messageParameters": "{\"config\":\"\\\"spark.sql.ansi.enabled\\\"\"}",
+          "errorId": "5ab95df6-30de-4f14-827c-9d4d196e3320",
+          "errorClass": "REMAINDER_BY_ZERO"
+        }
+      }
+    ]
+  },
+  {
+    "name": "legacy_null_input_div",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "legacy_null_input_divide",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "legacy_null_input_mod",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "legacy_volatile_null_divide",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "legacy_window_null_divide",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  },
+  {
+    "name": "legacy_pmod_zero",
+    "returned": true,
+    "condition": null,
+    "exception_type": null,
+    "parameters": null,
+    "connect_errors": []
+  }
+]

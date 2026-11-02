@@ -1,0 +1,15 @@
+diff --git a/crates/sail-common/src/spec/query_children.rs b/crates/sail-common/src/spec/query_children.rs
+index 13de9fdb4..22145d7f6 100644
+--- a/crates/sail-common/src/spec/query_children.rs
++++ b/crates/sail-common/src/spec/query_children.rs
+@@ -70,8 +70,8 @@ impl QueryPlan {
+             }
+             // One required input with expressions.
+             N::Filter { input, condition } => {
+-                visitor(QueryChild::Expression(condition))?;
+-                visitor(QueryChild::Query(input))
++                visitor(QueryChild::Query(input))?;
++                visitor(QueryChild::Expression(condition))
+             }
+             N::Sort { input, order, .. } => {
+                 visit_sort_orders(order, visitor)?;

@@ -1,0 +1,55 @@
+{
+  "started_at": "2026-10-31T02:02:14.421258+00:00",
+  "harness_sha256": "745b472445bea98325ae2173233e3b27070b30bba2e977e85d2f6e446e625141",
+  "scope": "Public namespace phase oracle; rows and session namespace only, no full metadata or Scala verdict",
+  "engine": "sail",
+  "cases": [
+    {
+      "name": "named",
+      "query": "SELECT foo FROM external_input",
+      "events": [
+        "Starting pipeline analysis",
+        "Pipeline run completed"
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "session_namespace": "binding_b"
+    },
+    {
+      "name": "literal",
+      "query": "SELECT foo FROM IDENTIFIER('external_input')",
+      "events": [
+        "Starting pipeline analysis",
+        "Pipeline run completed"
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 9
+        }
+      ],
+      "session_namespace": "binding_b"
+    },
+    {
+      "name": "computed",
+      "query": "SELECT foo FROM IDENTIFIER(concat('external_', 'input'))",
+      "events": [
+        "Starting pipeline analysis",
+        "Pipeline run completed"
+      ],
+      "returned": true,
+      "rows": [
+        {
+          "foo": 10
+        }
+      ],
+      "session_namespace": "binding_b"
+    }
+  ],
+  "spark_version": "4.2.1",
+  "completed_at": "2026-10-31T02:02:14.732980+00:00"
+}

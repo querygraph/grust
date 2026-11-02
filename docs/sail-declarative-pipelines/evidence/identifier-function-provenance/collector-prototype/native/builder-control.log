@@ -1,0 +1,35 @@
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 29.37s
+     Running unittests src/lib.rs (target/debug/deps/sail_plan-3178233150a540f5)
+
+running 3 tests
+test resolver::identifier::provenance_tests::registered_function_keeps_udf_rules_without_executing_the_function ... ok
+test resolver::identifier::provenance_tests::scalar_session_functions_keep_nonfoldable_provenance_and_semantic_error_priority ... FAILED
+test resolver::identifier::provenance_tests::identifier_observation_restores_parent_parameters_and_state_after_errors ... FAILED
+
+failures:
+
+---- resolver::identifier::provenance_tests::scalar_session_functions_keep_nonfoldable_provenance_and_semantic_error_priority stdout ----
+Error: "nonfoldable function was erased"
+
+---- resolver::identifier::provenance_tests::identifier_observation_restores_parent_parameters_and_state_after_errors stdout ----
+
+thread 'resolver::identifier::provenance_tests::identifier_observation_restores_parent_parameters_and_state_after_errors' (91080803) panicked at crates/sail-plan/src/resolver/identifier/provenance_tests.rs:134:13:
+assertion failed: result.is_err()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    resolver::identifier::provenance_tests::identifier_observation_restores_parent_parameters_and_state_after_errors
+    resolver::identifier::provenance_tests::scalar_session_functions_keep_nonfoldable_provenance_and_semantic_error_priority
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 97 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p sail-plan --lib`

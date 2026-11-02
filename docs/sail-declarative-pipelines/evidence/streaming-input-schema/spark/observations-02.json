@@ -1,0 +1,159 @@
+{
+  "started_at": "2026-10-31T21:07:20.354267+00:00",
+  "version": "4.2.1",
+  "framework_default": "false",
+  "cases": [
+    {
+      "label": "view_second_call_true_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pview_second_call_true_true.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#9)), k#6]\n+- ~Join Inner\n   :- ~SubqueryAlias spark_catalog.pview_second_call_true_true.source\n   :  +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@47de1212, [], [id#9], name=<Unassigned>\n   +- SubqueryAlias v\n      +- Project [1 AS k#6]\n         +- OneRowRelation\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pview_second_call_true_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_consumer_own_true_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT sqrt(id) FROM STREAM(source);CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow due to upstream failure: 'spark_catalog.pview_consumer_own_true_true.consumer'.\nError: Failed to read dataset 'v'. Dataset is defined in the pipeline but could not be resolved.",
+        "Failed to resolve flow: 'v'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 34;\n'Project [unresolvedalias(SQRT(id#18))]\n+- ~SubqueryAlias spark_catalog.pview_consumer_own_true_true.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@f69c49d, [], [id#18], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: v\nFlows that failed due to upstream errors: spark_catalog.pview_consumer_own_true_true.consumer\n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_second_call_true_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pview_second_call_true_false.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#28)), k#25]\n+- ~Join Inner\n   :- ~SubqueryAlias spark_catalog.pview_second_call_true_false.source\n   :  +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@8564961, [], [id#28], name=<Unassigned>\n   +- SubqueryAlias v\n      +- Project [1 AS k#25]\n         +- OneRowRelation\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pview_second_call_true_false.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_consumer_own_true_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=true;CREATE TEMPORARY VIEW v AS SELECT sqrt(id) FROM STREAM(source);CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow due to upstream failure: 'spark_catalog.pview_consumer_own_true_false.consumer'.\nError: Failed to read dataset 'v'. Dataset is defined in the pipeline but could not be resolved.",
+        "Failed to resolve flow: 'v'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 34;\n'Project [unresolvedalias(SQRT(id#37))]\n+- ~SubqueryAlias spark_catalog.pview_consumer_own_true_false.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@3db37eeb, [], [id#37], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: v\nFlows that failed due to upstream errors: spark_catalog.pview_consumer_own_true_false.consumer\n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_second_call_false_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pview_second_call_false_true.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(3)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#49)), k#44]\n+- ~Join Inner\n   :- ~SubqueryAlias spark_catalog.pview_second_call_false_true.source\n   :  +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@32029b4c, [], [id#49], name=<Unassigned>\n   +- SubqueryAlias v\n      +- Project [1 AS k#44]\n         +- OneRowRelation\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pview_second_call_false_true.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_consumer_own_false_true",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT sqrt(id) FROM STREAM(source);CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow due to upstream failure: 'spark_catalog.pview_consumer_own_false_true.consumer'.\nError: Failed to read dataset 'v'. Dataset is defined in the pipeline but could not be resolved.",
+        "Failed to resolve flow: 'v'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 34;\n'Project [unresolvedalias(SQRT(id#58))]\n+- ~SubqueryAlias spark_catalog.pview_consumer_own_false_true.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@74091081, [], [id#58], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: v\nFlows that failed due to upstream errors: spark_catalog.pview_consumer_own_false_true.consumer\n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_second_call_false_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;CREATE MATERIALIZED VIEW consumer AS SELECT sqrt(id), k FROM STREAM(source), v;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT 1 AS k",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow: 'spark_catalog.pview_second_call_false_false.consumer'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 44;\n'Project [unresolvedalias(SQRT(id#70)), k#65]\n+- ~Join Inner\n   :- ~SubqueryAlias spark_catalog.pview_second_call_false_false.source\n   :  +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@41749bb4, [], [id#70], name=<Unassigned>\n   +- SubqueryAlias v\n      +- Project [1 AS k#65]\n         +- OneRowRelation\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: spark_catalog.pview_second_call_false_false.consumer\nFlows that failed due to upstream errors: \n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "view_consumer_own_false_false",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS TIME(3)) AS id;SET spark.sql.types.framework.enabled=false;CREATE TEMPORARY VIEW v AS SELECT sqrt(id) FROM STREAM(source);CREATE STREAMING TABLE consumer AS SELECT * FROM STREAM(v)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Failed to resolve flow due to upstream failure: 'spark_catalog.pview_consumer_own_false_false.consumer'.\nError: Failed to read dataset 'v'. Dataset is defined in the pipeline but could not be resolved.",
+        "Failed to resolve flow: 'v'.\nError: [DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE] Cannot resolve \"SQRT(id)\" due to data type mismatch: The first parameter requires the \"DOUBLE\" type, however \"id\" has the type \"TIME(6)\". SQLSTATE: 42K09; line 1 pos 34;\n'Project [unresolvedalias(SQRT(id#79))]\n+- ~SubqueryAlias spark_catalog.pview_consumer_own_false_false.source\n   +- ~StreamingRelationV2 org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTableProvider$@1d795ec1, memory, org.apache.spark.sql.execution.streaming.runtime.MemoryStreamTable@123012b8, [], [id#79], name=<Unassigned>\n"
+      ],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": null,
+      "message": "\nFailed to resolve flows in the pipeline.\n\nA flow can fail to resolve because the flow itself contains errors or because it reads\nfrom an upstream flow which failed to resolve.\n\nFlows with errors: v\nFlows that failed due to upstream errors: spark_catalog.pview_consumer_own_false_false.consumer\n\nTo view the exceptions that were raised while resolving these flows, look for flow\nfailures that precede this log."
+    },
+    {
+      "label": "nullable_control_stream",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS INT) AS id;CREATE STREAMING TABLE consumer (id INT NOT NULL) AS SELECT id FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+      "message": "[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] Table 'spark_catalog.pnullable_control_stream.consumer' has a user-specified schema that is incompatible with the schema\ninferred from its query.\n\"\nStreaming tables are stateful and remember data that has already been\nprocessed. If you want to recompute the table from scratch, please full refresh\nthe table.\n              \n\nDeclared schema:\nroot\n |-- id: integer (nullable = false)\n\n\nInferred schema:\nroot\n |-- id: integer (nullable = true)\n SQLSTATE: 42000"
+    },
+    {
+      "label": "nullable_control_batch",
+      "sql": "CREATE MATERIALIZED VIEW source AS SELECT CAST(NULL AS INT) AS id;CREATE MATERIALIZED VIEW consumer (id INT NOT NULL) AS SELECT id FROM source",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+      "message": "[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] Table 'spark_catalog.pnullable_control_batch.consumer' has a user-specified schema that is incompatible with the schema\ninferred from its query.\n\n\nDeclared schema:\nroot\n |-- id: integer (nullable = false)\n\n\nInferred schema:\nroot\n |-- id: integer (nullable = true)\n SQLSTATE: 42000"
+    },
+    {
+      "label": "nullable_nested_stream",
+      "sql": "CREATE MATERIALIZED VIEW source (s STRUCT<x: INT NOT NULL>) AS SELECT named_struct('x', 1) AS s;CREATE STREAMING TABLE consumer (s STRUCT<x: INT NOT NULL>) AS SELECT s FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [
+        "Run is COMPLETED."
+      ],
+      "outcome": "accepted"
+    },
+    {
+      "label": "nullable_nested_control",
+      "sql": "CREATE MATERIALIZED VIEW source (s STRUCT<x: INT>) AS SELECT named_struct('x', 1) AS s;CREATE STREAMING TABLE consumer (s STRUCT<x: INT NOT NULL>) AS SELECT s FROM STREAM(source)",
+      "dry": true,
+      "confs": {},
+      "events": [],
+      "outcome": "error",
+      "error_type": "AnalysisException",
+      "condition": "USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE",
+      "message": "[USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] Table 'spark_catalog.pnullable_nested_control.consumer' has a user-specified schema that is incompatible with the schema\ninferred from its query.\n\"\nStreaming tables are stateful and remember data that has already been\nprocessed. If you want to recompute the table from scratch, please full refresh\nthe table.\n              \n\nDeclared schema:\nroot\n |-- s: struct (nullable = true)\n |    |-- x: integer (nullable = false)\n\n\nInferred schema:\nroot\n |-- s: struct (nullable = true)\n |    |-- x: integer (nullable = true)\n SQLSTATE: 42000"
+    }
+  ],
+  "completed_at": "2026-10-31T21:07:23.165039+00:00"
+}

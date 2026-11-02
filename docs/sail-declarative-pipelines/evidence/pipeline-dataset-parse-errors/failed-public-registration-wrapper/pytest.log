@@ -1,0 +1,61 @@
+...................................F.................................... [ 24%]
+........................................................................ [ 48%]
+........................................................................ [ 72%]
+........................................................................ [ 96%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+____________ test_dataset_location_is_rejected_during_registration _____________
+
+fixturefunc = <function pipeline_sql_file_with_error at 0x11295d940>
+request = <FixtureRequest for <Function test_dataset_location_is_rejected_during_registration>>
+kwargs = {'name': 'location.sql', 'condition': 'location.sql', 'docstring': "CREATE MATERIALIZED VIEW output LOCATION '/tmp/unu...tGraphElementRegistry object at 0x11a027f50>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11a0358a0>)}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'location.sql', condition = 'location.sql'
+docstring = "CREATE MATERIALIZED VIEW output LOCATION '/tmp/unused-pipeline-location' AS SELECT 1 AS value;"
+pipeline = ('21d7ceba-4912-4886-ad4a-a3ae9b51497e', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11a027f50>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11a0358a0>)
+
+    @given(parsers.parse("pipeline SQL file {name} fails with {condition}"))
+    def pipeline_sql_file_with_error(name, condition, docstring, pipeline):
+        _, registry, _ = pipeline
+>       with pytest.raises(AnalysisException, match=condition):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'location.sql'
+E         Actual message: '[_LEGACY_ERROR_TEMP_0035] Operation not allowed: Specifying location is not supported for CREATE MATERIALIZED VIEW statements. The storage location for a pipeline dataset is managed by the pipeline itself..'
+
+python/pysail/testing/spark/steps/pipelines.py:71: AssertionError
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_features.py::test_dataset_location_is_rejected_during_registration
+1 failed, 299 passed, 176 warnings in 11.51s

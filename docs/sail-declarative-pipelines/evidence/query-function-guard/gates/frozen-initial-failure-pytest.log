@@ -1,0 +1,226 @@
+........................................................................ [ 24%]
+..F..................................................................... [ 48%]
+........................................................................ [ 72%]
+........................................................................ [ 96%]
+..........F.                                                             [100%]
+=================================== FAILURES ===================================
+_________ test_declared_nonnullable_field_cannot_receive_nullable_data _________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1179ce3c0>
+pipeline = ('9773e0aa-568d-4e03-b16e-a46d45f25d43', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1179cede0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1179ca340>)
+
+    def test_declared_nonnullable_field_cannot_receive_nullable_data(pipeline_spark, pipeline):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+>           @dp.materialized_view(schema=StructType([StructField("id", LongType(), nullable=False)]))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_schema.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/api.py:289: in outer
+    registry.register_flow(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:117: in register_flow
+    df = flow.func()
+         ^^^^^^^^^^^
+python/pysail/tests/spark/pipelines/test_schema.py:75: in output
+    return pipeline_spark.createDataFrame([(1,), (None,)], "id BIGINT")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:491: in createDataFrame
+    schema = self.client._analyze(  # type: ignore[assignment]
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1460: in _analyze
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1179ce450>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[ATTEMPT_ANALYSIS_IN_PIPELIN...analysis or execution are not allowed in pipeline query functions. Move code outside of the pipeline query function."
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [ATTEMPT_ANALYSIS_IN_PIPELINE_QUERY_FUNCTION] Operations that trigger DataFrame analysis or execution are not allowed in pipeline query functions. Move code outside of the pipeline query function.
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+____ test_nested_table_schemas_after_two_materializations[arrays-and-maps] _____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x118d380b0>
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x118d5cf40>
+nested = False
+
+    @pytest.mark.parametrize("nested", [False, True], ids=["arrays-and-maps", "nested-arrays-and-maps"])
+    def test_nested_table_schemas_after_two_materializations(pipeline_spark, pipeline_factory, nested):
+        if nested:
+            a_query = "select map(0, map(0, struct('a', 'b'))) m"
+            b_query = "select array(array('a', 'b', 'c'), array('d', 'e', 'f')) arr"
+            c_query = "select * from a join b where m[0][0].col1 = arr[0][0]"
+            a_ddl = "m MAP<int, MAP<int, struct<col1: string, col2: string>>>"
+            b_ddl = "arr ARRAY<ARRAY<string>>"
+        else:
+            a_query = "select map(1, struct('a', 'b')) m"
+            b_query = None
+            c_query = "select * from a join b where map_entries(m)[0].key = arr[0]"
+            a_ddl = "m MAP<int, struct<col1: string, col2: string>>"
+            b_ddl = "arr ARRAY<int>"
+    
+        for _ in range(2):
+            _, registry, run = pipeline_factory()
+            with graph_element_registration_context(registry):
+                dp.materialized_view(name="a")(lambda: pipeline_spark.sql(a_query))
+                if nested:
+                    dp.materialized_view(name="b")(lambda: pipeline_spark.sql(b_query))
+                else:
+>                   dp.materialized_view(name="b")(
+                        lambda: pipeline_spark.createDataFrame([([1, 3, 5],), ([2, 4, 6],)], "arr ARRAY<int>")
+                    )
+
+python/pysail/tests/spark/pipelines/test_nested_materialization.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/api.py:289: in outer
+    registry.register_flow(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:117: in register_flow
+    df = flow.func()
+         ^^^^^^^^^^^
+python/pysail/tests/spark/pipelines/test_nested_materialization.py:37: in <lambda>
+    lambda: pipeline_spark.createDataFrame([([1, 3, 5],), ([2, 4, 6],)], "arr ARRAY<int>")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:491: in createDataFrame
+    schema = self.client._analyze(  # type: ignore[assignment]
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1460: in _analyze
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x118d38230>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[ATTEMPT_ANALYSIS_IN_PIPELIN...analysis or execution are not allowed in pipeline query functions. Move code outside of the pipeline query function."
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [ATTEMPT_ANALYSIS_IN_PIPELINE_QUERY_FUNCTION] Operations that trigger DataFrame analysis or execution are not allowed in pipeline query functions. Move code outside of the pipeline query function.
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 74 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 74 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_nonnullable_field_cannot_receive_nullable_data
+FAILED python/pysail/tests/spark/pipelines/test_nested_materialization.py::test_nested_table_schemas_after_two_materializations[arrays-and-maps]
+2 failed, 298 passed, 174 warnings in 12.72s

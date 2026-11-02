@@ -1,0 +1,7 @@
+# Virtual schema acquisition and compatibility APIs
+
+First implementation unit from the measured virtual-schema design: VirtualTableSchema owns only output identity, optional declared schema and incoming Arrow schemas. load uses the declaration directly or infers; validate merges incoming schemas and enforces declared compatibility. The existing schema::infer delegates to validate, preserving runtime behavior until the lazy-scope unit. No logical plans/providers or new external dependencies are stored by the descriptor.
+
+Three native contracts cover declared bypass of incompatible producers, untyped inference failure with no fallback, metadata preservation through Sail's SPARK_METADATA_JSON_KEY envelope, and declaration/nullability validation. Initial native run220/1 exposed an authored test's incorrect plain Arrow comment-key assumption; the corrected test checks the exact JSON envelope/value, with production metadata unchanged. Failed evidence is retained.
+
+Qualification:221 Connect native tests,fmt/strictClippy,300 selected public+67 upstream Python tests, and12 runtime schema vectors whose complete diagnostic fields remain identical to acceptedc645. All12 previously measured Spark divergences remain open; this API unit does not activate lazy GraphScope inputs, change command reanalysis or public streaming/CDC effects, or remove original strict markers. Next unit must wire schema acquisition at the actual read boundary and defer compatibility/final forcing in Spark's phase order.

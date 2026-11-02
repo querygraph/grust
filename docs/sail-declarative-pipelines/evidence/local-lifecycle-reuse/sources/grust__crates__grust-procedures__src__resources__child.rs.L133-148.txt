@@ -1,0 +1,16 @@
+        if self.0.accounting.observes_interruption() {
+            // Registered and checked under the lock `cancel` collects children
+            // under, after it has published its flag: either `cancel` finds
+            // this child, or this finds the flag.
+            let mut state = self
+                .0
+                .state
+                .lock()
+                .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
+            if self.0.cancelled.load(Ordering::Acquire) {
+                child.cancelled.store(true, Ordering::Release);
+            } else {
+                state.children.push(Arc::downgrade(&child));
+            }
+        }
+        Ok(ExecutionContext(child))
