@@ -716,7 +716,7 @@ Limits that remain:
 - Power loss and restore are not qualified, and the operator accepted this as a limit. The Turso store runs in `mvcc` journal mode, and only process death is tested.
 - Remote warehouses are tested against `moto`, which the operator accepted instead of real S3. One machine owns the flows.
 - A stream join and a deduplication keep their state in memory while a batch runs, as Spark's default state store does. Each batch writes only its own rows, so the state written per batch does not grow with the stream.
-- `withWatermark` must sit on a streaming read, or on a row-wise chain or a union over streaming reads: projections, filters, aliases, and added, renamed or dropped columns. After a transformation, every row read is kept as state, because the event time is not a column of the read.
+- `withWatermark` must sit on a streaming read, or on a row-wise chain or a union over streaming reads: projections, filters, aliases, and added, renamed or dropped columns. After a transformation, the stream's columns are carried through the chain, and a row is kept only while a window that its event time at the watermark may belong to is open. A row the chain filters out is dropped. A stream read in any other way keeps every row.
 - Within one batch, `dropDuplicates` keeps whichever row the plan reaches first; Spark does not fix that order either.
 - A partition emptied at offset 0 still reads as an origin.
 
@@ -765,3 +765,9 @@ The earlier claim that no Iceberg runtime runs on Spark 4.2.1 was wrong, and it 
 All three failures are Spark with Iceberg refusing to change a nested type in place: `Cannot update '<column>', not a primitive type`. Spark's full refresh alters the existing Iceberg table rather than replacing it. The tests are a full refresh that changes keys and types, a selective full refresh, and a new field in an array of structs. Sail completes these, as Spark does on its own row-level test catalog, so this is a difference, kept rather than copied. The operator decided on 2026-11-02 that Sail keeps completing them. Every other expectation agrees.
 
 The gate has a new step, `iceberg_on_spark`, which passes only when exactly these three tests fail.
+
+### Open rows after a transformed watermark (2026-11-02)
+
+`6c6c9d447` carries a stream's columns through the projections, filters and aliases beneath a watermark, so each stored row is judged by its event time at the watermark. A row is kept only while a window it may belong to is open, and a row the chain filters out is dropped. Before, every row read was kept. `test_a_watermark_on_a_renamed_event_time_closes_windows_across_runs` passes on real Spark 4.2.1 (42 of 42 in the semantics file) and on Sail. On Sail, the last state snapshot of that test holds one row, the only one in an open window.
+
+VERDICT commit=6c6c9d44766fe4d43ef6ddd88ee2cc65ec267139: every step is 0, including `iceberg_on_spark`. Whole Spark tree: 12134 passed. Pipelines: 1189 passed. Local-cluster: 96. Iceberg variant: 87. Hive: 89. Unity: 230. Offered for the milestone in CF-0619.
