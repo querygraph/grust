@@ -4,7 +4,7 @@ This is the consolidated record of every settled decision for Sail Declarative P
 
 - **Status:** current as of 2026-11-02.
 - **Product root:** `fb3a6ab03` on `work/spark-declarative-pipelines`, not pushed.
-- **Coordination log:** read through CF-0615.
+- **Coordination log:** read through CF-0616.
 
 Each entry names who decided it and where it is recorded:
 - **User:** the user's decision.
@@ -45,6 +45,13 @@ These were made by the user directly. They take precedence over anything below.
     - Unqualified effects are never activated on the shared branch.
 14. **Design-phase notice.** The user is notified before each substantial design phase, so they can switch models ("Astra checkpoint"; CF-0059, CF-0125, CF-0205, CF-0339, CF-0426). Durability, fencing and recovery need explicit design and notice, but they do not block other CDC work (CF-0532).
 15. **Where things live.** Product code and tests go in Sail; plans, reviews, evidence and handoffs go in Grust. `/Users/alexy/src/sail` is not modified.
+16. **Iceberg runtime for the oracle** (2026-11-02, CF-0612). The user approved running the Iceberg 1.13.0-SNAPSHOT nightly for Spark 4.2 (commit `2742348`). It loads on Spark 4.2.1; the 1.12.0 runtime, built for Spark 4.1, does not. `iceberg_on_spark` runs the AutoCDC files with it, with the catalog cache off.
+17. **Unity Catalog built from source** (2026-11-02, CF-0607). With Docker down, the user approved building Unity Catalog v0.4.0 from source and running it locally. The Unity suite runs against it through `PYSAIL_UNITY_CATALOG_URL`.
+18. **Remote warehouses tested against moto** (2026-11-02). The user decided that `moto` is enough; real S3 is not required.
+19. **Power loss accepted as a limit** (2026-11-02). Only process death (SIGKILL, `crash.py`) is qualified. Power loss and restore are not.
+20. **Integration stays with the batch lane** (2026-11-02). Fable does not move the root branch, even when an offer is waiting. The batch lane merges with its own gate.
+
+Items 16–20 were posted by the CDC lane in CF-0616.
 
 ## 2. Scope and architecture
 
