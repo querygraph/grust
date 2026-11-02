@@ -3,7 +3,7 @@
 This milestone is Sail's implementation of Spark 4.2.1 Spark Declarative Pipelines: the complete batch implementation, plus AutoCDC and streaming. The unchanged `pyspark.pipelines` client and the `spark-pipelines` CLI run against Sail over Spark Connect.
 
 - **Branch:** `work/spark-declarative-pipelines`, tag `sdp-batch-m1`, pushed to `querygraph/sail`.
-- **Root:** `fb3a6ab03`.
+- **Root:** `53790f575`. It adds two commits on top of the gated `fb3a6ab03`: `21c1cb498` (the demo, the report source, and a fix to AutoCDC target locations; gated) and `53790f575` (the built report editions only).
 - **Base:** upstream Sail `0ba425c03`. The branch adds 371 commits, with 801 files changed.
 - **Lanes:** the batch lane wrote batch, SQL, catalog, runtime and ORC. The CDC lane wrote AutoCDC, with the streaming and Iggy work it needs. Both lanes are on this root.
 
@@ -57,6 +57,20 @@ Every settled decision is recorded in [SAIL-SDP-DESIGN-DECISIONS.md](SAIL-SDP-DE
 **Spark 4.2.1 as the reference.** Batch test files are identical on `df2457e50` and on this root.
 - **Batch:** all 61 non-AutoCDC pipelines files were run on Spark 4.2.1, each failure then rerun alone. Only the 4 documented batch differences fail on Spark.
 - **AutoCDC on this root:** `test_autocdc_semantics.py` 41 passed; `test_autocdc_spark_suites.py` 43 passed and 4 skipped (Sail-only cases).
+
+## Demo and report
+
+- **Demo:** `examples/declarative-pipelines/` in the branch, run with `run.sh` after a build. It runs real projects through the unchanged `spark-pipelines` CLI and checks every result. On `21c1cb498`, with an Iggy broker: 48 passed, 0 failed, 0 skipped. Without a broker, the Iggy checks are reported as SKIP.
+- **Bug the demo found:** AutoCDC failed with Sail's default relative warehouse (`spark-warehouse`), because the commit path could not turn a relative location into a URL. It now uses `sail_data_source::resolve_table_url`, as Delta's table source does (`21c1cb498`, declared to the CDC lane in CF-0618). The demo failing before the fix and passing after it is the control.
+- **Report:** *Sail Declarative Pipelines*, built with the First Pair Press toolchain. The source is `docs/books/sail-declarative-pipelines/`; the builds (PDF, EPUB, HTML, version `1.0.0-21c1cb49`) are in its `dist/`. It is not published to firstpair.org.
+- **Gate on `21c1cb498`:**
+  - native: GATE=0;
+  - frozen 300 + 67: PASS;
+  - pipelines and ORC: 1262 passed, 23 skipped, 4 xfailed;
+  - Hive: 69 passed, 2 xfailed;
+  - second catalog: 13 passed;
+  - Delta failures identical by name;
+  - no cleanup failures at shutdown.
 
 ## Scope the user set
 
