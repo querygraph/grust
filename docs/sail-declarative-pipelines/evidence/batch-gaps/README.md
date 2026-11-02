@@ -80,3 +80,9 @@ The peer reported 52 failures that the earlier comparisons did not show. They we
 `run-full.py` is the corrected harness, with the optional test dependencies pinned as in `pyproject.toml`, installed outside the shared venv. Under it, upstream `0ba425c03` has 0 failures and 12 JVM fixture errors, so most earlier "fails upstream too" were harness failures on both sides.
 
 On `9d6646c92` 38 snapshots differed, 35 in TPC-DS and 3 in TPC-H, all plan text. Join, aggregate, filter, scan and repartition operators kept their counts, with 8 fewer projections that held a shared guard. Division guards became `spark_divisor_ansi_divide`, and a CASE ends in `ELSE NULL`. `67a6931ba` refreshes them.
+
+## `609a6c251` and the second catalog
+
+`609a6c251` refuses a union of streaming and batch inputs, as Spark does, so 4 strict expected failures remain. The merge after it adds `test_second_catalog.py`, which needs a server with two memory catalogs: `scripts/spark-pipelines-tests/run-second-catalog.sh`. Both SqlPipelineSuite catalog-crossing cases are now ported, on Sail only.
+
+The 32 Hive profile cases stay partial. Spark's Hive suites add no test bodies, so rerunning the same modules against a metastore would settle them. Docker Desktop is down, with its engine failing since 2026-10-27 on a full disk. A standalone Hive 4.0.1 metastore was downloaded and checksummed, but running downloaded jars was denied by the permission system, so no test has run against a metastore. `scripts/spark-pipelines-tests/run-hive-metastore.sh` has never been run.

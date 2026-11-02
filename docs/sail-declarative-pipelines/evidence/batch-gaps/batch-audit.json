@@ -2611,17 +2611,17 @@
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:634",
   "suite": "SqlPipelineSuite",
   "name": "Use database and set catalog works",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_sql_remaining.py::test_use_namespace_and_use_database_scope_each_file, test_sql_namespace.py::test_catalog_scope_is_local_to_sql_file",
-  "note": "A second catalog (mv4, SET CATALOG to another catalog) is not covered: it needs InMemoryTableCatalog, a Spark test class. SET CATALOG is covered only to the current catalog."
+  "note": "Second catalog through a server with two memory catalogs, on Sail only: test_second_catalog.py. Spark needs InMemoryTableCatalog, a test class, so these skip there."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:759",
   "suite": "SqlPipelineSuite",
   "name": "Writing/reading datasets from fully and partially qualified names works",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_sql_remaining.py::test_writing_and_reading_from_qualified_names, test_audit_sql.py::test_qualified_names_between_two_other_schemas",
-  "note": "The three catalog-crossing pairs need InMemoryTableCatalog, a Spark test class. They run across schemas; the catalog hop itself is not covered."
+  "note": "Second catalog through a server with two memory catalogs, on Sail only: test_second_catalog.py. Spark needs InMemoryTableCatalog, a test class, so these skip there."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:617",
