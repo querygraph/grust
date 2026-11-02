@@ -22,7 +22,7 @@
       "tests": 67
     }
   ],
-  "selected_nodes_sha256": "70ef0c0c12acff04a2da931d6fd919e8ae9c0a70098c9e8bd377f2a96d3455ef",
+  "selected_nodes_sha256": "6bf05ceab78ae4a6668e0f2635c25a9b7d3e6c14ed5124e32d8c4ee9287f9754",
   "source_sha256": {
     "python/pysail/testing/spark/session.py": "4533ed17671a2ee1bb8a1565fd58ccedd5f18a293dadecab024cdac98c6dc05d",
     "python/pysail/tests/conftest.py": "d5f2c3cff1c1f0671ae050d92f7eb12cf219a80b614e467b22d0c8c8c60b6065",
@@ -80,8 +80,9 @@
     "python/pysail/tests/spark/dml/features/ctas_error_handling.feature": "fa498e73be70962406fb5100f2485c126b2319e1a96e949fac385d9bb7896589",
     "python/pysail/tests/spark/dml/features/explain_write.feature": "04580d287e4d06926f41ec61c5bd8b12ef78d705392f3d89d69aa547588f4a1f",
     "python/pysail/tests/spark/dml/features/truncate_table.feature": "20fe09718a5271dcb2dc98b0810738e1d46635f03a549244b2a8bb7ac54d191c",
-    "python/pysail/tests/spark/pipelines/features/sql.feature": "5cf58b5523eccee25c1e9d13037b613242627c94956ad72d3cba914699a5386d",
-    "python/pysail/tests/spark/pipelines/features/views.feature": "8008dfbd3efad593079e666a578c9e4748357492f3abe857be2ac478c326106e"
+    "python/pysail/tests/spark/pipelines/features/sql.feature": "987e94e9f2c221b0dc251e43ee5e7ba7a26b34fada190dd5e5d838002b587cee",
+    "python/pysail/tests/spark/pipelines/features/views.feature": "b9de1b487ed05f30ac661cbd137ab774a92756762605d142d1ee19e63ebd2476",
+    "python/pysail/tests/spark/pipelines/test_batch_parity.py": "15d058fd461890d17ce63aa2c48519eda3d353cdbd4fc9de2d31d015bf77df87"
   },
   "case_counts_by_file": {
     "python/pysail/tests/spark/dataframe/test_cast_errors.py": 25,
@@ -236,5 +237,34 @@
     ],
     "selected_nodes_unchanged": true,
     "reason": "pipelines/conftest.py: pipeline_factory takes optional catalog and database, which default to the None it passed before."
+  },
+  "spark_measurement_alignment": {
+    "candidate": "2e73a0b8778210e86121a1b8d6624de3ea1b2484",
+    "source_changes": [
+      {
+        "path": "python/pysail/tests/spark/pipelines/features/sql.feature",
+        "before": "5cf58b5523eccee25c1e9d13037b613242627c94956ad72d3cba914699a5386d",
+        "after": "987e94e9f2c221b0dc251e43ee5e7ba7a26b34fada190dd5e5d838002b587cee"
+      },
+      {
+        "path": "python/pysail/tests/spark/pipelines/features/views.feature",
+        "before": "8008dfbd3efad593079e666a578c9e4748357492f3abe857be2ac478c326106e",
+        "after": "b9de1b487ed05f30ac661cbd137ab774a92756762605d142d1ee19e63ebd2476"
+      },
+      {
+        "path": "python/pysail/tests/spark/pipelines/test_batch_parity.py",
+        "before": null,
+        "after": "15d058fd461890d17ce63aa2c48519eda3d353cdbd4fc9de2d31d015bf77df87"
+      }
+    ],
+    "selected_nodes_unchanged": false,
+    "selected_nodes_before": "70ef0c0c12acff04a2da931d6fd919e8ae9c0a70098c9e8bd377f2a96d3455ef",
+    "selected_nodes_after": "6bf05ceab78ae4a6668e0f2635c25a9b7d3e6c14ed5124e32d8c4ee9287f9754",
+    "node_replacements": {
+      "python/pysail/tests/spark/pipelines/test_features.py::test_private_views_honor_declared_column_names": "python/pysail/tests/spark/pipelines/test_features.py::test_private_views_ignore_declared_column_names",
+      "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_retain_the_sql_file_namespace_and_column_comments": "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_retain_the_sql_file_namespace_and_ignore_declared_columns",
+      "python/pysail/tests/spark/pipelines/test_features.py::test_table_materialization_errors_precede_data_writes": "python/pysail/tests/spark/pipelines/test_batch_parity.py::test_a_missing_format_fails_before_any_table_is_written"
+    },
+    "reason": "Each changed scenario was run on Spark 4.2.1 with delta-spark 4.4.1 in local[2], alone, in an empty warehouse. Spark ignores the declared columns of temporary and persisted pipeline views, keeping the view comment; rejects a bare USE in a pipeline SQL file (SetCatalogAndNamespace), so the views scenarios use USE SCHEMA; and reports a missing format as DATA_SOURCE_NOT_FOUND wrapped in TableMaterializationException, which reaches the client as an unknown class, so that scenario moved to a paired test that does not fix the class. The table-write scenario accepts either engine's column-count text."
   }
 }
