@@ -717,7 +717,7 @@ Limits that remain:
 - Iceberg has no comparison on real Spark, because no runtime for Spark 4.2.1 exists. Its Sail path passes the tests whose expectations Spark verified on its test catalog.
 - Remote warehouses are tested against `moto`, which the operator accepted instead of real S3. One machine owns the flows.
 - A stateful join re-runs over all the rows it keeps, so its cost grows with its state. Spark's state grows the same way, but it does not join everything again in each batch.
-- A watermarked aggregate must read one stream, and `withWatermark` must sit on that read or on a row-wise chain over it: projections, filters, aliases, and added, renamed or dropped columns. A watermarked aggregate over several streams is refused, though Spark runs it. After a transformation, every row read is kept as state, because the event time is not a column of the read.
+- `withWatermark` must sit on a streaming read, or on a row-wise chain or a union over streaming reads: projections, filters, aliases, and added, renamed or dropped columns. After a transformation, every row read is kept as state, because the event time is not a column of the read.
 - Within one batch, `dropDuplicates` keeps whichever row the plan reaches first; Spark does not fix that order either.
 - A partition emptied at offset 0 still reads as an origin.
 
@@ -729,22 +729,23 @@ The stateful queries of a flow used to be evaluated by difference: over everythi
 - **Deduplication:** the state is the keys already seen, so a later row with a seen key is dropped and the first row is kept.
 - **Sliding windows:** a window with a slide feeds a flow too. Its state keeps every row within a window's length of the watermark. The filter on closing windows sits on the aggregate, so a query may select away the window column after aggregating; before, such a query failed.
 - **Start times and transformed watermarks:** a window with a start time feeds a flow. So does a watermark after a row-wise transformation, and it follows only the rows that reach it, as in Spark, so a row filtered out before the watermark does not move it.
+- **Several streams:** a watermarked aggregate may read several streams, under one watermark over their union or a watermark on each. With several watermarks, the query's watermark is the least of them, a stream with no rows yet counting as 0 (Spark's default `min` policy, WatermarkTracker.scala). As in Spark, only the query's watermark survives a restart. Each watermark starts again unset in a new run, so a window closes only when every stream has moved in that run. Real Spark showed this. I had first expected otherwise, and the test was corrected to Spark's answer.
 - **Inner join of streams:** both sides keep every row. A batch adds its new rows paired with every row of the other side, so a batch no longer reads the source's history, and duplicate pairs are kept.
 
-Six new tests pass on real Spark 4.2.1 (39 of 39 in `test_autocdc_semantics.py`) and on Sail. Two of them fail on the old code:
+Eight new tests pass on real Spark 4.2.1 (41 of 41 in `test_autocdc_semantics.py`) and on Sail. Two of them fail on the old code:
 
 - A late row changed a closed window: `[(1, 7)]` against Spark's `[(1, 1)]`.
 - A join over a deleted source file stopped with `PATH_NOT_FOUND`.
 
-The first row of a key across runs also passed on the old code, because its plan happened to read that row first. Sliding windows, start times and transformed watermarks were refused before.
+The first row of a key across runs also passed on the old code, because its plan happened to read that row first. Sliding windows, start times, transformed watermarks and several streams were refused before.
 
-VERDICT commit=788eb1c9eb805e173d8b01f8e7d8a6e41f1d9282, with root `df2457e50` merged in: every step is 0.
+VERDICT commit=669e35e6b43dc02b70e40c6acfee24ac062b5713, on root `df2457e50`: every step is 0.
 
-- Whole Spark tree: 12131 passed, 0 errors. The batch lane's `b1f41c6bf` ended the ORC teardown error: a failure already reported to its query no longer fails session shutdown.
-- Pipelines: 1186 passed.
-- Local-cluster: 93 passed.
-- Iceberg variant: 84 passed, 2 skipped.
-- Hive: 86 passed.
+- Whole Spark tree: 12133 passed, 0 errors. The batch lane's `b1f41c6bf` ended the ORC teardown error: a failure already reported to its query no longer fails session shutdown.
+- Pipelines: 1188 passed.
+- Local-cluster: 95 passed.
+- Iceberg variant: 86 passed, 2 skipped.
+- Hive: 88 passed.
 - Unity: 230 passed.
 - Real Spark 4.2.1: both test files pass.
 - Crash seeds: every recovery exact.
