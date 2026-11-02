@@ -715,7 +715,7 @@ Limits that remain:
 
 - Power loss and restore are not qualified, and the operator accepted this as a limit. The Turso store runs in `mvcc` journal mode, and only process death is tested.
 - Remote warehouses are tested against `moto`, which the operator accepted instead of real S3. One machine owns the flows.
-- A stateful join re-runs over all the rows it keeps, so its cost grows with its state. Spark's state grows the same way, but it does not join everything again in each batch.
+- A stream join and a deduplication keep their state in memory while a batch runs, as Spark's default state store does. Each batch writes only its own rows, so the state written per batch does not grow with the stream.
 - `withWatermark` must sit on a streaming read, or on a row-wise chain or a union over streaming reads: projections, filters, aliases, and added, renamed or dropped columns. After a transformation, every row read is kept as state, because the event time is not a column of the read.
 - Within one batch, `dropDuplicates` keeps whichever row the plan reaches first; Spark does not fix that order either.
 - A partition emptied at offset 0 still reads as an origin.
@@ -738,9 +738,9 @@ Eight new tests pass on real Spark 4.2.1 (41 of 41 in `test_autocdc_semantics.py
 
 The first row of a key across runs also passed on the old code, because its plan happened to read that row first. Sliding windows, start times, transformed watermarks and several streams were refused before.
 
-VERDICT commit=669e35e6b43dc02b70e40c6acfee24ac062b5713, on root `df2457e50`: every step is 0.
+VERDICT commit=44b2f5f73c313eb2eadafe8567105ec99ece4732, on root `df2457e50`: every step is 0, including `iceberg_on_spark`.
 
-- Whole Spark tree: 12133 passed, 0 errors. The batch lane's `b1f41c6bf` ended the ORC teardown error: a failure already reported to its query no longer fails session shutdown.
+- Whole Spark tree: 12133 passed, 0 errors. The batch lane's `b1f41c6bf` ended the ORC teardown error.
 - Pipelines: 1188 passed.
 - Local-cluster: 95 passed.
 - Iceberg variant: 86 passed, 2 skipped.
@@ -748,6 +748,8 @@ VERDICT commit=669e35e6b43dc02b70e40c6acfee24ac062b5713, on root `df2457e50`: ev
 - Unity: 230 passed.
 - Real Spark 4.2.1: both test files pass.
 - Crash seeds: every recovery exact.
+
+`44b2f5f73` makes join and deduplication state append-only. Each batch writes its rows as one segment, with a manifest listing every segment so far. Before, each batch rewrote the whole state.
 
 ### Iceberg on real Spark 4.2.1 (2026-11-02)
 
@@ -760,6 +762,6 @@ The earlier claim that no Iceberg runtime runs on Spark 4.2.1 was wrong, and it 
 | `test_autocdc_semantics.py`    | 40 passed, 1 failed            |
 | `test_autocdc_spark_suites.py` | 41 passed, 2 failed, 4 skipped |
 
-All three failures are Spark with Iceberg refusing to change a nested type in place: `Cannot update '<column>', not a primitive type`. Spark's full refresh alters the existing Iceberg table rather than replacing it. The tests are a full refresh that changes keys and types, a selective full refresh, and a new field in an array of structs. Sail completes these, as Spark does on its own row-level test catalog, so this is a difference, kept rather than copied. Every other expectation agrees.
+All three failures are Spark with Iceberg refusing to change a nested type in place: `Cannot update '<column>', not a primitive type`. Spark's full refresh alters the existing Iceberg table rather than replacing it. The tests are a full refresh that changes keys and types, a selective full refresh, and a new field in an array of structs. Sail completes these, as Spark does on its own row-level test catalog, so this is a difference, kept rather than copied. The operator decided on 2026-11-02 that Sail keeps completing them. Every other expectation agrees.
 
 The gate has a new step, `iceberg_on_spark`, which passes only when exactly these three tests fail.

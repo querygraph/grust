@@ -1,6 +1,6 @@
 # AutoCDC against Spark 4.2.1
 
-Product commit `669e35e6b`, on root `df2457e50`, branch `work/sdp-initialization-intents`.
+Product commit `44b2f5f73`, on root `df2457e50`, branch `work/sdp-initialization-intents`.
 
 Oracle: Spark 4.2.1 from PyPI, with `SharedTablesInMemoryRowLevelOperationTableCatalog` from Maven's `spark-catalyst_2.13-4.2.1-tests.jar` and `spark-sql_2.13-4.2.1-tests.jar`. This is the catalog Spark's own AutoCDC suites use, as `cat.ns1`.
 
