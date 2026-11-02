@@ -50,3 +50,25 @@ Merges `work/sdp-session-shutdown`. Gate: 15 crates, frozen 300 + 67, pipelines 
 Whole tree against upstream `0ba425c03`: 47 failures and errors, all 47 also failing upstream, 0 regressed, 0 new. By signature: 13 `ModuleNotFoundError` in a Python data source on an external server, 12 JVM gateway setup, 8 Delta maintenance commit lookups, 7 missing connectorx, 5 collection failures from missing modules, 2 others. Not fixed and not all diagnosed, since they fail the same way upstream under this harness.
 
 Session limits, from the branch: fallible actor and gateway results are not done, since they need the common actor framework. Non-checkpoint table writers are not routed through the effect owner. Cluster worker effects are not qualified, and a cluster session that used checkpoints now fails release and leaves the server exiting 1.
+
+## `5e905ecce` to `a4dfce84a`: audit, Iggy sources, final state
+
+`5e905ecce` merges the audit of the non-AutoCDC suites: `batch-audit.json`, 435 entries, 349 ported, 72 partial, 14 internal, 0 missing. 32 of the partial entries are Hive profiles run on Sail's default catalog, and most others are AutoCDC cases of PythonPipelineSuite, or internals with a partial client-visible form. The `ported` calls of four clusters were reviewed for failures and notes, not each against its Scala body. It also adds SHOW CREATE TABLE. Three frozen sources changed, recorded as `audit_alignment` in the harness `preparation.json`: `sql.feature` now expects Spark's "Invalid partitioning transform" (SqlGraphRegistrationContext.scala:573, SqlPipelineSuite.scala:326), and two test files gained cleanup fixtures with no assertion changed.
+
+`ad5c11711` reports a missing cluster column and a changed source set as Spark does.
+
+`1d9fb676a` reads a BoundedSource from append flows, Iggy first. `test_iggy_append.py` 9 on a real broker, control 9 failed on `ad5c11711`, `append_bounded_tests.rs` 6 with a fake source. Spark has no Iggy source, so these state Sail's contract. Gates now set `SAIL_IGGY_SERVER_BINARY`, and all 15 Iggy tests ran.
+
+`a4dfce84a`: a session released while its workers start could hang ReleaseSession for good. The pipelines suite found it in local-cluster mode, intermittently. A worker can stick in its own shutdown while its heartbeat task runs on, and the driver joined it forever. The driver now gives up after 30 seconds, which aborts what is left. Stop retries for an unreachable worker were added too. Repeating the racy tests 12 rounds in local-cluster mode: fixed binary 12 clean, with the bound firing once; prior binary 1 failed round. What holds the worker inside its shutdown was not found, so such a release takes 30 seconds.
+
+Final gate at `a4dfce84a`: 15 crates, frozen 300 + 67, pipelines 1227 passed, 9 skipped, 5 strict expected failures, CLI 4 passed with `catalog.shared_memory`, Delta suite unchanged. Local-cluster pipelines plus ORC: 1227 passed. Whole tree against upstream `0ba425c03`: 47 failed or errored, all 47 also on upstream, 0 regressed, 0 new.
+
+The 5 strict expected failures:
+
+- Interrupting a run: Spark cancels the operation and the flows finish, Sail stops the flows. Deliberate: nothing could stop such a run, and session shutdown needs them stopped.
+- Releasing a session during a run: the same.
+- Spark refuses a union of streaming and batch views at query start, Sail runs it.
+- Added columns: Spark's order comes from a Scala Map past four fields, Sail uses target order.
+- `writeStream` to `memory` outside a pipeline.
+
+Spark run file by file on the pre-merge audit tree: batch files failing there are mostly `LOCATION_ALREADY_EXISTS` from leftovers in the shared `default` schema (72 lines), since these fixtures rely on a fresh Sail catalog per session, and `NO_ACTIVE_SESSION` in the `direct` variants of `test_dataset_parse_errors.py`. The rest are Sail differences: Sail accepts dotted and hyphenated table names where Spark's catalog refuses them, and `test_direct_execution_policy.py` is a stated Sail policy. AutoCDC files fail on plain Spark, because it needs the row-level test catalog in `evidence/autocdc-spark-oracle`. The whole directory was not rerun on Spark after the final merges.

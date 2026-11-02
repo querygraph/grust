@@ -150,6 +150,16 @@ Latest accepted source/public runtime is **ba0d692c671fd78b0a1ca77e497c6eb049380
 300 selected public +67 upstream Python executions; inspect the [numeric divisor packet](docs/sail-declarative-pipelines/evidence/numeric-divisor-guard/README.md)
 for historical arithmetic qualification and basic-metadata-refresh packet below for test-source/inherited runtime proof. These selections are not original Scala acceptance.
 
+## Current root: `a4dfce84a` (supersedes the status lines below)
+
+Root `a4dfce84a` on `work/spark-declarative-pipelines`, not pushed. Batch is complete against the audit in `docs/sail-declarative-pipelines/evidence/batch-gaps`: 435 entries, 0 missing, pipelines 1227 passed with 5 strict expected failures, the same in local-cluster mode, whole tree 0 regressed against upstream `0ba425c03`. Compare with that base, not only the last root. No original Scala suite ran against Sail.
+
+Landing: `merge/gate-run.sh` then `merge/land.sh`, or `merge/gate-merge.sh` then a fast-forward. Check that the frozen harness printed PASS: a changed frozen source stops it. Never run `cargo fmt --all`, which rewrites `vendor/`.
+
+Open: streaming stateful operators (sliding windows, watermarked deduplication, stream-stream joins), exactly-once for plain file tables, Iceberg append sources, rate limits, what holds a worker inside its shutdown. Non-checkpoint writers and cluster workers are not covered by the session effect owner, and fallible actor results need the common actor framework.
+
+Three decisions wait on the user: `catalog.shared_memory` default, cluster release with checkpoints failing, ORC differences from Spark.
+
 ## Opus batch-lane checkpoint (supersedes the next-work item below)
 
 Opus now holds the batch lane in the coordinator worktrees; the CDC lane is an Opus session in the Fable role. The channel helper accepts only the labels Codex and Fable, so those remain role labels. Per the user, each lane does real work and syncs only on a shared reusable design.
