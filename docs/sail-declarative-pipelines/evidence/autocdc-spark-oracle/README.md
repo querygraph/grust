@@ -1,6 +1,6 @@
 # AutoCDC against Spark 4.2.1
 
-Product commit `f288738c3`, on root `2e73a0b87`, branch `work/sdp-initialization-intents`.
+Product commit `788eb1c9e`, on root `df2457e50`, branch `work/sdp-initialization-intents`.
 
 Oracle: Spark 4.2.1 from PyPI, with `SharedTablesInMemoryRowLevelOperationTableCatalog` from Maven's `spark-catalyst_2.13-4.2.1-tests.jar` and `spark-sql_2.13-4.2.1-tests.jar`. This is the catalog Spark's own AutoCDC suites use, as `cat.ns1`.
 
@@ -23,7 +23,7 @@ The launcher sets `AUTOCDC_ORACLE_NAMESPACE=cat.ns1`, so each test file qualifie
 
 | File                           | Spark 4.2.1          | Sail      |
 | :----------------------------- | :------------------- | :-------- |
-| `test_autocdc_semantics.py`    | 33 passed            | 33 passed |
+| `test_autocdc_semantics.py`    | 39 passed            | 39 passed |
 | `test_autocdc_spark_suites.py` | 43 passed, 4 skipped | 47 passed |
 
 The 4 skips are Sail-only: `ALTER` refusal on an enrolled table, refusing a format with no bounded read, Delta sources, and Iceberg targets. The Iceberg runtime for Spark 4.2 is not on Maven, so Iceberg has no oracle here.
@@ -44,14 +44,12 @@ These runs found two differences that were then fixed: a selection is checked be
 
 | Check                                            | Result                                                       |
 | :----------------------------------------------- | :----------------------------------------------------------- |
-| Whole Spark Python tree                          | 12125 passed, 0 failed, 1 error                              |
-| AutoCDC in local-cluster mode, with S3 and Iggy  | 87 passed                                                    |
-| Spark-verified tests on an Iceberg target        | 78 passed, 2 skipped                                         |
-| AutoCDC on a Hive 4.0.1 metastore, `run-hive.sh` | 80 passed                                                    |
+| Whole Spark Python tree                          | 12131 passed, 0 failed, 0 errors                             |
+| AutoCDC in local-cluster mode, with S3 and Iggy  | 93 passed                                                    |
+| Spark-verified tests on an Iceberg target        | 84 passed, 2 skipped                                         |
+| AutoCDC on a Hive 4.0.1 metastore, `run-hive.sh` | 86 passed                                                    |
 | SIGKILL during runs, `crash.py`                  | 24 on the memory catalog and 6 on Hive, every recovery exact |
 | Unity Catalog v0.4.0 suite, with AutoCDC         | 230 passed, 6 xfailed                                        |
-
-The error is an ORC encoding failure reported at session stop, not a CDC test: see CF-0606.
 
 Unity Catalog was built from source at v0.4.0 and run without Docker. The suite ran with `PYSAIL_INTEGRATION_SUITE=unity` and `PYSAIL_UNITY_CATALOG_URL` pointing at that server.
 
