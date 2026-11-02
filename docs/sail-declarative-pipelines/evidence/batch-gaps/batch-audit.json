@@ -1635,9 +1635,9 @@
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:1070",
   "suite": "DefaultMaterializeTablesSuite",
   "name": "cluster column that doesn't exist in table schema should fail",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_a_cluster_column_missing_from_the_table_schema_fails, test_audit_exec.py::test_a_missing_cluster_column_is_an_analysis_exception",
-  "note": "The failure and column name are covered; the AnalysisException cause is xfail on Sail, which raises IllegalArgumentException with its own text."
+  "note": "The materialization failure and its AnalysisException cause, since ad5c11711."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:984",
@@ -1795,121 +1795,121 @@
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:566#false",
   "suite": "HiveMaterializeTablesSuite",
   "name": "Complete tables should not evolve schema - isFullRefresh = false",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_audit_exec.py::test_complete_tables_take_each_new_schema[False]",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:566#true",
   "suite": "HiveMaterializeTablesSuite",
   "name": "Complete tables should not evolve schema - isFullRefresh = true",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_audit_exec.py::test_complete_tables_take_each_new_schema[True]",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:530",
   "suite": "HiveMaterializeTablesSuite",
   "name": "Invalid table properties error during table materialization",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_audit_exec.py::test_an_invalid_reset_allowed_names_the_property, test_properties.py::test_pipeline_table_properties",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:550",
   "suite": "HiveMaterializeTablesSuite",
   "name": "Materialization succeeds even if there are unknown pipeline properties on the existing table",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_materialization_succeeds_with_unknown_pipeline_properties_on_the_existing_table",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:621#false",
   "suite": "HiveMaterializeTablesSuite",
   "name": "Streaming tables should evolve schema only if not full refresh = false",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_streaming_tables_evolve_schema_only_without_a_full_refresh[False]",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:621#true",
   "suite": "HiveMaterializeTablesSuite",
   "name": "Streaming tables should evolve schema only if not full refresh = true",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_streaming_tables_evolve_schema_only_without_a_full_refresh[True]",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:495",
   "suite": "HiveMaterializeTablesSuite",
   "name": "Table properties are set when table gets materialized",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_table_properties_are_set_when_a_table_gets_materialized",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:42",
   "suite": "HiveMaterializeTablesSuite",
   "name": "basic",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_basic",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:194",
   "suite": "HiveMaterializeTablesSuite",
   "name": "batch flow reading from streaming table",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_batch_flow_reading_from_a_streaming_table",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:1070",
   "suite": "HiveMaterializeTablesSuite",
   "name": "cluster column that doesn't exist in table schema should fail",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_a_cluster_column_missing_from_the_table_schema_fails, test_audit_exec.py::test_a_missing_cluster_column_is_an_analysis_exception",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:984",
   "suite": "HiveMaterializeTablesSuite",
   "name": "cluster columns only (no partitioning)",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_cluster_columns_only",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:858",
   "suite": "HiveMaterializeTablesSuite",
   "name": "cluster columns with user schema",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_cluster_columns_with_a_user_schema",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:263",
   "suite": "HiveMaterializeTablesSuite",
   "name": "invalid schema merge",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_invalid_schema_merge",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:688",
   "suite": "HiveMaterializeTablesSuite",
   "name": "materialize only selected tables",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_materialize_only_selected_tables",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:1021",
   "suite": "HiveMaterializeTablesSuite",
   "name": "materialized view with cluster columns",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_a_materialized_view_with_cluster_columns",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:829",
@@ -1917,111 +1917,111 @@
   "name": "materializing no tables doesn't throw",
   "status": "partial",
   "sail_test": "test_audit_exec.py::test_a_selection_naming_no_table_materializes_nothing, test_execution.py::test_empty_pipeline",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Ran on a Hive metastore too. A client cannot send refreshTables=NoTables, so this stays partial on any catalog."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:125",
   "suite": "HiveMaterializeTablesSuite",
   "name": "multiple",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_multiple",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:1050",
   "suite": "HiveMaterializeTablesSuite",
   "name": "partition and cluster columns together should fail",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_partition_and_cluster_columns_together_fail",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:374",
   "suite": "HiveMaterializeTablesSuite",
   "name": "partition columns with user schema",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_partition_columns_with_a_user_schema",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:236",
   "suite": "HiveMaterializeTablesSuite",
   "name": "schema matches existing table schema",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_schema_matches_an_existing_table_schema",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:329",
   "suite": "HiveMaterializeTablesSuite",
   "name": "specified schema incompatible with existing table",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_a_specified_schema_incompatible_with_an_existing_table",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:947",
   "suite": "HiveMaterializeTablesSuite",
   "name": "specifying cluster column different from existing clustered table",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_specifying_cluster_columns_different_from_an_existing_clustered_table",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:893",
   "suite": "HiveMaterializeTablesSuite",
   "name": "specifying cluster column with existing clustered table",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_specifying_cluster_columns_with_an_existing_clustered_table",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:467",
   "suite": "HiveMaterializeTablesSuite",
   "name": "specifying partition column different from existing partitioned table",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_specifying_a_partition_column_different_from_an_existing_partitioned_table",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:402",
   "suite": "HiveMaterializeTablesSuite",
   "name": "specifying partition column with existing partitioned table",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_specifying_a_partition_column_with_an_existing_partitioned_table",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:292",
   "suite": "HiveMaterializeTablesSuite",
   "name": "table materialized with specified schema, even if different from inferred",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_materialize_tables_more.py::test_a_table_is_materialized_with_a_specified_schema_even_if_different_from_inferred",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:735",
   "suite": "HiveMaterializeTablesSuite",
   "name": "tables with arrays and maps",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_nested_materialization.py::test_nested_table_schemas_after_two_materializations[arrays-and-maps]",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:780",
   "suite": "HiveMaterializeTablesSuite",
   "name": "tables with nested arrays and maps",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_nested_materialization.py::test_nested_table_schemas_after_two_materializations[nested-arrays-and-maps]",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:161",
   "suite": "HiveMaterializeTablesSuite",
   "name": "temporary views don't get materialized",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_execution.py::test_batch_dependencies_and_view_isolation",
-  "note": "Run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/TriggeredGraphExecutionSuite.scala:256",
@@ -2131,9 +2131,9 @@
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/TriggeredGraphExecutionSuite.scala:419",
   "suite": "TriggeredGraphExecutionSuite",
   "name": "stream failure on deletes and updates gives clear error",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_triggered_execution.py::test_stream_failure_on_a_source_change_gives_a_clear_error, test_audit_exec.py::test_a_source_change_fails_the_run_with_its_own_error",
-  "note": "The single event and message are covered. The terminal error is xfail on Sail: Spark sends STREAM_FAILED, Sail STREAMING_SOURCES_CHANGED."
+  "note": "The event, the message, and STREAM_FAILED as the terminal error, since ad5c11711."
  },
  {
   "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/TriggeredGraphExecutionSuite.scala:827",
@@ -3051,9 +3051,9 @@
   "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala:2522",
   "suite": "HiveDDLSuite",
   "name": "CREATE MATERIALIZED VIEW cannot be directly executed",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_direct_execution.py::test_pipeline_dataset_direct_execution_has_spark_diagnostic",
-  "note": "Same test as the default profile: run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala:2533",
@@ -3067,9 +3067,9 @@
   "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala:2533",
   "suite": "HiveDDLSuite",
   "name": "CREATE STREAMING TABLE cannot be directly executed",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_direct_execution.py::test_pipeline_dataset_direct_execution_has_spark_diagnostic",
-  "note": "Same test as the default profile: run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala:2544",
@@ -3083,9 +3083,9 @@
   "id": "sql/core/src/test/scala/org/apache/spark/sql/execution/command/DDLSuite.scala:2544",
   "suite": "HiveDDLSuite",
   "name": "CREATE FLOW statement cannot be directly executed",
-  "status": "partial",
+  "status": "ported",
   "sail_test": "test_direct_execution.py::test_flow_direct_execution_has_spark_diagnostic",
-  "note": "Same test as the default profile: run on Sail's default catalog, not against a Hive metastore."
+  "note": "Same bodies on a standalone Hive 4.0.1 metastore: run-hive-metastore.sh. Spark's Hive suite adds no bodies of its own."
  },
  {
   "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/SparkDeclarativePipelinesServerSuite.scala:33",

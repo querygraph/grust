@@ -86,3 +86,18 @@ On `9d6646c92` 38 snapshots differed, 35 in TPC-DS and 3 in TPC-H, all plan text
 `609a6c251` refuses a union of streaming and batch inputs, as Spark does, so 4 strict expected failures remain. The merge after it adds `test_second_catalog.py`, which needs a server with two memory catalogs: `scripts/spark-pipelines-tests/run-second-catalog.sh`. Both SqlPipelineSuite catalog-crossing cases are now ported, on Sail only.
 
 The 32 Hive profile cases stay partial. Spark's Hive suites add no test bodies, so rerunning the same modules against a metastore would settle them. Docker Desktop is down, with its engine failing since 2026-10-27 on a full disk. A standalone Hive 4.0.1 metastore was downloaded and checksummed, but running downloaded jars was denied by the permission system, so no test has run against a metastore. `scripts/spark-pipelines-tests/run-hive-metastore.sh` has never been run.
+
+## `5cc046a0c`: the Hive metastore profile
+
+The user approved running the downloaded metastore, a standalone Hive 4.0.1 on the JDK with embedded Derby, no Docker. `scripts/spark-pipelines-tests/run-hive-metastore.sh` runs six test modules against it: 69 passed, 2 strict expected failures. It is now a gate step, with the second-catalog profile at 13 passed. The script's downloads are pinned by SHA-1 from Maven Central.
+
+The profile found four product defects the memory catalog could not show:
+
+- `file:/path` was read as a relative path, under the server's working directory, for every catalog. Hive writes that form. Paired test in `test_batch_parity.py`, which failed on the prior binary and passes on Spark.
+- Every Hive table read back as external, so a materialized view could not refresh. Owned tables now carry `external.table.purge`, and DROP deletes their data. DROP DATABASE now deletes data, as Spark's Hive client does.
+- Listing tables failed on Hive 4.0.1, which removed `get_table_objects_by_name`. The request form comes first, with the old call as fallback.
+- Hive map entries were named `keys` and `values`, not Sail's `key` and `value`. Nested write validation now compares map entries by position, as Spark does.
+
+The Sail Hive fixtures, which use Docker, were not run, so the fallback path to older metastores and S3-backed Hive are unverified. Sail's own HMS Python tests also need Docker and did not run. Spark's Hive suites add no test bodies: HiveMaterializeTablesSuite is MaterializeTablesSuite with a Hive session. `hive_profile_plugin.py` clears `default` between tests, since a metastore outlives sessions.
+
+Audit: 384 ported, 37 partial, 14 internal, 0 missing. The 37 partial cases are AutoCDC cases of PythonPipelineSuite, event fields and capacity that never reach a client, states a client cannot request, and the `memory` writeStream case.
