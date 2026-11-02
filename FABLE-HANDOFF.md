@@ -163,6 +163,8 @@ User decisions, 2026-11-02, all keeping current behavior:
 - Cluster release of a session with checkpoints keeps failing and keeps the files when the driver cannot confirm the writers stopped; the server exits 1.
 - ORC timestamps keep Sail's stored type; the write failure about one second before the epoch is a documented difference from Spark, which returns a wrong value there.
 - Spark's internal Scala suites are excluded from the goal; the 300 + 67 frozen ports stand in for them.
+- Docker- and S3-backed Hive tests are waived (Docker Desktop down); the Derby Hive profile runs in every gate.
+- The 4 strict expected failures (deliberate Sail designs) and the 37 wire-invisible partial audit entries are accepted as finished scope.
 
 Worker shutdown (found at `2e73a0b87`): a stuck worker sits in its gRPC server's graceful stop (`ServerMonitor::stop` awaiting the server handle), which waits for open connections to finish. The stop is now bounded at 5 seconds and then aborted; in 120 start/stop rounds the bound fired 4 times on the old binary and once on the new one, and the driver's 30-second limit never fired. Which connection stays open was not identified.
 
