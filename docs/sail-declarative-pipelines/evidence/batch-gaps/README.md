@@ -72,3 +72,11 @@ The 5 strict expected failures:
 - `writeStream` to `memory` outside a pipeline.
 
 Spark run file by file on the pre-merge audit tree: batch files failing there are mostly `LOCATION_ALREADY_EXISTS` from leftovers in the shared `default` schema (72 lines), since these fixtures rely on a fresh Sail catalog per session, and `NO_ACTIVE_SESSION` in the `direct` variants of `test_dataset_parse_errors.py`. The rest are Sail differences: Sail accepts dotted and hyphenated table names where Spark's catalog refuses them, and `test_direct_execution_policy.py` is a stated Sail policy. AutoCDC files fail on plain Spark, because it needs the row-level test catalog in `evidence/autocdc-spark-oracle`. The whole directory was not rerun on Spark after the final merges.
+
+## `67a6931ba`: the whole-tree comparison, corrected
+
+The peer reported 52 failures that the earlier comparisons did not show. They were right. `test_tpch.py`, `test_tpcds.py` and two utility tests never collected here, because duckdb and jedi were missing, and other tests failed for harness reasons: the server could not import pysail, and it did not share the tests' working directory. So "0 regressed" in the sections above covers only what ran.
+
+`run-full.py` is the corrected harness, with the optional test dependencies pinned as in `pyproject.toml`, installed outside the shared venv. Under it, upstream `0ba425c03` has 0 failures and 12 JVM fixture errors, so most earlier "fails upstream too" were harness failures on both sides.
+
+On `9d6646c92` 38 snapshots differed, 35 in TPC-DS and 3 in TPC-H, all plan text. Join, aggregate, filter, scan and repartition operators kept their counts, with 8 fewer projections that held a shared guard. Division guards became `spark_divisor_ansi_divide`, and a CASE ends in `ELSE NULL`. `67a6931ba` refreshes them.
