@@ -156,13 +156,15 @@ Root `5cc046a0c` on `work/spark-declarative-pipelines`, not pushed. Batch is com
 
 Landing: `merge/gate-run.sh` then `merge/land.sh`, or `merge/gate-merge.sh` then a fast-forward. Check that the frozen harness printed PASS: a changed frozen source stops it. Never run `cargo fmt --all`, which rewrites `vendor/`.
 
-Open: streaming stateful operators (sliding windows, watermarked deduplication, stream-stream joins), exactly-once for plain file tables, Iceberg append sources, rate limits, what holds a worker inside its shutdown. Non-checkpoint writers and cluster workers are not covered by the session effect owner, and fallible actor results need the common actor framework.
+Open: streaming stateful operators (sliding windows, watermarked deduplication, stream-stream joins), exactly-once for plain file tables, Iceberg append sources, rate limits. Non-checkpoint writers and cluster workers are not covered by the session effect owner, and fallible actor results need the common actor framework.
 
 User decisions, 2026-11-02, all keeping current behavior:
 - `catalog.shared_memory` stays off by default (opt-in; the CLI tests run with it in the gate).
 - Cluster release of a session with checkpoints keeps failing and keeps the files when the driver cannot confirm the writers stopped; the server exits 1.
 - ORC timestamps keep Sail's stored type; the write failure about one second before the epoch is a documented difference from Spark, which returns a wrong value there.
 - Spark's internal Scala suites are excluded from the goal; the 300 + 67 frozen ports stand in for them.
+
+Worker shutdown (found at `2e73a0b87`): a stuck worker sits in its gRPC server's graceful stop (`ServerMonitor::stop` awaiting the server handle), which waits for open connections to finish. The stop is now bounded at 5 seconds and then aborted; in 120 start/stop rounds the bound fired 4 times on the old binary and once on the new one, and the driver's 30-second limit never fired. Which connection stays open was not identified.
 
 Gate launch: a gate started from a shell with SIGINT blocked passes the block to every Sail server it starts, and `run-hive-metastore.sh` then waits forever in its SIGINT teardown (seen in the CF-0605 merge gate, 2026-11-02; Sail exits on SIGINT when started normally). Launch gates with SIGINT unblocked.
 
