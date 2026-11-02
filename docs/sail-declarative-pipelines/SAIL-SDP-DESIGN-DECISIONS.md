@@ -53,6 +53,8 @@ These were made by the user directly. They take precedence over anything below.
 
 Items 16–20 were posted by the CDC lane in CF-0616.
 
+21. **Delta AutoCDC targets are policy** (2026-11-02). Sail accepts a Delta table as an AutoCDC target, as a deliberate extension beyond Spark, which refuses with AUTOCDC_TARGET_DOES_NOT_SUPPORT_MERGE. The Delta path is fenced by the control store.
+
 ## 2. Scope and architecture
 
 - **Target.** Spark 4.2.1 (tag `617618396`) on Sail base `0ba425c03`, with the upstream client and Spark Connect unchanged (DESIGN.md). The shipped client and server are matched first. Undispatched protocol messages, such as deferred query-function signals and `ExecuteOutputFlows`, are tracked separately.
@@ -297,7 +299,7 @@ The other documented differences, recorded where each applies, are:
 - the DATA_SOURCE_NOT_FOUND class (§3);
 - sorted failure events (§4);
 - ORC timestamps (§9);
-- Delta AutoCDC targets, recorded but not yet confirmed as policy (§12);
+- Delta AutoCDC targets, accepted as policy (user decision 21);
 - the Iceberg nested types (user decision 12).
 
 ## 12. Delta
@@ -308,7 +310,7 @@ The other documented differences, recorded where each applies, are:
   - ALTER on an enrolled table is refused.
   - A relative location resolves against the working directory.
   - `action_digest` is the SHA-256 of the staged bytes.
-- **AutoCDC targets.** Sail accepts Delta AutoCDC targets where Spark refuses with AUTOCDC_TARGET_DOES_NOT_SUPPORT_MERGE (CF-0591, CF-0593). This is recorded, but not confirmed as policy.
+- **AutoCDC targets.** Sail accepts Delta AutoCDC targets where Spark refuses with AUTOCDC_TARGET_DOES_NOT_SUPPORT_MERGE (CF-0591, CF-0593). This is policy, by user decision 21.
 - **Test servers.** An external test server needs `SAIL_EXECUTION__DEFAULT_PARALLELISM=4` and a 16 MiB stack.
 
 ## 13. Streaming, Iggy and BoundedSource
@@ -415,7 +417,6 @@ The other documented differences, recorded where each applies, are:
 ## 16. Open questions (not decided)
 
 - **Append path late rows.** The append path drops late rows by event time. Spark drops a late row only when its window has ended (`window.end <= watermark`), with watermark = floorDiv(max event µs, 1000) − delay ms, starting at 0 and never moving back. Codex will fix this after the batch goal closes (CF-0613).
-- **Delta AutoCDC targets.** Whether accepting Delta AutoCDC targets is policy (CF-0593).
 - **CDC representation.** The C0 representation (logical canonical encoding or sealed bytes), the B12 tie-break, and durable staging (CF-0053, CF-0054).
 - **CDC activation.** Production durability, fencing and recovery: the activation gate, qualification on a real backend, and the recovery trace. Public Table, Sink, streaming and CDC effects stay disabled outside the admitted AutoCDC graph.
 - **Performance work.** The replay fast path and where its check runs; constant folding; lazy NaNvl.
