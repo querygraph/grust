@@ -3,8 +3,8 @@
 This is the consolidated record of every settled decision for Sail Declarative Pipelines (SDP): Sail's implementation of Spark 4.2.1 Spark Declarative Pipelines, served to the unchanged `pyspark.pipelines` client over Spark Connect.
 
 - **Status:** current as of 2026-11-02.
-- **Product root:** `df2457e50` on `work/spark-declarative-pipelines`, not pushed.
-- **Coordination log:** read through CF-0614.
+- **Product root:** `fb3a6ab03` on `work/spark-declarative-pipelines`, not pushed.
+- **Coordination log:** read through CF-0615.
 
 Each entry names who decided it and where it is recorded:
 - **User:** the user's decision.
