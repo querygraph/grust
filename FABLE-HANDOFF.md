@@ -158,7 +158,13 @@ Landing: `merge/gate-run.sh` then `merge/land.sh`, or `merge/gate-merge.sh` then
 
 Open: streaming stateful operators (sliding windows, watermarked deduplication, stream-stream joins), exactly-once for plain file tables, Iceberg append sources, rate limits, what holds a worker inside its shutdown. Non-checkpoint writers and cluster workers are not covered by the session effect owner, and fallible actor results need the common actor framework.
 
-Three decisions wait on the user: `catalog.shared_memory` default, cluster release with checkpoints failing, ORC differences from Spark.
+User decisions, 2026-11-02, all keeping current behavior:
+- `catalog.shared_memory` stays off by default (opt-in; the CLI tests run with it in the gate).
+- Cluster release of a session with checkpoints keeps failing and keeps the files when the driver cannot confirm the writers stopped; the server exits 1.
+- ORC timestamps keep Sail's stored type; the write failure about one second before the epoch is a documented difference from Spark, which returns a wrong value there.
+- Spark's internal Scala suites are excluded from the goal; the 300 + 67 frozen ports stand in for them.
+
+Gate launch: a gate started from a shell with SIGINT blocked passes the block to every Sail server it starts, and `run-hive-metastore.sh` then waits forever in its SIGINT teardown (seen in the CF-0605 merge gate, 2026-11-02; Sail exits on SIGINT when started normally). Launch gates with SIGINT unblocked.
 
 ## Opus batch-lane checkpoint (supersedes the next-work item below)
 
