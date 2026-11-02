@@ -693,9 +693,17 @@ VERDICT commit=0b6f34dd2880a78a818a2444d2fdee20413b57ec fmt=0 clippy=0 rust_comm
 
 Python pipelines 982 passed, 11 skipped. The CLI file passes against a private Sail server, and `sail-delta-lake`, `sail-sdp-control` and `sail-logical-plan` pass. The whole Spark tree has 52 failed and 1 error. The 52 fail the same way on bare `5111f29c8`, and those sampled are plan snapshots that predate the root's ANSI printing. `sail-spark-connect` has 2 ORC codec failures, also on the bare root. The error, in `test_parity_normalization.py`, did not occur in the narrower root control and passes alone, so it is unexplained in the full-tree run.
 
+### Crash recovery (2026-11-02)
+
+`crash.py` kills a real server with SIGKILL during runs and restarts it. The first campaigns all failed to recover, though every earlier test passed, because those tests stopped a run inside one process. A dead owner's lease stopped the next run at once, and an auxiliary table with a random location could not be found by a catalog that had forgotten it. A run now waits the lease out, and a fenced target's auxiliary table lives at `<target>.autocdc-aux/<generation>`, so a reset never deletes in place. A user's `DROP TABLE` of that table leaves its files, so its tombstones return on the next run, where Spark starts empty. That is stricter than Spark, not looser.
+
+VERDICT commit=b529720dcafe7e18ac6df142d1d7d99b12f617ae, all 0. Results at that commit are in `evidence/autocdc-spark-oracle`.
+
 Limits that remain:
 
-- Power loss and restore are not qualified for the Turso store.
-- AutoCDC has not been run in cluster mode by this lane.
+- Power loss and restore are not qualified. The Turso store runs in `mvcc` journal mode, and only process death is tested.
+- Catalog-managed Delta routing has never run: its tests need Docker for Unity Catalog.
+- Iceberg has no comparison on real Spark itself.
+- Remote warehouses are tested against `moto`, not real S3, and one machine owns the flows.
 - Stateful queries before the merge have no state store. Each is evaluated over everything read so far and everything read before the batch, and the difference is merged. So the cost of a batch grows with the source, and the source must still hold its history. A row behind the watermark is not dropped as in Spark: it can change a window already emitted. `dropDuplicates` on a subset of columns may keep a different row than Spark, which keeps the first it saw.
 - A partition emptied at offset 0 still reads as an origin.
