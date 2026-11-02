@@ -1,0 +1,28 @@
+== control A: no PYTHONPATH
+test session_manager::orc_options_tests::invalid_sql_booleans_fail_before_changing_the_effective_default ... ok
+test session_manager::orc_options_tests::set_unset_and_operation_override_preserve_prior_read_snapshots ... ok
+test session_manager::orc_options_tests::later_invalid_merge_value_keeps_the_earlier_partial_update ... ok
+test session_manager::orc_options_tests::sql_boolean_trimming_uses_java_control_characters_and_case_rules ... ok
+test session_manager::orc_options_tests::creation_reads_effective_spark_defaults ... ok
+test session_manager::orc_options_tests::invalid_write_defaults_do_not_mutate_either_configuration ... ok
+test session_manager::orc_options_tests::partial_batches_refresh_defaults_and_preserve_the_original_error ... ok
+test session_manager::orc_options_tests::partial_write_config_updates_refresh_without_replacing_original_error ... FAILED
+test session_manager::orc_options_tests::write_defaults_follow_creation_set_unset_and_preserve_snapshots ... FAILED
+thread 'session_manager::orc_options_tests::partial_write_config_updates_refresh_without_replacing_original_error' (87528769) panicked at crates/sail-spark-connect/src/session_manager/orc_options_tests.rs:250:9:
+  left: Snappy
+ right: Zstd
+thread 'session_manager::orc_options_tests::write_defaults_follow_creation_set_unset_and_preserve_snapshots' (87528772) panicked at crates/sail-spark-connect/src/session_manager/orc_options_tests.rs:200:5:
+  left: Snappy
+ right: Zstd
+test result: FAILED. 7 passed; 2 failed; 0 ignored; 0 measured; 119 filtered out; finished in 0.28s
+== control B: PYTHONPATH=4.2.1 venv
+test session_manager::orc_options_tests::set_unset_and_operation_override_preserve_prior_read_snapshots ... ok
+test session_manager::orc_options_tests::sql_boolean_trimming_uses_java_control_characters_and_case_rules ... ok
+test session_manager::orc_options_tests::invalid_sql_booleans_fail_before_changing_the_effective_default ... ok
+test session_manager::orc_options_tests::invalid_write_defaults_do_not_mutate_either_configuration ... ok
+test session_manager::orc_options_tests::write_defaults_follow_creation_set_unset_and_preserve_snapshots ... ok
+test session_manager::orc_options_tests::partial_batches_refresh_defaults_and_preserve_the_original_error ... ok
+test session_manager::orc_options_tests::later_invalid_merge_value_keeps_the_earlier_partial_update ... ok
+test session_manager::orc_options_tests::partial_write_config_updates_refresh_without_replacing_original_error ... ok
+test session_manager::orc_options_tests::creation_reads_effective_spark_defaults ... ok
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 119 filtered out; finished in 0.29s

@@ -1,0 +1,780 @@
+{
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "counts": {
+    "ported": 44,
+    "partial": 13,
+    "not-ported": 6
+  },
+  "cases": [
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:33",
+      "name_expression": "\"ColumnSelection None leaves schema unchanged\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_none_leaves_schema_unchanged",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:43",
+      "name_expression": "\"ColumnSelection IncludeColumns(Seq()) returns an empty schema\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_include_empty_returns_an_empty_schema",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:55",
+      "name_expression": "\"ColumnSelection ExcludeColumns(Seq()) leaves schema unchanged\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_exclude_empty_leaves_schema_unchanged",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:67",
+      "name_expression": "\"ColumnSelection IncludeColumns filters by exact name in schema order\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_include_filters_by_exact_name_in_schema_order",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:84",
+      "name_expression": "\"ColumnSelection ExcludeColumns filters by exact name\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_exclude_filters_by_exact_name",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:99",
+      "name_expression": "\"ColumnSelection IncludeColumns fails for columns not present in schema\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_include_fails_for_columns_not_present_in_schema",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:125",
+      "name_expression": "\"ColumnSelection ExcludeColumns fails for columns not present in schema\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_exclude_fails_for_columns_not_present_in_schema",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:151",
+      "name_expression": "\"ColumnSelection IncludeColumns matches case-insensitively under caseSensitive=false\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_include_matches_case_insensitively",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:171",
+      "name_expression": "\"ColumnSelection deduplicates user-provided columns that normalize to the same name\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_deduplicates_columns_that_normalize_to_the_same_name",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:189",
+      "name_expression": "\"ColumnSelection ExcludeColumns matches case-insensitively under caseSensitive=false\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_exclude_matches_case_insensitively",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:204",
+      "name_expression": "\"ColumnSelection missing-column error under caseSensitive=false preserves user casing\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::column_selection_missing_column_error_preserves_user_casing_when_insensitive",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:232",
+      "name_expression": "\"UnqualifiedColumnName accepts a simple single-part identifier\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_accepts_a_simple_single_part_identifier",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:238",
+      "name_expression": "\"UnqualifiedColumnName accepts a backtick-quoted name containing a literal dot\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_accepts_a_backtick_quoted_name_with_a_literal_dot",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:246",
+      "name_expression": "\"UnqualifiedColumnName accepts redundant backticks around a single-part name\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_accepts_redundant_backticks",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:254",
+      "name_expression": "\"UnqualifiedColumnName.quoted is safe to pass to functions.col for literal-dot names\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_quoted_is_safe_to_reparse_for_literal_dot_names",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Spark resolves `functions.col` against a DataFrame (UNRESOLVED_COLUMN.WITH_SUGGESTION); the port asserts the identifier re-parse property instead."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:290",
+      "name_expression": "\"IncludeColumns correctly matches a backtick-quoted literal-dot column\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::include_columns_matches_a_backtick_quoted_literal_dot_column",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:310",
+      "name_expression": "\"IncludeColumns correctly matches a backtick-quoted mixed-case column\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::include_columns_matches_a_backtick_quoted_mixed_case_column",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names and indices only; the original compares complete StructTypes (types, nullability, metadata), which the unwired schema helper does not carry."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:323",
+      "name_expression": "\"UnqualifiedColumnName rejects a dotted (multi-part) identifier\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_rejects_a_dotted_identifier",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:337",
+      "name_expression": "\"UnqualifiedColumnName rejects a qualified column reference\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_rejects_a_qualified_column_reference",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:351",
+      "name_expression": "\"UnqualifiedColumnName rejects an identifier with three or more parts\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_rejects_three_or_more_parts",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:365",
+      "name_expression": "\"ChangeArgs rejects an empty key list\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::change_args_rejects_an_empty_key_list",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_empty_keys_are_rejected",
+          "outcome": "passed"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/ChangeArgsSuite.scala:380",
+      "name_expression": "\"UnqualifiedColumnName lets a ParseException from the SQL parser propagate\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/change_args.rs::unqualified_column_name_lets_the_parser_reject_an_empty_input",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Sail raises PARSE_EMPTY_STATEMENT (42617) for a blank identifier before its SQL parser runs."
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:964",
+      "name_expression": "\"AutoCDC API: minimal flow registers an AutoCdcFlow with default name and SCD1 default\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::minimal_flow_registers_default_scd1_without_deletes_or_selection",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_minimal_flow_registers_with_the_target_name",
+          "outcome": "passed"
+        }
+      ],
+      "note": "`sequencing.expr.sql` is compared through Sail's expression rendering."
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:989",
+      "name_expression": "\"AutoCDC API: composite keys are forwarded to ChangeArgs in order\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::composite_keys_are_forwarded_in_order",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1010",
+      "name_expression": "\"AutoCDC API: apply_as_deletes is forwarded as a delete condition column\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::apply_as_deletes_is_forwarded_as_a_delete_condition",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1033",
+      "name_expression": "\"AutoCDC API: column_list is forwarded as IncludeColumns\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::column_list_is_forwarded_as_include_columns",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1055",
+      "name_expression": "\"AutoCDC API: except_column_list is forwarded as ExcludeColumns\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::except_column_list_is_forwarded_as_exclude_columns",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1077",
+      "name_expression": "\"AutoCDC API: explicit `name` is honored as the flow identifier\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/graph.rs::default_flow_name_is_the_target_and_explicit_name_is_honored",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_explicit_name_and_all_arguments_are_accepted",
+          "outcome": "passed"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1098",
+      "name_expression": "\"AutoCDC API: multi-part `keys` column is rejected at flow registration\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::multipart_keys_column_is_rejected_at_flow_registration",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_multipart_column_identifiers_are_rejected[keys]",
+          "outcome": "passed"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1118",
+      "name_expression": "\"AutoCDC API: multi-part `column_list` entry is rejected at flow registration\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::multipart_column_list_entry_is_rejected_at_flow_registration",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_multipart_column_identifiers_are_rejected[column-list]",
+          "outcome": "passed"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1139",
+      "name_expression": "\"AutoCDC API: Column-object form of keys/sequence_by/apply_as_deletes is honored\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::column_object_form_of_arguments_is_honored",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1166",
+      "name_expression": "\"AutoCDC API: graph resolves with the source streaming table as the flow's input\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_auto_cdc_flow_resolves_in_a_dry_run_and_execution_is_still_rejected[True]",
+          "outcome": "passed"
+        }
+      ],
+      "note": "The dry run resolves the flow against its source; `resolvedFlow.inputs` is not re-inspected after resolution."
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1186",
+      "name_expression": "\"AutoCDC API: single-part `source` inherits the pipeline's default catalog and database\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::minimal_flow_registers_default_scd1_without_deletes_or_selection",
+          "outcome": "ok"
+        }
+      ],
+      "note": "The single-part source is kept for graph resolution with the pipeline defaults; the qualified input set is not asserted after analysis."
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1218",
+      "name_expression": "\"AutoCDC API: multi-part `source` resolves to the corresponding qualified dataset\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::multi_part_source_is_kept_for_resolution_against_the_graph",
+          "outcome": "ok"
+        }
+      ],
+      "note": "The multi-part source and streaming read are asserted at definition; the resolved input set is not."
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1240",
+      "name_expression": "\"AutoCDC API: non-attribute expression in keys is rejected\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::non_attribute_expression_in_keys_is_rejected",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_non_attribute_key_expression_is_rejected",
+          "outcome": "passed"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1262",
+      "name_expression": "\"AutoCDC API: specifying both column_list and except_column_list is rejected\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/definition.rs::specifying_both_column_list_and_except_column_list_is_rejected",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_both_column_lists_are_rejected",
+          "outcome": "passed"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:1288",
+      "name_expression": "\"AutoCDC API: registered flow survives graph resolution and validation end-to-end\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_auto_cdc_flow_resolves_in_a_dry_run_and_execution_is_still_rejected[True]",
+          "outcome": "passed"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_auto_cdc_flow_resolves_in_a_dry_run_and_execution_is_still_rejected[False]",
+          "outcome": "passed"
+        }
+      ],
+      "note": "Registration, dry-run analysis and validation pass; the resolved flow's change arguments are not re-inspected, and a real run is still rejected before any write."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:90",
+      "name_expression": "\"AutoCdcFlow exposes its constructor fields\"",
+      "status": "not-ported",
+      "sail_tests": [],
+      "note": "Scala case-class field accessors; Sail's flow record has no equivalent surface."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:104",
+      "name_expression": "\"AutoCdcFlow defaults sqlConf to empty\"",
+      "status": "not-ported",
+      "sail_tests": [],
+      "note": "Scala case-class default; Sail merges graph and flow sql_conf at definition."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:120",
+      "name_expression": "\"AutoCdcFlow.once is always false\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_once_option_is_rejected_for_auto_cdc_flows",
+          "outcome": "passed"
+        }
+      ],
+      "note": "Observable form: the once option is rejected for an Auto CDC DefineFlow."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:131",
+      "name_expression": "\"AutoCdcFlow.withSqlConf returns a new instance with the updated sqlConf\"",
+      "status": "not-ported",
+      "sail_tests": [],
+      "note": "Scala `withSqlConf` copy semantics; no Sail equivalent."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:191",
+      "name_expression": "\"AutoCdcMergeFlow.schema appends _cdc_metadata to the source schema when no \" +\n    \"columnSelection is set\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::schema_appends_metadata_to_the_source_schema_without_selection",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names only; the metadata struct type needs the resolved sequencing type."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:211",
+      "name_expression": "\"AutoCdcMergeFlow.schema applies an IncludeColumns selection\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::schema_applies_an_include_columns_selection",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names only."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:234",
+      "name_expression": "\"AutoCdcMergeFlow.schema applies an ExcludeColumns selection\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::schema_applies_an_exclude_columns_selection",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Field names only."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:255",
+      "name_expression": "\"AutoCdcMergeFlow.schema's _cdc_metadata struct uses the resolved sequencing data type\"",
+      "status": "not-ported",
+      "sail_tests": [],
+      "note": "Needs the resolved sequencing data type (prepared CDC input unit)."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:270",
+      "name_expression": "\"AutoCdcMergeFlow.schema's _cdc_metadata field is non-null with nullable inner fields\"",
+      "status": "not-ported",
+      "sail_tests": [],
+      "note": "Needs the metadata struct nullability (prepared CDC input unit)."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:281",
+      "name_expression": "\"AutoCdcMergeFlow.schema is stable across reads\"",
+      "status": "not-ported",
+      "sail_tests": [],
+      "note": "Scala lazy-val identity; not applicable."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:291",
+      "name_expression": "\"AutoCdcMergeFlow rejects SCD2 at construction with AUTOCDC_SCD2_NOT_SUPPORTED\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::scd2_is_rejected_at_construction",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:313",
+      "name_expression": "\"AutoCdcMergeFlow.load() schema matches AutoCdcMergeFlow.schema\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::schema_appends_metadata_to_the_source_schema_without_selection",
+          "outcome": "ok"
+        }
+      ],
+      "note": "load() is not modelled; the schema names are the same computation."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:319",
+      "name_expression": "\"AutoCdcMergeFlow.load() respects an IncludeColumns selection\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::schema_applies_an_include_columns_selection",
+          "outcome": "ok"
+        }
+      ],
+      "note": "load() is not modelled."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:337",
+      "name_expression": "\"AutoCdcMergeFlow.load() respects an ExcludeColumns selection\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::schema_applies_an_exclude_columns_selection",
+          "outcome": "ok"
+        }
+      ],
+      "note": "load() is not modelled."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:375",
+      "name_expression": "\"Contract: a source df column with the reserved AutoCDC prefix is rejected at flow \" +\n    \"construction\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::contract_a_source_column_with_the_reserved_prefix_is_rejected",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:397",
+      "name_expression": "\"Contract: ChangeArgs referencing a reserved-prefix column is rejected even when the \" +\n    \"source df is clean\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::contract_change_args_referencing_a_reserved_prefix_column_are_rejected",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:438",
+      "name_expression": "\"AutoCdcMergeFlow rejects a source df column whose name equals the reserved CDC \" +\n    \"metadata column\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::a_source_column_equal_to_the_metadata_column_is_rejected",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:462",
+      "name_expression": "\"AutoCdcMergeFlow rejects an uppercase reserved-prefix column when caseSensitive=false\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::an_uppercase_reserved_prefix_column_is_rejected_when_case_insensitive",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:486",
+      "name_expression": "\"AutoCdcMergeFlow allows an uppercase reserved-prefix column when caseSensitive=true\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::an_uppercase_reserved_prefix_column_is_allowed_when_case_sensitive",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:506",
+      "name_expression": "\"AutoCdcMergeFlow rejects a key that is not present in the source change-data feed\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::a_key_absent_from_the_change_data_feed_is_rejected",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:529",
+      "name_expression": "\"AutoCdcMergeFlow rejects a key dropped by an IncludeColumns selection\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::a_key_dropped_by_an_include_columns_selection_is_rejected",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/AutoCdcFlowSuite.scala:550",
+      "name_expression": "\"AutoCdcMergeFlow rejects a key dropped by an ExcludeColumns selection\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/schema.rs::a_key_dropped_by_an_exclude_columns_selection_is_rejected",
+          "outcome": "ok"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ConnectInvalidPipelineSuite.scala:552",
+      "name_expression": "\"AutoCDC flow targeting a materialized view fails with \" +\n    \"STREAMING_RELATION_FOR_MATERIALIZED_VIEW\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/graph.rs::auto_cdc_flow_targeting_a_materialized_view_is_rejected",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_auto_cdc_flow_targeting_a_materialized_view_fails_at_dry_run",
+          "outcome": "passed"
+        }
+      ],
+      "note": "Condition only: Sail's existing streamingness check carries no flowIdentifier/tableIdentifier parameters."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ConnectInvalidPipelineSuite.scala:608",
+      "name_expression": "\"AutoCDC flow targeting a persisted view fails with STREAMING_RELATION_FOR_PERSISTED_VIEW\"",
+      "status": "partial",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/graph.rs::auto_cdc_flow_targeting_a_persisted_view_is_rejected",
+          "outcome": "ok"
+        }
+      ],
+      "note": "Condition only: Sail's existing streamingness check carries no flowIdentifier/viewIdentifier parameters. A persisted view without a query is only constructible in the Rust port."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ConnectInvalidPipelineSuite.scala:658",
+      "name_expression": "\"AutoCDC flow targeting a temporary view fails with AUTOCDC_RELATION_FOR_TEMPORARY_VIEW\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/graph.rs::auto_cdc_flow_targeting_a_temporary_view_is_rejected",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_auto_cdc_flow_targeting_a_temporary_view_fails_at_dry_run",
+          "outcome": "passed"
+        }
+      ],
+      "note": "Sail reports single-part temporary view identifiers where Spark reports fully qualified ones."
+    },
+    {
+      "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ConnectInvalidPipelineSuite.scala:720",
+      "name_expression": "\"A multiquery table cannot have an AutoCDC query input\"",
+      "status": "ported",
+      "sail_tests": [
+        {
+          "test": "crates/sail-spark-connect/src/pipelines/autocdc/tests/graph.rs::a_multiquery_table_cannot_have_an_auto_cdc_input",
+          "outcome": "ok"
+        },
+        {
+          "test": "python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_a_multiquery_table_cannot_have_an_auto_cdc_input",
+          "outcome": "passed"
+        }
+      ],
+      "note": ""
+    }
+  ]
+}

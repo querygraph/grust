@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-10-30T08:22:18.429715+00:00",
+  "author": "Fable",
+  "units": [
+    {
+      "unit": "3 bounded streaming source contract + deterministic source",
+      "sail": "c9a0132cfd9ea80be7d552102d5d640c6b1a7aa4"
+    },
+    {
+      "unit": "5 prepared CDC input manifest",
+      "sail": "6620ee940d8db72b2fe2002da7ad668caab9893b"
+    }
+  ],
+  "design_references": [
+    "SDP-FABLE-DESIGN-REVIEW.md \u00a74.1, \u00a75.2, \u00a75.8, Astra notes 'seal prepared input' and 'CDC preparation must retain the meaning of validation'",
+    "sail-iggy-mirror model.rs:89\u2013130 MirrorBatch::try_new (gap, non-contiguous, incarnation checks) as the reference for ScanError"
+  ],
+  "detached_gate_verdicts": [
+    "VERDICT commit=c9a0132cfd9ea80be7d552102d5d640c6b1a7aa4 fmt=0 clippy=0 rust_common=0 rust_pipelines=0 maturin=0 pytest_pipelines=0 at 2026-10-30T08:15:02Z",
+    "VERDICT commit=6620ee940d8db72b2fe2002da7ad668caab9893b fmt=0 clippy=0 rust_common=0 rust_pipelines=0 maturin=0 pytest_pipelines=0 at 2026-10-30T08:21:30Z"
+  ],
+  "dependency_change": "unit 5 adds sha2 0.11.0 to sail-spark-connect (version already used by sail-data-source); one Cargo.lock edge in 6620ee940",
+  "reuse_check": {
+    "grust-lancedb/src/snapshot.rs": "resident graph-table snapshot anchored to table versions; not partitioned cursors",
+    "grust-core graph_source.rs GraphSnapshotSource": "graph slot accessors; not a source contract",
+    "decision": "pipelines/streaming stays dependency-free"
+  },
+  "nondeterminism_found": "first unit-5 run: the reconciled rows' execution output order differed between two runs of the same plan, changing the content digest; fixed by ordering rows by the key columns before digesting (unique after dedup, non-null after validation)",
+  "tests": {
+    "streaming": 8,
+    "prepared": 5
+  },
+  "files_sha256": {
+    "logs/sail-streaming-prepared-tests.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

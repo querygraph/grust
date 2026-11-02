@@ -1,0 +1,47 @@
+{
+  "recorded_at": "2026-10-30T08:57:24.056275+00:00",
+  "host": "Capitola.local",
+  "os": "Darwin-25.2.0-arm64-arm-64bit-Mach-O",
+  "iggy_pin": {
+    "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+    "worktree": "/Users/alexy/src/iggy-fable-pin",
+    "target_dir": "/Users/alexy/src/iggy-fable-pin-target",
+    "sdk_version": "version = \"0.11.1-edge.5\"",
+    "server_binary_sha256": "2c0e0c31e22dc8a15b5f3d0ed805ae4928454b69ab56264a218fd068ead5decd"
+  },
+  "sail_iggy_pin": {
+    "commit": "5816b9b2f3bd20cd124f24128b7e45818351bcc1",
+    "role": "reference for the range checks (sail-iggy-mirror model.rs MirrorBatch::try_new); not linked"
+  },
+  "toolchain": {
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "hwloc": "hwloc 2.15.0"
+  },
+  "commands": [
+    "git -C /Users/alexy/src/iggy worktree add --detach /Users/alexy/src/iggy-fable-pin 153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+    "brew install hwloc  (macOS build dependency of iggy-server via hwlocality)",
+    "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/alexy/src/iggy-fable-pin-target cargo build --release --bin iggy-server",
+    "./run.sh  (cargo test --release -- --test-threads=1 --nocapture, in this directory, same target dir)",
+    "cargo test --release -p integration --test mod consumer_group_membership -- --test-threads=1  (in the pin worktree)",
+    "cargo test --release -p integration --test mod message_cleanup -- --test-threads=1  (in the pin worktree)"
+  ],
+  "observations_sha256": {
+    "s1_frontier.json": "212aeb31a90c1df44cdbfb152878cd26c4b4b7e96c31dbd17b29a51207f1baa4",
+    "s2_retention_s4_gap.json": "bdee258cbbf54ae8fc2d96bc64e1b19bd1fa3cf6f0b4f5b67b8142c741b5495e",
+    "s3_incarnation_s4_restart.json": "6a5e5da5e9c3613eea3dd0c4b4a67275de361aa771dd62632146838410921cc9",
+    "s5_uncertainty.json": "892699417d6b68ed27873eba8b65da451e7fa85e998965e924df09fa47aa89ae"
+  },
+  "logs_sha256": {
+    "iggy-pinned-cgm.log": "a98c83461e309114067f4f0ca7786ad2c508e07079f725db4a2cb2a02cbf5596",
+    "iggy-pinned-cleanup.log": "fe98e8c147bfe169dbe7dcbc8663ef68717f683f70c52060df024979e91f1029",
+    "iggy-scenarios-2.log": "341d8b2c1d795e0574600715ebd8546c141798c157e14e69c26baccf159ab0d0",
+    "iggy-scenarios-3.log": "eae7dc9c0d0ddc3ef507fa8e6bb20a23dc1e143f4b4cabf7618ba768d703fa86",
+    "iggy-scenarios.log": "5bc5f6539dc98e1a61b20aa390fa7a60a11f7bc3b8e11ac0b39b682e99610eb7"
+  },
+  "harness_sources_sha256": {
+    "Cargo.toml": "46e3d9873f0f44d9be9ac5bbdfc1db7e4fce67bb1cae5e718ef3b3ffc33c2ece",
+    "src/lib.rs": "dde00314b58312e55767ae19cfc7efa9f1f704fa830104a157922745ec649c3d",
+    "tests/scenarios.rs": "71b148d09ec178830693d1e8881abe7054fafdb7be7d11b3b5e89965687343f9",
+    "run.sh": "ca4c0c0cc078ee4ff8ab680868aee3e38ba9fe229a4437d18aa17c1a25f789b3"
+  }
+}

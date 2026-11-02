@@ -1,0 +1,224 @@
+host=Capitola.local date=2026-10-31T03:17:11Z spark=4.2.1 jars=/Users/alexy/src/sail-sdp-fable/.venvs/fable-spark-4.2.1 jdk=17.0.8 master=local[1] ansi=true (probe3 flips to false at the end)
+=== probe1_bare
+VERSION 4.2.1
+PROBE current_catalog() => ACCEPTED; current_catalog=spark_catalog
+PROBE typeof(rand()) => INVALID_NON_DETERMINISTIC_EXPRESSIONS: [INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is "typeof(rand())". SQLSTATE: 42K0E; line 1 
+PROBE rand() => INVALID_NON_DETERMINISTIC_EXPRESSIONS: [INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is "rand()". SQLSTATE: 42K0E; line 1 pos 0;
+PROBE raise_error('x') => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression raise_error('USER_RAISED_EXCEPTION', MAP('errorMessage', 'x')) used for the routine or clause IDENTIFIER mus
+PROBE typeof(raise_error('x')) => None: An error occurred while calling o32.sql.
+PROBE assert_true(true) => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression NULL used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of t
+PROBE assert_true(false) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression raise_error('USER_RAISED_EXCEPTION', MAP('errorMessage', '\'false\' is not true!')) used for the routine or 
+PROBE typeof(current_catalog()) => None: An error occurred while calling o32.sql.
+PROBE CAST(1 DIV 0 AS STRING) => DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to "false" to
+PROBE 1 DIV 0 => DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to "false" to
+PROBE concat(current_catalog(), '') => ACCEPTED; current_catalog=spark_catalog
+PROBE CASE WHEN false THEN current_catalog() ELSE 'spark_catalog' END => ACCEPTED; current_catalog=spark_catalog
+PROBE date_format(current_date(), 'yyyy') => PARSE_SYNTAX_ERROR: 
+PROBE explode(array('a')) => UNSUPPORTED_GENERATOR.OUTSIDE_SELECT: [UNSUPPORTED_GENERATOR.OUTSIDE_SELECT] The generator is not supported: outside the SELECT clause, found: SetCatalogCommand explode(array(a)). SQLSTATE: 42K0E
+PROBE (SELECT 'spark_catalog') => None: An error occurred while calling o32.sql.
+PROBE CAST(raise_error('x') AS STRING) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression CAST(raise_error('USER_RAISED_EXCEPTION', MAP('errorMessage', 'x')) AS STRING) used for the routine or claus
+PROBE current_user() => None: An error occurred while calling o32.sql.
+PROBE current_timezone() => PARSE_SYNTAX_ERROR: 
+PROBE uuid() => INVALID_NON_DETERMINISTIC_EXPRESSIONS: [INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is "uuid()". SQLSTATE: 42K0E; line 1 pos 0;
+PROBE version() => PARSE_SYNTAX_ERROR: 
+PROBE element_at(transform(array('spark_catalog'), x -> x), 1) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression element_at(transform(ARRAY('spark_catalog'), lambdafunction(namedlambdavariable(), namedlambdavariable())), 
+=== probe2_messages
+PROBE typeof(raise_error('x')) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `void` not found. Consider to set the SQL config "spark.sql.catalog.void" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecutionErrors$.catalogNotFoundError(QueryExecutionErrors.scala:1900) / at org.apache.spark.sql.connector.catalog.Catalogs$.load
+PROBE typeof(current_catalog()) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `string` not found. Consider to set the SQL config "spark.sql.catalog.string" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecutionErrors$.catalogNotFoundError(QueryExecutionErrors.scala:1900) / at org.apache.spark.sql.connector.catalog.Catalogs$.
+PROBE (SELECT 'spark_catalog') => None: An error occurred while calling o32.sql. / : org.apache.spark.SparkException: [INTERNAL_ERROR] Found the unresolved operator: 'Project [unresolvedalias(spark_catalog)] SQLSTATE: XX000 / == SQL (line 1, position 14) == / SET CATALOG (SELECT 'spark_catalog')
+PROBE current_user() => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `alexy` not found. Consider to set the SQL config "spark.sql.catalog.alexy" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecutionErrors$.catalogNotFoundError(QueryExecutionErrors.scala:1900) / at org.apache.spark.sql.connector.catalog.Catalogs$.lo
+PROBE date_format(current_date(), 'yyyy') => PARSE_SYNTAX_ERROR: [PARSE_SYNTAX_ERROR] Syntax error at or near '2026'. SQLSTATE: 42601 / == SQL (line 1, position 1) == / SET CATALOG date_format(current_date(), 'yyyy')
+PROBE current_timezone() => PARSE_SYNTAX_ERROR: [PARSE_SYNTAX_ERROR] Syntax error at or near '/'. SQLSTATE: 42601 / == SQL (line 1, position 1) == / SET CATALOG current_timezone()
+PROBE version() => PARSE_SYNTAX_ERROR: [PARSE_SYNTAX_ERROR] Syntax error at or near '4.2'. SQLSTATE: 42601 / == SQL (line 1, position 1) == / SET CATALOG version()
+PROBE CAST(typeof(1) AS STRING) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `int` not found. Consider to set the SQL config "spark.sql.catalog.int" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecutionErrors$.catalogNotFoundError(QueryExecutionErrors.scala:1900) / at org.apache.spark.sql.connector.catalog.Catalogs$.load(C
+PROBE IDENTIFIER(current_catalog()) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_catalog() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 23
+PROBE IDENTIFIER(typeof(current_catalog())) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `string` not found. Consider to set the SQL config "spark.sql.catalog.string" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecutionErrors$.catalogNotFoundError(QueryExecutionErrors.scala:1900) / at org.apache.spark.sql.connector.catalog.Catalogs$.
+PROBE IDENTIFIER(raise_error('x')) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression raise_error('x') used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 23
+=== probe3_identifier_and_non_ansi
+PROBE IDENTIFIER(typeof(rand())) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `double` not found. Consider to set the SQL config "spark.sql.catalog.double" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecu
+PROBE IDENTIFIER(1 DIV 0) => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression (CAST(1 AS BIGINT) div CAST(0 AS BIGINT)) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is bigint. SQLSTATE: 42601; line 1 pos 23
+PROBE IDENTIFIER(CAST(1 DIV 0 AS STRING)) => DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to "false" to bypass this error. SQLSTATE: 22012 / == SQL (line 1, position 29) == / SET CATALOG IDENTIFIER(CAST(1 DIV 0 AS STRING))
+PROBE IDENTIFIER(assert_true(true)) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression assert_true(true, '\'true\' is not true!') used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non determini
+PROBE IDENTIFIER(assert_true(false)) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression assert_true(false, '\'false\' is not true!') used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non determi
+PROBE IDENTIFIER(explode(array('a'))) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression explode(array('a')) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as r
+PROBE IDENTIFIER((SELECT 'spark_catalog')) => None: An error occurred while calling o32.sql. / : org.apache.spark.SparkException: [INTERNAL_ERROR] Found the unresolved operator: 'Project [unresolvedalias(spark_catalog)] SQLSTATE: XX000 / == SQL (line 1, position 25) ==
+PROBE IDENTIFIER(current_timezone()) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_timezone() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as ra
+PROBE IDENTIFIER(concat(current_catalog(), '')) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat(current_catalog(), '') used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function
+PROBE IDENTIFIER(CASE WHEN false THEN current_catalog() ELSE 'spark_catalog' END) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression CASE WHEN false THEN current_catalog() ELSE 'spark_catalog' END used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or i
+PROBE IDENTIFIER(rand()) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression rand() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTA
+PROBE IDENTIFIER(NULL) => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression NULL used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is void. SQLSTATE: 42601; line 1 pos 23
+PROBE IDENTIFIER(1) => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression 1 used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is int. SQLSTATE: 42601; line 1 pos 23
+PROBE IDENTIFIER(CAST(NULL AS STRING)) => NOT_A_CONSTANT_STRING.NULL: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 23
+PROBE IDENTIFIER('a.b') => INVALID_SQL_SYNTAX.MULTI_PART_NAME: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`a`.`b`) is not allowed. SQLSTATE: 42000
+PROBE bare NULL => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression NULL used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is void. SQLSTATE: 42601; line 1 pos 12
+PROBE bare 1 => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression 1 used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is int. SQLSTATE: 42601; line 1 pos 12
+PROBE bare CAST(NULL AS STRING) => NOT_A_CONSTANT_STRING.NULL: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 12
+PROBE bare 'a.b' => INVALID_SQL_SYNTAX.MULTI_PART_NAME: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`a`.`b`) is not allowed. SQLSTATE: 42000
+PROBE non-ANSI 1 DIV 0 => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression CAST(NULL AS BIGINT) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is bigint. SQLSTATE: 42601; line 1 pos 12
+PROBE non-ANSI CAST(1 DIV 0 AS STRING) => NOT_A_CONSTANT_STRING.NULL: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 12
+PROBE non-ANSI IDENTIFIER(1 DIV 0) => NOT_A_CONSTANT_STRING.WRONG_TYPE: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression (CAST(1 AS BIGINT) div CAST(0 AS BIGINT)) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is bigint. SQLSTATE: 42601; line 1 pos 23
+PROBE non-ANSI IDENTIFIER(CAST(1 DIV 0 AS STRING)) => NOT_A_CONSTANT_STRING.NULL: [NOT_A_CONSTANT_STRING.NULL] The expression CAST((CAST(1 AS BIGINT) div CAST(0 AS BIGINT)) AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 23
+=== probe4_registered_udf date=2026-10-31T03:34:05Z
+PROBE SET CATALOG det_identity('spark_catalog') => None: An error occurred while calling o32.sql. / : org.apache.spark.SparkException: [INTERNAL_ERROR] Invalid PythonUDF det_identity(spark_catalog)#-1, requires attributes from more than one child. SQLSTATE: XX000 / at org.apache.spark.SparkException$.internalError(SparkException.scala:104)
+PROBE SET CATALOG IDENTIFIER(det_identity('spark_catalog')) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression det_identity(spark_catalog) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function s
+PROBE SET CATALOG typeof(det_identity('x')) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `string` not found. Consider to set the SQL config "spark.sql.catalog.string" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecu
+PROBE SET CATALOG IDENTIFIER(typeof(det_identity('x'))) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `string` not found. Consider to set the SQL config "spark.sql.catalog.string" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecu
+PROBE SET CATALOG nondet_identity('spark_catalog') => INVALID_NON_DETERMINISTIC_EXPRESSIONS: [INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is "nondet_identity(spark_catalog)". SQLSTATE: 42K0E; line 1 pos 0; / SetCatalogCommand nondet_identity(spark_catalog)#4
+PROBE SET CATALOG IDENTIFIER(nondet_identity('spark_catalog')) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression nondet_identity(spark_catalog) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic functio
+PROBE SET CATALOG typeof(nondet_identity('x')) => INVALID_NON_DETERMINISTIC_EXPRESSIONS: [INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is "typeof(nondet_identity(x))". SQLSTATE: 42K0E; line 1 pos 0; / SetCatalogCommand typeof(nondet_identity(x)#6)
+PROBE SET CATALOG IDENTIFIER(typeof(nondet_identity('x'))) => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `string` not found. Consider to set the SQL config "spark.sql.catalog.string" to a catalog plugin. SQLSTATE: 42P08 / at org.apache.spark.sql.errors.QueryExecu
+PROBE SET CATALOG concat(det_identity('spark_'), 'catalog') => None: An error occurred while calling o32.sql. / : org.apache.spark.SparkException: [INTERNAL_ERROR] Invalid PythonUDF det_identity(spark_)#-1, requires attributes from more than one child. SQLSTATE: XX000 / at org.apache.spark.SparkException$.internalError(SparkException.scala:104)
+PROBE SET CATALOG IDENTIFIER(concat(det_identity('spark_'), 'catalog')) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat(det_identity(spark_), 'catalog') used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministi
+PROBE SELECT IDENTIFIER(det_identity('x')) FROM (SELECT 1 AS x) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression det_identity(x) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(
+PROBE SELECT IDENTIFIER(typeof(det_identity('x'))) FROM (SELECT 1 AS string) => ACCEPTED; current_catalog=spark_catalog
+=== probe5_typeof_arithmetic_select date=2026-10-31T03:50:59Z ansi=true
+PROBE SELECT typeof(1 DIV 0) => [('bigint',)]
+PROBE SELECT typeof(1 / 0) => [('double',)]
+PROBE SELECT typeof(1 % 0) => [('int',)]
+PROBE SELECT typeof(CAST(1 DIV 0 AS STRING)) => [('string',)]
+PROBE SELECT typeof(raise_error('x')) => [('void',)]
+PROBE SELECT typeof(assert_true(false)) => [('void',)]
+PROBE SELECT 1 DIV 0 => DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to "false" to
+PROBE SELECT typeof(1 DIV 0) FROM VALUES (1), (2) AS t(x) => [('bigint',), ('bigint',)]
+PROBE SELECT typeof(x DIV 0) FROM VALUES (1) AS t(x) => [('bigint',)]
+PROBE SELECT IDENTIFIER(typeof(1 DIV 0)) FROM (SELECT 1 AS bigint) => [(1,)]
+=== probe6_wrapped_unresolved date=2026-10-31T03:52:40Z ansi=true
+PROBE SET CATALOG IDENTIFIER(missing) => UNRESOLVED_COLUMN.WITHOUT_SUGGESTION: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved.  SQLSTATE: 42703; line 1 pos 23; / 'SetCatalogCommand expressionwithunresolvedidentifier('missing, 
+PROBE SET CATALOG IDENTIFIER(concat(current_catalog(), missing)) => UNRESOLVED_COLUMN.WITHOUT_SUGGESTION: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved.  SQLSTATE: 42703; line 1 pos 49; / 'SetCatalogCommand expressionwithunresolvedidentifier('concat(cu
+PROBE SET CATALOG IDENTIFIER(typeof(missing)) => UNRESOLVED_COLUMN.WITHOUT_SUGGESTION: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `missing` cannot be resolved.  SQLSTATE: 42703; line 1 pos 30; / 'SetCatalogCommand expressionwithunresolvedidentifier('typeof('m
+PROBE SET CATALOG missing => None: An error occurred while calling o32.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `missing` not found. Consider to set the SQL config "spark.sql.catalog.missing
+PROBE SET CATALOG `spark_catalog` => ACCEPTED; current_catalog=spark_catalog
+PROBE SET CATALOG IDENTIFIER('spark_catalog') => ACCEPTED; current_catalog=spark_catalog
+PROBE SET CATALOG IDENTIFIER(:p) => UNBOUND_SQL_PARAMETER: [UNBOUND_SQL_PARAMETER] Found the unbound parameter: p. Please, fix `args` and provide a mapping of the parameter to either a SQL literal or collection constructor functions such as `map()`, `array()`, `struct()`. SQLSTA
+PROBE SET CATALOG IDENTIFIER(CAST(NULL AS STRING)) => NOT_A_CONSTANT_STRING.NULL: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 23
+PROBE SELECT * FROM IDENTIFIER(missing) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression missing used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, 
+PROBE SELECT * FROM IDENTIFIER(concat(current_catalog(), missing)) => NOT_A_CONSTANT_STRING.NOT_CONSTANT: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat(current_catalog(), missing) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must 
+=== probe7_missing_catalog_sites date=2026-10-31T04:13:45Z classic-mode (not Connect)
+PROBE SET CATALOG missing => Py4JJavaError None: An error occurred while calling o30.sql. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `missing` not found. Consider to set the SQL config "spark
+PROBE catalog.setCurrentCatalog('missing') => Py4JJavaError None: An error occurred while calling o35.setCurrentCatalog. / : org.apache.spark.sql.connector.catalog.CatalogNotFoundException: [CATALOG_NOT_FOUND] The catalog `missing` not found. Consider to set the SQL
+PROBE SELECT * FROM missing.db.t => AnalysisException REQUIRES_SINGLE_PART_NAMESPACE: [REQUIRES_SINGLE_PART_NAMESPACE] spark_catalog requires a single-part namespace, but got identifier `missing`.`db`.`t`. SQLSTATE: 42K05
+PROBE SHOW NAMESPACES IN missing => AnalysisException SCHEMA_NOT_FOUND: [SCHEMA_NOT_FOUND] The schema `spark_catalog`.`missing` cannot be found. Verify the spelling and correctness of the schema and catalog. / If you did not qualify the name with a catalog, verify the cur
+PROBE SHOW TABLES IN missing.db => AnalysisException _LEGACY_ERROR_TEMP_1126: Nested databases are not supported by v1 session catalog: missing.db.
+PROBE USE missing.db => AnalysisException SCHEMA_NOT_FOUND: [SCHEMA_NOT_FOUND] The schema `spark_catalog`.`missing`.`db` cannot be found. Verify the spelling and correctness of the schema and catalog. / If you did not qualify the name with a catalog, verify th
+PROBE catalog.listTables('missing.db') => AnalysisException _LEGACY_ERROR_TEMP_1126: Nested databases are not supported by v1 session catalog: missing.db.
+PROBE CREATE TABLE missing.db.t (x INT) => AnalysisException REQUIRES_SINGLE_PART_NAMESPACE: [REQUIRES_SINGLE_PART_NAMESPACE] spark_catalog requires a single-part namespace, but got identifier `missing`.`db`.`t`. SQLSTATE: 42K05
+=== probe8_division_by_zero date=2026-10-31T04:37:12Z classic-mode
+=== ansi=true
+PROBE SELECT 1 / 0 => ArithmeticException DIVIDE_BY_ZERO org.apache.spark.SparkArithmeticException: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to 
+PROBE SELECT 1 DIV 0 => ArithmeticException DIVIDE_BY_ZERO org.apache.spark.SparkArithmeticException: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to 
+PROBE SELECT 1 % 0 => ArithmeticException REMAINDER_BY_ZERO org.apache.spark.SparkArithmeticException: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to
+PROBE SELECT pmod(1, 0) => ArithmeticException REMAINDER_BY_ZERO org.apache.spark.SparkArithmeticException: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to
+PROBE SELECT 1.5 / 0 => ArithmeticException DIVIDE_BY_ZERO org.apache.spark.SparkArithmeticException: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to 
+PROBE SELECT 1.0 % 0.0 => ArithmeticException REMAINDER_BY_ZERO org.apache.spark.SparkArithmeticException: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to
+PROBE SELECT CAST(1.0 AS DOUBLE) % CAST(0.0 AS DOUBLE) => ArithmeticException REMAINDER_BY_ZERO org.apache.spark.SparkArithmeticException: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to
+PROBE SELECT CAST(NULL AS INT) / 0 => [(None,)]
+PROBE SELECT CAST(NULL AS INT) % 0 => [(None,)]
+PROBE SELECT CAST(NULL AS INT) DIV 0 => [(None,)]
+PROBE SELECT 1 / CAST(NULL AS INT) => [(None,)]
+PROBE SELECT x / 0 FROM VALUES (1), (CAST(NULL AS INT)) AS t(x) => ArithmeticException DIVIDE_BY_ZERO org.apache.spark.SparkArithmeticException: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to 
+PROBE SELECT x / y FROM VALUES (CAST(NULL AS INT), 0) AS t(x, y) => [(None,)]
+PROBE SELECT x / y FROM VALUES (1, 0) AS t(x, y) => ArithmeticException DIVIDE_BY_ZERO org.apache.spark.SparkArithmeticException: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to 
+PROBE SELECT x % y FROM VALUES (1, 0) AS t(x, y) => ArithmeticException REMAINDER_BY_ZERO org.apache.spark.SparkArithmeticException: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to
+PROBE SELECT CASE WHEN false THEN 1 / 0 ELSE 2 END => [(2.0,)]
+PROBE SELECT coalesce(2, 1 / 0) => [(2.0,)]
+PROBE SELECT typeof(1 / 0) => [('double',)]
+PROBE SELECT try_divide(1, 0), try_mod(1, 0) => [(None, None)]
+PROBE SELECT CAST(1 / 0 AS STRING) => ArithmeticException DIVIDE_BY_ZERO org.apache.spark.SparkArithmeticException: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.enabled" to 
+=== ansi=false
+PROBE SELECT 1 / 0 => [(None,)]
+PROBE SELECT 1 DIV 0 => [(None,)]
+PROBE SELECT 1 % 0 => [(None,)]
+PROBE SELECT pmod(1, 0) => [(None,)]
+PROBE SELECT 1.5 / 0 => [(None,)]
+PROBE SELECT 1.0 % 0.0 => [(None,)]
+PROBE SELECT CAST(1.0 AS DOUBLE) % CAST(0.0 AS DOUBLE) => [(None,)]
+PROBE SELECT CAST(NULL AS INT) / 0 => [(None,)]
+PROBE SELECT CAST(NULL AS INT) % 0 => [(None,)]
+PROBE SELECT CAST(NULL AS INT) DIV 0 => [(None,)]
+PROBE SELECT 1 / CAST(NULL AS INT) => [(None,)]
+PROBE SELECT x / 0 FROM VALUES (1), (CAST(NULL AS INT)) AS t(x) => [(None,), (None,)]
+PROBE SELECT x / y FROM VALUES (CAST(NULL AS INT), 0) AS t(x, y) => [(None,)]
+PROBE SELECT x / y FROM VALUES (1, 0) AS t(x, y) => [(None,)]
+PROBE SELECT x % y FROM VALUES (1, 0) AS t(x, y) => [(None,)]
+PROBE SELECT CASE WHEN false THEN 1 / 0 ELSE 2 END => [(2.0,)]
+PROBE SELECT coalesce(2, 1 / 0) => [(2.0,)]
+PROBE SELECT typeof(1 / 0) => [('double',)]
+PROBE SELECT try_divide(1, 0), try_mod(1, 0) => [(None, None)]
+PROBE SELECT CAST(1 / 0 AS STRING) => [(None,)]
+=== probe9_signed_zero_divisor date=2026-10-31T04:58:00Z classic-mode
+=== ansi=true
+PROBE SELECT 1.0 / -0.0 => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1 / CAST(-0.0 AS DOUBLE) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1 / CAST(-0.0 AS FLOAT) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1.0 % -0.0 => ArithmeticException REMAINDER_BY_ZERO: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary s
+PROBE SELECT CAST(1 AS FLOAT) % CAST(-0.0 AS FLOAT) => ArithmeticException REMAINDER_BY_ZERO: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary s
+PROBE SELECT 1 DIV CAST(-0.0 AS DOUBLE) => AnalysisException DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES: [DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES] Cannot resolve "(1 div CAST(0.0 AS DOUBLE))" due to data type mismatch: the lef
+PROBE SELECT pmod(1.0, -0.0) => ArithmeticException REMAINDER_BY_ZERO: [REMAINDER_BY_ZERO] Remainder by zero. Use `try_mod` to tolerate divisor being 0 and return NULL instead. If necessary s
+PROBE SELECT 1 / CAST(-0.00 AS DECIMAL(3,2)) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT CAST(-0.0 AS DOUBLE) = 0.0, nullif(CAST(-0.0 AS DOUBLE), 0.0) => [(True, None)]
+PROBE SELECT x / y FROM VALUES (CAST(1 AS DOUBLE), CAST(-0.0 AS DOUBLE)) AS t(x, y) => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary se
+PROBE SELECT 1.0 / CAST('NaN' AS DOUBLE), 1.0 % CAST('NaN' AS DOUBLE) => [(nan, nan)]
+PROBE SELECT typeof(1 / CAST(-0.0 AS FLOAT)) => [('double',)]
+PROBE SELECT -0.0 / 1.0, CAST(-0.0 AS DOUBLE) / 1 => [(Decimal('0.000000'), 0.0)]
+=== ansi=false
+PROBE SELECT 1.0 / -0.0 => [(None,)]
+PROBE SELECT 1 / CAST(-0.0 AS DOUBLE) => [(None,)]
+PROBE SELECT 1 / CAST(-0.0 AS FLOAT) => [(None,)]
+PROBE SELECT 1.0 % -0.0 => [(None,)]
+PROBE SELECT CAST(1 AS FLOAT) % CAST(-0.0 AS FLOAT) => [(None,)]
+PROBE SELECT 1 DIV CAST(-0.0 AS DOUBLE) => AnalysisException DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES: [DATATYPE_MISMATCH.BINARY_OP_DIFF_TYPES] Cannot resolve "(1 div CAST(0.0 AS DOUBLE))" due to data type mismatch: the lef
+PROBE SELECT pmod(1.0, -0.0) => [(None,)]
+PROBE SELECT 1 / CAST(-0.00 AS DECIMAL(3,2)) => [(None,)]
+PROBE SELECT CAST(-0.0 AS DOUBLE) = 0.0, nullif(CAST(-0.0 AS DOUBLE), 0.0) => [(True, None)]
+PROBE SELECT x / y FROM VALUES (CAST(1 AS DOUBLE), CAST(-0.0 AS DOUBLE)) AS t(x, y) => [(None,)]
+PROBE SELECT 1.0 / CAST('NaN' AS DOUBLE), 1.0 % CAST('NaN' AS DOUBLE) => [(nan, nan)]
+PROBE SELECT typeof(1 / CAST(-0.0 AS FLOAT)) => [('double',)]
+PROBE SELECT -0.0 / 1.0, CAST(-0.0 AS DOUBLE) / 1 => [(Decimal('0.000000'), 0.0)]
+=== probe10_string_arith_decimal_types date=2026-10-31T05:42:11Z classic-mode
+=== ansi=true
+PROBE SELECT '7' / '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 / 2)" due to data type mismatch: the binary operator requires the input type ("D
+PROBE SELECT '1' / '0' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(1 / 0)" due to data type mismatch: the binary operator requires the input type ("D
+PROBE SELECT 1 / '0' => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If necessary set "spark.sql.ansi.en
+PROBE SELECT '7' % '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 % 2)" due to data type mismatch: the binary operator requires the input type "NU
+PROBE SELECT '7' DIV '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 div 2)" due to data type mismatch: the binary operator requires the input type (
+PROBE SELECT 7 / '2' => [(3.5,)] schema=[('(7 / 2)', 'double', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)) => [(Decimal('0.3333333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)))', 'decimal(23,13)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)) => [(Decimal('0.33333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)))', 'decimal(21,11)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)) => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)))', 'decimal(38,6)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)) => [(Decimal('1.00'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)))', 'decimal(10,2)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) DIV CAST(3 AS DECIMAL(10,2)) => [(0,)] schema=[('(CAST(1 AS DECIMAL(10,2)) div CAST(3 AS DECIMAL(10,2)))', 'bigint', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / 3 => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / 3)', 'decimal(14,6)', True)]
+PROBE SELECT CASE WHEN x > 0 THEN x ELSE 2 END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', False)]
+PROBE SELECT CASE WHEN x > 0 THEN x END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', True)]
+PROBE SELECT x / 2 AS d, x / y AS e FROM VALUES (CAST(1 AS DECIMAL(10,2)), CAST(2 AS DECIMAL(10,2))) AS t(x, y) => [(Decimal('0.500000'), Decimal('0.5000000000000'))] schema=[('d', 'decimal(14,6)', True), ('e', 'decimal(23,13)', True)]
+=== ansi=false
+PROBE SELECT '7' / '2' => [(3.5,)] schema=[('(7 / 2)', 'double', True)]
+PROBE SELECT '1' / '0' => [(None,)] schema=[('(1 / 0)', 'double', True)]
+PROBE SELECT 1 / '0' => [(None,)] schema=[('(1 / 0)', 'double', True)]
+PROBE SELECT '7' % '2' => [(1.0,)] schema=[('(7 % 2)', 'double', True)]
+PROBE SELECT '7' DIV '2' => AnalysisException DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE: [DATATYPE_MISMATCH.BINARY_OP_WRONG_TYPE] Cannot resolve "(7 div 2)" due to data type mismatch: the binary operator requires the input type (
+PROBE SELECT 7 / '2' => [(3.5,)] schema=[('(7 / 2)', 'double', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)) => [(Decimal('0.3333333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / CAST(3 AS DECIMAL(10,2)))', 'decimal(23,13)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)) => [(Decimal('0.33333333333'),)] schema=[('(CAST(1 AS DECIMAL(10,0)) / CAST(3 AS DECIMAL(10,0)))', 'decimal(21,11)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)) => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)))', 'decimal(38,6)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)) => [(Decimal('1.00'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) % CAST(3 AS DECIMAL(10,2)))', 'decimal(10,2)', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) DIV CAST(3 AS DECIMAL(10,2)) => [(0,)] schema=[('(CAST(1 AS DECIMAL(10,2)) div CAST(3 AS DECIMAL(10,2)))', 'bigint', True)]
+PROBE SELECT CAST(1 AS DECIMAL(10,2)) / 3 => [(Decimal('0.333333'),)] schema=[('(CAST(1 AS DECIMAL(10,2)) / 3)', 'decimal(14,6)', True)]
+PROBE SELECT CASE WHEN x > 0 THEN x ELSE 2 END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', False)]
+PROBE SELECT CASE WHEN x > 0 THEN x END AS c FROM VALUES (1) AS t(x) => [(1,)] schema=[('c', 'int', True)]
+PROBE SELECT x / 2 AS d, x / y AS e FROM VALUES (CAST(1 AS DECIMAL(10,2)), CAST(2 AS DECIMAL(10,2))) AS t(x, y) => [(Decimal('0.500000'), Decimal('0.5000000000000'))] schema=[('d', 'decimal(14,6)', True), ('e', 'decimal(23,13)', True)]
+=== probe11_cross_row_error_order date=2026-10-31T05:58:04Z ansi=true
+PROBE local[1] codegen=true row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[1] codegen=true row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[1] codegen=false row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[1] codegen=false row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[1] row1-left-raise row2-div0 => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[1] row1-div0 row2-left-raise => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If ne
+PROBE local[1] 2 partitions left-raise vs cast => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] codegen=true row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] codegen=true row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[2] codegen=false row1-left-fails => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] codegen=false row1-right-fails => NumberFormatException CAST_INVALID_INPUT: [CAST_INVALID_INPUT] The value 'y' of the type "STRING" cannot be cast to "INT" because it is malformed. Corre
+PROBE local[2] row1-left-raise row2-div0 => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001
+PROBE local[2] row1-div0 row2-left-raise => ArithmeticException DIVIDE_BY_ZERO: [DIVIDE_BY_ZERO] Division by zero. Use `try_divide` to tolerate divisor being 0 and return NULL instead. If ne
+PROBE local[2] 2 partitions left-raise vs cast => SparkRuntimeException USER_RAISED_EXCEPTION: [USER_RAISED_EXCEPTION] L SQLSTATE: P0001

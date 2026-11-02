@@ -1,0 +1,73 @@
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-fable/crates/sail-python-udf)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-fable/crates/sail-logical-optimizer)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-fable/crates/sail-execution)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-fable/crates/sail-plan)
+   Compiling sail-session v0.7.2 (/Users/alexy/src/sail-sdp-fable/crates/sail-session)
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-fable/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 46.35s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-8e2eb13bec315478)
+
+running 55 tests
+test pipelines::autocdc::tests::change_args::column_selection_include_empty_returns_an_empty_schema ... ok
+test pipelines::autocdc::tests::change_args::column_selection_exclude_empty_leaves_schema_unchanged ... ok
+test pipelines::autocdc::tests::change_args::column_selection_none_leaves_schema_unchanged ... ok
+test pipelines::autocdc::tests::change_args::column_selection_exclude_filters_by_exact_name ... ok
+test pipelines::autocdc::tests::change_args::column_selection_include_filters_by_exact_name_in_schema_order ... ok
+test pipelines::autocdc::tests::change_args::column_selection_deduplicates_columns_that_normalize_to_the_same_name ... ok
+test pipelines::autocdc::tests::change_args::column_selection_exclude_matches_case_insensitively ... ok
+test pipelines::autocdc::tests::change_args::column_selection_include_matches_case_insensitively ... ok
+test pipelines::autocdc::tests::change_args::include_columns_matches_a_backtick_quoted_literal_dot_column ... ok
+test pipelines::autocdc::tests::change_args::include_columns_matches_a_backtick_quoted_mixed_case_column ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_accepts_a_simple_single_part_identifier ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_accepts_a_backtick_quoted_name_with_a_literal_dot ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_accepts_redundant_backticks ... ok
+test pipelines::autocdc::tests::change_args::change_args_rejects_an_empty_key_list ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_lets_the_parser_reject_an_empty_input ... ok
+test pipelines::autocdc::tests::change_args::column_selection_exclude_fails_for_columns_not_present_in_schema ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_rejects_a_qualified_column_reference ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_rejects_three_or_more_parts ... ok
+test pipelines::autocdc::tests::change_args::column_selection_missing_column_error_preserves_user_casing_when_insensitive ... ok
+test pipelines::autocdc::tests::change_args::column_selection_include_fails_for_columns_not_present_in_schema ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_rejects_a_dotted_identifier ... ok
+test pipelines::autocdc::tests::change_args::unqualified_column_name_quoted_is_safe_to_reparse_for_literal_dot_names ... ok
+test pipelines::autocdc::tests::definition::missing_source_and_sequence_by_are_rejected_in_handler_order ... ok
+test pipelines::autocdc::tests::definition::multipart_column_list_entry_is_rejected_at_flow_registration ... ok
+test pipelines::autocdc::tests::definition::multipart_keys_column_is_rejected_at_flow_registration ... ok
+test pipelines::autocdc::tests::definition::specifying_both_column_list_and_except_column_list_is_rejected ... ok
+test pipelines::autocdc::tests::definition::empty_keys_are_rejected_after_the_other_arguments ... ok
+test pipelines::autocdc::tests::definition::except_column_list_is_forwarded_as_exclude_columns ... ok
+test pipelines::autocdc::tests::definition::column_list_is_forwarded_as_include_columns ... ok
+test pipelines::autocdc::tests::definition::composite_keys_are_forwarded_in_order ... ok
+test pipelines::autocdc::tests::definition::minimal_flow_registers_default_scd1_without_deletes_or_selection ... ok
+test pipelines::autocdc::tests::definition::multi_part_source_is_kept_for_resolution_against_the_graph ... ok
+test pipelines::autocdc::tests::definition::non_attribute_expression_in_keys_is_rejected ... ok
+test pipelines::autocdc::tests::definition::unrecognized_scd_type_is_unsupported_and_scd1_values_are_accepted ... ok
+test pipelines::autocdc::tests::definition::column_object_form_of_arguments_is_honored ... ok
+test pipelines::autocdc::tests::definition::apply_as_deletes_is_forwarded_as_a_delete_condition ... ok
+test pipelines::autocdc::tests::schema::a_source_column_equal_to_the_metadata_column_is_rejected ... ok
+test pipelines::autocdc::tests::graph::default_flow_name_is_the_target_and_explicit_name_is_honored ... ok
+test pipelines::autocdc::tests::graph::auto_cdc_flow_targeting_a_materialized_view_is_rejected ... ok
+test pipelines::autocdc::tests::graph::auto_cdc_flow_targeting_a_persisted_view_is_rejected ... ok
+test pipelines::autocdc::tests::graph::auto_cdc_flow_targeting_a_temporary_view_is_rejected ... ok
+test pipelines::autocdc::tests::graph::auto_cdc_flow_targeting_a_sink_is_unsupported ... ok
+test pipelines::autocdc::tests::schema::an_uppercase_reserved_prefix_column_is_allowed_when_case_sensitive ... ok
+test pipelines::autocdc::tests::graph::a_multiquery_table_cannot_have_an_auto_cdc_input ... ok
+test pipelines::autocdc::tests::schema::pipeline_command_with_auto_cdc_details_round_trips_through_the_proto ... ok
+test pipelines::autocdc::tests::schema::contract_a_source_column_with_the_reserved_prefix_is_rejected ... ok
+test pipelines::autocdc::tests::schema::scd2_is_rejected_at_construction ... ok
+test pipelines::autocdc::tests::schema::schema_appends_metadata_to_the_source_schema_without_selection ... ok
+test pipelines::autocdc::tests::schema::schema_applies_an_exclude_columns_selection ... ok
+test pipelines::autocdc::tests::schema::schema_applies_an_include_columns_selection ... ok
+test pipelines::autocdc::tests::schema::a_key_dropped_by_an_include_columns_selection_is_rejected ... ok
+test pipelines::autocdc::tests::schema::a_key_dropped_by_an_exclude_columns_selection_is_rejected ... ok
+test pipelines::autocdc::tests::schema::an_uppercase_reserved_prefix_column_is_rejected_when_case_insensitive ... ok
+test pipelines::autocdc::tests::schema::a_key_absent_from_the_change_data_feed_is_rejected ... ok
+test pipelines::autocdc::tests::schema::contract_change_args_referencing_a_reserved_prefix_column_are_rejected ... ok
+
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 73 filtered out; finished in 0.03s
+

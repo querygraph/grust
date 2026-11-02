@@ -1,0 +1,37 @@
+CASE a STRUCT<b: STRUCT<x: INT>> || a STRUCT<b: STRUCT<x: STRING>>
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="STRUCT<b: STRUCT<x: INT>>", right="STRUCT<b: STRUCT<x: STRING>>"}
+CASE a ARRAY<STRUCT<x: INT>> || a ARRAY<STRUCT<x: STRING>>
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="ARRAY<STRUCT<x: INT>>", right="ARRAY<STRUCT<x: STRING>>"}
+CASE a MAP<STRING, STRUCT<x: INT>> || a MAP<STRING, STRUCT<x: STRING>>
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="MAP<STRING, STRUCT<x: INT>>", right="MAP<STRING, STRUCT<x: STRING>>"}
+CASE a STRUCT<p: INT, q: STRUCT<x: INT>> || a STRUCT<q: STRUCT<x: STRING>, p: INT>
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="STRUCT<p: INT, q: STRUCT<x: INT>>", right="STRUCT<q: STRUCT<x: STRING>, p: INT>"}
+CASE id SMALLINT || id INT
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="SMALLINT", right="INT"}
+CASE d DECIMAL(10,2) || d DECIMAL(12,4)
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="DECIMAL(10,2)", right="DECIMAL(12,4)"}
+CASE d DECIMAL(12,2) || d DECIMAL(10,2)
+  OK d DECIMAL(12,2)
+CASE s STRING || s VARCHAR(10)
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="STRING", right="VARCHAR(10)"}
+CASE s STRING || s CHAR(10)
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="STRING", right="CHAR(10)"}
+CASE i INTERVAL YEAR || i INTERVAL MONTH
+  OK i INTERVAL YEAR TO MONTH
+CASE ts TIMESTAMP || ts TIMESTAMP_NTZ
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="TIMESTAMP", right="TIMESTAMP_NTZ"}
+CASE x INT || y INT, x STRING
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="INT", right="STRING"}
+CASE first STRING, x INT || x STRING
+  CLASS org.apache.spark.SparkException
+  PARAMS {left="INT", right="STRING"}

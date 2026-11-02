@@ -1,0 +1,35 @@
+fmt-exit=0
+clippy-exit=0
+maturin-exit=0
+
+error = AnalysisException('[AUTOCDC_MULTIPLE_FLOWS_TO_TARGET] Invalid AutoCDC destination sail.default.target with multiple fl...ail.default.auto_cdc_flow, sail.default.extra_flow. An AutoCDC target table must have exactly one flow writing to it.')
+condition = 'AUTOCDC_MULTIPLE_FLOWS_TO_TARGET', sql_state = '42000'
+parameters = {'tableName': 'spark_catalog.default.target', 'flows': 'spark_catalog.default.auto_cdc_flow, spark_catalog.default.extra_flow'}
+
+    def _assert_error(error, condition, sql_state, parameters):
+        assert error.getCondition() == condition
+>       assert error.getMessageParameters() == parameters
+E       AssertionError: assert {'flows': 'sa...fault.target'} == {'tableName':...t.extra_flow'}
+E         
+E         Differing items:
+E         {'flows': 'sail.default.auto_cdc_flow, sail.default.extra_flow'} != {'flows': 'spark_catalog.default.auto_cdc_flow, spark_catalog.default.extra_flow'}
+E         {'tableName': 'sail.default.target'} != {'tableName': 'spark_catalog.default.target'}
+E         Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_autocdc_definition.py:70: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+[2026-10-30T07:49:11Z INFO sail_session::session_manager::actor::handler] creating session a8022aa8-2023-486d-a81e-a7bb5d2cefab
+----------------------------- Captured stdout call -----------------------------
+2026-10-30 07:49:11: Starting pipeline analysis
+--------------------------- Captured stderr teardown ---------------------------
+[2026-10-30T07:49:11Z INFO sail_session::session_manager::actor::handler] removing session a8022aa8-2023-486d-a81e-a7bb5d2cefab
+[2026-10-30T07:49:11Z INFO sail_session::session_manager::actor::handler] removing session 835f89b5-8cea-4518-8b38-30aa2c6d12b4
+[2026-10-30T07:49:11Z INFO sail_python::spark::server] Shutting down the Spark Connect server...
+[2026-10-30T07:49:11Z WARN sail_common::actor] aborting 562 task(s) for SessionManagerActor
+[2026-10-30T07:49:11Z INFO sail_python::spark::server] The Spark Connect server has stopped.
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_auto_cdc_multiflow_is_reported_before_materialized_view_multiflow[False]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 30 passed in 1.22s
+FAILED python/pysail/tests/spark/pipelines/test_autocdc_definition.py::test_auto_cdc_multiflow_is_reported_before_materialized_view_multiflow[True]
+2 failed, 240 passed, 150 warnings in 14.32s

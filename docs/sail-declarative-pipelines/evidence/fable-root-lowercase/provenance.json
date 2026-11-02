@@ -1,0 +1,82 @@
+{
+  "recorded": "2026-10-30T07:39:43.237908+00:00",
+  "host": "Capitola.local",
+  "os": "Darwin-25.2.0-arm64-arm-64bit-Mach-O",
+  "jdk_home": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+  "javac_version": "javac 17.0.8",
+  "java_version": [
+    "java version \"17.0.8\" 2023-07-18 LTS",
+    "Java(TM) SE Runtime Environment (build 17.0.8+9-LTS-211)",
+    "Java HotSpot(TM) 64-Bit Server VM (build 17.0.8+9-LTS-211, mixed mode, sharing)"
+  ],
+  "commands": [
+    "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/javac RootLowercaseProbe.java WordBreakTablesDump.java ContextSetsProbe.java",
+    "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java -cp . RootLowercaseProbe @designed-all2.txt > probe.json",
+    "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java --add-opens java.base/sun.text=ALL-UNNAMED -cp . WordBreakTablesDump > word-break-tables.json",
+    "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java -cp . ContextSetsProbe <13 named strings> > context-sets.json",
+    "python3 generate_break_tables.py word-break-tables.json probe.json context-sets.json oracle.json root_lowercase_tables.rs oracle.json"
+  ],
+  "files_sha256": {
+    "jdk/ContextSetsProbe.java": "cc0babe85c10b081e1a9f1de01c4c041157f9f08408cac6f109eca74a2a189d7",
+    "jdk/RootLowercaseProbe.java": "09bc3e74def68e8840c019dff9b9d50cd38fee41042407c064f5ad0b8aa220a9",
+    "jdk/WordBreakTablesDump.java": "7da86c4acf291785f3693cba17c19d24a653b977092096a42e215f969a32ae76",
+    "jdk/connectors.txt": "bddcb2c6b395ee2e73b0b96791e96aff4698225feef7155b2a283e2ce2cf3896",
+    "jdk/context-sets.json": "6e53a1ceee36f334715cd37885f266a609778eabc62e28b523f1753ee8b060f3",
+    "jdk/designed-all2.txt": "2146f9073996b0358013b82a2125bc0c6c97e029ab045802723a27dc33968ad0",
+    "jdk/generate_break_tables.py": "e907ba6c074c374327279ef5a859c423c52b9b8531c8349a9bb1688737e6d592",
+    "jdk/generate_tables.py": "1fc7a012857aae05c2480b1f60d877c0646b890a987b5c23593b995e36a423d4",
+    "jdk/oracle.json": "af7859946a3465f3fe05bda5dd6c7eb0525a529414ff8166da45b17d71a4f8b3",
+    "jdk/probe-connectors.json": "7d636b1273fc328f4414a333d96b2a0199b221f5fff041b852d9593225e2743b",
+    "jdk/probe.json": "326011f232066e6be58f33baacdf3250866ae914572946db984ed2242c92da27",
+    "jdk/root_lowercase_tables.rs": "72654e88f5896494820290cbf54cf5c6eb58bf896814a9be0bfb4a33cdd36b29",
+    "jdk/word-break-tables.json": "f8215b552be9bd765f67420812381d68bdbd93d0f4acc411a4a0ab6e5d99fefa"
+  },
+  "word_break_iterator": {
+    "class": "sun.text.RuleBasedBreakIterator",
+    "rule_data_checksum": "e227e00a",
+    "num_categories": 22,
+    "num_states": 20,
+    "category_ranges": 2076,
+    "cased_ranges": 137
+  },
+  "context_sets": {
+    "java_runtime_version": "17.0.8+9-LTS-211",
+    "enumeration_count": 39215,
+    "enumeration_fnv1a64": "1c6c6679e53c5440",
+    "random_count": 40000,
+    "random_seed": "9e3779b97f4a7c15",
+    "random_fnv1a64": "946ac58df63010ea",
+    "named": 13
+  },
+  "scalar": {
+    "fnv1a64": "96999cee517b26e5",
+    "simple_mapping_entries": 1393,
+    "designed_strings": 201
+  },
+  "sail_consumer": {
+    "commit": "2dcd0eaa9",
+    "tables_sha256": "72654e88f5896494820290cbf54cf5c6eb58bf896814a9be0bfb4a33cdd36b29",
+    "oracle_sha256": "af7859946a3465f3fe05bda5dd6c7eb0525a529414ff8166da45b17d71a4f8b3",
+    "tables_match_packet": true,
+    "oracle_matches_packet": true
+  },
+  "superseded": "the single-neighbour sigma model of Sail f4537586b (generate_tables.py, retained) was refuted by fable-c2-context-review and replaced by the break-iterator port",
+  "independent_corpus_replays": {
+    "recorded_at": "2026-10-30T09:00:07.327263+00:00",
+    "sail_commit": "d38058973 (opt-in test optional_external_jvm_corpus_replays_against_the_helper on top of 2dcd0eaa9; helper and tables unchanged)",
+    "lowercase": {
+      "source": "Grust evidence/fable-c2-corrected-review/lowercase (cases.json + java.stdout, Oracle JDK 17.0.8)",
+      "strings": 68588,
+      "compact_corpus_sha256": "6fedc31f532fae9c2a3402b1e6ed2dfdc82dc574a66ad0716cd14f40ba8caba7",
+      "command": "SAIL_FABLE_LOWERCASE_CORPUS=<compact json> cargo test -p sail-common --lib root_lowercase -- --nocapture",
+      "result": "external corpus: 68588 strings, 0 mismatches; 7 passed"
+    },
+    "lookup": {
+      "source": "Grust evidence/fable-c4-independent-review (256 fresh schemas, 16,684 queries)",
+      "sail_commit": "1eea0b140 opt-in test, rerun semantics unchanged by 2dcd0eaa9",
+      "command": "SAIL_FABLE_LOOKUP_CORPUS=<compact json> cargo test -p sail-spark-connect --lib pipelines::autocdc -- --nocapture",
+      "result": "review corpus: 256 schemas, 16684 queries replayed; 70 passed (recorded in fable-cdc-validation provenance)"
+    },
+    "generator_provenance": "jdk/WordBreakTablesDump.java, jdk/generate_break_tables.py and jdk/word-break-tables.json retained with hashes in files_sha256"
+  }
+}
