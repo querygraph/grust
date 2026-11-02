@@ -112,3 +112,13 @@ Audit: 384 ported, 37 partial, 14 internal, 0 missing. The 37 partial cases are 
 Each gate: native 15 crates, frozen 300 + 67 PASS, pipelines plus ORC 1254 passed, 23 skipped, 4 strict expected failures, Hive 69 passed and 2 xfailed, second catalog 13 passed, Delta failures identical by name to the baseline.
 
 User decisions recorded 2026-11-02 in FABLE-HANDOFF.md. Spark's internal Scala suites are excluded from the goal by the user.
+
+## Spark oracle on the final root `df2457e50`
+
+Every non-AutoCDC pipelines file was run on Spark 4.2.1 (delta-spark 4.4.1, `local[2]`), each file in its own Spark session: 61 files, 40 failures. Each failure was then rerun alone with an empty warehouse: 36 passed, so they were leftovers from earlier tests in the same session. The 4 that fail on Spark alone are all documented Sail differences (SAIL-SDP-DESIGN-DECISIONS.md §3):
+
+- `test_direct_execution_policy.py::test_rejected_flow_does_not_execute_insert`: Sail rejects before the INSERT child runs.
+- `test_features.py::test_a_failed_sql_file_registers_no_partial_definitions`: file-atomic registration.
+- `test_execution.py::test_quoted_identifier_with_dot` and `test_sql_batch.py::test_escaped_hyphenated_dataset_dependencies`: Spark's session catalog refuses these names.
+
+Before the `2e73a0b87` fixes the same run had 8 real differences; the bare USE, declared view columns and DATA_SOURCE_NOT_FOUND cases now pass on Spark.
