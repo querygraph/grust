@@ -39,7 +39,7 @@
     "python/pysail/tests/spark/dml/test_features.py": "2b7dd61d8ea3bd5aa67db200bcf62ef0b15763246b9dde5f05e0991f2deaf92e",
     "python/pysail/tests/spark/dml/test_write_table.py": "a8690f1e15bdbf02172b2968f1bb70136668c02b0c96955c097d2f769458dace",
     "python/pysail/tests/spark/iceberg/test_schema_comments.py": "b547094bcb72bf3163b54e5dca2f0be6586e88bc71e0c0bed86e4f381f642bcb",
-    "python/pysail/tests/spark/pipelines/conftest.py": "2fa092517bf3ec850533cf73f13e0fa461791b2305e7d5fae3b95c5327516439",
+    "python/pysail/tests/spark/pipelines/conftest.py": "62321cba3c90abb7083019651089940d437968edb5059a09c2436d8221d9db78",
     "python/pysail/tests/spark/pipelines/test_analysis_context.py": "6ef7e6454bcea6ba11afcb89f967cf05bc40c10489fde53458c8c139373606c1",
     "python/pysail/tests/spark/pipelines/test_catalog_cast_errors.py": "04ba872b8d0fa64b0d133250c6bade6853d74a4dc62beb395b41cda90505c567",
     "python/pysail/tests/spark/pipelines/test_catalog_expressions.py": "99fc14252f2b8550d8f31d43c1d9ce5780fb0247c2fa82fc9eaf6bee602dba65",
@@ -224,5 +224,17 @@
     ],
     "selected_nodes_unchanged": true,
     "reason": "sql.feature: the nonidentity partitioning scenario now expects Spark's own text, 'Invalid partitioning transform', from SqlGraphRegistrationContext.scala:573 and SqlPipelineSuite.scala:326 at Spark 617618396. test_nested_materialization.py and test_properties.py: an autouse fixture drops the tables a case leaves, with no assertion changed."
+  },
+  "autocdc_fixture_alignment": {
+    "candidate": "9d6646c92de247b89b150a07973f526d7a743ead",
+    "source_changes": [
+      {
+        "path": "python/pysail/tests/spark/pipelines/conftest.py",
+        "before": "2fa092517bf3ec850533cf73f13e0fa461791b2305e7d5fae3b95c5327516439",
+        "after": "62321cba3c90abb7083019651089940d437968edb5059a09c2436d8221d9db78"
+      }
+    ],
+    "selected_nodes_unchanged": true,
+    "reason": "pipelines/conftest.py: pipeline_factory takes optional catalog and database, which default to the None it passed before."
   }
 }
