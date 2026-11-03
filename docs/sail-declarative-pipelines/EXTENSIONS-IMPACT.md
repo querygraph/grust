@@ -60,3 +60,23 @@ The book mentions "declarative" once today.
 - Then merge in the extension branch's order of units, resolving the session manager first: port the extension loader's per-session state onto the cleanup record, and its native admission domains onto the manager's Open/Closing states. Expect the 23 conflicts to take a day of careful work, mostly in `session_manager/actor/handler.rs` and `executor.rs`.
 - Re-run the lifecycle evidence and the Morrobay ABI harness on the merged tip, and add that tip to `hosts.json`. Keep the proposal's text; replace its evidence section.
 - Revise the book's six chapters and add the pipelines chapter from the manual; the ORC material is new.
+
+## The performance branches
+
+Assessed the same day, read-only: `agent/sail-performance-hot-paths` (22 commits, 2026-08-08), `agent/sail-performance-alignment` (36, 2026-08-09, the LakeCat-aligned variant) and `agent/grust-performance-alignment` (31, 2026-08-09, adds the graph-extension parser work). All three fork from August upstream (`3c000fd86` or `7da486db9`), two months before the SDP base `0ba425c03`.
+
+**What they optimized.** Six hot sites, each with a criterion bench: Iceberg metadata discovery (streamed, searched from the newest snapshot, deserialized directly), manifest parsing (a reused Avro reader), the delete index (shared descriptors, routed file matching), current-snapshot lookup, single-statement SQL parsing, and an object-store read-through cache on Foyer (fast-path hits, single-page reads, reused locations) with a consistency model documented in `docs/guide/performance/index.md`. No commit body or document records a measured number; the evidence is the benches themselves.
+
+**How the work holds against the SDP root.**
+
+| Hot site | What happened since the fork | SDP's own part |
+|---|---|---|
+| Iceberg metadata, manifests, delete index (`sail-iceberg`) | Upstream rewrote all of it: `datasource/provider.rs` is gone, `delete_apply_exec.rs` +874/−127, `manifest/mod.rs` +729, `delete_index.rs` +308, `metadata_loader.rs` +109 (v3 MOR, metadata-discovery and manifest fixes #2542/#2544/#2853). The branch's changes do not apply to this code. | None. SDP did not touch `sail-iceberg`. |
+| SQL frontend parsing | Upstream removed the parser cache and upgraded Chumsky (#2786) and fixed a parser memory leak (#2789); the single-statement specialization targets a parser that no longer has that shape. | Small: the pipeline statements and keywords (+20 lines in `sail-sql-parser`, −10/+8 in the analyzer's `parser.rs`). |
+| Object-store Foyer cache (`layers/cache.rs`) | Never reached upstream; the file does not exist on the root. The standalone `feat/object-store-foyer-cache` branch conflicts with the root in 9 files. | SDP reworked the object-store layers for owned stores and multipart supervision (`layers/runtime*.rs`, `owned_multipart/`), which is where the cache layer would have to re-home. |
+| Physical-plan codec | Upstream and SDP both added nodes (+3853/−567 since the fork in all; SDP +337). | Mechanical conflict only. |
+| Catalog provider seams (alignment branch: `provider/mod.rs`, `options.rs`, `sail-catalog-iceberg`) | The LakeCat branch's planning helpers and commit-table seam (PRs #2134/#2135/#2140); SDP added `SHOW CREATE TABLE`, the HMS purge semantics and shared-memory catalogs on the same files. | 18 conflicts for the alignment branch, 10 for hot-paths, 14 for the grust variant. |
+
+**Verdict.** The performance work does not hold as code: its hot sites were rewritten upstream between August and October, independently of SDP, and its six benches are not on the root. SDP's contribution to that drift is minor (the parser's pipeline statements and the codec); the one place SDP matters is the object store, where the Foyer cache layer would now sit beside owned stores and the multipart supervisor. The ideas hold: streaming discovery, a reused Avro reader, delete-file routing and a read-through cache are still the right targets, but whether upstream's rewrites already captured the gains is unknown, because nothing recorded the before/after numbers.
+
+**What it would take to know.** Port the six benches onto the root (they are self-contained criterion files), run them on the root and on the branch's own tip, and record the numbers in the repository this time. The parser and object-store benches port in an hour; the Iceberg ones need rewriting against the new types. Do this after M1 closes and after the extensions merge, since the object-store layer is involved in both.
