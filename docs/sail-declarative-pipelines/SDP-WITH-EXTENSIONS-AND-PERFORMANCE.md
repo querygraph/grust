@@ -105,6 +105,18 @@ Offers are batched as at M1: a lane gates several units in one offer rather than
 
 Why not one session doing A then B: the serial length is sixteen units with the gate on each, and B's numbers would arrive after A's changes, so the baseline would already include them. Why not a third session for Phase C: C is one chapter per unit of A or B that lands and is best written by the lane that landed the unit, with the merge order telling the chapter what it describes; a third writer would wait on both.
 
+## 8. Landing record
+
+| Unit | Root after landing | Gate (native; frozen; pipelines; CLI; Hive; second catalog; Delta) |
+|---|---|---|
+| (peer) M2 dedup `2bcea9676` | `117ff726f` (fast-forward of the offer tip) | GATE=0; PASS 300+67; 1283/25/4 on rerun (one setup error on the first run, see DESIGN item 3); clean; 69+2x; 13; parity |
+| A1a | `889ac0464` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity. First landing `7cf4b9301` withdrawn: the scripts had omitted the root `Cargo.toml`. |
+| A2 | `ffe8ff3c8` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
+| A3 | `3e9c92ca9` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
+| A4 | `0f789f47b` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
+| A5 | (gating) | |
+| A1b (examples re-pinned; Nutmeg lock from crates.io) | waits on Grust 0.24.1 | |
+
 ## 8. What this plan does not cover
 
 M2's own SDP items (the single AutoCDC run path, concurrent flows, state compaction, structured errors, the worker-stop connection lifetime) are in `DESIGN.md`'s review and stay there; where a unit above touches the same file, the SDP item lands first.
