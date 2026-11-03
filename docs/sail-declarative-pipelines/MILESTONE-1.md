@@ -97,10 +97,10 @@ Every settled decision is recorded in [SAIL-SDP-DESIGN-DECISIONS.md](SAIL-SDP-DE
 
 - `6f45d5d73` (gated, on top of `sdp-batch-m1`): late rows in the append path now follow Spark. The AutoCDC Spark oracle was rerun on `7d6bc1917`: semantics 42 passed; spark_suites 43 passed and 4 Sail-only skipped. Delta AutoCDC targets are policy (user decision 21).
 
+- `97be991c5` (gated): a stopped producer's local streams end for their subscribers. This was the worker-stop cause: a stage-0 shuffle response subscribed by a peer worker at the instant of the stop, held by a sink mid-commit in a task future the abort had not reached. Measured 0 firings in 600 rounds of the session-close hammer against 4 in 500 without it. The diagnosis is DESIGN.md "Review at milestone 1", item 3.
+
 ## Open, not in this milestone
 
-- **Late rows in the append path:** Spark's rule is `window.end <= watermark`. This is the next unit of work.
-- **Delta AutoCDC targets:** whether accepting them is policy.
-- **Worker stop:** a worker can wait up to 5 seconds to stop, because a canceled job's stage-0 Flight stream stays open after its tasks are aborted.
+- **Worker stop, second half:** why tokio's abort leaves task futures alive for seconds, and releasing the reader-side Flight subscription through the task resource scope.
 - **CDC durability:** production durability, fencing and recovery for CDC beyond the qualified process-death cases.
 - **Session work:** fallible actor results and cluster worker effects.
