@@ -115,6 +115,7 @@ Why not one session doing A then B: the serial length is sixteen units with the 
 | A3 | `3e9c92ca9` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
 | A4 | `0f789f47b` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
 | A5 | `97556263a` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
+| (peer) B1 `484f2bc95` + M2 join eviction `5b9111fc7` | `5b9111fc7` (fast-forward of the offer tip) | GATE=0; PASS; 1284/25/4; clean; 69+2x; 13; parity. Peer gate 23 full on the same commits over `117ff726f`; core gate on the rebased tip. |
 | A1b (examples re-pinned; Nutmeg lock from crates.io) | waits on Grust 0.24.1 | |
 
 ## 8. What this plan does not cover
