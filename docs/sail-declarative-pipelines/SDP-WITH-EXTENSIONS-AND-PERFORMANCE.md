@@ -117,6 +117,7 @@ Why not one session doing A then B: the serial length is sixteen units with the 
 | A5 | `97556263a` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
 | (peer) B1 `484f2bc95` + M2 join eviction `5b9111fc7` | `5b9111fc7` (fast-forward of the offer tip) | GATE=0; PASS; 1284/25/4; clean; 69+2x; 13; parity. Peer gate 23 full on the same commits over `117ff726f`; core gate on the rebased tip. |
 | A1b (examples re-pinned; Nutmeg lock from crates.io) | waits on Grust 0.24.1 | |
+| C8, then C1, C2, C3, C4, C6, C7 (book, 2026-11-03) | `~/src/book-sources/sail-rust-book` branch `work/sdp-chapter`, eight commits on `72a42d9`: `4a6a8f7` Chapter 21 Declarative Pipelines (new, 2,900 words, numbered 21 so nothing moves), `f77b90e` build fix (PDF information page), `962b338` Ch 3, `71f6736` Ch 8, `1ef5b19` Ch 10, `330ff3e` Ch 12, `2750bb5` Ch 16, `ed117b9` Ch 17 | The library build passes with the new chapter; the seven-chapter build is the check for the revisions. Not pushed; artifacts not rebuilt into the repo (that is the publication step). C5 and C9 remain. |
 
 ## 8. What this plan does not cover
 
