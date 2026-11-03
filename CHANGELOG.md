@@ -6,6 +6,18 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.24.1 — Cumacean — 2026-11-03
+
+A patch in version and a change of foundation in one place: Cypher write
+statements are now planned from the typed AST that the read side has used all
+along, and the string-scanning write planner is gone. No golden write plan
+changed, and 18,930 paired comparisons were run to say so; what changed is the
+handling of the corners the scanner got wrong, each listed below. Backtick-quoted
+names are read as names, the Arrow floor comes down to 59.2 so that a host on
+Arrow 59.2 can depend on the crates, and the embedded Turso engine moves to
+its stable 0.8.1. The release exists so that the Sail extensions can pin a
+published Grust that carries the typed write planner and accepts their Arrow.
+
 ### Cypher
 
 - **Backtick-quoted names in write statements are read as names.** The
@@ -73,6 +85,12 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Dependencies
 
+- **Arrow 59.2 is the floor.** `grust-arrow`, `grust-algorithms`,
+  `grust-algorithm-procedures` and the projection-ingest benchmark required
+  `arrow-*` and `parquet` 59.3.0; they now require 59.2.0, so that a host on
+  Arrow 59.2 and DataFusion 55.2 (Sail's, and so the Sail extensions') can
+  depend on them. Nothing in the crates needs 59.3; the workspace still
+  resolves to the newest 59.x in its lockfile.
 - **Turso 0.8.1.** The embedded Turso engine moves from 0.7.2 to the stable
   0.8.1 (its `turso_*` crates with it, and `antithesis_sdk` 0.2.9 to 0.3.0).
   `grust-turso` needed no source change: it builds with all features, and its
