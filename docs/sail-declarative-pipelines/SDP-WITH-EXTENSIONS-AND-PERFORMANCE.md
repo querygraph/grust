@@ -85,6 +85,24 @@ Order: C8 can start as soon as the manual is final; C1–C4, C6, C7 after M1 clo
 - The book's six chapters and the new chapter are published with a version stamp naming the merged commit.
 - No decision in `SAIL-SDP-DESIGN-DECISIONS.md` is reversed by any unit without a new entry there.
 
-## 7. What this plan does not cover
+## 7. Lanes: one tree, two sessions, and what runs in parallel
+
+The three phases are one re-engineering of one tree, but not one serial job. They are run as two lanes on the same root with the same gate, the way M1 was run, because the file surfaces barely overlap:
+
+| Phase A touches | Phase B touches | Shared |
+|---|---|---|
+| session manager, Connect layer, driver scheduler and codec, resolver, functions, task resource scope | `sail-iceberg`, `sail-sql-analyzer` parser, `sail-object-store` cache layer, benches, performance guide | `Cargo.toml`/`Cargo.lock` (A1, B1, B6); nothing else |
+
+So the only ordering the files force is that **A1 lands first and alone**, as a unit of its own, and that every later offer is rebased onto the current root before its gate. After A1 the two lanes do not edit the same files; their serialization point is the gate (one gate run at a time on the gate tree, about an hour each), not the code.
+
+**Lane 1 (lifecycle owner, Codex): A2 → A3 → A4 → A5 → A6 → A7, then A9 if taken.** This is the critical path: A2 is the one L unit and nothing in A3–A6 can start before it, since each re-homes an extension seam onto the session layer A2 defines. A8 (the Morrobay ABI harness) is a run, not an edit; lane 1 starts it on the A6 tip while A7 is written.
+
+**Lane 2 (measurement owner, Fable): B1 → B2 → {B3, B4, B5} → B6 → B7.** B1 and B2 start the moment A1 lands; B1 and B2 are evidence, and taking the root's numbers *before* lane 1 changes the session and driver layers gives a clean baseline that B7 later re-measures on the merged tip, which is how we learn whether the extensions port costs anything. B6 (the Foyer layer, L) waits only for A1. Lane 2 is shorter than lane 1 (B is five S/M units and one L against A's one L and five M), so it finishes Phase B while A is still in A4–A6 and then takes Phase C: C8 first (the manual is final at M1), then C1–C4, C6, C7, which depend only on M1. C5 waits for A6; C9 is last and is written by whichever lane closes.
+
+Offers are batched as at M1: a lane gates several units in one offer rather than one gate per commit, and the other lane keeps working on its own tip while that gate runs. Each lane rebases onto the new root after every merge; a rebase that touches the other lane's files is declared in the coordination file before it lands (the SHARED-FILE CHANGE rule).
+
+Why not one session doing A then B: the serial length is sixteen units with the gate on each, and B's numbers would arrive after A's changes, so the baseline would already include them. Why not a third session for Phase C: C is one chapter per unit of A or B that lands and is best written by the lane that landed the unit, with the merge order telling the chapter what it describes; a third writer would wait on both.
+
+## 8. What this plan does not cover
 
 M2's own SDP items (the single AutoCDC run path, concurrent flows, state compaction, structured errors, the worker-stop connection lifetime) are in `DESIGN.md`'s review and stay there; where a unit above touches the same file, the SDP item lands first.
