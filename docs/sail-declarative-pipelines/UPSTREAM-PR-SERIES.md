@@ -6,7 +6,11 @@ implement is recorded in [SAIL-SDP-DESIGN-DECISIONS.md](SAIL-SDP-DESIGN-DECISION
 (the record); each PR cites the sections of the record it implements, and the
 record's §0 is the cover letter for the whole series.
 
-- **Status:** plan, 2026-11-03. Nothing has been opened upstream.
+- **Status:** plan, 2026-11-03, with the owner's eight decisions recorded in
+  place (examples repository, `orc-rust` release first, Grust kernels as
+  crates, the general track first, the record as a Sail docs PR, Iggy behind a
+  feature, the discussion post by the owner in week 1, both lanes after A9).
+  Nothing has been opened upstream.
 - **Source:** root `d65857340` (427 commits over upstream `0ba425c03`,
   1,179 files, 274k lines added, 2.5k removed). Upstream `main` is at
   `62251e0a2`, 22 commits past the base.
@@ -116,7 +120,7 @@ each track's last PR.
 | --- | --- | --- | ---: | --- | --- |
 | S1 | `feat: parse pipeline SQL into definitions without executing DDL` | `sail-sql-parser` pipeline statements, `sail-sql-analyzer/src/pipeline/` (entry point, validators: INSERT clause order, CTAS/RTAS, `USE SCHEMA`/`USE CATALOG`, REPLACE forms), source slices from lexer spans | ~1,800 | G4, G11 | record §3; SQL-SOURCE-DESIGN.md, REGISTRATION-ERROR-FIDELITY-DESIGN.md; every error measured on Spark |
 | S2 | `feat: Spark Connect pipeline commands and graph registration` | `pipelines/` module skeleton: `CreateDataflowGraph`, `DefineDataset`, `DefineFlow`, `DefineSqlGraphElements`, `DropDataflowGraph`; graph IDs, atomic SQL files, the graph lock with async preparation; proto changes; the `pyspark.pipelines` protocol tests | ~3,000 | S1, G7, G10 | record §3 "Declarative registration", "Atomic files", "Preparation and the graph lock"; the registration suites |
-| S3 | `feat: pipeline analysis and validation in Spark's order` | `analysis.rs`, `reanalysis`, `topology.rs` (+ `vendor/grust-topology` and `grust-columns` as workspace members or, preferably, as crates.io dependencies, see §4), schema merge, `UnresolvedPipeline`, flow failure events, lazy virtual schemas, configuration fusion | ~3,000 | S2 | record §4; FLOW-CONFIGURATION-DESIGN.md, BATCH-PROVIDER-MIGRATION-DESIGN.md; ViewSuite and SqlPipelineSuite ports |
+| S3 | `feat: pipeline analysis and validation in Spark's order` | `analysis.rs`, `reanalysis`, `topology.rs` (with `grust-topology` and `grust-columns` as crates.io dependencies, see §4), schema merge, `UnresolvedPipeline`, flow failure events, lazy virtual schemas, configuration fusion | ~3,000 | S2 | record §4; FLOW-CONFIGURATION-DESIGN.md, BATCH-PROVIDER-MIGRATION-DESIGN.md; ViewSuite and SqlPipelineSuite ports |
 | S4 | `feat: materialize pipeline outputs through catalog providers` | `materialize/`, metadata-only materialization, the execute guard, refresh and reset semantics, partition columns last | ~1,200 | S3, G5, G6 | record §5; METADATA-TABLE-MATERIALIZATION-DESIGN.md; MaterializeTablesSuite port |
 | S5 | `feat: run pipelines: scheduler, events and the local job runner` | `execution.rs`, `StartRun`, dry run, the typed event stream, `sail-execution/src/job_runner/local`, interrupt and release semantics | ~2,800 | S4, G8, G9 | record §4 "Analyze before writing", §7 "Deliberate difference"; the end-to-end CLI tests, cluster-mode runs |
 | S6 | `feat: query functions, dynamic references and SQL parameters in pipelines` | `query_function_guard`, DYNAMIC-REFERENCE-BINDING-DESIGN.md, `DefineFlow.once` rejection | ~700 | S5 | record §3 "Query functions", "IDENTIFIER and parameters" |
@@ -128,7 +132,7 @@ each track's last PR.
 | --- | --- | --- | ---: | --- | --- |
 | C1 | `feat: BoundedSource, a protocol-neutral bounded streaming source` | `sail-common-datafusion/src/streaming/bounded.rs`, cursors, incarnations, `retains_origin` | ~500 | – | record §13 "BoundedSource" |
 | C2 | `feat: streaming tables as bounded AvailableNow microbatches` | `pipelines/streaming/` (binding, append path, event windows, watermarks, late-row rule), STREAM-read schema function | ~4,000 as two PRs: binding and refusals (C2a), windows and watermarks (C2b) | S5, C1 | record §13 "Execution model", "Unit 4 lowering", "Shared windowing code", "Late rows"; measured on Spark 4.2.1 with Delta 4.4.1 |
-| C3 | `feat: Apache Iggy as a BoundedSource` | `crates/sail-iggy-bounded/` behind a cargo feature | ~2,900 | C1 | record §13 "Iggy"; the pinned-broker tests; proposed as optional, since Spark has no Iggy source |
+| C3 | `feat: Apache Iggy as a BoundedSource (optional feature)` | `crates/sail-iggy-bounded/` behind a cargo feature, off by default (owner decision, 2026-11-03) | ~2,900 | C1 | record §13 "Iggy"; the pinned-broker tests; the dependency is opt-in, since Spark has no Iggy source |
 | C4 | `feat: sail-sdp-control, the pure control model for durable pipeline runs` | `crates/sail-sdp-control/` | ~4,200 | – | record §14 "Control store", "Store rules"; CDC-CONTROL-STORE-DESIGN.md; pure, no I/O, its own tests |
 | C5 | `feat: AutoCDC definitions and name folding` | `pipelines/autocdc/` definition parsing (C1–C4 of the record), `sail-common/src/utils/root_lowercase*` with the JDK 17 tables | ~5,000 | S3 | record §14 "Definition parsing"; the oracle JSON |
 | C6 | `feat: AutoCDC SCD1 runtime with stateful queries between batches` | `pipelines/autocdc/` runtime: MERGE paths for Delta, Iceberg, Hive and Unity, state segments and manifest, watermark recovery, full refresh | ~12,000 as three PRs: targets and MERGE (C6a), state (C6b), recovery and the control-store adapter (C6c) | C2, C4, C5, G13 | record §14 "Runtime", decisions 14 and 15; `crash.py` process-death qualification; `iceberg_on_spark` |
@@ -138,20 +142,20 @@ each track's last PR.
 
 | # | Title | Scope | Size | Needs | Evidence |
 | --- | --- | --- | ---: | --- | --- |
-| X0 | Discussion post in [#2001](https://github.com/lakehq/sail/discussions/2001): the bounded host contract | `docs/development/extensions/maintainer-request.md` as the post, linking the design review and the record §15 | – | – | opened before X1 so the contract is discussed before code |
+| X0 | Discussion post in [#2001](https://github.com/lakehq/sail/discussions/2001): the bounded host contract | `docs/development/extensions/maintainer-request.md` as the post, linking the design review and the record §15; owner decision (2026-11-03): the text is prepared from the request and the record's §0, and the owner posts it under their own account in week 1 alongside the first G PRs | – | – | opened before X1 so the contract is discussed before X2–X5 are written against `main` |
 | X1 | `feat: sail-native-resource-ffi, the memory-lease C ABI` | `crates/sail-native-resource-ffi/` | ~200 | – | record §15; the lease probes in `abi-review.md` |
 | X2 | `feat: session-owned native extension loader and admission pool` | `sail-session/src/extensions/`, `build.rs` host identity from `Cargo.lock`, `datafusion-ffi` in the root manifest, the two lifecycle host tests | ~2,800 | G7, G8, X1 | record §15 "Version identity", "Host-funded memory", "The session owns the admission pool" |
 | X3 | `feat: dispatch Connect extension relations to registered native packages` | `sail-spark-connect` relation dispatch, `proto/plan.rs`, `sail-common-datafusion/src/connect_extension.rs`, error mapping | ~1,200 | X2, G1 | record §15 "A bounded host contract"; discussion #2002 |
 | X4 | `feat: driver placement and codec for native extension plans` | `sail-execution/src/proto/codec/` extension plans, `driver_extension.rs`, job-graph placement, replay disabled for driver-local regions | ~3,200 | X3 | record §15; the distributed tests of the matrix |
 | X5 | `feat: extension scalar functions resolved by identity on workers` | `sail-plan` resolver extension functions, `spark_array.rs` geometry field metadata | ~500 | X4 | record §15; the Sedona matrix rows |
 | X6 | `docs: the extension design review and ABI review` | `docs/development/extensions/{design-review,abi-review,linux-environment,implementation-plan}.md`, the evidence checksums and bundles cited by them | ~3,000 of prose; bundles as binary | X5 | record §15; the audit JSON and benchmark corpus stay out |
-| X7 | `examples/extensions` | Sedona and Nutmeg wheels, Pecan, the matrix tests and harness scripts | ~30,000 | X6 | **to be decided with the maintainers:** as `examples/` in-tree, or as a separate `sail-extensions-examples` repository referenced from X6; the series proposes the separate repository, since the examples pin exact engine versions and carry their own workspaces |
+| X7 | `sail-extensions-examples` repository | Sedona and Nutmeg wheels, Pecan, the matrix tests and harness scripts, as a separate repository under querygraph referenced from X6 (owner decision, 2026-11-03); not proposed in-tree, since the examples pin exact engine versions and carry their own workspaces and wheel builds |  ~30,000 | X6 | the matrix and ABI evidence cite the repository's tags |
 
 ### Track D: documentation
 
 | # | Title | Scope | With |
 | --- | --- | --- | --- |
-| D1 | `docs: the design record for declarative pipelines and native extensions` | the record (this document's companion) placed as `docs/development/pipelines/design-record.md`, with the links to the manual, report and book | the first S PR |
+| D1 | `docs: the design record for declarative pipelines and native extensions` | the record (this document's companion) placed as `docs/development/pipelines/design-record.md`, with the links to the manual, report and book; owner decision (2026-11-03): the record lives in Sail as this docs PR, opened as a draft in week 1 so it is readable while the first code PRs are reviewed, and merged in the wake of the first S PR | week 1 as a draft; merged with the first S PR |
 | D2 | `docs: declarative pipelines user guide` | condensed from the manual's chapters: projects, datasets, SQL files, catalogs, streaming, AutoCDC, differences from Spark | S7 |
 | D3 | `docs: streaming sources and AutoCDC operator notes` | checkpoints, control store, one pipeline per plain target, recovery limits | C7 |
 | D4 | `docs: performance guide and bench record` | `docs/guide/performance/index.md`, `docs/development/benches.md` | P5 |
@@ -161,20 +165,25 @@ each track's last PR.
 
 - **`orc-rust`.** The branch vendors `orc-rust` 0.9.0 with three local
   commits (Arrow 59 test alignment; frame checks, typed read failures and the
-  five codec output bounds; the decoder panic fix). G12 needs these released:
-  open them against `datafusion-contrib/orc-rust` first; if a release is
-  slow, G12 can depend on a git revision of that repository, never on a
-  vendored copy.
+  five codec output bounds; the decoder panic fix). Owner decision
+  (2026-11-03): the fixes are opened against `datafusion-contrib/orc-rust`
+  first, and G12 waits for a release and depends on it from crates.io. No git
+  dependency and no vendored copy are proposed; G12's timing follows that
+  release.
 - **Grust kernels.** `vendor/grust-topology` and `vendor/grust-columns` are
-  dependency-free extractions with `SOURCE.json` provenance. S3 should
-  depend on them as published crates (`grust-topology`, `grust-columns` on
-  crates.io, from the querygraph/grust repository) rather than carry
-  `vendor/` into Sail.
+  dependency-free extractions with `SOURCE.json` provenance. Owner decision
+  (2026-11-03): they are published to crates.io from querygraph/grust as
+  `grust-topology` and `grust-columns` before S3 opens, and S3 depends on
+  them as ordinary crates; `vendor/` does not enter Sail.
 - **PySpark 4.2.1.** The pipelines client was measured at 4.2.1; S7 moves
   upstream's `pyspark[connect]==4.2.0` pin.
 - **Grust 0.24.1 on crates.io** (done) for the Nutmeg example in X7.
 
 ## 5. Sequencing and cadence
+
+Owner decision (2026-11-03): the general track leads. Track G and the benches
+are offered first, so that value lands even if the pipelines review is slow
+and the pipelines PRs arrive on a `main` that already has their prerequisites.
 
 1. **Week 1:** X0 (discussion post) and D1 as a draft PR carrying the record,
    so the maintainers can read the design while the first code PRs are
@@ -185,6 +194,12 @@ each track's last PR.
 3. **Weeks 3–4:** G8–G10, G13, P5, C1, C4, X1; then S1–S2.
 4. **Weeks 5–8:** S3–S7 in order, C2 alongside S5, X2–X5 alongside S6–S7.
 5. **Weeks 9–12:** C3, C5–C7, X6–X7 (as decided), D2–D4.
+
+Owner decision (2026-11-03): both lanes prepare the series, starting once A9
+has been fast-forwarded and the branch is final. The batch lane takes tracks
+G, P, S, X and D; the CDC lane takes track C (streaming, Iggy, the control
+store, AutoCDC) after reviewing its split. Each PR is gated on the branch's
+scripts before it opens.
 
 Each PR is prepared on a detached branch from upstream `main` by replaying
 the branch's commits for its scope (the branch's commits are already
@@ -197,8 +212,7 @@ to it as ordinary gated commits, so the branch and the series never diverge.
 
 - **Review bandwidth.** Forty-odd PRs over three months is a lot for a small
   maintainer team; the general track is front-loaded so that value lands
-  even if the pipelines track slows. The record's §0 asks the maintainers
-  which track they want first.
+  even if the pipelines track slows; the owner chose this order (§5).
 - **Upstream movement.** `sail-plan` and `sail-function` moved since the base;
   G1, G2 and G4 are rebased before anything else. `python/pysail` was
   reorganized; S7 and C7 take the new layout.
