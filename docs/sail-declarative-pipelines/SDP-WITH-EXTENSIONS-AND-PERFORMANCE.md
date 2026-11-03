@@ -114,7 +114,7 @@ Why not one session doing A then B: the serial length is sixteen units with the 
 | A2 | `ffe8ff3c8` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
 | A3 | `3e9c92ca9` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
 | A4 | `0f789f47b` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
-| A5 | (gating) | |
+| A5 | `97556263a` | GATE=0; PASS; 1283/25/4; clean; 69+2x; 13; parity |
 | A1b (examples re-pinned; Nutmeg lock from crates.io) | waits on Grust 0.24.1 | |
 
 ## 8. What this plan does not cover
