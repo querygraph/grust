@@ -378,7 +378,7 @@ Enable the `memory` feature to use `MemoryGraphStore` from the public facade:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.21.0", features = ["memory"] }
+grust = { package = "grust-graph", version = "0.24.1", features = ["memory"] }
 ```
 
 The facade re-exports the full `grust-memory` crate surface when the feature is
