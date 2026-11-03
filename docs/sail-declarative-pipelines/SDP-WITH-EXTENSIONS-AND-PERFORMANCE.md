@@ -1,0 +1,90 @@
+# SDP with extensions and performance: a design and work plan
+
+A goal for after milestone 1 of Sail Declarative Pipelines: bring the earlier Sail work on **extensions** (the `sail-extensions` branch and its review request), on **performance** (the `agent/sail-performance-*` branches) and in the **Sail Rust Book** current with the SDP root, as a series of human-size, reviewable commits, each with its tests and its design explained in a self-contained way.
+
+Written 2026-11-02 against SDP root `f575ca5da`. The assessment this plan rests on is `EXTENSIONS-IMPACT.md` (same directory); this document is the plan, that one is the evidence. Nothing here starts before M1 closes.
+
+## 1. Where the three bodies of work stand
+
+| Work | What it is | Fork from the SDP line | State against the SDP root |
+|---|---|---|---|
+| Extensions | `sail-extensions` at `a20d660d9`, review request v1.0.0: native package bootstrap, SedonaDB scalar functions through DataFusion FFI, Nutmeg graph tables and driver-resident native kernels, a Connect relation extension, host-funded native memory, lifecycle coverage, the ABI experiments; harness and evidence on Morrobay under `src/sail-extensions-gates`. | `a85d912d7` (Iceberg v3 MOR, #2655); 31 commits of its own. | A dry merge onto the root conflicts in 23 files, all on the host seams the proposal calls its necessary contracts: the session manager, the Connect executor and session, the job scheduler, the codec, the resolver's expression path. The design holds; the lifecycle and distributed-execution evidence must be re-run. |
+| Performance | `agent/sail-performance-hot-paths` (22 commits, 2026-08-08) and its siblings: six hot sites with criterion benches (Iceberg metadata discovery, manifest parsing, delete index, snapshot lookup, single-statement SQL parsing, a Foyer object-store read cache). | August upstream (`3c000fd86`, `7da486db9`); two months before the SDP base. | Does not hold as code: upstream rewrote the Iceberg sites and the parser in September–October, independently of SDP; the Foyer cache layer never reached upstream and conflicts with SDP's reworked object-store layers; the benches are not on the root. No number was ever recorded. |
+| The book | The Sail Rust Book, 19 chapters, 55,500 words, 0.7.2 preparation edition; chapter 13 is the extension architecture. | Written against the pre-SDP tree. | Six chapters describe code SDP changed materially (3, 8, 10, 12, 13, 16, 17); ORC is absent; pipelines are mentioned once. |
+
+What SDP changed that all three depend on: the session lifecycle (states, one cleanup record, concurrent shutdown, tombstones), the Connect executor (typed events, heartbeats, closed-session responses), the driver's stop path and output forwarding, the physical-plan codec (new nodes), the resolver's request-local state and constant contexts, structured errors, the object-store layers (owned stores, multipart supervision), ORC, and the catalog seams (shared memory, HMS purge, `SHOW CREATE TABLE`).
+
+## 2. How the work is done
+
+Every unit below is one commit (or a short chain of commits that land together), sized for one reviewer in one sitting, and self-contained:
+
+- **A design note in the commit itself.** The message states what changes, why the old shape no longer fits, what alternative was rejected and why. Where the reasoning needs more than a message, the unit adds or updates a document under `docs/development/` (extensions) or this directory (SDP), and the message points to it. A reader with only the diff and the message must be able to judge the change.
+- **Tests before, during and after.** A unit that ports behaviour carries the test that pinned that behaviour before the port and shows it passing after. A unit that changes behaviour names the old behaviour's test and what it becomes. A performance unit carries its bench and the numbers from both sides, recorded in the repository.
+- **A gate line.** Each unit passes the SDP gate (native tests, the frozen 300 + 67, pipelines, Hive, second catalog, Delta) plus the suite of the area it touches (the extension workspaces' tests, the ABI harness, the benches), and the message records the line.
+- **Conflicts are resolved by the owner of the seam.** The SDP session layer is the authority for lifecycle; the extensions port onto it, not the other way around. The proposal's text is kept; its evidence section is replaced.
+- **One tree.** Work happens on a branch off the SDP root, merged forward in the order below; no unit lands that leaves the tree failing its gate.
+
+Sizes: S is under 200 changed lines, M under 800, L more. Units are ordered by dependency; units within a phase with no arrow between them can proceed in parallel.
+
+## 3. Phase A: the extensions, ported onto the SDP root
+
+Goal: the `sail-extensions` work builds, tests and gates on the SDP root with its contracts intact and its evidence re-established.
+
+| Unit | Scope | Design to explain | Tests and evidence | Size |
+|---|---|---|---|---|
+| A1 Build and manifests | `Cargo.toml`, `Cargo.lock`, the two crate manifests; the extension workspace members and FFI dependencies beside `sail-sdp-control`, `sail-iggy-bounded`, orc-rust and Turso. | Why each dependency is pinned as it is; no version of DataFusion/Arrow/PyO3 moves. | `--locked` build of every workspace member; the extension workspaces under `examples/extensions` build. | S |
+| A2 Session manager | `sail-session/src/session_manager/{actor/core,actor/handler,mod}.rs`, `session_factory/worker.rs`, `sail-common-datafusion/src/session/lifecycle.rs`: the extension loader's per-session state and the native admission domains re-homed onto SDP's lifecycle. | The per-session bound state becomes a resource released through the session's cleanup record (not on actor drop), so a session with native state cannot report a false clean deletion; admission domains follow the manager's Open/Closing states; the loader stays in the Python-capable layer. | SDP's `lifecycle_tests.rs` (30 cases) unchanged and passing; the extension's own session tests (`extensions/resource_tests.rs`, `graph_utils` tests) passing; a new test: deleting a session with a staged native graph releases its quota and reports the release in the cleanup outcome. | L; the heaviest unit, done first after A1 |
+| A3 Connect layer | `sail-spark-connect/src/{executor,session,session_manager,server,entrypoint,error}.rs`, `proto/plan.rs`, `service/plan_analyzer.rs`: relation-extension dispatch and interrupt coverage on top of SDP's typed events, heartbeats, closed-session responses and the query-function guard. | Where relation extensions sit relative to the pipeline commands in the dispatcher; why extension relations are rejected inside a pipeline query function (analysis is forbidden there) until a later unit admits them. | The extension's wire and conversion tests (`proto/extension/tests.rs`); SDP's `test_query_function_guard.py`; a new test: a relation extension inside `spark.sql()` in a query function is refused with `ATTEMPT_ANALYSIS_IN_PIPELINE_QUERY_FUNCTION`. | M |
+| A4 Driver and codec | `sail-execution/src/driver/job_scheduler/core.rs`, `job_graph/planner.rs`, `proto/codec.rs`: native-region placement and the bound-plan registry beside SDP's abandoned forwarders, canceled-job output and new nodes. | Native regions stay driver-resident; a stopping driver abandons their output like any job's; the codec gains the extension plans next to the ORC sink, fenced commit and cast-policy nodes with no overlap in tags. | Codec round-trip tests for every extension node; the local-cluster pipelines suite; the extension's two-host functional run. | M |
+| A5 Resolver and functions | `sail-plan/src/resolver/expression/mod.rs`, `sail-function/src/scalar/array/spark_array.rs`: extension scalar functions and geometry metadata through array construction, beside SDP's constant contexts and cast UDFs. | Extension functions resolve after SDP's constant-context check, so `SET CATALOG IDENTIFIER(...)` never sees them as foldable; geometry metadata propagation and SDP's TIME metadata use one field-metadata rule. | Sedona's 128-function registration test; SDP's constant-context and TIME tests; a new test: a geometry column and a TIME column survive one `array()` together. | M |
+| A6 Resource ownership | `TaskResourceScope` and the native quota lease: a native lease that outlives a task becomes a resource of that scope, drained at stop. | Why a quota lease is an effect in SDP's sense (it must be settled before cleanup), and what "drained" means for memory. | `monitor_resource_tests.rs` extended with a native lease; a stop during a native algorithm releases the quota. | M |
+| A7 Lifecycle evidence | Re-run the proposal's lifecycle matrix (interrupt, early termination, session deletion and expiry, graceful shutdown) on the merged tree. | Which expectations changed because SDP made a silent success an error (deletion with unconfirmed cleanup now fails; shutdown exits 1), and why that is right. | The matrix as a test file under `python/pysail/tests/spark/extensions/`, run in the gate; `design-review.md` §Evidence replaced with the new results. | M |
+| A8 ABI and Morrobay | Re-run `sail-extensions-gates` (`review-linux.sh`, `sail-abi-*.py`) on the merged tip; add that host revision to `hosts.json`. | No FFI boundary or engine version changed; the claim gains a host revision, not a new argument. | The harness logs and bundles committed to the gates store; `abi-review.md` updated with the row. | S |
+| A9 Pipelines and extensions together | Admit an extension relation as a pipeline dataset source (a Nutmeg graph table read by a materialized view). | Extension relations resolve through SDP's `GraphScope` and the request-local resolver state; a native region is a batch source, never a streaming one in this unit. | A pipeline test: a materialized view over `nm.tables(...).degrees()`; dry run, run, refresh. | M, optional for the goal |
+
+Order: A1 → A2 → A3 → A4 → A5 → A6 → A7 → A8; A9 last and optional. A7 and A8 are evidence units and may run in parallel once A6 lands.
+
+## 4. Phase B: performance, measured this time
+
+Goal: know which of the six hot-site gains still exist on the SDP root, keep the ones that do, and record numbers in the repository.
+
+| Unit | Scope | Design to explain | Tests and evidence | Size |
+|---|---|---|---|---|
+| B1 Benches on the root | Port the six criterion benches (`sail-iceberg/benches/{delete_index,manifest_parsing,metadata_discovery,metadata_updates}.rs`, `sail-object-store/benches/object_store_cache.rs`, `sail-sql-analyzer/benches/sql_frontend.rs`) to the root's types; add `docs/development/recipes/benchmark.md` and a `benches.md` that records numbers. | What each bench measures and why it is the hot site; the Iceberg benches are rewritten against the v3 MOR types. | The benches run; a first table of numbers on the root, with machine and commit. | M |
+| B2 Baseline on both tips | Run B1's benches on the performance branch's own tip (its own types) and on the root; publish both tables. | How the two are comparable (same inputs, same machine) and where they are not. | The two tables in `benches.md`. | S |
+| B3 SQL frontend | Re-apply "specialize single-statement parsing" to the post-#2786 parser if B2 shows the gap remains. | What the specialization was, why the parser cache's removal changes it. | The frontend bench before and after; the parser's own tests; the SDP pipeline-statement tests. | S |
+| B4 Iceberg discovery and manifests | Re-apply streamed discovery, newest-first snapshot search, direct deserialization and the reused Avro reader to the rewritten `sail-iceberg`, one commit each, each measured. | What upstream's rewrite already does and what it does not. | Each commit's bench numbers; Iceberg's own tests and the `iceberg_on_spark` AutoCDC step. | M each |
+| B5 Delete index | Shared descriptors and delete routing on the rewritten delete index. | Same. | The delete-index bench; Iceberg MOR tests. | M |
+| B6 Object-store read cache | Re-home the Foyer read-through layer beside SDP's owned-store and multipart layers, as an opt-in layer below them, with its consistency model (write invalidation, metadata TTL) restated for owned writes. | Why the cache sits below the owned layer (owned writes invalidate through it); interaction with SDP's listing cache (`execution.file_listing_cache`) and review item 12. | The cache bench; a new test that an owned multipart commit invalidates the cached object; the SDP ORC and Delta suites with the cache on. | L |
+| B7 Record | `docs/guide/performance/index.md` revised for the cache's new place; `benches.md` final tables. | One page a user can act on. | The numbers. | S |
+
+Order: B1 → B2, then B3, B4, B5 in any order, B6 after A1 (it shares the object-store layer with the extensions' memory work only through the build), B7 last.
+
+## 5. Phase C: the Sail Rust Book
+
+Goal: the book describes the merged tree. Each chapter revision is one commit in the book's source repository, with the build's version stamp carrying the Sail commit it describes.
+
+| Unit | Chapter | What changes | Size |
+|---|---|---|---|
+| C1 | 3 Spark Connect | The six pipeline commands and their event stream; typed command events and heartbeats; the closed-session response. | S |
+| C2 | 8 Drivers, workers, tasks, streams | Session states and the cleanup record; stop ordering and the two bounds; canceled-job output; the task resource scope and the settled-failure rule; the preparation lease. | M |
+| C3 | 10 Spec and plan resolver | Request-local resolver state, constant contexts, structured errors, the ANSI cast UDFs, TIME. | M |
+| C4 | 12 Catalogs, lakehouse, file formats | Shared memory catalogs, HMS purge, case-insensitive memory names, ORC reader and writer (new), the fenced Delta commit path. | M |
+| C5 | 13 Extension architecture | The extension loader and admission domains on the new session layer (after A2–A6 land). | M |
+| C6 | 16 Local and streaming execution | Bounded microbatches, `BoundedSource`, checkpoints, the Iggy source, AutoCDC and the control store. | M |
+| C7 | 17 Testing Spark compatibility | The frozen ports, Spark-first measurement, the gates, the whole-tree comparison, the oracle runs. | S |
+| C8 | new: Declarative Pipelines | From the SDP manual's chapters, condensed for the book's reader. | L |
+| C9 | 19 Roadmap and navigation | SDP delivered at M1; the extensions and performance goals as this plan. | S |
+
+Order: C8 can start as soon as the manual is final; C1–C4, C6, C7 after M1 closes; C5 after Phase A; C9 last.
+
+## 6. Acceptance for the goal
+
+- The extensions branch is merged onto the SDP line with every one of its tests and the SDP gate passing, the lifecycle matrix re-established, and the ABI harness carrying the merged host revision.
+- `benches.md` holds numbers for all six hot sites on the root, with each kept optimization measured against the root before it.
+- The book's six chapters and the new chapter are published with a version stamp naming the merged commit.
+- No decision in `SAIL-SDP-DESIGN-DECISIONS.md` is reversed by any unit without a new entry there.
+
+## 7. What this plan does not cover
+
+M2's own SDP items (the single AutoCDC run path, concurrent flows, state compaction, structured errors, the worker-stop connection lifetime) are in `DESIGN.md`'s review and stay there; where a unit above touches the same file, the SDP item lands first.
