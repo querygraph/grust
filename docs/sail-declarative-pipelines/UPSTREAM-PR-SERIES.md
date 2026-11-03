@@ -6,6 +6,7 @@ implement is recorded in [SAIL-SDP-DESIGN-DECISIONS.md](SAIL-SDP-DESIGN-DECISION
 (the record); each PR cites the sections of the record it implements, and the
 record's §0 is the cover letter for the whole series.
 
+- **Opened:** D1, the design record, as draft [lakehq/sail#2930](https://github.com/lakehq/sail/pull/2930) (2026-11-03, from `alexy/sail` branch `docs/sdp-design-record`, page `docs/development/pipelines/index.md`).
 - **Status:** plan, 2026-11-03, with the owner's eight decisions recorded in
   place (examples repository, `orc-rust` release first, Grust kernels as
   crates, the general track first, the record as a Sail docs PR, Iggy behind a
@@ -155,7 +156,7 @@ each track's last PR.
 
 | # | Title | Scope | With |
 | --- | --- | --- | --- |
-| D1 | `docs: the design record for declarative pipelines and native extensions` | the record (this document's companion) placed as `docs/development/pipelines/design-record.md`, with the links to the manual, report and book; owner decision (2026-11-03): the record lives in Sail as this docs PR, opened as a draft in week 1 so it is readable while the first code PRs are reviewed, and merged in the wake of the first S PR | week 1 as a draft; merged with the first S PR |
+| D1 | `docs: add the design record for declarative pipelines and native extensions` ([#2930](https://github.com/lakehq/sail/pull/2930), draft) | the record (this document's companion) placed as `docs/development/pipelines/index.md` (the development sidebar discovers directory index pages), with the links to the manual, report and book; owner decision (2026-11-03): the record lives in Sail as this docs PR, opened as a draft in week 1 so it is readable while the first code PRs are reviewed, and merged in the wake of the first S PR | week 1 as a draft; merged with the first S PR |
 | D2 | `docs: declarative pipelines user guide` | condensed from the manual's chapters: projects, datasets, SQL files, catalogs, streaming, AutoCDC, differences from Spark | S7 |
 | D3 | `docs: streaming sources and AutoCDC operator notes` | checkpoints, control store, one pipeline per plain target, recovery limits | C7 |
 | D4 | `docs: performance guide and bench record` | `docs/guide/performance/index.md`, `docs/development/benches.md` | P5 |
