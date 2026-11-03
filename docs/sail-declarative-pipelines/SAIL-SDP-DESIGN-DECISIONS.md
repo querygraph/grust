@@ -4,7 +4,7 @@ This is the consolidated record of every settled decision for Sail Declarative P
 
 - **Status:** current as of 2026-11-02.
 - **Product root:** `fb3a6ab03` on `work/spark-declarative-pipelines`, not pushed.
-- **Coordination log:** read through CF-0624.
+- **Coordination log:** read through CF-0641.
 - **Review:** DESIGN.md "Review at milestone 1" lists verified defects, proposed design changes and code improvements; none of them changes a decision above until it lands.
 
 Each entry names who decided it and where it is recorded:
@@ -55,6 +55,7 @@ These were made by the user directly. They take precedence over anything below.
 Items 16–20 were posted by the CDC lane in CF-0616.
 
 21. **Delta AutoCDC targets are policy** (2026-11-02). Sail accepts a Delta table as an AutoCDC target, as a deliberate extension beyond Spark, which refuses with AUTOCDC_TARGET_DOES_NOT_SUPPORT_MERGE. The Delta path is fenced by the control store.
+22. **The plain AutoCDC run path is Spark's own exposure** (2026-11-02). AutoCDC targets in Iceberg and Unity-managed Delta run without a lease or control-store slot; the catalog orders the commits. Two pipelines writing one such target would interleave, as they would on Spark. M1 documents one pipeline per target as the operator's responsibility; leasing plain targets and the single run path (review items 5 and 7's prerequisite) are M2 design.
 
 ## 2. Scope and architecture
 
