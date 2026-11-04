@@ -86,12 +86,15 @@ delegated to the driver in cluster mode, where it reaches each source through
 the task that runs its partition), that decides when a checkpoint starts (on a period, or once at the end for a
 bounded run) and tells every source to emit the checkpoint marker with the
 next id. An operator with state snapshots that state when the marker has
-arrived on all its inputs, then forwards the marker. A sink **commits** when the
-marker arrives: it makes the rows it received since the previous marker
-durable under the checkpoint id, records the id, and acknowledges. The
-coordinator records each source's position for that id. A restart resumes
-every source from the positions of the last acknowledged checkpoint, and a sink
-that sees an id it already committed skips it. This gives each row exactly one
+arrived on all its inputs, then forwards the marker. When the marker arrives at a sink, the coordinator first records each
+source's position for that id durably; only then does the sink **commit**:
+it makes the rows it received since the previous marker durable under the
+checkpoint id, records the id, and acknowledges. A restart resumes every
+source from the positions of the last checkpoint the sinks hold (the least
+committed id among several sinks), and a sink that sees an id it already
+committed skips it. The order is what makes each row count once: a commit
+before the positions were recorded would let a restart reissue the id at a
+different boundary and skip rows. This gives each row exactly one
 effect on the target. The alignment rule (wait for the marker on all inputs)
 is the only new protocol; it is the standard barrier scheme and needs no
 change to the marker format.

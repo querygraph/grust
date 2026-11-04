@@ -63,8 +63,9 @@ rows after the last checkpoint skips the id already committed.
 
 - `CheckpointedAppendSink`, an execution plan node that consumes flow
   events, buffers data rows (retractions are an error), and on `Checkpoint {
-  id }` writes the buffer through the target's write path with the tag, then
-  forwards the marker.
+  id }` waits for the coordinator to record the id's positions, then writes
+  the buffer through the target's write path with the tag and forwards the
+  marker. A restart resumes from the last id the table holds.
 - Two targets: a file table (stage into `<table>/_staging/<id>`, rename into
   place at commit; an existing directory means already committed) and Delta
   (the tag in the commit's user metadata; the sink reads the last tag at start).
@@ -72,9 +73,11 @@ rows after the last checkpoint skips the id already committed.
   checkpoint's commit but before the coordinator records it, restarts from
   the previous positions, and checks the target.
 
-**Test.** Rate source bounded after two checkpoints; the target holds the
-rows exactly once after a restart replayed the second checkpoint's rows;
-the tag of the last commit equals the last checkpoint id.
+**Test.** Two crash windows over a rate source bounded after two
+checkpoints: death after checkpoint N committed resumes from N and the table
+holds every row once; death after N's positions were recorded but before N
+committed resumes from N minus 1, reuses id N, and again holds every row
+once. The tag of the last commit equals the last checkpoint id.
 
 **Out of scope.** Iceberg, Hive, merges, retractions.
 

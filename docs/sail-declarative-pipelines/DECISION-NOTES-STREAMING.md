@@ -157,7 +157,14 @@ last checkpoint.
 2. A write-ahead log kept by the sink, applied to the target after the
    checkpoint.
 
-**Recommendation.** The tagged write. Delta and Iceberg commits carry
+**Recommendation.** The tagged write, with one ordering rule that the
+prototype showed to be necessary: a sink commits checkpoint N only after the
+coordinator has durably recorded N's positions, and a restart resumes from
+the positions of the last checkpoint the sinks hold, which with several
+sinks is the least last-committed id among them. Without the rule a sink
+that committed N before the positions were recorded would see a restarted
+run reissue id N at a different boundary, skip it as already committed, and
+lose the rows between the two boundaries. Delta and Iceberg commits carry
 metadata; a file table stages into a directory named by the checkpoint id
 and renames it at commit, and a directory already present means already
 committed. No log to maintain. For change capture the merge is two commits,

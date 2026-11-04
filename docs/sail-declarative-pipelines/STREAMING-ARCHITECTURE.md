@@ -54,9 +54,12 @@ in DECISION-NOTES-STREAMING.md.
    Each source emits the marker after its current rows.
 2. Each operator snapshots its state when the marker has arrived on all its
    inputs (barrier alignment), then forwards the marker.
-3. The sink commits its buffered rows tagged with the id and acknowledges.
-4. The coordinator asks each source for its position at the id and records
-   the set as the run's last checkpoint.
+3. The coordinator asks each source for its position at the id and records
+   the set durably as checkpoint N.
+4. Only then does each sink commit its buffered rows tagged with the id and
+   acknowledge. The order matters: a commit before the positions are
+   recorded would let a restart reissue the id at another boundary and lose
+   rows.
 
 A bounded run differs only at the start (`bound_now()` on every source) and
 at the end (the final checkpoint once every source reported end of data; the
@@ -81,8 +84,10 @@ waits out a dead owner's lease and takes over.
 
 ## Recovery
 
-On start, the pipeline layer reads the run's last recorded checkpoint. Each
-source is given its position; each stateful operator loads the manifest of
+On start, the pipeline layer reads the sinks' last committed ids and
+resumes from the least of them, N; the coordinator's record of N's positions
+exists, because positions are recorded before any sink commits. Each source
+is given its position at N; each stateful operator loads the manifest of
 that recorded checkpoint, never the newest one; each sink reads the target's
 last commit tag. Rows replayed between the recorded positions and the sinks'
 last tags are re-applied by operators and skipped by sinks whose tag already
@@ -98,8 +103,8 @@ only unit of durability.
 | --- | --- |
 | A source cannot reach its recorded position (retention gap, recreated partition) | The run fails at start with the partition named; nothing is written. |
 | A worker dies mid-checkpoint | The checkpoint is abandoned; the run restarts from the previous one. |
-| A sink commit fails after the target applied it | The next start reads the target's tag, sees the id, skips the replay. |
-| A sink commit fails before the target applied it | The replay commits it. |
+| A sink commits N, then the run dies | The restart resumes from N's recorded positions; the table holds N; nothing is replayed twice or lost. |
+| N's positions are recorded, then the run dies before the sink commits N | The restart resumes from N minus 1, reuses id N at its own boundary, and the table, which does not hold N, commits it; every row once. |
 | State segment missing | The run fails at start with the operator and id named; no partial state is used. |
 | Two runs on one unmanaged Delta change-capture target | The second waits out the first's lease if the first is dead and takes over; a commit from the older epoch is refused by the table. |
 | A crash between the auxiliary-table merge and the target merge | The checkpoint is not committed; the sealed rows are restored and both merges rerun; the auxiliary merge is idempotent by tag. |
