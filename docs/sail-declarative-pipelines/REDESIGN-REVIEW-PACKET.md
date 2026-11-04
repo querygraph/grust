@@ -5,7 +5,8 @@ Reading order, with what each document is for and what the reviewer decides.
 | Order | Document | What it is | Decide |
 | --- | --- | --- | --- |
 | 1 | REDESIGN-PLAN.md | The approach: decision notes and prototypes posted early, two independent tracks, schedule | Venue; which prototypes start first; whether to post the proposals as they are |
-| 2 | STREAMING-ON-STREAMSOURCE.md | The streaming proposal for the maintainers, under 2,000 words | Ready to post, or one more pass |
+| 2 | STREAMING-ON-STREAMSOURCE.md | The streaming-tables proposal for the maintainers, under 2,000 words | Ready to post, or one more pass |
+| 2a | CHANGE-CAPTURE-ON-STREAMSOURCE.md | The change-capture proposal, companion to 2, under 2,000 words | Ready to post, or one more pass; whether it goes as a second post in the same thread |
 | 3 | DECISION-NOTES-STREAMING.md | S1 to S10, one post each | Order and wording of the first four posts |
 | 4 | STREAMING-ARCHITECTURE.md | Components, data flow, recovery, failure cases, what is reused from the current code | Internal; whether the reuse table is right |
 | 5 | EXTENSIONS-ON-ARROW-C-ABI.md | The extensions proposal: Arrow-only C boundaries, decoupled from streaming | Ready to post, or one more pass |

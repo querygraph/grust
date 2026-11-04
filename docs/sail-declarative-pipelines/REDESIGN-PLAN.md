@@ -14,9 +14,10 @@ hundred lines that make the option concrete and testable, thrown away or kept
 as the maintainers say. Nothing is built for real until the notes it depends
 on are answered.
 
-Two tracks, kept independent: streaming (the proposal in
-STREAMING-ON-STREAMSOURCE.md) and extensions (EXTENSIONS-ON-ARROW-C-ABI.md).
-They share no decision and no prototype.
+Two tracks, kept independent: streaming (the proposals in
+STREAMING-ON-STREAMSOURCE.md and CHANGE-CAPTURE-ON-STREAMSOURCE.md) and
+extensions (EXTENSIONS-ON-ARROW-C-ABI.md). They share no decision and no
+prototype.
 
 ## Venue
 
