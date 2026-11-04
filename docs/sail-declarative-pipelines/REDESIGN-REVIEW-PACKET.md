@@ -11,6 +11,7 @@ Reading order, with what each document is for and what the reviewer decides.
 | 5 | EXTENSIONS-ON-ARROW-C-ABI.md | The extensions proposal: Arrow-only C boundaries, decoupled from streaming | Ready to post, or one more pass |
 | 6 | DECISION-NOTES-EXTENSIONS.md | E1 to E5 | Whether E1 (adopt Comet's boundary unchanged) is the opening post |
 | 7 | PROTOTYPE-SPECS.md | P1 to P6 with interfaces and the one test each | Which two to start on day 2 (plan says P1 and P5) |
+| 7a | PROTOTYPE-RESULTS-EXTENSIONS.md | What P5 showed, in the results format | Whether to run Comet's and Sedona's libraries through it yourself |
 | 8 | WRITING-RULES.md | The standard every outward document meets | Adopt |
 | 9 | SHEHAB.md | The maintainers' own agent rules, verbatim | Read once |
 
