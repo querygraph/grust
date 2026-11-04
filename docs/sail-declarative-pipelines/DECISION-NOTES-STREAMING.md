@@ -118,11 +118,16 @@ must survive a restart and be snapshotted at each checkpoint.
    that names the segments making up the current state.
 2. An embedded key-value store (a new dependency) with its own snapshots.
 
-**Recommendation.** The directory. Recovery is a manifest read followed by
-segment loads; no new dependency; the files are inspectable with any Arrow
-tool; segments older than the last checkpoint are deleted by the manifest
-writer. Compaction, when state grows, is a merge of segments into one, also
-written as a new segment.
+**Recommendation.** The directory, with one manifest per recorded
+checkpoint. Recovery reads the manifest of the checkpoint the run resumes
+from, never the newest, because an operator may have written state for a
+checkpoint the coordinator never recorded, and pairing that state with older
+positions would apply rows twice. Segments are deleted only after a later
+checkpoint is recorded. A snapshot is read back only under the column types
+it was written with. An operator whose state shrinks, as eviction makes it,
+rewrites its state as one compacted segment, since appending segments cannot
+express removal. No new dependency; the files are inspectable with any Arrow
+tool.
 
 **What settles it.** Your preference; P4 writes and recovers the store.
 
@@ -144,7 +149,10 @@ last checkpoint.
 **Recommendation.** The tagged write. Delta and Iceberg commits carry
 metadata; a file table stages into a directory named by the checkpoint id
 and renames it at commit, and a directory already present means already
-committed. No log to maintain.
+committed. No log to maintain. For change capture the merge is two commits,
+auxiliary table then target, as in Spark; both carry the tag, the checkpoint
+counts as committed only when both do, and the reduced rows are sealed before
+the first merge so that a retry reads the same winners.
 
 **What settles it.** P2 shows it on a file table and on Delta with a restart.
 
@@ -157,15 +165,21 @@ model has a watermark marker emitted by a source; nothing emits or consumes
 it today.
 
 **Options.**
-1. The source emits watermarks from the event-time column the user
-   declares, minus the user's delay; an operator drops a row whose event
-   time is below the watermark it has seen, and counts it.
+1. A watermark operator placed where the user declared it (it may follow
+   filters, projections and renames) emits the marker from the rows that
+   reach it, as the event time minus the user's delay, never moving back, in
+   whole milliseconds. A row is late only when every window it belongs to has
+   ended at or before the watermark. An operator with several inputs takes
+   the minimum of their watermarks, and the checkpoint records that combined
+   value only.
 2. The same, plus an allowed-lateness window during which a late row is
    still applied and a correction is emitted as a retraction plus a new row.
 
-**Recommendation.** Option 1 first. The retraction flag makes option 2
-natural later, since a corrected window result is exactly a retraction of the
-old result and an emission of the new one.
+**Recommendation.** Option 1 first. Spark applies the watermark of the
+previous microbatch to the next; here the marker advances as rows arrive, so
+a row arriving with the row that advanced the watermark can be late. That is
+a deliberate, observable difference, kept with its tests marked. The
+retraction flag makes option 2 natural later.
 
 **What settles it.** P4; your view on whether allowed lateness belongs in the
 first version.
@@ -233,3 +247,65 @@ on our branch for that reason and offered only when the floor fits.
 
 **What settles it.** Your preference on the feature, and on whether a lockfile
 move for the client is acceptable when the time comes.
+
+---
+
+## S11. Ordering, ties and deletes in change capture
+
+**Context.** Spark keeps no per-key operator state for change capture: each
+microbatch is reduced to one row per key, then merged into an auxiliary table
+of tombstones and into the target, whose metadata column holds each row's
+last upsert and delete sequences. Which of two rows with equal key and
+sequence wins within a microbatch is undefined in Spark.
+
+**Options.**
+1. Keep Spark's shape: reduce within one checkpoint interval only, no
+   cross-interval state in the operator, deletes carried with their
+   sequence, both merges tagged; fix the tie by source position.
+2. A key-latest operator that remembers every key and emits retractions.
+
+**Recommendation.** Option 1. Option 2 duplicates the target, grows without
+bound and must be recovered; it also cannot express the four tombstone rules,
+which need the delete and its sequence. The deterministic tie is a deliberate
+difference from Spark and is recorded as such.
+
+**What settles it.** Your preference; P4's companion test for change capture.
+
+---
+
+## S12. Key drift and full refresh
+
+**Context.** Spark records the key columns on the auxiliary table when it is
+created and refuses a later run whose keys differ; only a full refresh changes
+them. A full refresh replaces the target's schema and keys, empties the
+auxiliary table and reprocesses the source from its origin.
+
+**Recommendation.** Keep both. The merge sink reads the stored keys before its
+first commit. A full refresh discards positions and operator state, empties
+both tables, and asks each source whether it still holds its origin; a source
+that does not refuses the refresh rather than rebuild a target missing its
+oldest changes.
+
+**What settles it.** Your preference on whether the origin check belongs on
+the checkpointable-source interface.
+
+---
+
+## S13. What the lease guarantees, and for which targets
+
+**Context.** Two runs could write one change-capture target. A lease in the
+control store exists today for durable change-capture runs on Delta targets
+that no catalog manages; targets a catalog manages run without it.
+
+**Options.**
+1. Keep it: a commit carries the lease's epoch and the table refuses an
+   older epoch; a run that starts after a crash waits out the dead owner's
+   lease and takes over.
+2. A lock that makes the second run fail at start.
+
+**Recommendation.** Option 1, as today. The fence is what protects the target;
+a lock would not stop an owner paused past its lease from writing after a
+successor started.
+
+**What settles it.** Your preference, and whether catalog-managed targets
+should gain a fence later.

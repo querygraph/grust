@@ -64,12 +64,17 @@ compatibility requirement; the coordinator serves it because Sail's existing
 streaming queries, started through the Spark streaming API, are continuous
 already.
 
-An **AutoCDC flow** is a stream source of change rows, an operator that keeps
-the latest row per key by sequence number and emits the previous row as a
-retraction when a newer one arrives, and a sink that applies inserts and
-retractions to the target as merges. The retraction flag is the natural carrier
-for "this key's old version is gone", so the model expresses change capture
-without a separate changelog type.
+An **AutoCDC flow** is a stream source of change rows, each an upsert or a
+delete of one key ordered by a **sequence** value, an operator that reduces
+the rows of one checkpoint interval to one row per key, and a sink that
+merges those rows into the target. Ordering across intervals does not live in
+the operator: as in Spark, it lives in the target itself, in a metadata
+column that records per row the sequence of its last upsert and last delete,
+and in an **auxiliary table** beside the target that holds **tombstones**, the
+records that a key was deleted at a given sequence so that an older upsert
+arriving later does not bring it back. A delete is therefore a durable fact
+with its own sequence, not a retraction of an earlier row, and the model's
+retraction flag is not used for change capture.
 
 ## What has to exist
 
@@ -113,26 +118,60 @@ carries no broker dependency.
 event-time window and a key, holds partial results until the watermark passes
 the window's end, then emits the window's result and drops its state; late
 rows, with event time below the watermark at arrival, are dropped and counted.
-A **key-latest** operator keeps, per key, the row with the highest sequence
-value seen, emits a retraction of the previous row and the new row when a
-newer one arrives, and is what AutoCDC needs. A **deduplicate** operator keeps
-the set of keys seen within the watermark horizon and drops repeats. Each
-snapshots its state at checkpoints to the run's state store. The state store is
-a directory per run under the pipeline's checkpoint location, with one
-immutable segment per checkpoint and a manifest naming the segments that make
-up the current state, so recovery is a read of the manifest. Stream-to-stream
-joins are deliberately left out of the first version; they are the largest
-state machine and Spark's own semantics for them in pipelines are the least
-used.
+An **interval-reduce** operator, for change capture, keeps per key the row
+with the highest sequence seen since the last checkpoint marker, emits those
+winners and the deletes with their sequences at the marker, and then holds
+nothing: it never remembers a key across intervals, because the target does.
+Equal sequences are resolved by a stated rule, source position, so that a
+replay picks the same winner; Spark leaves the tie undefined, and this is
+recorded as a deliberate difference. A **deduplicate** operator keeps the set
+of keys seen within the watermark horizon and drops repeats. The windowed and
+deduplicate operators snapshot their state at checkpoints to the run's state
+store: a directory per run under the pipeline's checkpoint location, with one
+immutable segment per checkpoint per operator and one manifest per recorded
+checkpoint. Recovery reads the manifest of the checkpoint the run resumes
+from, never the newest one, since an operator may have written state for a
+checkpoint the coordinator never recorded; segments are deleted only after a
+later checkpoint is recorded; a snapshot is read back only under the column
+types it was written with; and an operator whose state shrinks rewrites it as
+one compacted segment. Stream-to-stream joins are deliberately left out of the
+first version; they are the largest state machine and Spark's own semantics
+for them in pipelines are the least used.
 
-**5. A merge sink for change capture.** A sink that collects inserts and
-retractions between checkpoints and, at the marker, applies them to the target
-as one merge: delete the retracted keys' rows, insert the new rows, in one
-transaction tagged with the checkpoint id. Targets without transactions (Hive
-file tables) are written by replacing the affected partitions, which is what
-Spark does for them too. Where two runs could write one target, a lease in a
-small control store prevents the second from committing; that store exists
-already for the batch kinds and is not changed here.
+**5. A merge sink for change capture.** A sink that takes the interval's
+reduced rows at the marker, seals them so that every retry reads the same
+winners, and applies them as Spark does: first a merge into the auxiliary
+table, which advances or removes tombstones, then a merge into the target,
+whose conditions compare each incoming sequence with the sequences in the
+metadata column. Both commits carry the checkpoint id, and the checkpoint
+counts as committed only when both tables carry it. The four tombstone rules
+Spark pins are kept: a delete older than the stored upsert leaves the row but
+records a tombstone; a delete that loses to an upsert in the same interval
+records none; an upsert at or above a tombstone's sequence removes it; an
+upsert below the stored sequence is ignored. The sink reads the key columns
+recorded on the auxiliary table before its first commit and refuses a run
+whose keys differ; only a full refresh changes them. A target without
+row-level operations, such as a Hive file table, is refused as Spark refuses
+it. Where two runs could write one target that no catalog manages, a lease in
+the existing control store fences them: a commit carries the lease's epoch
+and the table refuses an older epoch, and a run that starts after a crash
+waits out the dead owner's lease and takes over. Targets a catalog manages
+run without that fence, as recorded in the batch design.
+
+**Watermarks and full refresh, across the pieces.** A watermark is declared
+on a dataset and may follow filters, projections and renames, so it is a plan
+operator placed where the user declared it, emitting the watermark marker from
+the rows that reach it; it is not a source property. A row is late only when
+every window it belongs to has ended at or before the watermark, so a row
+behind the watermark still updates an open window. An operator with several
+inputs takes the minimum of their watermarks, never moving back, in whole
+milliseconds, and the checkpoint records that combined value only; after a
+restart each declared watermark counts again from the new run's rows. A full
+refresh of a change-capture flow discards positions and operator state,
+replaces the target's schema and keys, empties the auxiliary table, and
+reprocesses the source from its origin; a source that no longer holds its
+origin refuses the refresh rather than rebuild a target missing its oldest
+changes.
 
 ## What changes for the pipeline layer
 
@@ -165,12 +204,23 @@ Spark lets a stopped run leave a streaming table's last microbatch partly
 written and reconciles it from its own log on the next start. Here a
 checkpoint is the only unit of durability, so a stopped run leaves the target
 exactly at its last acknowledged checkpoint and nothing has to be reconciled.
-Spark evaluates stateful queries by difference between microbatches, which
-ties results to batch boundaries the user never chose. Here state lives in
-operators and advances continuously, so the same query over the same input
-produces the same final table regardless of where checkpoints fall. Spark
-sorts late rows by a per-batch watermark; here the watermark is a marker in
-the stream and a row is late or not by the same rule at every operator.
+Spark applies the watermark computed at the end of one microbatch to the
+next, so a row arriving in the same microbatch as the row that advanced the
+watermark is never late; here the marker advances as rows arrive, so such a
+row can be late. This difference is observable, several of the ported Spark
+tests assert the microbatch outcome, and it is kept as a deliberate
+difference with its tests marked. Spark leaves undefined which of two change
+rows with equal key and sequence wins within a microbatch; here the rule is
+stated and deterministic, so a replay cannot change the winner.
+
+**Recovery and re-reading.** A restart re-reads rows between the recorded
+positions and the sinks' committed tags. A re-read is not always identical to
+the first read: a broker may have dropped retained messages, a view may hold
+a non-deterministic expression. For change capture, therefore, the sealed
+reduced rows of each checkpoint are archived before the merges and restored
+on recovery, as the current runtime does; for streaming tables, a flow whose
+re-read is not guaranteed identical is refused at analysis with the reason
+named.
 
 ## What was verified, and how
 
