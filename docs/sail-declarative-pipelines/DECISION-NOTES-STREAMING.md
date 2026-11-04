@@ -65,8 +65,10 @@ rate source, which gains a counter as its position only to exercise the path.
 
 ## S3. When a checkpoint starts
 
-**Context.** A bounded run needs exactly one checkpoint at the end so the sink
-can commit and finish. A continuous run needs periodic checkpoints so that a
+**Context.** A bounded run (the only kind Spark's pipelines have: every
+streaming flow uses the available-now trigger) needs exactly one checkpoint
+at the end so the sink can commit and finish. A continuous run, which Sail's
+existing streaming queries already are, needs periodic checkpoints so that a
 restart loses little and sinks commit regularly.
 
 **Options.**
@@ -201,7 +203,11 @@ and finish, which is Spark's "available now" semantics.
 2. The coordinator stops the sources at a chosen time.
 
 **Recommendation.** Option 1; it is what the end-of-data marker was defined
-for, and a continuous run is the same plan with no end position.
+for (its documentation in `marker.rs` says the sink waits for the next
+checkpoint marker and then the job finishes), and a continuous run is the same
+plan with no end position. Spark 4.2.1 was checked at the source: the graph
+executor uses the available-now trigger for every streaming flow and the
+command protocol has no continuous mode.
 
 **What settles it.** P1 and P3 show it.
 

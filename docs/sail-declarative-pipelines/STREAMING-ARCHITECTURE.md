@@ -98,3 +98,26 @@ One coordinator per run, in-memory until the final design decides durability
 of positions (the prototype keeps them in memory; the real design writes them
 beside the state manifest). One alignment scheme. One state format. Each can
 be replaced behind its interface without touching the others.
+
+## What is reused from the current implementation
+
+Read from the current code by the person who built the change-capture
+runtime; line counts are of the files as they stand.
+
+| Carries over | Why |
+| --- | --- |
+| The flow binder and admission (which query shapes a streaming flow may contain, how its reads bind), about 1,450 lines | Works on the plan before any source model |
+| The watermark rule and the late-row rule, about 350 lines | Spark's rule; the value comes from the watermark marker instead of from the rows |
+| The stateful operators for deduplication, deduplication within the watermark, and join eviction, about 1,370 lines | Driven by a watermark value, whichever carries it; re-keyed by checkpoint id |
+| The change-capture definitions, name folding and their oracle, about 5,000 lines | Parse Spark's statements; no source model |
+| The merge paths for the four target kinds, about 1,100 lines | A lakehouse commit is bounded by nature; the unit becomes the checkpoint |
+| The control model's lease, fence, guard and reset rules, most of 4,200 lines | Keyed by a sequence number; the checkpoint id is that sequence |
+| The ported Spark 4.2.1 suites, 75 files | Assert table contents after a run; unchanged |
+
+| Replaced, not adapted | Why |
+| --- | --- |
+| The bounded-source contract, the Iggy bounded source, the Delta bounded reads | Positions, ranges, retention and incarnations become the checkpointable-source interface and offsets per checkpoint |
+| The per-batch intent and progress digests | The interval between two checkpoint markers replaces the batch |
+| The range plumbing in the append path and the batch half of the change-capture source | Plans one bounded scan per source per batch |
+| The batch loop of the change-capture run, its archive and replay by intent | Replay becomes resume from checkpoint positions |
+

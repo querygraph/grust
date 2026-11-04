@@ -53,9 +53,16 @@ sources hold at the moment the run starts and then finish; this is Spark's
 "available now" semantics. In the model this is exactly end of data: at run
 start the source fixes its end position, emits its rows up to that position,
 then the end-of-data marker, and the sink finishes after the next checkpoint.
-A **continuous run**, which Spark also offers, is the same plan without a fixed
-end position. Nothing in the pipeline layer needs to know which of the two it
-is running.
+This is not an addition to the model: its end-of-data marker is documented
+as "the stream will contain no more data events" with the sink waiting for
+the next checkpoint marker before the job finishes, which is a run that ends.
+Spark's pipelines have no other mode: every streaming flow in a run uses the
+available-now trigger and the run returns when its flows complete. A
+**continuous run**, the same plan with no fixed end position and periodic
+checkpoints, is therefore a Sail capability beyond Spark's pipelines, not a
+compatibility requirement; the coordinator serves it because Sail's existing
+streaming queries, started through the Spark streaming API, are continuous
+already.
 
 An **AutoCDC flow** is a stream source of change rows, an operator that keeps
 the latest row per key by sequence number and emits the previous row as a
@@ -164,6 +171,23 @@ operators and advances continuously, so the same query over the same input
 produces the same final table regardless of where checkpoints fall. Spark
 sorts late rows by a per-batch watermark; here the watermark is a marker in
 the stream and a row is late or not by the same rule at every operator.
+
+## What was verified, and how
+
+Against the Spark 4.2.1 source: the pipeline graph executor starts every
+streaming flow with the available-now trigger
+(`sql/pipelines/.../graph/TriggeredGraphExecution.scala`), and the pipeline
+command protocol offers a dry-run flag and refresh selections but no
+continuous mode (`spark/connect/pipelines.proto`); the installed client's
+`spark-pipelines run` has only refresh options. Against Sail's `main`: the
+four marker kinds and the end-of-data semantics are in
+`crates/sail-common-datafusion/src/streaming/event/marker.rs`, unchanged
+since the streaming events were introduced; no source emits checkpoint or
+watermark markers and the rewriter refuses windows, aggregates, joins and
+repartitions (`crates/sail-plan/src/streaming/rewriter.rs`). Both were read
+from source; nothing here was run. The uncertainty that remains is how the
+maintainers intend checkpoints to be coordinated, which is the first
+question below.
 
 ## Questions for the maintainers
 
