@@ -150,7 +150,11 @@ def main():
         assert not owners(), f'port {PORT} already has a listener; no process was stopped'
         run('environment', [PYTHON, '-c',
             "import json,sys,pyspark; assert pyspark.__version__=='4.2.1'; print(json.dumps({'python':sys.version,'executable':sys.executable,'pyspark':pyspark.__version__,'pyspark_file':pyspark.__file__}))"], BUILD_ENV)
-        run('build', ['cargo', '+1.98.1', 'build', '-p', 'sail-cli', '--locked'], BUILD_ENV, timeout=7200)
+        # The branch wheel keeps optional format features on (pyproject.toml); the
+        # frozen build must match it, or the ports that use those formats refuse.
+        features = os.environ.get('SAIL_FROZEN_CLI_FEATURES', '')
+        receipt['cli_features'] = features
+        run('build', ['cargo', '+1.98.1', 'build', '-p', 'sail-cli', '--locked'] + (['--features', features] if features else []), BUILD_ENV, timeout=7200)
         receipt['cli_path'] = str(CLI)
         receipt['cli_sha256'] = sha(CLI)
         receipt['cli_stat'] = {'size': CLI.stat().st_size, 'mtime_ns': CLI.stat().st_mtime_ns}

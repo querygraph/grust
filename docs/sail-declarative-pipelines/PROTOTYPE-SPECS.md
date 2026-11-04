@@ -164,14 +164,23 @@ discovery symbol and version probe, and its functions run from Spark SQL.
   kernel as a DataFusion scalar UDF that calls `init` for the return type and
   `execute` per batch, converting arrays through the Arrow C Data Interface;
   the library handle is kept alive for the process.
-- Comet's test UDF library (`comet-test-udfs`, built from Comet's source at a
-  pinned commit) as the fixture; then Sedona's spatial function library built
-  with the same header.
+- A Sail-owned fixture library, `sail-c-udf-fixture`, that fills the C
+  structs by hand with two kernels, `add_one_c` and `sub_c` (argument order
+  observable), so the boundary is exercised without building any external
+  code. Comet's own test library and Sedona's functions are the second step,
+  run by the owner, since building downloaded code is outside this session's
+  permissions.
+- Built on the integration branch, where the extension loader that will own
+  the second channel lives; the crate itself (`sail-c-udf`: the C layout, the
+  loader with the version probe, the kernel-as-scalar-function adapter) has
+  no dependency on anything the branch added and applies to upstream `main`
+  as is.
 
-**Test.** `SELECT add_one_c(1)` returns 2; `sub_c(5, 3)` returns 2 and `sub_c(3,
-5)` returns minus 2 (argument order); a panicking UDF fails the query without
-killing the server; a library with the wrong probe value is refused with the
-versions named.
+**Test.** Through DataFusion's frame API over a three-row batch: `add_one_c`
+gives 2, 6 and null; `sub_c(a, b)` and `sub_c(b, a)` give opposite signs; a
+kernel error (`sub_c` with one argument) names the function and the reason; a
+library without the version probe is refused by name. The panic-containment
+and Spark SQL cases follow once the loader hook is in.
 
 **Size.** About 400 lines plus the fixture build.
 
