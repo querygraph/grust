@@ -112,11 +112,17 @@ seen at start; a retention gap or a recreated partition fails the run.
 - Built on the integration branch, since the client's dependency floor is
   above upstream's lockfile (S10); offered only when the floor fits.
 
-**Test.** Against the pinned broker: produce 1,000 messages across three
-partitions, run bounded, assert the collector holds all 1,000 once; produce
-500 more, resume from the recorded positions, assert exactly 500 new; delete
-the first retained offsets below a recorded position and assert the run
-fails with the partition named.
+**Test.** Against the pinned broker, through the scan, the merge and the
+collector with the coordinator bounding and finishing the run: 1,000
+messages across three partitions are read once each and the recorded
+position is 333, 333 and 334; after 500 more, a resume reads exactly ids
+1,000 to 1,499; a resume from an offset that retention has removed fails
+naming the partition and the expected offset; a resume onto a deleted,
+recreated and refilled partition fails naming the partition and its
+incarnation. Every poll goes through the bounded reader's exact-range read,
+so the gap and incarnation checks run on every page. Not in P3: registering
+the source for the pipelines' `readStream.format("iggy")` path, which still
+builds the bounded source.
 
 **Size.** About 800 lines, most of it moved.
 

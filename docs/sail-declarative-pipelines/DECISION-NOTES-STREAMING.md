@@ -255,7 +255,10 @@ for (its documentation in `marker.rs` says the sink waits for the next
 checkpoint marker and then the job finishes), and a continuous run is the same
 plan with no end position. Spark 4.2.1 was checked at the source: the graph
 executor uses the available-now trigger for every streaming flow and the
-command protocol has no continuous mode.
+command protocol has no continuous mode. One rule from the prototype: the
+query's stream can end as soon as the final marker passes through it, before
+the coordinator has recorded that checkpoint's positions, so the run is
+finished when the coordinator says so, not when the query ends.
 
 **What settles it.** P1 and P3 show it.
 
