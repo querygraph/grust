@@ -39,6 +39,9 @@ Still open, by owner:
   proposed upstream; the frozen harness now builds with the branch's
   optional features.
 - Prototypes built so far, all local and unpushed: P1 (checkpoints end to
-  end) and P2 (append sink with tagged commits) by the second session, with
-  two findings already folded into S1 and S6; P5 (the Arrow-only scalar
+  end) and P2 (append sink with tagged commits, file table and Delta) by the
+  second session, with two findings already folded into S1 and S6. P2's
+  Delta half implements Delta's idempotent writes (`txnAppId`, `txnVersion`),
+  declared upstream but unsupported until now, verified on both engines; it
+  stands alone and is a candidate for a small general-track PR at your call; P5 (the Arrow-only scalar
   kernel loader with a Sail-owned fixture, three tests) by this session.

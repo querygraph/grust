@@ -164,10 +164,16 @@ the positions of the last checkpoint the sinks hold, which with several
 sinks is the least last-committed id among them. Without the rule a sink
 that committed N before the positions were recorded would see a restarted
 run reissue id N at a different boundary, skip it as already committed, and
-lose the rows between the two boundaries. Delta and Iceberg commits carry
-metadata; a file table stages into a directory named by the checkpoint id
-and renames it at commit, and a directory already present means already
-committed. No log to maintain. For change capture the merge is two commits,
+lose the rows between the two boundaries. For Delta the tag is Delta's own
+idempotent-write pair, `txnAppId` (the query id) and `txnVersion` (the
+checkpoint id): the commit carries a transaction action for the pair, and a
+write whose version is at or below the one the table records for that app
+id is skipped without writing, removing or committing anything, as Delta
+Lake defines it; the last committed id is the snapshot's transaction version
+for the query id. Iceberg commits carry the tag as metadata. A file table
+stages into a directory named by the checkpoint id and renames it at commit,
+and a directory already present means already committed. No log to maintain.
+For change capture the merge is two commits,
 auxiliary table then target, as in Spark; both carry the tag, the checkpoint
 counts as committed only when both do, and the reduced rows are sealed before
 the first merge so that a retry reads the same winners.

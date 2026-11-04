@@ -68,7 +68,11 @@ rows after the last checkpoint skips the id already committed.
   marker. A restart resumes from the last id the table holds.
 - Two targets: a file table (stage into `<table>/_staging/<id>`, rename into
   place at commit; an existing directory means already committed) and Delta
-  (the tag in the commit's user metadata; the sink reads the last tag at start).
+  through its idempotent writes (`txnAppId` = the query id, `txnVersion` =
+  the checkpoint id; a write at or below the recorded version is skipped
+  entirely; the last committed id is the snapshot's transaction version for
+  the app id). The Delta half stands alone outside streaming and is verified
+  against Spark 4.2.1 with Delta 4.4.1 (nine cases, both engines).
 - A recovery test harness that runs the query, kills it after the first
   checkpoint's commit but before the coordinator records it, restarts from
   the previous positions, and checks the target.
