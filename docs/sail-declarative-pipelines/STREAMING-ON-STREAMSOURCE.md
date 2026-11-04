@@ -1,213 +1,142 @@
-# Streaming tables on Sail's continuous streaming model
+# Streaming tables on Sail's flow event model
 
-A proposal for Sail's maintainers. Status: draft for discussion, 2026-11-04.
-Change capture, the second incremental dataset kind, has its own document,
-CHANGE-CAPTURE-ON-STREAMSOURCE.md, built on the pieces proposed here.
+Streaming tables let a pipeline append newly available rows without rebuilding
+the target from its entire source history. The intended guarantee is that a
+successful recovery neither loses nor duplicates those rows. This proposal
+uses Sail's existing streaming plans to provide that behavior.
 
-## What this is
+It does not propose a second streaming engine or full Structured Streaming
+operator coverage. Recovery scope and changes to existing marker contracts
+need agreement before production implementation.
 
-Spark Declarative Pipelines lets a user declare tables and views in Python or
-SQL and have the engine compute them in dependency order. One of its dataset
-kinds consumes data incrementally: a **streaming table** appends each new
-input row to a target table exactly once. Sail already runs the batch kinds of
-the same pipelines. This document proposes how streaming tables should run on
-Sail's existing continuous streaming model, which we call the flow-event model
-below, instead of on bounded microbatches.
+## Fit with Sail
 
-It is not a proposal to change the flow-event model's contracts. It adds a
-source, two operators, a sink and a coordinator that the model already leaves
-room for, and names the places where the model needs a decision that only its
-owners can make.
+Sail's `StreamSource` provides a streaming scan. Its output is a sequence of
+flow events: data batches or control markers carried in order with the data.
+A retraction flag identifies rows that cancel earlier rows. The existing
+markers describe latency, watermarks, checkpoints and end of data.
 
-## The model we build on
+The streaming rewriter already handles sources and several stateless
+operations. At the inspected upstream revision it refuses windows,
+aggregates, joins and repartitions. The proposed additions are checkpoint
+coordination, source participation, table sinks and selected stateful
+operators. The existing encoding remains the starting point, with any
+contract changes discussed explicitly. The
+[marker definitions](https://github.com/lakehq/sail/blob/62251e0a27bbab0a15547562e829cad2a418f353/crates/sail-common-datafusion/src/streaming/event/marker.rs)
+already describe waiting for a checkpoint after end of data.
 
-Sail's streaming model, in `crates/sail-common-datafusion/src/streaming`, has
-four parts that this proposal relies on.
+## Decide the recovery scope first
 
-A **stream source** is a table provider whose scan returns an unbounded
-execution plan. Its output rows are **flow events**: either a batch of data
-rows with a per-row **retraction flag** (a retracted row cancels an earlier row
-with the same values), or a **marker**. The four marker kinds are a latency
-tracker, a **watermark** (no later data row will carry an event time older than
-the watermark's timestamp), a **checkpoint** with a numeric id (every source
-emits it to start a new checkpoint), and **end of data** (the stream will carry
-no more data rows but stays open until the next checkpoint completes). Flow events are encoded into ordinary Arrow batches with two leading
-columns.
+A checkpoint identifies a cut through the source positions and operator
+state. A sink makes the corresponding output visible through a table commit.
+Recording positions before a commit is necessary, but does not alone make
+recovery safe when effects complete separately.
 
-A **rewriter** turns a batch logical plan into a streaming one: stream
-sources become their scans, batch inputs emit their rows and then end of
-data, projections, filters and limits become streaming variants, and a plan
-with no sink gets a **collector** that returns results once the input is
-bounded. Windows, aggregates, joins, sorts and repartitions are refused
-today. No source emits checkpoint or watermark markers yet, and nothing
-consumes them.
+Suppose two sinks have completed a checkpoint at source position 3. The next
+checkpoint records position 6, but only one sink commits. A restart at 3
+must not reuse that identifier for rows through position 10: the completed
+sink would skip rows 6 through 9. A new identifier would instead repeat rows
+3 through 5 in that sink.
 
-## A streaming table, restated in the model
+There are three useful initial scopes:
 
-A streaming table is a stream source (or several, through a union) followed by
-stateless operators, or by an event-time window aggregate, ending in a sink
-that appends to a table. A **run** of a pipeline must process everything the
-sources hold at the moment the run starts and then finish; this is Spark's
-"available now" semantics. In the model this is exactly end of data: at run
-start the source fixes its end position, emits its rows up to that position,
-then the end-of-data marker, and the sink finishes after the next checkpoint.
-The model already says this: its end-of-data marker is documented with the
-sink waiting for the next checkpoint before the job finishes. Spark's
-pipelines have no other mode. A **continuous run**, the same plan with no
-fixed end position and periodic checkpoints, is a Sail capability beyond
-Spark's pipelines, served because Sail's existing streaming queries are
-continuous already.
+- One append sink whose output fits one table transaction.
+- One flow that may have several effects, including change capture's two
+  table merges, with recovery tracking each effect.
+- Several independent sinks coordinated as one recoverable query.
 
-## What has to exist
+We recommend starting with one flow and deferring independent multi-sink
+queries. If change capture is included, its two effects still require a
+recovery protocol. Any prepared checkpoint must keep its boundary and
+required state while an effect can still depend on them. An identifier must
+not silently acquire different rows. Atomic visibility across tables is a
+separate guarantee and is not claimed here.
 
-Four pieces, in the order they can land and be tested alone.
+Would you include two-effect change capture initially, or start with one
+append transaction? The answer determines what the recovery experiment must
+prove before a sink can be offered for merge.
 
-**1. Checkpoint coordination.** A run owns a **checkpoint coordinator** that
-decides when a checkpoint starts (on a period, or once at the end for a
-bounded run) and tells every source to emit the checkpoint marker with the
-next id. It is held by the query's job runner: in process in local mode,
-where no driver exists; delegated to the driver in cluster mode, where a
-source's scan runs on a worker and the coordinator reaches it through the
-task that runs its partition. An operator with state snapshots it when the marker has arrived on all its
-inputs, then forwards the marker: the standard barrier scheme, with no change
-to the marker format. When the marker arrives at a
-sink, the coordinator first records each source's position for that id
-durably; only then does the sink **commit**: it makes the rows it received
-since the previous marker durable under the checkpoint id, records the id, and
-acknowledges. A restart resumes every source from the positions of the last
-checkpoint the sinks hold (the least committed id among several sinks), and a
-sink that sees an id it already committed skips it. The order makes each row count once: a commit before the positions were
-recorded would let a restart reissue the id at another boundary and skip
-rows. The run is
-finished when the coordinator says so, not when the query's stream ends,
-because the stream can end as soon as the final marker passes through it.
+## Coordination and bounded completion
 
-**2. A table append sink.** A sink that buffers data rows between checkpoints
-and, at the marker, writes them as one transactional append to the target
-table, tagged with the checkpoint id. On Delta the tag is Delta's own
-idempotent-write pair, an application id (the query) and a version (the
-checkpoint), so the table itself skips a version it already holds; Iceberg
-commits carry the tag as metadata; a file table stages into a directory named
-by the checkpoint id and renames it at commit. A retraction is an error,
-since a streaming table's input is append-only by Spark's definition.
+We propose that the job runner own checkpoint coordination. Local execution
+has no driver; distributed execution would delegate coordination to the
+driver and reach sources through their running tasks. A separate optional
+source capability would request markers, report positions and establish a
+bounded end. The exact interfaces depend on the recovery decision.
 
-**3. A message-broker source: Apache Iggy.** Iggy is a message broker with
-streams, topics and partitions; each message has a monotonically increasing
-offset within its partition. The source reads a topic as flow events: a batch
-of decoded messages per poll, the checkpoint marker when the coordinator asks
-for it, and end of data when a bounded run reaches the offsets observed at
-start. Its position for a checkpoint is, per partition, the next offset to
-read paired with the partition's **incarnation**, the identity the broker gives
-a partition when it is created, since a recreated partition reuses its id with
-offsets from zero. On every poll the source checks that the broker returned
-the offset it asked for, because the broker silently skips to the first
-retained offset otherwise; a gap or a changed incarnation fails the run with
-the partition named rather than silently skipping. Reads never acknowledge at
-the broker, so the coordinator owns the only record of progress. This source
-is the only one that needs the broker's client library; it lives in its own
-optional crate so that a default build of Sail carries no broker dependency.
+Operators with several inputs would align markers by holding each input at
+its barrier until the other inputs reach the same checkpoint. Requests must
+be serialized or queued so no input misses an identifier. Source end,
+physical stream closure and completed sink effects need distinct accounting.
+The run finishes only after the globally final checkpoint completes.
 
-**4. Two stateful operators and the watermark.** A watermark is declared on a
-dataset and may follow filters, projections and renames, so it is a plan
-operator placed where the user declared it, emitting the watermark marker
-from the rows that reach it; it is not a source property. Where several
-inputs merge, the merge forwards the minimum of their watermarks, never
-moving back, in whole milliseconds, once each input has sent one, letting an
-input that has ended stop holding the minimum back; a downstream operator
-sees one combined value, and the checkpoint records that value only. After a
-restart each declared watermark counts again from the new run's rows. A
-**windowed aggregate** groups rows by an event-time window and a key, holds
-partial results until the watermark passes the window's end, then emits the
-window's result and drops its state; a row is late, dropped and counted, only
-when every window it belongs to has ended at or before the watermark, so a row
-behind the watermark still updates an open window; a null event time belongs
-to no window. A **deduplicate** operator keeps the set of keys seen within the
-watermark horizon and drops repeats. Both snapshot their state at checkpoints
-to the run's state store: a directory per run under the pipeline's checkpoint
-location, with one immutable segment per checkpoint per operator, written
-before its manifest and each by rename, and one manifest per recorded
-checkpoint. Recovery reads the manifest of the checkpoint the run resumes
-from, never the newest one, since an operator may have written state for a
-checkpoint the coordinator never recorded; segments are deleted only after a
-later checkpoint is recorded; a snapshot is read back only under the column
-types it was written with; and an operator writes one compacted segment per
-checkpoint, since appending segments cannot express removal. Stream-to-stream joins are deliberately left out of the first version, as
-the largest state machine and the least used in pipelines.
+Spark 4.2.1 pipelines use available-now execution: each source captures a
+target offset and may process it over several batches. It does not imply one
+checkpoint or a single simultaneous snapshot across all sources. We propose
+allowing intermediate checkpoints plus a mandatory final checkpoint for
+bounded runs. A continuous run would have no bounded end and would extend
+Spark's pipeline execution modes. The
+[available-now source contract](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/catalyst/src/main/java/org/apache/spark/sql/connector/read/streaming/SupportsTriggerAvailableNow.java)
+states the offset and multiple-batch behavior.
 
-## What changes for the pipeline layer
+## Sinks, sources and state
 
-The pipeline layer, in `crates/sail-spark-connect/src/pipelines`, keeps its
-registration, analysis and scheduling as they are. For an incremental dataset
-it builds a streaming plan through the rewriter instead of looping over
-bounded batches, starts it as a streaming query under the session's existing
-streaming-query manager, and waits for the coordinator to finish the run
-(bounded) or leaves it running (continuous). The bounded-batch path and its
-source abstraction are removed, not kept beside the new one. A streaming
-table over an unsupported operator, or over a source whose re-read after a
-restart is not guaranteed identical, is refused at analysis with the reason
-named.
+For Delta, the proposed commit tag uses its application identifier and
+transaction version. The application identity must survive restarts and
+separate full refresh generations. The checkpoint identifier names one
+prepared boundary. Other formats need their own verified commit and retry
+contract; attaching metadata alone is not an implementation of idempotency.
+An append sink rejects retractions.
 
-## What this does not do
+Apache Iggy is a message broker that stores data in partitions. Its source
+would record each partition's next offset and incarnation,
+the identity that distinguishes a recreated partition. Reads and bound
+capture must reject retention gaps and incarnation changes before advancing
+progress. The client belongs in an optional crate. Upstream dependency
+compatibility is a separate admission decision.
 
-It does not change the flow-event encoding, the marker set or the rewriter's
-contract, add a second streaming engine or a scheduler, or claim parity with
-Spark's full Structured Streaming operator set: the two operators above are
-the ones Spark's pipeline tests exercise for streaming tables. It does not
-decide the checkpoint period for continuous runs.
+The initial state store candidate uses Arrow segments and manifests naming
+complete snapshots. Recovery must pair source positions with the correct
+operator state and configuration. State remains while any incomplete effect
+or recovery point requires it. Merely recording a newer position does not
+permit deleting older state. Publication durability, ownership and cleanup
+need a defined protocol before the local file experiment becomes production
+storage.
 
-## Where this is deliberately not Spark
+Checkpoint frequency trades replay size against commit and snapshot work.
+Periodic checkpoints alone do not bound memory. The prototype buffers append
+rows and rewrites complete window state; byte limits, backpressure or spill
+need an explicit resource decision. No performance envelope is established.
 
-Sail matches Spark's intended behavior and replaces Spark's inconsistencies
-with consistent behavior where correctness allows; it does not reproduce
-choices that exist only because of Spark's microbatch engine.
+## Watermarks and differences from Spark
 
-Spark lets a stopped run leave a streaming table's last microbatch partly
-written and reconciles it from its own log on the next start. Here a
-checkpoint is the only unit of durability, so a stopped run leaves the target
-exactly at its last acknowledged checkpoint and nothing has to be reconciled.
-Spark applies the watermark computed at the end of one microbatch to the
-next, so a row arriving in the same microbatch as the row that advanced the
-watermark is never late; here the marker advances as rows arrive, so such a
-row can be late. This difference is observable, several of the ported Spark
-tests assert the microbatch outcome, and it is kept as a deliberate
-difference with its tests marked.
+An event-time watermark lets an operator decide which old state it can
+discard. Spark derives progress from observed event times and a configured
+delay, and its late-row decisions depend on batch boundaries.
 
-## What was verified, and how
+Sail's current marker instead promises that older timestamped data will not
+follow. Placing an event-time operator after a projection and permitting late
+rows needs an agreed interpretation or amendment of that contract. We should
+settle it before adding window and deduplication operators. Immediate marker
+advancement could change which rows Spark accepts within one batch; that is
+an open behavior choice, not an established compatibility claim.
 
-Against the Spark 4.2.1 source: the pipeline graph executor starts every
-streaming flow with the available-now trigger
-(`sql/pipelines/.../graph/TriggeredGraphExecution.scala`), and the pipeline
-command protocol offers a dry-run flag and refresh selections but no
-continuous mode (`spark/connect/pipelines.proto`); the installed client's
-`spark-pipelines run` has only refresh options. Against Sail's `main`: the
-four marker kinds and the end-of-data semantics are in
-`crates/sail-common-datafusion/src/streaming/event/marker.rs`, unchanged
-since the streaming events were introduced; no source emits checkpoint or
-watermark markers and the rewriter refuses windows, aggregates, joins and
-repartitions (`crates/sail-plan/src/streaming/rewriter.rs`); local mode runs
-with no driver and cluster scans are rebuilt on workers. Prototypes of pieces
-1 to 4, on `main`, pass their tests; their results document says what each
-showed.
+Stream joins and broader stateful coverage remain outside the initial scope.
 
-## Questions for the maintainers
+## Evidence and the next decision
 
-1. Should the checkpoint coordinator be owned by the job runner, in process
-   locally and delegated to the driver in cluster mode, as proposed; or should
-   local mode gain a driver so that one placement serves both?
-2. Should a source's checkpoint position be part of the stream-source trait,
-   or a separate interface that only checkpointable sources implement, as
-   proposed, which keeps the rate and socket sources unchanged?
-3. Is a per-run state directory with immutable segments and a manifest per
-   checkpoint the state store you would accept, or do you have a preferred
-   store?
-4. The windowed aggregate drops late rows; Spark offers an allowed lateness.
-   Should the first version expose it?
+Local experiments exercise marker transport, controlled alignment, one file
+sink's restart, separate Delta write options, broker range checks and window
+restoration from recorded events. Those historical runs do not establish a
+complete recovery protocol. Source review identified untested completion,
+concurrent-request and bound-capture cases, plus a possible concurrent Delta
+creation issue.
 
-## How it would be built
+Spark 4.2.1 source and the pinned Sail revision were inspected for this
+proposal. No Spark, broker or Rust suites were rerun during its revision.
+Distributed coordination, durable recovery and planner integration remain
+unbuilt.
 
-In the order above, each piece with its own tests: the coordinator with the
-rate source (which gains checkpoint markers) and the collector; the append
-sink with a file table and Delta; the Iggy source against a pinned broker;
-the operators against recorded inputs with known outputs. Then the pipeline
-layer switches over and the ported Spark pipeline tests for streaming tables
-run again. Nothing is built for merge before this document is discussed.
+Please decide the initial recovery scope first. We would then use one small
+local experiment to distinguish the selected protocol's failure cases, and
+bring its evidence back before preparing an implementation for merge.

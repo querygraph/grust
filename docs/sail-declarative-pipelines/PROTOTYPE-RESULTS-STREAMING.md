@@ -1,139 +1,152 @@
-# What the streaming prototypes showed
+# What the streaming prototypes establish
 
-Four prototypes test the redesign of streaming on Sail's flow event model.
-A flow event is a batch of rows or a marker, a control signal that travels
-in order with the rows. Each prototype answers one question from the
-decision notes. All four are local builds, not pull requests.
+Four local prototypes exercise Sail's flow events, which carry data batches
+and ordered control markers. Their historical test results are preserved
+below. This revision inspected source and corrected the scope of the claims;
+it did not rerun the Rust, Spark or broker tests.
 
-## P1: checkpoints as markers
+P1, P2 and P4 are stacked at `4fad33ca5` over upstream `62251e0a2`. P3 is
+`ef5f848a7` on integration ancestry and is reviewed as its own commit. The
+original report was imported from document commit `32f858e8`. These branches
+remain local and unpushed.
 
-**Question.** A checkpoint is a consistent cut of a running query, so that
-a restart loses and repeats nothing. Can it travel as a marker through the
-existing plan, with no microbatch loop?
+## P1 Checkpoint markers and alignment
 
-**What it showed.** A coordinator gives each checkpoint an id, asks every
-source to emit a marker with it, and records each source's position. A
-position is where the source would resume. A new merge operator joins
-partitions into one stream and forwards a checkpoint marker once every
-input has sent it. A bounded query finishes when its sink sees the
-end-of-data marker followed by a checkpoint. The merge also forwards the
-least watermark of the inputs still running. A watermark is a marker
-saying no older row will follow.
+**Question.** Can a coordinator request checkpoint markers, collect source
+positions and finish a bounded query through the existing event model?
 
-| Test                                                 | Runs passed |
-| ---------------------------------------------------- | ----------- |
-| Two sources, unioned, filtered, merged and collected | 20 of 20    |
-| Marker order out of a four-partition merge           | 20 of 20    |
-| Watermark combination over three inputs              | 20 of 20    |
+**Historical result.** The test-driven, in-process coordinator records
+positions in memory. A merge aligns equal checkpoint identifiers across
+inputs. Controlled runs combine watermarks and finish after end of data and
+a checkpoint. The rate source's position is a row counter for exercising the
+protocol; it does not make time-dependent rate rows replayable.
 
-**What it changed.** Local mode has no driver, so the coordinator belongs
-to the component that runs the query.
+| Reported test | Historical passes |
+| --- | --- |
+| Two rate sources unioned, filtered, merged and collected | 20 of 20 |
+| Marker order from four partitions | 20 of 20 |
+| Watermark combination over three inputs | 20 of 20 |
 
-**What it leaves out.** Cluster mode and a durable coordinator record.
+**Decision evidence.** A coordinator can exercise these mechanisms in local
+mode without introducing a driver. Its production owner remains S1's choice.
 
-## P2: one table commit per checkpoint
+**Limits.** No durable coordinator, cluster transport or recovery test.
+Source review found that end and close can count the same input twice, and
+that overlapping checkpoint requests can strand different inputs at
+different barriers. The reported schedules do not exercise these cases.
+These findings remain unexecuted in this review.
 
-**Question.** Can a sink commit exactly once per checkpoint?
+## P2 Tagged append and separate Delta writes
 
-**What it showed.** Tagging each commit with its checkpoint id and
-skipping ids the table holds is not enough. If the sink commits checkpoint
-N and the query dies before N's positions are recorded, the restart
-resumes from the checkpoint before N. It then reaches a new boundary also
-numbered N, skips it, and loses the rows between the two boundaries. The
-fix has two parts. A sink commits N only after N's positions are recorded.
-A restart resumes from the last checkpoint the table holds, and with
-several sinks, from the least of those.
+**Question.** Can an append sink recover both sides of a commit crash window?
 
-For Delta tables the tag is Delta's idempotent write, the txnAppId and
-txnVersion options, which Sail declared but did not support. A write whose
-version is at or below the one recorded for its application id is skipped
-in every save mode, committing nothing.
+**Historical result.** A replayable test source feeds one file-table sink.
+Positions are recorded before the sink commits. The harness simulates a
+crash by aborting the reader task and retaining positions in memory. An
+interruption after commit resumes from that checkpoint; one before commit
+replays from the previous one.
+The harness can reuse an uncommitted identifier at a new boundary only
+because its sole sink has not committed it.
 
-| Test                                           | Passed   |
-| ---------------------------------------------- | -------- |
-| Death after a commit, restart: every row once  | 20 of 20 |
-| Death before a commit, restart: every row once | 20 of 20 |
-| Idempotent write cases on Sail                 | 9 of 9   |
-| The same cases on Spark 4.2.1 with Delta 4.4.1 | 9 of 9   |
+A separate Delta prototype implements the application identifier and
+transaction version options for idempotent writes. Its tests exercise those
+options directly; they are not an integrated Delta streaming-restart test.
 
-**What it changed.** The decision on how a sink commits states the
-ordering rule and covers both crash windows. The idempotent write is a
-candidate for a small pull request on its own.
+| Reported test | Historical passes |
+| --- | --- |
+| File sink simulated crash after commit | 20 of 20 |
+| File sink simulated crash before commit | 20 of 20 |
+| Delta idempotent-write cases on Sail | 9 of 9 |
+| Same cases on Spark 4.2.1 with Delta 4.4.1 | 9 of 9 |
 
-**What it leaves out.** Retractions and other table formats.
+**Decision evidence.** Recording positions before a commit is necessary.
+It is not sufficient for several sinks or the two change-capture effects.
+Reusing an identifier at a different boundary can skip rows in an already
+committed sink. S6 now asks which recovery scope to support.
 
-## P3: Apache Iggy as a stream source
+**Limits.** No integrated Delta checkpoint sink, multiple-sink crash test,
+change-capture merge, retractions or other table formats. A source-path
+inference identifies a possible duplicate write when two plans see an absent
+Delta table and use the same transaction identity. Reproduce that path before
+extracting a standalone implementation PR.
 
-**Question.** Apache Iggy is a message broker. A poll past retained data
-silently skips ahead, and a recreated partition reuses its id with offsets
-restarting at zero. Can the existing bounded Iggy adapter become a
-checkpointed stream source and still fail closed on both?
+## P3 Iggy positions and exact-range reads
 
-**What it showed.** Every page is read through the adapter's exact-range
-reader, so every reply is checked for the offset asked for and for the
-partition's incarnation, the broker's count of recreations. A position is
-the next offset and incarnation of each partition.
+**Question.** Can an Iggy source resume while detecting retained-data gaps
+and partition recreation?
 
-| Test against the pinned broker                           | Passed   |
-| -------------------------------------------------------- | -------- |
-| A bounded run reads each message once                    | yes      |
-| A resume reads each new message once                     | yes      |
-| A resume below retained data fails, naming the partition | yes      |
-| A resume onto a recreated partition fails, naming it     | yes      |
-| All four, repeated on idle cores                         | 20 of 20 |
-| All four, repeated with every core saturated             | 15 of 15 |
+**Historical result.** Reads use the bounded adapter's exact-range reader.
+Positions contain the next offset and partition incarnation. The reported
+cases detect a resume below retention and recreation before scanning.
 
-In one run, retention overtook a resume and the gap appeared mid-run. The
-check caught it there, which is why it runs on every poll. A query can
-also end before the coordinator records the final checkpoint.
+| Reported broker test | Historical result |
+| --- | --- |
+| Bounded run reads each message once | Pass |
+| Resume reads each new message once | Pass |
+| Resume below retained data fails | Pass |
+| Resume onto a recreated partition fails | Pass |
+| These cases repeated on idle cores | 20 of 20 |
+| These cases repeated with all cores saturated | 15 of 15 |
 
-**What it changed.** A bounded run is finished when the coordinator says
-so, not when the query's stream ends.
+The original report also records retention overtaking a resume during a run,
+which the exact-range check caught. It records that stream termination can
+precede coordinator completion.
 
-**What it leaves out.** Wiring into the pipelines' Iggy format, and
-upstream's lockfile, which is below the client's dependency floor.
+**Decision evidence.** Source completion and durable run completion need
+separate accounting. Incarnation belongs in every recoverable position.
 
-## P4: windowed state in files
+**Limits.** Source review found a gap when a partition is recreated between
+scan and bounding: end-of-data can precede the incarnation check. Bound
+capture racing ongoing consumption also needs a controlled test. These cases
+were not rerun. Planner registration and upstream dependency alignment remain
+outside the prototype.
 
-**Question.** Can a stateful operator keep state across checkpoints in
-plain files and recover it exactly?
+## P4 Recorded window state and interval reduction
 
-**What it showed.** A tumbling window aggregate counts and sums per window
-and key. A row whose window ended at or before the watermark is dropped
-and counted as late. A watermark closes the windows it passed and emits
-their results. At each checkpoint the operator writes its open windows,
-watermark and late count as one Arrow file, a segment, plus a manifest
-naming it, each by rename, manifest last. A restart reads the recorded
-checkpoint's manifest and refuses a segment under other column types. A
-companion function reduces one interval of change rows to the latest per
-key, giving ties to the later row and keeping deletes with their sequence
-value.
+**Question.** Can a window operator snapshot and restore state for a recorded
+event sequence?
 
-| Test                                                    | Runs passed |
-| ------------------------------------------------------- | ----------- |
-| Windows and late count over a recorded input            | 20 of 20    |
-| Restart reproduces the remaining output and final state | 20 of 20    |
-| A snapshot under another key type is refused            | 20 of 20    |
-| Interval reduce with a tie and a delete                 | 20 of 20    |
+**Historical result.** A tumbling window counts and sums per key. Recorded
+watermark markers close windows and determine the late-row count. Each
+checkpoint writes the full open state as an Arrow segment and then its
+manifest, using rename. Recovery reads the requested checkpoint and refuses
+incompatible column types. A separate function reduces an already collected
+batch of change rows, resolving ties by its row order and retaining deletes
+with sequence values.
 
-Disabling the restore fails the restart and refusal tests.
+| Reported test | Historical passes |
+| --- | --- |
+| Windows and late count on recorded input | 20 of 20 |
+| Restart reproduces remaining output and final state | 20 of 20 |
+| Snapshot under another key type is refused | 20 of 20 |
+| Interval reduction with a tie and a delete | 20 of 20 |
 
-**What it changed.** The decision on the state store states the rename
-order, and that rewriting a replayed checkpoint is safe only because a
-restart never passes the recorded checkpoint.
+The original report states that disabling restore fails the restart and
+schema-refusal tests. That control was not rerun here.
 
-**What it leaves out.** The watermark operator, sliding windows, allowed
-lateness, joins and removal of old segments.
+**Decision evidence.** File snapshots support recovery for that fixed merged
+event order. They do not prove recovery under another source interleaving.
+The tie test proves recorded row order, not a total source-position order.
 
-## What the four establish
+**Limits.** No watermark generator, integrated change-capture operator,
+sliding windows, joins or executed state reclamation. The proposed cleanup
+rule must retain state needed by incomplete effects. Rename alone does not
+establish power-loss durability. Full snapshots, high-cardinality state and
+whole-batch reduction have no measured memory or throughput envelope.
 
-The flow event model carries the whole exactly-once path without a
-microbatch loop. Sources emit markers on request, a merge aligns them,
-sinks commit once per checkpoint under an ordering rule, and stateful
-operators recover from files. Each piece fails closed where data would
-otherwise be lost or repeated.
+## What the set establishes
 
-They do not establish cluster execution, a durable coordinator, speed, or
-the planner changes that would place these operators in a user's query.
-Change capture has its reduction and its tagged Delta write, but not the
-two merges per interval that Spark performs.
+The prototypes provide evidence for in-process marker transport, controlled
+alignment, single-file-sink recovery, separate Delta transaction options,
+Iggy range validation and recorded-state restoration. They give maintainers
+concrete mechanisms to discuss.
+
+They do not establish a complete exactly-once protocol. Prepared boundaries,
+partial effects, stable recovery identity, durable publication, replay
+ordering and reclamation must be settled together. Neither production
+planner wiring nor the Spark end-to-end replacement exists. Historical pass
+counts do not close the source-review findings in ASTRA-REDESIGN-1.
+
+The next deliverable is the discussion packet. Any further experiment should
+answer one of its open decisions rather than expand the production design
+without a maintainer answer.

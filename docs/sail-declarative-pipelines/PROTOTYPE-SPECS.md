@@ -1,10 +1,15 @@
 # Prototype specifications
 
-Six prototypes, each with one test file that is its whole claim; all but P3
-are branches from upstream `main` on the fork (P3 builds on the integration
-branch, see its note). They exist to make a decision concrete for
-the maintainers, not to be merged; what survives is rewritten with their
-answers. Sizes are estimates of what each adds.
+Internal specifications and evidence boundaries. P1, P2 and P4 exist as a
+stack at `4fad33ca5` over upstream `62251e0a2`; P3 is `ef5f848a7` on the
+integration branch. P5's separate report describes an integration-branch
+fixture. P6 remains proposed. The extension specifications below are retained
+as background and were not reviewed by this streaming revision.
+
+Each experiment supports a decision, not an automatic production plan.
+PROTOTYPE-RESULTS-STREAMING.md preserves historical counts and open findings.
+The scopes below do not establish complete recovery, and no tests were rerun
+for this document correction. Sizes are original estimates, not measurements.
 
 Terms: see DECISION-NOTES-STREAMING.md and DECISION-NOTES-EXTENSIONS.md.
 Interfaces below are sketches in Rust; names are proposals.
@@ -15,9 +20,10 @@ Interfaces below are sketches in Rust; names are proposals.
 
 **Claim.** A bounded streaming query over two rate sources, unioned, filtered
 and collected, checkpoints once at the end and finishes, with an in-process
-coordinator assigning the id and collecting one position per source (S1:
-owned by the job runner; the cluster implementation, which reaches a source
-through its task, is a later prototype).
+coordinator assigning the id and collecting one position per source. S1
+proposes job-runner ownership; the prototype is test-driven. Cluster
+coordination remains outside this experiment and depends on the selected
+scope.
 
 **Components.**
 
@@ -36,7 +42,7 @@ through its task, is a later prototype).
   }
   ```
   A stream source exposes it through `fn as_checkpointable(&self) -> Option<&dyn CheckpointableSource> { None }` on the stream-source trait, the only change to that trait.
-- `CheckpointCoordinator` in `sail-common-datafusion`, owned by the query: holds the run's sources, issues ids, waits for every source's `request_checkpoint`, stores positions in memory for the prototype, and issues the final checkpoint when every source has reported end of data. Driven by the test in the prototype; the local job runner would own it.
+- `CheckpointCoordinator` in `sail-common-datafusion`, owned by the query: holds the run's sources, issues ids, waits for every source's `request_checkpoint`, stores positions in memory for the prototype, and issues the final checkpoint when every source has reported end of data. Driven by the test in the prototype; job-runner ownership is proposed only if the selected recovery domain fits one job.
 - The rate source implements the interface: its position is the number of rows emitted per partition; `bound_now` makes it stop after the rows already scheduled.
 - The collector finishes when it has seen end of data on its input and then the next checkpoint marker, instead of when the input closes.
 - Alignment happens where partitions merge (a union never interleaves partitions): the merge holds a partition after its marker until every partition's marker with the same id has arrived, then forwards one marker. The same merge combines watermarks as the minimum over running inputs (S7), tested with a fixed interleaving of three inputs where an ended input and a closed input each raise the minimum.
@@ -47,7 +53,13 @@ issued; two positions recorded; the collector returns exactly the rows the
 sources emitted before their end positions; the union forwarded one marker per
 id; the query finished without a stop request.
 
-**Out of scope.** Durable positions, restart, watermarks, state.
+**Out of scope.** Durable positions, restart, watermark generation, state,
+and cluster coordination. Recorded watermark combination is included.
+
+**Review gap.** Test staggered end-of-data and closure separately, and
+concurrent checkpoint requests. The current merge can count an ended input
+again when it closes; a latest-value request channel can skip an identifier.
+These source-review findings are not reproduced execution results.
 
 **Size.** About 600 lines.
 
@@ -55,9 +67,10 @@ id; the query finished without a stop request.
 
 ## P2. A table append sink with per-checkpoint commits (S6)
 
-**Claim.** Rows received between checkpoints are committed as one
-transactional append tagged with the checkpoint id, and a restart that replays
-rows after the last checkpoint skips the id already committed.
+**Claim under test.** One file-table sink can recover both sides of its
+commit boundary with a replayable test source. Separate Delta tests exercise
+idempotent-write options. There is no integrated Delta streaming-restart
+claim.
 
 **Components.**
 
@@ -66,24 +79,31 @@ rows after the last checkpoint skips the id already committed.
   id }` waits for the coordinator to record the id's positions, then writes
   the buffer through the target's write path with the tag and forwards the
   marker. A restart resumes from the last id the table holds.
-- Two targets: a file table (stage into `<table>/_staging/<id>`, rename into
-  place at commit; an existing directory means already committed) and Delta
-  through its idempotent writes (`txnAppId` = the query id, `txnVersion` =
+- A file target plus a separate Delta write-option experiment: the file table
+  stages into `<table>/_staging/<id>`, then renames into
+  place at commit; an existing directory means already committed. Delta is
+  exercised separately through its idempotent writes (`txnAppId` = the query id, `txnVersion` =
   the checkpoint id; a write at or below the recorded version is skipped
   entirely; the last committed id is the snapshot's transaction version for
-  the app id). The Delta half stands alone outside streaming and is verified
-  against Spark 4.2.1 with Delta 4.4.1 (nine cases, both engines).
-- A recovery test harness that runs the query, kills it after the first
-  checkpoint's commit but before the coordinator records it, restarts from
-  the previous positions, and checks the target.
+  the app id). The Delta half stands alone outside streaming; its historical report lists
+  nine cases on each engine, Spark 4.2.1 with Delta 4.4.1 and Sail.
+- A recovery harness with a replayable integer-row test source, distinct
+  from the rate source. It records positions before permitting a file-table
+  commit, then interrupts either before or after that commit.
 
-**Test.** Two crash windows over a rate source bounded after two
-checkpoints: death after checkpoint N committed resumes from N and the table
-holds every row once; death after N's positions were recorded but before N
-committed resumes from N minus 1, reuses id N, and again holds every row
-once. The tag of the last commit equals the last checkpoint id.
+**Test.** Two simulated crash windows over the replayable fixture: interruption
+after checkpoint N commits resumes from N; interruption after N's positions are recorded
+but before its commit resumes from N minus 1 and reuses N at another boundary.
+Both checks expect every row once in the sole target. That identifier reuse
+is not safe when another sink already committed N.
 
-**Out of scope.** Iceberg, Hive, merges, retractions.
+**Review gap.** S6 must choose the recovery domain. A small transition model
+can illustrate partial-commit loss, duplication and fixed-boundary replay;
+it cannot substitute for a future two-effect execution test. The Delta
+concurrent-creation inference also needs a separate reproduction before a PR.
+
+**Out of scope.** Multiple sinks, integrated Delta streaming recovery,
+Iceberg, Hive, merges, retractions and durable coordinator storage.
 
 **Size.** About 500 lines plus the harness.
 
@@ -91,8 +111,9 @@ once. The tag of the last commit equals the last checkpoint id.
 
 ## P3. Apache Iggy as a stream source (S10, S2)
 
-**Claim.** A topic is read as flow events; a bounded run ends at the offsets
-seen at start; a retention gap or a recreated partition fails the run.
+**Intended claim.** A topic is read as flow events, a bounded run stops at
+captured source offsets, and retention gaps or changed incarnations fail.
+The existing tests cover specific resume cases, not every bounding race.
 
 **Components.**
 
@@ -100,8 +121,8 @@ seen at start; a retention gap or a recreated partition fails the run.
   `CheckpointableSource`, reusing the broker client wrapper, the message
   decoding and the schema validation already written for the bounded source.
 - Markers: a checkpoint marker on request and end of data on reaching the
-  start-time offsets. The watermark is not the source's: it comes from the
-  watermark operator placed where the user declared it (S7).
+  start-time offsets. P3 emits no watermark. An event-time operator and its
+  marker obligations remain S7's proposed choice.
 - Positions: one offset per partition, the next offset to read (half-open,
   as the bounded source has it), paired with the partition's incarnation,
   since the broker reuses a partition's id on recreation and restarts its
@@ -123,6 +144,12 @@ incarnation. Every poll goes through the bounded reader's exact-range read,
 so the gap and incarnation checks run on every page. Not in P3: registering
 the source for the pipelines' `readStream.format("iggy")` path, which still
 builds the bounded source.
+
+**Review gap.** Recreate a partition after scan but before bounding, with
+an empty replacement. Check that incarnation validation happens before an
+end marker. Also test capture of one partition's bound while another metadata
+request is delayed and readers continue consuming. Existing tests do not
+establish either interleaving.
 
 **Size.** About 800 lines, most of it moved.
 
@@ -147,24 +174,34 @@ state to a segment at each checkpoint, and recovers from the manifest.
   recovery loads the manifest of the recorded checkpoint, and a snapshot is
   refused under column types other than those it was written with.
 - A companion test for change capture: an interval-reduce over recorded
-  change rows with equal-sequence ties, asserting the source-position tie rule
-  and that deletes keep their sequence.
+  change rows with equal-sequence ties, asserting the recorded row-order rule
+  and that deletes keep their sequence. This is a whole-batch function, not
+  a demonstrated streaming interval accumulator.
 - A recorded input: a file of flow events (rows with event times, interleaved
   watermark and checkpoint markers) and the expected output.
 
 **Test.** The recorded input yields the expected windows and late count,
 including both boundaries (a row at a window's end opens the next window; a
-watermark equal to a window's end closes it); a null event time belongs to
-no window and is dropped uncounted, as Spark's window drops it; a restart
+watermark equal to a window's end closes it); a restart
 from the second checkpoint's manifest, replaying the events after it,
 reproduces the first run's remaining windows, late count and third-checkpoint
 state; a snapshot under a different key type is refused; the interval
-reduce resolves a tie to the later source row and lets a delete beat a
+reduce resolves a tie to the later recorded row and lets a delete beat a
 later, older-sequence upsert. Not in P4: the watermark operator itself (the
 recorded input carries the markers) and the minimum across inputs at the
 merge.
 
-**Out of scope.** Sliding windows, allowed lateness, joins.
+**Out of scope.** Sliding windows, joins, a live watermark generator,
+replay under another source interleaving, safe cleanup and power-loss
+publication guarantees.
+
+**Review gap.** The implementation skips null event times without counting
+them, but the recorded fixture does not test that case. S5 must retain state
+needed by incomplete sink effects.
+S7 must settle the existing marker contract before implementing late-data
+semantics. The recorded input does not prove equivalence to Spark's batch
+watermark behavior. Snapshot cost and memory under stalled watermarks remain
+unmeasured.
 
 **Size.** About 900 lines.
 

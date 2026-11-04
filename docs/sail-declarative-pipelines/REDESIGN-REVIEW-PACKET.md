@@ -1,60 +1,92 @@
-# Review packet for 2026-11-05
+# Streaming redesign discussion packet
 
-Reading order, with what each document is for and what the reviewer decides.
+Internal packet for owner review after ASTRA-REDESIGN-1. The immediate
+question is whether the exact discussion text below gives maintainers enough
+context to choose the initial recovery scope. This is a documentation
+candidate, not approval of the prototype code or its replacement runtime.
 
-| Order | Document | What it is | Decide |
+## Read first and decide
+
+| Order | Document | Purpose | Owner decision |
 | --- | --- | --- | --- |
-| 1 | REDESIGN-PLAN.md | The approach: decision notes and prototypes posted early, two independent tracks, schedule | Venue; which prototypes start first; whether to post the proposals as they are |
-| 2 | STREAMING-ON-STREAMSOURCE.md | The streaming-tables proposal for the maintainers, under 2,000 words | Ready to post, or one more pass |
-| 2a | CHANGE-CAPTURE-ON-STREAMSOURCE.md | The change-capture proposal, companion to 2, under 2,000 words | Ready to post, or one more pass; whether it goes as a second post in the same thread |
-| 3 | DECISION-NOTES-STREAMING.md | S1 to S10, one post each | Order and wording of the first four posts |
-| 4 | STREAMING-ARCHITECTURE.md | Components, data flow, recovery, failure cases, what is reused from the current code | Internal; whether the reuse table is right |
-| 5 | EXTENSIONS-ON-ARROW-C-ABI.md | The extensions proposal: Arrow-only C boundaries, decoupled from streaming | Ready to post, or one more pass |
-| 6 | DECISION-NOTES-EXTENSIONS.md | E1 to E5 | Whether E1 (adopt Comet's boundary unchanged) is the opening post |
-| 7 | PROTOTYPE-SPECS.md | P1 to P6 with interfaces and the one test each | Which two to start on day 2 (plan says P1 and P5) |
-| 7a | PROTOTYPE-RESULTS-STREAMING.md | What P1 to P4 showed, by the second session (snapshot of their branch at 32f858e8) | Whether the four establish enough to post the proposals |
-| 7b | PROTOTYPE-RESULTS-EXTENSIONS.md | What P5 showed, in the results format | Whether to run Comet's and Sedona's libraries through it yourself |
-| 7c | STREAMING-REVIEW-AGAINST-RUNTIME.md | The second session's review of the streaming documents against the current change-capture runtime (snapshot at 10385dde); already folded in | Read for the reasoning behind the change-capture proposal |
-| 7d | STREAMING-MODEL-FACTS.md | The second session's fact base on what carries over from the current streaming layer and what is replaced (snapshot at 9ecdcff9); note it predates the end-of-data finding | Background only |
-| 8 | WRITING-RULES.md | The standard every outward document meets | Adopt |
-| 9 | SHEHAB.md | The maintainers' own agent rules, verbatim | Read once |
-| 10 | LAKESAIL.md | What we learned about doing software for Sail: maintainers, integration discipline, the two-lane process, Sail as found, tooling pitfalls | Adopt as the project's standing practice |
+| 1 | [Redesign plan](REDESIGN-PLAN.md) | Current status, decision register and dependency order | Is the proposed venue and decision sequence suitable? |
+| 2 | [Streaming proposal](STREAMING-ON-STREAMSOURCE.md) | Exact opening discussion text | Is the scope question clear enough to post? |
+| 3 | [Change-capture proposal](CHANGE-CAPTURE-ON-STREAMSOURCE.md) | Exact companion reply explaining the two table effects | Include it in the initial discussion? |
+| 4 | [Streaming decision notes](DECISION-NOTES-STREAMING.md) | Exact individual replies, S6 first, identifiers S1 to S13 retained | Approve S6 as the opening decision; keep remaining notes available as needed |
+| 5 | [Architecture](STREAMING-ARCHITECTURE.md) | Internal explanation of alternatives, recovery obligations and reuse | Does the reference material preserve the required behavior without deciding for maintainers? |
 
-Facts verified today, against sources, that the documents rely on:
+Proposed initial outbound package: the two proposals and S6. Each proposal is
+below 2,000 words and each decision note below 300. The later notes should
+follow the maintainers' questions and chosen scope, not arrive as thirteen
+simultaneous requests. No private evidence paths or coordination identifiers
+are needed to read the outward text. Nothing is posted by preparing this
+packet.
 
-- Spark 4.2.1 pipelines run every streaming flow with the available-now
-  trigger and have no continuous mode (graph executor source; pipeline
-  command protocol; installed client).
-- Sail's `main` defines four markers, including end of data with "sink waits
-  for the next checkpoint, then the job finishes"; no source emits checkpoint
-  or watermark markers; the rewriter refuses windows, aggregates, joins and
-  repartitions.
-- Comet's scalar UDF boundary is Sedona's v1 kernel with a discovery symbol
-  and a version probe; Sedona's header also defines table providers,
-  execution plans and streams over Arrow only; Sedona's extension crate has
-  no DataFusion FFI dependency.
+## The opening decision
 
-Still open, by owner:
+Should the first version support only one append transaction, one flow
+including change capture's two effects, or several independent sinks?
 
-- The maintainers: nothing posted since the feedback; the draft reply on
-  the scalar ABI (DISCUSSION-2001-REPLY-2.md) waits for the go.
-- The second implementation session: a review of the streaming documents
-  against the current change-capture runtime, requested; its findings go
-  into the documents before posting.
-- The ORC optional-crate unit landed (branch root `99dc47788`), not
-  proposed upstream; the frozen harness now builds with the branch's
-  optional features.
-- Prototypes built so far, all local and unpushed: P1 (checkpoints end to
-  end) and P2 (append sink with tagged commits, file table and Delta) by the
-  second session, with two findings already folded into S1 and S6. P2's
-  Delta half implements Delta's idempotent writes (`txnAppId`, `txnVersion`),
-  declared upstream but unsupported until now, verified on both engines; it
-  stands alone and is a candidate for a small general-track PR at your call;
-  P4 (windowed aggregate with state, the state store, and the interval
-  reduce for change capture) is built too, four tests over a recorded input
-  including a restart from a checkpoint, all on upstream main plus P1 and
-  P2, and the merge now combines watermarks as S7 states; P3 (Iggy as a
-  stream source with checkpoint positions, on the integration branch) with
-  three broker tests including a retention gap and a recreated partition;
-  P5 (the Arrow-only scalar kernel loader with a Sail-owned fixture,
-  three tests) by this session.
+The counterexample is small: if one sink commits a checkpoint and another
+does not, assigning different rows to the same identifier on restart can lose
+rows. Allocating a fresh identifier for the replayed prefix can duplicate
+rows. This motivates preserving prepared boundaries whenever effects depend
+on them; it does not select an implementation or require a general multi-sink
+coordinator before the maintainers choose the scope.
+
+The proposed starting point is one flow, with change capture included only
+if its two-effect recovery protocol is accepted. A narrower append-only first
+step remains an explicit alternative. State retention, source participation,
+completion and refresh identity follow from that decision.
+
+## Evidence and its limits
+
+| Record | What was checked | What it does not establish |
+| --- | --- | --- |
+| [Spark semantics](evidence/redesign-discussion-1/SPARK-SEMANTICS.md) | Direct inspection of Spark 4.2.1 at `617618396087429b5627a86ce933bb0f5d6645cb`, with file hashes | No new Spark execution or complete compatibility verdict |
+| [Boundary model](evidence/redesign-discussion-1/checkpoint_boundary_model.py) and [result](evidence/redesign-discussion-1/checkpoint-boundary-model.json) | Two incorrect retry policies fail; fixed-boundary replay preserves both modeled append sinks | No execution of Sail, storage, stateful transforms or concurrent recovery |
+| [Prototype results](PROTOTYPE-RESULTS-STREAMING.md) | Historical P1 to P4 runs and current source-review limits | No complete exactly-once protocol or performance envelope |
+| [Prototype specifications](PROTOTYPE-SPECS.md) | Intended experiments, actual coverage and focused gaps | No authorization to implement all proposed components |
+| [Corrected review](ASTRA-REDESIGN-1.md) | Technical findings and the required human decision process | No retrospective completion of the original review requirements |
+| [Document checks](evidence/redesign-discussion-1/DOCUMENT-CHECKS.md) | Current specialist findings, resolutions and text checks | No production integration gate |
+
+The code references remain P4 `4fad33ca5` over `62251e0a2`, P3 `ef5f848a7`
+on integration ancestry, and the current runtime `99dc47788`. P4 includes
+P1 and P2; P3 must not be represented as a clean upstream-only patch.
+
+Fresh source verification changes several claims: available-now can use
+multiple batches; raw-row validation precedes reduction; equal-sequence
+winners are undefined; full refresh does not establish a connector-independent
+absolute-origin rule. Archives, fencing and checkpoint transaction tags are
+Sail mechanisms requiring their own evidence. Historical test counts have
+not been promoted into fresh execution results.
+
+## Human review and subsequent work
+
+The governing instructions are [LAKESAIL.md](LAKESAIL.md),
+[SHEHAB.md](SHEHAB.md) and [WRITING-RULES.md](WRITING-RULES.md).
+The author must understand proposed code, and the owner approves the exact
+outward text. Maintainers choose architecture while alternatives remain
+open. Agent reviews support those decisions; they do not replace them.
+
+After an answer, record its public reference and the implementation scope it
+permits in the plan. Use a small local experiment only to distinguish an open
+choice. Any selected implementation receives the seven specialist reviews
+and the full immutable-commit integration gate. Several reference artifacts
+may expose existing work; only selected, agreed pieces become small upstream
+implementation PRs.
+
+## Separate extensions and historical background
+
+The extension track remains independent and is not approved by this streaming
+revision. Its material remains [the proposal](EXTENSIONS-ON-ARROW-C-ABI.md),
+[decision notes](DECISION-NOTES-EXTENSIONS.md) and
+[historical results](PROTOTYPE-RESULTS-EXTENSIONS.md). The scalar fixture does
+not establish that external Comet and Sedona binaries load unchanged.
+
+[The original review](ASTRA-REDESIGN-0.md),
+[the earlier runtime review](STREAMING-REVIEW-AGAINST-RUNTIME.md),
+[model facts](STREAMING-MODEL-FACTS.md) and
+[the bounded control-store brief](CONTROL-STORE-ASTRA-BRIEF.md) remain
+historical background. Their older claims must be read with the corrected
+proposals and evidence above.

@@ -1,98 +1,124 @@
-# Redesign plan: streaming on the flow-event model, extensions over Arrow-only C boundaries
+# Redesign plan for streaming and extensions
 
-For review on 2026-11-05. Status: proposal, nothing started.
+Internal plan for owner review. Streaming proposals are revised after
+[ASTRA-REDESIGN-1](ASTRA-REDESIGN-1.md). Local prototypes exist; no maintainer
+answer is recorded here. A recommendation or passing prototype does not
+permit production implementation of an unanswered design choice.
 
-## The approach
+## What is ready to discuss
 
-The maintainers want to shape the design before code exists, and they want to
-read small things. So the redesign is run as a sequence of **decision notes**,
-each one page, each presenting one question with the options, a
-recommendation, and what would settle it, posted where the maintainers can
-answer in a sentence. Where a decision is better shown than argued, a
-**prototype** on a branch from upstream `main` accompanies the note: a few
-hundred lines that make the option concrete and testable, thrown away or kept
-as the maintainers say. Nothing is built for real until the notes it depends
-on are answered.
+Streaming builds on Sail's existing flow events, stream sources and markers.
+The immediate deliverable is the exact text in the streaming and
+change-capture proposals, followed by short decision notes. The opening
+question is the recovery scope in S6: which effects belong to a checkpoint,
+and what must survive a crash between those effects?
 
-Two tracks, kept independent: streaming (the proposals in
-STREAMING-ON-STREAMSOURCE.md and CHANGE-CAPTURE-ON-STREAMSOURCE.md) and
-extensions (EXTENSIONS-ON-ARROW-C-ABI.md). They share no decision and no
-prototype.
+The owner reviews the complete text before any external post. Maintainers
+then choose architecture and upstream scope. Local experiments may resolve
+one stated question; they do not silently become a production subsystem.
+The author must understand and explain every proposed code change.
 
-## Venue
+## Venue and reading order
 
-One GitHub Discussion thread per track in `lakehq/sail`, opened by the owner
-with the proposal as the first post. Each decision note is a reply in that
-thread, numbered, under 300 words, with the prototype branch linked when there
-is one. The maintainers answer in the thread; the answer is recorded in the
-note's section of this plan. This keeps everything in their repository and
-nothing in ours that they would have to open.
+Propose one GitHub Discussion per track in `lakehq/sail`, opened by the
+owner. For streaming, use STREAMING-ON-STREAMSOURCE.md as the opening post
+and CHANGE-CAPTURE-ON-STREAMSOURCE.md as its companion reply. Introduce S6
+first, then S1, S2, S4 and S9 as the selected scope requires. Follow with S3,
+S5, S7, S8 and S10 to S13. Keep the identifiers stable for traceability;
+they do not prescribe implementation order.
 
-## Streaming decisions, in the order they unblock each other
+Each decision note is exact reply text under 300 words. It presents the
+situation, options, a recommendation and what would settle the question.
+No reader needs our private repository or coordination log. Publish no local
+prototype link until a separately authorized public reference exists.
 
-| # | Question | Options | Recommendation | Settled by |
-| --- | --- | --- | --- | --- |
-| S1 | Where does the checkpoint coordinator live? | In the session beside the streaming-query manager; in the execution driver beside job state | Driver: distributed runs need the driver to own positions, and local mode runs a driver too | Their preference; prototype P1 shows the driver placement |
-| S2 | How does a source learn that a checkpoint starts and report its position? | A method pair on the stream-source trait; a separate checkpointable-source interface that only some sources implement | The separate interface: the rate and socket sources stay untouched | Their preference; P1 implements it for the rate source |
-| S3 | When do checkpoints start? | Fixed period; adaptive on volume; once at the end for a bounded run | Period for continuous runs, once at the end for bounded runs; the period is a run option | Their preference |
-| S4 | How do operators align markers from several inputs? | Wait for the marker on every input, then forward (barrier alignment); forward the first and reconcile later | Barrier alignment: it is the only scheme the marker format supports without an extra field | P1 shows a union of two sources |
-| S5 | What is the state store? | A per-run directory with immutable segments and a manifest; an embedded key-value store | The directory: no new dependency, recovery is a manifest read, segments are Arrow files | P4 writes and recovers it |
-| S6 | How does a sink commit? | One transactional write per checkpoint tagged with the id, skipped on replay; write-ahead log plus apply | The tagged write: Delta and Iceberg carry the tag in the commit, file tables stage and rename | P2 shows it with a file table and Delta |
-| S7 | Watermark semantics | Source-emitted marker, late rows dropped and counted; plus an allowed-lateness window | Source-emitted, dropped, counted; allowed lateness as a later option | P4 |
-| S8 | Which stateful operators first | Windowed aggregate, key-latest, deduplicate; joins now or later | The three; joins later, named as out of scope | Their preference |
-| S9 | How a bounded pipeline run ends | The source emits end-of-data at the positions seen at start; the sink finishes after the next checkpoint | As stated; no microbatch concept remains | P1 and P3 |
-| S10 | Iggy as a source | Optional crate with the broker client; positions are offsets per partition; retention gaps fail the run | As stated; the crate's client dependency floor is checked against their lockfile first | P3 |
+## Streaming decision register
 
-## Extensions decisions
+All entries are proposed. The maintainer answer is **not recorded** for every
+row. Evidence supports discussion only; permitted production scope remains
+**none until the relevant answer is recorded**. When an answer arrives, add
+its public link and the exact scope it permits to that row.
 
-| # | Question | Options | Recommendation | Settled by |
-| --- | --- | --- | --- | --- |
-| E1 | The scalar boundary | Comet's scalar kernel (Sedona v1 shape) with its discovery symbol and version probe; a Sail-named copy of the same structs; keep `datafusion-ffi` | Comet's, unchanged, including symbol names, so Sedona's functions import with no edit; follow the header if it moves to DataFusion or Arrow | P5 loads Comet's test library and Sedona's functions |
-| E2 | The relation boundary | Sedona's table provider and execution plan structs; keep `datafusion-ffi` | Sedona's; depend on its Rust crate for the import and export adapters if the maintainers accept the dependency, else carry the two adapters | P6 |
-| E3 | What a package declares | Header versions, the Arrow C interface version and the Sail extension API version; no DataFusion version | As stated | Their preference |
-| E4 | The memory lease | Keep Sail's C record; offer it to the same shared home as the scalar header | Keep; offer later | Their preference |
-| E5 | What stays out | Optimizer rules, planner extensions, command plugins, catalog providers | Out, named as such | Their preference |
+| Note | Question and options | Proposed recommendation | Evidence and limits |
+| --- | --- | --- | --- |
+| S6 | One append transaction, one flow with several effects, or several independent sinks per checkpoint? | Start with one flow; retain prepared boundaries and separate effect progress if change capture is included | P2 tests one file sink; partial commits remain unresolved |
+| S1 | Job runner ownership or one driver in every mode? | Job runner locally and driver in cluster mode if the recovery domain fits one job | P1 is in process; local mode has no driver |
+| S2 | Extend StreamSource or expose separate checkpoint capability? | Separate optional capability | Rate counter exercises protocol, not replay; P3 has real positions |
+| S4 | Align barriers or capture in-flight rows? | Alignment with serialized requests | P1 covers controlled inputs, not overlapping requests |
+| S9 | Finish on source end or globally completed final checkpoint? | All source ends plus completed final effects | End and close accounting has an open prototype finding |
+| S3 | Final checkpoint only, or intermediate checkpoints too? | Permit intermediate checkpoints plus a mandatory final one | Final-only buffering grows with the whole backlog; no resource bound measured |
+| S5 | Arrow segments and manifests or another state store? | Files initially, retaining every required recovery point | P4 covers recorded replay; GC and durable storage protocol remain open |
+| S7 | How should event-time lateness fit the existing watermark contract? | Agree on the contract before adding its operator | P4 consumes recorded markers; it does not implement watermark generation |
+| S8 | Append first, then windows and deduplication, or wider stateful scope? | Narrow initial operator set; defer joins | Only window and interval-reduction mechanisms prototyped |
+| S10 | Optional Iggy source now or after dependency alignment? | Keep optional and defer upstream dependency expansion | P3 is on integration ancestry; bound-time incarnation race is open |
+| S11 | Stable source order or archived winners for equal sequences? | Retain sealed winners without claiming cross-partition ordering | P4 resolves ties only in recorded row order |
+| S12 | How should key changes and full refresh reset identity? | Explicit refresh generation and source-origin admission | Spark source and current runtime inform the choice; new reset path unbuilt |
+| S13 | Which targets require stale-writer fencing? | Preserve existing fenced guarantees; decide additional target scope | Catalog commit ordering alone is not a fencing proof |
 
-## Prototypes
+See DECISION-NOTES-STREAMING.md for the alternatives and acceptance questions,
+and evidence/redesign-discussion-1/SPARK-SEMANTICS.md for source verification.
 
-Each on its own branch from upstream `main` on the fork, with one test file
-that is its whole claim. Sizes are what the prototype adds, not the final
-feature.
+## Prototype status
 
-| # | Shows | What it is | Size | Order |
-| --- | --- | --- | ---: | --- |
-| P1 | S1, S2, S4, S9 | A checkpoint coordinator in the driver; the rate source gains the checkpointable interface and emits checkpoint and end-of-data markers; the collector finishes a bounded query after end-of-data and the next checkpoint; a union of two rate sources aligns | ~600 lines | first |
-| P5 | E1 | Load Comet's published test UDF library through its discovery symbol and version probe, resolve `add_one_c` as a Sail scalar function, call it from Spark SQL; then Sedona's spatial functions the same way | ~400 lines | first, in parallel |
-| P2 | S6 | A table append sink that stages rows between checkpoints and commits them tagged with the checkpoint id; a restart replays and skips the committed id; file table and Delta | ~500 lines | after P1 |
-| P6 | E2 | Import a Sedona C table provider through the header's structs, scan it through Sail's bounded-relation dispatch with a child plan exported across the boundary | ~500 lines | after P5 |
-| P3 | S10, S2 | Iggy as a stream source with the four markers; a bounded run ends at the offsets seen at start; a retention gap fails the run | ~800 lines, reusing the broker client and decoding already written | after P2 |
-| P4 | S5, S7, S8 | A windowed aggregate with watermark eviction over a recorded input, snapshotting state to segments and recovering from the manifest | ~900 lines | after P2 |
-
-## Schedule
-
-| Day | Streaming | Extensions |
+| Prototype | Current state | What remains outside its evidence |
 | --- | --- | --- |
-| 1 (review day) | Review this plan; open the discussion thread with the proposal; post S1 to S4 | Open the thread; post E1 |
-| 2 to 3 | P1 built and linked from S1 | P5 built and linked from E1 |
-| 4 to 5 | Answers to S1 to S4 recorded; post S5 to S9; start P2 | Post E2 to E5; start P6 |
-| Week 2 | P2 and P4; P3 once the Iggy dependency floor is checked | P6; record answers |
-| Week 3 | Build the real pieces in the order the answers allow | Scalar channel for real, then the relation boundary |
+| P1 | Built locally; stacked in P4 at `4fad33ca5` over `62251e0a2` | Driver placement, durable recovery, overlapping requests, staggered completion |
+| P2 | Built in the same stack; file-sink restart tests and separate Delta write cases | Multiple sinks, change-capture merges, concurrent first-write inference |
+| P3 | Built at `ef5f848a7` on integration ancestry | Planner registration, bound-time races, upstream dependency fit |
+| P4 | Built in the P4 stack; recorded windows, snapshots and interval reduction | Live watermark replay, cleanup, cross-partition ties, integrated recovery |
 
-The schedule assumes the maintainers answer within a few days; if a decision
-stays open, the prototypes that do not depend on it continue and the dependent
-ones wait.
+The test counts in PROTOTYPE-RESULTS-STREAMING.md are historical reports,
+not fresh execution. PROTOTYPE-SPECS.md distinguishes intended claims from
+what those tests cover. The existing branches remain local and unpushed.
 
-## What happens to the existing branch
+## Extensions remain a separate track
 
-The bounded-microbatch streaming, the AutoCDC runtime on it and the Iggy
-bounded source stay on the branch as the working system until the new pieces
-pass the same ported Spark tests, then they are removed in one change. Nothing
-from that path is proposed upstream. The batch pipelines, the catalogs and the
-general engine improvements are unaffected by either track and remain the
-first reference material.
+This streaming revision does not assess or approve the extensions proposals.
+Keep EXTENSIONS-ON-ARROW-C-ABI.md and DECISION-NOTES-EXTENSIONS.md as their
+separate discussion material, with an independent owner review.
 
-## What this plan needs from the owner
+| Note | Existing proposed direction | Evidence status |
+| --- | --- | --- |
+| E1 | Adopt Comet's Arrow-only scalar boundary unchanged | P5 reports a Sail-owned fixture; external Comet and Sedona libraries remain unverified |
+| E2 | Sedona table-provider and execution-plan boundary | P6 remains a proposed experiment |
+| E3 | Declare boundary and Sail API versions | Maintainer answer not recorded |
+| E4 | Keep the memory lease and discuss a shared home later | Maintainer answer not recorded |
+| E5 | Keep optimizer and catalog plugins out of initial scope | Maintainer answer not recorded |
 
-- Agreement on the venue (discussion threads in their repository).
-- Which prototypes to start on day 2: the plan says P1 and P5.
-- Whether to post the two proposals as they are or after one more pass.
+PROTOTYPE-RESULTS-EXTENSIONS.md retains the historical P5 report. Neither the
+old calendar nor the existence of P5 authorizes the next extension step.
+
+## Work follows decisions
+
+1. Complete the corrected packet, source checks and end-to-end reading pass.
+2. The owner reviews the exact outward text and decides whether to post it.
+3. Record each maintainer answer and its permitted scope. An unanswered
+   dependency keeps the dependent implementation pending.
+4. Use a small local test only where it distinguishes alternatives. Record
+   failures and limits as well as successes in the corresponding note.
+5. Prepare the selected implementation as a small, single-purpose change.
+   A few larger reference PRs may expose existing work when authorized;
+   maintainers select the pieces that become implementation PRs.
+6. Apply seven specialist reviews to the cumulative candidate and repeat
+   affected reviews after fixes. These support human judgment.
+7. Gate the exact combined commit through the LAKESAIL integration procedure.
+   Preserve receipts, verify the freshly built binaries and required features,
+   and land only the tree and parent that passed.
+
+For each session, preserve the prompt and governing instructions, distribute
+both to reviewers, and reread after compaction. Keep one writer per file and
+one integration owner. Documentation evidence is distinct from an executable
+integration verdict.
+
+## Existing runtime and replacement criteria
+
+Keep the working bounded runtime until the selected replacement has evidence
+for its declared scope. Preserve raw-row validation, sealed winners, archives,
+separate effect receipts, contract identity and stale-writer fences where
+already supported. Stronger prepared validation receipts remain pending
+wiring; their presence as a component is not a production guarantee.
+
+Replacement requires recovery tests, relevant Spark comparisons and explicit
+acceptance of deliberate behavior differences. Passing inherited tests alone
+does not prove the newly introduced checkpoint protocol. Batch pipelines,
+catalogs and general engine changes remain separate work.

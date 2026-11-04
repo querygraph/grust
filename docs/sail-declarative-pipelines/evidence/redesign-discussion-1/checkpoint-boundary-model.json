@@ -1,0 +1,213 @@
+{
+  "assumptions": [
+    "Rows are stable integers 0 through 9 and positions are half-open offsets.",
+    "Both sinks completed checkpoint 1 through position 3.",
+    "Checkpoint 2 was prepared through position 6; only A committed it.",
+    "Recovery starts at position 3, the least committed sink position.",
+    "Each sink atomically appends unless identifier <= its last committed ID.",
+    "No transforms, operator state, concurrency, crashes during recovery or storage failures are modeled."
+  ],
+  "controls": "Two incorrect policies fail the exactly-once assertion; fixed-boundary replay passes it.",
+  "expected_rows": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "initial_sinks": [
+    {
+      "last_checkpoint": 2,
+      "name": "A",
+      "rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "last_checkpoint": 1,
+      "name": "B",
+      "rows": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "checkpoints": [
+        {
+          "end": 10,
+          "identifier": 2,
+          "start": 3
+        }
+      ],
+      "exactly_once": false,
+      "expected_result": "negative control detects violation",
+      "observations": [
+        {
+          "duplicated": [],
+          "last_checkpoint": 2,
+          "missing": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "rows": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "sink": "A"
+        },
+        {
+          "duplicated": [],
+          "last_checkpoint": 2,
+          "missing": [],
+          "rows": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "sink": "B"
+        }
+      ],
+      "policy": "reuse prepared ID at new boundary"
+    },
+    {
+      "checkpoints": [
+        {
+          "end": 10,
+          "identifier": 3,
+          "start": 3
+        }
+      ],
+      "exactly_once": false,
+      "expected_result": "negative control detects violation",
+      "observations": [
+        {
+          "duplicated": [
+            3,
+            4,
+            5
+          ],
+          "last_checkpoint": 3,
+          "missing": [],
+          "rows": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "sink": "A"
+        },
+        {
+          "duplicated": [],
+          "last_checkpoint": 3,
+          "missing": [],
+          "rows": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "sink": "B"
+        }
+      ],
+      "policy": "allocate fresh ID for replayed prefix"
+    },
+    {
+      "checkpoints": [
+        {
+          "end": 6,
+          "identifier": 2,
+          "start": 3
+        },
+        {
+          "end": 10,
+          "identifier": 3,
+          "start": 6
+        }
+      ],
+      "exactly_once": true,
+      "expected_result": "preserves both sinks",
+      "observations": [
+        {
+          "duplicated": [],
+          "last_checkpoint": 3,
+          "missing": [],
+          "rows": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "sink": "A"
+        },
+        {
+          "duplicated": [],
+          "last_checkpoint": 3,
+          "missing": [],
+          "rows": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "sink": "B"
+        }
+      ],
+      "policy": "replay prepared boundary then new boundary"
+    }
+  ],
+  "scope": "Deterministic append-effect model only; not a Sail or Spark execution",
+  "script_sha256": "2735202718b93a21e43d1fdd9a06198e2d857caf72f8048ae2e1b373a62b6feb"
+}

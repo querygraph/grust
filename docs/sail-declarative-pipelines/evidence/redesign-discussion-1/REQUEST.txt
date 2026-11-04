@@ -1,0 +1,47 @@
+Current user instruction, verbatim:
+start on the immediate work
+
+The immediately preceding assistant proposal accepted by that instruction:
+Prepare the corrected discussion packet for your review, following ASTRA-REDESIGN-1.md.
+1. Correct the existing documents. Reconcile the proposals, decision notes, architecture and prototype results. Remove stale status and claims that the prototypes establish complete recovery.
+2. Lead with the unresolved recovery decision. Present the partial-commit counterexample, supported-scope options, and their costs. Ask maintainers what checkpoint scope and recovery guarantees they want, including the two CDC table effects.
+3. Make the evidence precise. Verify relevant Spark semantics from source. Distinguish inspected code, executed tests and findings still awaiting reproduction. Use small local experiments only where they help settle a decision.
+4. Finish the exact outward text. Produce short, self-contained proposals and decision notes, read them end to end, and give you the concrete packet to review before posting.
+After your review, the maintainers choose the architecture and permitted implementation scope. Their answers determine the next prototype or implementation unit. The seven-role cumulative patch review and integration gates apply when that implementation is ready to be offered.
+
+Earlier user instructions in this conversation, verbatim:
+
+Astra should review three areas: the design documents, the four prototype worktrees, and the current change-capture runtime the redesign replaces. Diffing the prototypes against upstream base 62251e0a2 shows only the new code.
+
+1. Design documents. All of these are in /Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/. Start with REDESIGN-REVIEW-PACKET.md, which gives the reading order and the decision each document needs. For the CDC redesign, the key documents are:
+- STREAMING-ON-STREAMSOURCE.md and CHANGE-CAPTURE-ON-STREAMSOURCE.md, the two proposals
+- DECISION-NOTES-STREAMING.md, which covers S1 to S10
+- STREAMING-ARCHITECTURE.md
+- PROTOTYPE-SPECS.md and PROTOTYPE-RESULTS-STREAMING.md
+- STREAMING-REVIEW-AGAINST-RUNTIME.md, which explains the reasoning behind the change-capture proposal
+
+The folder also has an earlier CONTROL-STORE-ASTRA-BRIEF.md from the previous design checkpoint. It describes the bounded model, so treat it as background rather than the current design.
+
+2. Prototype code. These are local, unpushed Sail worktrees:
+- /Users/alexy/src/sail-proto-p4 at 4fad33ca5 contains P1, P2 and P4 stacked, so one diff covers all three. The new code is in these places:
+  - crates/sail-physical-plan/src/streaming/: merge.rs, append_sink.rs, state_store.rs, window.rs, changes.rs and their tests
+  - the checkpoint-capable rate source in crates/sailate/
+  - the Delta idempotent writes in crates/sail-delta-lake/src/physical_plan/, tested by python/pysail/tests/_dev/spark/delta/test_delta_i
+- /Users/alexy/src/sail-proto-p3 at ef5f848a7 holds the Iggy stream source. It sits on the integration branch, not upstream main.        Review crates/sail-iggy-bounded/src/stream.rs and t
+- sail-proto-p1 and sail-proto-p2 are subsets of P4. Skip them unless Astra wants to review each prototype separately.
+3. The current runtime being replaced. This is in /Users/alexy/src/sail-pipelines-proposal on work/spark-declarative-pipelines. Review crates/sail-spark-connect/src/pipelines/autocdc/, espd.rs, to see what the redesign has to keep, such asreplay-safe merges and validation receipts.
+The change-capture merges, planner wiring, durable checkpoint-position record and Spark 4.2.1 end-to-end test haven't been built. Those are design questions for Astra, not code to rev
+
+have you reviewed LAKESAIL.md and all the human review requirements?  How do you propose to adjust our design and development process accordingly?
+
+write down the original review to ASTRA-REDESIGN-0.  Correct it with the above as -1.
+
+is grust-sdp a subset of grust for sail sdp?
+
+what is the next step in the redesign process
+
+Required instructions for every participating reviewer:
+Read /Users/alexy/src/grust-sdp/AGENTS.md and the complete LAKESAIL.md, SHEHAB.md, WRITING-RULES.md, and ASTRA-REDESIGN-1.md in /Users/alexy/src/grust-sdp/docs/sail-declarative-pipelines/.
+Reread this request and those instructions after context compaction.
+The authorized scope is documentation correction, source verification, small decision-resolving experiments, and exact drafts for owner review. No production implementation or external posting is authorized by this task.
+The lead owns integration of these document edits. Each file has one writer; reviewers send findings to that owner. Preserve existing unrelated edits and the historical ASTRA-REDESIGN-0 and ASTRA-REDESIGN-1 records.
