@@ -31,9 +31,8 @@ with the same values), or a **marker**. The four marker kinds are a latency
 tracker, a **watermark** (no later data row will carry an event time older than
 the watermark's timestamp), a **checkpoint** with a numeric id (every source
 emits it to start a new checkpoint), and **end of data** (the stream will carry
-no more data rows but stays open until the next checkpoint completes). Flow
-events are encoded into ordinary Arrow batches with two leading columns, so
-they pass through any operator that forwards columns it does not know.
+no more data rows but stays open until the next checkpoint completes). Flow events are encoded into ordinary Arrow batches with two leading
+columns.
 
 A **rewriter** turns a batch logical plan into a streaming one: table scans of
 stream sources become their scans, batch inputs are adapted by emitting their
@@ -52,16 +51,12 @@ sources hold at the moment the run starts and then finish; this is Spark's
 "available now" semantics. In the model this is exactly end of data: at run
 start the source fixes its end position, emits its rows up to that position,
 then the end-of-data marker, and the sink finishes after the next checkpoint.
-This is not an addition to the model: its end-of-data marker is documented
-as "the stream will contain no more data events" with the sink waiting for
-the next checkpoint marker before the job finishes, which is a run that ends.
-Spark's pipelines have no other mode: every streaming flow in a run uses the
-available-now trigger and the run returns when its flows complete. A
-**continuous run**, the same plan with no fixed end position and periodic
-checkpoints, is therefore a Sail capability beyond Spark's pipelines, not a
-compatibility requirement; the coordinator serves it because Sail's existing
-streaming queries, started through the Spark streaming API, are continuous
-already.
+The model already says this: its end-of-data marker is documented with the
+sink waiting for the next checkpoint before the job finishes. Spark's
+pipelines have no other mode. A **continuous run**, the same plan with no
+fixed end position and periodic checkpoints, is a Sail capability beyond
+Spark's pipelines, served because Sail's existing streaming queries are
+continuous already.
 
 ## What has to exist
 
@@ -73,18 +68,17 @@ bounded run) and tells every source to emit the checkpoint marker with the
 next id. It is held by the query's job runner: in process in local mode,
 where no driver exists; delegated to the driver in cluster mode, where a
 source's scan runs on a worker and the coordinator reaches it through the
-task that runs its partition. An operator with state snapshots that state
-when the marker has arrived on all its inputs, then forwards the marker; that
-alignment rule is the only new protocol, it is the standard barrier scheme,
-and it needs no change to the marker format. When the marker arrives at a
+task that runs its partition. An operator with state snapshots it when the marker has arrived on all its
+inputs, then forwards the marker: the standard barrier scheme, with no change
+to the marker format. When the marker arrives at a
 sink, the coordinator first records each source's position for that id
 durably; only then does the sink **commit**: it makes the rows it received
 since the previous marker durable under the checkpoint id, records the id, and
 acknowledges. A restart resumes every source from the positions of the last
 checkpoint the sinks hold (the least committed id among several sinks), and a
-sink that sees an id it already committed skips it. The order is what makes
-each row count once: a commit before the positions were recorded would let a
-restart reissue the id at a different boundary and skip rows. The run is
+sink that sees an id it already committed skips it. The order makes each row count once: a commit before the positions were
+recorded would let a restart reissue the id at another boundary and skip
+rows. The run is
 finished when the coordinator says so, not when the query's stream ends,
 because the stream can end as soon as the final marker passes through it.
 
@@ -137,10 +131,8 @@ from, never the newest one, since an operator may have written state for a
 checkpoint the coordinator never recorded; segments are deleted only after a
 later checkpoint is recorded; a snapshot is read back only under the column
 types it was written with; and an operator writes one compacted segment per
-checkpoint, since appending segments cannot express removal. Stream-to-stream
-joins are deliberately left out of the first version; they are the largest
-state machine and Spark's own semantics for them in pipelines are the least
-used.
+checkpoint, since appending segments cannot express removal. Stream-to-stream joins are deliberately left out of the first version, as
+the largest state machine and the least used in pipelines.
 
 ## What changes for the pipeline layer
 
