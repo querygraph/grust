@@ -1,7 +1,9 @@
 # Draft: post for Sail discussion #2001
 
-Status: draft 2026-11-04, for the owner to post under their own account in
-week 1 of the upstream series (plan X0). Links were checked on 2026-11-03.
+Status: posted by the owner on 2026-11-04 at
+https://github.com/lakehq/sail/discussions/2001#discussioncomment-19386410
+(plan X0, brought forward from week 1 at the owner's direction). Links were
+checked on 2026-11-03.
 
 ---
 

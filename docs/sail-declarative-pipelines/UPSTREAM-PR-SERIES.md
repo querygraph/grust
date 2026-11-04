@@ -7,6 +7,7 @@ implement is recorded in [SAIL-SDP-DESIGN-DECISIONS.md](SAIL-SDP-DESIGN-DECISION
 record's §0 is the cover letter for the whole series.
 
 - **Reviewed:** the C-track split, by the CDC lane (CF-0722, 2026-11-04); its corrections are in place: G14, the `iggy` feature unit before C3, C6a/b/c reordered, tests travel with their PRs.
+- **Posted:** X0, the #2001 discussion post, on 2026-11-04: https://github.com/lakehq/sail/discussions/2001#discussioncomment-19386410 (text in DISCUSSION-2001-POST.md).
 - **Opened:** D1, the design record, as draft [lakehq/sail#2930](https://github.com/lakehq/sail/pull/2930) (2026-11-03, from `alexy/sail` branch `docs/sdp-design-record`, page `docs/development/pipelines/index.md`).
 - **Status:** plan, 2026-11-03, with the owner's eight decisions recorded in
   place (examples repository, `orc-rust` release first, Grust kernels as
