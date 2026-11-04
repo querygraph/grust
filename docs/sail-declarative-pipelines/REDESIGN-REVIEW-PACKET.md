@@ -43,5 +43,8 @@ Still open, by owner:
   second session, with two findings already folded into S1 and S6. P2's
   Delta half implements Delta's idempotent writes (`txnAppId`, `txnVersion`),
   declared upstream but unsupported until now, verified on both engines; it
-  stands alone and is a candidate for a small general-track PR at your call; P5 (the Arrow-only scalar
+  stands alone and is a candidate for a small general-track PR at your call;
+  P4 (windowed aggregate with state, the state store, and the interval
+  reduce for change capture) is built too, four tests over a recorded input
+  including a restart from a checkpoint, all on upstream main plus P1 and P2; P5 (the Arrow-only scalar
   kernel loader with a Sail-owned fixture, three tests) by this session.
