@@ -39,7 +39,7 @@ through its task, is a later prototype).
 - `CheckpointCoordinator` in `sail-common-datafusion`, owned by the query: holds the run's sources, issues ids, waits for every source's `request_checkpoint`, stores positions in memory for the prototype, and issues the final checkpoint when every source has reported end of data. Driven by the test in the prototype; the local job runner would own it.
 - The rate source implements the interface: its position is the number of rows emitted per partition; `bound_now` makes it stop after the rows already scheduled.
 - The collector finishes when it has seen end of data on its input and then the next checkpoint marker, instead of when the input closes.
-- Alignment happens where partitions merge (a union never interleaves partitions): the merge holds a partition after its marker until every partition's marker with the same id has arrived, then forwards one marker.
+- Alignment happens where partitions merge (a union never interleaves partitions): the merge holds a partition after its marker until every partition's marker with the same id has arrived, then forwards one marker. The same merge combines watermarks as the minimum over running inputs (S7), tested with a fixed interleaving of three inputs where an ended input and a closed input each raise the minimum.
 
 **Test.** Two rate sources at ten rows per second, bounded after one second,
 unioned, filtered on an odd value, collected. Asserts: one checkpoint id

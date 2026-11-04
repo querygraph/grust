@@ -199,10 +199,13 @@ it today.
    reach it, as the event time minus the user's delay, never moving back, in
    whole milliseconds. A row is late only when every window it belongs to has
    ended at or before the watermark. An operator with several inputs takes
-   the minimum of their watermarks at the point where its inputs merge, and
-   the checkpoint records that combined value only. (The prototypes' merge
-   aligns checkpoint markers but does not yet combine watermarks; that is the
-   next piece of P1.)
+   the minimum of their watermarks at the point where its inputs merge: the
+   merge keeps each input's latest watermark, forwards the minimum over the
+   inputs still running once each has sent one and only when that minimum
+   advances, ignores a watermark that would move an input back, lets an input
+   that has ended stop holding the minimum back, and forwards nothing once
+   every input has ended. A downstream operator sees one combined value, and
+   that is the value a checkpoint records.
 2. The same, plus an allowed-lateness window during which a late row is
    still applied and a correction is emitted as a retraction plus a new row.
 

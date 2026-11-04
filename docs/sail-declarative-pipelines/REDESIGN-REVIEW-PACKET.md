@@ -47,5 +47,5 @@ Still open, by owner:
   P4 (windowed aggregate with state, the state store, and the interval
   reduce for change capture) is built too, four tests over a recorded input
   including a restart from a checkpoint, all on upstream main plus P1 and
-  P2; P5 (the Arrow-only scalar kernel loader with a Sail-owned fixture,
+  P2, and the merge now combines watermarks as S7 states; P5 (the Arrow-only scalar kernel loader with a Sail-owned fixture,
   three tests) by this session.
