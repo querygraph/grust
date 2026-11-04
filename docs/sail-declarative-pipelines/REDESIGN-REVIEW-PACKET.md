@@ -18,6 +18,7 @@ Reading order, with what each document is for and what the reviewer decides.
 | 7d | STREAMING-MODEL-FACTS.md | The second session's fact base on what carries over from the current streaming layer and what is replaced (snapshot at 9ecdcff9); note it predates the end-of-data finding | Background only |
 | 8 | WRITING-RULES.md | The standard every outward document meets | Adopt |
 | 9 | SHEHAB.md | The maintainers' own agent rules, verbatim | Read once |
+| 10 | LAKESAIL.md | What we learned about doing software for Sail: maintainers, integration discipline, the two-lane process, Sail as found, tooling pitfalls | Adopt as the project's standing practice |
 
 Facts verified today, against sources, that the documents rely on:
 
