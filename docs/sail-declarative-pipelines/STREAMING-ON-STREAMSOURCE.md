@@ -34,13 +34,13 @@ emits it to start a new checkpoint), and **end of data** (the stream will carry
 no more data rows but stays open until the next checkpoint completes). Flow events are encoded into ordinary Arrow batches with two leading
 columns.
 
-A **rewriter** turns a batch logical plan into a streaming one: table scans of
-stream sources become their scans, batch inputs are adapted by emitting their
-rows and then end of data, projections and filters and limits become streaming
-variants, and a plan with no sink gets a **collector** that returns results once
-the input is bounded. Windows, aggregates, joins, sorts and repartitions are
-refused today. No source emits checkpoint or watermark markers yet, and no
-component consumes them.
+A **rewriter** turns a batch logical plan into a streaming one: stream
+sources become their scans, batch inputs emit their rows and then end of
+data, projections, filters and limits become streaming variants, and a plan
+with no sink gets a **collector** that returns results once the input is
+bounded. Windows, aggregates, joins, sorts and repartitions are refused
+today. No source emits checkpoint or watermark markers yet, and nothing
+consumes them.
 
 ## A streaming table, restated in the model
 
@@ -142,18 +142,18 @@ it builds a streaming plan through the rewriter instead of looping over
 bounded batches, starts it as a streaming query under the session's existing
 streaming-query manager, and waits for the coordinator to finish the run
 (bounded) or leaves it running (continuous). The bounded-batch path and its
-own source abstraction are removed, not kept beside the new one. The
-analysis-time refusals stay: a streaming table over an unsupported operator,
-or over a source whose re-read after a restart is not guaranteed identical,
-is refused with the reason named before any run.
+source abstraction are removed, not kept beside the new one. A streaming
+table over an unsupported operator, or over a source whose re-read after a
+restart is not guaranteed identical, is refused at analysis with the reason
+named.
 
 ## What this does not do
 
 It does not change the flow-event encoding, the marker set or the rewriter's
-contract. It does not add a second streaming engine or a scheduler. It does
-not claim parity with Spark's full Structured Streaming operator set; the two
-operators above are the ones Spark's pipeline tests exercise for streaming
-tables. It does not decide the checkpoint period for continuous runs.
+contract, add a second streaming engine or a scheduler, or claim parity with
+Spark's full Structured Streaming operator set: the two operators above are
+the ones Spark's pipeline tests exercise for streaming tables. It does not
+decide the checkpoint period for continuous runs.
 
 ## Where this is deliberately not Spark
 
