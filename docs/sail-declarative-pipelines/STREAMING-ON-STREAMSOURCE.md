@@ -185,10 +185,9 @@ four marker kinds and the end-of-data semantics are in
 since the streaming events were introduced; no source emits checkpoint or
 watermark markers and the rewriter refuses windows, aggregates, joins and
 repartitions (`crates/sail-plan/src/streaming/rewriter.rs`); local mode runs
-with no driver (`crates/sail-session/src/session_factory/job_runner.rs`) and
-cluster scans are rebuilt on workers (`crates/sail-execution/src/proto/codec.rs`).
-Prototypes of pieces 1 to 4, on `main`, pass their tests; their results
-document says what each showed.
+with no driver and cluster scans are rebuilt on workers. Prototypes of pieces
+1 to 4, on `main`, pass their tests; their results document says what each
+showed.
 
 ## Questions for the maintainers
 
