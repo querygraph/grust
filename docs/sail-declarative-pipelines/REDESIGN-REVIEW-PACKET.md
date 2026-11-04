@@ -46,5 +46,6 @@ Still open, by owner:
   stands alone and is a candidate for a small general-track PR at your call;
   P4 (windowed aggregate with state, the state store, and the interval
   reduce for change capture) is built too, four tests over a recorded input
-  including a restart from a checkpoint, all on upstream main plus P1 and P2; P5 (the Arrow-only scalar
-  kernel loader with a Sail-owned fixture, three tests) by this session.
+  including a restart from a checkpoint, all on upstream main plus P1 and
+  P2; P5 (the Arrow-only scalar kernel loader with a Sail-owned fixture,
+  three tests) by this session.
