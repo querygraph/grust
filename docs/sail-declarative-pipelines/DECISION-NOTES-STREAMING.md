@@ -137,8 +137,13 @@ positions would apply rows twice. Segments are deleted only after a later
 checkpoint is recorded. A snapshot is read back only under the column types
 it was written with. An operator whose state shrinks, as eviction makes it,
 rewrites its state as one compacted segment, since appending segments cannot
-express removal. No new dependency; the files are inspectable with any Arrow
-tool.
+express removal; the prototype writes one compacted segment at every
+checkpoint, segment first and manifest last, each by rename, so an existing
+manifest names complete segments. A replay that reaches a checkpoint id
+again rewrites that id's segment and manifest; this is safe only because the
+restart point never moves past the recorded checkpoint, which the sink
+ordering rule in S6 guarantees. No new dependency; the files are inspectable
+with any Arrow tool.
 
 **What settles it.** Your preference; P4 writes and recovers the store.
 
@@ -194,8 +199,10 @@ it today.
    reach it, as the event time minus the user's delay, never moving back, in
    whole milliseconds. A row is late only when every window it belongs to has
    ended at or before the watermark. An operator with several inputs takes
-   the minimum of their watermarks, and the checkpoint records that combined
-   value only.
+   the minimum of their watermarks at the point where its inputs merge, and
+   the checkpoint records that combined value only. (The prototypes' merge
+   aligns checkpoint markers but does not yet combine watermarks; that is the
+   next piece of P1.)
 2. The same, plus an allowed-lateness window during which a late row is
    still applied and a correction is emitted as a retraction plus a new row.
 

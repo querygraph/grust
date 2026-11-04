@@ -146,9 +146,17 @@ state to a segment at each checkpoint, and recovers from the manifest.
 - A recorded input: a file of flow events (rows with event times, interleaved
   watermark and checkpoint markers) and the expected output.
 
-**Test.** The recorded input yields the expected windows and late count; a
-restart from the manifest after the second checkpoint yields the same
-output for the remaining input.
+**Test.** The recorded input yields the expected windows and late count,
+including both boundaries (a row at a window's end opens the next window; a
+watermark equal to a window's end closes it); a null event time belongs to
+no window and is dropped uncounted, as Spark's window drops it; a restart
+from the second checkpoint's manifest, replaying the events after it,
+reproduces the first run's remaining windows, late count and third-checkpoint
+state; a snapshot under a different key type is refused; the interval
+reduce resolves a tie to the later source row and lets a delete beat a
+later, older-sequence upsert. Not in P4: the watermark operator itself (the
+recorded input carries the markers) and the minimum across inputs at the
+merge.
 
 **Out of scope.** Sliding windows, allowed lateness, joins.
 
