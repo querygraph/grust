@@ -1,7 +1,8 @@
 # Prototype specifications
 
-Six prototypes, each a branch from upstream `main` on the fork, each with one
-test file that is its whole claim. They exist to make a decision concrete for
+Six prototypes, each with one test file that is its whole claim; all but P3
+are branches from upstream `main` on the fork (P3 builds on the integration
+branch, see its note). They exist to make a decision concrete for
 the maintainers, not to be merged; what survives is rewritten with their
 answers. Sizes are estimates of what each adds.
 
@@ -89,12 +90,18 @@ seen at start; a retention gap or a recreated partition fails the run.
 - `IggyStreamSource` implementing the stream-source trait and
   `CheckpointableSource`, reusing the broker client wrapper, the message
   decoding and the schema validation already written for the bounded source.
-- Markers: a checkpoint marker on request, a watermark from the declared
-  event-time column minus the declared delay after each poll, end of data on
-  reaching the start-time offsets.
-- Positions: one offset per partition, encoded as JSON.
-- Built on the branch, since the client's dependency floor is above
-  upstream's lockfile (S10).
+- Markers: a checkpoint marker on request and end of data on reaching the
+  start-time offsets. The watermark is not the source's: it comes from the
+  watermark operator placed where the user declared it (S7).
+- Positions: one offset per partition, the next offset to read (half-open,
+  as the bounded source has it), paired with the partition's incarnation,
+  since the broker reuses a partition's id on recreation and restarts its
+  offsets at zero.
+- The gap check (the first offset of every reply equals the offset asked
+  for) runs on every poll, not only at resume, because the broker silently
+  skips to the first retained offset. Reads never acknowledge at the broker.
+- Built on the integration branch, since the client's dependency floor is
+  above upstream's lockfile (S10); offered only when the floor fits.
 
 **Test.** Against the pinned broker: produce 1,000 messages across three
 partitions, run bounded, assert the collector holds all 1,000 once; produce
@@ -115,12 +122,18 @@ state to a segment at each checkpoint, and recovers from the manifest.
 **Components.**
 
 - `WindowedAggregateExec` consuming flow events: rows go to per-window,
-  per-key partial state; a watermark marker closes windows whose end is at
-  or below it and emits their results as data rows; a checkpoint marker
-  writes the open state as one Arrow file segment and a manifest entry.
+  per-key partial state; a row is dropped and counted only when every window
+  it belongs to has ended at or before the watermark; a watermark marker
+  closes windows whose end is at or below it and emits their results as data
+  rows; a checkpoint marker writes the open state as one Arrow file segment
+  and a manifest for that checkpoint.
 - The state store: `<checkpoint location>/<run>/state/<operator>/<id>.arrow`
-  plus `manifest.json` naming the live segments; recovery loads the live
-  segments.
+  plus `manifest-<id>.json` naming the live segments at that checkpoint;
+  recovery loads the manifest of the recorded checkpoint, and a snapshot is
+  refused under column types other than those it was written with.
+- A companion test for change capture: an interval-reduce over recorded
+  change rows with equal-sequence ties, asserting the source-position tie rule
+  and that deletes keep their sequence.
 - A recorded input: a file of flow events (rows with event times, interleaved
   watermark and checkpoint markers) and the expected output.
 

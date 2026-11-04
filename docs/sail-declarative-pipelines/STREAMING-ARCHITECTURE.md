@@ -61,25 +61,32 @@ sink finishes after committing it).
 ## Data flow for change capture
 
 ```
- change rows ──▶ key-latest ──▶ merge sink ──▶ target
-                 (emits retraction of the previous row for a key,
-                  then the new row; keeps latest per key by sequence)
+ change rows ──▶ interval-reduce ──▶ merge sink ──▶ auxiliary table (tombstones)
+                 (one row per key per      │
+                  checkpoint interval,     └──────▶ target (metadata column)
+                  deletes with sequence)
 ```
 
-The merge sink turns retractions into deletes by key and data rows into
-inserts, applied as one transaction at the checkpoint. A target without
-transactions is written by replacing the affected partitions. A lease in the
-existing control store stops a second run from committing to the same target.
+The operator holds nothing across intervals; ordering lives in the target's
+metadata column and the auxiliary table, as in Spark. At the marker the sink
+seals the reduced rows, merges them into the auxiliary table, then into the
+target, tagging both commits with the checkpoint id. A target without
+row-level operations is refused. On a Delta target that no catalog manages, a
+lease in the existing control store fences commits by epoch; a successor
+waits out a dead owner's lease and takes over.
 
 ## Recovery
 
 On start, the pipeline layer reads the run's last recorded checkpoint. Each
-source is given its position; each stateful operator loads the live segments
-named by the manifest; each sink reads the target's last commit tag. Rows
-replayed between the recorded positions and the sinks' last tags are
-re-applied by operators (their state was snapshotted before those rows) and
-skipped by sinks whose tag already covers them. There is no reconciliation
-step: the checkpoint is the only unit of durability.
+source is given its position; each stateful operator loads the manifest of
+that recorded checkpoint, never the newest one; each sink reads the target's
+last commit tag. Rows replayed between the recorded positions and the sinks'
+last tags are re-applied by operators and skipped by sinks whose tag already
+covers them. Change capture does not rely on the re-read being identical: the
+sealed rows of each checkpoint are archived before the merges and restored on
+recovery. A streaming table whose re-read is not guaranteed identical is
+refused at analysis. There is no reconciliation step: the checkpoint is the
+only unit of durability.
 
 ## Failure cases, by component
 
@@ -90,7 +97,9 @@ step: the checkpoint is the only unit of durability.
 | A sink commit fails after the target applied it | The next start reads the target's tag, sees the id, skips the replay. |
 | A sink commit fails before the target applied it | The replay commits it. |
 | State segment missing | The run fails at start with the operator and id named; no partial state is used. |
-| Two runs on one change-capture target | The second cannot take the lease and fails before writing. |
+| Two runs on one unmanaged Delta change-capture target | The second waits out the first's lease if the first is dead and takes over; a commit from the older epoch is refused by the table. |
+| A crash between the auxiliary-table merge and the target merge | The checkpoint is not committed; the sealed rows are restored and both merges rerun; the auxiliary merge is idempotent by tag. |
+| An operator wrote state for a checkpoint never recorded | Recovery reads the recorded checkpoint's manifest, so that state is ignored. |
 
 ## What is deliberately simple
 
