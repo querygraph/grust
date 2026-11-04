@@ -19,10 +19,12 @@ in DECISION-NOTES-STREAMING.md.
    windowed aggregate, key-latest, dedup       new logical and physical nodes
    append sink, merge sink                     new sink nodes
 
- execution (sail-execution driver)
-   jobs, tasks, workers                        exists
-   checkpoint coordinator                      new: ids, requests, positions,
-                                               final checkpoint at end of data
+ execution (sail-session job runners, sail-execution driver)
+   local runner (no driver), cluster runner    exist
+   checkpoint coordinator, per query, owned    new: ids, requests, positions,
+   by the job runner: in process locally,      final checkpoint at end of data;
+   delegated to the driver in cluster mode     cluster mode reaches a source
+                                               through the task that runs it
 
  sources (sail-data-source, sail-iggy)
    stream-source trait                         exists
@@ -47,7 +49,9 @@ in DECISION-NOTES-STREAMING.md.
 ```
 
 1. The coordinator decides a checkpoint and calls `request_checkpoint(id)`
-   on every source. Each source emits the marker after its current rows.
+   on every source: directly in local mode, through the task that runs the
+   source's partition in cluster mode, since the scan is rebuilt on the worker.
+   Each source emits the marker after its current rows.
 2. Each operator snapshots its state when the marker has arrived on all its
    inputs (barrier alignment), then forwards the marker.
 3. The sink commits its buffered rows tagged with the id and acknowledges.

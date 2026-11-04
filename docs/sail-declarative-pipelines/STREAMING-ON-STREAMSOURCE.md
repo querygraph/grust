@@ -80,8 +80,10 @@ retraction flag is not used for change capture.
 
 Five pieces, in the order they can land and be tested alone.
 
-**1. Checkpoint coordination.** A run owns a **checkpoint coordinator** that
-decides when a checkpoint starts (on a period, or once at the end for a
+**1. Checkpoint coordination.** A run owns a **checkpoint coordinator**,
+held by the job runner (in process in local mode, where no driver exists;
+delegated to the driver in cluster mode, where it reaches each source through
+the task that runs its partition), that decides when a checkpoint starts (on a period, or once at the end for a
 bounded run) and tells every source to emit the checkpoint marker with the
 next id. An operator with state snapshots that state when the marker has
 arrived on all its inputs, then forwards the marker. A sink **commits** when the

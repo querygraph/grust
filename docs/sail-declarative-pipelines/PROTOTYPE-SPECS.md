@@ -14,8 +14,10 @@ Interfaces below are sketches in Rust; names are proposals.
 ## P1. Checkpoints end to end (streaming S1, S2, S4, S9)
 
 **Claim.** A bounded streaming query over two rate sources, unioned, filtered
-and collected, checkpoints once at the end and finishes, with a coordinator in
-the driver assigning the id and collecting one position per source.
+and collected, checkpoints once at the end and finishes, with an in-process
+coordinator assigning the id and collecting one position per source (S1:
+owned by the job runner; the cluster implementation, which reaches a source
+through its task, is a later prototype).
 
 **Components.**
 
@@ -34,10 +36,10 @@ the driver assigning the id and collecting one position per source.
   }
   ```
   A stream source exposes it through `fn as_checkpointable(&self) -> Option<&dyn CheckpointableSource> { None }` on the stream-source trait, the only change to that trait.
-- `CheckpointCoordinator` in `sail-execution`'s driver: holds the run's sources, issues ids, waits for every source's `request_checkpoint`, stores positions in memory for the prototype, and issues the final checkpoint when every source has reported end of data.
+- `CheckpointCoordinator` in `sail-common-datafusion`, owned by the query: holds the run's sources, issues ids, waits for every source's `request_checkpoint`, stores positions in memory for the prototype, and issues the final checkpoint when every source has reported end of data. Driven by the test in the prototype; the local job runner would own it.
 - The rate source implements the interface: its position is the number of rows emitted per partition; `bound_now` makes it stop after the rows already scheduled.
 - The collector finishes when it has seen end of data on its input and then the next checkpoint marker, instead of when the input closes.
-- A union of two flow-event inputs aligns markers: it holds an input after its marker until the other input's marker with the same id arrives, then forwards one marker.
+- Alignment happens where partitions merge (a union never interleaves partitions): the merge holds a partition after its marker until every partition's marker with the same id has arrived, then forwards one marker.
 
 **Test.** Two rate sources at ten rows per second, bounded after one second,
 unioned, filtered on an odd value, collected. Asserts: one checkpoint id

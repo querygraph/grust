@@ -20,22 +20,33 @@ resumes from it with each row having had exactly one effect.
 
 **Context.** The marker model says each source emits a checkpoint marker "to
 start a new checkpoint", but nothing in Sail decides when, assigns the id, or
-records the positions. Something must: the coordinator.
+records the positions. Something must: the coordinator. Two facts about
+Sail's execution shape it. Local mode has no driver: the local job runner
+executes the plan directly in the session's process. In local-cluster and
+Kubernetes modes the cluster job runner starts a driver, and a stream
+source's scan does not stay in the driver's process: the plan codec ships the
+source's options to a worker, which rebuilds the scan there. A coordinator can
+therefore reach a source only through the task that runs its partition.
 
 **Options.**
-1. In the session, next to the streaming-query manager that already tracks
-   query ids, status and stop requests.
-2. In the execution driver, which already owns job state, task placement and
-   worker lifecycle, in both local and cluster mode.
+1. A coordinator per query owned by the job runner: in process for the local
+   runner, calling the sources directly; delegated to the driver by the
+   cluster runner, which reaches each source through a request to the task
+   running its partition and reads the position back in the task's status.
+   One interface, two implementations.
+2. Driver only, with local mode gaining a driver it does not have today.
+3. In the session, next to the streaming-query manager.
 
-**Recommendation.** The driver. In cluster mode the sources run on workers and
-the driver is the one place that can ask all of them to mark and can collect
-their positions; local mode runs a driver too, so one implementation serves
-both. The session keeps what it has: the query handle, status, stop.
+**Recommendation.** Option 1. It changes nothing for local execution of
+non-streaming queries, keeps the session's streaming-query manager as it is
+(query handle, status, stop), and makes the cluster path an implementation of
+the same interface rather than a different design. Option 2 would change local
+execution for everyone.
 
-**What settles it.** Your preference, and the prototype P1, which puts a
-coordinator in the driver and shows a bounded query over two rate sources
-checkpointing and finishing.
+**What settles it.** Your preference. Prototype P1 implements the interface
+and drives a coordinator in process over two rate sources; the driver-to-task
+request of the cluster implementation is the next prototype if you want it
+shown before deciding.
 
 ---
 
