@@ -12,7 +12,10 @@ Reading order, with what each document is for and what the reviewer decides.
 | 5 | EXTENSIONS-ON-ARROW-C-ABI.md | The extensions proposal: Arrow-only C boundaries, decoupled from streaming | Ready to post, or one more pass |
 | 6 | DECISION-NOTES-EXTENSIONS.md | E1 to E5 | Whether E1 (adopt Comet's boundary unchanged) is the opening post |
 | 7 | PROTOTYPE-SPECS.md | P1 to P6 with interfaces and the one test each | Which two to start on day 2 (plan says P1 and P5) |
-| 7a | PROTOTYPE-RESULTS-EXTENSIONS.md | What P5 showed, in the results format | Whether to run Comet's and Sedona's libraries through it yourself |
+| 7a | PROTOTYPE-RESULTS-STREAMING.md | What P1 to P4 showed, by the second session (snapshot of their branch at 32f858e8) | Whether the four establish enough to post the proposals |
+| 7b | PROTOTYPE-RESULTS-EXTENSIONS.md | What P5 showed, in the results format | Whether to run Comet's and Sedona's libraries through it yourself |
+| 7c | STREAMING-REVIEW-AGAINST-RUNTIME.md | The second session's review of the streaming documents against the current change-capture runtime (snapshot at 10385dde); already folded in | Read for the reasoning behind the change-capture proposal |
+| 7d | STREAMING-MODEL-FACTS.md | The second session's fact base on what carries over from the current streaming layer and what is replaced (snapshot at 9ecdcff9); note it predates the end-of-data finding | Background only |
 | 8 | WRITING-RULES.md | The standard every outward document meets | Adopt |
 | 9 | SHEHAB.md | The maintainers' own agent rules, verbatim | Read once |
 
