@@ -35,5 +35,10 @@ Still open, by owner:
 - The second implementation session: a review of the streaming documents
   against the current change-capture runtime, requested; its findings go
   into the documents before posting.
-- The ORC optional-crate unit: in the branch gate; lands on pass, not
-  proposed upstream.
+- The ORC optional-crate unit landed (branch root `99dc47788`), not
+  proposed upstream; the frozen harness now builds with the branch's
+  optional features.
+- Prototypes built so far, all local and unpushed: P1 (checkpoints end to
+  end) and P2 (append sink with tagged commits) by the second session, with
+  two findings already folded into S1 and S6; P5 (the Arrow-only scalar
+  kernel loader with a Sail-owned fixture, three tests) by this session.
