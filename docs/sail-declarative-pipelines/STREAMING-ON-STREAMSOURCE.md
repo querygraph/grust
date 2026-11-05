@@ -7,7 +7,7 @@ uses Sail's existing streaming plans to provide that behavior.
 
 It does not propose a second streaming engine or full Structured Streaming
 operator coverage. Recovery scope and changes to existing marker contracts
-need agreement before production implementation.
+remain open design choices.
 
 ## Fit with Sail
 
@@ -29,6 +29,9 @@ already describe waiting for a checkpoint after end of data.
 
 A checkpoint identifies a cut through the source positions and operator
 state. A sink makes the corresponding output visible through a table commit.
+The recovery domain is the set of effects whose progress is tracked together.
+For a sink that uses checkpoint identifiers as transaction tags, the table
+skips a transaction carrying an identifier it has already committed.
 Recording positions before a commit is necessary, but does not alone make
 recovery safe when effects complete separately.
 
@@ -38,6 +41,10 @@ must not reuse that identifier for rows through position 10: the completed
 sink would skip rows 6 through 9. A new identifier would instead repeat rows
 3 through 5 in that sink.
 
+A flow is one declared computation feeding a target. Change capture applies
+keyed updates and deletes, using a target and an auxiliary table that records
+deletion sequences. The auxiliary table stops older updates from restoring
+deleted records. One flow can therefore have two separately committed effects.
 There are three useful initial scopes:
 
 - One append sink whose output fits one table transaction.
@@ -54,15 +61,16 @@ separate guarantee and is not claimed here.
 
 Would you include two-effect change capture initially, or start with one
 append transaction? The answer determines what the recovery experiment must
-prove before a sink can be offered for merge.
+prove.
 
 ## Coordination and bounded completion
 
-We propose that the job runner own checkpoint coordination. Local execution
-has no driver; distributed execution would delegate coordination to the
-driver and reach sources through their running tasks. A separate optional
-source capability would request markers, report positions and establish a
-bounded end. The exact interfaces depend on the recovery decision.
+For a recovery domain contained within one job, we propose that the job runner
+own checkpoint coordination. Local execution has no driver; distributed
+execution would delegate coordination to the driver and reach sources through
+their running tasks. A separate optional source capability would request
+markers, report positions and establish a bounded end. The exact interfaces
+depend on the recovery decision.
 
 Operators with several inputs would align markers by holding each input at
 its barrier until the other inputs reach the same checkpoint. Requests must
@@ -83,10 +91,10 @@ states the offset and multiple-batch behavior.
 
 For Delta, the proposed commit tag uses its application identifier and
 transaction version. The application identity must survive restarts and
-separate full refresh generations. The checkpoint identifier names one
-prepared boundary. Other formats need their own verified commit and retry
-contract; attaching metadata alone is not an implementation of idempotency.
-An append sink rejects retractions.
+separate full refresh generations, which identify target rebuilds. The
+checkpoint identifier names one prepared boundary. Other formats need their
+own verified commit and retry contract; attaching metadata alone is not an
+implementation of idempotency. An append sink rejects retractions.
 
 Apache Iggy is a message broker that stores data in partitions. Its source
 would record each partition's next offset and incarnation,
@@ -95,18 +103,19 @@ capture must reject retention gaps and incarnation changes before advancing
 progress. The client belongs in an optional crate. Upstream dependency
 compatibility is a separate admission decision.
 
-The initial state store candidate uses Arrow segments and manifests naming
-complete snapshots. Recovery must pair source positions with the correct
-operator state and configuration. State remains while any incomplete effect
-or recovery point requires it. Merely recording a newer position does not
-permit deleting older state. Publication durability, ownership and cleanup
-need a defined protocol before the local file experiment becomes production
-storage.
+The initial state store candidate uses Arrow files, with a manifest listing
+the files in each complete snapshot. Recovery must pair source positions with
+the correct operator state and configuration. State remains while any
+incomplete effect or recovery point requires it. Merely recording a newer
+position does not permit deleting older state. Publication durability,
+ownership and cleanup need a defined protocol before the local file
+experiment becomes production storage.
 
 Checkpoint frequency trades replay size against commit and snapshot work.
-Periodic checkpoints alone do not bound memory. The prototype buffers append
-rows and rewrites complete window state; byte limits, backpressure or spill
-need an explicit resource decision. No performance envelope is established.
+Periodic checkpoints alone do not bound memory. Current experiments buffer
+append rows and rewrite complete window state; byte limits, backpressure or
+spill need an explicit resource decision. No performance envelope is
+established.
 
 ## Watermarks and differences from Spark
 
@@ -127,16 +136,19 @@ Stream joins and broader stateful coverage remain outside the initial scope.
 
 Local experiments exercise marker transport, controlled alignment, one file
 sink's restart, separate Delta write options, broker range checks and window
-restoration from recorded events. Those historical runs do not establish a
-complete recovery protocol. Source review identified untested completion,
-concurrent-request and bound-capture cases, plus a possible concurrent Delta
-creation issue.
+restoration from recorded events. Those component tests do not establish a
+complete recovery protocol. Source inspection identifies unresolved cases:
+overlapping checkpoint requests, staggered source completion, and partition
+recreation while capturing a bounded end. A possible concurrency defect in
+first-time Delta table creation is inferred from source, not a reproduced
+failure.
 
-Spark 4.2.1 source and the pinned Sail revision were inspected for this
-proposal. No Spark, broker or Rust suites were rerun during its revision.
-Distributed coordination, durable recovery and planner integration remain
-unbuilt.
+The Spark and Sail behavior described above is supported by pinned source
+inspection. No integrated Spark comparison establishes replacement
+compatibility. Distributed coordination, durable recovery and planner
+integration remain unbuilt.
 
-Please decide the initial recovery scope first. We would then use one small
-local experiment to distinguish the selected protocol's failure cases, and
-bring its evidence back before preparing an implementation for merge.
+The first decision is whether recovery covers one append transaction or one
+flow including change capture. For that scope, the next experiment must
+demonstrate correct recovery after a crash between durable effects. Only then
+can a complete streaming path claim the intended recovery guarantee.

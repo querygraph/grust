@@ -1,198 +1,215 @@
-# Streaming tables and change capture: architecture questions
+# Streaming tables and change capture: architecture
 
-Internal working architecture for the discussion packet. Every component
-choice below is proposed. No maintainer answer has been recorded. This document
-describes required properties and candidate mechanisms, not an approved
-production coordinator or a claim that the prototypes establish recovery.
+Streaming tables append newly available rows to a target without rebuilding
+its full history. Change capture applies keyed updates and deletes while
+preserving their sequence order. Both need recovery that completes interrupted
+work without losing or repeating its effects.
 
-## Decide the recovery domain first
+This design uses Sail's streaming execution model. It does not require atomic
+visibility across independent tables or a general transaction coordinator.
+The recovery scope, component ownership and watermark contract remain choices.
 
-A checkpoint identifies an input boundary, operator state and output effects.
-The recovery domain is the set of effects that must complete together.
-The maintainers must choose among these scopes before placement is settled:
+## Execution model and recovery scope
 
-| Candidate scope | Required recovery work | Deliberately excluded |
+Sail's `StreamSource` supplies a streaming scan. Its flow events carry data
+batches and ordered control markers. A checkpoint marker names an input
+boundary at which positions and operator state can be recorded for restart.
+A sink writes the resulting rows to a target. A flow is one declared
+computation feeding a target.
+
+The recovery domain is the set of output effects whose completion is tracked
+together. Its size determines which failures must be coordinated:
+
+| Candidate scope | Required recovery work | Cost or limitation |
 | --- | --- | --- |
-| One append flow into one transactional table | Stable identity, positions and state paired with its table commit | Change capture and shared recovery across tables |
-| One flow, including change capture | The preceding work plus sealed rows and separate receipts for auxiliary and target writes | Shared recovery across independent flows |
-| Several flows or sinks together | A shared prepared boundary and completion accounting for every participating effect | No additional exclusion decided yet |
+| One append flow into one transactional table | Pair source positions and any operator state with the table commit | Smallest scope; does not support change capture |
+| One flow, including change capture | Also retain repeatable input and separate completion records for its two table effects | Supports keyed changes; must recover a crash between the effects |
+| Several flows or sinks together | Coordinate participating sources, state and effects across outputs | Wider scope and shared failure handling across otherwise independent flows |
 
-A single logical change-capture sink still has two physical table effects.
-Choosing one flow per domain therefore does not eliminate partial commits.
+Change capture writes both its target and an auxiliary table. The auxiliary
+table stores deletion sequences so an older update cannot resurrect a deleted
+key. One logical flow therefore does not always mean one table transaction.
 
-## Why positions and tags are insufficient
+The recommended starting point is one flow, including change capture if its
+two-effect recovery is required. Independent multi-sink recovery can wait.
+An append-only first step is simpler but leaves keyed updates and deletes
+outside that path.
 
-Suppose both tables committed checkpoint 1 at input position 3. Checkpoint 2
-records position 6, but only A commits it. Restart from position 3 and reuse
-identifier 2 at position 10: A skips rows 6 through 9. Use identifier 3 instead:
-A receives rows 3 through 5 twice.
+## The partial-commit problem
 
-Recording positions before commits prevents an effect from having no recorded
-boundary. It does not permit replacing a partially committed boundary. Reading
-the least committed identifier is likewise insufficient without preserving the
-outstanding prepared work. The [transition model](evidence/redesign-discussion-1/checkpoint_boundary_model.py)
-and its [result](evidence/redesign-discussion-1/checkpoint-boundary-model.json)
-demonstrate this logical failure; they do not execute the Rust coordinator.
+Consider append sinks that skip a transaction identifier already committed.
+Positions below name the next unread input row. Both tables have committed
+checkpoint 1 at position 3. Checkpoint 2 records position 6, but only table A
+commits it before a crash.
 
-## Components and ownership candidates
+Restarting at position 3 and reusing identifier 2 at position 10 loses rows
+6 through 9 from A: its existing tag suppresses the entire retry. Assigning
+identifier 3 to that replay instead duplicates rows 3 through 5 in A.
 
-| Component | Existing foundation | Proposed responsibility or open choice |
-| --- | --- | --- |
-| Pipeline layer | Registration, analysis and scheduling | Build admitted flow-event plans; own user-visible run completion |
-| Streaming rewriter | Sources and stateless streaming operators | Add only the operators admitted by the chosen scope |
-| Job runner and driver | Local execution without a driver; cluster execution with worker scans | Candidate coordinator ownership, conditional on whether the recovery domain fits a job |
-| Checkpointable source | Prototype rate and Iggy implementations | Stable identity, exact position semantics, replay capability, bound capture and explicit checkpoint participation |
-| State store | Prototype Arrow snapshots and manifests | Immutable prepared snapshots, contract checks and recovery-aware retention |
-| Append sink | File sink and separate Delta write-option prototype | Tagged writes under the accepted identity and completion protocol |
-| Change-capture sink | Existing bounded runtime's validation, sealing and merge paths | Adapt archive and individual effect receipts to checkpoints; not implemented in the streaming prototypes |
+Recording positions before commits is necessary, but recovery must also
+preserve what each committed tag means. This example rules out two retry
+policies. It does not select a storage system or prove that every effect must
+share a new coordinator. Change-capture merges have different semantics, but
+their separate commits likewise need an explicit recovery protocol.
 
-The source interface must not silently treat a non-resumable source as safe.
-Repeatable rows are also weaker than repeatable computation: nondeterministic
-expressions and watermark interleaving can change output.
+## Component responsibilities
 
-## Candidate prepared-checkpoint contract
+Sail already supplies streaming scans, flow events, the streaming rewriter and
+local and cluster job execution. Recoverable table writes require additions:
+source checkpoint participation, durable progress, state snapshots and sink
+completion tracking. The table assigns those responsibilities without assuming
+that each needs a new component.
 
-If the accepted scope includes partial effects, a candidate is a durable
-prepared record before the first output commit. It would bind:
-
-- Stable flow identity and refresh generation, distinct from a transient query handle.
-- The participating sources, their incarnations and exact input boundaries.
-- The operator manifests and the schema and plan contract they describe.
-- Sealed output artifacts where re-evaluation is not an accepted recovery mechanism.
-- Evidence that every original change row passed the required validation.
-- The participating table effects and a separate completion receipt for each.
-
-This is a contract to discuss, not a new control-store implementation request.
-Reuse of the current control model should be evaluated before inventing another
-log. Storage placement, atomic publication and power-loss guarantees remain open.
-
-A possible execution order is alignment, state and artifact preparation,
-durable publication of the prepared record, then individually tagged effects.
-Recovery finishes the original prepared effects using their original identity.
-It cannot assign newly evaluated rows to a tag that an effect already holds.
-Source replay, if used, must reproduce the exact accepted boundary and semantics.
-An archive may instead supply already prepared output without re-reading it.
-
-The coordinator may report completion only after every required effect is
-confirmed. An output stream ending is not itself that confirmation. Visible
-partial table effects can exist before overall completion; this proposal does
-not provide atomic visibility across independent tables.
-
-## State retention and source completion
-
-Recovery loads the manifest named by the accepted recovery record, not the
-newest manifest. A snapshot referenced by outstanding work remains immutable.
-Reclamation must retain everything needed by incomplete effects and the oldest
-valid restart point. Merely recording a newer source position cannot authorize
-deletion of older state. Schema equality alone is not a complete operator
-compatibility check.
-
-A bounded source captures its end in coordination with its reader and checks
-incarnation while doing so. Otherwise consumption can pass the captured end,
-or a recreated empty partition can appear already finished. End of data means
-no further rows, not release from every checkpoint obligation. Independent
-source bounds do not imply one atomic pipeline-wide snapshot.
-
-An input that ends and later closes must count once. Ordinary and final
-checkpoint requests must not overwrite each other. Serializing requests is a
-candidate initial rule; explicit request queues are another. If periodic
-checkpoints are admitted for bounded runs, final completion must wait for
-outstanding checkpoints and then the globally final checkpoint.
-
-The current append sink holds interval data in memory. A final-only policy
-therefore needs an admitted size limit or spill policy. Cadence alone is not
-a memory bound: slow commits, open-window cardinality and stalled watermarks
-also need resource controls. Full snapshots trade replay distance against
-state materialization and write cost. No performance claim is established.
-
-## Watermark contract remains open
-
-Upstream's marker promises that a source emits no later row with an older
-timestamp. An observed-event-time threshold does not itself establish that
-promise. S7 asks whether to enforce the existing guarantee before emitting a
-marker or explicitly change the marker's meaning and downstream obligations.
-The proposed acceptance of an older row into a still-open window must fit that
-answer. It cannot be called an unchanged contract without resolving this.
-
-Combining inputs, excluding ended inputs and restoring watermark progress are
-separate decisions. The recorded-event prototype does not establish recovery
-under different input schedules. Preserving only a combined watermark while
-resetting input trackers is not assumed sufficient here.
-
-## Change-capture obligations to preserve
-
-Validate original rows before reducing them. A losing row with a null sequence
-must not disappear before validation. Reduce within the checkpoint interval,
-retain deletes and their sequences, and seal the winners once before effects.
-Ordering across intervals remains a responsibility of the target and auxiliary
-tables in the existing runtime, not an unbounded map of every key in the reducer.
-
-There are two distinct tie guarantees. Sealing makes retries use the same
-chosen winner. A deterministic winner across independently scheduled sources
-also needs an explicit total provenance order. The prototype uses row index
-in an already ordered batch and establishes only that narrower case.
-
-Retain auxiliary-table and target-table outcomes separately. Do not discard
-sealed rows or their validation evidence because one table committed. A
-source retention gap may prevent future reading without invalidating an
-already sealed effect that recovery can finish from its archive.
-
-Preserve stored-key checks, name resolution, schema selection and target
-capability refusals. Full refresh must check source history before destructive
-reset under the proposed Sail retained-origin policy, and define what happens
-to interrupted effects and old identities. Preserve enrollment, fencing,
-target-recreation checks and reset contracts where the existing runtime
-enforces them. Catalog commit ordering is not evidence of an equivalent
-stale-writer fence.
-
-## Evidence and its limits
-
-The reviewed prototype heads are P4 `4fad33ca5`, covering P1 and P2 against
-upstream `62251e0a2`, and P3 `ef5f848a7` on the integration branch. The current
-runtime was inspected at `99dc47788`. The review did not rerun Rust, Spark or
-broker suites. Historical prototype results remain distinct from new source
-inspection and the transition-model counterexample.
-
-| Inspected evidence | What it establishes or leaves open |
+| Component | Responsibility and ownership choice |
 | --- | --- |
-| `sail-physical-plan/src/streaming/merge.rs:135` in P4 | Ended and closed counts can count one input twice; controlled reproduction remains open |
-| `sail-common-datafusion/src/streaming/checkpoint.rs:98` and `sail-data-source/src/formats/rate/checkpoint.rs:116` in P4 | Requests are not serialized and use a latest-value channel; overlap needs a controlled test |
-| `sail-physical-plan/src/streaming/state_store.rs:132` in P4 | Retention API allows removal after recording; no active call site was found |
-| `sail-physical-plan/src/streaming/changes.rs:20` in P4 | Tie rule uses supplied row order, not source provenance |
-| `sail-iggy-bounded/src/stream.rs:198,459` in P3 | Bound capture lacks an incarnation check before early completion |
-| `sail-delta-lake/src/physical_plan/planner/op_write.rs:51` and `sail-delta-lake/src/transaction/mod.rs:1390` in P4 | Concurrent table creation may bypass transaction revalidation; an unexecuted source-path inference |
-| Runtime `autocdc/write.rs:420,441,474` | Original-row validation precedes reduction; winners are sealed once |
-| Runtime `autocdc/durable.rs:672,711,737,774` | Archive restoration, preparation before effects, separate effect checks and completion after effects |
-| Runtime `autocdc/prepared.rs:11` | Stronger identity-bound validation receipt is modeled and tested separately, with production wiring still pending |
+| Pipeline planner | Bind source reads and target writes; refuse unsupported query shapes |
+| Streaming rewriter | Build flow-event operators for the selected query shapes |
+| Job runner and driver | Candidate owners of checkpoint requests and completion; local execution has no driver, while cluster scans run on workers |
+| Source checkpoint capability | Report source identity, exact positions, bounded ends and replay guarantees |
+| Stateful operator | Snapshot the state associated with its aligned input boundary |
+| State store | Publish snapshots and retain every snapshot still required for recovery |
+| Table sink | Perform a recoverable write and expose evidence of its completion |
 
-Prototype paths are relative to each named checkout's `crates` directory;
-runtime paths begin at `crates/sail-spark-connect/src/pipelines`.
-Primary Spark-source evidence is recorded in
-[evidence/redesign-discussion-1/SPARK-SEMANTICS.md](evidence/redesign-discussion-1/SPARK-SEMANTICS.md).
-This architecture does not derive Spark parity from prototype tests.
+Coordinator placement follows the domain. One job may fit its existing job
+runner; several jobs may need broader ownership. Source participation and
+completion contracts constrain that choice. Existing lifecycle and durable
+progress facilities should be reused where their guarantees fit.
 
-## Reuse assessment
+## Candidate recovery protocol
 
-| Preserve or adapt | Boundary of the claim |
-| --- | --- |
-| Flow binding, admission and name resolution | Recheck admitted shapes when planning changes; not a wholesale unchanged-code claim |
-| Validation before reduction and sealing once | Keep the behavior even if interval construction changes |
-| Archive identity and replay, individual effect receipts | Checkpoint identifiers replace sequencing units, not these obligations |
-| Merge semantics and target capability checks | Adapt under verified source semantics and the selected target scope |
-| Lease, fencing, enrollment and refresh rules | Preserve actual target coverage; no claim all catalogs are fenced |
-| Window and deduplication rules and tests | Adapt event scheduling and recovery; do not label changed outcomes as parity |
-| Existing Spark suites | Preserve as evidence and regression coverage; rerun applicable suites after implementation |
+A prepared checkpoint is a durable description of work that may have started
+writing but is not yet complete. One candidate records this description before
+the first output effect. It binds:
 
-Replace bounded scan scheduling and per-batch execution loops only after the
-accepted streaming plan preserves their required behavior. Do not classify
-intent identity, archives or validation receipts as obsolete plumbing.
-Joins and unsupported table formats do not become supported through reuse.
+- A stable flow identity and a generation distinguishing each full rebuild of its target.
+- Source identities and exact input boundaries, including partition incarnations that distinguish recreated sources.
+- Operator snapshots, their schemas and the plan configuration that gives the state meaning.
+- Repeatable output, either saved rows or a proved equivalent replay mechanism.
+- Evidence that all original change rows passed the required validation.
+- Required table effects and a completion receipt identifying each successful write.
 
-## Next decision and allowed work
+Sealing means persisting selected rows unchanged for retries. It avoids
+re-evaluating nondeterministic expressions or choosing a different winner
+among tied changes. Replay without sealing is an alternative only if both
+the source range and transformed results remain reproducible and available.
+Source positions alone establish neither property.
 
-Present S6 first, then source participation and coordinator ownership. The
-decision register records the options, evidence, maintainer answer and the
-scope that answer permits. No answer has yet authorized production work.
-Any local experiment should test one disputed property and retain its limits.
-The next deliverable is the concrete discussion packet for owner review,
-not an automatically expanded coordinator prototype.
+A candidate execution order is input alignment, state and row preparation,
+durable publication of the prepared checkpoint, then individually tagged
+effects. Recovery completes the original effects with their original meaning.
+It must not attach newly evaluated rows to a tag a table already holds.
+
+A checkpoint completes only when every required effect is confirmed. A closed
+result stream does not prove that. Readers may see partial table effects
+before completion; cross-table atomic visibility is a separate guarantee.
+
+Storage placement and durability remain open. Atomic file rename does not
+alone establish survival after power loss. Format-specific transaction checks
+must also remain valid when concurrent writers refresh a table snapshot.
+
+## State and source lifecycle
+
+A manifest names the files forming one operator snapshot. Recovery loads the
+manifest associated with its input boundary, never simply the newest file.
+A snapshot referenced by outstanding effects stays immutable. Cleanup retains
+all state required by incomplete effects and the oldest valid restart point.
+Recording a newer source position does not itself permit deleting older state.
+
+Schema equality alone cannot establish snapshot compatibility. Window sizes,
+key expressions and other operator configuration can change the meaning of
+identically typed state. Recovery must check that contract too.
+
+A bounded run captures an end position for each source and finishes after
+processing those ranges. Each source must coordinate bound capture with its
+reader so consumption cannot pass the bound before it is installed. A broker
+partition's incarnation must be checked during capture as well as during
+reads. Independent source bounds do not imply an atomic pipeline-wide snapshot.
+
+End of data means no further rows; it does not release every checkpoint
+obligation. An input that ends and later closes counts once. Ordinary and final
+checkpoint requests must be serialized or queued so no identifier disappears.
+Final completion waits for the participating sources and required table effects.
+
+## Watermarks and resource limits
+
+An event-time window groups rows into a timestamp interval. A watermark tells
+operators when older data can no longer change a result. Sail's existing
+[marker contract](https://github.com/lakehq/sail/blob/62251e0a27bbab0a15547562e829cad2a418f353/crates/sail-common-datafusion/src/streaming/event/marker.rs)
+promises that a source will emit no later row with an older timestamp.
+A threshold derived from observed event times does not itself establish that
+promise, because late rows can still arrive.
+
+There are two choices: enforce the existing guarantee before rows enter the
+downstream stream, or amend the marker to carry a threshold with explicit
+late-row rules. The proposed window rule accepts a row while at least one
+window it belongs to remains open, even if its timestamp precedes the
+threshold. That rule must be reconciled with the marker contract.
+
+Combining input watermarks, handling ended inputs and restoring progress are
+related decisions. Replaying identical rows under a different input schedule
+can change which rows reach an operator before its watermark advances.
+A snapshot test over one recorded event order does not establish equivalent
+results under another order.
+
+Checkpoint frequency trades buffered output and replay distance against commit
+and snapshot work. An append sink that buffers until the next marker needs a
+size limit, backpressure or spill policy. Periodic checkpoints alone do not
+bound memory. Open-window cardinality and stalled watermarks can also grow
+state, while frequent full snapshots increase materialization and write cost.
+No throughput or memory envelope follows from the event model alone.
+
+## Change-capture validation, ties and ownership
+
+A change row carries a key, an ordering value and an insertion, update or
+delete. Validate every original row before reduction or either table effect.
+A losing row with an invalid sequence must still fail the interval. Spark
+4.2.1 [validates before reducing and then performs the two merges](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandler.scala#L39).
+The proposed reducer chooses one winner per key between checkpoint markers.
+Ordering across intervals belongs in the target and auxiliary tables, avoiding
+an unbounded duplicate of every target key in operator state.
+
+Spark [leaves equal-key, equal-sequence selection undefined](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessor.scala#L80).
+Sealing preserves a chosen winner during retry. A stronger guarantee across
+independently scheduled inputs also needs a total order over source identity,
+partition and position. Selecting the later row of one batch does not define
+that order. Prefer stable sealed winners unless the stronger contract is needed.
+
+Keep both table outcomes and validation evidence until pending effects finish.
+An archive of sealed rows can complete a prepared effect despite lost source data;
+it cannot supply unread future input. Full refresh rebuilds the target and
+needs a distinct recovery identity. A requirement to rebuild from the absolute
+source origin also needs a retained-history check before destructive reset.
+That is a source-admission policy, not an automatic property of table reset.
+
+A lease grants temporary writer ownership. A fence rejects writes carrying an
+older ownership number after a successor takes over. Catalog commit ordering
+alone does not provide this guarantee. The design must either require target
+fencing or state which targets depend on externally enforced single-writer
+ownership. Target recreation and interrupted refresh need the same protection.
+
+## Tests that distinguish the choices
+
+The decisive recovery test interrupts execution between required table effects,
+then resumes after new input has arrived. Every completed tag must retain its
+original meaning, and required state must remain available. Repeat it with
+source data removed after sealing to distinguish archive recovery from replay.
+
+Source tests must overlap checkpoint requests, stagger end-of-data and closure,
+and recreate a partition during bound capture. Stateful tests must change input
+interleaving and operator configuration during restart. Writer tests must pause
+an owner past lease expiry and resume it after takeover. Resource tests must
+exercise a large backlog, stalled watermarks and slow commits.
+
+Existing mechanism tests cover controlled marker alignment, one file sink's
+simulated restart, broker resume checks and recorded-window restoration.
+They do not establish the combined protocol, distributed coordination or a
+resource envelope. [Prototype results](PROTOTYPE-RESULTS-STREAMING.md) provide
+optional detail; the architecture's recovery obligations do not depend on
+those experiments having passed.
+
+The consequential choices are the initial flow and operator scope, whether
+existing job ownership can coordinate its recovery, and the watermark promise
+for any included windows. The recommended first capability is one independently
+recoverable flow, including change capture only with both table effects covered.
+Does that scope meet the intended use case, and which supported targets and
+resource limits should constrain its implementation?

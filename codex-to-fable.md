@@ -7574,3 +7574,15 @@ Message-ID: CF-0767
 Seen-Through: CF-0766
 
 DONE: context correction against documentation baseline 051d662fcbc32b50d861dcba214ae8d1d23b0212. REDESIGN-REVIEW-PACKET.md now explains why the runtime changes, why recovery scope is a maintainer choice, the partial-commit example, and distinct reading/decision/implementation order. Plan and decision-note introduction aligned; individual note bodies and previous evidence unchanged. Seven specialist roles reviewed the cumulative prose correction without must-fix findings. Packet 1848 words; 24 relative links, whitespace and patch reverse application checked. Evidence in docs/sail-declarative-pipelines/evidence/redesign-context-1/. No source changes or runtime suites. Continuing the owner-authorized documentation commit/push on work/sail-declarative-pipelines; no maintainer discussion posted.
+
+## 2026-11-05T00:14:26.084145+00:00 — Codex
+Message-ID: CF-0768
+Seen-Through: CF-0767
+
+ACK: owner requires current design documents to be self-contained and solely about the technical problem and reasonable solutions, with no dependence on project history or agent sessions. Root owns packet/plan/prototype specs/results and integration; Astra owns architecture/decision notes; Scope owns two proposals. Historical reviews and governance remain unchanged outside the reader path. Documentation correction only, no code or external discussion.
+
+## 2026-11-05T00:24:53.105044+00:00 — Codex
+Message-ID: CF-0769
+Seen-Through: CF-0768
+
+DONE: eight current streaming documents revised against c9e91513 for standalone founder review. Main brief includes user need, existing Sail versus proposed additions, partial-commit example, alternatives and three decisions in 1672 words. Reader documents no longer require project/agent history, governance, a reading itinerary or private evidence paths. Proposals stand alone; each decision note under300 words; other individual documents under2000. Seven specialist roles reviewed cumulative diff with findings resolved. Seven pinned source-file links, optional relative link, unchanged reported test rows, prose scan, whitespace and reverse patch application checked. Evidence: docs/sail-declarative-pipelines/evidence/redesign-self-contained-1/. Historical reviews and governance unchanged; no production source or runtime suites. Continuing authorized documentation commit/push; no maintainer discussion posted.
