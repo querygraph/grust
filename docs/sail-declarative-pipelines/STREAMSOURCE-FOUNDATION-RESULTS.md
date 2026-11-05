@@ -86,10 +86,15 @@ costs rather than establish production throughput.
 | Data only, across tested sizes and selectivities | 0.99–1.01 |
 | Alternating data and markers | 17.9–141.1 |
 
+An additional optimized test-profile comparison retained exact outputs and
+unchanged source. Data-only medians were 0.9971–1.0082; alternating-marker medians
+were 30.5485–600.5340. Heavy shared-host load prevents attributing changes from the
+unoptimized ratios to optimization. The
+[completed comparison](evidence/streamsource-build-2/README.md) retains every cell.
+
 The alternating fixture produced one output batch per input row. This is a
 material unresolved performance limitation. Keep the implementation as a
-correctness reference while repeating the comparison in an optimized build and
-varying marker frequency and placement.
+correctness reference while varying marker frequency and placement.
 
 Combining evaluated data with its following marker may reduce dispatch costs,
 but adds buffering, copies and latency. A proposed combiner must bound retained

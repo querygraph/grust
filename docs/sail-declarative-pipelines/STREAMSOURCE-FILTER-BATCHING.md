@@ -13,14 +13,14 @@ small predicate calls and output batches, even when the input arrived as one bat
 
 A shared-host diagnostic compared the new filter with its predecessor using
 identical safe predicates and verified outputs. Ratios divide new elapsed time
-by previous elapsed time. Data-only medians were 0.99 to 1.01. Alternating-marker
-medians were 17.9 to 141.1, with one output batch per input row. These measurements
-used an unoptimized build; they identify fragmentation without establishing
-production throughput.
+by previous elapsed time. In an optimized test build, data-only medians were
+1.00 to 1.01. Alternating-marker medians were 30.5 to 600.5, with one output batch
+per input row. Heavy host load limits timing interpretation; this is not a
+production throughput qualification.
 
 Keep this implementation as a correctness reference while qualifying its cost.
-First repeat the same cases in an optimized build, then vary marker placement and
-frequency. Preserve every result, including slower cases.
+Next vary marker placement and frequency. Preserve every result, including
+slower cases. The optimized comparison confirms fragmentation remains material.
 
 ## Options and next decision
 

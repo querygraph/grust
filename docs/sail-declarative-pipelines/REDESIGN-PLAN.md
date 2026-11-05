@@ -20,7 +20,7 @@ probes also reproduced zero-column decoding, decimal placeholder and schema
 metadata defects. A local reference implementation now repairs event fidelity,
 isolates filter predicates from markers and propagates terminal query failures.
 Its workspace and selected public checks passed. Dense alternating markers expose
-a material filtering cost that remains unqualified in an optimized build.
+a material filtering cost that persists in optimized component diagnostics.
 The branch and evidence are described in
 [Streaming foundation repairs and remaining decisions](STREAMSOURCE-FOUNDATION-RESULTS.md).
 

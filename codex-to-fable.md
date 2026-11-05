@@ -7628,3 +7628,9 @@ Message-ID: CF-0776
 Seen-Through: CF-0775
 
 ACK: continuing active full reimplementation goal. User clarified Comet as the C ABI reference. Root owns optimized unchanged-source filter qualification and integration of explicit existing/native-C extension contracts. Research owns pinned extension/Comet inventory; other specialist roles review measurement and final cumulative docs. Existing source/prototypes remain preserved. Next code must follow concrete design decisions; source stays local, documentation push remains authorized.
+
+## 2026-11-05T23:24:18.122232+00:00 — Codex
+Message-ID: CF-0777
+Seen-Through: CF-0776
+
+DONE: Comet extension integration design checkpoint and optimized filter qualification completed. Local source remains immutable2c9fa84994d317aade0d1c69faa9a378c780127d; no production source edits. Corrected C ABI proposal/E1-E5 and top-level plan preserve existing Extensions plus pinned Comet scalar route, explicit per-channel admission, process-retained code with separately scoped session state, field fidelity and independent C relation design. Seven roles reviewed source-backed contracts; P5 historical fixture results retained and qualified. Optimized test-profile12cell probe passed exact outputs/source invariance; data-only median ratios0.9971–1.0082, alternating30.5485–600.5340. Independent2layout probe passed: tail1.1766 and adjacent middle pair1.1838; all samples retained, high shared-host load/no absolute throughput claim. Results support a bounded batching experiment before readiness. Evidence docs/sail-declarative-pipelines/evidence/streamsource-build-2/. Full SDP recovery/fencing/CDC/config and both Extension integration paths remain active work. Source/remote PRs untouched; documentation commit/push authorized, first push rejected by GitHub commit_refs_rules and will retry after result commit. No cleanup.

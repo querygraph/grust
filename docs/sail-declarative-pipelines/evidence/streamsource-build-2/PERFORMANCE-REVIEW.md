@@ -112,3 +112,76 @@ through dependency compilation but still contained no completed comparison.
 The source pin and initial receipt remained unchanged. No timing result is
 claimed. This review performed no source edits, builds or runtime measurements;
 the saved request and governing-file compliance remains confirmed.
+
+## Completed optimized comparison
+
+The optimized comparison subsequently completed in the same run directory.
+Read its complete twelve-cell summary, receipt and final log. The log contains
+a completed optimized test-profile build and one passing exploratory test.
+The receipt reports exit zero, unchanged tracked source, and the same immutable
+`2c9fa84994d317aade0d1c69faa9a378c780127d` pin. The optimization override remains
+`CARGO_PROFILE_TEST_OPT_LEVEL=3`; this is not a release-LTO run.
+
+| Batch rows | Markers | Selected data | Median candidate/baseline ratio |
+| ---: | --- | ---: | ---: |
+| 128 | none | 0% | 1.0057 |
+| 128 | none | 50% | 0.9971 |
+| 128 | none | 100% | 1.0082 |
+| 128 | alternating | 0% | 47.9481 |
+| 128 | alternating | 50% | 30.5485 |
+| 128 | alternating | 100% | 57.6963 |
+| 8192 | none | 0% | 1.0046 |
+| 8192 | none | 50% | 0.9993 |
+| 8192 | none | 100% | 1.0010 |
+| 8192 | alternating | 0% | 106.7252 |
+| 8192 | alternating | 50% | 60.6014 |
+| 8192 | alternating | 100% | 600.5340 |
+
+The marker-free median range is 0.9971–1.0082. Alternating-marker medians remain
+large at 30.5485–600.5340, with the same 65,536 candidate output batches versus
+512 or eight baseline outputs. Exact ordered-output verification passed before
+timing. Thus optimization does not eliminate the fixture’s structural batching
+cost. The adverse fixture does not establish its frequency in production.
+
+The host was heavily loaded: its one-minute load average rose from 5.85 at the
+start to 71.17 at completion on ten logical CPUs. There is no CPU isolation,
+steal measurement or same-load control. Paired execution and retained samples
+help expose variability but do not remove systematic interference. These are
+shared-host diagnostic ratios. Comparing their magnitude with the earlier debug
+ratios cannot establish the effect of optimization or a production slowdown.
+
+The two planned additional layouts, one tail marker and a grouped interior marker
+run at 8192 rows and half data selectivity, are an appropriate bounded next
+experiment. They can distinguish a small number of data/marker runs from the
+existing alternating case without introducing a new batching policy. Those
+results are not yet reviewed here. No production code or broad performance
+qualification follows from the completed comparison alone.
+
+## Completed sparse and grouped layout comparison
+
+Reviewed `review-logs/filter-layout/receipt.json`, `SUMMARY.md` and the complete
+test log in the same detached source worktree. The log has a completed optimized
+test-profile build and one passing exploratory test. The receipt reports exit
+zero and unchanged source at `2c9fa84994d317aade0d1c69faa9a378c780127d`.
+Both layouts use 8192-row inputs, half data selectivity and seven alternating-order
+pairs. Exact ordered rows are verified before timing.
+
+| Layout | Median candidate/baseline ratio | Pair range | Output batches baseline/candidate |
+| --- | ---: | ---: | ---: |
+| One tail marker | 1.1766 | 1.0112–1.2586 | 8/16 |
+| Two adjacent middle markers | 1.1838 | 1.0105–1.2519 | 8/24 |
+
+Additional filtering, slicing and output dispatch are associated with measurable
+overhead even in these sparse/grouped fixtures. This experiment does not isolate
+dispatch cost from slicing or filtering cost. Its shared-host load averages were
+9.71 at start and 9.41 at completion, and it remains a diagnostic rather than a
+production performance result. Neither these ratios nor the dense-marker ratios
+should be dismissed as proof of acceptable overhead.
+
+The evidence supports prototyping bounded assembly of already evaluated data
+with its immediately following marker run. Preserve that marker’s delivery before
+evaluating subsequent data, cap retained bytes and preserve cooperative polling.
+Compare the prototype against this correctness reference with the same exact-row,
+error-order, lifetime and layout cases. Extra copying may outweigh dispatch savings;
+the experiment justifies testing the mechanism, not adopting it or claiming a
+speedup. No production source changes or builds were performed by this reviewer.
