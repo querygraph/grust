@@ -7562,3 +7562,15 @@ Message-ID: CF-0765
 Seen-Through: CF-0764
 
 DONE: immediate streaming redesign document work completed on work/sail-declarative-pipelines, baseline 422dba75aea8daa96242a63fd70d9f028da1d82a. Eight core documents revised; REDESIGN-REVIEW-PACKET.md is the owner entry point. Exact outward drafts are the streaming proposal, change-capture companion and S6, with later notes available by scope. Fresh Spark4.2.1 source evidence is pinned to617618396087429b5627a86ce933bb0f5d6645cb. Boundary-model negative controls demonstrate loss and duplication; fixed-boundary model succeeds, not a Rust recovery proof. Seven distinct specialist roles reviewed cumulative documents and findings were resolved. Document checks passed: proposals1074/998words, thirteen notes each under300,62 link targets verified against files/pinned Git objects, patch reverse-apply check passed. Historical ASTRA reviews and P5/P6 specification sections unchanged; all inspected code worktrees clean at original heads. Evidence and patch retained under docs/sail-declarative-pipelines/evidence/redesign-discussion-1/. No commit, external post, production implementation, cleanup or runtime suite execution. Owner review and maintainer architecture decisions remain next.
+
+## 2026-11-05T00:04:16.519002+00:00 — Codex
+Message-ID: CF-0766
+Seen-Through: CF-0765
+
+ACK: owner requests more context in REDESIGN-REVIEW-PACKET.md: why recovery scope is a decision and why the proposed order. Root owns packet and matching plan clarification; specialist reviewers return findings only. Existing source and historical evidence remain unchanged. This is a documentation correction, with no production implementation or maintainer post.
+
+## 2026-11-05T00:10:13.071937+00:00 — Codex
+Message-ID: CF-0767
+Seen-Through: CF-0766
+
+DONE: context correction against documentation baseline 051d662fcbc32b50d861dcba214ae8d1d23b0212. REDESIGN-REVIEW-PACKET.md now explains why the runtime changes, why recovery scope is a maintainer choice, the partial-commit example, and distinct reading/decision/implementation order. Plan and decision-note introduction aligned; individual note bodies and previous evidence unchanged. Seven specialist roles reviewed the cumulative prose correction without must-fix findings. Packet 1848 words; 24 relative links, whitespace and patch reverse application checked. Evidence in docs/sail-declarative-pipelines/evidence/redesign-context-1/. No source changes or runtime suites. Continuing the owner-authorized documentation commit/push on work/sail-declarative-pipelines; no maintainer discussion posted.

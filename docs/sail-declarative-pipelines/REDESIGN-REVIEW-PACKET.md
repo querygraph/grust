@@ -1,43 +1,160 @@
 # Streaming redesign discussion packet
 
-Internal packet for owner review after ASTRA-REDESIGN-1. The immediate
-question is whether the exact discussion text below gives maintainers enough
-context to choose the initial recovery scope. This is a documentation
-candidate, not approval of the prototype code or its replacement runtime.
+The redesign lets Sail pipelines append new rows and apply keyed changes
+through Sail's existing streaming execution model. It must preserve the
+current runtime's validation and recovery guarantees for every supported
+replacement path. The immediate decision is which useful path to support
+first, because that determines the recovery protocol we need to build.
 
-## Read first and decide
+This internal packet explains the choices for the owner before a maintainer
+discussion. No maintainer answer is recorded. The prototypes provide evidence
+for individual mechanisms; they are not an approved replacement runtime.
 
-| Order | Document | Purpose | Owner decision |
+## Why the runtime is being redesigned
+
+The current runtime processes bounded ranges of input and records progress
+around table writes. Its change-capture path validates original rows, saves
+the selected rows for retries, and tracks table effects separately. Those
+behaviors protect users from invalid input and partially completed updates.
+The redesign must carry the supported guarantees into a different execution
+model, rather than discard them with the old execution loop.
+
+Sail already has `StreamSource`, which supplies a streaming scan, and flow
+events, which carry data batches and control markers in order. A checkpoint
+marker identifies a boundary at which source positions and operator state
+can be saved. An end-of-data marker says a source reached its bounded end;
+the run still needs to finish its checkpoint and writes. Maintainers have
+asked us to build on this model rather than introduce a second bounded
+execution engine.
+
+The prototypes exercise marker transport, source positions, append writes,
+state snapshots and change-row reduction separately. The change-capture
+merges, planner integration, durable checkpoint-position record and Spark
+4.2.1 end-to-end replacement test remain unbuilt. Connecting those pieces
+requires deciding what one recoverable unit contains.
+
+## Why recovery scope is a decision
+
+A recovery domain is the set of writes whose progress is tracked together
+so a restart can finish incomplete work. A flow is one declared computation
+feeding a target. One flow can still write more than one table: change
+capture updates the target and an auxiliary table that remembers deletion
+sequences, preventing older updates from resurrecting deleted records.
+
+Consider an append checkpoint whose identifier is attached to each table
+transaction. A table skips a retry with an identifier it already committed.
+Suppose the checkpoint covers three new rows, table A commits them, and the
+process crashes before table B commits. If restart attaches the same
+identifier to those three rows plus later arrivals, A skips the later rows.
+If restart assigns a new identifier to the whole replay, A duplicates the
+original three. Recovery needs to finish the original work with its original
+meaning before moving on. Change capture has different merge semantics, but
+its two separately committed effects also need an explicit recovery protocol.
+
+That safety obligation is not optional. The choice is how much functionality
+the first version promises, and which mechanism establishes the obligation.
+The append example does not mandate a general transaction coordinator or
+atomic visibility across tables. Here, recovery means eventually completing
+the required effects correctly after a crash; readers may observe partial
+progress while the effects complete.
+
+| Initial scope | What users can do | What must be established | What waits |
 | --- | --- | --- | --- |
-| 1 | [Redesign plan](REDESIGN-PLAN.md) | Current status, decision register and dependency order | Is the proposed venue and decision sequence suitable? |
-| 2 | [Streaming proposal](STREAMING-ON-STREAMSOURCE.md) | Exact opening discussion text | Is the scope question clear enough to post? |
-| 3 | [Change-capture proposal](CHANGE-CAPTURE-ON-STREAMSOURCE.md) | Exact companion reply explaining the two table effects | Include it in the initial discussion? |
-| 4 | [Streaming decision notes](DECISION-NOTES-STREAMING.md) | Exact individual replies, S6 first, identifiers S1 to S13 retained | Approve S6 as the opening decision; keep remaining notes available as needed |
-| 5 | [Architecture](STREAMING-ARCHITECTURE.md) | Internal explanation of alternatives, recovery obligations and reuse | Does the reference material preserve the required behavior without deciding for maintainers? |
+| One append transaction | Append new rows to one transactional target | Bind replayed output and progress to the commit identity, including a crash around commit | Change capture and shared recovery across targets |
+| One flow including change capture | Apply keyed updates and deletes as well as append | Also preserve original-row validation evidence, repeatable retry output and each table effect’s completion | Coordinated recovery across independent flows |
+| Several independent sinks or flows | Recover several outputs as one declared unit | Also define shared participation, ownership and completion across those outputs | The breadth of this initial implementation needs justification |
 
-Proposed initial outbound package: the two proposals and S6. Each proposal is
-below 2,000 words and each decision note below 300. The later notes should
-follow the maintainers' questions and chosen scope, not arrive as thirteen
-simultaneous requests. No private evidence paths or coordination identifiers
-are needed to read the outward text. Nothing is posted by preparing this
-packet.
+We recommend **one flow, including change capture if its recovery protocol is
+accepted**. That addresses the runtime we are replacing while deferring
+coordination across independent flows. Sealed winners are selected rows
+persisted unchanged for retries; the proposal uses them with separate effect
+completion records. A proven replay mechanism could be considered instead.
+Reuse the existing lifecycle, archive and effect-record mechanisms where
+they fit; a new coordinator or storage subsystem needs its own justification.
+An append-only first step is smaller, but it leaves the current change-capture
+runtime in service. This is a meaningful scope tradeoff for maintainers,
+not a choice that passing a marker-transport test can settle.
 
-## The opening decision
+## Why the questions follow this order
 
-Should the first version support only one append transaction, one flow
-including change capture's two effects, or several independent sinks?
+The decision identifiers S1 to S13 are stable references, not a schedule.
+Start by agreeing on the first user scenario and its recovery domain in S6.
+The change-capture companion belongs in that conversation: otherwise “one
+flow” can be mistaken for “one table transaction.” Operator scope in S8 and
+change-row semantics in S11 help make that initial scenario concrete.
 
-The counterexample is small: if one sink commits a checkpoint and another
-does not, assigning different rows to the same identifier on restart can lose
-rows. Allocating a fresh identifier for the replayed prefix can duplicate
-rows. This motivates preserving prepared boundaries whenever effects depend
-on them; it does not select an implementation or require a general multi-sink
-coordinator before the maintainers choose the scope.
+Then resolve the dependencies for the chosen scenario:
 
-The proposed starting point is one flow, with change capture included only
-if its two-effect recovery protocol is accepted. A narrower append-only first
-step remains an explicit alternative. State retention, source participation,
-completion and refresh identity follow from that decision.
+1. **Who owns recovery, S1.** A domain contained in one job may fit its job
+   runner. A domain spanning jobs might require different ownership. Choosing
+   placement first would silently constrain the supported scope.
+2. **What sources and completion promise, S2, S4 and S9.** Sources must report
+   meaningful positions, inputs must agree on checkpoint boundaries, and
+   bounded success must wait for required writes. These contracts determine
+   what the coordinator records and when it can declare completion. Discuss
+   them together and revisit ownership if they require it. An early-ending
+   source still has checkpoint obligations.
+3. **What state and resources the scenario needs, S3, S5, S7 and S8.**
+   Checkpoint frequency affects buffered data and snapshot cost. Retention
+   depends on which recovery points remain needed. Windows additionally need
+   an agreed watermark contract, which says when older data can no longer
+   change results. A stateless append path does not need the window state
+   store. Resource limits must be designed with the selected path; periodic
+   checkpoints alone do not bound memory. Checkpoint scheduling must also
+   respect the completion obligations in S9.
+4. **What makes the chosen change-capture path safe, S11, S12 and S13.**
+   Validation and retry winners, full-refresh identity, and protection from
+   stale writers belong in its design before durable implementation. A full
+   refresh rebuilds a target; a stale writer is an old owner resuming after
+   replacement. These are not optional final polish. They can change the
+   initial scope and source contract, so bring them forward when needed.
+
+S10, optional Iggy broker support, can be discussed alongside the source
+contract. Its dependency compatibility need not block another accepted
+source. This is a dependency-guided conversation with feedback, not thirteen
+serial approvals. Maintainers may choose a different entry point when an
+existing contract or intended use case already answers a question.
+
+## Reading order and the next human decisions
+
+Read the following in order to move from the proposed user behavior to its
+consequences, then inspect the implementation alternatives. Reading order is
+different from implementation order.
+
+| Order | Document | Why read it here | Decision it supports |
+| --- | --- | --- | --- |
+| 1 | [Streaming proposal](STREAMING-ON-STREAMSOURCE.md) | Establishes user behavior and fit with Sail | Is the initial scope question clear enough to take to maintainers? |
+| 2 | [Change-capture proposal](CHANGE-CAPTURE-ON-STREAMSOURCE.md) | Exposes the two table effects hidden by “one flow” | Is change capture part of the first proposed scope? |
+| 3 | [Decision notes](DECISION-NOTES-STREAMING.md), starting with S6 | Makes alternatives and acceptance questions explicit | Does each relevant note leave a genuine maintainer choice? |
+| 4 | [Architecture](STREAMING-ARCHITECTURE.md) | Explains recovery obligations and implementation alternatives | Does the proposed mechanism preserve required behavior with justified complexity? |
+| 5 | [Redesign plan](REDESIGN-PLAN.md) | Records unresolved decisions, evidence and permitted next work | Does the work sequence follow the choices actually made? |
+
+The owner first reviews the exact outward text for clarity and scope.
+The proposed initial discussion consists of the two proposals and S6;
+other notes follow the questions raised. Each proposal is under 2,000 words
+and each note under 300. Maintainers choose architecture while alternatives
+remain open. Preparing or pushing these documents does not post a discussion.
+
+## What can be built and when
+
+Before an architecture answer, local experiments can reproduce the identified
+failure cases or distinguish proposed protocols. They should answer a named
+question and feed the evidence back into its note. This work can proceed
+without treating a prototype as the chosen production architecture.
+
+After the relevant answers, build a small complete path through a source,
+checkpoint, durable table commit and restart. If append is selected first,
+prove that path before extending it. If change capture is selected, its
+validation and recovery between the two merges are part of the first path.
+Windows and additional sources need only block a path that uses them.
+
+Keep the working runtime until the replacement demonstrates its declared
+scope. Record maintainer answers and their permitted scope in the plan;
+apply the seven specialist reviews and immutable-commit integration gate to
+the selected implementation. The author must understand the code and the
+owner reviews proposed upstream submissions, as required by
+[LAKESAIL.md](LAKESAIL.md), [SHEHAB.md](SHEHAB.md) and
+[WRITING-RULES.md](WRITING-RULES.md). Agent reviews support human decisions.
 
 ## Evidence and its limits
 
@@ -48,33 +165,18 @@ completion and refresh identity follow from that decision.
 | [Prototype results](PROTOTYPE-RESULTS-STREAMING.md) | Historical P1 to P4 runs and current source-review limits | No complete exactly-once protocol or performance envelope |
 | [Prototype specifications](PROTOTYPE-SPECS.md) | Intended experiments, actual coverage and focused gaps | No authorization to implement all proposed components |
 | [Corrected review](ASTRA-REDESIGN-1.md) | Technical findings and the required human decision process | No retrospective completion of the original review requirements |
-| [Document checks](evidence/redesign-discussion-1/DOCUMENT-CHECKS.md) | Current specialist findings, resolutions and text checks | No production integration gate |
+| [Document checks](evidence/redesign-discussion-1/DOCUMENT-CHECKS.md) | Specialist findings and text checks for the preceding revision | Does not cover this context revision or a production gate |
 
 The code references remain P4 `4fad33ca5` over `62251e0a2`, P3 `ef5f848a7`
 on integration ancestry, and the current runtime `99dc47788`. P4 includes
 P1 and P2; P3 must not be represented as a clean upstream-only patch.
 
-Fresh source verification changes several claims: available-now can use
+The preceding source verification corrected several claims: available-now can use
 multiple batches; raw-row validation precedes reduction; equal-sequence
 winners are undefined; full refresh does not establish a connector-independent
 absolute-origin rule. Archives, fencing and checkpoint transaction tags are
 Sail mechanisms requiring their own evidence. Historical test counts have
 not been promoted into fresh execution results.
-
-## Human review and subsequent work
-
-The governing instructions are [LAKESAIL.md](LAKESAIL.md),
-[SHEHAB.md](SHEHAB.md) and [WRITING-RULES.md](WRITING-RULES.md).
-The author must understand proposed code, and the owner approves the exact
-outward text. Maintainers choose architecture while alternatives remain
-open. Agent reviews support those decisions; they do not replace them.
-
-After an answer, record its public reference and the implementation scope it
-permits in the plan. Use a small local experiment only to distinguish an open
-choice. Any selected implementation receives the seven specialist reviews
-and the full immutable-commit integration gate. Several reference artifacts
-may expose existing work; only selected, agreed pieces become small upstream
-implementation PRs.
 
 ## Separate extensions and historical background
 

@@ -1,8 +1,10 @@
 # Decision notes: streaming tables and change capture
 
 Draft discussion posts. Every recommendation is proposed; no maintainer answer
-has been recorded. Identifiers remain stable. Begin with S6, then discuss S1,
-S2, S4 and S9, followed by S3. The remaining notes follow the scope those answers permit.
+has been recorded. Identifiers remain stable. Begin with the first user
+scenario and S6. Bring S8 and S11 into that discussion where needed, then resolve the dependencies
+explained in REDESIGN-REVIEW-PACKET.md. These notes are not a serial approval
+queue; resolve the notes relevant to a path before implementing that path.
 Each section below is a separate outward post.
 
 ## S6. What must recover together

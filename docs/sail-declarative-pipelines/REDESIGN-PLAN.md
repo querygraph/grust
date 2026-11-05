@@ -22,10 +22,24 @@ The author must understand and explain every proposed code change.
 
 Propose one GitHub Discussion per track in `lakehq/sail`, opened by the
 owner. For streaming, use STREAMING-ON-STREAMSOURCE.md as the opening post
-and CHANGE-CAPTURE-ON-STREAMSOURCE.md as its companion reply. Introduce S6
-first, then S1, S2, S4 and S9 as the selected scope requires. Follow with S3,
-S5, S7, S8 and S10 to S13. Keep the identifiers stable for traceability;
-they do not prescribe implementation order.
+and CHANGE-CAPTURE-ON-STREAMSOURCE.md as its companion reply. Start with the
+first user scenario and its recovery domain in S6. Use S8 and S11 to make
+operator scope and change-capture behavior concrete where needed.
+
+Resolve ownership in S1 against that domain, then discuss source positions,
+barrier alignment and completion together in S2, S4 and S9. Those contracts
+explain which progress and effects must survive a crash. Scheduling and
+resources in S3, state storage in S5, and watermarks in S7 follow the selected
+operators, with feedback if their costs change the scope. Resolve S11 to S13
+before durable change-capture implementation, including validation, refresh
+identity and stale-writer protection. S10 can proceed alongside the source
+contract; Iggy dependency choices need not block another accepted source.
+
+This order exposes dependencies rather than prescribing thirteen serial
+approvals. It does not require a stateless append path to wait for a window
+state store. The [review packet](REDESIGN-REVIEW-PACKET.md) explains the
+tradeoffs and gives a reading order from user behavior to architecture and
+then this work register. Identifiers remain stable for traceability.
 
 Each decision note is exact reply text under 300 words. It presents the
 situation, options, a recommendation and what would settle the question.
