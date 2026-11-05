@@ -1,117 +1,106 @@
-# Native extensions for Sail over Arrow-only C boundaries
+# Native scalar extensions through Comet’s Arrow C boundary
 
-A proposal for Sail's maintainers, extending the contract posted in
-[discussion #2001](https://github.com/lakehq/sail/discussions/2001). Status:
-draft for discussion, 2026-11-04.
+Sail should load separately packaged native scalar functions while reducing their
+coupling to DataFusion releases. Add the Arrow-only scalar calling contract used
+by Apache DataFusion Comet beside Sail’s existing `datafusion-ffi` route. Keep
+relation integration separate because scalar calls do not define relation planning
+or execution.
 
-## What this is
+## Existing foundation and the proposed boundary
 
-A **native extension** is a library, compiled separately from Sail and
-installed as a Python package, that adds functions or relations to Sail
-without becoming a Sail dependency. The contract already proposed lets the
-host (Sail) discover such packages through Python entry points, refuse one
-whose declared versions do not match the host's, dispatch a Spark Connect
-relation to it, keep its stateful work on the driver, and fund its memory
-through a small C lease. That contract crosses relations through
-`datafusion-ffi`, the FFI that DataFusion ships for its own types.
+The existing pipeline branch discovers Python extension packages, validates their
+build identity, binds native functions and relations, and loads matching scalar
+implementations on workers. Functions retain package owners. Distributed plans
+carry package/configuration identity and function name. Native memory leases
+already use C callbacks with host-funded quotas.
 
-This document changes one thing: the boundary that functions and relations
-cross. It proposes Arrow-only C definitions, the ones Apache Sedona and
-Apache DataFusion Comet already use, in place of `datafusion-ffi`, so that an
-extension depends on Arrow's C Data Interface and nothing else. Everything
-else in the contract stays.
+That implementation crosses DataFusion objects through `datafusion-ffi` and must
+match the host’s DataFusion and Arrow versions. The upstream-based StreamSource
+foundation does not yet contain this extension host. Preserve its behavior as
+an independently tested integration increment.
 
-## Why Arrow-only
+Comet’s scalar interface crosses schemas and arrays using the Arrow C Data
+Interface, with records of C-callable function pointers. A factory creates a
+kernel instance. Initialization determines its return field; execution consumes
+argument arrays and returns an array. Version and discovery symbols identify
+this interface. The host adapts the imported kernel to its own DataFusion version.
 
-`datafusion-ffi` carries DataFusion's own types across the boundary, so a
-library built against it is bound to one DataFusion major version. When Sail
-upgrades DataFusion, every extension must be rebuilt, and authors do not
-backport. Comet measured this directly: a DataFusion upgrade removed one trait
-method and would have forced a source edit and a rebuild of every library on
-the `datafusion-ffi` flavor, while the Arrow-only flavor needed no change. An
-extension that crosses only Arrow arrays, schemas and streams is bound to
-Arrow's C interface, which is stable, and to a small versioned header, which
-changes rarely and is probed at load.
+## What compatibility this buys
 
-## The boundaries
+The Arrow-only route avoids exposing DataFusion’s Rust types. It does not provide
+a general stable plugin ABI. Comet explicitly disclaims compatibility across its
+releases, including patch releases. Its pinned SDK documentation supports
+SDK-built libraries and does not publish a C header as a supported development
+surface. Carry a pinned, attributed contract and verify actual independently
+built binaries before claiming interoperability.
 
-Three C surfaces, each a struct of function pointers with a private data
-pointer and a release function, so ownership never crosses.
+The implementation reference is Comet commit
+`0f7f8e45399847715093b3d3affdfa97614b39dc`:
+[scalar layout and ownership](https://github.com/apache/datafusion-comet/blob/0f7f8e45399847715093b3d3affdfa97614b39dc/native/comet-udf-sdk/src/c_abi.rs),
+[SDK support boundary](https://github.com/apache/datafusion-comet/blob/0f7f8e45399847715093b3d3affdfa97614b39dc/native/comet-udf-sdk/src/lib.rs).
 
-**Scalar functions** use the scalar kernel of Sedona's header, which Comet
-adopted unchanged: a kernel factory that names the function and creates an
-instance; an instance that, given the argument types and any constant
-arguments, reports the return type, and then, given argument arrays and a row
-count, returns a result array. Errors come back as a code plus a last-error
-string. The library exports a discovery symbol that lists its kernels and a
-version probe that returns the header version. Sail resolves a function by
-name from the list, checks the probe against the version it was built for,
-and refuses a mismatch before calling anything.
+The supported contract admits pure immutable functions. Initialization’s constant
+argument pointer is reserved and must be null. A function needing constant values
+to determine its return type needs another supported interface or an explicit
+refusal. Do not infer additional capabilities from a similar Sedona structure;
+similar layouts can have different discovery and initialization semantics.
 
-**Relations** use Sedona's table provider and execution plan structs. A table
-provider reports a schema and produces an execution plan for a scan given
-encoded arguments; an execution plan reports its schema, exposes named
-properties as Arrow arrays, can be re-created with a property changed, and
-executes into an Arrow array stream, with an asynchronous variant for
-engines that need it. Sail's existing bounded-relation dispatch keeps its
-shape: the host resolves the relation's children to plans, exports them across
-the boundary as C execution plans, asks the extension for its plan, and imports
-that plan as a DataFusion execution plan. The import and export adapters exist
-in Sedona's Rust crate for that header; Sail would depend on that crate or
-carry the two adapters, which are small.
+## Ownership is part of execution correctness
 
-**Memory** keeps the lease already proposed, a C record with a version, a
-size, a byte quota, an owner pointer and retain and release callbacks. It has
-no Arrow or DataFusion type in it and is unchanged.
+Argument transfer, output ownership and error-string lifetime follow the pinned
+interface. Returned arrays may retain release callbacks into the library after
+a function, plan or session has been dropped. Keeping a library handle only inside
+the function does not establish their safety.
 
-## What is declared and what is refused
+Use process-retained library code for the first adapter, matching the existing
+host policy and Comet’s importer. Keep session state and memory admissions scoped
+and releasable. Code retention does not authorize retaining session allocations.
+An unloadable design is possible, but every dependent allocation and callback must
+retain the library; that broader ownership mechanism needs separate evidence.
 
-A package's manifest declares three things: the header version of each C
-surface it uses, the Arrow C interface it was built against, and the Sail
-extension API version. The host compares all three with its own at discovery
-and refuses a mismatch with the declaration quoted. No DataFusion version
-appears in the manifest any more, because no DataFusion type crosses. A
-package may additionally ship the `datafusion-ffi` flavor of a function; the
-host prefers the Arrow-only flavor when both are present and will drop the
-other once no shipped extension needs it.
+## Admission and distributed identity
 
-## What stays outside
+A package must declare each boundary it exports. Preserve exact host-version
+checks for any `datafusion-ffi` channel, including mixed packages. A pure C scalar
+channel can have separate admission tied to the pinned interface and verified
+version probe. Do not invent an Arrow C interface version field without a defined
+negotiation contract.
 
-The host still does not accept optimizer rules, physical planner extensions
-or command plugins from a package; those need DataFusion types by nature and
-are the subject of a separate discussion. Catalog providers, which Sedona's
-header also defines, are left out of the first version because Sail's catalog
-layer has its own contract that a C surface would have to match.
+Carry boundary selection, code digest, normalized configuration and function name
+through plan serialization. Workers must resolve the same identity or refuse the
+plan. Explicit selection avoids silently switching semantics when both routes
+export the same name. Native functions must remain outside marker evaluation:
+operators must forward markers and pass only user data to kernels. Projection
+and asynchronous expression isolation remain unbuilt on the foundation branch.
 
-## Keeping this independent of the streaming work
+## Evidence and implementation increments
 
-The streaming proposal in the companion document and this one meet at one
-point only, and deliberately so. An extension's execution plan is a batch
-plan: it has no notion of flow events, markers or retractions. When a
-pipeline's streaming plan reads an extension relation, the rewriter adapts
-the extension's plan as it adapts any batch input, by emitting its rows and
-then the end-of-data marker. The two columns that carry markers never cross
-the C boundary. So the extension contract can change without touching
-streaming, the streaming model can change without touching extensions, and
-each can be reviewed, merged or rejected alone. A streaming table over an
-extension relation is admitted as a batch source in a bounded run and refused
-in a continuous run, with the reason named.
+The standalone Sail scalar prototype implements Comet-shaped discovery and calls
+a handwritten fixture. Its reported tests cover ordinary results, nulls, argument
+order and errors. They establish neither SDK-built Comet interoperability nor
+package and worker integration. Full argument-field metadata, admission and
+returned-array lifetime still need qualification.
 
-## Questions for the maintainers
+The standalone adapter can proceed independently of porting the extension host.
+Before package integration, verify result lifetime after dropping function owners,
+metadata, empty/sliced/nested arrays, error ownership and refusal of unsupported
+functions. Then connect package admission and worker identity through both scalar
+routes, preserving existing cancellation, cleanup and quota behavior.
 
-1. If the scalar header moves from Comet to DataFusion or Arrow, Sail follows
-   it. Until then, is implementing against Comet's copy, with its version
-   probe, acceptable, or would you rather wait for the shared home?
-2. For relations, is depending on Sedona's extension crate for the import and
-   export adapters acceptable, or should Sail carry the adapters?
-3. The lease record is Sail's own C definition. Should it be offered to the
-   same shared home as the scalar header, so that an extension author has
-   one place to look?
+Arrow-only relations require another decision. Sedona’s provider and execution
+adapters include planning semantics, expression transport, asynchronous execution
+and runtime support. They are not two trivial converters. Inspect the required
+operations and dependency closure before choosing attributed Sail-owned adapters
+or a dependency. Comet’s scalar ABI alone supplies no relation boundary.
 
-## How it would be built
+## Decisions before dependent implementation
 
-The scalar channel first, since Sedona's functions import through it with no
-change and the matrix of tests exists; then the relation boundary, replacing
-the `datafusion-ffi` dispatch and re-running the same relation tests; then the
-manifest change. Each step keeps the previous flavor until its tests pass on
-the new one.
+Use process-retained code for the first scalar adapter? This gives a narrow
+lifetime contract whose result callbacks remain valid; unloading adds ownership
+work that is not needed for initial package integration.
+
+Which pinned Comet SDK/library pair demonstrates interoperability? Require its
+independent binary to pass the same result, error and lifetime checks as the fixture.
+
+Which relation capabilities require a C interface initially? Preserve the existing
+relation route while that requirement determines the separate implementation scope.

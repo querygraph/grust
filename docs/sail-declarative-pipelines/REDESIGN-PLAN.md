@@ -151,6 +151,28 @@ Configuration work and foundation repairs can proceed independently. Stable
 semantic identity is needed before durable preparation, so effective normalized
 configuration and schema versions must be defined before that integration lands.
 
+## Preserve native Extensions and add the Comet scalar boundary
+
+Port the existing native extension host as independently verifiable contracts:
+package identity, relation dispatch, scalar worker lookup, placement, memory
+admission and lifecycle cleanup. This preserves separately packaged functions and
+relations in the StreamSource redesign rather than rebuilding only pipeline SQL.
+
+The standalone Arrow-only scalar adapter can develop independently using Comet’s
+pinned C interface. Its package integration depends on the host port and verified
+result lifetime, metadata and immutable-function admission. Keep the existing
+DataFusion-FFI route for current packages; select each boundary explicitly and
+retain its identity through planning and recovery. Comet does not promise ABI
+stability across releases.
+
+Native functions need data-only projection and asynchronous expression evaluation
+before those operators may call them safely. Live extension sources need the same
+checkpoint/replay contracts as other StreamSources. Durable computation must bind
+code/configuration identity and either reproduce identical results or persist
+prepared output. Define C relation capabilities separately from scalar calls.
+The standalone [extension integration design](EXTENSIONS-STREAMSOURCE-INTEGRATION.md)
+explains alternatives, existing code and the decisions preceding dependent code.
+
 ## Migrate only after the replacement proves its contract
 
 Spark 4.2.1 source remains evidence for retained behaviors, not an obligation to

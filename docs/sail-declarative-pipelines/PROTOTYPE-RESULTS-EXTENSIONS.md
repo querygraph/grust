@@ -4,6 +4,24 @@ What the extensions prototype built so far shows, for the review. Terms as in
 DECISION-NOTES-EXTENSIONS.md. The streaming prototypes have their own results
 document.
 
+## Current integration qualification
+
+The observations below remain the reported standalone fixture results. They do
+not qualify production loading. Inspection of the prototype additionally found
+that execution rebuilds argument fields without their original metadata and
+returned arrays do not visibly retain the library after the function is dropped.
+Comet’s importer relies on process-retained library code for the latter case.
+Both contracts need qualification before package integration.
+
+The pinned Comet interface admits pure immutable functions and requires a null
+constant-argument pointer during initialization. Those are interface restrictions,
+not capabilities established by the fixture. Comet explicitly disclaims ABI
+stability across its releases. The current
+[scalar proposal](EXTENSIONS-ON-ARROW-C-ABI.md) and
+[integration design](EXTENSIONS-STREAMSOURCE-INTEGRATION.md) supply the resulting
+requirements; historical statements below about correctness apply only to the
+exercised fixture cases.
+
 ## P5. Scalar functions from a library over the Arrow-only C kernel
 
 **Question.** Can Sail load a library that exports scalar kernels in the
@@ -51,9 +69,8 @@ P5 specification now says the fixture is Sail-owned and the crate applies to
 upstream `main` as is.
 
 **What it leaves out.** Loading Comet's own test library and Sedona's
-functions, which is the claim that matters most for E1 and is a build the
-owner runs, since building downloaded code was outside this session's
-permissions. The hook that lets a package declare such a library beside the
+functions. Those independently compiled binaries remain unverified; the
+handwritten fixture establishes a narrower result. The hook that lets a package declare such a library beside the
 `datafusion-ffi` channel in the session's extension loader. Panic containment
 on the kernel's side is the exporter's job (Comet's SDK does it); the host
 side has nothing to contain. Spark SQL end to end, which follows the hook.
