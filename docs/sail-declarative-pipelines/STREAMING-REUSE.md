@@ -1,5 +1,13 @@
 # Streaming reuse from Sail-Iggy
 
+> **Reference scope.** The connector observations below apply to the pinned source versions. The
+> implementation sequence and extraction recommendations are reference material,
+> not requirements for the StreamSource redesign. Evaluate existing Sail job,
+> source and catalog commit interfaces before extracting another control subsystem.
+> Fencing is mandatory for durable admission, and change capture uses complete
+> per-key event order rather than Spark-shaped batches. The replacement direction
+> is [Recoverable streaming tables](STREAMING-ON-STREAMSOURCE.md).
+
 This is a source review for the streaming phase after batch acceptance. It does
 not claim that the integration was built or its broker tests rerun here.
 

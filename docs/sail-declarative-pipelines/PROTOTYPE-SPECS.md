@@ -1,8 +1,9 @@
 # Experiments for streaming recovery and extension interfaces
 
 These experiments isolate mechanisms needed for streaming recovery and
-extension interfaces in Sail. Each specifies a claim, components, test and
-coverage limits. Passing a component test does not establish an integrated
+extension interfaces in Sail. The specifications describe experimental mechanisms, not production contracts.
+Their tied-event selection, planning-object controls and single-sink identifier
+reuse must not become implementation requirements. Passing a component test does not establish an integrated
 source-to-table recovery protocol.
 
 A flow event is a data batch or an ordered control marker. A checkpoint
@@ -26,22 +27,9 @@ scope.
 
 **Components.**
 
-- `CheckpointableSource`, a new interface in `sail-common-datafusion`:
-  ```rust
-  pub trait CheckpointableSource: Send + Sync {
-      /// Ask the running scan to emit `Checkpoint { id }` after the rows it has
-      /// produced so far; returns once the marker has been emitted on every
-      /// partition.
-      fn request_checkpoint(&self, id: u64) -> BoxFuture<'_, Result<()>>;
-      /// The position the source reached at `id`, opaque to the coordinator.
-      fn position(&self, id: u64) -> BoxFuture<'_, Result<Vec<u8>>>;
-      /// Fix the end position now (bounded run); the scan emits `EndOfData`
-      /// on reaching it.
-      fn bound_now(&self) -> BoxFuture<'_, Result<()>>;
-  }
-  ```
-  The stream-source trait exposes this optional capability through
-  `as_checkpointable`, returning `None` by default.
+- An optional `CheckpointableSource` experiment requests markers, reports opaque
+  positions and captures bounded ends. Production control must address running
+  task attempts, not planning objects.
 - `CheckpointCoordinator` holds the sources, assigns identifiers, waits for
   requested markers and records positions in memory. The test drives a final
   checkpoint after all sources report end of data.
@@ -96,8 +84,8 @@ claim.
 **Test.** Two simulated crash windows over the replayable fixture: interruption
 after checkpoint N commits resumes from N; interruption after N's positions are recorded
 but before its commit resumes from N minus 1 and reuses N at another boundary.
-Both checks expect every row once in the sole target. That identifier reuse
-is not safe when another sink already committed N.
+These single-sink checks reuse an uncommitted identifier. Production preparation
+keeps boundaries immutable; the experiment does not prove multi-effect recovery.
 
 **Uncovered cases.** The test covers one table transaction. A small transition model
 can illustrate partial-commit loss, duplication and fixed-boundary replay;
@@ -146,8 +134,8 @@ poll uses the exact-range reader. Planner registration for
 **Uncovered cases.** Recreate a partition after scan but before bounding, with
 an empty replacement. Check that incarnation validation happens before an
 end marker. Also test capture of one partition's bound while another metadata
-request is delayed and readers continue consuming. Existing tests do not
-establish either interleaving.
+request is delayed and readers continue consuming. Existing tests do not establish either interleaving. Source descriptor identity,
+partition discovery and incarnation-bearing event provenance also need qualification.
 
 ---
 
@@ -174,8 +162,8 @@ state to a segment at each checkpoint, and recovers from the manifest.
   refused under column types other than those it was written with.
 - A companion test for change capture: an interval-reduce over recorded
   change rows with equal-sequence ties, asserting the recorded row-order rule
-  and that deletes keep their sequence. This is a whole-batch function, not
-  a demonstrated streaming interval accumulator.
+  and that deletes keep their sequence. This whole-batch function does not implement the proposed stable per-key order,
+  conflict checks or streaming accumulator.
 - A recorded input: a file of flow events (rows with event times, interleaved
   watermark and checkpoint markers) and the expected output.
 

@@ -1,5 +1,13 @@
 # CDC units on the current base
 
+> **Reference scope.** This is an implementation and execution-evidence ledger at the revisions named
+> in each unit. Its compatibility targets are not requirements for the StreamSource
+> replacement. In particular, arrival ties, asymmetric change comparisons and
+> resetting individual watermark progress to reproduce Spark are superseded by
+> complete event ordering and recoverable event-time state. Existing test outcomes
+> remain unchanged; new semantics need their own tests. See
+> [StreamSource architecture and engineering changes](STREAMSOURCE-ENGINEERING-REVIEW.md).
+
 Fable's CDC implementation units on Sail's accepted source, after the
 division of labour was restored on 2026-10-31 (CF-0532/CF-0533). Each unit
 names its Spark 4.2.1 pin sources (`617618396`), what it wires, what it leaves

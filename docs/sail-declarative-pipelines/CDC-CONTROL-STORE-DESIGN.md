@@ -1,5 +1,14 @@
 # CDC control store and fenced commit authority
 
+> **Reference scope.** This specifies the bounded reference implementation, not the required storage
+> or service layout for new StreamSource pipelines. Exact-byte acceptance and
+> recovery reasoning remain useful. Bounded-only admission, Spark checkpoint paths,
+> a fixed two-table representation and unfenced compatibility mode are superseded.
+> New durable writes require enforced fencing; reuse an existing catalog authority
+> where possible and select atomic version-state publication or fenced sidecar
+> recovery by target capability. See [Fenced commits](FENCED-TABLE-COMMITS.md) and
+> [Change-capture semantics](CHANGE-CAPTURE-SEMANTICS.md).
+
 Status: selected architecture for implementation and cross-boundary review, 2026-10-31. Requested by the user from Fable's CONTROL-STORE-ASTRA-BRIEF. This document specifies the control store; it does not claim a working durable runner, backend qualification, or production activation.
 
 ## Decision

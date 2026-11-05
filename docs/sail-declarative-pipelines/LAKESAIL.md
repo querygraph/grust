@@ -24,10 +24,13 @@ standard. This file is the rest.
   stream sources, retractable batches and markers. Bounded microbatches are a
   direction they will not take. Build on their model, add what it leaves room
   for, and change none of its contracts without asking.
-- **Match Spark's intended behavior; do not conform to Spark's inferior
-  choices.** Where Spark's behavior is a bug, an incorrect error, an
-  inconsistency, or an artifact of its microbatch engine, choose the
-  consistent behavior, verify it, and say so in a section of its own.
+- **Engineering quality governs; Spark conformance is not a design constraint.**
+  Retain Spark behavior only when it serves the intended contract. Reverse
+  compatibility choices that introduce nondeterminism, weaker durability,
+  brittle configuration or needless architectural cost. Explain and verify
+  intentional differences. Build missing fencing for every admitted durable
+  target; neither catalog serialization nor an external single-writer
+  convention replaces commit-time ownership enforcement.
 - **Verify semantics at Spark's source**, not from memory and not from test
   names: the 4.2.1 source is the reference, and a document states what was
   read, what was run, and what remains uncertain.
@@ -107,10 +110,12 @@ standard. This file is the rest.
   reach a source in cluster mode goes through the task that runs it.
 - **The flow-event model has the pieces but not the machinery.** Four markers
   exist (latency, watermark, checkpoint, end of data) and the end-of-data
-  marker already defines a run that ends; no source emits checkpoint or
-  watermark markers, nothing consumes them, and windows, aggregates, joins and
-  repartitions are refused by the rewriter. Sinks commit only after the
-  coordinator has recorded positions, or a restart can lose rows.
+  marker already defines a run that ends; the native rate and socket sources do not provide recoverable checkpoint
+  participation. Marker encoding, expression isolation, transport alignment
+  and completion need repairs. Windows, aggregates, joins and repartitions
+  remain unsupported by the streaming rewriter. Persist a fixed prepared
+  boundary before output effects and reconcile each effect afterward; recording
+  positions alone does not establish recovery.
 - **The session lifecycle is a state machine** (creating, running, deleting,
   deletion failed, deleted, failed) with one cleanup record for every delete
   and shutdown path, and a tombstone for a deleted session. Effects are owned

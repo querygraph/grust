@@ -1,5 +1,14 @@
 # Sail Declarative Pipelines
 
+> **Reference scope.** This is the bounded implementation reference at the revisions recorded below.
+> Its streaming, change-capture and configuration requirements do not govern new
+> StreamSource pipelines. Observed-only durable writes and Spark conformance as
+> a correctness gate are superseded: every durable target needs commit-time fencing,
+> valid change events need deterministic per-key order, and effective configuration
+> must be typed before dependent planning. The current technical proposal is
+> [Streaming pipelines and change capture](REDESIGN-REVIEW-PACKET.md). Unrelated
+> catalog, SQL and protocol integration guidance remains reference material.
+
 Implement Apache Spark 4.2.1 Declarative Pipelines (SDP) as a Rust control layer
 above Sail's existing planner, catalog providers, and execution service. Keep
 the upstream `pyspark.pipelines` API and Spark Connect client: users should be

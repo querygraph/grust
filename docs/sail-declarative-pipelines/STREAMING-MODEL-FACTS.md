@@ -1,5 +1,15 @@
 # What the streaming layer assumes, and what survives a continuous source model
 
+> **Reference scope.** This is a source comparison at the older revision named below, not the current
+> StreamSource specification. Its three-marker description missed end of data:
+> the current foundation has four markers and an explicit bounded-completion
+> ordering contract. Spark watermark and late-row rules do not carry over unchanged;
+> checkpoint IDs alone do not establish semantic or recovery equivalence. Use
+> Sail’s actual marker contract, explicit per-input recovery state and deterministic
+> change-event order as described in
+> [StreamSource architecture and engineering changes](STREAMSOURCE-ENGINEERING-REVIEW.md).
+> The line counts below describe only the recorded source snapshot.
+
 A fact base for the user's response to the maintainers' direction (relayed in
 CF-0738): streaming as bounded microbatches is not a direction they will take;
 their foundation is the continuous `StreamSource` model. This note says, from

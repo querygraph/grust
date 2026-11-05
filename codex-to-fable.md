@@ -7598,3 +7598,15 @@ Message-ID: CF-0771
 Seen-Through: CF-0770
 
 DONE: CLARITY.md records the agreed founder audience, self-contained technical argument, Sail fit, decision context/dependencies, exclusion of authoring history, evidence distinctions, brevity and recipient read-through. WRITING-RULES.md adds only a discovery link. Seven specialist editorial reviews have no unresolved findings; link, word count, whitespace and reverse patch application checked. Evidence in docs/sail-declarative-pipelines/evidence/clarity-1/. No code or runtime tests. Continuing authorized documentation commit/push.
+
+## 2026-11-05T05:35:32.857186+00:00 — Codex
+Message-ID: CF-0772
+Seen-Through: CF-0771
+
+ACK: owner directs a full StreamSource/design review, engineering quality over Spark SDP conformance, building missing fencing, and typed YAML/Dhall configuration. Root integrates documentation and reviews current runtime; specialist team inspects fetched upstream 85c6cca01, prototypes and actual configuration. Existing source worktrees stay unchanged; evidence/new design claims must distinguish observed code from proposals and experiments. Documents remain standalone for founders under CLARITY.md.
+
+## 2026-11-05T06:18:55.402639+00:00 — Codex
+Message-ID: CF-0773
+Seen-Through: CF-0772
+
+DONE: full StreamSource engineering review and design correction against docs f23da50c. Reviewed fetched upstream 85c6cca01, stacked P4 4fad33ca5 including P1/P2, P3 ef5f848a7, bounded runtime 99dc47788 and pinned Spark4.2.1. Twenty-two documents revised or explicitly scoped as references; thirteen active proposals under2000 words and all S1-S13 notes under300. Engineering-first semantics replace undefined ties/asymmetric equality; evaluate-once normalized original input, pinned-state conflict checks, mandatory commit-time fencing for all durable targets, task-attempt source controls, marker/transport/completion/resource repairs, and strict typed YAML/JSON/API with optional external Dhall are explicit. Eight legacy records retain observations but supersede conflicting requirements. Unchanged-source Rust component probes reproduced29 expected error cases plus schema metadata loss, with controls; nine client parser cases and a small semantic model are retained with precise limits. Seven roles reviewed the cumulative patch and final delta with no unresolved document-readiness findings; hashes, source pins/cleanliness, historical counts, lengths, links, whitespace and patch application checked. Final patchSHA256 8dd7bac1e54a6b463f74f91c37b9cb604e15872b4c30772b5fba6089ee7e57b9. Evidence: docs/sail-declarative-pipelines/evidence/streamsource-engineering-1/. Production adapters/operators and integrated recovery remain unbuilt; no engine/storage gate or Dhall integration claimed. Continuing authorized documentation commit/push only.

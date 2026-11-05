@@ -1,153 +1,167 @@
-# Change capture on Sail's flow event model
+# Change capture on Sail’s streaming foundation
 
-Change capture applies keyed updates and deletes to a table in sequence
-order. It lets a pipeline maintain current records even when older changes
-arrive later. This proposal maps that behavior to Sail's existing stream
-sources and ordered control markers.
+Change capture maintains current records from keyed replacements and deletions.
+Users need late arrivals, retries and different checkpoint sizes to produce the
+same final records. Build it on Sail’s `StreamSource` and flow events with a
+stable event contract, validated preparation and fenced table publication.
 
-It does not propose keeping the whole target in operator state or treating
-a delete as a retraction that cancels an earlier emitted row. The initial
-scope remains open: include recoverable change capture, or deliver append
-streaming first.
+The initial operation replaces complete rows or deletes them. Historical-version
+queries, partial field patches and arbitrary streaming joins are separate features.
+Spark-compatible APIs may describe the flow, but undefined Spark behavior must
+not become its correctness contract.
 
 ## Fit with Sail
 
-Sail's `StreamSource` provides a streaming scan. It emits flow events: data
-batches and ordered control markers. A checkpoint marker identifies a
-boundary at which source positions and operator state can be saved. An
-end-of-data marker says a source reached its bounded end; the run still
-needs to finish its writes. These existing concepts are the foundation,
-rather than a second engine that repeatedly executes bounded queries.
+Sail already describes streaming scans and transports data with ordered control
+markers. A checkpoint marker supplies a boundary for source progress and state;
+end of data marks a bounded source’s end. Neither marker by itself proves that
+output is durable.
 
-The proposed additions are source checkpoint participation, coordination,
-row validation, reduction between checkpoint markers, and a sink that merges
-into two tables. A durable checkpoint record must connect source progress
-to those table effects. Marker transport and row reduction have component
-experiments, but the coordinated change-capture path remains unbuilt.
+Add three components to this model: a normalizer that evaluates and validates
+change events, an interval reducer, and a fenced target writer. The reducer
+selects the greatest event per key between checkpoints. Cross-interval ordering
+lives in durable target-associated state rather than a duplicate in-memory copy
+of every key ever observed.
 
-## Preserve the change semantics
+Existing marker encoding and expression handling need repair, and the actual
+execution transport needs aligned barriers. Local reduction and merge prototypes
+are evidence about individual mechanisms, not an integrated change-capture path.
+Source controls must address running task attempts through Sail’s existing job
+and driver ownership, not a source object left in the planner.
 
-A change row contains a key, a sequence value for ordering, and an action.
-An upsert inserts or updates that key; a delete removes it.
-Spark 4.2.1 validates the original input rows, reduces each batch to one
-winner per key, then merges into an auxiliary table and the target. The
-auxiliary table retains tombstones, records of deletion sequences that stop
-older changes from bringing deleted keys back. Target metadata preserves
-ordering for live rows. The
-[batch handler](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandler.scala#L39)
-shows that order.
+## Make ordering a source contract
 
-The sequence comparisons matter. An upsert at an equal or greater sequence
-can replace the current target row; a delete removes it only at a strictly
-greater sequence. A tombstone rejects strictly older events. An upsert at or
-above its sequence removes the tombstone. A delete that loses during
-reduction reaches neither merge. These are separate rules from choosing
-between equal-sequence rows within a batch. The
-[merge processor](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessor.scala#L220)
-contains those comparisons.
+Each normalized event has a key, a complete order for that key, an immutable
+identity, an explicit action and a typed payload. A log position plus a stable
+transaction row ordinal can order changes. A timestamp alone is insufficient
+when distinct changes share it. A declared business tie-breaker is acceptable;
+arrival order and arbitrary sorting of unrelated partitions are not.
 
-We propose reducing the rows between successive checkpoint markers to one
-winner per key. The reducer emits those winners at the marker, then clears
-its interval state. Deletes retain their sequence values. Ordering across
-intervals remains in the tables rather than an unbounded copy of every target
-key in the operator. The existing local experiment is only a whole-batch
-reduction function, not this streaming operator.
+An identity may be native to the source or derived from its incarnation, canonical
+key and complete order when that combination uniquely names the replacement event.
+A source incarnation distinguishes recreation from continuation. Preserve necessary
+provenance through projection, or require an admitted input envelope. A payload-only
+scan does not automatically supply this identity.
 
-## Validate before reduction
+Use one comparison for upserts and deletes. Apply a greater version and ignore
+a smaller one. Equal complete versions with identical canonical action and payload
+are duplicates; different content is a conflict. A deletion retains its version
+after its visible row disappears, preventing an older upsert from resurrecting it.
+Canonical equality compares typed logical values, not Arrow buffer layout.
 
-Every original row must pass validation before either table effect begins.
-A losing invalid row must still fail the interval. Spark rejects null
-sequence values, null values in each declared key column and non-orderable
-sequence types. It does not recursively reject every null field inside a
-non-null struct value. See the
-[validator](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/ScdBatchValidator.scala#L45).
+For valid ordered inputs, selecting maxima in intervals gives the same final
+state as selecting the maximum across all events. Checkpoints therefore control
+recovery and resource use without changing business results. Intermediate table
+visibility can still differ while input is arriving.
 
-The proposed reducer can validate as it consumes rows, or consume input with
-validation evidence covering the same rows. A validation receipt would name
-the interval and contract that were checked. The contract identifies the
-schema and computation that give those rows meaning. How to persist and
-verify that identity belongs to the recovery decision. Validation of winners
-alone cannot preserve the original-row guarantee.
+## Validate the exact values that can be written
 
-## Decide recovery for two effects
+Normalize each original event once. Validate its key, order, action and schema
+before reduction can discard it. A losing invalid row must fail the interval.
+Use explicit non-null order and action rules, with defined equality for supported
+key types; a null delete expression must not silently become an upsert.
 
-A flow is one declared computation feeding a target. One change-capture
-flow still has two table effects. A crash after the auxiliary merge but
-before the target merge leaves a partially completed checkpoint. A shared
-identifier alone neither completes the second effect nor defines its rows.
-Spark's inspected merge calls use sequence comparisons for replay safety;
-they do not attach the batch identifier as a transaction tag.
+Default admission requires deterministic normalization and immutable source events.
+A nondeterministic computation needs a separately logged normalization step whose
+output becomes immutable input, with explicit retention and rebuild semantics.
+Evaluating a lazy plan for validation and evaluating it again for reduction does
+not prove that the written rows were validated.
 
-We recommend sealing the reduced rows before the first effect. Sealing means
-persisting the selected rows as an immutable artifact that every retry reads.
-The prepared checkpoint would bind that artifact to source boundaries,
-validation evidence, the flow contract and each table's completion record.
-This is a proposed Sail recovery mechanism, not a claim about Spark's
-checkpoint implementation.
+Default conflict checks cover each prepared interval and original versions matching
+a pinned durable-state snapshot. Check before reduction discards evidence: durable
+8:A conflicts with incoming 8:B even if 9:C wins. Bind the snapshot to the commit
+precondition. These checks do not detect every contradictory superseded event in history.
+If exhaustive verification is required, retain version and identity fingerprints
+under an explicit admissible horizon and state budget. A durable source frontier
+can justify reclamation; an arbitrary timeout cannot.
 
-There are two useful choices. Include change capture initially with durable
-sealed rows and separate effect completion, or ship append-only streaming
-first and defer this protocol. Rereading without an archive is another
-possible tradeoff only if the design proves identical inputs and transformed
-rows remain available until all pending effects finish. Source positions
-alone do not provide that proof.
+A validation receipt binds the checked normalized input, semantic version and
+prepared output. The writer verifies it before publication. Preserve complete
+validation without adding a second execution of the source plan.
 
-Recovery should finish pending effects from their sealed input before
-advancing to new boundaries. Source retention must still be checked for
-subsequent unread data. An archive does not make the broker's entire future
-history available. Atomic visibility across both tables is outside this
-proposal's guarantee.
+## Choose storage by atomicity and table behavior
 
-## Keys, refresh and writer ownership
+Durable state must remember the greatest version of both live and deleted keys.
+Spark’s separate tombstone table is one layout, not a semantic requirement.
 
-Spark checks existing key names and types as a set under the session's name
-resolver. Reordering the declaration alone is accepted. A full refresh
-rebuilds the target from source data under a new recovery identity, called a
-checkpoint generation. It truncates the target, drops its auxiliary table and
-adopts the current output schema. The
-[key check](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowExecution.scala#L514)
-and
-[refresh path](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/DatasetManager.scala#L301)
-establish those behaviors.
+Prefer a target capability that atomically publishes row mutations with version
+state or a reference to an immutable key-state index. It must preserve the ordinary
+user table’s schema, reads and operations. Delta and Iceberg adapters need to prove
+metadata preservation and enforcement for every admitted writer before claiming
+that capability.
 
-We propose keeping those checks and explicitly separating recovery identities
-across full refreshes. Requiring a source to retain its absolute origin would
-be a further Sail admission policy. Spark's table-reset path does not prove
-that policy for every connector. Source options and retained history must be
-part of the refresh decision before destructive effects begin.
+A fenced sidecar table plus the ordinary target is a valid alternative when
+one transaction cannot cover both. Persist immutable prepared rows and record
+each effect separately. A crash between effects must complete the original work.
+Cross-table atomic visibility is not promised.
 
-Targets must support row-level operations. Writer ownership can be protected
-by giving each new owner a greater epoch, an ownership number. A target's
-fence rejects writes carrying an older epoch. Replacing a fenced write
-path must preserve that protection. Whether other targets need that
-mechanism remains open. A catalog ordering individual commits does not
-establish ownership across both table effects.
+A physical state table exposed through a filtered view can combine live and deleted
+state, but changes the public table contract. External reads, table identity,
+schema and DDL all need explicit product acceptance. A hidden table-to-view
+substitution is not an implementation shortcut.
 
-## Differences that need a decision
+## Make every effect recoverable and fenced
 
-Spark leaves equal-key, equal-sequence winners within a batch undefined.
-A fixed total order over source positions would change that contract and
-would need a definition across partitions and transformations. The reduction
-experiment selects the later row in recorded input order; asynchronous replay
-can change that order.
+A prepared checkpoint binds source identity and boundaries, configuration and
+semantic version, validation evidence, immutable output and required effect IDs.
+Retries use that same work. Source replay may replace saved output only with a
+proof that the same input and normalization remain available until completion.
+Chunk artifacts and budget memory, disk and retention rather than collecting a
+whole interval or archive in memory.
 
-We recommend guaranteeing that sealed winners remain unchanged during
-recovery, while leaving the initial equal-sequence choice undefined. If a
-stronger ordering is wanted, define and test it separately. Archives,
-validation receipts and ownership fences also require Sail-specific evidence;
-they are not covered by a blanket claim of Spark parity.
+Every admitted durable target must reject obsolete owners at commit acceptance.
+Atomically check epoch, refresh generation, table incarnation, effect identity
+and content. A lease or serialized catalog commit is insufficient: an old owner
+can reload the latest head. Build missing managed Delta and Iceberg adapters;
+remove the unfenced fallback. Source and target admission report a missing capability
+until its enforcement exists.
 
-## Evidence and questions
+Cover creation, enrollment, schema changes, maintenance, refresh and worker commits.
+External writers must obey the same authority or mandatory protocol. Reconcile
+unknown commit outcomes by the original identity. An effect accepted before
+ownership changed may finish publishing exact bytes; the replaced owner may not
+authorize new effects.
 
-The Spark 4.2.1 claims above are supported by pinned source inspection of
-validation, sequence comparisons, merge order, key drift and refresh behavior.
-Reduction tests cover a tie and a delete in recorded rows, not streaming
-intervals or cross-partition replay. The merge sink, durable checkpoint record
-and end-to-end replacement remain unbuilt. No integrated Spark comparison
-establishes compatibility of that replacement.
+## Refresh and migration
 
-Should change capture be included in the initial recovery scope? If so, is
-sealed input with separate effect completion the acceptable starting point?
-Should equal-sequence selection stay undefined before sealing? These answers
-determine the recovery protocol to test. Its decisive experiment must crash
-between the two merges and finish both effects from the same validated rows.
+Keep correct key resolution and schema checks, including harmless key declaration
+reordering. Changes to key meaning, ordering, normalization or storage need a
+versioned migration. Resolve pending work under its recorded contract, fence old
+writers and inspect retained versions and deletion state before switching.
+
+A rebuild needs authoritative source data. That may be a consistent snapshot
+plus a continuation frontier, rather than physical offset zero. Verify completeness
+before destructive effects. Prefer building and publishing a new fenced generation
+when supported; otherwise define the visibility and recovery of an in-place reset.
+
+Existing data may have lost tied-event order or deletion history. Such state
+cannot be repaired by changing a comparator alone. Require reconstruction or an
+explicitly accepted baseline with a new source admission frontier.
+
+## Deliberate differences from Spark
+
+Spark 4.2.1 leaves equal-sequence winners within a batch undefined and gives equal
+upserts different treatment from equal deletes in target merges. Those rules can
+change the outcome when the same events cross a batch boundary. Replace them
+with complete per-key order and one action-independent comparison. Sealing an
+arbitrary winner would fix retries but leave the initial ambiguity.
+
+Retain original-row validation, anti-resurrection state, schema checks and immutable
+prepared work because they protect correctness. Do not preserve an auxiliary-table
+name, error ordering, batch-lag watermark rule or permissive configuration fallback
+merely for parity. Public metadata changes still require an explicit migration.
+
+## Decisions and evidence
+
+Choose the first source’s complete-order contract and the target’s atomic-state
+capability. If atomic publication cannot preserve the ordinary table interface,
+use fenced sidecar recovery rather than quietly changing that interface. Decide
+whether the default validation scope is sufficient for the application or whether
+historical conflict verification is worth its retention cost.
+
+Pinned Spark and Sail source inspection and a small logic model support the
+ordering counterexamples. They do not demonstrate a replacement engine. Acceptance
+requires actual source-to-table permutations, checkpoint regrouping, invalid losing
+rows, partial effects, stale writers, refresh recovery and external-reader checks.
+The streaming normalizer, reducer, durable checkpoint integration and merge sink
+remain to be built.

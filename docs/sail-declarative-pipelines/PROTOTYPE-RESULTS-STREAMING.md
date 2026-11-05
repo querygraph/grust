@@ -3,8 +3,10 @@
 Four component experiments exercise Sail's flow events, which carry data
 batches and ordered control markers. The tables below summarize reported
 runs on the code versions listed at the end. Source-inspection findings
-are identified separately from executed tests. None of these results
-establishes a complete durable source-to-table recovery protocol.
+are identified separately from executed tests. None of these results establishes a complete durable source-to-table recovery
+protocol or the proposed deterministic change-event semantics. Reported counts
+below belong to the experimental implementations; they were not rerun as an
+integrated qualification.
 
 A checkpoint identifies an input boundary and associated state. A bounded
 source emits end of data when it reaches its captured end position. A
@@ -104,7 +106,10 @@ separate accounting. Incarnation belongs in every recoverable position.
 scan and bounding: end-of-data can precede the incarnation check. Bound
 capture racing ongoing consumption also needs a controlled test. These cases
 are outside the reported test coverage. Planner registration and dependency alignment remain
-outside the prototype.
+outside the prototype. Saved positions also need binding to the complete source
+descriptor and a partition-set/discovery policy. Payload-only decoded rows do
+not automatically preserve the incarnation-bearing provenance required by
+change-event normalization.
 
 ## P4 Recorded window state and interval reduction
 
@@ -132,7 +137,9 @@ schema-refusal tests.
 
 **Decision evidence.** File snapshots support recovery for that fixed merged
 event order. They do not prove recovery under another source interleaving.
-The tie test proves recorded row order, not a total source-position order.
+The tie test proves recorded row order. Its arbitrary tie winner is not the
+proposed contract: production change capture requires complete per-key order,
+consistent upsert/delete comparisons and defined duplicate/conflict handling.
 
 **Limits.** No watermark generator, integrated change-capture operator,
 sliding windows, joins or executed state reclamation. The proposed cleanup
@@ -151,6 +158,45 @@ partial effects, stable recovery identity, durable publication, replay
 ordering and reclamation must be settled together. Neither production
 planner wiring nor the Spark end-to-end replacement exists. Passing these
 component cases does not resolve the uncovered failure schedules above.
+
+## Additional upstream foundation probes
+
+Focused Rust probes compiled eight unchanged source/build/protobuf files from
+upstream Sail `85c6cca01`, with its resolved Arrow 59.2.0 and DataFusion 55.2.0
+dependency versions. They exercise real event encoding, placeholders and
+DataFusion expression/filter calls in an isolated harness.
+
+| Executed check | Result |
+| --- | --- |
+| Zero-column data and all four marker kinds | Encoding succeeds; decoding fails without a preserved row count |
+| Nonnullable decimal fields across all four widths | Nondefault precision/scale produces marker type mismatches |
+| Strict casts and the rewritten predicate shape on markers | Placeholder evaluation fails before marker handling can protect it |
+| Schema-level metadata | Encoding drops the map |
+
+Twenty-nine expected error cases reproduced, with success controls for ordinary
+rows, nonempty schemas and valid decimal configurations. Metadata loss was a
+separate assertion. The successful harness exit confirms reproduction of defects;
+it does not indicate that the foundation passed its correctness requirements.
+These are component tests, not Sail SQL, distributed execution or storage tests.
+
+## Required evidence beyond these prototypes
+
+The reviewed execution transport still needs graph-wide marker alignment and
+bounded-memory qualification. The append sink buffers an interval, snapshots
+rewrite complete state and local replica overflow can grow without bound.
+No throughput or resource envelope follows from the recorded cases.
+
+Every durable target needs commit-time fencing, including creation, managed
+Delta, Iceberg and worker execution. The bounded reference runtime’s exact-byte
+Delta ratification is reusable but does not qualify those other paths. Source
+inspection identifies the gaps; no new storage takeover tests ran here.
+
+The replacement needs fixed prepared identities, evaluate-once validation,
+current-version conflict checks, real crash recovery and explicit migration.
+A small independent Python model verifies grouping counterexamples for Spark’s
+rules and consistent maxima for valid complete orders. It is a semantic model,
+not an engine or durability test. The ordinary source-to-table path, streaming
+change-capture merge and distributed recovery remain unbuilt.
 
 ## Code versions for the reported mechanisms
 

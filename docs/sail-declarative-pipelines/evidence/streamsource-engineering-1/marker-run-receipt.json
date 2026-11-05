@@ -1,0 +1,53 @@
+{
+  "recorded_at": "2026-11-05T05:50:55.794696+00:00",
+  "source_revision": "85c6cca01cd521dd778bc200c987a34edf141de1",
+  "source_worktree_status": "",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+  "protoc": "libprotoc 36.1",
+  "platform": "Darwin arm64",
+  "environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/streamsource-probes-20261105/target"
+  },
+  "command_working_directory": "/Users/alexy/src/sail/tmp/streamsource-probes-20261105",
+  "runs": [
+    {
+      "command": "cargo run --offline > run-1.stdout.json 2> run-1.stderr.log",
+      "exit_code": 101,
+      "outcome": "Setup failure: manifest requested pre-lockfile dependency versions; no probe ran"
+    },
+    {
+      "command": "cargo run --offline > run-2.stdout.json 2> run-2.stderr.log",
+      "exit_code": 101,
+      "outcome": "Setup failure: locked log 0.4.35 missing from local cache; no probe ran"
+    },
+    {
+      "command": "cargo run --locked > run-3.stdout.json 2> run-3.stderr.log",
+      "exit_code": 0,
+      "outcome": "29 expected error cases reproduced, named success controls passed, schema metadata loss asserted"
+    }
+  ],
+  "dependency_check": "Every dependency name/version/source triple in probe Cargo.lock occurs in the reviewed Sail Cargo.lock; only harness root differs",
+  "source_copy_check": "All 8 copied source/build/proto files byte-identical before and after execution",
+  "binary_sha256": "c622ba665b78c4ab2bc52274d946b07b11a2602b1d985ab3671ab0966b005b44",
+  "probe_source_sha256": "29672cfa157421bf618896df7492d42813fe64dbba3e5f9ab79a81f0823a10c5",
+  "prepare_script_sha256": "8f563ccaf5d9500f925b74ead6e04e3be519f319ef87391c640017f6968e3a9d",
+  "files": {
+    "marker-Cargo.toml": "50570d32c499ec5dea9f9c65509e44da9c49f8669ecf04b32db7c9ea9195d681",
+    "marker-Cargo.lock": "12d0cb6769830023c10e70ead2931a8fb0aa1eea23ff79e0364dbf4841e10426",
+    "marker-Cargo.run-1.toml": "791f29340c32b161aaa9362d579995499f89f20e4be12db645f3cf71dc72dce1",
+    "marker-run-1.stderr.log": "9c3f860bb050c3e2e4415d8af78021f1a5a658da0ab4aaf9792b4aae5e8a9138",
+    "marker-run-2.stderr.log": "935d2abd0eea7e61e8720da5c3ef7796cce683d1251181f02f2d4384f0421350",
+    "marker-run-3.stderr.log": "5d14e986c79a37cab23b46c0b7cd2fbd70c7a2a77acc62df9af949ac538f3a2b",
+    "marker-run-3.stdout.json": "57dd88f87da65e0478a1b2821b82518546da4f76be4d2c815ed5fedb4853740f"
+  },
+  "limits": [
+    "No production fix",
+    "No SQL planning or full Sail runtime execution",
+    "No distributed execution",
+    "No Spark/broker/storage suite",
+    "No full Arrow type sweep",
+    "No performance claim"
+  ]
+}

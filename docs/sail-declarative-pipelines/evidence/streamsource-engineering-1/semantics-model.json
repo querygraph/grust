@@ -1,0 +1,61 @@
+{
+  "method": "Python logic model only; source-derived rules; no engine execution",
+  "spark_equal_version_combined": {
+    "live": null,
+    "tombstone": 5
+  },
+  "spark_equal_version_separate": {
+    "live": [
+      5,
+      "upsert",
+      "A"
+    ],
+    "tombstone": 5
+  },
+  "spark_equal_upserts_ab": {
+    "live": [
+      5,
+      "upsert",
+      "B"
+    ],
+    "tombstone": null
+  },
+  "spark_equal_upserts_ba": {
+    "live": [
+      5,
+      "upsert",
+      "A"
+    ],
+    "tombstone": null
+  },
+  "spark_losing_delete_same_interval": {
+    "live": [
+      9,
+      "upsert",
+      "N"
+    ],
+    "tombstone": null
+  },
+  "spark_losing_delete_after_newer": {
+    "live": [
+      9,
+      "upsert",
+      "N"
+    ],
+    "tombstone": 5
+  },
+  "proposed_valid_distinct_order_partition_cases": 12,
+  "proposed_valid_result": [
+    9,
+    "delete",
+    null
+  ],
+  "proposed_conflict_permutation_partition_cases": 24,
+  "proposed_conflict_result": "conflict in every case",
+  "limits": [
+    "One key, fixed scalar versions, replace-row upserts and deletes only",
+    "Fingerprint retention is unbounded in this tiny model",
+    "No storage, transactions, concurrency, failures, planner or Arrow execution",
+    "The chosen Spark max_by tie outcome is allowed, not guaranteed"
+  ]
+}

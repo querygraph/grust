@@ -1,144 +1,168 @@
-# Implementation plan for streaming pipelines and change capture
+# Building recoverable streaming pipelines on Sail
 
-Streaming pipelines append new data and apply keyed changes without rebuilding
-the target on every run. They need a restart protocol that preserves source
-progress, intermediate state and committed table writes together. This plan
-builds that protocol on Sail's existing streaming sources and ordered flow
-events, then adds only the operators needed by the selected use case.
+Streaming pipelines should maintain tables continuously and recover without
+losing or repeating effects. Change capture adds ordered keyed replacements and
+deletions whose final state must not depend on checkpoint size. The implementation
+should extend Sail’s flow events, execution ownership and table commits, while
+repairing the foundation those guarantees depend on.
 
-The proposed first scope is one flow, a computation feeding a target, with
-change capture included if its two-table recovery contract is accepted.
-Append-only output is a smaller alternative. Coordinated recovery across
-independent flows, streaming joins and general stateful coverage are deferred.
+Start with one flow, a computation feeding one target. Include append and change
+capture, developing the simpler append path first to exercise shared recovery.
+Do not make windows, joins, independent multi-flow transactions or a broker-specific
+client prerequisites for that path.
 
-## Establish the recovery boundary
+## Repair the foundation before promising recovery
 
-A checkpoint names an input boundary, associated operator state and required
-output writes. Its recovery domain is the set of writes whose completion is
-tracked together. One append target may fit one transaction. Change capture
-also writes an auxiliary table of deletion sequences, so one flow can have
-two separately committed effects.
+Sail already carries data and ordered control markers through streaming plans.
+The current rewrite can evaluate user expressions on marker placeholder rows;
+fan-in and shuffle do not establish graph-wide checkpoint alignment. Component
+probes also reproduced zero-column decoding, decimal placeholder and schema
+metadata defects. Fix these at the event/operator boundary, with all applicable
+Arrow types and mixed marker/data schedules covered.
 
-The first decision is whether both effects belong in the initial scope.
-If one commits before a crash, recovery must finish the other with the same
-intended rows. Reusing a committed checkpoint identifier for a wider input
-range can lose rows; assigning a fresh identifier to already committed append
-rows can duplicate them. The input boundary and the identity of its output
-must remain stable while any effect depends on them.
+A flow-aware transform should evaluate user code only on data and forward markers
+without alteration. Use Sail-owned adapters or narrowly attributed implementations
+where dependency behavior must change; avoid accumulating expression-specific
+workarounds. Preserve existing stateless behavior with controls that fail on
+the unmodified path.
 
-A candidate protocol persists a prepared record before output commits. It
-binds source positions, state, saved output where needed, and each effect's
-completion record. An alternative can rely on source replay only if it proves
-identical input and computation remain available. Reuse existing durable
-publication and effect-tracking mechanisms before introducing another store.
+Distinguish successful completion, cancellation, input failure and physical stream
+closure. A bounded source emits end of data, then participates in the final
+checkpoint. A run succeeds only after the required effects complete. Propagate
+sink failures and refuse unsupported retractions or execution options instead of
+silently ignoring them.
 
-This decision precedes component placement because a domain inside one job
-can use its job runner, while a domain spanning jobs might require different
-ownership. It also determines how much state and output must survive partial
-completion. Correct recovery does not imply atomic visibility across tables.
+These repairs precede durable sink claims because losing a marker, hiding an
+error or evaluating a marker as data invalidates every recovery protocol above it.
 
-## Agree the contracts needed by the selected path
+## Establish execution identity and source control
 
-| Contract | Proposed starting point | What would justify another choice |
-| --- | --- | --- |
-| Coordination ownership | Job runner when the domain fits one job; driver and running tasks in cluster mode | Recovery participants spanning several jobs |
-| Source capability | Optional interface defining identity, position meaning, replay and bounded-end capture | A simpler existing interface that expresses the same guarantees |
-| Checkpoint boundary | Align each input at the same marker and serialize requests | Measured alignment cost that justifies saving in-flight rows or queuing requests |
-| Bounded completion | All source bounds reached, then required final checkpoint effects completed | A separately specified user-visible stopping contract |
-| Checkpoint scheduling | Intermediate checkpoints plus a final bounded checkpoint, with resource limits | Volume triggers or spill better matching the workload |
-| Retry output | Persist selected output when replay cannot guarantee the same result | Proven repeatable source input and transformations |
-| Stateful operators | Add only those required by the use case, with explicit state recovery | A use case needing windows, duplicate removal or broader operators |
-| Source and target admission | One pair with demonstrated replay, commit and ownership behavior | Additional pairs carrying equivalent evidence |
+`StreamSource` is a planning descriptor, not a live distributed control handle.
+A scan is reconstructed in a running task. Add a capability description and
+register runtime control endpoints identified by flow, source, partition and
+task attempt. Route checkpoint and bound requests through existing job-runner,
+driver and task actors. Reject responses from superseded attempts.
 
-These are interacting contracts. Scheduling must respect the completion
-protocol; state size can change scheduling choices; a source may constrain
-replay and refresh. Resolve those interactions before implementing the
-dependent path. A stateless append path does not need a window state store,
-and an optional broker client need not block another suitable source.
+Local execution needs no new driver. A recovery domain inside one job can use
+its job runner; distributed execution delegates through its driver. Stable flow
+identity survives process restarts, while query attempts and refresh generations
+remain distinct. Source positions include incarnation and versioned interpretation.
 
-## Prove one complete source-to-table path
+Serialize checkpoint requests initially. Align the same marker across participating
+inputs in the actual transport graph, with explicit end/close accounting. Test
+staggered completion, task replacement, overlapping ordinary/final requests and
+barriers passing through shuffle. Local merge tests alone are insufficient.
 
-Implement the selected path through a source, checkpoint, durable target
-commit and restart. Begin with planning-time refusals for unsupported sources,
-operators and targets so the supported guarantee is explicit.
+## Build mandatory commit fencing in parallel
 
-The path needs the following checks:
+A lease cannot stop an old owner that resumes after takeover. Every durable
+target must enforce owner epoch, generation, table incarnation and effect identity
+at its commit boundary. Ordinary optimistic table-version checks do not establish
+that contract.
 
-- Interrupt before and after each output commit. Recovery must preserve the
-  original boundary and produce the required result without lost or repeated effects.
-- Interrupt after preparation but before completion is recorded. Confirm
-  that the target's actual outcome can be reconciled safely.
-- Delay one input, end another, and request an ordinary and final checkpoint
-  close together. No input may skip a checkpoint or count as completed twice.
-- Change source identity or remove unread retained data. Fail explicitly
-  rather than advance progress past missing input.
-- Replace a writer and resume the previous writer. Verify the target rejects
-  stale ownership wherever that guarantee is promised.
+Extend the existing staged-commit and catalog seams. Build managed Delta and
+Iceberg adapters rather than retaining their unfenced execution path. The first
+adapter may use a narrower backend, but every admitted target needs the same
+acceptance guarantees. Creation, enrollment, schema mutation, refresh and worker
+commit routing are part of the adapter, not exceptions.
 
-A file-sink test that retains positions in memory does not establish process
-restart durability. Separate Delta transaction-option tests do not establish
-an integrated streaming sink. The complete path must exercise the actual
-source, recovery record and admitted target together.
+An accepted effect may finish publishing exact bytes after takeover; an obsolete
+owner may not authorize another effect. Persist acceptance and reconcile uncertain
+outcomes by identity. Test both sides of takeover and timeouts around acceptance,
+including a stale owner that reloads the latest table head. If external engines
+can write, the enforcement boundary must constrain them too.
 
-## Include change capture without weakening its semantics
+Use an existing catalog if it can enforce the contract. A commit service adds
+availability, access-control and operational obligations and is justified only
+when it can actually become the authoritative publication boundary.
 
-A change row carries a key, sequence value and action. An upsert inserts or
-updates that key; a delete removes it.
-Validate every original row before choosing one winner per key for a
-checkpoint interval. Invalid rows must fail even if reduction would discard
-them. Seal the winners by saving them unchanged before either table write,
-then track the auxiliary-table and target-table effects separately.
+## Prove one durable append path
 
-The sequence comparisons follow Spark 4.2.1: target upserts accept equal or
-greater sequences; target deletes require a greater sequence. The auxiliary
-table retains deletion sequences to reject older events. Ordering across
-intervals belongs in the tables, without retaining every target key forever
-in an operator. Spark leaves equal-sequence selection within a batch undefined;
-retrying a sealed interval must nevertheless preserve its chosen winners.
+Connect a replayable source, aligned checkpoint, durable prepared record and
+fenced target writer. Preparation binds exact source boundaries, semantic and
+configuration identity, necessary state, immutable output chunks and effect IDs.
+A proven identical replay path may replace saved output; offsets alone are not
+that proof.
 
-Before this path is durable, define how validation evidence identifies its
-input and schema, how full refresh creates a new recovery identity, and how
-writer ownership is enforced. A refresh rebuilds the target and needs an
-explicit policy for available source history before destructive effects.
-A writer fence rejects writes from an older ownership number. Commit ordering
-alone does not establish that fence.
+Recover pending original effects before accepting new work under their identifiers.
+A target receipt, source progress and coordinator completion are distinct facts.
+An unknown outcome must be reconciled without inventing a new write identity.
+Retain all artifacts needed by incomplete work and admitted restart points.
 
-Exercise failure between the two table writes and during refresh. Compare
-source-to-table behavior with Spark 4.2.1 for the selected cases; document
-intentional differences separately. Preserve existing supported validation,
-merge, archive and ownership guarantees until the replacement passes those
-checks. Verify that the actual write path checks validation evidence before
-either table effect begins.
+Use real process restart tests around preparation, acceptance, publication and
+completion recording. The existing file-sink harness retains positions in memory;
+separate Delta transaction-option tests do not qualify the integrated path.
+Exercise source retention loss and recreation, authority failure and corrupt or
+missing artifacts as explicit failures, never skipped progress.
 
-## Add stateful operators only with their missing contracts
+## Add deterministic change capture
 
-Windows and duplicate removal need saved state tied to the checkpoint that
-produced it. Immutable Arrow snapshots and manifests naming their files are
-one starting point. Choose them only if full-snapshot cost is practical for
-the intended state size. Keep every snapshot needed by incomplete writes and
-valid restart points; a newer recorded position is not permission to delete it.
+Require a complete source/application order per entity key and immutable event
+identity. Normalize key, order, action and payload once; validate those values
+before reduction. Apply greater versions, ignore older versions and detect
+conflicting equal versions. Use the same rule for upserts and deletes. Retain
+the latest version after deletion so an older upsert cannot resurrect the row.
 
-Sail's watermark marker promises that older timestamped rows will not follow.
-A threshold derived from observed timestamps does not ensure that promise.
-Either enforce the contract before rows enter the downstream stream,
-including arrivals after a watermark, or explicitly change what downstream
-operators may assume. Only then implement window
-closure, late-row handling and recovery of watermark progress.
+Default conflict checks cover the prepared interval and current durable version.
+They rely on the source contract and do not verify every superseded event in
+history. Offer exhaustive fingerprint retention only with an explicit admission
+horizon and state budget.
 
-Test independently scheduled inputs, growing key counts, slow commits and
-stalled watermarks. Periodic checkpoints do not bound memory. Establish byte
-limits, backpressure or spill and measure snapshot and recovery cost. Recorded
-event replay alone cannot establish correctness under different interleavings.
+Choose storage by atomic publication and the ordinary table interface. Prefer
+one transaction publishing user-row changes and version state where supported.
+Otherwise use a fenced sidecar with separate effect completion and recovery between
+commits. A state table exposed through a view requires explicit product acceptance;
+it must not silently replace a table.
 
-## Replacement and expansion criteria
+Test permutations and checkpoint regrouping of valid events, duplicate deliveries,
+conflicts, invalid losing rows, null actions and interrupted publication. Include
+durable 8:A against incoming 8:B followed by 9:C: reduction must not hide the
+conflict with the pinned validation snapshot. Bind that snapshot to the commit
+precondition and budget original-version checking without reevaluating input. Check
+ordinary external reads and table operations. A streaming reducer and merge sink
+remain implementation work; whole-batch prototype reduction is not that path.
 
-Replace an existing path only when the selected implementation demonstrates
-its declared recovery and compatibility contract. Broader sources, targets
-and operators require their own capability checks and failure cases.
+## Bound resources and validate configuration throughout
 
-The current mechanism evidence covers marker transport and alignment, a
-simulated single-file-sink restart, separate Delta write options, broker
-resume checks and state restored from recorded events. Durable coordination,
-streaming change-capture merges and the integrated end-to-end replacement
-remain unbuilt. Those gaps define the next technical work; the existence of
-component tests does not establish the complete protocol.
+Reserve memory for transport queues, interval reduction, output preparation and
+operator state using Sail’s existing memory pools. Reuse temporary-file facilities
+for spill, with disk and retained-artifact limits. Avoid whole-output archives
+and synchronous full-state rewrites as an assumed scalable default.
+
+An unbounded replica overflow queue protects fan-out liveness today. Replacing
+it with a blocking queue can deadlock a forked graph. Prove graph-wide progress
+under slow consumers using bounded credits or spill, and measure aggregate bytes,
+not merely batch counts. Checkpoint frequency does not provide this bound.
+
+Use one typed, versioned configuration model before dependent planning. Strict
+YAML, JSON and API inputs share schemas, defaults, alias rules and connector
+validation. Optional Dhall compiles against the expected type to ordinary JSON.
+A shared acceptance corpus must catch duplicate keys, coercions, unknown options,
+conflicting scopes and frontend/schema drift.
+
+Configuration work and foundation repairs can proceed independently. Stable
+semantic identity is needed before durable preparation, so effective normalized
+configuration and schema versions must be defined before that integration lands.
+
+## Migrate only after the replacement proves its contract
+
+Spark 4.2.1 source remains evidence for retained behaviors, not an obligation to
+keep undefined ties, asymmetric action comparisons, permissive option fallbacks
+or batch-dependent event-time decisions. Tests should state intentional differences
+and compare independently specified results. Preserve correct name resolution,
+original-row validation, replay receipts and schema checks.
+
+Existing pending effects must finish under their recorded semantics before a
+new generation takes ownership. Inspect retained key versions and deletion state;
+missing historical information may require a rebuild. A consistent snapshot plus
+continuation frontier can be a valid bootstrap, so do not require physical origin
+where the source supplies a stronger usable contract.
+
+Windows and deduplication follow only when their state, watermark and reclamation
+contracts are defined. Preserve Sail’s promise that a watermark excludes later
+older timestamps, or explicitly change that contract before relying on it.
+
+Replacement requires integrated recovery, fencing, resource and interoperability
+evidence at the actual source/target boundary. Component probes identify defects;
+prototype reports demonstrate limited mechanisms. Neither is a production gate
+for the unbuilt distributed checkpoint and change-capture integration.

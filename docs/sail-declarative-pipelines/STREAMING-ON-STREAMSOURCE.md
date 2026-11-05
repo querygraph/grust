@@ -1,154 +1,157 @@
-# Streaming tables on Sail's flow event model
+# Recoverable streaming tables on Sail’s flow events
 
-Streaming tables let a pipeline append newly available rows without rebuilding
-the target from its entire source history. The intended guarantee is that a
-successful recovery neither loses nor duplicates those rows. This proposal
-uses Sail's existing streaming plans to provide that behavior.
+Streaming tables append newly available rows without rebuilding the target.
+Users need a crash or task replacement to preserve both data and source progress.
+Build that guarantee on Sail’s existing continuous flow events and execution
+ownership, with durable preparation and fenced table commits.
 
-It does not propose a second streaming engine or full Structured Streaming
-operator coverage. Recovery scope and changes to existing marker contracts
-remain open design choices.
+The first recovery domain is one flow, a computation feeding a target. Broader
+multi-flow transactions and stateful operators are separate capabilities. Spark’s
+batch scheduling is not the execution model or a constraint on correctness.
 
-## Fit with Sail
+## Extend the existing foundation at its real boundaries
 
-Sail's `StreamSource` provides a streaming scan. Its output is a sequence of
-flow events: data batches or control markers carried in order with the data.
-A retraction flag identifies rows that cancel earlier rows. The existing
-markers describe latency, watermarks, checkpoints and end of data.
+`StreamSource` describes a streaming scan. Its provider becomes a flow-event
+source through Sail’s streaming rewrite. A flow event contains data, retraction
+flags that cancel earlier rows, or a marker for latency, watermark, checkpoint
+or end of data. The marker ordering is useful, but does not itself save progress
+or commit output.
 
-The streaming rewriter already handles sources and several stateless
-operations. At the inspected upstream revision it refuses windows,
-aggregates, joins and repartitions. The proposed additions are checkpoint
-coordination, source participation, table sinks and selected stateful
-operators. The existing encoding remains the starting point, with any
-contract changes discussed explicitly. The
-[marker definitions](https://github.com/lakehq/sail/blob/62251e0a27bbab0a15547562e829cad2a418f353/crates/sail-common-datafusion/src/streaming/event/marker.rs)
-already describe waiting for a checkpoint after end of data.
+Native rate and socket sources demonstrate streaming; their current contracts
+do not qualify them as replayable production sources. Add optional recovery
+capabilities without forcing nonrecoverable sources to claim durability.
 
-## Decide the recovery scope first
+| Existing component | Required behavior |
+| --- | --- |
+| Rewriter, projection and filter paths | Evaluate expressions only on data; preserve control events without inventing user rows |
+| Arrow event encoding | Preserve row counts, exact types, field/schema metadata and unambiguous control-column identity |
+| Fan-in, shuffle and replicas | Preserve per-input order and align checkpoint markers through the actual graph |
+| Job runner and cluster actors | Coordinate recovery inside one job and address live source task attempts |
+| Table writers and catalog commits | Publish fixed prepared effects with enforced ownership and reconcilable receipts |
+| Query lifecycle | Distinguish final durable success from closure, cancellation and failure |
 
-A checkpoint identifies a cut through the source positions and operator
-state. A sink makes the corresponding output visible through a table commit.
-The recovery domain is the set of effects whose progress is tracked together.
-For a sink that uses checkpoint identifiers as transaction tags, the table
-skips a transaction carrying an identifier it has already committed.
-Recording positions before a commit is necessary, but does not alone make
-recovery safe when effects complete separately.
+Focused unchanged-module probes reproduced strict-cast errors on marker placeholders,
+zero-column decode errors, decimal marker mismatches and schema metadata loss.
+Source inspection found plain fan-in and an unbounded local replica overflow queue.
+Repair these foundations before treating additional marker-aware operators as a
+complete streaming system. A flow-aware adapter is preferable to guarding each
+kind of user expression separately.
 
-Suppose two sinks have completed a checkpoint at source position 3. The next
-checkpoint records position 6, but only one sink commits. A restart at 3
-must not reuse that identifier for rows through position 10: the completed
-sink would skip rows 6 through 9. A new identifier would instead repeat rows
-3 through 5 in that sink.
+## Separate source descriptors from running controls
 
-A flow is one declared computation feeding a target. Change capture applies
-keyed updates and deletes, using a target and an auxiliary table that records
-deletion sequences. The auxiliary table stops older updates from restoring
-deleted records. One flow can therefore have two separately committed effects.
-There are three useful initial scopes:
+A source scan is reconstructed on a worker, so an object retained during planning
+cannot control its runtime instance. A recovery-capable descriptor declares source
+identity, position format, replay guarantees and bound capture. Running partitions
+register control endpoints with source, partition and task-attempt identity.
+Existing job and driver actors route commands and reject obsolete attempts.
 
-- One append sink whose output fits one table transaction.
-- One flow that may have several effects, including change capture's two
-  table merges, with recovery tracking each effect.
-- Several independent sinks coordinated as one recoverable query.
+Bind recoverable positions to the source descriptor and its incarnation, which
+distinguishes recreation from continuation. Record the participating partition
+set. Newly discovered partitions need an explicit bootstrap policy; starting them
+silently at the earliest retained offset may omit required history.
 
-We recommend starting with one flow and deferring independent multi-sink
-queries. If change capture is included, its two effects still require a
-recovery protocol. Any prepared checkpoint must keep its boundary and
-required state while an effect can still depend on them. An identifier must
-not silently acquire different rows. Atomic visibility across tables is a
-separate guarantee and is not claimed here.
+A source must detect missing retained data on every read, including during a
+run. A bounded run captures ends with their identities and reads exactly to them.
+Capturing an empty end must not bypass recreation checks. Bounds across several
+sources need not be one simultaneous snapshot; any stronger claim requires a
+source-specific contract.
 
-Would you include two-effect change capture initially, or start with one
-append transaction? The answer determines what the recovery experiment must
-prove.
+Apache Iggy is one optional broker candidate. Its exact-range reader, decoder and
+incarnation checks are useful. The stream prototype still needs topology and
+bound-capture qualification, planner integration and dependency admission. Another
+source can establish the core protocol without taking on that client first.
 
-## Coordination and bounded completion
+## Make checkpoint participation explicit
 
-For a recovery domain contained within one job, we propose that the job runner
-own checkpoint coordination. Local execution has no driver; distributed
-execution would delegate coordination to the driver and reach sources through
-their running tasks. A separate optional source capability would request
-markers, report positions and establish a bounded end. The exact interfaces
-depend on the recovery decision.
+A checkpoint binds a source boundary, relevant operator state and required output
+effects. Initially serialize requests and hold each participating input at its
+marker until the others reach the same identifier. This alignment avoids saving
+in-flight rows, but can wait for a slow input. Queued or unaligned checkpoints
+are alternatives only if their extra state and recovery cost are justified.
 
-Operators with several inputs would align markers by holding each input at
-its barrier until the other inputs reach the same checkpoint. Requests must
-be serialized or queued so no input misses an identifier. Source end,
-physical stream closure and completed sink effects need distinct accounting.
-The run finishes only after the globally final checkpoint completes.
+Use the job runner when the recovery domain fits one job; distributed execution
+delegates through the driver and running tasks. Local execution needs no new
+driver. Stable flow identity must survive query attempts and process restarts;
+a refresh creates a distinct generation.
 
-Spark 4.2.1 pipelines use available-now execution: each source captures a
-target offset and may process it over several batches. It does not imply one
-checkpoint or a single simultaneous snapshot across all sources. We propose
-allowing intermediate checkpoints plus a mandatory final checkpoint for
-bounded runs. A continuous run would have no bounded end and would extend
-Spark's pipeline execution modes. The
-[available-now source contract](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/catalyst/src/main/java/org/apache/spark/sql/connector/read/streaming/SupportsTriggerAvailableNow.java)
-states the offset and multiple-batch behavior.
+An ended input, a closed channel and a completed effect are different facts.
+A bounded run permits intermediate checkpoints, then succeeds only after its
+final prepared work is durable. A continuous run uses the same protocol without
+captured ends. Explicitly reject unsupported trigger, output and retraction
+semantics rather than quietly choosing append behavior.
 
-## Sinks, sources and state
+## Prepare output before committing it
 
-For Delta, the proposed commit tag uses its application identifier and
-transaction version. The application identity must survive restarts and
-separate full refresh generations, which identify target rebuilds. The
-checkpoint identifier names one prepared boundary. Other formats need their
-own verified commit and retry contract; attaching metadata alone is not an
-implementation of idempotency. An append sink rejects retractions.
+Persist the checkpoint’s exact boundaries, normalized configuration, semantic
+version, state references and effect identities before table effects. Persist
+immutable output chunks when replay cannot guarantee identical rows. Positions
+alone do not guarantee source retention, deterministic transformation or stable
+output after a restart.
 
-Apache Iggy is a message broker that stores data in partitions. Its source
-would record each partition's next offset and incarnation,
-the identity that distinguishes a recreated partition. Reads and bound
-capture must reject retention gaps and incarnation changes before advancing
-progress. The client belongs in an optional crate. Upstream dependency
-compatibility is a separate admission decision.
+If an effect already committed, its identity must never acquire more rows. For
+example, one sink commits rows through position 6 and another fails. Retrying
+that identity through position 10 loses the extra rows at the completed sink;
+a fresh identity can instead repeat the original rows. Finish the original
+pending effects before advancing them.
 
-The initial state store candidate uses Arrow files, with a manifest listing
-the files in each complete snapshot. Recovery must pair source positions with
-the correct operator state and configuration. State remains while any
-incomplete effect or recovery point requires it. Merely recording a newer
-position does not permit deleting older state. Publication durability,
-ownership and cleanup need a defined protocol before the local file
-experiment becomes production storage.
+Delta’s application identifier and transaction version can identify repeated
+append writes. They do not supply owner fencing, stable flow identity, refresh
+separation or a complete checkpoint protocol. Other targets need equivalent
+commit and reconciliation capabilities, not merely metadata carrying a tag.
 
-Checkpoint frequency trades replay size against commit and snapshot work.
-Periodic checkpoints alone do not bound memory. Current experiments buffer
-append rows and rewrite complete window state; byte limits, backpressure or
-spill need an explicit resource decision. No performance envelope is
-established.
+For one flow with several effects, record each completion separately. Recovery
+can finish partial progress without promising atomic visibility across tables.
+Retain preparation and state until no pending effect or admitted restart point
+can use them. Restore the state named by that recovery point, never simply the
+newest snapshot found in storage.
 
-## Watermarks and differences from Spark
+## Enforce ownership and bound resource use
 
-An event-time watermark lets an operator decide which old state it can
-discard. Spark derives progress from observed event times and a configured
-delay, and its late-row decisions depend on batch boundaries.
+Every durable target needs a commit-time fence: the accepting authority atomically
+checks owner epoch, generation, table incarnation, effect identity and content.
+A lease or catalog table-version check alone cannot stop a stale writer that
+reloads the latest head. Build the missing managed Delta and Iceberg enforcement
+paths; do not offer an unfenced durable fallback.
 
-Sail's current marker instead promises that older timestamped data will not
-follow. Placing an event-time operator after a projection and permitting late
-rows needs an agreed interpretation or amendment of that contract. We should
-settle it before adding window and deduplication operators. Immediate marker
-advancement could change which rows Spark accepts within one batch; that is
-an open behavior choice, not an established compatibility claim.
+The contract covers creation, enrollment, schema mutation, refresh and worker
+commits. A cooperating Sail-only property cannot constrain external engines;
+all permitted writers need the enforced protocol. An effect accepted before
+takeover may finish publishing its exact content, but an old owner cannot accept
+new work. Unknown outcomes require reconciliation under the same effect identity.
 
-Stream joins and broader stateful coverage remain outside the initial scope.
+Use Sail’s memory pools and temporary-file facilities to budget transport,
+preparation and state. The append prototype buffers a whole interval and the
+local transport can accumulate unbounded overflow. Replace those assumptions
+with byte accounting, chunked artifacts, spill or backpressure. A blocking queue
+alone can deadlock a fan-out graph, so qualify aggregate resource bounds and
+progress together under slow consumers. Periodic checkpoints are not memory limits.
 
-## Evidence and the next decision
+## Event time and intentional differences from Spark
 
-Local experiments exercise marker transport, controlled alignment, one file
-sink's restart, separate Delta write options, broker range checks and window
-restoration from recorded events. Those component tests do not establish a
-complete recovery protocol. Source inspection identifies unresolved cases:
-overlapping checkpoint requests, staggered source completion, and partition
-recreation while capturing a bounded end. A possible concurrency defect in
-first-time Delta table creation is inferred from source, not a reproduced
-failure.
+Sail’s watermark marker promises that older timestamped data will not follow.
+A threshold derived from observed timestamps does not establish that promise
+when late data may arrive. A future event-time operator must enforce the promise
+at its declared plan position, or propose an explicit revised contract.
 
-The Spark and Sail behavior described above is supported by pinned source
-inspection. No integrated Spark comparison establishes replacement
-compatibility. Distributed coordination, durable recovery and planner
-integration remain unbuilt.
+For multiple inputs, progress must reflect all active participants and survive
+recovery with the evidence needed to preserve it. Do not discard per-input progress
+or truncate precision solely because Spark does. Keep event-time policies independent
+of checkpoint scheduling. Windows and deduplication need their own state and
+late-data contracts before admission.
 
-The first decision is whether recovery covers one append transaction or one
-flow including change capture. For that scope, the next experiment must
-demonstrate correct recovery after a crash between durable effects. Only then
-can a complete streaming path claim the intended recovery guarantee.
+Strict typed configuration applies equally to YAML, JSON and APIs; optional Dhall
+is an authoring frontend, not a second runtime. Validate effective options before
+dependent planning and bind their semantic identity to prepared work.
+
+## What settles the implementation choices
+
+Choose the first replayable source and the target authority that can enforce
+all publication paths. Demonstrate real restarts around preparation, commit and
+completion, stale-writer rejection, source recreation, barrier alignment and
+bounded resources through actual local and distributed plans.
+
+Existing prototypes cover controlled marker alignment, a simulated file-sink
+restart and separate Delta write options. They do not establish durable distributed
+coordination, the integrated fenced sink or the production planner path. Those
+are required implementation work, with component failures and preserved controls
+providing focused starting tests.

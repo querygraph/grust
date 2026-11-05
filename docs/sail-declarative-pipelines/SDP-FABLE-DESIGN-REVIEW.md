@@ -1,5 +1,13 @@
 # SDP design and implementation review for Fable
 
+> **Reference scope.** This is a pinned implementation review brief. Its objective of reproducing all
+> applicable Spark behavior and its batch-dependent semantic recommendations are
+> superseded for new streaming pipelines. Engineering correctness governs: use
+> complete per-key ordering, typed effective configuration, coherent event-time
+> progress and mandatory commit fencing. Source observations, failures and receipts
+> below remain evidence about the specified versions. The current technical
+> proposal is [Streaming pipelines and change capture](REDESIGN-REVIEW-PACKET.md).
+
 Please review the complete Sail Declarative Pipelines work, with particular
 attention to the proposed streaming/Iggy and CDC architecture. Identify correctness
 risks, missing contracts, unnecessary machinery, weak evidence and a realistic

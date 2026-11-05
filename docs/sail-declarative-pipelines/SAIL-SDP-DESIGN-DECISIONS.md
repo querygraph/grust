@@ -1,5 +1,15 @@
 # Sail Declarative Pipelines and native extensions: the design record
 
+> **Reference scope.** This records decisions and evidence for the pinned bounded implementation,
+> not requirements for new StreamSource pipelines. Arrival-order ties, asymmetric
+> change comparisons, Spark error-row selection, traversal-driven configuration,
+> batch-lag/millisecond watermark rules and combined-only progress restoration
+> are superseded. Use complete per-key order, deterministic typed configuration
+> and recoverable event-time progress under Sail’s marker contract. Every durable
+> target requires enforced fencing. The current direction is explained in
+> [StreamSource architecture and engineering changes](STREAMSOURCE-ENGINEERING-REVIEW.md).
+> Recorded observations and test results below remain evidence about their pins.
+
 This document records the design of three bodies of work built on a branch of
 [Sail](https://github.com/lakehq/sail) and offered upstream as a series of
 pull requests:

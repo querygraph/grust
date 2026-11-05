@@ -1,5 +1,14 @@
 # Flow configuration phases for Spark 4.2.1 parity
 
+> **Reference scope.** This is a compatibility trace and implementation record for the pinned bounded
+> runtime. The “Required behavior” below describes that target, not the new pipeline
+> contract. New flows resolve typed effective settings before dependent planning;
+> graph traversal must not redefine configuration or require repeated evaluation
+> of effectful definitions. Conflict diagnostics must be deterministic and useful,
+> without copying Spark’s incidental first-error order. See
+> [Typed pipeline configuration](TYPED-PIPELINE-CONFIG.md) for the replacement.
+> The measured parser and resolver observations below are retained unchanged.
+
 Status: the selected implementation uses an ordered graph-input trace with the
 existing resolver. Native source-case separation (`b4d83ef72`), pure raw-map
 arithmetic (`349771bd9`) and input tracing (`fa78d067c`) are integrated separately.
