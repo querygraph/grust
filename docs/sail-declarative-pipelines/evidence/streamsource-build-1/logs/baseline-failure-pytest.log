@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_console_execution_failure_reaches_query_and_waiters ___________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x115789940>
+
+    def test_console_execution_failure_reaches_query_and_waiters(spark):
+        spark.streams.resetTerminated()
+        source = spark.readStream.format("rate").option("rowsPerSecond", 100).option("numPartitions", 1).load()
+        query = source.selectExpr("raise_error(concat('streaming-input-', cast(value as string)))").writeStream.format(
+            "console"
+        ).start()
+        try:
+>           with pytest.raises(StreamingQueryException, match="streaming-input-"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE StreamingQueryException
+
+python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py:14: Failed
+=========================== short test summary info ============================
+FAILED python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py::test_console_execution_failure_reaches_query_and_waiters
+1 failed in 10.53s

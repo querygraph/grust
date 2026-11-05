@@ -17,12 +17,17 @@ Sail already carries data and ordered control markers through streaming plans.
 The current rewrite can evaluate user expressions on marker placeholder rows;
 fan-in and shuffle do not establish graph-wide checkpoint alignment. Component
 probes also reproduced zero-column decoding, decimal placeholder and schema
-metadata defects. Fix these at the event/operator boundary, with all applicable
-Arrow types and mixed marker/data schedules covered.
+metadata defects. A local reference implementation now repairs event fidelity,
+isolates filter predicates from markers and propagates terminal query failures.
+Its workspace and selected public checks passed. Dense alternating markers expose
+a material filtering cost that remains unqualified in an optimized build.
+The branch and evidence are described in
+[Streaming foundation repairs and remaining decisions](STREAMSOURCE-FOUNDATION-RESULTS.md).
 
 A flow-aware transform should evaluate user code only on data and forward markers
-without alteration. Use Sail-owned adapters or narrowly attributed implementations
-where dependency behavior must change; avoid accumulating expression-specific
+without alteration. Extend the implemented filter boundary to projection and
+asynchronous expression evaluation. Use Sail-owned adapters or narrowly attributed
+implementations where dependency behavior must change; avoid accumulating expression-specific
 workarounds. Preserve existing stateless behavior with controls that fail on
 the unmodified path.
 
@@ -30,7 +35,9 @@ Distinguish successful completion, cancellation, input failure and physical stre
 closure. A bounded source emits end of data, then participates in the final
 checkpoint. A run succeeds only after the required effects complete. Propagate
 sink failures and refuse unsupported retractions or execution options instead of
-silently ignoring them.
+silently ignoring them. Console failures and atomic terminal failure reporting
+are implemented locally; final durable completion and cancellation classification
+are still separate work.
 
 These repairs precede durable sink claims because losing a marker, hiding an
 error or evaluating a marker as data invalidates every recovery protocol above it.

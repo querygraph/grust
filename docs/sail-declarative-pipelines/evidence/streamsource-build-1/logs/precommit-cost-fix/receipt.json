@@ -1,0 +1,113 @@
+{
+  "started_at": "2026-11-05T20:19:06.248907+00:00",
+  "base": "b52144955b629314a000b1fe49eeea97fa3d0c5c",
+  "candidate_head": "d57946ee24199b3287386aebd64c87cf9ee68211",
+  "patch_sha256": "bda65fdba075378f3088a2b00681fdf63f57b9d9a66722ec78c8e1f688220163",
+  "free_disk_bytes": 380128931840,
+  "steps": [
+    {
+      "name": "01-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-05T20:19:06.321293+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:19:10.162291+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "02-python-format",
+      "command": [
+        "uvx",
+        "--offline",
+        "hatch",
+        "fmt",
+        "--check",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py"
+      ],
+      "started_at": "2026-11-05T20:19:10.256668+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:19:10.705504+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "03-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-spark-connect",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-05T20:19:10.799686+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:19:49.464630+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "04-rust-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-data-source",
+        "-p",
+        "sail-spark-connect",
+        "--lib"
+      ],
+      "started_at": "2026-11-05T20:19:49.590827+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:21:24.417741+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "05-cli-build",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-cli"
+      ],
+      "started_at": "2026-11-05T20:21:24.512352+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:22:34.978542+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "06-public-tests",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Users/alexy/src/sail/tmp/streamsource-build-20261105-b52144955/review-logs/run-public-tests.py",
+        "precommit-cost-fix-public",
+        "/Users/alexy/src/sail/tmp/streamsource-build-20261105-b52144955/review-logs/precommit-cost-fix/sail",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming"
+      ],
+      "started_at": "2026-11-05T20:22:35.963387+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:22:45.828688+00:00",
+      "candidate_unchanged": true
+    }
+  ],
+  "binary_sha256": "6d236fdb26ca14dc892ee84f882d8db9db2d81793aded534d8f3b39c13e18112",
+  "finished_at": "2026-11-05T20:22:45.882176+00:00",
+  "verdict": "PASS: exact worktree patch precommit checks; immutable commit qualification follows"
+}

@@ -1,0 +1,46 @@
+.........F                                                               [100%]
+=================================== FAILURES ===================================
+___________ test_console_execution_failure_reaches_query_and_waiters ___________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x115ad4380>
+
+    def test_console_execution_failure_reaches_query_and_waiters(spark):
+        spark.streams.resetTerminated()
+        source = spark.readStream.format("rate").option("rowsPerSecond", 100).option("numPartitions", 1).load()
+        query = (
+            source.selectExpr("raise_error(concat('streaming-input-', cast(value as string)))")
+            .writeStream.format("console")
+            .start()
+        )
+        try:
+            with pytest.raises(StreamingQueryException, match="streaming-input-"):
+                query.awaitTermination(10)
+            assert not query.isActive
+            cause = query.status["message"]
+            assert "streaming-input-" in cause
+>           assert str(query.exception()) == f"() {cause}"
+                       ^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.streaming.query.StreamingQuery object at 0x115d05af0>
+
+    def exception(self) -> Optional[StreamingQueryException]:
+        cmd = pb2.StreamingQueryCommand()
+        cmd.exception = True
+        exception = self._execute_streaming_query_cmd(cmd).exception
+        if not exception.HasField("exception_message"):
+            return None
+        else:
+            # Drop the Java StreamingQueryException type info
+            # exception_message maps to the return value of original
+            # StreamingQueryException's toString method
+>           msg = exception.exception_message.split(": ", 1)[1]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/streaming/query.py:162: IndexError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py::test_console_execution_failure_reaches_query_and_waiters
+1 failed, 9 passed in 0.38s

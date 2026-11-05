@@ -1,0 +1,25 @@
+
+running 2 tests
+test streaming::tests::individual_wait_does_not_finish_before_stopped_publication ... FAILED
+test streaming::tests::manager_wait_does_not_finish_before_stopped_publication ... FAILED
+
+failures:
+
+---- streaming::tests::individual_wait_does_not_finish_before_stopped_publication stdout ----
+
+thread 'streaming::tests::individual_wait_does_not_finish_before_stopped_publication' (142830376) panicked at crates/sail-spark-connect/src/streaming_tests.rs:177:5:
+await returned before the query was stopped
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- streaming::tests::manager_wait_does_not_finish_before_stopped_publication stdout ----
+
+thread 'streaming::tests::manager_wait_does_not_finish_before_stopped_publication' (142830377) panicked at crates/sail-spark-connect/src/streaming_tests.rs:201:5:
+manager await returned before the query was stopped
+
+
+failures:
+    streaming::tests::individual_wait_does_not_finish_before_stopped_publication
+    streaming::tests::manager_wait_does_not_finish_before_stopped_publication
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.10s
+

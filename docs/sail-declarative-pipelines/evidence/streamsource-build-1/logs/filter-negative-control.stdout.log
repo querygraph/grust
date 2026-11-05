@@ -1,0 +1,36 @@
+
+running 6 tests
+test streaming::filter::tests::scalar_predicates_evaluate_data_once_and_never_drop_markers ... FAILED
+test streaming::filter::tests::marker_only_batches_do_not_invoke_the_predicate ... FAILED
+test streaming::filter::tests::real_data_errors_follow_preceding_markers_and_stop_that_batch ... FAILED
+test streaming::filter::tests::strict_cast_skips_mixed_sliced_markers_and_preserves_retractions ... FAILED
+test streaming::filter::tests::data_only_batches_keep_one_predicate_call_per_batch ... ok
+test streaming::filter::tests::data_and_markers_keep_order_across_input_batches ... FAILED
+
+failures:
+
+---- streaming::filter::tests::scalar_predicates_evaluate_data_once_and_never_drop_markers stdout ----
+Error: Execution("predicate evaluated a marker row")
+
+---- streaming::filter::tests::marker_only_batches_do_not_invoke_the_predicate stdout ----
+Error: Execution("predicate evaluated a marker row")
+
+---- streaming::filter::tests::real_data_errors_follow_preceding_markers_and_stop_that_batch stdout ----
+Error: ArrowError(CastError("Cannot cast string '' to value of Int32 type"), Some(""))
+
+---- streaming::filter::tests::strict_cast_skips_mixed_sliced_markers_and_preserves_retractions stdout ----
+Error: ArrowError(CastError("Cannot cast string '' to value of Int32 type"), Some(""))
+
+---- streaming::filter::tests::data_and_markers_keep_order_across_input_batches stdout ----
+Error: ArrowError(CastError("Cannot cast string '' to value of Int32 type"), Some(""))
+
+
+failures:
+    streaming::filter::tests::data_and_markers_keep_order_across_input_batches
+    streaming::filter::tests::marker_only_batches_do_not_invoke_the_predicate
+    streaming::filter::tests::real_data_errors_follow_preceding_markers_and_stop_that_batch
+    streaming::filter::tests::scalar_predicates_evaluate_data_once_and_never_drop_markers
+    streaming::filter::tests::strict_cast_skips_mixed_sliced_markers_and_preserves_retractions
+
+test result: FAILED. 1 passed; 5 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.01s
+

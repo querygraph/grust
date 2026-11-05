@@ -1,0 +1,184 @@
+.....FF                                                                  [100%]
+=================================== FAILURES ===================================
+______________________ test_rate_with_literal_projection _______________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x11170f290>
+
+    def test_rate_with_literal_projection(spark):
+>       actual = spark.sql("SELECT 'constant' AS label FROM t2 LIMIT 2").collect()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/_dev/spark/datasource/test_rate.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x11170f2c0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Invalid argument erro...lumn"
+	debug_error_string = "INTERNAL:Invalid argument error: must either specify a row count or at least one column"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Invalid argument error: must either specify a row count or at least one column
+
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException
+__________________________ test_rate_with_no_columns ___________________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x11170f290>
+
+    def test_rate_with_no_columns(spark):
+>       actual = spark.sql("SELECT * FROM t2").select().limit(2).collect()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/_dev/spark/datasource/test_rate.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x11170f2c0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Invalid argument erro...lumn"
+	debug_error_string = "INTERNAL:Invalid argument error: must either specify a row count or at least one column"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Invalid argument error: must either specify a row count or at least one column
+
+../../../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException
+=========================== short test summary info ============================
+FAILED python/pysail/tests/_dev/spark/datasource/test_rate.py::test_rate_with_literal_projection
+FAILED python/pysail/tests/_dev/spark/datasource/test_rate.py::test_rate_with_no_columns
+2 failed, 5 passed in 0.93s

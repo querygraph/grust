@@ -1,0 +1,42 @@
+
+running 5 tests
+test streaming::tests::normal_completion_still_succeeds ... ok
+test streaming::tests::first_execution_error_stops_polling_and_preserves_cause ... FAILED
+test streaming::tests::manager_known_failure_takes_priority_over_success ... FAILED
+test streaming::tests::reset_termination_does_not_erase_individual_failure ... FAILED
+test streaming::tests::failed_query_wait_and_status_retain_the_same_cause ... FAILED
+
+failures:
+
+---- streaming::tests::first_execution_error_stops_polling_and_preserves_cause stdout ----
+
+thread 'streaming::tests::first_execution_error_stops_polling_and_preserves_cause' (142824631) panicked at crates/sail-spark-connect/src/streaming_tests.rs:34:5:
+assertion `left == right` failed
+  left: 3
+ right: 1
+
+---- streaming::tests::manager_known_failure_takes_priority_over_success stdout ----
+
+thread 'streaming::tests::manager_known_failure_takes_priority_over_success' (142824632) panicked at crates/sail-spark-connect/src/streaming_tests.rs:110:22:
+known failure must not be hidden: true
+
+---- streaming::tests::reset_termination_does_not_erase_individual_failure stdout ----
+
+thread 'streaming::tests::reset_termination_does_not_erase_individual_failure' (142824634) panicked at crates/sail-spark-connect/src/streaming_tests.rs:132:10:
+individual wait survives manager reset
+
+---- streaming::tests::failed_query_wait_and_status_retain_the_same_cause stdout ----
+
+thread 'streaming::tests::failed_query_wait_and_status_retain_the_same_cause' (142824630) panicked at crates/sail-spark-connect/src/streaming_tests.rs:84:18:
+failed wait must raise: true
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    streaming::tests::failed_query_wait_and_status_retain_the_same_cause
+    streaming::tests::first_execution_error_stops_polling_and_preserves_cause
+    streaming::tests::manager_known_failure_takes_priority_over_success
+    streaming::tests::reset_termination_does_not_erase_individual_failure
+
+test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.09s
+

@@ -13,7 +13,7 @@ or weaken durability.
 
 ## What Sail already supplies
 
-A flow event carries a data batch, optional retraction flags that cancel earlier
+A flow event carries a data batch, per-row retraction flags that cancel earlier
 rows, or an ordered control marker. Sail has markers for latency, watermarks,
 checkpoints and end of data. A checkpoint identifies a recoverable input boundary;
 a watermark promises that older timestamped rows will not follow.
@@ -28,12 +28,17 @@ a watermark promises that older timestamped rows will not follow.
 | Memory pools and temporary-file facilities | Account for transport, preparation and state buffers; spill or apply backpressure | Bounded channels and periodic checkpoints do not bound total memory |
 
 The foundation fits the intended design, but needs correctness repairs before
-its durability can be extended. Focused tests against unchanged upstream modules
-reproduced zero-column decoding failures, decimal marker type mismatches,
-strict-cast errors on marker placeholders and schema metadata loss. Source
-inspection also found unordered fan-in, an unbounded local replica overflow
-queue and completion paths that discard control information. These tests are
-component evidence, not an integrated streaming qualification.
+its durability can be extended. A local reference branch repairs zero-column
+row counts, marker type fidelity, schema metadata, filter isolation and terminal
+failure reporting. Workspace and selected public checks passed. Its mixed-batch
+filter still has a material dense-marker performance limitation; projection and
+asynchronous expressions remain to be isolated. The branch’s
+[implementation results](STREAMSOURCE-FOUNDATION-RESULTS.md) state its evidence
+and limits.
+
+Source inspection also found unordered fan-in, an unbounded local replica overflow
+queue and completion paths that discard control information. The local repairs
+do not establish checkpoint alignment, durable completion or integrated recovery.
 
 ## Give change events stable meaning
 
@@ -159,10 +164,10 @@ mechanisms and delivery order:
 3. Which existing catalog or authority can enforce every commit, including those
    from workers and permitted external writers?
 
-Repair control-event handling and truthful completion first because every sink
-relies on them. Source control and fencing can then develop in parallel around
-stable identities. Prove one complete append path, then the selected change-capture
-storage protocol; neither requires windows or a general state store.
+Complete control-event handling and truthful completion because every sink
+relies on them. Source control, fencing and typed configuration can develop in
+parallel around stable identities. Prove one complete append path, then the selected
+change-capture storage protocol; neither requires windows or a general state store.
 
 Acceptance needs real process and task restarts, partial effects, unknown outcomes,
 stale-owner attempts, source recreation, resource exhaustion and table interoperability.

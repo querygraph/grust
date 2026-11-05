@@ -1,0 +1,33 @@
+
+running 2 tests
+partition 0 batch 0
+error: Execution error: console input failure
+partition 0 batch 1
+error: Execution error: must not consume this
+partition 0 batch 0
+error formatting batch: Parser error: Invalid timezone "invalid timezone": failed to parse timezone
+partition 0 batch 1
+error: Execution error: must not consume this
+test formats::console::writer::tests::console_propagates_formatting_error_and_stops_consuming ... FAILED
+test formats::console::writer::tests::console_propagates_input_error_and_stops_consuming ... FAILED
+
+failures:
+
+---- formats::console::writer::tests::console_propagates_formatting_error_and_stops_consuming stdout ----
+
+thread 'formats::console::writer::tests::console_propagates_formatting_error_and_stops_consuming' (142825280) panicked at crates/sail-data-source/src/formats/console/writer_tests.rs:66:10:
+sink must emit execution error
+
+---- formats::console::writer::tests::console_propagates_input_error_and_stops_consuming stdout ----
+
+thread 'formats::console::writer::tests::console_propagates_input_error_and_stops_consuming' (142825281) panicked at crates/sail-data-source/src/formats/console/writer_tests.rs:66:10:
+sink must emit execution error
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    formats::console::writer::tests::console_propagates_formatting_error_and_stops_consuming
+    formats::console::writer::tests::console_propagates_input_error_and_stops_consuming
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 93 filtered out; finished in 0.04s
+

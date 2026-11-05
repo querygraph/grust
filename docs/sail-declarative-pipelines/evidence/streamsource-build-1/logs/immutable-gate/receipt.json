@@ -1,0 +1,115 @@
+{
+  "started_at": "2026-11-05T20:25:03.678070+00:00",
+  "base": "b52144955b629314a000b1fe49eeea97fa3d0c5c",
+  "candidate_head": "2c9fa84994d317aade0d1c69faa9a378c780127d",
+  "candidate_tree": "5d67cdc81cdd9ba7eb18a74eda17d84b9e5d30c7",
+  "patch_sha256": "bda65fdba075378f3088a2b00681fdf63f57b9d9a66722ec78c8e1f688220163",
+  "free_disk_bytes": 379294797824,
+  "steps": [
+    {
+      "name": "01-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-05T20:25:03.824045+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:25:07.643748+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "02-python-format",
+      "command": [
+        "uvx",
+        "--offline",
+        "hatch",
+        "fmt",
+        "--check",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py"
+      ],
+      "started_at": "2026-11-05T20:25:07.850999+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:25:08.208791+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "03-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-05T20:25:08.411598+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:26:41.612443+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "04-rust-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "nextest",
+        "run",
+        "--locked",
+        "--workspace",
+        "--no-fail-fast",
+        "--test-threads",
+        "8",
+        "--status-level",
+        "fail",
+        "--final-status-level",
+        "fail"
+      ],
+      "started_at": "2026-11-05T20:26:41.859491+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:31:50.402965+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "05-cli-build",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-cli"
+      ],
+      "started_at": "2026-11-05T20:31:50.612273+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:32:39.546411+00:00",
+      "candidate_unchanged": true
+    },
+    {
+      "name": "06-public-tests",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Users/alexy/src/sail/tmp/streamsource-build-20261105-b52144955/review-logs/run-public-tests.py",
+        "immutable-public",
+        "/Users/alexy/src/sail/tmp/streamsource-build-20261105-b52144955/review-logs/immutable-gate/sail",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming"
+      ],
+      "started_at": "2026-11-05T20:32:40.688029+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-05T20:32:50.484727+00:00",
+      "candidate_unchanged": true
+    }
+  ],
+  "binary_sha256": "6d236fdb26ca14dc892ee84f882d8db9db2d81793aded534d8f3b39c13e18112",
+  "finished_at": "2026-11-05T20:32:50.595273+00:00",
+  "verdict": "PASS: immutable detached commit workspace qualification; dense-marker production performance remains outside this gate"
+}

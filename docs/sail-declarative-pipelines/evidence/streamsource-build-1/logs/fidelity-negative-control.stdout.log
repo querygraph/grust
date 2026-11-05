@@ -1,0 +1,160 @@
+
+running 77 tests
+test array::placeholder_tests::invalid_decimal_parameters_return_errors ... FAILED
+test catalog::lakehouse::tests::iceberg_rest_session_ref_decodes_legacy_fingerprint_only_json ... ok
+test array::placeholder_tests::decimal_placeholders_preserve_precision_and_scale ... FAILED
+test array::placeholder_tests::nested_decimal_placeholders_preserve_exact_types ... FAILED
+test array::placeholder_tests::run_end_placeholders_preserve_fields_and_empty_length ... FAILED
+test array::placeholder_tests::run_end_placeholders_reject_unrepresentable_lengths ... FAILED
+test array::record_batch::tests::cast_struct_populates_missing_optional_fields ... ok
+test array::record_batch::tests::cast_struct_reorders_fields_by_name ... ok
+test catalog::lakehouse::tests::stable_binding_excludes_operation_scoped_sessions ... ok
+test catalog::managed::tests::test_lake_source_marker_is_format_agnostic ... ok
+test array::placeholder::tests::test_all_placeholder_arrays ... ok
+test array::placeholder_tests::placeholder_type_matrix_preserves_exact_arrow_types ... FAILED
+test catalog::managed::tests::test_metadata_location_helpers_accept_dash_and_underscore_keys ... ok
+test datasource::tests::missing_lake_source_error_stays_generic ... ok
+test datasource::tests::missing_jdbc_data_source_error_includes_registration_hint ... ok
+test datasource::tests::lake_source_registration_replaces_an_ordinary_source ... ok
+test datasource::tests::missing_non_jdbc_data_source_error_stays_generic ... ok
+test datasource::tests::ordinary_data_source_has_no_lake_capability ... ok
+test command::tests::command_results_have_static_nullable_long_schemas ... ok
+test datasource::tests::ordinary_data_source_registration_replaces_a_lake_source ... ok
+test datasource::tests::row_level_operation_type_decodes_typed_values ... ok
+test display::tests::test_array_value_to_string_duration ... ok
+test display::tests::test_const_options ... ok
+test display::tests::test_map_array_to_string ... ok
+test display::tests::test_null ... ok
+test lakeprocedure::tests::procedure_call_accepts_a_null_value_for_optional_arguments ... ok
+test lakeprocedure::tests::procedure_call_accepts_an_explicit_null_for_a_required_argument ... ok
+test lakeprocedure::tests::procedure_call_rejects_argument_type_mismatch ... ok
+test display::tests::test_spark_float_to_string ... ok
+test lakeprocedure::tests::procedure_descriptor_rejects_case_insensitive_duplicate_names ... ok
+test lakeprocedure::tests::procedure_descriptor_requires_a_declared_string_table_target ... ok
+test display::tests::test_string_run_arry_to_string ... ok
+test input_file::tests::derives_spark_metadata_from_whole_file ... ok
+test input_file::tests::rejects_invalid_file_range ... ok
+test input_file::tests::derives_spark_metadata_from_file_range ... ok
+test schema_evolution::tests::cast_struct_field_by_physical_name_before_logical_name ... ok
+test schema_evolution::tests::cast_struct_fields_by_column_id ... ok
+test schema_evolution::tests::explicit_aliases_match_unidentified_fields_only ... ok
+test schema_evolution::tests::generic_default_matches_nested_fields_by_name ... ok
+test schema_evolution::tests::identical_schema_evolution_reuses_array ... ok
+test schema_evolution::tests::generic_name_mode_rejects_structs_without_field_overlap ... ok
+test schema_evolution::tests::list_offset_width_cast_checks_element_nullability ... ok
+test display::tests::test_variant_array_to_string ... ok
+test schema_evolution::tests::map_entry_wrappers_match_by_name_in_physical_name_mode ... ok
+test schema_evolution::tests::list_offset_width_cast_rejects_overflow ... ok
+test schema_evolution::tests::missing_non_nullable_mapped_field_is_rejected ... ok
+test schema_evolution::tests::name_mode_does_not_fallback_to_id_or_logical_name ... ok
+test schema_evolution::tests::cast_array_unshreds_variant_without_value_field ... ok
+test schema_evolution::tests::cast_array_unshreds_nested_variant ... ok
+test schema_evolution::tests::cast_array_unshreds_list_element_variant ... ok
+test schema_evolution::tests::list_offset_width_cast_preserves_field_ids_and_slices ... ok
+test session::config::tests::accepts_empty_requests_and_missing_values ... ok
+test session::config::tests::rejects_invalid_provider_cardinality ... ok
+test schema_evolution::tests::virtual_row_numbers_survive_column_mapping ... ok
+test schema_evolution::tests::maps_top_level_columns_by_field_id ... ok
+test streaming::event::encoding_tests::empty_zero_column_data_is_elided ... FAILED
+test schema_evolution::tests::relaxed_timezone_cast_scales_without_shifting_values ... ok
+test schema_evolution::tests::relaxed_timezone_cast_recurses_into_structs ... ok
+test streaming::event::encoding_tests::nonempty_data_preserves_values_nulls_and_retractions ... ok
+test streaming::event::encoding_tests::schema_helpers_preserve_schema_and_nested_field_metadata ... FAILED
+test streaming::event::encoding_tests::zero_column_data_preserves_rows_and_retractions ... FAILED
+test streaming::event::encoding_tests::zero_column_markers_round_trip ... FAILED
+test streaming::event::encoding_tests::streams_preserve_schema_and_nested_field_metadata ... FAILED
+test streaming::event::marker::tests::test_encode_decode_checkpoint ... ok
+test streaming::event::marker::tests::test_encode_decode_end_of_data ... ok
+test streaming::event::encoding_tests::mixed_zero_column_data_and_markers_survive_every_batch_slice ... FAILED
+test schema_evolution::tests::missing_defaults_and_aliases_preserve_field_identity ... ok
+test streaming::event::marker::tests::test_encode_decode_latency_tracker ... ok
+test streaming::event::marker::tests::test_encode_decode_watermark ... ok
+test schema_evolution::tests::list_default_projection_preserves_element_metadata ... ok
+test utils::datetime::tests::arrow_timezone_label_spells_spark_zones_for_arrow ... ok
+test variant::tests::variant_shredding_plan_is_noop_for_non_variant_schema ... ok
+test variant::tests::variant_shredding_inference_budget_limits_wide_objects ... ok
+test variant::tests::variant_shredding_plan_shreds_object_fields ... ok
+test scan::tests::metadata_loads_are_concurrent_and_preserve_groups ... ok
+test streaming::event::encoding_tests::mixed_data_and_markers_survive_every_batch_slice ... ok
+test streaming::event::encoding_tests::markers_preserve_every_arrow_payload_type ... FAILED
+
+failures:
+
+---- array::placeholder_tests::invalid_decimal_parameters_return_errors stdout ----
+
+thread 'array::placeholder_tests::invalid_decimal_parameters_return_errors' (142744979) panicked at crates/sail-common-datafusion/src/array/placeholder_tests.rs:236:13:
+accepted invalid type Decimal32(0, 0) at length 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- array::placeholder_tests::decimal_placeholders_preserve_precision_and_scale stdout ----
+
+thread 'array::placeholder_tests::decimal_placeholders_preserve_precision_and_scale' (142744978) panicked at crates/sail-common-datafusion/src/array/placeholder_tests.rs:178:5:
+assertion `left == right` failed: length 0
+  left: Decimal32(9, 2)
+ right: Decimal32(5, 2)
+
+---- array::placeholder_tests::nested_decimal_placeholders_preserve_exact_types stdout ----
+Error: ArrowError(InvalidArgumentError("Child type mismatch for List(non-null Decimal32(5, 2), metadata: {\"field-purpose\": \"item\"}). Expected Decimal32(5, 2) but child data had Decimal32(9, 2)"), Some(""))
+
+---- array::placeholder_tests::run_end_placeholders_preserve_fields_and_empty_length stdout ----
+Error: ArrowError(InvalidArgumentError("The values in run_ends array should be strictly positive. Found value 0 at index 0 that does not match the criteria."), Some(""))
+
+---- array::placeholder_tests::run_end_placeholders_reject_unrepresentable_lengths stdout ----
+
+thread 'array::placeholder_tests::run_end_placeholders_reject_unrepresentable_lengths' (142744983) panicked at crates/sail-common-datafusion/src/array/placeholder_tests.rs:264:9:
+accepted unrepresentable run length 65537
+
+---- array::placeholder_tests::placeholder_type_matrix_preserves_exact_arrow_types stdout ----
+
+thread 'array::placeholder_tests::placeholder_type_matrix_preserves_exact_arrow_types' (142744981) panicked at crates/sail-common-datafusion/src/array/placeholder_tests.rs:178:5:
+assertion `left == right` failed: length 0
+  left: Decimal32(9, 2)
+ right: Decimal32(5, 2)
+
+---- streaming::event::encoding_tests::empty_zero_column_data_is_elided stdout ----
+Error: ArrowError(InvalidArgumentError("must either specify a row count or at least one column"), Some(""))
+
+---- streaming::event::encoding_tests::schema_helpers_preserve_schema_and_nested_field_metadata stdout ----
+
+thread 'streaming::event::encoding_tests::schema_helpers_preserve_schema_and_nested_field_metadata' (142745042) panicked at crates/sail-common-datafusion/src/streaming/event/encoding_tests.rs:245:9:
+assertion `left == right` failed
+  left: {}
+ right: {"schema-key": "schema-value"}
+
+---- streaming::event::encoding_tests::zero_column_data_preserves_rows_and_retractions stdout ----
+Error: ArrowError(InvalidArgumentError("must either specify a row count or at least one column"), Some(""))
+
+---- streaming::event::encoding_tests::zero_column_markers_round_trip stdout ----
+Error: ArrowError(InvalidArgumentError("must either specify a row count or at least one column"), Some(""))
+
+---- streaming::event::encoding_tests::streams_preserve_schema_and_nested_field_metadata stdout ----
+
+thread 'streaming::event::encoding_tests::streams_preserve_schema_and_nested_field_metadata' (142745043) panicked at crates/sail-common-datafusion/src/streaming/event/encoding_tests.rs:256:5:
+assertion `left == right` failed
+  left: {}
+ right: {"schema-key": "schema-value"}
+
+---- streaming::event::encoding_tests::mixed_zero_column_data_and_markers_survive_every_batch_slice stdout ----
+Error: ArrowError(InvalidArgumentError("must either specify a row count or at least one column"), Some(""))
+
+---- streaming::event::encoding_tests::markers_preserve_every_arrow_payload_type stdout ----
+Error: ArrowError(InvalidArgumentError("column types must match schema types, expected Decimal32(5, 2) but found Decimal32(9, 2) at column index 2"), Some(""))
+
+
+failures:
+    array::placeholder_tests::decimal_placeholders_preserve_precision_and_scale
+    array::placeholder_tests::invalid_decimal_parameters_return_errors
+    array::placeholder_tests::nested_decimal_placeholders_preserve_exact_types
+    array::placeholder_tests::placeholder_type_matrix_preserves_exact_arrow_types
+    array::placeholder_tests::run_end_placeholders_preserve_fields_and_empty_length
+    array::placeholder_tests::run_end_placeholders_reject_unrepresentable_lengths
+    streaming::event::encoding_tests::empty_zero_column_data_is_elided
+    streaming::event::encoding_tests::markers_preserve_every_arrow_payload_type
+    streaming::event::encoding_tests::mixed_zero_column_data_and_markers_survive_every_batch_slice
+    streaming::event::encoding_tests::schema_helpers_preserve_schema_and_nested_field_metadata
+    streaming::event::encoding_tests::streams_preserve_schema_and_nested_field_metadata
+    streaming::event::encoding_tests::zero_column_data_preserves_rows_and_retractions
+    streaming::event::encoding_tests::zero_column_markers_round_trip
+
+test result: FAILED. 64 passed; 13 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
