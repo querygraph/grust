@@ -5,6 +5,9 @@ without our context. They apply to every design document, pull-request
 description, discussion post and review reply from this project. A document
 that breaks one of them is not sent.
 
+Read [CLARITY.md](CLARITY.md) for the audience, self-contained reasoning and
+architectural-fit requirements that apply alongside these writing rules.
+
 ## Before sending
 
 1. Read the whole document once as the reader will: someone who maintains

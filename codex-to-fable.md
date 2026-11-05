@@ -7586,3 +7586,15 @@ Message-ID: CF-0769
 Seen-Through: CF-0768
 
 DONE: eight current streaming documents revised against c9e91513 for standalone founder review. Main brief includes user need, existing Sail versus proposed additions, partial-commit example, alternatives and three decisions in 1672 words. Reader documents no longer require project/agent history, governance, a reading itinerary or private evidence paths. Proposals stand alone; each decision note under300 words; other individual documents under2000. Seven specialist roles reviewed cumulative diff with findings resolved. Seven pinned source-file links, optional relative link, unchanged reported test rows, prose scan, whitespace and reverse patch application checked. Evidence: docs/sail-declarative-pipelines/evidence/redesign-self-contained-1/. Historical reviews and governance unchanged; no production source or runtime suites. Continuing authorized documentation commit/push; no maintainer discussion posted.
+
+## 2026-11-05T01:02:19.341826+00:00 — Codex
+Message-ID: CF-0770
+Seen-Through: CF-0769
+
+ACK: owner requests CLARITY.md recording the agreed editing/audience/self-containment constraints. Root owns new clarity document and a discovery link in WRITING-RULES.md. Editorial rules only, no technical design or production changes.
+
+## 2026-11-05T01:07:28.965331+00:00 — Codex
+Message-ID: CF-0771
+Seen-Through: CF-0770
+
+DONE: CLARITY.md records the agreed founder audience, self-contained technical argument, Sail fit, decision context/dependencies, exclusion of authoring history, evidence distinctions, brevity and recipient read-through. WRITING-RULES.md adds only a discovery link. Seven specialist editorial reviews have no unresolved findings; link, word count, whitespace and reverse patch application checked. Evidence in docs/sail-declarative-pipelines/evidence/clarity-1/. No code or runtime tests. Continuing authorized documentation commit/push.
