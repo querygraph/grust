@@ -43,7 +43,11 @@ Its public `AsyncMapper` extracts supported asynchronous calls. Invoke those cal
 on each data run using `AsyncFuncExpr`, append their results for the final projector,
 and await completion before a following marker. Keep the original expressions on
 the node; worker decoding reconstructs the same mapping from those expressions.
-The codec carries the child, expressions, aliases and metadata schema.
+DataFusion's generic plan codec carries the child. The projection's own payload
+contains its expressions, aliases and metadata schema. Decode exactly one supplied
+child and resolve the expressions against its schema. Embedding the child again
+would serialize and reconstruct the same subtree twice; nested projections compound
+that cost. Use the existing child transport rather than introducing another copy.
 Expose existing streaming detection and rewrite functions from the plan crate for
 programmatic planning, sharing the implementation used by the request resolver.
 
@@ -120,7 +124,10 @@ without clock races. Test supported positive ideal sizes and empty inputs. Verif
 that optimizer-inserted ordinary evaluators cannot reach markers, including a
 computed constant followed by a contradictory physical predicate. Round-trip the
 worker codec and execute the reconstructed plan. Test child replacement and
-expression traversal. Preserve unchanged-source negative controls.
+expression traversal. Verify that decoding reuses the supplied child and that encoded
+size grows with the plan, rather than duplicating the input at every projection.
+Use metadata on a dropped input field to distinguish duplicated input from legitimate
+output-schema metadata. Preserve unchanged-source negative controls.
 
 Run public streaming queries against the newly built server and ordinary batch
 controls. Compare equivalent no-marker and mixed-marker workloads with exact ordered

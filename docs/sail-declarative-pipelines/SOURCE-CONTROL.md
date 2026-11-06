@@ -92,6 +92,11 @@ and registration; they never authorize a replacement attempt. Output errors and 
 must settle requests explicitly, without manufacturing EndOfData or durable success.
 No actor handler should wait for source polling while holding its actor turn.
 
+Commit an operation's immutable outcome while holding the scope lock, then release
+the lock before notifying waiters, sending commands or dropping channel owners.
+Waking a task can re-enter control code synchronously. Keep cancellation and success
+atomic without running those callbacks inside the ownership lock.
+
 ## Put the cut inside the source
 
 Only the source knows its input position. A generic wrapper cannot reconstruct it
@@ -124,10 +129,33 @@ user expressions or change payload projection. Extract a reusable event encoder
 from the existing encoding implementation so the controlled reader can encode before
 acknowledging, preserving all Arrow fields and existing encoding oracles.
 
+The plan codec already carries child plans. Store only binding identity and capability
+in the extension payload and reuse its one supplied child when decoding. Embedding
+the child again would duplicate serialization and reconstruction work for every scan.
+
 This introduces no durable store, new scheduler, expression framework or replacement
 for Sail's flow events. Source routing is outside per-row computation. Measure
 normal execution and controlled polling separately, retaining residual costs and
 resource limits. A finite local corpus cannot establish production throughput.
+
+Binding occurs once when execution opens and owns no operator metrics. Keep the
+binding node in the tracing traversal, trace its child operators, and omit a separate
+per-batch tracing wrapper and operator number for the binding itself. This preserves
+the real operators' identities and metrics without adding polling work for metadata.
+The binding's dedicated span is omitted; measure its context setup separately.
+Verify actual exported child metrics as well as values, since correct output alone
+cannot detect accidentally disabling all child instrumentation.
+
+## Review three connected contracts
+
+Review the ownership protocol first: bounded requests, registration replacement,
+immutable receipts and cancellation. Then review identity preservation through the
+task context, physical binding, optimizer and codec. Finally review the native reader
+and local runner together, where marker handoff and output lifetime become observable.
+These are distinct review boundaries within one working path. Keeping the ownership
+state machine together makes its races easier to assess than splitting it across
+connectors. Each boundary needs its own discriminating tests and the combined path
+needs integration tests. Distributed routing and durable recovery add further contracts.
 
 ## Verify the contract before building recovery on it
 
