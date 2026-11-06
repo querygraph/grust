@@ -53,7 +53,7 @@ specific questions, not additional required chapters.
 | Area | Demonstrated locally | Still required |
 | --- | --- | --- |
 | [Flow-event foundation](PROJECTION-COMPOSITION-RESULTS.md) | Arrow fidelity, data-only filter and supported projection evaluation, source retention before pruning, worker reconstruction and terminal failure reporting passed component and selected public checks | Mixed-marker performance, remaining completion semantics and integrated recovery |
-| Sources and checkpoints | Source and alignment prototypes exercise individual mechanisms; live source-control work is unqualified | Replay-qualified source, task-scoped controls, actual transport alignment, durable preparation and process restart |
+| [Sources and checkpoints](evidence/source-control-1/README.md) | Local execution owns live source controls; idle wakeup, ordered acknowledgements, cancellation and plan-codec reconstruction passed qualification | Replay-qualified source, distributed task controls, actual transport alignment, durable preparation and process restart |
 | Targets and change capture | Existing bounded-runtime merge, receipt and staged-commit mechanisms provide implementation references | Complete fencing for each admitted target, streaming normalization and reduction, recoverable merges and migration |
 | [Native Extensions](COMET-SCALAR-RESULTS.md) | Standalone adapter checks and independently compiled pinned Comet SDK probes passed | Existing host port, package and worker integration, bounded admission and any new C relation interface |
 | [Configuration](TYPED-PIPELINE-CONFIG.md) | One strict typed model and optional Dhall authoring frontend are specified | Shared validation implementation and integration into durable computation identity |

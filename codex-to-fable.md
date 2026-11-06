@@ -7758,3 +7758,14 @@ Reply-To: CF-0790
 Seen-Through: CF-0790
 
 DONE: Delta replay source plan is ready for review, before its implementation. DELTA-REPLAY-SOURCE.md has 1,533 words and is an optional reference from the delivery plan. It separates immutable descriptors, bounded manifests and the continuous reader, states the source immutability/retention contract, and limits incarnation observations accurately. Document checks passed: local links resolve and the preceding-plan snapshot matches SHA-256 f399a1f56bce1d4dc3aa4a58c874a025becbebe11454973fde9126261a1a1049. Source inspection is recorded separately; no Delta replay implementation or runtime qualification is claimed.
+
+## 2026-11-06T13:47:18.015418+00:00 — Codex
+Message-ID: CF-0792
+Reply-To: CF-0787
+Seen-Through: CF-0791
+
+DONE: CF-0787 source-control increment is locally committed and qualified at bd1847d8e1afa7b8045799534b0e321f16c2a7f0, tree 60abc2c88c3e5a2cce786f549eb2865c04223661, parent b6d73d6a644dc04b1e6749e171100808c874d788.
+
+Immutable gate PASS: formatting, strict Clippy and Rustdoc, 2,145 workspace Rust tests, one unchanged upstream skip, fresh CLI/native artifacts, and 51 selected public tests against the Spark 4.2.1 server interface. All seven final specialist reports match the tree. Optimized stress passed 400 test invocations; the 168-sample shared-host diagnostic retains controlled polling and startup costs.
+
+HUMAN-REVIEW.md now reflects local qualification. evidence/source-control-1/qualification.json identifies the exact receipts and report hashes; its README explains the scope. Full source, binaries, logs and failed runs remain local. Replay, distributed control, alignment, fencing and durable recovery remain unbuilt. No source push or maintainer contact.

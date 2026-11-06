@@ -1,0 +1,234 @@
+{
+  "recorded_at": "2026-11-06T13:46:26.599412+00:00",
+  "status": "PASS: qualified local live source controls; no durable recovery claim",
+  "source": {
+    "worktree": "/Users/alexy/src/sail/tmp/source-control-20261106-b6d73d6a",
+    "head": "bd1847d8e1afa7b8045799534b0e321f16c2a7f0",
+    "tree": "60abc2c88c3e5a2cce786f549eb2865c04223661",
+    "parent": "b6d73d6a644dc04b1e6749e171100808c874d788",
+    "cumulative_base": "b52144955b629314a000b1fe49eeea97fa3d0c5c",
+    "patch_sha256": {
+      "increment": "400eaf165f0d3bd18164e7e298401f4d78f21330d92b1432650f8834c397edb3",
+      "cumulative": "f5d5c7965d45c664f7f086450d48cd9aacfb90eaf6ed0f88aa81af56fb493a98"
+    },
+    "local_only": true
+  },
+  "preceding_design_commit": "4b6e901604ef88dea2f372ac71425575534d0e90",
+  "evidence_root": "/Users/alexy/src/sail/tmp/source-control-20261106-b6d73d6a/review-logs",
+  "receipt_sha256": {
+    "source-control-immutable-v1/receipt.json": "987e037e60aef8b3bf23aadcd306a39af68210be58c7962573e0d7362d7c4f77",
+    "source-control-immutable-v1-public-receipt.json": "a27d9e46198048c786d652e16e139f857ce82562f1ad20afdbae35885f2efb71",
+    "source-control-performance-final-v2/receipt.json": "7a376dd9f30b430e4f0d67ba6fcb00cf3e9a7a4a806a31305562f5b5b527a491",
+    "source-control-stress-final-v2/receipt.json": "dde54baa2b5d216648434938004d57a760b444c2e067aa8c888d13ebb8203fd5",
+    "final-review-reconciliation.json": "d0a6b2183a4d1209a2a44e3ca540f72cc1f32f18b2bd27fa716e1c77bdf91545"
+  },
+  "immutable_gate": {
+    "finished_at": "2026-11-06T13:39:47.226077+00:00",
+    "verdict": "PASS: immutable local source-control qualification; final performance/stress receipts match this tree; distributed routing/alignment, replay, durable recovery and fencing remain unbuilt",
+    "environment": {
+      "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/source-control-20261106-b6d73d6a/target",
+      "CARGO_INCREMENTAL": "0",
+      "CARGO_BUILD_JOBS": "6",
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_PROFILE_TEST_DEBUG": "0",
+      "CARGO_PROFILE_RELEASE_DEBUG": "0",
+      "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+      "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+    },
+    "steps": [
+      {
+        "name": "01-fixtures",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "build",
+          "--locked",
+          "-p",
+          "sail-c-udf-fixture",
+          "--lib",
+          "--examples"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "02-format",
+        "command": [
+          "cargo",
+          "+nightly",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "03-rustdoc",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "doc",
+          "--locked",
+          "--no-deps",
+          "-p",
+          "sail-common-datafusion",
+          "-p",
+          "sail-data-source",
+          "-p",
+          "sail-physical-plan",
+          "-p",
+          "sail-logical-plan",
+          "-p",
+          "sail-plan",
+          "-p",
+          "sail-logical-optimizer",
+          "-p",
+          "sail-execution",
+          "-p",
+          "sail-session",
+          "-p",
+          "sail-telemetry"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "04-clippy",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "clippy",
+          "--locked",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "05-tests",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "nextest",
+          "run",
+          "--locked",
+          "--workspace",
+          "--no-fail-fast",
+          "--test-threads",
+          "8",
+          "--status-level",
+          "fail",
+          "--final-status-level",
+          "fail"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "06-python-format",
+        "command": [
+          "uvx",
+          "--offline",
+          "hatch",
+          "fmt",
+          "--check",
+          "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+          "python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py",
+          "python/pysail/tests/_dev/spark/streaming/test_projection.py",
+          "python/pysail/tests/_dev/spark/streaming/test_participation.py",
+          "python/pysail/tests/_dev/spark/dataframe/test_projection_composition.py"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "07-cli",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "build",
+          "--locked",
+          "-p",
+          "sail-cli"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "08-native",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "rustc",
+          "--locked",
+          "-p",
+          "sail-python",
+          "--features",
+          "pyo3/extension-module,pyo3/abi3-py38,pyo3/generate-import-lib",
+          "--",
+          "-C",
+          "link-arg=-undefined",
+          "-C",
+          "link-arg=dynamic_lookup"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      },
+      {
+        "name": "09-public",
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "/Users/alexy/src/sail/tmp/source-control-20261106-b6d73d6a/review-logs/run-public-tests.py",
+          "source-control-immutable-v1-public",
+          "/Users/alexy/src/sail/tmp/source-control-20261106-b6d73d6a/review-logs/source-control-immutable-v1/sail",
+          "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+          "python/pysail/tests/_dev/spark/streaming",
+          "python/pysail/tests/_dev/spark/dataframe/test_projection_composition.py"
+        ],
+        "exit_code": 0,
+        "source_unchanged": true
+      }
+    ]
+  },
+  "counts": {
+    "workspace_rust_passed": 2145,
+    "preexisting_rust_skipped": 1,
+    "selected_public_passed": 51,
+    "optimized_stress_invocations": 60,
+    "optimized_stress_test_invocations": 400,
+    "performance_samples": 168
+  },
+  "public_server_version": "4.2.1",
+  "artifacts": {
+    "cli_sha256": "8db35767a0cd4d160ecd7043e1feba6c96ab07ebab4e7fd771765ae1820eec45",
+    "native_sha256": "7e22d8e83cf65ba70f4137e33a8dc3d876f85bd6ab73a538ec4612c4c1118333"
+  },
+  "final_reviews": {
+    "directory": "final-reviews",
+    "sha256": {
+      "RESEARCH.md": "492c5ea6d333b1bd2a9533195cbdb9ab7c6370d5282cc609fa7116e5c067031e",
+      "DESIGN-QUALITY-REVIEW.md": "b824c712f573aaeecf38f1a20d9abf01d9848e2889ab19b0542e9bb00a91fa0b",
+      "TEST-CASE-REVIEW.md": "fb4aa4c0031ae05038daa279757941709d53640b543c8e406eb9f1febc574bf7",
+      "SCOPE-REVIEW.md": "2456d559b2ce192022625e75b0de1a1ae09905971f8e6f76b7961e429c65bfb5",
+      "REGRESSION-REVIEW.md": "c7ea0f8daf6352b261e4ed4d70511219e3bbbea90f9ead36eb36a964822d5749",
+      "PERFORMANCE-REVIEW.md": "ea98c299b912e89854eb5224e68423e95dd3dcb8774205e66c6f8adf3af7c196",
+      "SPARK-SEMANTICS-REVIEW.md": "4c8bcf7cc027918140f2690b53d77c2f02fddc6a3268e64b430fc840764d1483"
+    },
+    "qualification": "Specialist reviews are not maintainer approval; their pending-gate statements describe the review point before this completed gate."
+  },
+  "limitations": [
+    "live source controls are local-only; no replay, alignment, fencing or durable recovery",
+    "shared-host ready-poll diagnostics exclude pending polls, metric emitters and production throughput",
+    "prior streaming startup and mixed-marker fragmentation remain unresolved",
+    "The public tests cover rate, streaming and projection, not integrated SDP or CDC recovery.",
+    "Shared-host diagnostics retain controlled polling and startup costs; no production performance claim.",
+    "Source patches, binaries, full logs and failed runs remain in the local evidence root."
+  ]
+}
