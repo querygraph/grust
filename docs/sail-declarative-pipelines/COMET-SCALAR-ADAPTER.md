@@ -3,7 +3,7 @@
 Native scalar functions should preserve Arrow fields and remain safe when results
 outlive their query. Sail already has a standalone adapter for Comet-shaped kernels,
 but it rebuilds argument fields from array types and retains library code only
-through the function. Those choices lose metadata and leave result callbacks
+through the function. This loses metadata and leaves result callbacks
 without a proven code lifetime.
 
 Keep the pinned Comet ABI v1 and require explicit admission of trusted pure immutable
@@ -17,6 +17,7 @@ loader retains each admitted opening; package integration must bound admissions
 and supply content identity. Unloading would require ownership following every
 returned array and callback, a broader mechanism than this increment needs.
 
+Admit zero or more arguments in planning; each kernel decides its actual arity.
 Pass DataFusion’s actual argument fields during initialization at planning and
 execution. Check argument types, counts and row lengths before execution. Compare
 the execution return type and metadata with planning. DataFusion ignores the

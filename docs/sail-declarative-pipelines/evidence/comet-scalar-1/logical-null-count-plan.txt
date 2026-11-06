@@ -1,0 +1,31 @@
+# Nonnullable native results must exclude logical nulls
+
+A native scalar function declares its result field during planning. Sail and
+DataFusion may use that field’s nullability when simplifying expressions. A
+nonnullable declaration must therefore mean that no result row evaluates to null.
+
+Arrow distinguishes physical validity bits from logical nulls. A dictionary
+can have valid keys pointing to null values; run-end and union arrays also derive
+nullness from their contents. Checking only `null_count()` does not establish
+the scalar-result guarantee across Sail’s supported Arrow types.
+
+Keep the existing field-agreement checks and use `logical_null_count()` when
+the planned result is nonnullable. Return a named execution error for logical
+nulls. Nullable results retain their normal import path. This explicitly checks
+one declared result property, not arbitrary native-function correctness or foreign
+pointer safety; trusted-producer admission remains necessary.
+
+The cheaper alternative follows Arrow batch validation’s physical-null check.
+It preserves physical schema validity but cannot enforce the stronger scalar
+guarantee. Trusting declarations alone avoids validation work but leaves this
+known counterexample undetected. Prefer the logical check because callers reason
+about evaluated values rather than encoding details.
+
+Test nonempty dictionary, run-end, union and Null arrays, both with nullable fields
+that preserve their nulls and nonnullable fields that refuse them. Removing the
+logical check must fail those controls. Retain alias and safe-nullability-widening
+tests. Encoded logical-null checks can scan keys or allocate a bitmap proportional to
+logical rows. Callers must bound that work and memory. Assess the check’s cost
+for nonnullable encoded outputs; ordinary nullable
+results should gain no scan. Do not generalize the check into a full payload
+validation pass or claim it validates every promise made by a native producer.

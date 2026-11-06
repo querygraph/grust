@@ -1,0 +1,185 @@
+{
+  "started_at": "2026-11-06T01:12:21.200226+00:00",
+  "mode": "immutable",
+  "head": "06dd7e237eb5a343dcc6a6145e775f495e6c30de",
+  "tree": "455101575ecbfbec6f843464ce178e0d09046f51",
+  "cumulative_sha256": "743a1346feb7ae62a4cded0224b007312b471b09d80d149b2b0bdf5c25c25b30",
+  "review_sha256": {
+    "RESEARCH.md": "c97edfd72d30078f22194fac532dfc9b89a2ee00f253e777bf57a08207549274",
+    "DESIGN-QUALITY-REVIEW.md": "a43ffe2c54c790cfc11c6e4f0fb53e18d934b69dc1a200143f918119051a01ad",
+    "TEST-CASE-REVIEW.md": "52ff963cbc7bfc1b10ea83b52f15f182c208be3a1aa5604b92cf79c3cb521160",
+    "SCOPE-REVIEW.md": "0a622dd5634f0b8df5c85eb79af9704388433500ec6733c0b9183e738e2519e8",
+    "REGRESSION-REVIEW.md": "e6f3059077ac81630412007a1623fc6a9bdd0af2054a8ec902d0eef65f7a5935",
+    "PERFORMANCE-REVIEW.md": "0670746536c1530769cb1fb349f890154277444f9419bf567690e03dbfa496a3",
+    "SPARK-SEMANTICS-REVIEW.md": "24e12bfc82bf81d299bbbbf787c369772a29009aae30257a3bc38ae50f6343b5"
+  },
+  "free_disk_bytes": 364481433600,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T01:12:21.357887+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:21.598935+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T01:12:21.924327+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:25.617599+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-c-udf"
+      ],
+      "started_at": "2026-11-06T01:12:25.949754+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:26.197930+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "04-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-06T01:12:26.513494+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:14:58.091756+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "05-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "nextest",
+        "run",
+        "--locked",
+        "--workspace",
+        "--no-fail-fast",
+        "--test-threads",
+        "8",
+        "--status-level",
+        "fail",
+        "--final-status-level",
+        "fail"
+      ],
+      "started_at": "2026-11-06T01:14:58.491951+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:20:59.487649+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "06-python-format",
+      "command": [
+        "uvx",
+        "--offline",
+        "hatch",
+        "fmt",
+        "--check",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py"
+      ],
+      "started_at": "2026-11-06T01:20:59.935002+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:21:01.481399+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "07-cli",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-cli"
+      ],
+      "started_at": "2026-11-06T01:21:01.822303+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:23:32.953760+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "08-public",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Users/alexy/src/sail/tmp/comet-scalar-20261105-2c9fa8499/review-logs/run-public-tests.py",
+        "comet-immutable-public",
+        "/Users/alexy/src/sail/tmp/comet-scalar-20261105-2c9fa8499/review-logs/immutable-qualification/sail",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming"
+      ],
+      "started_at": "2026-11-06T01:23:34.212959+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:23:56.353039+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "09-sdk",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-c-udf",
+        "--test",
+        "comet_producer_probe",
+        "--",
+        "--test-threads=1"
+      ],
+      "started_at": "2026-11-06T01:23:56.689190+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:23:58.710392+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/comet-scalar-20261105-2c9fa8499/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "cli_sha256": "f176f63acc831bee17107df2f29a5a97b85eafcf89158d6c058c585a8304555b",
+  "sdk_producer_sha256": "27685a3fd43575ea6c30d561067b5b40241a1e6efd1fb3bcea08c7a32b2b6a93",
+  "finished_at": "2026-11-06T01:23:59.044298+00:00",
+  "verdict": "PASS: immutable standalone scalar qualification; pipeline integration and performance envelope remain outside this gate"
+}

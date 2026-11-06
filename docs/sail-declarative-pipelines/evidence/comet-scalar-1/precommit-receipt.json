@@ -1,0 +1,136 @@
+{
+  "started_at": "2026-11-06T01:11:57.474397+00:00",
+  "mode": "precommit",
+  "head": "2c9fa84994d317aade0d1c69faa9a378c780127d",
+  "tree": "455101575ecbfbec6f843464ce178e0d09046f51",
+  "cumulative_sha256": "743a1346feb7ae62a4cded0224b007312b471b09d80d149b2b0bdf5c25c25b30",
+  "review_sha256": {
+    "RESEARCH.md": "c97edfd72d30078f22194fac532dfc9b89a2ee00f253e777bf57a08207549274",
+    "DESIGN-QUALITY-REVIEW.md": "a43ffe2c54c790cfc11c6e4f0fb53e18d934b69dc1a200143f918119051a01ad",
+    "TEST-CASE-REVIEW.md": "52ff963cbc7bfc1b10ea83b52f15f182c208be3a1aa5604b92cf79c3cb521160",
+    "SCOPE-REVIEW.md": "0a622dd5634f0b8df5c85eb79af9704388433500ec6733c0b9183e738e2519e8",
+    "REGRESSION-REVIEW.md": "e6f3059077ac81630412007a1623fc6a9bdd0af2054a8ec902d0eef65f7a5935",
+    "PERFORMANCE-REVIEW.md": "0670746536c1530769cb1fb349f890154277444f9419bf567690e03dbfa496a3",
+    "SPARK-SEMANTICS-REVIEW.md": "24e12bfc82bf81d299bbbbf787c369772a29009aae30257a3bc38ae50f6343b5"
+  },
+  "free_disk_bytes": 364503076864,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T01:11:57.607017+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:00.053727+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T01:12:00.317708+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:04.159675+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-c-udf"
+      ],
+      "started_at": "2026-11-06T01:12:04.413790+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:04.877573+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "04-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-c-udf",
+        "-p",
+        "sail-c-udf-fixture",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-06T01:12:05.124091+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:06.262441+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "05-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-c-udf",
+        "--tests",
+        "--no-fail-fast"
+      ],
+      "started_at": "2026-11-06T01:12:06.525388+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:19.009378+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "09-sdk",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-c-udf",
+        "--test",
+        "comet_producer_probe",
+        "--",
+        "--test-threads=1"
+      ],
+      "started_at": "2026-11-06T01:12:19.266580+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T01:12:20.459581+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/comet-scalar-20261105-2c9fa8499/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "sdk_producer_sha256": "27685a3fd43575ea6c30d561067b5b40241a1e6efd1fb3bcea08c7a32b2b6a93",
+  "finished_at": "2026-11-06T01:12:20.729993+00:00",
+  "verdict": "PASS: precommit standalone scalar qualification; pipeline integration and performance envelope remain outside this gate"
+}

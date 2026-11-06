@@ -111,6 +111,11 @@ Preserve complete Arrow fields during planning and execution.
 Comet’s scalar interface does not define a C relation protocol; choose required
 relation capabilities and dependencies independently while retaining existing relations.
 
+A nonnullable scalar declaration concerns evaluated values, including encoded
+nulls. Check selected dictionary keys, actual union IDs and active physical runs
+recursively rather than expanding compressed data into a null bitmap. Admission
+must still bound selected-value traversal and nesting; compressed output is not free.
+
 ## Treat performance as an engineering requirement
 
 Correct results and bounded resources come first; a working implementation with
@@ -138,12 +143,12 @@ polling need measurement before selecting a policy.
 | Flow-event foundation | Local repairs preserve Arrow fidelity and zero-column rows, isolate filter predicates and report terminal query failures; workspace and selected public checks passed | Projection/asynchronous isolation, mixed-marker performance and complete termination semantics |
 | Source and checkpoint protocol | Existing planning/actor seams inspected; limited source and merge prototypes exist | Live attempt-scoped controls, transport alignment, durable preparation and process-restart recovery |
 | Durable targets and change capture | Existing bounded-runtime behavior and transaction mechanisms inspected | Enforced adapters for every admitted target, deterministic streaming reducer/merge and migration |
-| Extensions | Existing host inspected; focused standalone adapter and pinned Comet SDK producer probes passed | Final adapter source review and gates pending; package/worker integration and C relations remain separate increments |
+| Extensions | Existing host inspected; standalone adapter source reviews, immutable workspace checks and pinned Comet SDK probes passed locally | Package/worker integration, resource admission and C relations remain separate increments |
 | Configuration | Strict typed YAML/JSON/API and optional Dhall typed authoring frontend specified | Shared normalized model, frontend validation corpus and integration before durable semantic identity |
 
 The foundation qualification does not establish integrated recovery. Standalone
-fixture success does not establish SDK interoperability. An initial adapter compile
-does not establish its tests or package integration. These boundaries remain explicit
+fixture success does not establish SDK interoperability. Standalone SDK probes
+do not establish package or worker integration. These boundaries remain explicit
 until evidence at the corresponding interface proves otherwise.
 
 ## Plans precede dependent implementation
