@@ -61,5 +61,6 @@ The existing runtime, prototypes and foundation worktrees were preserved. The ne
 worktree owns its target directory; no product environment was modified. Raw logs,
 patches, producer sources, manifests and binaries remain local. Selected receipts
 are copied here and local artifacts are hashed. No cleanup or remote source action
-was performed. Documentation pushes currently encounter GitHub's
-`fatal error in commit_refs_rules`; local commits remain available.
+was performed. Earlier documentation pushes returned GitHub's
+`fatal error in commit_refs_rules`; a later retry successfully published the
+compendium and preceding documentation through `d5bc76fb`.
