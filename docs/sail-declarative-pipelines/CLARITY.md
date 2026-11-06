@@ -9,6 +9,12 @@ These requirements apply to proposals, architecture documents, decision notes
 and implementation plans. Evidence reports need the same clear terminology
 and distinction between demonstrated behavior and open questions.
 
+Maintain `HUMAN-REVIEW.md` as the overall review compendium. Begin with the full
+SDP, Extensions and performance goal, explain its fit with Sail, and keep verified
+behavior distinct from pending work. Write each self-contained plan from first
+principles before its dependent implementation; keep human review and maintainability
+as design constraints rather than end-of-work presentation tasks.
+
 ## Make the document stand alone
 
 Explain the user problem, relevant existing behavior, proposed change,

@@ -1,0 +1,53 @@
+{
+  "recorded_at": "2026-11-06T00:26:13.977213+00:00",
+  "steps": [
+    {
+      "name": "candidate-fixture-build",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "candidate-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-c-udf",
+        "--tests",
+        "--no-fail-fast",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "candidate-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-c-udf",
+        "-p",
+        "sail-c-udf-fixture",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "scope": "WIP focused checks; no immutable or whole integration qualification"
+}

@@ -1,5 +1,8 @@
 # Streaming pipelines and change capture on Sail
 
+The [human review compendium](HUMAN-REVIEW.md) connects these pipeline contracts
+with native Extensions, performance work and the current implementation evidence.
+
 Streaming pipelines maintain tables as source data arrives. Change capture
 applies keyed replacements and deletions, including changes delivered out of
 order. Build both on Sail’s continuous flow-event execution, with explicit

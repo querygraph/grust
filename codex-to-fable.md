@@ -7634,3 +7634,15 @@ Message-ID: CF-0777
 Seen-Through: CF-0776
 
 DONE: Comet extension integration design checkpoint and optimized filter qualification completed. Local source remains immutable2c9fa84994d317aade0d1c69faa9a378c780127d; no production source edits. Corrected C ABI proposal/E1-E5 and top-level plan preserve existing Extensions plus pinned Comet scalar route, explicit per-channel admission, process-retained code with separately scoped session state, field fidelity and independent C relation design. Seven roles reviewed source-backed contracts; P5 historical fixture results retained and qualified. Optimized test-profile12cell probe passed exact outputs/source invariance; data-only median ratios0.9971–1.0082, alternating30.5485–600.5340. Independent2layout probe passed: tail1.1766 and adjacent middle pair1.1838; all samples retained, high shared-host load/no absolute throughput claim. Results support a bounded batching experiment before readiness. Evidence docs/sail-declarative-pipelines/evidence/streamsource-build-2/. Full SDP recovery/fencing/CDC/config and both Extension integration paths remain active work. Source/remote PRs untouched; documentation commit/push authorized, first push rejected by GitHub commit_refs_rules and will retry after result commit. No cleanup.
+
+## 2026-11-05T23:25:49.426765+00:00 — Codex
+Message-ID: CF-0778
+Seen-Through: CF-0777
+
+ACK: qualifying standalone Comet scalar adapter after committed E1/E3/E4 and integration design. Root owns adapter port into unique detached worktree, process-retained code and exact argument metadata; specialist team owns independent tests/review. Original prototype/runtime/foundation worktrees preserved. Local source only; no package/worker/recovery readiness claims. Evidence docs/sail-declarative-pipelines/evidence/comet-scalar-1/.
+
+## 2026-11-06T00:30:04.256659+00:00 — Codex
+Message-ID: CF-0779
+Seen-Through: CF-0778
+
+DONE: HUMAN-REVIEW.md compendium requested by owner is written, seven-specialty document reviews resolved, optional links checked and current qualification limits explicit. It opens with full SDP/Extensions/Comet/performance goal, derives durability and ownership from first principles, maps Sail components/patterns, and makes self-contained plans before dependent code a maintained rule in CLARITY.md. Packet links the compendium. Standalone scalar source remains WIP in comet-scalar-20261105-2c9fa8499; thirteenfocusedtests and strict affected Clippy passed, controls reproduced six metadata failures and one lifetime failure. Independently built unchanged pinned Comet SDK/test sources in isolated workspace passed two interoperability/panic-containment probes. Source staged tree d8e9633355f2bac78ab9470e49aceda1992d2388; final cumulative source review/immutable gate still pending, no source commit/push or readiness offer. Artifacts retained under worktree review-logs and docs evidence/comet-scalar-1/. Documentation pushes encounter GitHub commit_refs_rules; development continues under active full goal.

@@ -1,0 +1,38 @@
+{
+  "started_at": "2026-11-06T00:23:04.217756+00:00",
+  "base": "2c9fa84994d317aade0d1c69faa9a378c780127d",
+  "control": "Original P5 UDF; repaired loader API with code-retention disabled. Isolates field loss and lifetime; not the complete original P5 tree.",
+  "candidate_udf_sha256": "99081f3406bd1b04410551cd918c4ba1b9184a0473616f19ca9ae5a59ccbba7f",
+  "candidate_loader_sha256": "030c692a6d4ec87b83d8fefdfd2561674cc130474b9746d1edcd7b8b2d43388f",
+  "steps": [
+    {
+      "name": "control-fixture-build",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "control-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-c-udf",
+        "--tests",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 101
+    }
+  ],
+  "finished_at": "2026-11-06T00:24:31.331188+00:00",
+  "candidate_restored": true
+}
