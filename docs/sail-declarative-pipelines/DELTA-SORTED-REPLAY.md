@@ -1,0 +1,88 @@
+# Release Delta replay payloads as their input batch is consumed
+
+A Delta snapshot reconstructs the active files from Add and Remove actions. Sail
+already supports doing this through an externally sorted stream, which can spill
+history to disk. Bounded manifest capture should reuse that operator. First repair
+its private output buffer: a small number of retained rows can currently keep many
+large Arrow input buffers alive.
+
+This plan concerns `DeltaLogReplayExec` in Sort mode. It changes neither the Delta
+reconciliation rule nor the choice between sorted and hash replay. It is an optional
+implementation reference for the [Delta source design](DELTA-REPLAY-SOURCE.md).
+
+## Why the existing buffer grows
+
+The child orders actions by logical file key, newest version first, with Add before
+Remove on an equal version. The first action for a key therefore decides its result:
+emit that Add, or emit nothing for that Remove. Older actions cannot change it.
+
+The current operator instead saves a one-row Arrow slice until the key changes, then
+accumulates slices until it has at least 8,192 winners. An Arrow slice shares its
+parent buffers. For example, retaining one file description from each of many wide
+input batches can retain all those batches, even when the useful descriptions are
+small. The Sort branch has no memory reservation for this retained payload. A row
+threshold does not bound its bytes.
+
+This ownership problem also affects ordinary Delta reads using sorted replay. A
+manifest writer that pages the eventual output would leave it intact.
+
+## Recommend emitting winners from each input batch
+
+Select the first action for each new key while scanning an input batch. Emit its
+payload when it is an Add. Retain only the owned current key and its decided state
+across batches; discard older actions for that key. Produce one output batch from
+the selected rows, or continue reading if none survive. No pending winner or array
+slice needs to survive privately while the operator fetches another input batch.
+
+Preserve the declared output schema, nested metadata, logical rows and their order.
+Keep existing replay-column validation and tie handling. Batch boundaries and the
+time at which a completed batch becomes available may change; neither is a persistent
+file identity. EOF needs no deferred winner flush. Errors and cancellation must
+release owned state through the normal stream lifecycle.
+
+Fund the key and temporary row-selection storage through the task's existing memory
+pool, reserving before growth and releasing when ownership ends. Avoid copying the
+same key for every older action. This eliminates private payload accumulation across
+batches. A finite task pool also limits the owned key and selection storage. It
+does not establish a byte bound for upstream decoding, sorting or downstream
+consumers. Those components retain their own resource responsibilities.
+
+## Alternatives and the performance decision
+
+A byte-accounted accumulator could preserve larger output batches. It would need
+compact ownership of retained payload, allocation checks before growth and headroom
+for concatenation. Tracking the same shared buffers across many slices adds complexity
+that immediate emission avoids.
+
+An existing Arrow coalescer is preferable to a new batching implementation if
+measurements require one. However, some coalescer paths also retain slices, and
+concatenation temporarily needs additional memory. Adding a coalescer without an
+ownership and reservation contract would move the defect.
+
+Start with per-input-batch emission. Compare dense winners, sparse winners after long
+histories, wide payloads and tombstone-heavy histories. Measure both replay and a real
+downstream Delta scan: sparse survivors can create small batches and increase scan
+overhead. A material slowdown requires resolving this batching choice before calling
+the repair ready. Shared-host diagnostics establish comparative costs, not production
+throughput.
+
+## Evidence required before accepting the repair
+
+Retain a control that demonstrates the old operator keeps prior payload buffers alive
+while requesting later input. Release producer and consumer references so the control
+isolates ownership inside replay. The repaired operator must release those private
+references. Exercise groups spanning batches, empty batches, long runs of older
+actions, Add/Remove ties, cancellation and error termination. Verify reservation
+release and named resource failure when the key or selection cannot be funded.
+
+Check exact output membership, multiplicity, order and schema under changed input
+batch boundaries. Force the public Delta path with `metadataAsDataRead=true` and
+`deltaLogReplayStrategy=sort`, retaining ordinary reads and the other replay strategies
+as controls. Cover deletion-vector file identity even though the initial continuous
+reader will refuse active deletion vectors: this is a shared operator repair.
+
+This increment adds no manifest format, checkpoint position or publication service.
+Manifest capture still needs streaming discovery and checkpoint decoding, complete Add
+metadata, distinct snapshot-as-of and original-commit provenance, a bounded index, and
+artifact durability matching the checkpoint's failure model. Fixing this buffer removes
+one concrete obstacle without claiming those contracts are implemented.

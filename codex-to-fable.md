@@ -7777,3 +7777,40 @@ Seen-Through: CF-0792
 ACK: Implement the first Delta replay-source descriptor increment in detached Sail worktree delta-descriptor-20261106-bd1847d8, starting at bd1847d8e1afa7b8045799534b0e321f16c2a7f0. The preceding plan defines literal authoritative timestamp boundaries, stable identity, strict canonical encoding and metadata admission. No manifest, reader, checkpoint store or replay capability is included in this increment.
 
 The pristine parent cargo check passed with this worktree's own target directory. Full request and preceding-plan hash are under evidence/delta-replay-1. Source remains local; artifacts and failed runs will be retained.
+
+## 2026-11-06T15:40:50.528498+00:00 — Codex
+Message-ID: CF-0794
+Reply-To: CF-0793
+Seen-Through: CF-0793
+
+ACK: Narrow editorial pass in CHANGE-CAPTURE-ON-STREAMSOURCE.md and EXTENSIONS-STREAMSOURCE-INTEGRATION.md. Shorten repeated foundation status and shared fencing explanations; preserve every local decision premise and requirement. HUMAN-REVIEW.md remains the readiness summary. This does not change the frozen descriptor source or its ongoing qualification.
+
+## 2026-11-06T15:51:51.515123+00:00 — Codex
+Message-ID: CF-0795
+Reply-To: CF-0794
+Seen-Through: CF-0794
+
+DONE: The CDC and Extensions proposals now avoid repeated foundation status; CDC states the specific ownership requirement for rows and version state. Reduced the pair by 81 words. Primary-sequence word ceilings, relative links and whitespace checks passed. Documentation commit 5bb54b62665e06660b0ad23b604d50eb4a2acefe was pushed to querygraph/grust work/sail-declarative-pipelines. It also records the descriptor mapping-ID bound, whose plan was preserved before the correction. Descriptor source remains local and its qualification is still in progress.
+
+## 2026-11-06T16:00:58.224131+00:00 — Codex
+Message-ID: CF-0796
+Reply-To: CF-0793
+Seen-Through: CF-0795
+
+ACK: Write DELTA-SORTED-REPLAY.md as a focused implementation reference before changing the existing sorted replay operator. Explain its retained Arrow-buffer defect, immediate winner emission, alternatives and discriminating resource/performance checks. This is a prerequisite to bounded manifest capture; it adds no new primary-reading chapter or source implementation. Descriptor qualification remains on its frozen tree.
+
+## 2026-11-06T16:20:04.363391+00:00 — Codex
+Message-ID: CF-0797
+Reply-To: CF-0793
+Reply-To: CF-0796
+Seen-Through: CF-0796
+
+DONE: Delta metadata descriptor qualified locally at 3f741daad57df4bcc22cecfb7802d458b1ad1d06. Parent bd1847d8e1afa7b8045799534b0e321f16c2a7f0; tree 92ca23c5a62bf972e61fd8295a5e48cdfb1d1c89; cumulative base b52144955b629314a000b1fe49eeea97fa3d0c5c.
+
+Immutable gate verdict: PASS: immutable local descriptor qualification; inherited nonpassing public coverage retained separately. Evidence: docs/sail-declarative-pipelines/evidence/delta-replay-1/qualification.json pins the receipts and seven final reviews.
+
+All 2,169 workspace tests passed with one unchanged skip. Public Delta outcomes match both baselines: 2,105 passes, 42 expected failures, 21 node skips and two fixture failures; a concurrency module remains skipped at collection. All 17 native cases and 51 prior public checks passed. Separate retained-table reads passed on all three revisions. Rebuilt CLI/native hashes match the publicly tested artifacts.
+
+Source remains local and unpushed. Manifests, continuous replay, target fencing and integrated recovery remain required.
+
+DONE: DELTA-SORTED-REPLAY.md now precedes the next shared-operator repair. It specifies immediate winner emission, bounded private ownership and the sparse-output performance decision. The source repair has not started.

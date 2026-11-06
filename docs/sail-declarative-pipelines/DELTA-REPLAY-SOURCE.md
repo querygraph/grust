@@ -5,8 +5,8 @@ cannot describe a checkpoint halfway through a file, and reopening that version
 under a newer schema can change its meaning. Add a native continuous `StreamSource`
 that reads an identified snapshot, then append commits, and reports the next physical
 row it will read. A source boundary supplies input recovery; it does not establish
-durable target completion. These interfaces are proposed; source inspection identifies
-the reuse points, but the replay path has not been implemented or qualified.
+durable target completion. The [metadata descriptor is locally qualified](evidence/delta-replay-1/README.md);
+manifest capture and the continuous replay path remain proposed and unqualified.
 
 ## Reuse Sail's reader without inheriting its scheduling
 
@@ -180,7 +180,9 @@ strict decoding and fixed-schema/incarnation admission in the Delta crate. Use r
 local Delta fixtures, including persistent empty anchors. This unit needs no checkpoint
 store, scheduler or common position framework, and advertises no replay capability.
 
-Next implement bounded segment capture and manifest publication through the caller's
+Before capture, repair [sorted replay's payload lifetime](DELTA-SORTED-REPLAY.md);
+output paging cannot bound buffers retained upstream. Implement bounded segment
+capture and manifest publication through the caller's
 existing storage and resource interfaces. Define the Delta position format against
 those manifests. Finally implement the persistent reader, plan codec and control-position
 envelope. Its identity, order and input admission contract must precede that integration.
