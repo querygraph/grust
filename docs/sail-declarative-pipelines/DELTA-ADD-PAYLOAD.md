@@ -20,7 +20,7 @@ Accept the existing action field names and exact Arrow types. Required fields mu
 
 Reject duplicate schema names and duplicate or null map keys before conversion to a Rust map. Preserve a missing partition key separately from a present null value. This decoder does not infer partition coverage from arbitrary columns; capture admission must establish its descriptor-specific requirements.
 
-Input paths are URI-encoded action paths. Decode exactly once using Sail's existing path utility. Do not decode the resulting Add again, resolve path aliases or collapse distinct replay keys. Preserve and validate deletion-vector fields without advertising reader support for active vectors. Snapshot capture will separately refuse active vectors under its initial admission contract.
+Input paths are URI-encoded action paths. Decode exactly once using Sail's existing path utility. Do not decode the resulting Add again, resolve path aliases or collapse distinct replay keys. Validate deletion-vector descriptor structure: known storage type, nonnegative size, cardinality and optional offset, with no offset for inline storage. Preserve an absent offset. This checks neither external vector bytes nor bitmap contents and advertises no reader support for active vectors. Snapshot capture will separately refuse active vectors under its initial admission contract.
 
 The decoder never invents original commit metadata. Its Add auxiliary commit fields remain unknown. The future entry wrapper supplies explicit `SnapshotAsOf(V)` membership and independently established original provenance. A checkpoint at version 20 does not establish that a surviving file was originally added at version 20.
 
