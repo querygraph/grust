@@ -7686,3 +7686,33 @@ Preparation bypass fails both marker/failure controls, then exact restoration pa
 A separate retained failing oracle now isolates the alias arithmetic defect to DataFusion 55.2 projection optimization. Analysis and filter pushdown retain two additions; projection optimization drops one. Identity controls remain correct. No fix has been implemented. PROJECTION-COMPOSITION.md records the first-principles correction decision before dependent code. This finding is not counted as a passing product regression.
 
 HUMAN-REVIEW.md, the participation plan/results and evidence retain the full SDP, Extensions, performance, mandatory fencing and typed configuration/Dhall goal. The full goal remains active. Source controls, distributed alignment, durable preparation, CDC and native package/worker integration are still implementation obligations. Documentation publication is the remaining action for this increment; no source push or maintainer communication is authorized.
+
+## 2026-11-06T06:50:50.300439+00:00 — Codex
+Message-ID: CF-0785
+Seen-Through: CF-0784
+
+ACK: projection composition correction in a new local detached Sail worktree.
+
+Repository /Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3 starts at 6e4da8d33ba1bf4073fcb853123f81860ef18151, with its own target directory. Merge base remains b52144955; newly fetched upstream 5c0381bb3 adds a separate nullable-field resolver fix and will be reviewed without rewriting the qualified source chain.
+
+The self-contained PROJECTION-COMPOSITION.md is published in documentation commit cac6ef00 and saved before code. First preserve exact upstream production copies and comparison evidence. Wire the unchanged owned rule into both existing optimizer lists and retain the failing arithmetic oracle. Then test the smallest composition correction, preserving pruning, metadata, volatility, conditional guards and recursion protection. Mechanical checks precede final seven-role cumulative review and an immutable commit gate.
+
+The full SDP, Extensions, performance, mandatory target fencing and typed configuration/Dhall goal remains active. Source push, maintainer communication, environment changes and cleanup remain excluded. All original worktrees and artifacts are preserved; document publication remains authorized.
+
+## 2026-11-06T10:01:27.967679+00:00 — Codex
+Message-ID: CF-0786
+Seen-Through: CF-0785
+
+DONE: projection composition is locally qualified.
+
+Source branch work/projection-composition-20261106 points to b6d73d6a644dc04b1e6749e171100808c874d788, tree b337dfd145db4773ba1aa019028a8e9c86bbaa67, parent 6e4da8d33ba1bf4073fcb853123f81860ef18151. Review base remains upstream b52144955b629314a000b1fe49eeea97fa3d0c5c; newer 5c0381bb3105ab38bf808cbe3e68a3e0aae619e6 was inspected separately. Increment SHA-256 d0be097703b5ce7ba7f1e8400dfd486ee492f9d64f2c91437a8e4f86409cc227; cumulative SHA-256 01226d1ed79d26afa4cd9e36d1e331b365d3ad4ba93c434fbbc50636262c991c.
+
+Self-contained ownership, positional identity-fold and chain-lifecycle plans preceded dependent code. The owned DataFusion 55.2 rule preserves repeated computations, declared fields/qualifiers/metadata and remapped dependencies in both optimizer registrations. All seven final specialist reviews independently bind all 85 cumulative file hashes and 11 increment paths, with retained exact upstream comparisons. Original arithmetic/schema failures, unsafe equality controls, the unique-chain stack failure and all prior failed setup/fixture runs remain preserved. The same original ownership probe now passes both depths; atomic retirement follows the pinned Rust contract rather than claiming a newly reproduced concurrent failure.
+
+Conditional precommit checks passed 491 Rust tests with one existing skip. Immutable verdict: PASS: immutable projection composition qualification; distributed alignment, durable recovery, fencing and production performance remain outside this gate; finite planning coverage, unrelated streaming startup and mixed-marker costs remain explicit limits. Strict workspace Clippy, nightly formatting, strict Rustdoc, 2110 Rust tests with one existing skip, Python formatting/lint and fresh CLI/native builds passed. All 51 selected public cases passed: 42 live-server executions and nine mocked client fixtures, actual server version4.2.1. Artifact digests are in the receipts.
+
+All ten correctness-qualified optimized planning cells and seventy paired timing samples remain recorded. Borrowed identity folding resolves the earlier material deep-wide cost on these fixtures, final ratio0.917; shallow-wide ratio1.025 remains visible. These are shared-host diagnostics, not production throughput or general latency claims. Mixed-marker execution and earlier short-streaming startup costs remain open.
+
+HUMAN-REVIEW, plans, results and evidence retain the full SDP, existing Extensions, Comet, performance, mandatory fencing and typed configuration/Dhall goal. All ten earlier worktrees, product PySpark4.2.1/PyArrow26.0.0 and qualified artifacts are unchanged. Source remains local; no source push, upstream offer, maintainer communication or cleanup occurred. Documentation validation passed; committing/pushing all updated documents is the remaining authorized publication action.
+
+The full goal remains active. Next write the source capability/attempt-control plan from actual execution ownership before implementing it. Checkpoint alignment, durable prepared effects/recovery, mandatory target fencing, streaming CDC and migration, typed configuration, native package/worker integration and remaining resource/performance obligations are still unbuilt work.

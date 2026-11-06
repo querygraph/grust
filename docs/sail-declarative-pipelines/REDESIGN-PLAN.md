@@ -30,8 +30,10 @@ and reconstructs the node through the worker codec. Its immutable workspace and
 selected public checks passed. Standard metrics remain enabled; mixed-marker
 fragmentation still has material cost. A mandatory compiler phase now protects
 executable sources before logical data pruning, retaining safe scan pushdowns and
-expression sharing. The admitted corpus passed local checks; a shared alias
-optimizer defect and short-plan compilation overhead remain. The
+expression sharing. Projection composition now preserves repeated calculations and
+declared schemas in the qualified local corpus. Identity-chain planning costs and
+ownership release have focused controls; short-plan streaming compilation overhead
+remains. The [composition results](PROJECTION-COMPOSITION-RESULTS.md),
 [projection results](STREAMSOURCE-PROJECTION-RESULTS.md) and
 [source participation results](STREAMSOURCE-PARTICIPATION-RESULTS.md) bound the evidence.
 

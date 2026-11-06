@@ -1,0 +1,61 @@
+{
+  "started_at": "2026-11-06T09:20:58.778646+00:00",
+  "tree": "b337dfd145db4773ba1aa019028a8e9c86bbaa67",
+  "steps": [
+    {
+      "name": "format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:21:02.590349+00:00"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:21:26.371691+00:00"
+    },
+    {
+      "name": "rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer",
+        "-p",
+        "sail-session"
+      ],
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:21:37.249308+00:00"
+    }
+  ],
+  "verdict": "PASS: strict mechanical preflight before final frozen review"
+}

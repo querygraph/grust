@@ -1,0 +1,26 @@
+{
+  "recorded_at": "2026-11-06T09:59:27.454836+00:00",
+  "full_goal_status": "active",
+  "full_objective": "reimplement Sail Declarative Pipelines in human-digestible increments following the initial redesign on StreamSource, incorporating Extensions both as built before and with C ABI from",
+  "clarification": "from Comet",
+  "qualified_source": "b6d73d6a644dc04b1e6749e171100808c874d788",
+  "next_work": "Read existing source execution and task-attempt routing, write a self-contained capability/control design before implementation, then build a reviewable attempt-scoped source-control increment. Typed configuration and native package integration remain independent work.",
+  "observed_seams": {
+    "crates/sail-common-datafusion/src/streaming/source.rs": "StreamSource describes schema, constraints, filter pushdown and planning scan; it has no replay/control capability API.",
+    "crates/sail-execution/src/driver/job_scheduler/state.rs": "TaskDescriptor holds attempt descriptors and lifecycle state; runtime endpoint routing still needs inspection."
+  },
+  "remaining_requirements": [
+    "live attempt-scoped source controls and durable identities",
+    "transport checkpoint alignment and bounded resources",
+    "immutable prepared effects, reconciliation and process-restart recovery",
+    "mandatory commit-time fencing for every admitted durable target",
+    "deterministic streaming change capture, version state, validation receipts and migration",
+    "strict normalized typed YAML/JSON/API and optional Dhall authoring",
+    "existing Extensions host/package/worker integration and Comet C scalar integration",
+    "separate C relation capability decision",
+    "mixed-marker performance, collector retractions and complete termination semantics",
+    "integration onto observed newer upstream remains separate preserved work"
+  ],
+  "source_push": false,
+  "cleanup": false
+}

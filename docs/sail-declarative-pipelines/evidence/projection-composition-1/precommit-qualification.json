@@ -1,0 +1,170 @@
+{
+  "started_at": "2026-11-06T09:41:51.843815+00:00",
+  "mode": "precommit",
+  "head": "6e4da8d33ba1bf4073fcb853123f81860ef18151",
+  "tree": "b337dfd145db4773ba1aa019028a8e9c86bbaa67",
+  "cumulative_sha256": "01226d1ed79d26afa4cd9e36d1e331b365d3ad4ba93c434fbbc50636262c991c",
+  "review_sha256": {
+    "RESEARCH.md": "c82ea6cd5f0d5251301f128440e6567203fd65cc2a85354bf577307d9c7c971d",
+    "DESIGN-QUALITY-REVIEW.md": "96fb51ac0e044486eb8ddba7140688e88781d680505703e395481a448ba7fe38",
+    "TEST-CASE-REVIEW.md": "3c0ef62747fee3683add25665a7c7c959b5cee589076c375c5521f111fbd3856",
+    "SCOPE-REVIEW.md": "e8d456c6dc551fa8816193262c3775cb672f4f53741d1062dbfedcfc2243f3c8",
+    "REGRESSION-REVIEW.md": "e070507d54e9a0b3a60bfefb693e6610eeac8dd277f4d31480e279f2c80b2bfa",
+    "PERFORMANCE-REVIEW.md": "6387cd4d5e6a00dce983c1813997e67e72752109107dbdcc5a61d3fd1ccb9119",
+    "SPARK-SEMANTICS-REVIEW.md": "ba8398d1dbcd4bbb668d19509228fb44cb8e0ff290ee827e2072d67ea19abb48"
+  },
+  "known_limits": [
+    "finite shared-host optimized planning corpus; shallow wide-identity ratio 1.025 retained, prior deep-wide regression resolved on measured cells",
+    "material shallow-streaming compilation overhead in earlier shared-host debug diagnostic",
+    "mixed-marker execution fragmentation and durable integration remain unresolved"
+  ],
+  "free_disk_bytes": 271992614912,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T09:41:51.999644+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:42:17.190820+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T09:42:17.494884+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:42:21.418886+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer"
+      ],
+      "started_at": "2026-11-06T09:42:21.725164+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:43:27.543341+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "04-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-telemetry",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-06T09:43:27.888738+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:43:49.990645+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "05-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "nextest",
+        "run",
+        "--locked",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-telemetry",
+        "--no-fail-fast"
+      ],
+      "started_at": "2026-11-06T09:43:50.307492+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:45:38.157272+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "06-python-format",
+      "command": [
+        "uvx",
+        "--offline",
+        "hatch",
+        "fmt",
+        "--check",
+        "python/pysail/tests/_dev/spark/dataframe/test_projection_composition.py"
+      ],
+      "started_at": "2026-11-06T09:45:38.502240+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:45:38.959704+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "finished_at": "2026-11-06T09:45:39.248500+00:00",
+  "verdict": "PASS: precommit projection composition qualification; distributed alignment, durable recovery, fencing and production performance remain outside this gate; finite planning coverage, unrelated streaming startup and mixed-marker costs remain explicit limits"
+}

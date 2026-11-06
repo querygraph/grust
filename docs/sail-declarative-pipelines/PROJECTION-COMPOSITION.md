@@ -1,36 +1,39 @@
-# Preserve computation when projections reuse an alias
+# Preserve computation and schemas when combining projections
 
-Two successive projections computing `v + 1 AS v` must add twice. Equal expression
-text does not mean equal computation: each projection reads its immediate child's
-output. An isolated DataFusion 55.2 projection-optimization probe turns inputs
-`1, 2, 3, 4` into `2, 3, 4, 5` instead of `3, 4, 5, 6`. Direct analysis and
-filter pushdown preserve the expected result; identity-projection controls pass.
-The defect affects batch queries and streaming preparation.
+Projection optimization must preserve values and the declared output schema. Two
+successive projections computing `v + 1 AS v` must add twice. Equal expression text
+reads different input scopes. Isolated DataFusion 55.2 and unchanged Sail-owned copies
+instead drop an addition. Both copies also lose output qualifiers, field metadata and
+schema metadata during reconstruction.
 
-Disabling projection optimization sacrifices column pruning. Renaming aliases
-around the public rule adds scoping and metadata machinery while leaving internally
-created projection pairs outside its control. Postprocessing cannot reconstruct a
-discarded addition.
+Waiting for a dependency repair delays delivery. Disabling the rule sacrifices column
+pruning. Renaming aliases around it adds scoping machinery without controlling
+internally created projection pairs. Postprocessing cannot recover discarded computation
+or metadata.
 
-Recommend owning the narrowly scoped rule and private helpers inside Sail's
-logical-optimizer crate. Estimated ownership is 1,142 existing production lines,
-with no replacement optimizer framework. Register the same implementation in the
-ordinary optimizer and streaming preparation. The existing equal-expression
-shortcut is the source-derived candidate: it bypasses substitution into the child's
-input. Test removing that shortcut while retaining ordinary composition.
+Recommend owning the existing rule and private helpers inside Sail's logical optimizer.
+About 1,142 existing production lines are carried; the framework stays. Use the same
+implementation in ordinary optimization and streaming preparation. Use ordinary
+child-output substitution for computed expressions. Borrow bare positional identity
+chains and reconstruct once. Release skipped wrappers iteratively. Equal alias/literal
+lists still require same-position binding.
 
-Copy pinned DataFusion 55.2 source exactly before adapting it. Retain attribution
-and comparison evidence. Preserve recursion protection explicitly; copying the
-module does not inherit DataFusion's feature configuration. Its required dependency
-version is already locked.
+Preserve the declared outer schema when composing unchanged output positions. When
+pruning columns, select its original qualified fields and metadata, remapping
+column-dependency guarantees to their retained indices. Remove an identity projection
+only when its complete output schema matches its input. Do not introduce casts, new
+nullability policy or arbitrary type substitution.
 
-The unchanged owned copy must reproduce the stock failure. The correction must
-pass the original arithmetic oracle, identity controls, qualifiers, metadata,
-subqueries, column pruning and both compilation paths. Preserve volatile evaluation
-counts and conditional guards; determinism alone does not authorize evaluating an
-otherwise unused expression. Compare optimized plans and measured costs.
+Retain exact pinned originals, attribution and comparisons. Preserve recursion
+protection with the locked version. The unchanged copy must reproduce both failures.
 
-Spark 4.2.1 source confirms dependent projection composition; JVM parity was not
-executed. Should Sail own this rule to correct composition while preserving its
-optimizations? The controlled failure, exact ownership diff and regression checks
-must settle that implementation decision before broader readiness claims.
+Verify original arithmetic and schema oracles, identity, pruning, dependency remapping,
+subqueries and both registrations. Execute resulting physical plans too: schema
+construction alone checks only column count. Preserve volatile evaluation counts and
+conditional guards. Measure valid old/new plans without timing incorrect results as
+equivalent work.
+
+Spark 4.2.1 source confirms dependent composition and alias metadata preservation; JVM
+parity was not executed. Does ownership preserve computation, schemas and optimization?
+The [identity-fold decision](PROJECTION-IDENTITY-FOLD.md) explains the planning-cost
+choice.

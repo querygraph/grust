@@ -129,7 +129,9 @@ Extensions goal. The [evidence directory](evidence/streamsource-participation-1/
 retains exact source identities, controls, all planning samples and verification
 receipts. Raw patches and binaries remain local.
 
-The [next correctness plan](PROJECTION-COMPOSITION.md) addresses projection composition.
+The [composition plan](PROJECTION-COMPOSITION.md) bounds the logical correction;
+[composition results](PROJECTION-COMPOSITION-RESULTS.md) qualify its repair at a
+separate source pin. The failing findings above apply to the source named here.
 Optimized-profile measurements must guide any startup-cost change. Recoverable
 source controls, transport alignment, immutable prepared effects, enforced target
 ownership, deterministic change-capture publication, typed configuration and native

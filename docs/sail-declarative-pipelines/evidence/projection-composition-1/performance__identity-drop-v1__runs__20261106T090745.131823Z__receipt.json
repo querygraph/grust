@@ -1,0 +1,119 @@
+{
+  "started_at": "2026-11-06T09:07:45.133232+00:00",
+  "candidate_tree": "1935edac69836542b67aa5ca25f5d794c14ee2b4",
+  "candidate_increment_sha256": "42199c5a97525b898e516db90d415ecfed8f6098415ec3f58383dcadabb56101",
+  "candidate_cumulative_sha256": "3dd8b8f09be9506f0fce1b3f4f611817d7567e47b4788c8a6b90eae0e5269bee",
+  "original_head": "6e4da8d33ba1bf4073fcb853123f81860ef18151",
+  "executed_runner_sha256": "94d0392c28cc3a9b38fde197f2f495599b4f48d3115f1ecc9c00a9559f5cf10e",
+  "prepared_manifest_sha256": "6b8f06c61ff892de58298e0f6da582dbe8c716d7f500bdf38accb48bc79c3e83",
+  "host": "Darwin Capitola.local 25.2.0 Darwin Kernel Version 25.2.0: Tue Nov 18 21:09:40 PST 2025; root:xnu-12377.61.12~1/RELEASE_ARM64_T6000 arm64",
+  "profile": "unoptimized test, debug0, explicit1MiB diagnostic thread",
+  "depths": [
+    8192,
+    16384
+  ],
+  "stack_bytes": 1048576,
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "4",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "status": "One or more probe processes failed or aborted; inspect separate outcomes",
+  "steps": [
+    {
+      "variant": "baseline",
+      "test": "baseline_uniquely_owned_identity_chain_v1",
+      "started_at": "2026-11-06T09:07:45.139808+00:00",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-logical-optimizer",
+        "--test",
+        "identity_drop_probe_v1",
+        "--",
+        "--ignored",
+        "--exact",
+        "baseline_uniquely_owned_identity_chain_v1",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cargo_pid": 87714,
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:07:56.397781+00:00",
+      "log_sha256": "d8395bd1b86b78556eb0ad0bf7c92d923ab1c09998ecbb7f3ce6809afbb92951",
+      "phases": [
+        "test baseline_uniquely_owned_identity_chain_v1 ... IDENTITY_DROP_V1 variant=baseline depth=8192 stack=1048576 phase=construct",
+        "IDENTITY_DROP_V1 variant=baseline depth=8192 phase=before_rewrite unique=true",
+        "IDENTITY_DROP_V1 variant=baseline depth=8192 phase=after_rewrite",
+        "IDENTITY_DROP_V1 variant=baseline depth=8192 phase=completed",
+        "IDENTITY_DROP_V1 variant=baseline depth=8192 phase=joined",
+        "IDENTITY_DROP_V1 variant=baseline depth=16384 stack=1048576 phase=construct",
+        "IDENTITY_DROP_V1 variant=baseline depth=16384 phase=before_rewrite unique=true",
+        "IDENTITY_DROP_V1 variant=baseline depth=16384 phase=after_rewrite",
+        "IDENTITY_DROP_V1 variant=baseline depth=16384 phase=completed",
+        "IDENTITY_DROP_V1 variant=baseline depth=16384 phase=joined"
+      ],
+      "binary": "/Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3/target/debug/deps/identity_drop_probe_v1-63163c9e1e19dcb0",
+      "binary_sha256": "e9c02632c849382b496856baec296bcf51e36db703ed6dd5a4d16f803c331444",
+      "qualified_pass": true,
+      "build_completed": true,
+      "selected_test_started": true,
+      "probe_entered": true,
+      "outcome": "PASS: both depths completed and joined"
+    },
+    {
+      "variant": "current",
+      "test": "current_uniquely_owned_identity_chain_v1",
+      "started_at": "2026-11-06T09:07:56.430779+00:00",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "test",
+        "--locked",
+        "-p",
+        "sail-logical-optimizer",
+        "--test",
+        "identity_drop_probe_v1",
+        "--",
+        "--ignored",
+        "--exact",
+        "current_uniquely_owned_identity_chain_v1",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cargo_pid": 87817,
+      "exit_code": 101,
+      "finished_at": "2026-11-06T09:07:57.281668+00:00",
+      "log_sha256": "83d8d7f5076c3be8763f31081f7d63fc96aaa3e00e3200f16d767f1315ad597f",
+      "phases": [
+        "test current_uniquely_owned_identity_chain_v1 ... IDENTITY_DROP_V1 variant=current depth=8192 stack=1048576 phase=construct",
+        "IDENTITY_DROP_V1 variant=current depth=8192 phase=before_rewrite unique=true"
+      ],
+      "binary": "/Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3/target/debug/deps/identity_drop_probe_v1-63163c9e1e19dcb0",
+      "binary_sha256": "e9c02632c849382b496856baec296bcf51e36db703ed6dd5a4d16f803c331444",
+      "qualified_pass": false,
+      "build_completed": true,
+      "selected_test_started": true,
+      "probe_entered": true,
+      "outcome": "runtime failure or abort; inspect phase markers"
+    }
+  ],
+  "restoration_verified": true,
+  "executed_lib_sha256": "beea2e6bd68cdf9b5113cd3284e9dcac99bbb39edb071d1c3b2fdc050e851f52",
+  "executed_artifacts": {
+    "crates/sail-logical-optimizer/src/identity_drop_baseline_v1/mod.rs": "00eabc6d08bbf05707061d589b99cfeca66807f94bbc7d8158d160511be3f694",
+    "crates/sail-logical-optimizer/src/identity_drop_baseline_v1/referenced_indices.rs": "b904fb830e5360731539fb31a801adb080802aac9ed8e38cc9055b0c8f2b1254",
+    "crates/sail-logical-optimizer/src/identity_drop_baseline_v1/required_indices.rs": "cb5d3b4d3f62dba7da03c35d2b582595d25e6b507b0426e2bbed920fd73afbcd",
+    "crates/sail-logical-optimizer/tests/identity_drop_probe_v1.rs": "228e0d58d9cce8fd48763db48c7b5d7db6f41d8b86b10ff8d840c49e88a2c866"
+  },
+  "runner_pid": 87699,
+  "same_binary_verified": true,
+  "restoration_failures": [],
+  "finished_at": "2026-11-06T09:07:57.421224+00:00"
+}

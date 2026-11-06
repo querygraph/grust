@@ -84,9 +84,9 @@ product decision.
 
 ## Preserve Extensions while adding the Comet route
 
-The existing extension implementation uses Python package discovery, build checks,
-DataFusion foreign-function interfaces, worker identity lookup and host-funded
-native memory leases. Preserve those capabilities through integration with the
+The existing extension host discovers Python packages, checks their builds and uses
+DataFusion's foreign-function interface, or FFI. It resolves worker identities and
+funds native allocations through memory leases. Preserve those capabilities through integration with the
 new runtime. This host is reference code on the existing integration branch,
 not yet part of the upstream-based foundation. Keeping its behavior as a control
 makes boundary changes reviewable.
@@ -145,7 +145,7 @@ polling need measurement before selecting a policy.
 
 | Area | Current demonstrated state | Work still required |
 | --- | --- | --- |
-| [Flow-event foundation](STREAMSOURCE-PARTICIPATION-RESULTS.md) | Local repairs preserve Arrow fidelity and zero-column rows, isolate filter and supported projection expressions, retain sources before pruning, preserve worker reconstruction and report terminal failures; workspace and selected public checks passed | Restart-stable source identity, mixed-marker performance, collector retractions and complete termination semantics |
+| [Flow-event foundation](PROJECTION-COMPOSITION-RESULTS.md) | Local repairs preserve Arrow fidelity and zero-column rows, isolate filter and supported projection expressions, retain sources before pruning, preserve worker reconstruction and report terminal failures; workspace and selected public checks passed | Restart-stable source identity, mixed-marker performance, collector retractions and complete termination semantics |
 | Source and checkpoint protocol | Existing planning/actor seams inspected; limited source and merge prototypes exist | Live attempt-scoped controls, transport alignment, durable preparation and process-restart recovery |
 | Durable targets and change capture | Existing bounded-runtime behavior and transaction mechanisms inspected | Enforced adapters for every admitted target, deterministic streaming reducer/merge and migration |
 | [Extensions](COMET-SCALAR-RESULTS.md) | Existing host inspected; standalone adapter source reviews, immutable workspace checks and pinned Comet SDK probes passed locally | Package/worker integration, resource admission and C relations remain separate increments |
@@ -194,13 +194,13 @@ The [pipeline plan](REDESIGN-PLAN.md),
 detail for the contracts above. The evidence table distinguishes local component
 checks from integrated recovery and production readiness.
 
-A shared optimizer defect remains: twelve additions through a reused alias produce
-one addition after optimization in both compared paths. The direct analyzed graph
-is correct. A rule-isolation probe identifies projection optimization as the defect
-boundary. The [composition plan](PROJECTION-COMPOSITION.md) bounds a repair
-with the original expected values intact.
-Short streaming compilation also costs more in the local diagnostic; an optimized
-profile should guide tuning.
+An owned projection optimizer preserves repeated computations and declared schemas.
+Unchanged-copy controls reproduce discarded additions and metadata; the repair
+retains those oracles. Borrowed identity folding and iterative ownership release
+resolve the measured deep-plan cost and demonstrated destruction failure on the
+reviewed corpus. The [composition results](PROJECTION-COMPOSITION-RESULTS.md) give
+qualification boundaries, including small residual shallow-plan overhead.
+Short streaming compilation and mixed-marker execution still need performance work.
 Which bounded batching policy preserves marker-before-error ordering under measured
 memory and latency limits?
 

@@ -1,0 +1,205 @@
+{
+  "started_at": "2026-11-06T09:45:39.765531+00:00",
+  "mode": "immutable",
+  "head": "b6d73d6a644dc04b1e6749e171100808c874d788",
+  "tree": "b337dfd145db4773ba1aa019028a8e9c86bbaa67",
+  "cumulative_sha256": "01226d1ed79d26afa4cd9e36d1e331b365d3ad4ba93c434fbbc50636262c991c",
+  "review_sha256": {
+    "RESEARCH.md": "c82ea6cd5f0d5251301f128440e6567203fd65cc2a85354bf577307d9c7c971d",
+    "DESIGN-QUALITY-REVIEW.md": "96fb51ac0e044486eb8ddba7140688e88781d680505703e395481a448ba7fe38",
+    "TEST-CASE-REVIEW.md": "3c0ef62747fee3683add25665a7c7c959b5cee589076c375c5521f111fbd3856",
+    "SCOPE-REVIEW.md": "e8d456c6dc551fa8816193262c3775cb672f4f53741d1062dbfedcfc2243f3c8",
+    "REGRESSION-REVIEW.md": "e070507d54e9a0b3a60bfefb693e6610eeac8dd277f4d31480e279f2c80b2bfa",
+    "PERFORMANCE-REVIEW.md": "6387cd4d5e6a00dce983c1813997e67e72752109107dbdcc5a61d3fd1ccb9119",
+    "SPARK-SEMANTICS-REVIEW.md": "ba8398d1dbcd4bbb668d19509228fb44cb8e0ff290ee827e2072d67ea19abb48"
+  },
+  "known_limits": [
+    "finite shared-host optimized planning corpus; shallow wide-identity ratio 1.025 retained, prior deep-wide regression resolved on measured cells",
+    "material shallow-streaming compilation overhead in earlier shared-host debug diagnostic",
+    "mixed-marker execution fragmentation and durable integration remain unresolved"
+  ],
+  "free_disk_bytes": 269450072064,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T09:45:39.956955+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:45:40.433836+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T09:45:40.820842+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:45:44.862919+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer"
+      ],
+      "started_at": "2026-11-06T09:45:45.243405+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:45:46.119377+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "04-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-06T09:45:46.499243+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:46:09.377080+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "05-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "nextest",
+        "run",
+        "--locked",
+        "--workspace",
+        "--no-fail-fast",
+        "--test-threads",
+        "8",
+        "--status-level",
+        "fail",
+        "--final-status-level",
+        "fail"
+      ],
+      "started_at": "2026-11-06T09:46:09.766027+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:51:45.218344+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "06-python-format",
+      "command": [
+        "uvx",
+        "--offline",
+        "hatch",
+        "fmt",
+        "--check",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py",
+        "python/pysail/tests/_dev/spark/streaming/test_projection.py",
+        "python/pysail/tests/_dev/spark/streaming/test_participation.py",
+        "python/pysail/tests/_dev/spark/dataframe/test_projection_composition.py"
+      ],
+      "started_at": "2026-11-06T09:51:45.733837+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:51:46.170107+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "07-cli",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-cli"
+      ],
+      "started_at": "2026-11-06T09:51:46.543611+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:52:38.877830+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "08-native",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "rustc",
+        "--locked",
+        "-p",
+        "sail-python",
+        "--features",
+        "pyo3/extension-module,pyo3/abi3-py38,pyo3/generate-import-lib",
+        "--",
+        "-C",
+        "link-arg=-undefined",
+        "-C",
+        "link-arg=dynamic_lookup"
+      ],
+      "started_at": "2026-11-06T09:52:40.140376+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:53:28.858777+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "09-public",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3/review-logs/run-public-tests.py",
+        "composition-immutable-public",
+        "/Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3/review-logs/immutable-qualification/sail",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming",
+        "python/pysail/tests/_dev/spark/dataframe/test_projection_composition.py"
+      ],
+      "started_at": "2026-11-06T09:53:30.228714+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T09:53:54.037526+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/projection-composition-20261105-6e4da8d3/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "cli_sha256": "37650421740af0725347c5f9e1e8487ad50009a67055116fb3e74bdf6de82840",
+  "native_sha256": "2fc3224e1d5a950ba641aac818307013287101eb884d25018a6630f98f9b5ae7",
+  "finished_at": "2026-11-06T09:53:54.414201+00:00",
+  "verdict": "PASS: immutable projection composition qualification; distributed alignment, durable recovery, fencing and production performance remain outside this gate; finite planning coverage, unrelated streaming startup and mixed-marker costs remain explicit limits"
+}

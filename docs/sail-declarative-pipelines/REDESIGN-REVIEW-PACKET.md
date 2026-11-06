@@ -39,8 +39,10 @@ reference isolates synchronous and supported asynchronous projection, preserves
 names and metadata, and reconstructs the node on workers. Its immutable workspace
 and selected public checks passed. A mandatory compiler phase now protects
 executable sources before data pruning, retaining safe scan pushdowns and expression
-sharing. Mixed-marker execution remains costly; short streaming compilation adds
-startup cost, and a shared alias optimizer defect remains. The
+sharing. An owned projection optimizer preserves repeated calculations and declared
+schemas, with qualified identity-chain performance and ownership controls.
+Mixed-marker execution and short streaming startup costs remain. The
+[composition results](PROJECTION-COMPOSITION-RESULTS.md),
 [foundation results](STREAMSOURCE-FOUNDATION-RESULTS.md),
 [projection results](STREAMSOURCE-PROJECTION-RESULTS.md) and
 [source participation results](STREAMSOURCE-PARTICIPATION-RESULTS.md) give exact evidence
