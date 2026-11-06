@@ -140,7 +140,7 @@ polling need measurement before selecting a policy.
 
 | Area | Current demonstrated state | Work still required |
 | --- | --- | --- |
-| Flow-event foundation | Local repairs preserve Arrow fidelity and zero-column rows, isolate filter predicates and report terminal query failures; workspace and selected public checks passed | Projection/asynchronous isolation, mixed-marker performance and complete termination semantics |
+| Flow-event foundation | Local repairs preserve Arrow fidelity and zero-column rows, isolate filter and supported projection expressions, preserve worker reconstruction and report terminal failures; workspace and selected public checks passed | Source identity across optimization, mixed-marker performance, collector retractions and complete termination semantics |
 | Source and checkpoint protocol | Existing planning/actor seams inspected; limited source and merge prototypes exist | Live attempt-scoped controls, transport alignment, durable preparation and process-restart recovery |
 | Durable targets and change capture | Existing bounded-runtime behavior and transaction mechanisms inspected | Enforced adapters for every admitted target, deterministic streaming reducer/merge and migration |
 | Extensions | Existing host inspected; standalone adapter source reviews, immutable workspace checks and pinned Comet SDK probes passed locally | Package/worker integration, resource admission and C relations remain separate increments |
@@ -182,7 +182,7 @@ different computations under the same recovery identity.
 
 ## Review compendium and immediate decisions
 
-The implementation branch and its limited checks are detailed in
+The flow-event and filtering repairs are detailed in
 [foundation results](STREAMSOURCE-FOUNDATION-RESULTS.md). The
 [pipeline plan](REDESIGN-PLAN.md),
 [streaming architecture](STREAMING-ARCHITECTURE.md) and
@@ -191,6 +191,20 @@ The [extension integration plan](EXTENSIONS-STREAMSOURCE-INTEGRATION.md) preserv
 both native routes. The [standalone scalar results](COMET-SCALAR-RESULTS.md) qualify
 the component evidence. The [standalone scalar plan](COMET-SCALAR-ADAPTER.md) and
 [filter batching note](STREAMSOURCE-FILTER-BATCHING.md) bound the immediate work.
+The [projection plan](STREAMSOURCE-PROJECTION.md) and
+[projection results](STREAMSOURCE-PROJECTION-RESULTS.md) establish ordered data-only
+synchronous and supported asynchronous evaluation, nullable marker construction,
+qualified names, metadata and worker reconstruction in the local reference.
+Workspace and selected public checks passed. Standard metrics remain enabled;
+data-only component costs are close to ordinary projection, while mixed-marker
+fragmentation remains material. Logical optimization can erase a streaming source
+before detection, so preserving source participation remains a correctness obligation
+before any global expression-isolation or recovery claim.
+
+Which source-preservation boundary prevents optimization from erasing checkpoint
+participants? Settle it with constant-false and zero-output flows. Which bounded
+batching policy preserves marker-before-error ordering under measured memory
+and latency limits?
 
 Which replayable source and fenced target will qualify the first durable append
 path? Decide using actual replay, publication and external-writer constraints.

@@ -1,0 +1,138 @@
+{
+  "started_at": "2026-11-06T04:12:30.862847+00:00",
+  "mode": "precommit",
+  "head": "06dd7e237eb5a343dcc6a6145e775f495e6c30de",
+  "tree": "bb8699fdfbc4ca88fa6c0e816e189af80e560efd",
+  "cumulative_sha256": "7f2cf1d64419f8968e311f04b4b132bed8ee05e5e94be995dcf083b10dd9f8aa",
+  "review_sha256": {
+    "RESEARCH.md": "7b3b065f018d5984bb74a1a402253aeeb8b0d45e77f8de0587f5b30f1c78b8b7",
+    "DESIGN-QUALITY-REVIEW.md": "887c2970d4614dc05d3d787c62db7fda4acc0246348846011f806ee878be8e5d",
+    "TEST-CASE-REVIEW.md": "3fbbae0fe0eeaf13bae40fac61c2bfc193def7db54c9b592274b48bf7d9426b1",
+    "SCOPE-REVIEW.md": "cf77cbfdbad8d41e846614f4956a34d14ad9fa674ef0d3e126cfafc80bc2f18f",
+    "REGRESSION-REVIEW.md": "2ad4490854a3732b0b72efa7d42245fcb86d4b64afe9035f1753cb47c0fcfa26",
+    "PERFORMANCE-REVIEW.md": "f7fa9fe65156272d13ad232ba02081d157eb89baeaec1da7f8eece9ebfc7aded",
+    "SPARK-SEMANTICS-REVIEW.md": "06ba496d5fc140a5df94e2e43f797de799939c9beb6b883a3c54642153a9003b"
+  },
+  "free_disk_bytes": 330146603008,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T04:12:30.997364+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:12:31.550915+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T04:12:31.823947+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:12:35.800590+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-logical-plan"
+      ],
+      "started_at": "2026-11-06T04:12:36.068313+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:12:41.197064+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "04-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-telemetry",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-06T04:12:41.491518+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:13:17.605997+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "05-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "nextest",
+        "run",
+        "--locked",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-telemetry",
+        "--no-fail-fast"
+      ],
+      "started_at": "2026-11-06T04:13:17.924825+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:14:59.477458+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/streamsource-projection-20261105-06dd7e237/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "finished_at": "2026-11-06T04:14:59.792842+00:00",
+  "verdict": "PASS: precommit streaming projection qualification; source detection, distributed alignment, durable recovery and production performance remain outside this gate"
+}

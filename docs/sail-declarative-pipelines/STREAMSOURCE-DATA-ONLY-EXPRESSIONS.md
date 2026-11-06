@@ -5,7 +5,7 @@ control markers as user data. A valid cast must not fail because a checkpoint
 carries an empty-string placeholder, and a function must not run on that placeholder.
 Add small flow-aware operators within Sail's existing planner and execution model.
 
-This increment isolates expression evaluation. It does not implement checkpoint
+This design isolates expression evaluation. It does not implement checkpoint
 alignment, durable sinks, new event-time rules or general stateful streaming.
 
 ## Existing execution and the failure
@@ -15,13 +15,13 @@ columns. A non-null marker value identifies a control row; otherwise the row is
 data and its retraction flag says whether it cancels a previously emitted row.
 Marker payload fields contain placeholders solely to satisfy the batch schema.
 
-The streaming rewriter runs after logical optimization. It currently retains an
-ordinary projection and prepends the two control columns. For filters, it builds
+The streaming rewriter at the inspected baseline runs after logical optimization.
+It retains an ordinary projection and prepends the two control columns. For filters, it builds
 `user_predicate OR marker_present` inside `StreamFilterExec`. That physical node
 calls DataFusion's batch filter on the whole encoded batch.
 
-Neither path isolates user expressions. A strict integer cast of a nonnullable
-string sees the marker's empty string and fails. Checking the marker first in
+Neither baseline path isolates user expressions. A strict integer cast of a
+nonnullable string sees the marker's empty string and fails. Checking the marker first in
 one Boolean expression is insufficient: projections and arbitrary functions
 remain exposed, and evaluation transformations must not become safety assumptions.
 
@@ -182,3 +182,9 @@ No deliberate Spark data-expression change is proposed. Spark 4.2.1's
 [projection and filter operators](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/core/src/main/scala/org/apache/spark/sql/execution/basicPhysicalOperators.scala#L46)
 evaluate data rows. Sail's own control representation must stay outside that
 evaluation. That comparison is source inspection, not an executed parity result.
+
+The local reference now implements filter and supported projection boundaries,
+with immutable workspace and selected public checks recorded in the
+[projection results](STREAMSOURCE-PROJECTION-RESULTS.md). Logical source erasure
+before streaming detection remains outside these operators; preserving source
+participation is required before a global isolation or recovery claim.

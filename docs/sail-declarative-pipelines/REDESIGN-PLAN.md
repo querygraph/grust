@@ -14,7 +14,7 @@ client prerequisites for that path.
 ## Repair the foundation before promising recovery
 
 Sail already carries data and ordered control markers through streaming plans.
-The current rewrite can evaluate user expressions on marker placeholder rows;
+At Sail `b52144955`, the rewrite can evaluate expressions on marker placeholders;
 fan-in and shuffle do not establish graph-wide checkpoint alignment. Component
 probes also reproduced zero-column decoding, decimal placeholder and schema
 metadata defects. A local reference implementation now repairs event fidelity,
@@ -24,9 +24,17 @@ a material filtering cost that persists in optimized component diagnostics.
 The branch and evidence are described in
 [Streaming foundation repairs and remaining decisions](STREAMSOURCE-FOUNDATION-RESULTS.md).
 
-A flow-aware transform should evaluate user code only on data and forward markers
-without alteration. Extend the implemented filter boundary to projection and
-asynchronous expression evaluation. Use Sail-owned adapters or narrowly attributed
+A local projection increment now evaluates synchronous and supported asynchronous
+expressions only on ordered data runs, preserves qualified names and metadata,
+and reconstructs the node through the worker codec. Its immutable workspace and
+selected public checks passed. Standard metrics remain enabled; mixed-marker
+fragmentation still has material cost. Logical optimization can erase a streaming
+source before detection, so preserve source participation before claiming global
+isolation or durable coordination. The
+[projection results](STREAMSOURCE-PROJECTION-RESULTS.md) bound the evidence.
+
+A flow-aware transform must evaluate user code only on data and forward markers
+without alteration. Use Sail-owned adapters or narrowly attributed
 implementations where dependency behavior must change; avoid accumulating expression-specific
 workarounds. Preserve existing stateless behavior with controls that fail on
 the unmodified path.

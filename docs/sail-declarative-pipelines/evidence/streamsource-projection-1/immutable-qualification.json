@@ -1,0 +1,185 @@
+{
+  "started_at": "2026-11-06T04:15:00.446456+00:00",
+  "mode": "immutable",
+  "head": "327572240365e2507f348ee92bc009cbfc67abe9",
+  "tree": "bb8699fdfbc4ca88fa6c0e816e189af80e560efd",
+  "cumulative_sha256": "7f2cf1d64419f8968e311f04b4b132bed8ee05e5e94be995dcf083b10dd9f8aa",
+  "review_sha256": {
+    "RESEARCH.md": "7b3b065f018d5984bb74a1a402253aeeb8b0d45e77f8de0587f5b30f1c78b8b7",
+    "DESIGN-QUALITY-REVIEW.md": "887c2970d4614dc05d3d787c62db7fda4acc0246348846011f806ee878be8e5d",
+    "TEST-CASE-REVIEW.md": "3fbbae0fe0eeaf13bae40fac61c2bfc193def7db54c9b592274b48bf7d9426b1",
+    "SCOPE-REVIEW.md": "cf77cbfdbad8d41e846614f4956a34d14ad9fa674ef0d3e126cfafc80bc2f18f",
+    "REGRESSION-REVIEW.md": "2ad4490854a3732b0b72efa7d42245fcb86d4b64afe9035f1753cb47c0fcfa26",
+    "PERFORMANCE-REVIEW.md": "f7fa9fe65156272d13ad232ba02081d157eb89baeaec1da7f8eece9ebfc7aded",
+    "SPARK-SEMANTICS-REVIEW.md": "06ba496d5fc140a5df94e2e43f797de799939c9beb6b883a3c54642153a9003b"
+  },
+  "free_disk_bytes": 330117611520,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T04:15:00.665587+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:15:01.129045+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T04:15:01.482677+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:15:05.387327+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-logical-plan"
+      ],
+      "started_at": "2026-11-06T04:15:05.741349+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:15:06.501923+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "04-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-06T04:15:06.856153+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:16:40.320965+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "05-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "nextest",
+        "run",
+        "--locked",
+        "--workspace",
+        "--no-fail-fast",
+        "--test-threads",
+        "8",
+        "--status-level",
+        "fail",
+        "--final-status-level",
+        "fail"
+      ],
+      "started_at": "2026-11-06T04:16:40.734909+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:22:12.485470+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "06-python-format",
+      "command": [
+        "uvx",
+        "--offline",
+        "hatch",
+        "fmt",
+        "--check",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py",
+        "python/pysail/tests/_dev/spark/streaming/test_projection.py"
+      ],
+      "started_at": "2026-11-06T04:22:12.984848+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:22:13.480408+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "07-cli",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-cli"
+      ],
+      "started_at": "2026-11-06T04:22:13.848129+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:23:47.330410+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "08-public",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Users/alexy/src/sail/tmp/streamsource-projection-20261105-06dd7e237/review-logs/run-public-tests.py",
+        "projection-immutable-public",
+        "/Users/alexy/src/sail/tmp/streamsource-projection-20261105-06dd7e237/review-logs/immutable-qualification/sail",
+        "python/pysail/tests/_dev/spark/datasource/test_rate.py",
+        "python/pysail/tests/_dev/spark/streaming"
+      ],
+      "started_at": "2026-11-06T04:23:48.690678+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:23:59.694201+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "09-source-erasure-probe",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Users/alexy/src/sail/tmp/streamsource-projection-20261105-06dd7e237/review-logs/run-public-tests.py",
+        "projection-source-erasure",
+        "/Users/alexy/src/sail/tmp/streamsource-projection-20261105-06dd7e237/review-logs/immutable-qualification/sail",
+        "review-logs/source_erasure_public_probe.py",
+        "-s"
+      ],
+      "started_at": "2026-11-06T04:24:00.044720+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T04:24:01.496071+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/streamsource-projection-20261105-06dd7e237/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "cli_sha256": "23a3ed7fe413b3bf4e31319520f10c8a0c442e346f3dce85aa80f59562273de6",
+  "finished_at": "2026-11-06T04:24:01.847335+00:00",
+  "verdict": "PASS: immutable streaming projection qualification; source detection, distributed alignment, durable recovery and production performance remain outside this gate"
+}

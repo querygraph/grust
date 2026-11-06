@@ -1,0 +1,46 @@
+{
+  "recorded_at": "2026-11-06T04:06:02.411811+00:00",
+  "records": [
+    {
+      "artifact": "controls/marker-evaluation.log",
+      "outcome": "Three selected tests fail when marker handling is replaced with ordinary expression projection."
+    },
+    {
+      "artifact": "empty-sync-control.log",
+      "outcome": "Empty synchronous batch invokes expression once; expected zero. Guard repair passes."
+    },
+    {
+      "artifact": "nullable-marker-control.log",
+      "outcome": "Oversized run-end fixture not applicable because MemorySource split input at default8192; retained, not counted as panic."
+    },
+    {
+      "artifact": "nullable-marker-control-v2.log",
+      "outcome": "Corrected fixture proves full32767/32768 rows arrive in one batch. Four direct/nested nullable run-end cases and one fixed-size child multiplication panic before repair."
+    },
+    {
+      "artifact": "empty-dictionary-control.log",
+      "outcome": "Empty dictionary constructs unused oversized value and panics before repair."
+    },
+    {
+      "artifact": "nonnull-marker-counterexample.log",
+      "outcome": "All-nonnull placeholder policy refuses a valid nullable dictionary; this rejected policy is superseded by fallible nullable constructor."
+    },
+    {
+      "artifact": "metrics-control.log",
+      "outcome": "Two tests fail without baseline metrics and exporter routing."
+    },
+    {
+      "artifact": "controls/metrics-dispatch.log",
+      "outcome": "After baseline repair, removing only typed dispatch fails for missing expression evaluation export."
+    },
+    {
+      "artifact": "metrics-tests.log",
+      "outcome": "Intermediate test used sum_by_name for built-in metrics, which the API excludes. Changed lookup to typed MetricsSet::sum; exact expected counts remain unchanged."
+    },
+    {
+      "artifact": "precommit-qualification-failed-rustdoc-v1/receipt.json",
+      "outcome": "Precommit chain stopped before commit on two pre-existing unresolved RecordBatch links. Links qualified; strict Rustdoc retry passed."
+    }
+  ],
+  "boundary": "Raw controls and source patches are retained locally under the projection worktree review-logs. These are preceding implementation/fixture observations, not final-source gate claims."
+}

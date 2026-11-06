@@ -1,0 +1,79 @@
+{
+  "started_at": "2026-11-06T03:26:16.270962+00:00",
+  "mode": "precommit",
+  "head": "06dd7e237eb5a343dcc6a6145e775f495e6c30de",
+  "tree": "b67d1a9416d22241ab0359e2ef96dcdf3c678757",
+  "cumulative_sha256": "c34dcc56ba6d8f7260e7d6eb0997a7dd016fd07de6e79d5a2424da574d6cf1bf",
+  "review_sha256": {
+    "RESEARCH.md": "a9938611ab3b8a2de868f0ad5eedc698234c7b4471ee2a66ccae2eabc80656b4",
+    "DESIGN-QUALITY-REVIEW.md": "05ca590f180140e5f6480ddd02eb59a594efc4f990db110fc633d47bd3d1af1b",
+    "TEST-CASE-REVIEW.md": "a16bd6136677ff34fc2b9c688b34e3ca5b41c672a51f51bd4aeab52b04fd67fd",
+    "SCOPE-REVIEW.md": "aaf2963517b7c7df6904a13bf201900055e72675437d450ae0fa130721f7d5e5",
+    "REGRESSION-REVIEW.md": "5d642bc3cec4b2b91924aaaa61c65f194829f6f3d23fc34873886fd26bde4a3b",
+    "PERFORMANCE-REVIEW.md": "6445e7188fdadd63259a0c3dab4078804f45f1ed4b86f7d71cd59710a924e394",
+    "SPARK-SEMANTICS-REVIEW.md": "6512d1e2182ca7aa2026b6484a8223804ad6b669478a7e890b2de5c44bea3481"
+  },
+  "free_disk_bytes": 334489276416,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T03:26:16.408840+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T03:26:39.533567+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T03:26:39.835026+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T03:26:43.696677+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-logical-plan"
+      ],
+      "started_at": "2026-11-06T03:26:43.962350+00:00",
+      "exit_code": 101,
+      "finished_at": "2026-11-06T03:27:27.988693+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/streamsource-projection-20261105-06dd7e237/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  }
+}
