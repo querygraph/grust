@@ -181,8 +181,9 @@ local Delta fixtures, including persistent empty anchors. This unit needs no che
 store, scheduler or common position framework, and advertises no replay capability.
 
 Before capture, repair [sorted replay's payload lifetime](DELTA-SORTED-REPLAY.md);
-output paging cannot bound buffers retained upstream. Implement bounded segment
-capture and manifest publication through the caller's
+output paging cannot bound buffers retained upstream. Preserve complete Add metadata
+through the [capture payload contract](DELTA-ADD-PAYLOAD.md), including its validation
+and provenance boundaries. Then implement bounded segment capture and manifest publication through the caller's
 existing storage and resource interfaces. Define the Delta position format against
 those manifests. Finally implement the persistent reader, plan codec and control-position
 envelope. Its identity, order and input admission contract must precede that integration.
