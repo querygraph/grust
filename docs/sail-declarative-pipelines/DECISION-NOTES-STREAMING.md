@@ -76,7 +76,8 @@ must associate it with source positions, state and effects before it supports
 recovery. Marker isolation from data expressions is required, not a selectable
 policy.
 
-Use flow-aware operators that evaluate data only. At every admitted exchange,
+Either dedicated streaming operators or changes to existing operators must evaluate
+data only; that implementation boundary remains a choice. At every admitted exchange,
 route markers to all required participants and establish a consistent boundary
 before snapshotting or forwarding. Ordinary asynchronous fan-in and payload-based
 hash routing do not provide that contract.

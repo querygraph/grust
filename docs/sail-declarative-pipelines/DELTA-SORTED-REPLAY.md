@@ -2,29 +2,32 @@
 
 A Delta snapshot reconstructs the active files from Add and Remove actions. Sail
 already supports doing this through an externally sorted stream, which can spill
-history to disk. Bounded manifest capture should reuse that operator. First repair
-its private output buffer: a small number of retained rows can currently keep many
-large Arrow input buffers alive.
+history to disk. Bounded manifest capture should reuse that operator. The previous
+private output buffer let a small number of retained rows keep many large Arrow
+input buffers alive.
+
+The repair below is implemented and [locally qualified](evidence/delta-sorted-replay-1/README.md),
+including measured downstream scan costs. Manifest capture and the continuous reader remain unbuilt.
 
 This plan concerns `DeltaLogReplayExec` in Sort mode. It changes neither the Delta
 reconciliation rule nor the choice between sorted and hash replay. It is an optional
 implementation reference for the [Delta source design](DELTA-REPLAY-SOURCE.md).
 
-## Why the existing buffer grows
+## Why the previous buffer grew
 
 The child orders actions by logical file key, newest version first, with Add before
 Remove on an equal version. The first action for a key therefore decides its result:
 emit that Add, or emit nothing for that Remove. Older actions cannot change it.
 
-The current operator instead saves a one-row Arrow slice until the key changes, then
-accumulates slices until it has at least 8,192 winners. An Arrow slice shares its
+The previous operator saved a one-row Arrow slice until the key changed, then
+accumulated slices until it had at least 8,192 winners. An Arrow slice shares its
 parent buffers. For example, retaining one file description from each of many wide
 input batches can retain all those batches, even when the useful descriptions are
-small. The Sort branch has no memory reservation for this retained payload. A row
+small. That Sort branch had no memory reservation for this retained payload. A row
 threshold does not bound its bytes.
 
-This ownership problem also affects ordinary Delta reads using sorted replay. A
-manifest writer that pages the eventual output would leave it intact.
+This ownership problem also affected ordinary Delta reads using sorted replay. A
+manifest writer that merely paged the eventual output would have left it intact.
 
 ## Recommend emitting winners from each input batch
 

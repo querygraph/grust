@@ -28,8 +28,8 @@ in the pipeline scheduler would leave other write paths and paused workers
 able to bypass it.
 
 A bounded change-capture implementation provides reusable reference code for
-filesystem-managed Delta: stage exact log bytes, ratify them through a control
-authority, then publish with create-only semantics. The authority retains the
+filesystem-managed Delta: stage exact log bytes, record their approval in a durable
+commit service, then publish by creating the log entry only if absent. The service retains the
 staged path and digest so a successor can finish an accepted publication.
 Its table property and server registry reject unfenced cooperating Sail writers.
 This is not yet a universal or distributed StreamSource commit capability.

@@ -139,9 +139,11 @@ standard. This file is the rest.
   anything binds. Native memory is funded through a small C lease. The
   Arrow-only C scalar boundary (Sedona's, adopted by Comet) is small enough
   to carry without either project's crate.
-- **Delta's idempotent writes** (`txnAppId`, `txnVersion`) are the native tag
-  for an exactly-once checkpoint commit; the table skips a version it already
-  holds.
+- **Delta transaction tags identify repeated writes, not complete recovery.**
+  Supporting writers can use `txnAppId` and `txnVersion` to recognize an append
+  already committed. The local prototype demonstrated that mechanism separately;
+  the qualified streaming stack still lacks its public writer wiring. Reproducible
+  input, fixed prepared output and rejection of replaced writers remain necessary.
 - **An external client's dependency floor can keep a crate off `main`.** The
   Iggy client needs newer HTTP and QUIC crates than upstream's lockfile
   holds; moving two hundred packages is not a reviewable change.

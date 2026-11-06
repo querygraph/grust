@@ -4,6 +4,8 @@ A replayable source needs a saved description of each admitted input file. An or
 
 Build a capture-specific path on Sail's existing Arrow action schema and sorted replay. Preserve every meaningful Add field under the admitted Delta protocol, and keep snapshot membership separate from original commit provenance. This plan adds one focused prerequisite at a time; durable manifest capture remains the intended result.
 
+The strict decoder described below is implemented and [locally qualified](evidence/delta-add-payload-1/README.md) as a private component. Capturing file lists and integrating the continuous reader remain unbuilt.
+
 ## Existing components and alternatives
 
 Sail already defines the complete known Add schema, including partition values, statistics, tags, deletion vectors and row-tracking fields. Sorted replay can carry arbitrary payload columns while selecting surviving actions. The read descriptor fixes table interpretation and a starting boundary.
@@ -18,7 +20,7 @@ Add a crate-private decoder borrowing an Arrow `StructArray`. Construct it once 
 
 Accept the existing action field names and exact Arrow types. Required fields must exist and non-null action rows must supply non-null path, partition map, size, modification time and `dataChange`. Refuse negative size, wrong types for recognized optional fields, and the malformed map or deletion-vector structures specified below. Preserve row-tracking integers; validating their table-level semantics requires capture admission. Preserve false `dataChange`, all partition/tag entries, statistics, row IDs and clustering information. Missing optional fields and null optional values mean semantic absence; present empty strings and maps remain distinct.
 
-Reject duplicate schema names and duplicate or null map keys before conversion to a Rust map. Preserve a missing partition key separately from a present null value. This decoder does not infer partition coverage from arbitrary columns; capture admission must establish its descriptor-specific requirements.
+Reject duplicate schema names in the Add and recognized map-entry and deletion-vector structures, and duplicate or null map keys before conversion to a Rust map. Unknown nested fields are not recursively inspected. Preserve a missing partition key separately from a present null value. This decoder does not infer partition coverage from arbitrary columns; capture admission must establish its descriptor-specific requirements.
 
 Input paths are URI-encoded action paths. Decode exactly once using Sail's existing path utility. Do not decode the resulting Add again, resolve path aliases or collapse distinct replay keys. Validate deletion-vector descriptor structure: known storage type, nonnegative size, cardinality and optional offset, with no offset for inline storage. Preserve an absent offset. This checks neither external vector bytes nor bitmap contents and advertises no reader support for active vectors. Snapshot capture will separately refuse active vectors under its initial admission contract.
 

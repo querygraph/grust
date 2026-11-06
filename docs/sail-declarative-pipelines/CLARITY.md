@@ -22,6 +22,18 @@ alternatives, tradeoffs and requested decision within the document itself.
 Define each necessary term before using it. Use one name consistently for
 one concept, and distinguish similar concepts when the distinction matters.
 
+Assume systems-engineering knowledge, not experience building Delta or streaming
+engines. Start with the operation and the failure it must survive. For example,
+explain why a paused worker must lose permission to commit before naming that
+protection “fencing.” Say what a source or package must support before calling
+the check “admission.” Prefer the plain explanation when the specialist name
+adds nothing. Defining a term once does not make a paragraph of such terms fluent.
+
+Keep the actor and action visible: who saves progress, who accepts a write, and
+what happens after a lost reply. Separate an engine's saved recovery point from
+publication in an external table. Explain technical distinctions where they affect
+behavior, rather than making the reader decode stacks of abstract nouns.
+
 A review sequence may establish a shared model and then develop its consequences.
 Each document must supply the context needed for its own question, including a
 short explanation of any shared guarantee it uses. It need not repeat the full

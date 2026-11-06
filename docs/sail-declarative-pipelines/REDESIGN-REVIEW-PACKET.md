@@ -1,45 +1,117 @@
 # Decisions for recoverable streaming pipelines on Sail
 
-Review whether the proposed streaming pipelines, change capture and native Extensions fit Sail's continuous execution model, and select the boundaries of the first implementation milestone. The initial delivery should prove one replayable Delta source feeding one fenced append target through process restart. Keyed change capture follows that recovery contract. Extensions remain separately packaged; Comet's Arrow-only scalar interface is an optional additional boundary.
+Sail Declarative Pipelines should keep tables current from declared computations and
+resume safely after failures. The proposed design uses Sail's continuous execution
+model, adds deterministic updates and deletions, and preserves separately packaged
+native Extensions. The first milestone should prove one replayable source feeding
+one append-only destination through a process restart.
 
-Sail already transports data, retractions and ordered control markers. A retraction cancels an earlier row. `StreamSource` describes a scan, while an executing task owns the running source. Existing job runners, driver/task actors, physical-plan codecs and format/catalog commit paths are the integration points. The proposal extends those components; it does not introduce a bounded microbatch engine or a local-mode driver.
+This memo asks for three architectural decisions. The components built so far provide
+reference implementations and tests; they do not yet form a recoverable pipeline.
+The decisions determine which components to integrate and what the first delivery promises.
 
-Recovery needs more than saved source positions. Before publishing table effects, persist the exact prepared boundary and its intended effects. If publication succeeds but its reply is lost, reconcile that same effect identity after restart. Every admitted target must reject obsolete owners at acceptance. These are required guarantees; the mechanisms below remain choices.
+## Use Sail's existing execution ownership
 
-## Execution ownership and expression isolation
+Sail already carries data and ordered control messages through streaming plans. A
+`StreamSource` describes a reader; the executing task owns the actual running reader.
+Local execution uses the job runner. Distributed execution uses driver and task actors.
 
-A planner object cannot control the source instance reconstructed on a worker. Checkpoint requests, cancellation and acknowledgements must reach the task that actually owns it, and late responses from replaced tasks must not advance progress.
+Checkpoint requests must reach those live readers, including readers waiting for input.
+A checkpoint is a saved recovery point matching input positions, computation state and
+intended output. A message passing through the plan identifies its boundary but does
+not itself make that state durable. Responses from a replaced task must not advance
+the new task's progress.
 
-**Recommend routing source controls through the existing local job runner or distributed driver/task actors.** A separate coordinator can span independent jobs, but adds another lifecycle and authority boundary. Select it only if that cross-job requirement belongs in the first delivery. Real worker replacement and cancellation tests must establish the chosen route.
+**Recommend coordinating through the existing job runner and distributed actors.** A
+separate coordinator could span independent jobs, but introduces another lifecycle and
+ownership boundary. Use it only if coordination across jobs belongs in the first delivery.
+Local control tests support the proposed route; real worker replacement and cancellation
+still need testing.
 
-Control markers also pass through operators that normally evaluate row expressions. Evaluating a user cast or arithmetic expression on an internal placeholder can fail a query that has valid data. Two reasonable mechanisms are dedicated flow-aware filter/projection operators, or changes to existing operators so they evaluate only data rows.
+There is a related operator choice. User expressions must evaluate data, not internal
+control placeholders: a cast on a placeholder can fail a valid query. Dedicated streaming
+filter and projection nodes work locally, but alternating data and control messages
+produce expensive small batches. Adapting existing operators is another reasonable
+mechanism. **Choose which operator boundary Sail should maintain.** Both options must
+preserve message order and pass performance checks; the current reference code does
+not settle that choice.
 
-The local flow-aware implementation provides a concrete reference, including worker reconstruction, but mixed marker/data inputs can fragment output into costly small batches. **Choose the operator boundary before extending that architecture.** Require data-only evaluation, preserved event order and measured batching costs from either option; component correctness alone does not settle the performance choice.
+## Choose where a destination accepts a write
 
-## First source, target and failure model
+Delta stores table data in files and records table changes in a transaction log.
+It is a practical first source and destination because Sail already reads and writes
+it. Use separate source and target tables, initially with the local job runner.
+The source requires retained immutable files and a stable storage location. Its
+saved description and replay repairs are built; the complete saved file list and
+continuous recovery reader remain to be built and integrated.
 
-The Delta descriptor and sorted-replay repairs provide reusable source foundations. Complete manifest capture, a replay-qualified reader, durable preparation and restart integration remain unbuilt. A manifest must preserve file membership and interpretation; it does not itself retain missing data files.
+Recovery has two distinct problems. A write may succeed but lose its reply, so restart
+must look up that same write instead of issuing a new one. Also, a paused worker may
+resume after a replacement has taken over. Reading the newest table version does not
+restore its permission to write. The destination must check current ownership together
+with acceptance of each write. This rejection of obsolete writers is called fencing.
 
-For the target, ordinary version ordering and transaction tags are insufficient. An obsolete writer can reload the newest table and still submit a fresh write. Ownership must participate in the same serialized acceptance decision as the effect.
+**Support one Delta append target first, and select its commit mechanism before code.**
+The alternatives are:
 
-**Start with one Delta source and one explicitly admitted Delta append target; select its authority mechanism before code.** Reasonable options are:
+| Mechanism | Why consider it | What must be established |
+| --- | --- | --- |
+| Extend an existing catalog's commit operation | Reuses the catalog's control over table changes | It can atomically check ownership and recognize the exact repeated write; version ordering alone is insufficient |
+| Record ownership and append decisions in the same Delta log | Orders takeover and writes together without another commit history | A required writer protocol and enforcement or refusal on every permitted write path, including other engines |
+| Use a separate durable commit service | Can provide one acceptance interface for several table formats | Protection against direct writes, recovery of accepted but unpublished output, and safe service restart and restore |
 
-- Use a catalog's existing acceptance boundary, extended to check ownership and effect identity. This best reuses a managed catalog when it can express the contract; generic catalog serialization is not proof that it can.
-- Put ownership and append acceptance in the same Delta log. An exact-next-version create can serialize takeover and append without a second acceptance history. This needs an explicit required writer feature, enforcement or refusal on every permitted mutation path, and interoperability review.
-- Ratify exact staged effects through a separate durable authority, then publish them. This can serve multiple adapters, but requires recovery of accepted-yet-unpublished effects and a qualified authority restart/restore model.
+Prefer an existing catalog if it can enforce the contract. For a filesystem-managed
+Delta target, compare the same-log and protected-service designs explicitly; neither
+is selected by this memo. A property that only cooperating Sail writers honor cannot
+control other permitted clients. Creation, maintenance and retries need the same
+protection as ordinary appends.
 
-For a local-filesystem first target, process crashes with the OS and filesystem surviving are a narrower initial qualification than power loss or multi-host failover. Current create-only local publication does not establish power-loss durability. Select that failure model explicitly, or require the broader durability work in the first milestone. A protected commit endpoint is an alternative when storage access must enforce the authority boundary; its deployment and availability costs must be included.
+The first failure model also needs a choice. Surviving a process crash while the OS
+and filesystem remain running is narrower than surviving power loss or machine loss.
+Existing create-only file publication does not establish power-loss durability.
+**Recommend the narrower process-crash milestone with that limit stated explicitly,**
+or include the broader storage work in the first delivery. Managed Delta and Iceberg
+remain required subsequent adapters, each with demonstrated ownership enforcement.
 
-No selected target may expose an unfenced durable-write fallback. Creation, takeover, retries and cleanup must respect accepted or uncertain effects. Managed Delta and Iceberg remain required adapters for the full design, each admitted only after its own enforcement is demonstrated.
+## Keep existing native packages and select the Comet interface explicitly
 
-## Native package boundary
+Existing Extensions use DataFusion's foreign-function interface, which connects compiled
+libraries through DataFusion types. Apache DataFusion Comet, a native accelerator for
+Spark, offers an Arrow-only C interface for scalar
+functions. It reduces coupling to those Rust types, but its binary contract must still
+be pinned and checked against the producer.
 
-Existing native packages use DataFusion's foreign-function interface. Comet offers a smaller Arrow-only scalar interface with a separately pinned binary contract. Replacing the existing package route would broaden migration and compatibility work; supporting both requires explicit export selection and two well-defined admission paths.
+Replacing the existing interface would force package migration alongside streaming work.
+Supporting both adds loader and compatibility responsibilities. **Recommend preserving
+the existing route and letting each exported function select the additional C interface.**
+Decide whether that extra boundary belongs in Sail's host.
 
-**Recommend preserving the existing route and selecting the C scalar route per export.** Decide whether that additional boundary belongs in Sail's host. Before package admission, verify host/worker identity, allocation ownership, cancellation and result lifetime. Standalone SDK probes do not establish package integration or compatibility with other Comet versions. A relation interface is a separate decision.
+Standalone adapter and producer probes support feasibility. Package and worker integration
+must still verify matching code, memory ownership, cancellation and returned-array lifetime.
+Native code remains trusted code; a version check is not a sandbox. A C interface for
+relations is a separate decision because scalar calls do not define source execution.
 
-## Review outcome and supporting sequence
+## What Flink contributes to these decisions
 
-Record the chosen source-control and operator boundaries, first target authority and failure model, and native package boundary. Size the first delivery around one source, one target and append recovery; resolve these choices before further dependent implementation. Strict typed configuration, optional Dhall authoring, deterministic change semantics and fencing remain full-design requirements. Spark compatibility cannot justify weaker engineering guarantees.
+Flink's Materialized Tables pair declarations with continuously running jobs. Its runtime
+coordinates source and operator snapshots, while connectors determine when output becomes
+visible. Iceberg's Flink connector can complete a checkpoint before a table commit succeeds.
+This supports keeping saved recovery progress separate from publication status. Flink's
+internal ownership checks also do not prove that an arbitrary table rejects an old writer.
+The [Flink comparison](FLINK-COMPARISON.md) supplies versioned sources and explains the
+implications; it does not substitute for testing Sail's chosen target.
 
-The primary proposal sequence is [overall scope and readiness](HUMAN-REVIEW.md), [streaming](STREAMING-ON-STREAMSOURCE.md), [change capture](CHANGE-CAPTURE-ON-STREAMSOURCE.md), then [Extensions](EXTENSIONS-STREAMSOURCE-INTEGRATION.md). Each develops a distinct part of the design. The [delivery plan](REDESIGN-PLAN.md), decision notes and evidence are optional references for specific questions. Local reference implementations establish only their recorded component claims; they do not establish integrated recovery or architectural agreement.
+## The requested outcome
+
+Select the execution and operator boundaries, first target's commit mechanism and failure
+model, and native package boundary. Append recovery comes before keyed change capture
+because the latter adds durable record versions to that same recovery path. Configuration
+validation and native interface work can proceed independently once their own boundaries
+are agreed. Strict configuration validation, optional authoring with the typed configuration
+language Dhall, and deterministic change ordering remain requirements. Spark compatibility
+cannot justify weaker behavior.
+
+For fuller context, read [the overview](HUMAN-REVIEW.md),
+[streaming](STREAMING-ON-STREAMSOURCE.md), [change capture](CHANGE-CAPTURE-ON-STREAMSOURCE.md),
+then [Extensions](EXTENSIONS-STREAMSOURCE-INTEGRATION.md). The
+[delivery plan](REDESIGN-PLAN.md) and detailed evidence are optional references.

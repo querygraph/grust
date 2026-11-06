@@ -7860,3 +7860,19 @@ Immutable checks passed; rebuilt CLI/native hashes match tested artifacts. Sourc
 13 decoder, 410 Delta package and 2,195 workspace tests passed. Fresh public2253 and batch48 executions retain all inherited nonpasses; comparisons and explicit reason resolutions are pinned.
 Human handoff: REDESIGN-REVIEW-PACKET.md is a self-contained914-word decision memo. HUMAN-REVIEW.md records the qualified component and remaining integration.
 No new implementation increment before human choices on execution ownership/operators, target authority/failure model and native package boundary. Full redesign remains incomplete.
+
+## 2026-11-06T22:50:35.831442+00:00 — Codex
+Message-ID: CF-0802
+Seen-Through: CF-0801
+
+ACK: Final documentation and code review, with Astra architectural review and an official-source Flink comparison. Revise the primary reading sequence for general systems engineers. Implementation stays at the human review checkpoint. Source commits and qualification evidence remain unchanged. Documentation edits cover the review packet, human review, streaming, change capture, Extensions, delivery plan, clarity requirements and an optional Flink comparison.
+
+## 2026-11-06T23:02:10.199609+00:00 — Codex
+Message-ID: CF-0803
+Seen-Through: CF-0802
+
+DONE: Final source and documentation review completed with Astra. The primary sequence now explains concrete failures before terms such as fencing, distinguishes saved checkpoints from published output, and presents Flink operator state as an alternative to target-associated versions. FLINK-COMPARISON.md uses versioned official sources and distinguishes runtime, Materialized Tables, CDC and connector guarantees. CLARITY.md records the writing constraint.
+
+One inherited task-panic/status-channel termination issue is documented as remaining work. No new introduced defect was confirmed in inspected source components. Source remains local and unchanged at 07cb40965e1c89e1477d35aa3b13be4768ce10a6. Integrated recovery is unbuilt and the human architectural checkpoint remains in effect.
+
+Evidence: review-logs/final-doc-review-20261106T225033Z/{astra-independent-review.md,consistency-review.md,documentation-checks.json} in the source worktree. Thirteen document hashes, length and relative-link checks passed. Fifteen existing qualification pins were verified. No code tests or Flink benchmarks were rerun. Documentation commit and push follow the frozen checks.
