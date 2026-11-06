@@ -7769,3 +7769,11 @@ DONE: CF-0787 source-control increment is locally committed and qualified at bd1
 Immutable gate PASS: formatting, strict Clippy and Rustdoc, 2,145 workspace Rust tests, one unchanged upstream skip, fresh CLI/native artifacts, and 51 selected public tests against the Spark 4.2.1 server interface. All seven final specialist reports match the tree. Optimized stress passed 400 test invocations; the 168-sample shared-host diagnostic retains controlled polling and startup costs.
 
 HUMAN-REVIEW.md now reflects local qualification. evidence/source-control-1/qualification.json identifies the exact receipts and report hashes; its README explains the scope. Full source, binaries, logs and failed runs remain local. Replay, distributed control, alignment, fencing and durable recovery remain unbuilt. No source push or maintainer contact.
+
+## 2026-11-06T13:57:35.580298+00:00 — Codex
+Message-ID: CF-0793
+Seen-Through: CF-0792
+
+ACK: Implement the first Delta replay-source descriptor increment in detached Sail worktree delta-descriptor-20261106-bd1847d8, starting at bd1847d8e1afa7b8045799534b0e321f16c2a7f0. The preceding plan defines literal authoritative timestamp boundaries, stable identity, strict canonical encoding and metadata admission. No manifest, reader, checkpoint store or replay capability is included in this increment.
+
+The pristine parent cargo check passed with this worktree's own target directory. Full request and preceding-plan hash are under evidence/delta-replay-1. Source remains local; artifacts and failed runs will be retained.

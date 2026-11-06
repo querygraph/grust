@@ -48,6 +48,44 @@ that `latest` records an after-V anchor immediately, so later commits are consum
 It must not be re-evaluated on every restart. This deliberately differs from the bounded
 reader's existing empty-first-run behavior; keep its tests and add durable-mode tests.
 
+For timestamp starts, choose the earliest version through the captured head whose
+authoritative timestamp is at least the requested UTC instant. Then consume every
+subsequent version: this selects a prefix boundary, not a continuing time filter.
+Use Delta's enabled in-commit timestamps and legacy log-file modification times;
+ordinary `commitInfo.timestamp` is not a substitute. Preserve submillisecond request
+precision. Equal or decreasing legacy times require an ordered search, not binary
+search. For times 100, 90 and 110 milliseconds, a request at 100 starts at the first
+commit; one at 100.5 starts at the third.
+
+An alternative adjusts legacy times upward to form a monotonic history, as existing
+history presentation does. Prefer literal authoritative times here: the boundary is
+explicit without inventing times. Require timestamp evidence from version zero through
+the first match; missing history or no match fails explicitly. Version, snapshot and
+latest starts remain available without that history walk. This costs one metadata
+search at binding, uses constant auxiliary state and never changes ordinary batch or
+bounded-stream timestamp behavior.
+
+## Admit a precise descriptor
+
+The first descriptor admits path-based Parquet tables with no format options. Reject
+catalog-managed logs without their commit context, unknown protocol features and
+incomplete column mappings. Require globally unique positive mapping IDs and
+sibling-unique physical names on mapped fields, including fields inside collections. Collection
+wrappers and Variant storage children are not separate mapped columns. Pin the full
+schema and normalized protocol feature sets. Initially require exact equality at
+consumed versions, even for otherwise harmless writer-only protocol upgrades; a more
+permissive compatibility relation needs its own evidence.
+
+Use versioned canonical JSON and a domain-separated SHA-256 digest. Sort object keys
+and protocol feature sets while preserving field order. Name the Arrow schema encoding
+version and retain golden fixtures across dependency upgrades. Limit descriptors to
+4 MiB and JSON nesting to 64 containers. Reject duplicate or unknown fields, trailing
+input, unsupported versions and invalid schema structures before conversion. Admit the
+logical Arrow types Delta actually produces; lossy conversion of other Arrow layouts
+is not a valid descriptor. Credentials belong to runtime object-store configuration:
+reject URL userinfo, queries and fragments rather than persisting or silently stripping
+them. Fixed-schema, append-only and fail-on-loss semantics are one closed typed policy.
+
 ## Identify files and retain the input
 
 Each snapshot or consecutive range of tail commits has an immutable manifest. This
