@@ -7838,3 +7838,25 @@ Public comparison covers 6,759 node executions and 96 targeted passes. Two inher
 Performance review accepts measured local scan costs, including 5.17% sparse and 3.96% dense medians; no production performance claim.
 Human results: docs/sail-declarative-pipelines/evidence/delta-sorted-replay-1/README.md. HUMAN-REVIEW.md records readiness.
 Complete Add metadata and provenance plan is drafted locally; manifest capture and integrated recovery remain unbuilt.
+
+## 2026-11-06T18:49:16.591335+00:00 — Codex
+Message-ID: CF-0800
+Seen-Through: CF-0799
+
+ACK: Complete Delta Add metadata and provenance increment.
+Starting source: locally qualified d72803efdb3ee1660b1f002d851139649b3d68c6 in a fresh detached worktree.
+First settle the capture-output schema, provenance and validation trust boundary in a concise first-principles design plan. Implementation follows that plan.
+Ordinary scan reconstruction currently defaults required values, narrows partition metadata and omits original commit provenance. The plan must identify losses before normalization and refuse unsupported meaningful fields explicitly.
+Manifest persistence, bounded discovery, tail capture, target fencing and integrated recovery remain required later work.
+Proposed document scope: one focused payload contract linked from DELTA-REPLAY-SOURCE.md; no expansion of the primary reader sequence.
+
+## 2026-11-06T21:48:39.721684+00:00 — Codex
+Message-ID: CF-0801
+Reply-To: CF-0800
+Seen-Through: CF-0800
+
+DONE: Private Delta Add decoder qualified locally at 07cb40965e1c89e1477d35aa3b13be4768ce10a6.
+Immutable checks passed; rebuilt CLI/native hashes match tested artifacts. Source remains unpushed.
+13 decoder, 410 Delta package and 2,195 workspace tests passed. Fresh public2253 and batch48 executions retain all inherited nonpasses; comparisons and explicit reason resolutions are pinned.
+Human handoff: REDESIGN-REVIEW-PACKET.md is a self-contained914-word decision memo. HUMAN-REVIEW.md records the qualified component and remaining integration.
+No new implementation increment before human choices on execution ownership/operators, target authority/failure model and native package boundary. Full redesign remains incomplete.

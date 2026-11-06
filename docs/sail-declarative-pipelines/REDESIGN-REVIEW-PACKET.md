@@ -1,36 +1,45 @@
-# Review agenda for streaming pipelines, change capture and Extensions
+# Decisions for recoverable streaming pipelines on Sail
 
-Sail can transport continuous data and control events, but those events alone do
-not make table updates recoverable. The proposed design adds replay, durable
-preparation and enforced writer ownership, then builds deterministic change capture
-and native extension integration on that foundation.
+Review whether the proposed streaming pipelines, change capture and native Extensions fit Sail's continuous execution model, and select the boundaries of the first implementation milestone. The initial delivery should prove one replayable Delta source feeding one fenced append target through process restart. Keyed change capture follows that recovery contract. Extensions remain separately packaged; Comet's Arrow-only scalar interface is an optional additional boundary.
 
-The [overall review](HUMAN-REVIEW.md) explains scope, architectural fit and current
-readiness. Read the streaming proposal first, then change capture and Extensions.
-This agenda identifies the choices to discuss; it does not restate their contracts.
+Sail already transports data, retractions and ordered control markers. A retraction cancels an earlier row. `StreamSource` describes a scan, while an executing task owns the running source. Existing job runners, driver/task actors, physical-plan codecs and format/catalog commit paths are the integration points. The proposal extends those components; it does not introduce a bounded microbatch engine or a local-mode driver.
 
-## Decisions for the first delivery
+Recovery needs more than saved source positions. Before publishing table effects, persist the exact prepared boundary and its intended effects. If publication succeeds but its reply is lost, reconcile that same effect identity after restart. Every admitted target must reject obsolete owners at acceptance. These are required guarantees; the mechanisms below remain choices.
 
-| Choice | Why it needs an answer | Recommendation and evidence needed |
-| --- | --- | --- |
-| Running-source control | A source described during planning is reconstructed in an executing task. A planner-held object cannot command that instance. | Route controls through the job runner and existing driver/task actors. A separate coordinator is justified only if recovery must span jobs. Test replacement, cancellation and stale responses through real execution. |
-| Expression isolation | User expressions must never evaluate internal marker placeholders. Both dedicated flow-aware operators and changes to existing operators can enforce this. | Review the local flow-aware operator design against changing existing operators. Preserve data-only evaluation, worker reconstruction and marker-before-error ordering; resolve its mixed-marker cost. |
-| First source and target authority | Recovery needs retained input and an authority that can reject an obsolete owner at commit acceptance. Format transaction tags alone supply neither. | Start with a Delta log source and an authority-protected filesystem Delta target. Qualify retention, authority durability and storage permissions that prevent bypass before admitting this path. |
-| Native package boundary | Existing packages use DataFusion’s foreign-function interface; Comet offers a smaller Arrow-only scalar interface with a separately pinned binary contract. | Retain the existing route and select the C route explicitly per export. Verify the host port, worker identity and result lifetime before admitting packages through it. |
+## Execution ownership and expression isolation
 
-These are mechanism and delivery choices. Deterministic change semantics, fencing for
-every admitted durable target and strict configuration are requirements. Starting with
-one target does not require all format adapters in the first delivery or allow an
-unfenced fallback.
+A planner object cannot control the source instance reconstructed on a worker. Checkpoint requests, cancellation and acknowledgements must reach the task that actually owns it, and late responses from replaced tasks must not advance progress.
 
-## Supporting material by question
+**Recommend routing source controls through the existing local job runner or distributed driver/task actors.** A separate coordinator can span independent jobs, but adds another lifecycle and authority boundary. Select it only if that cross-job requirement belongs in the first delivery. Real worker replacement and cancellation tests must establish the chosen route.
 
-The [delivery plan](REDESIGN-PLAN.md) explains why append recovery precedes change
-capture and sizes its implementation slices. The [streaming](DECISION-NOTES-STREAMING.md)
-and [extension](DECISION-NOTES-EXTENSIONS.md) notes provide focused alternatives when a
-particular choice needs closer review. The architecture and results documents support
-specific claims; none is an additional prerequisite for reading the proposals.
+Control markers also pass through operators that normally evaluate row expressions. Evaluating a user cast or arithmetic expression on an internal placeholder can fail a query that has valid data. Two reasonable mechanisms are dedicated flow-aware filter/projection operators, or changes to existing operators so they evaluate only data rows.
 
-The requested outcome is agreement on these boundaries and the first milestone,
-with unresolved choices recorded before dependent implementation. Local reference
-code demonstrates particular behaviors, not adoption of the architecture.
+The local flow-aware implementation provides a concrete reference, including worker reconstruction, but mixed marker/data inputs can fragment output into costly small batches. **Choose the operator boundary before extending that architecture.** Require data-only evaluation, preserved event order and measured batching costs from either option; component correctness alone does not settle the performance choice.
+
+## First source, target and failure model
+
+The Delta descriptor and sorted-replay repairs provide reusable source foundations. Complete manifest capture, a replay-qualified reader, durable preparation and restart integration remain unbuilt. A manifest must preserve file membership and interpretation; it does not itself retain missing data files.
+
+For the target, ordinary version ordering and transaction tags are insufficient. An obsolete writer can reload the newest table and still submit a fresh write. Ownership must participate in the same serialized acceptance decision as the effect.
+
+**Start with one Delta source and one explicitly admitted Delta append target; select its authority mechanism before code.** Reasonable options are:
+
+- Use a catalog's existing acceptance boundary, extended to check ownership and effect identity. This best reuses a managed catalog when it can express the contract; generic catalog serialization is not proof that it can.
+- Put ownership and append acceptance in the same Delta log. An exact-next-version create can serialize takeover and append without a second acceptance history. This needs an explicit required writer feature, enforcement or refusal on every permitted mutation path, and interoperability review.
+- Ratify exact staged effects through a separate durable authority, then publish them. This can serve multiple adapters, but requires recovery of accepted-yet-unpublished effects and a qualified authority restart/restore model.
+
+For a local-filesystem first target, process crashes with the OS and filesystem surviving are a narrower initial qualification than power loss or multi-host failover. Current create-only local publication does not establish power-loss durability. Select that failure model explicitly, or require the broader durability work in the first milestone. A protected commit endpoint is an alternative when storage access must enforce the authority boundary; its deployment and availability costs must be included.
+
+No selected target may expose an unfenced durable-write fallback. Creation, takeover, retries and cleanup must respect accepted or uncertain effects. Managed Delta and Iceberg remain required adapters for the full design, each admitted only after its own enforcement is demonstrated.
+
+## Native package boundary
+
+Existing native packages use DataFusion's foreign-function interface. Comet offers a smaller Arrow-only scalar interface with a separately pinned binary contract. Replacing the existing package route would broaden migration and compatibility work; supporting both requires explicit export selection and two well-defined admission paths.
+
+**Recommend preserving the existing route and selecting the C scalar route per export.** Decide whether that additional boundary belongs in Sail's host. Before package admission, verify host/worker identity, allocation ownership, cancellation and result lifetime. Standalone SDK probes do not establish package integration or compatibility with other Comet versions. A relation interface is a separate decision.
+
+## Review outcome and supporting sequence
+
+Record the chosen source-control and operator boundaries, first target authority and failure model, and native package boundary. Size the first delivery around one source, one target and append recovery; resolve these choices before further dependent implementation. Strict typed configuration, optional Dhall authoring, deterministic change semantics and fencing remain full-design requirements. Spark compatibility cannot justify weaker engineering guarantees.
+
+The primary proposal sequence is [overall scope and readiness](HUMAN-REVIEW.md), [streaming](STREAMING-ON-STREAMSOURCE.md), [change capture](CHANGE-CAPTURE-ON-STREAMSOURCE.md), then [Extensions](EXTENSIONS-STREAMSOURCE-INTEGRATION.md). Each develops a distinct part of the design. The [delivery plan](REDESIGN-PLAN.md), decision notes and evidence are optional references for specific questions. Local reference implementations establish only their recorded component claims; they do not establish integrated recovery or architectural agreement.

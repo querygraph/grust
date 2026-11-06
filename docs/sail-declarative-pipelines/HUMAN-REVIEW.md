@@ -48,6 +48,14 @@ The [delivery plan](REDESIGN-PLAN.md) sizes the first milestone and explains imp
 dependencies. Detailed architecture, decision notes and evidence are references for
 specific questions, not additional required chapters.
 
+## Review checkpoint
+
+The [decision memo](REDESIGN-REVIEW-PACKET.md) supplies the context and alternatives for
+reviewing execution ownership, expression isolation, target acceptance and native package
+boundaries. Select those mechanisms and the first failure model before further dependent
+implementation. Supporting code and evidence are optional references for assessing the
+stated component results; they do not require architectural adoption.
+
 ## What is demonstrated and what remains
 
 | Area | Demonstrated locally | Still required |
@@ -59,6 +67,8 @@ specific questions, not additional required chapters.
 | [Configuration](TYPED-PIPELINE-CONFIG.md) | One strict typed model and optional Dhall authoring frontend are specified | Shared validation implementation and integration into durable computation identity |
 
 The [sorted Delta replay repair](evidence/delta-sorted-replay-1/README.md) is locally qualified: it releases consumed payloads and preserves public results, with measured scan costs retained. Manifest capture and the replay reader remain required.
+
+The [strict Add decoder](evidence/delta-add-payload-1/README.md) is locally qualified as a private component. It preserves complete known file metadata; raw-reader admission, memory funding and capture integration remain required.
 
 Component qualification does not establish source-to-table recovery. SDK probes do
 not establish package integration or compatibility with other Comet versions. The

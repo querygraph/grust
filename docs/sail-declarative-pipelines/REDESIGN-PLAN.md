@@ -34,14 +34,15 @@ and cannot currently replay. A deterministic synthetic source would help testing
 would not qualify this milestone. An Iggy source remains useful later; it adds broker
 retention, topology and client-dependency qualification to the same core integration.
 
-For the target, recommend extending the existing staged Delta commit mechanism behind
-one commit-authority process. That process accepts ownership-bound effects and publishes
+Select the target acceptance mechanism through the [review agenda](REDESIGN-REVIEW-PACKET.md).
+One candidate extends the existing staged Delta commit mechanism behind one
+commit-authority process. That process accepts ownership-bound effects and publishes
 exact accepted content. The deployment must deny workers and other clients direct
 mutation of the target log and published data. Staging must not leave accepted content
 mutable by an obsolete owner. A property checked only by cooperating Sail writers is
 insufficient enforcement.
 
-This recommendation is conditional on a concrete storage-permission and durability
+That staged-authority option requires a concrete storage-permission and durability
 design. An existing catalog that can enforce the contract is the preferred alternative;
 ordinary catalog serialization alone cannot. The bounded-runtime reference authority
 adapter has been qualified for one authority process, not power loss, concurrent authority processes or
