@@ -19,6 +19,8 @@ or declared starting version, then tail append commits. Adapt the existing Delta
 range reader into a continuous `StreamSource`; do not schedule a series of bounded
 queries. Preserve the public pipeline declaration and normal table reads.
 
+The [Delta source plan](DELTA-REPLAY-SOURCE.md) defines descriptor admission, bounded
+manifest capture and the continuous reader as separate reviewable increments.
 The existing reader already records table identity and version ranges. Add durable
 schema and file-manifest identity, reproducible within-range progress and incremental
 file consumption. Bind progress to logical files and rows rather than task splitting.

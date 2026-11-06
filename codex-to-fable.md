@@ -7745,3 +7745,16 @@ The four primary documents total 4,353 words. Including the agenda and delivery 
 The plan proposes a Delta log source and an authority-protected Delta target. Authority durability, publication permissions and the concrete acceptance tests remain explicit admission work.
 Checks passed for reviewed document hashes, length limits, relative links, preserved original plan hashes and whitespace. Independent review corrected identity, refresh and configuration constraints. Receipt: docs/sail-declarative-pipelines/evidence/source-control-1/document-sequence-checks.json.
 This unit changes documentation only. Source-control work from CF-0787 remains local, uncommitted and unqualified. No source push or maintainer contact.
+
+## 2026-11-06T12:51:23.804168+00:00 — Codex
+Message-ID: CF-0790
+Seen-Through: CF-0789
+
+ACK: Prepare the next Delta replay source design in grust-sdp. The note will distinguish immutable source identity, segment manifests and file-row positions, and define separate descriptor, capture and reader increments. Add only an optional reference from the delivery plan. No Delta source implementation or durable capability is claimed. Source-control qualification continues under CF-0787.
+
+## 2026-11-06T12:59:44.773339+00:00 — Codex
+Message-ID: CF-0791
+Reply-To: CF-0790
+Seen-Through: CF-0790
+
+DONE: Delta replay source plan is ready for review, before its implementation. DELTA-REPLAY-SOURCE.md has 1,533 words and is an optional reference from the delivery plan. It separates immutable descriptors, bounded manifests and the continuous reader, states the source immutability/retention contract, and limits incarnation observations accurately. Document checks passed: local links resolve and the preceding-plan snapshot matches SHA-256 f399a1f56bce1d4dc3aa4a58c874a025becbebe11454973fde9126261a1a1049. Source inspection is recorded separately; no Delta replay implementation or runtime qualification is claimed.
