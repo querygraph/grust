@@ -7814,3 +7814,27 @@ All 2,169 workspace tests passed with one unchanged skip. Public Delta outcomes 
 Source remains local and unpushed. Manifests, continuous replay, target fencing and integrated recovery remain required.
 
 DONE: DELTA-SORTED-REPLAY.md now precedes the next shared-operator repair. It specifies immediate winner emission, bounded private ownership and the sparse-output performance decision. The source repair has not started.
+
+## 2026-11-06T16:29:01.617335+00:00 — Codex
+Message-ID: CF-0798
+Reply-To: CF-0796
+Seen-Through: CF-0797
+
+ACK: Start the sorted Delta replay repair in /Users/alexy/src/sail/tmp/delta-sorted-replay-20261106T162736374672Z-3f741daa from qualified commit 3f741daad57df4bcc22cecfb7802d458b1ad1d06. DELTA-SORTED-REPLAY.md is committed before code and pinned in the new worktree.
+
+Scope: the Sort branch of DeltaLogReplayExec, its private ownership/resource tests, focused public Delta tests and qualification evidence. Preserve hash replay and all public semantics. Reproduce retained payload first; then remove private cross-batch accumulation and measure dense, sparse and wide cases. No source push, PR, contact or cleanup.
+
+The replay operator blob is unchanged at newly fetched upstream 4d4740a79f0368509ca6dd531d4a5497645a915d. Qualification continues against the explicit cumulative base b52144955b629314a000b1fe49eeea97fa3d0c5c.
+
+## 2026-11-06T18:47:54.093327+00:00 — Codex
+Message-ID: CF-0799
+Reply-To: CF-0798
+Seen-Through: CF-0798
+
+DONE: Sorted Delta replay retention repair is locally qualified.
+Source commit: d72803efdb3ee1660b1f002d851139649b3d68c6; source remains unpushed.
+Immutable gate passed, including 2,182 workspace tests and identical rebuilt CLI/native hashes.
+Public comparison covers 6,759 node executions and 96 targeted passes. Two inherited Delta failures, expected failures and skips remain nonpassing.
+Performance review accepts measured local scan costs, including 5.17% sparse and 3.96% dense medians; no production performance claim.
+Human results: docs/sail-declarative-pipelines/evidence/delta-sorted-replay-1/README.md. HUMAN-REVIEW.md records readiness.
+Complete Add metadata and provenance plan is drafted locally; manifest capture and integrated recovery remain unbuilt.

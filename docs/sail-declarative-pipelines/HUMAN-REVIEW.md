@@ -58,6 +58,8 @@ specific questions, not additional required chapters.
 | [Native Extensions](COMET-SCALAR-RESULTS.md) | Standalone adapter checks and independently compiled pinned Comet SDK probes passed | Existing host port, package and worker integration, bounded admission and any new C relation interface |
 | [Configuration](TYPED-PIPELINE-CONFIG.md) | One strict typed model and optional Dhall authoring frontend are specified | Shared validation implementation and integration into durable computation identity |
 
+The [sorted Delta replay repair](evidence/delta-sorted-replay-1/README.md) is locally qualified: it releases consumed payloads and preserves public results, with measured scan costs retained. Manifest capture and the replay reader remain required.
+
 Component qualification does not establish source-to-table recovery. SDK probes do
 not establish package integration or compatibility with other Comet versions. The
 replacement runtime is not yet ready to take over durable production pipelines.
