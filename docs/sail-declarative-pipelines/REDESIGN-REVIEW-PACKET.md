@@ -37,10 +37,13 @@ failure reporting. Workspace and selected public checks passed. Its mixed-batch
 filter still has a material dense-marker performance limitation. A further local
 reference isolates synchronous and supported asynchronous projection, preserves
 names and metadata, and reconstructs the node on workers. Its immutable workspace
-and selected public checks passed. Mixed-marker projection remains costly, and
-logical optimization can erase source participation before streaming detection.
-The [foundation results](STREAMSOURCE-FOUNDATION-RESULTS.md) and
-[projection results](STREAMSOURCE-PROJECTION-RESULTS.md) give the exact evidence
+and selected public checks passed. A mandatory compiler phase now protects
+executable sources before data pruning, retaining safe scan pushdowns and expression
+sharing. Mixed-marker execution remains costly; short streaming compilation adds
+startup cost, and a shared alias optimizer defect remains. The
+[foundation results](STREAMSOURCE-FOUNDATION-RESULTS.md),
+[projection results](STREAMSOURCE-PROJECTION-RESULTS.md) and
+[source participation results](STREAMSOURCE-PARTICIPATION-RESULTS.md) give exact evidence
 and qualification boundaries.
 
 Source inspection also found unordered fan-in, an unbounded local replica overflow

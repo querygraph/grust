@@ -47,6 +47,11 @@ standard. This file is the rest.
 
 ## Integration discipline
 
+- **Check mechanical gates before freezing the independent review.** Run
+  formatting, strict lint and strict Rust documentation first. Fixing a comment
+  link or a fixture import afterward changes the source pin and forces every
+  reviewer to verify another revision. The final immutable gate still runs;
+  this preflight reduces repeated review without weakening verification.
 - **One integration branch, one gate, one landing path.** Every unit lands
   through a full gate on an immutable detached commit with its own target
   directory: format, strict clippy, library tests, a CLI build, the frozen

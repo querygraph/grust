@@ -1,0 +1,150 @@
+{
+  "recorded_at": "2026-11-06T06:15:48.158708+00:00",
+  "source_final_tree": "f71f8c5c97b08baa0c7f0f914ea7a2e24d150622",
+  "controls": [
+    {
+      "subject": "mandatory compiler preparation",
+      "mutation": "bypass both prepare_streaming_plan calls; restore exact bytes",
+      "before": {
+        "tests": 2,
+        "failed": 2,
+        "reason": "streaming collector lost"
+      },
+      "restored": {
+        "tests": 2,
+        "passed": 2
+      },
+      "receipt": {
+        "started_at": "2026-11-06T05:55:23.791863+00:00",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "nextest",
+          "run",
+          "--locked",
+          "-p",
+          "sail-session",
+          "-E",
+          "test(mandatory_compiler_preserves_zero_data) | test(false_filter_still_surfaces_source_failure)",
+          "--no-fail-fast"
+        ],
+        "saved_sha256": {
+          "crates/sail-plan/src/optimizer.rs": "cb4facfd032c9f4b82db5dd1323294b2b2888317f3986758791ead96eb8b86c1"
+        },
+        "control_exit_code": 100,
+        "restored": true,
+        "restored_at": "2026-11-06T05:56:46.761772+00:00",
+        "restored_exit_code": 0,
+        "finished_at": "2026-11-06T05:57:35.935089+00:00"
+      }
+    },
+    {
+      "subject": "source occurrence identity and initial zero demand",
+      "mutation": "restore parent production implementations with new test modules; restore exact candidate bytes",
+      "before": {
+        "tests": 2,
+        "failed": 2
+      },
+      "restored": {
+        "tests": 2,
+        "passed": 2
+      },
+      "receipt": {
+        "started_at": "2026-11-06T05:12:46.868934+00:00",
+        "parent": "327572240365e2507f348ee92bc009cbfc67abe9",
+        "command": [
+          "cargo",
+          "+1.98.1",
+          "nextest",
+          "run",
+          "--locked",
+          "-p",
+          "sail-logical-plan",
+          "-p",
+          "sail-physical-plan",
+          "-E",
+          "test(source_occurrence_identity_survives) | test(zero_fetch_cancels)",
+          "--no-fail-fast"
+        ],
+        "saved_sha256": {
+          "crates/sail-logical-plan/src/streaming/source_wrapper.rs": "98b2f92ad79ca5e44029c4ca2bc4f42047f9ba127b68710a3e6b9d674ad34624",
+          "crates/sail-physical-plan/src/streaming/limit.rs": "4e16d5a85e1d457cd2459f8749338bd7e4fbc9a06909107ac517cabea44efd2b"
+        },
+        "control_exit_code": 100,
+        "restored": true,
+        "restored_at": "2026-11-06T05:14:48.863597+00:00",
+        "restored_exit_code": 0,
+        "finished_at": "2026-11-06T05:15:00.647266+00:00"
+      }
+    },
+    {
+      "subject": "immutable expression work sharing",
+      "before": {
+        "data_rows": 4,
+        "old_function_calls": 1,
+        "new_function_calls": 3,
+        "old_evaluated_rows": 4,
+        "new_evaluated_rows": 12,
+        "exact_data": "same correct four rows in three output columns",
+        "work_assertion": "FAILED"
+      },
+      "restored": {
+        "old_function_calls": 1,
+        "new_function_calls": 1,
+        "old_evaluated_rows": 4,
+        "new_evaluated_rows": 4,
+        "work_assertion": "PASS"
+      },
+      "limitation": "standalone counted-expression probe; not throughput"
+    }
+  ],
+  "same_alias_diagnostic": {
+    "data": "batch and stream, depth12",
+    "direct_expected": [
+      13,
+      14,
+      15,
+      16
+    ],
+    "old_optimized": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "new_optimized": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "outcome": "FAILED both cells; shared optimizer defect with exact rule unassigned; not a valid performance comparison"
+  },
+  "qualification": "Immutable checked-corpus gate passed; retained shared optimizer defect remains outside any broad correctness/readiness claim",
+  "post_gate_rule_isolation": {
+    "recorded_at": "2026-11-06T06:39:34.690032+00:00",
+    "receipt": "projection-alias-rule-diagnostic.json",
+    "data": "batch, depth2 reused alias, with/without filters",
+    "arithmetic_expected_direct_after_filter": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "arithmetic_after_projection": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "identity_control_all_stages": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "outcome": "both arithmetic cases FAILED original oracle; both identity controls passed; isolated public OptimizeProjections boundary",
+    "fix": "not implemented",
+    "product_regression_passes_added": 0
+  }
+}

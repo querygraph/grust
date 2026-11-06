@@ -28,10 +28,12 @@ A local projection increment now evaluates synchronous and supported asynchronou
 expressions only on ordered data runs, preserves qualified names and metadata,
 and reconstructs the node through the worker codec. Its immutable workspace and
 selected public checks passed. Standard metrics remain enabled; mixed-marker
-fragmentation still has material cost. Logical optimization can erase a streaming
-source before detection, so preserve source participation before claiming global
-isolation or durable coordination. The
-[projection results](STREAMSOURCE-PROJECTION-RESULTS.md) bound the evidence.
+fragmentation still has material cost. A mandatory compiler phase now protects
+executable sources before logical data pruning, retaining safe scan pushdowns and
+expression sharing. The admitted corpus passed local checks; a shared alias
+optimizer defect and short-plan compilation overhead remain. The
+[projection results](STREAMSOURCE-PROJECTION-RESULTS.md) and
+[source participation results](STREAMSOURCE-PARTICIPATION-RESULTS.md) bound the evidence.
 
 A flow-aware transform must evaluate user code only on data and forward markers
 without alteration. Use Sail-owned adapters or narrowly attributed

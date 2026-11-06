@@ -172,8 +172,8 @@ These tests qualify expression isolation, not durable recovery or distributed ba
 ## Decision and remaining boundary
 
 Proceed with dedicated flow-aware operators, existing batch evaluators and unchanged
-encoded expression indexing. This restores the existing event contract without
-choosing a new execution architecture. The implementation question to settle with
+encoded expression indexing. This restores the existing event contract within
+Sail's execution architecture. The implementation question to settle with
 tests is whether the public asynchronous APIs preserve supported behavior without
 copying a narrow helper. Reserved control-name collisions and broader retractable
 semantics remain separate issues; this repair must not silently reinterpret either.
@@ -185,6 +185,9 @@ evaluation. That comparison is source inspection, not an executed parity result.
 
 The local reference now implements filter and supported projection boundaries,
 with immutable workspace and selected public checks recorded in the
-[projection results](STREAMSOURCE-PROJECTION-RESULTS.md). Logical source erasure
-before streaming detection remains outside these operators; preserving source
-participation is required before a global isolation or recovery claim.
+[projection results](STREAMSOURCE-PROJECTION-RESULTS.md). A separate mandatory
+compiler boundary now retains executable sources before logical data pruning,
+with local checks described in the
+[source participation results](STREAMSOURCE-PARTICIPATION-RESULTS.md). Shared alias
+optimization and mixed-marker costs remain unresolved; these component results
+do not establish integrated recovery.

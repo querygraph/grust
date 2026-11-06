@@ -1,0 +1,155 @@
+{
+  "started_at": "2026-11-06T06:23:11.312882+00:00",
+  "mode": "precommit",
+  "head": "327572240365e2507f348ee92bc009cbfc67abe9",
+  "tree": "f71f8c5c97b08baa0c7f0f914ea7a2e24d150622",
+  "cumulative_sha256": "0b71c28974776dedaf643028bf12cc7959a0856b751db223b883393818e3d59a",
+  "review_sha256": {
+    "RESEARCH.md": "1544a9c584362e9f8c67a1721a3521efd17a5998790914fc81be3d82baad2368",
+    "DESIGN-QUALITY-REVIEW.md": "b9d572b06eb7d5c705f2300f53dd6c70fd65bd8a9c6ddb4f2ee7bc63a3feff90",
+    "TEST-CASE-REVIEW.md": "d3074c39319abf8753416ca0354179a1224729ab65e2c5e6833175ae2ee0c80a",
+    "SCOPE-REVIEW.md": "8b9af3a92ee679eeda0772b14deda044ca1bd9c860e4cf76f2b1017964947416",
+    "REGRESSION-REVIEW.md": "f28af24ea7c3a0040201ae2a61147f50b4aebe5f0ffaeca9384e97714f1ac082",
+    "PERFORMANCE-REVIEW.md": "6643b8c71bc7e38a225a87dcec5e4b9b49b8c1d97e58f03c9c4cc2f6391f41e7",
+    "SPARK-SEMANTICS-REVIEW.md": "96b87adc900554ca9443276db6bf1cf3ffe77b0ab4eaf3bc3e7bb522ad534e26"
+  },
+  "known_limits": [
+    "shared same-alias optimizer discrepancy retained outside passing corpus",
+    "material shallow-streaming compilation overhead in shared-host debug diagnostic",
+    "mixed-marker execution fragmentation and durable integration remain unresolved"
+  ],
+  "free_disk_bytes": 300783124480,
+  "steps": [
+    {
+      "name": "01-fixtures",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "build",
+        "--locked",
+        "-p",
+        "sail-c-udf-fixture",
+        "--lib",
+        "--examples"
+      ],
+      "started_at": "2026-11-06T06:23:11.450431+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T06:23:11.990278+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "02-format",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-11-06T06:23:12.276122+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T06:23:16.188497+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "03-rustdoc",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer"
+      ],
+      "started_at": "2026-11-06T06:23:16.478466+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T06:23:17.312882+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "04-clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-telemetry",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-11-06T06:23:17.621897+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T06:23:37.101300+00:00",
+      "source_unchanged": true
+    },
+    {
+      "name": "05-tests",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "nextest",
+        "run",
+        "--locked",
+        "-p",
+        "sail-common-datafusion",
+        "-p",
+        "sail-logical-plan",
+        "-p",
+        "sail-physical-plan",
+        "-p",
+        "sail-session",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-logical-optimizer",
+        "-p",
+        "sail-execution",
+        "-p",
+        "sail-telemetry",
+        "--no-fail-fast"
+      ],
+      "started_at": "2026-11-06T06:23:37.394532+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-11-06T06:25:44.633641+00:00",
+      "source_unchanged": true
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/alexy/src/sail/tmp/streamsource-participation-20261105-327572240/target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-pipelines-proposal/.venv/bin/python"
+  },
+  "finished_at": "2026-11-06T06:25:44.964522+00:00",
+  "verdict": "PASS: precommit streaming source participation qualification; distributed alignment, durable recovery, fencing and production performance remain outside this gate; shared alias defect and planning overhead remain explicit limits"
+}

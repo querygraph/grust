@@ -92,8 +92,9 @@ not yet part of the upstream-based foundation. Keeping its behavior as a control
 makes boundary changes reviewable.
 
 Comet’s scalar interface passes Arrow schemas and arrays through C callbacks instead
-of exposing DataFusion’s Rust types. It reduces dependency coupling, but its pinned
-binary calling contract, or ABI, is specific to a Comet release. It admits trusted
+of exposing DataFusion’s Rust types. It reduces dependency coupling. Its binary calling contract, or ABI, is pinned
+to the inspected Comet implementation; Arrow does not stabilize those callbacks.
+It admits trusted
 pure immutable functions; a numeric version probe cannot establish pointer safety
 or truthful purity.
 
@@ -131,7 +132,11 @@ a number.
 
 The repaired filter illustrates this discipline. Data-only costs stayed near its
 predecessor in component probes, but mixed data/marker batches fragmented into more
-outputs. Optimized sparse/grouped fixtures also showed overhead. A bounded batching
+outputs. Projection probes with alternating markers exposed up to roughly a
+thousandfold overhead against ordinary projection on equivalent-output fixtures.
+Tiny data runs create many output batches. These shared-host diagnostics establish
+a batching problem, not production throughput. Optimized sparse/grouped filter
+fixtures also showed overhead. A bounded batching
 prototype is justified, provided a preceding marker is emitted before evaluating
 later data that may fail. Its copies, retained bytes, latency and cooperative
 polling need measurement before selecting a policy.
@@ -140,10 +145,10 @@ polling need measurement before selecting a policy.
 
 | Area | Current demonstrated state | Work still required |
 | --- | --- | --- |
-| Flow-event foundation | Local repairs preserve Arrow fidelity and zero-column rows, isolate filter and supported projection expressions, preserve worker reconstruction and report terminal failures; workspace and selected public checks passed | Source identity across optimization, mixed-marker performance, collector retractions and complete termination semantics |
+| [Flow-event foundation](STREAMSOURCE-PARTICIPATION-RESULTS.md) | Local repairs preserve Arrow fidelity and zero-column rows, isolate filter and supported projection expressions, retain sources before pruning, preserve worker reconstruction and report terminal failures; workspace and selected public checks passed | Restart-stable source identity, mixed-marker performance, collector retractions and complete termination semantics |
 | Source and checkpoint protocol | Existing planning/actor seams inspected; limited source and merge prototypes exist | Live attempt-scoped controls, transport alignment, durable preparation and process-restart recovery |
 | Durable targets and change capture | Existing bounded-runtime behavior and transaction mechanisms inspected | Enforced adapters for every admitted target, deterministic streaming reducer/merge and migration |
-| Extensions | Existing host inspected; standalone adapter source reviews, immutable workspace checks and pinned Comet SDK probes passed locally | Package/worker integration, resource admission and C relations remain separate increments |
+| [Extensions](COMET-SCALAR-RESULTS.md) | Existing host inspected; standalone adapter source reviews, immutable workspace checks and pinned Comet SDK probes passed locally | Package/worker integration, resource admission and C relations remain separate increments |
 | Configuration | Strict typed YAML/JSON/API and optional Dhall typed authoring frontend specified | Shared normalized model, frontend validation corpus and integration before durable semantic identity |
 
 The foundation qualification does not establish integrated recovery. Standalone
@@ -182,29 +187,22 @@ different computations under the same recovery identity.
 
 ## Review compendium and immediate decisions
 
-The flow-event and filtering repairs are detailed in
-[foundation results](STREAMSOURCE-FOUNDATION-RESULTS.md). The
-[pipeline plan](REDESIGN-PLAN.md),
-[streaming architecture](STREAMING-ARCHITECTURE.md) and
-[change-capture proposal](CHANGE-CAPTURE-ON-STREAMSOURCE.md) expand the contracts above.
-The [extension integration plan](EXTENSIONS-STREAMSOURCE-INTEGRATION.md) preserves
-both native routes. The [standalone scalar results](COMET-SCALAR-RESULTS.md) qualify
-the component evidence. The [standalone scalar plan](COMET-SCALAR-ADAPTER.md) and
-[filter batching note](STREAMSOURCE-FILTER-BATCHING.md) bound the immediate work.
-The [projection plan](STREAMSOURCE-PROJECTION.md) and
-[projection results](STREAMSOURCE-PROJECTION-RESULTS.md) establish ordered data-only
-synchronous and supported asynchronous evaluation, nullable marker construction,
-qualified names, metadata and worker reconstruction in the local reference.
-Workspace and selected public checks passed. Standard metrics remain enabled;
-data-only component costs are close to ordinary projection, while mixed-marker
-fragmentation remains material. Logical optimization can erase a streaming source
-before detection, so preserving source participation remains a correctness obligation
-before any global expression-isolation or recovery claim.
+The [pipeline plan](REDESIGN-PLAN.md),
+[streaming proposal](STREAMING-ON-STREAMSOURCE.md),
+[change-capture proposal](CHANGE-CAPTURE-ON-STREAMSOURCE.md) and
+[extension integration plan](EXTENSIONS-STREAMSOURCE-INTEGRATION.md) provide optional
+detail for the contracts above. The evidence table distinguishes local component
+checks from integrated recovery and production readiness.
 
-Which source-preservation boundary prevents optimization from erasing checkpoint
-participants? Settle it with constant-false and zero-output flows. Which bounded
-batching policy preserves marker-before-error ordering under measured memory
-and latency limits?
+A shared optimizer defect remains: twelve additions through a reused alias produce
+one addition after optimization in both compared paths. The direct analyzed graph
+is correct. A rule-isolation probe identifies projection optimization as the defect
+boundary. The [composition plan](PROJECTION-COMPOSITION.md) bounds a repair
+with the original expected values intact.
+Short streaming compilation also costs more in the local diagnostic; an optimized
+profile should guide tuning.
+Which bounded batching policy preserves marker-before-error ordering under measured
+memory and latency limits?
 
 Which replayable source and fenced target will qualify the first durable append
 path? Decide using actual replay, publication and external-writer constraints.
