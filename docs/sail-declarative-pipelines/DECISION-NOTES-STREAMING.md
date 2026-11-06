@@ -4,9 +4,10 @@ Streaming tables append new rows. Change capture maintains current records from
 ordered updates and deletes. Sail's continuous flow events provide the foundation;
 recovery must preserve their meaning through execution and durable publication.
 
-Recovery scope constrains the participating sources, tasks and effects. Those
-contracts can be developed together; the note order is not an implementation
-sequence. Each recommendation remains a proposed design choice.
+These optional notes compare mechanisms within required guarantees: ordered
+changes, safe control events, recoverable effects, bounded resources and fencing
+for every admitted durable target. Each note supplies context for one mechanism
+choice; its label is an optional reference identifier.
 
 ## S6. What must recover together
 
@@ -26,8 +27,7 @@ does not provide atomic visibility across tables.
 
 Which target representation preserves ordinary table reads at acceptable cost?
 Interrupt publication, introduce new input and recover every original effect
-before claiming the selected scope works. Neither option requires a new service
-by definition.
+before claiming the selected scope works.
 
 ## S1. Where checkpoint coordination belongs
 
@@ -71,12 +71,13 @@ operations, but cannot claim durable recovery.
 
 ## S4. How control markers traverse execution
 
-A checkpoint marker identifies a recoverable input boundary. Ordinary projections
-and filters can evaluate user expressions on its fabricated data fields. Focused
-component tests reproduced failures; the marker must bypass data expressions.
+A checkpoint marker identifies an ordered boundary. A durable prepared record
+must associate it with source positions, state and effects before it supports
+recovery. Marker isolation from data expressions is required, not a selectable
+policy.
 
 Use flow-aware operators that evaluate data only. At every admitted exchange,
-route markers to all required participants and align corresponding boundaries
+route markers to all required participants and establish a consistent boundary
 before snapshotting or forwarding. Ordinary asynchronous fan-in and payload-based
 hash routing do not provide that contract.
 
@@ -85,9 +86,9 @@ pause but adds recovery state and complexity. Prefer alignment initially while
 measuring slow-input effects. Preserve latency, watermark, checkpoint and terminal
 marker ordering explicitly.
 
-Which plan shapes can be admitted safely? Exercise real projections, filters,
-unions and exchanges locally and across workers. Encoding tests alone do not
-qualify a distributed execution graph.
+Should the first admitted exchanges align inputs or record in-flight rows?
+Exercise real projections, filters, unions and exchanges locally and across
+workers. Encoding tests alone do not qualify a distributed execution graph.
 
 ## S9. How bounded execution finishes
 
@@ -95,10 +96,10 @@ A bounded run fixes an end position for each participating source. Independent
 bounds are not an atomic snapshot of all sources. Capturing bounds concurrently
 with readers requires coordination so consumption cannot pass an uninstalled bound.
 
-Prefer fixed ranges over stopping at an arbitrary clock time. Pin source identity
-and participants, and define partition discovery separately. An input's end marker
-and later closure count once. Ended inputs retain their assigned checkpoint
-acknowledgements until the protocol releases them.
+Fixed ranges, source identity and participants define the bounded run. Choose
+how its owner coordinates capture and installation. Define new-partition discovery
+separately. An input's end marker and later closure count once. Ended inputs retain
+their assigned checkpoint acknowledgements until the protocol releases them.
 
 Input exhaustion, cancellation, failure and durable success are different outcomes.
 Sail's query lifecycle and bounded adapters need that distinction; a closed stream
@@ -153,7 +154,7 @@ Event time is a row's timestamp. Sail's [watermark marker](https://github.com/la
 promises that no later row has an older timestamp. Observed timestamps minus a
 delay do not alone establish that promise because late rows can arrive afterward.
 
-Prefer preserving the contract. Handle excluded late rows before they enter
+Preserve this contract. Handle excluded late rows before they enter
 the downstream stream, including arrivals after emission. A distinct threshold
 marker with downstream admission rules is an alternative requiring explicit
 semantics, not a silent reinterpretation.
@@ -224,8 +225,9 @@ It does not detect every contradictory superseded event in history. Exhaustive
 verification requires an explicit retention horizon and resource budget.
 
 This deliberately replaces Spark 4.2.1's [undefined ties and action-dependent equality](https://github.com/apache/spark/blob/617618396087429b5627a86ce933bb0f5d6645cb/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessor.scala#L80).
-Which source supplies complete order? Test invalid losing rows, conflicting equals,
-delete resurrection, retries and regrouped checkpoints with exact normalized values.
+Is verification against current state sufficient, or is budgeted historical
+conflict detection needed? Test invalid losing rows, conflicting equals, delete resurrection, retries
+and regrouped checkpoints with exact normalized values.
 
 ## S12. How identity changes and rebuilds work
 

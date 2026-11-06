@@ -1,120 +1,123 @@
 # Native extensions in recoverable streaming pipelines
 
 Pipelines should use separately packaged native functions and relations without
-making those packages dependencies of Sail. Preserve Sail’s existing extension
-loading and execution contracts while adding the Arrow-only scalar boundary used
-by Apache DataFusion Comet. Streaming recovery requires additional contracts beyond
-loading and calling a native library.
+making those packages dependencies of Sail. Preserve the existing extension host
+and add the Arrow-only scalar interface used by Apache DataFusion Comet. Native
+calls must preserve Sail’s execution, memory and recovery guarantees.
 
-## Existing implementation and proposed additions
+## Carry the existing host into the streaming foundation
 
-The existing extension implementation discovers Python packages, validates their
-manifests and binds their native functions and relations. Its `datafusion-ffi`
-boundary carries DataFusion types, so it checks the host’s DataFusion and Arrow
-versions. Scalars retain their package owner. Distributed plans identify them by
-package/configuration identity and function name; workers resolve the matching
-loaded implementation. Native memory leases use C callbacks and host-funded quotas.
+The existing host discovers Python packages, validates manifests and binds native
+functions and relations. Its DataFusion foreign-function interface, or FFI, carries
+DataFusion types and therefore checks host DataFusion and Arrow versions. Distributed
+plans identify scalar functions by package, configuration and function name; workers
+resolve the matching implementation. Native memory leases use C callbacks and
+host-funded quotas.
 
-This implementation lives on the pipeline integration branch. It is reference
-code to preserve and adapt, rather than functionality already present in the
-new upstream-based StreamSource foundation branch.
+This host exists on the pipeline integration branch. Porting it to the upstream-based
+streaming foundation must preserve its behavior; that integration is not yet demonstrated.
 
-| Capability | Existing implementation | Required integration |
-| --- | --- | --- |
-| Package admission and identity | Version checks, package ownership and worker-side scalar lookup | Include the selected boundary and actual code/configuration identity in planning and recovery |
-| Native scalar calls | DataFusion foreign-function interface | Add Comet’s Arrow-only C scalar interface while retaining the existing route |
-| Native relations | Bound relation dispatch and driver placement support | Preserve resolver scope, cancellation, cleanup and placement in the new execution path |
-| Native memory | Host-funded memory lease with retain/release callbacks | Keep admission alive until every dependent native allocation and task effect settles |
-| Streaming expressions | Ordered data and control markers in Arrow batches | Evaluate native functions on data only, preserving retractions and markers in Sail |
+| Existing responsibility | Required integration |
+| --- | --- |
+| Package admission and scalar lookup | Include selected boundary and actual code/configuration identity in plans and recovery |
+| Native relations and placement | Preserve resolver scope, driver placement, cancellation and cleanup |
+| Native memory leases | Retain admission until dependent allocations and task effects settle |
+| Package ownership | Separate loaded code lifetime from session state and kernel instances |
 
-The C ABI is the binary calling contract between independently compiled libraries.
-Comet’s scalar boundary passes Arrow schemas and arrays through C records and
-callbacks, rather than exporting DataFusion’s Rust types. This reduces coupling
-to DataFusion releases. Comet explicitly does not promise ABI compatibility across
-its own releases, including patch releases. Pin and verify the actual boundary;
-an Arrow-only layout does not make every kernel or future header compatible.
+The [streaming proposal](STREAMING-ON-STREAMSOURCE.md) supplies fixed prepared work
+and fenced publication. Extensions add the requirement that replay use the same
+native implementation and that returned memory remain valid after its callers end.
 
-## Why two routes remain necessary
+## Keep two explicit scalar boundaries
 
-Replacing every existing native package immediately would combine loader,
-execution and compatibility changes in one migration. Keeping only the existing
-route would retain its DataFusion-version coupling. Add an explicit boundary
-choice per exported function, with deterministic name resolution and identity.
-Do not silently select another implementation when the requested one is unavailable.
-Any later default preference needs demonstrated equivalence for affected packages.
+A binary interface defines the calling contract between compiled libraries.
+Comet’s scalar interface passes Arrow schemas and arrays through C records and callbacks,
+reducing coupling to DataFusion’s Rust types. Comet does not promise this interface
+is stable across its releases, including patch releases. Pin the actual layout and
+verify compatible producers; an Arrow-only layout or numeric version probe cannot
+establish arbitrary library compatibility.
 
-The standalone scalar prototype implements Comet-shaped discovery, a version probe
-and calls through a Sail-owned fixture. It is useful implementation material.
-It does not yet establish package loading, distributed execution or loading
-Comet-built binaries. The prototype also needs complete argument-field metadata
-and explicit admission of pure immutable kernels, as Comet’s interface requires.
-The existing package loader does not enforce that purity requirement.
-The pinned Comet ABI v1 reserves the constant-argument pointer and requires it
-to be null. Functions needing those values for type resolution must be refused
-unless a separately versioned interface supplies them. Declaring a stateful
-function immutable would permit unsafe constant folding.
+Replacing all existing packages at once would combine loader and execution changes
+with a package migration. Retaining only DataFusion FFI would preserve its version
+coupling. Add an explicit boundary choice per export, deterministic name resolution
+and a named refusal when the requested implementation is unavailable. A mixed package
+still needs DataFusion and Arrow build checks for every DataFusion-FFI channel.
+Changing a default requires demonstrated equivalence for affected packages.
 
-Returned arrays may invoke library-owned release callbacks long after evaluation.
-Keeping the library alive only while its function exists is insufficient unless
-the returned arrays independently retain it. Choose process-retained code, as in
-the existing extension model, or ownership that follows every exported allocation.
-Use process-retained code initially because it matches the existing host policy
-and Comet’s importer. The existing scalar registry retains the full package owner;
-the port must separate code retention from session state rather than assume
-that state is already released correctly. Keep session allocations separately scoped. Either choice
-must be tested after dropping plans, functions and sessions while
-retaining results. A successful scalar result alone does not prove this lifetime.
+The Comet route admits trusted, pure immutable functions. An immutable declaration
+does not prove purity, pointer safety or non-unwinding behavior. A stateful function
+misdeclared immutable could be folded incorrectly during planning. Package admission
+must enforce the supported contract rather than trusting a version number alone.
 
-## Streaming and replay boundaries
+The pinned interface reserves its constant-argument pointer and requires null.
+Functions requiring literal values during type resolution need a separately versioned
+interface or a named refusal. Literal values passed during execution can be expanded
+into arrays. Preserve complete argument and result fields, including nested metadata;
+the native boundary must not reduce them to data types alone.
 
-Sail owns flow events: data with per-row retraction flags, or ordered markers
-for latency, watermarks, checkpoints and end of data. These control columns must
-remain outside native user-function arguments. Marker-safe filtering is implemented
-on the foundation branch; projection and asynchronous expressions still need the
-same isolation. This is a prerequisite for native functions in those positions.
+## Keep callback code alive after evaluation
 
-An ordinary finite relation can participate as finite input where the execution
-graph defines its completion. It does not become a replayable stream source merely
-because it returns Arrow batches. A live extension source needs explicit source
-identity, replay positions, retention and task-attempt checkpoint controls through
-`StreamSource`. A finite source used in recovery also needs reproducible snapshot
-identity or saved prepared output. Extending a scalar C interface does not supply
-either source contract.
+An Arrow result can retain a library-owned release callback. For example, a client
+may hold a sliced result after its query, native function and session are dropped.
+Unloading the library then makes eventual result cleanup unsafe.
 
-Recovery must retain the original function identity and normalized configuration.
-Pure deterministic computation may support identical replay when all inputs and
-dependencies are fixed. For nondeterministic computation, persist validated output
-before committing effects. Native functions that perform external mutations require
-an explicit effect protocol; do not admit them as replay-safe merely because their
-manifest says immutable. Target commits still require enforced ownership fencing.
+The initial adapter retains loaded code for the process lifetime. The alternative
+is explicit library ownership following every exported allocation, with a larger
+ownership and unload protocol. Process retention matches the existing host policy
+and Comet importer; session allocations and kernel instances still need independent
+cleanup. The existing scalar registry retains the entire package owner, so its port
+must separate those lifetimes rather than assuming cleanup already works.
 
-## Human-reviewable implementation boundaries
+Retained code consumes resources even when discovery later rejects the library.
+Bound package admission and identify actual code content to control repeated loading.
+Memory leases must remain valid for outstanding results while releasing unrelated
+session resources. Test result reading, slicing and destruction after dropping every
+query and session owner.
 
-Preserve package identity, owner lifetime, worker lookup, memory admission
-and cleanup as independently verifiable host contracts on the new foundation.
-Exercise the existing DataFusion route before replacing any boundary. This provides
-a control for failures introduced by the C adapter.
+## Admit native work to streaming and recovery
 
-The standalone Comet scalar adapter can proceed independently of that host port,
-using a pinned layout and attribution.
-Before connecting it to packages, verify metadata, nulls, literal inputs expanded
-as arrays, refusal of unsupported initialization requirements, sliced and
-nested arrays, declared volatility, error ownership and result lifetime. Then test
-package admission, duplicate names, worker identity mismatch, cancellation and
-session cleanup through both routes. Verify independently compiled Comet-compatible
-binaries; a handwritten fixture remains a narrower check.
+Flow events contain data with retraction flags or ordered control markers. Native
+functions must receive data values only; Sail retains marker ordering and retractions.
+Local foundation checks now cover filter isolation and supported synchronous and
+asynchronous projections, with schema-preserving projection composition. Mixed-marker
+batch fragmentation and short streaming startup costs remain performance limits.
+The [composition results](PROJECTION-COMPOSITION-RESULTS.md) define that evidence scope.
 
-Treat Arrow-only relations as a separate design. Comet’s scalar interface alone
-does not define relation planning, properties, asynchronous execution or task
-placement. A relation boundary needs its own pinned provider contract and evidence.
-Neither an entire Comet dependency nor an entire Sedona dependency is required
-merely to adopt a small attributed C layout.
+A finite native relation can participate where the graph defines its completion.
+Returning Arrow batches does not make it replayable. A live extension source needs
+source identity, replay positions, retention and task-attempt controls through
+`StreamSource`. A finite recovery input needs a reproducible snapshot or saved prepared
+output. The scalar interface supplies neither source contract.
 
-Should code remain loaded for the process lifetime, or must every result carry
-library ownership? Settle this before the production scalar adapter.
+Bind function identity and normalized configuration into durable preparation.
+Deterministic replay needs fixed inputs, code and dependencies. Nondeterministic
+computation needs persisted validated output. Native functions performing external
+mutations need an explicit effect protocol; a manifest cannot make such mutations
+replay-safe. These are additional admission requirements within the shared recovery
+protocol, not a second checkpoint system.
 
-Which native functions are eligible for replay, and which require persisted output
-or effect handling? Settle this before integrating them into durable preparation.
+## What is established and what remains to decide
 
-Which relation capabilities need a C boundary initially? Keep the existing route
-available while actual required operations determine that interface.
+The [standalone adapter results](COMET-SCALAR-RESULTS.md) establish complete argument-field
+handling, immutable-only admission and process-retained callback code in component
+checks. An independently compiled producer using the pinned Comet development kit passed two
+interoperability probes. This is stronger than a handwritten fixture, but does not
+qualify arbitrary Comet versions, package registration, Spark SQL calls or worker loading.
+
+Before integrating packages, preserve the existing DataFusion route as a control.
+Verify both routes through package admission, duplicate-name resolution, worker identity
+mismatch, cancellation, memory admission and session cleanup. Extend component coverage
+for metadata, literal expansion, sliced and nested arrays, nullability, error ownership
+and lifetime through those real interfaces. Nullability checks must respect encoded
+dictionary, union and run-end values without unbounded expansion or traversal.
+
+Which packages and pinned producer define the first end-to-end acceptance cases?
+Do their operations fit process-retained immutable scalars, or require a separately
+designed lifetime or effect contract? Settle these choices before admitting them
+to durable execution.
+
+Which relation capabilities require a C boundary? Comet’s scalar interface does not
+define relation planning, properties, asynchronous execution or placement. Preserve
+existing relations while required operations determine any new provider contract.
+A small attributed C layout does not require adopting the whole Comet or Sedona
+dependency graph.

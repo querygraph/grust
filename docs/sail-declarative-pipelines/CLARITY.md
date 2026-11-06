@@ -22,11 +22,33 @@ alternatives, tradeoffs and requested decision within the document itself.
 Define each necessary term before using it. Use one name consistently for
 one concept, and distinguish similar concepts when the distinction matters.
 
-Do not require a reading itinerary, companion document, glossary, private
-repository or previous conversation to understand the argument. Links may
-provide optional source support or implementation detail. They must not carry
-context or reasoning that the reader needs to decide. A short decision note
-must stand alone even when it belongs to a larger collection.
+A review sequence may establish a shared model and then develop its consequences.
+Each document must supply the context needed for its own question, including a
+short explanation of any shared guarantee it uses. It need not repeat the full
+argument that established that guarantee. Never require session history, a private
+repository, a separate glossary or an explanation from the author.
+
+Links provide optional evidence and deeper implementation detail. They must not
+substitute for the reasoning needed to answer the document's question. A short
+decision note states its premises and alternatives even when it belongs to a
+larger collection.
+
+## Make the sequence cumulative
+
+Assign each document one purpose and each substantial explanation one home. The
+overview explains the goal, architectural fit and readiness. The shared proposal
+establishes the execution and recovery model. Later proposals explain the behavior
+they add and the choices that addition creates. A review agenda lists decisions;
+an implementation plan explains delivery dependencies. Neither retells the proposals.
+
+Use a brief recap where a reader needs a shared premise. Repeat a requirement only
+when its application changes the current decision. Put the worked example and full
+tradeoff in the document that owns them. Do not reproduce the same failure example,
+component table, status report or correctness argument across the sequence.
+
+Keep the primary reading path short and explicit. Mark detailed architecture,
+specialist notes, implementation plans and evidence as references rather than
+required stops. Assess the total reading burden as well as individual lengths.
 
 ## Show the fit with Sail
 
@@ -104,8 +126,8 @@ lists for genuinely parallel choices or steps.
 
 Keep a design document under 2,000 words and each standalone decision note
 under 300. These are ceilings, not targets. Cut repetition and process detail
-before cutting the context needed to understand a decision. If separate
-proposals are necessary, each must supply its own complete argument.
+before cutting the context needed to understand a decision. Separate proposals
+must answer distinct questions rather than divide one repeated system description.
 
 ## Read it as the recipient
 
@@ -118,3 +140,7 @@ that its cause and consequences are clear. For every ordering claim, check
 that the dependency is explained. For every link, check that the argument
 still works without opening it. Revise any passage that needs the author
 beside the reader to supply missing context.
+
+Then read the primary documents in sequence. Check that each advances the argument,
+that shared terms retain their meaning, and that recaps are shorter than the new
+material. Remove repeated explanations even when each would be clear in isolation.

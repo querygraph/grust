@@ -1,14 +1,15 @@
 # Decisions for native extension integration
 
-Each note states one technical choice independently. Native extensions are separately
-packaged libraries that add functions or relations to Sail.
+Native extensions are separately packaged libraries that add functions or relations
+to Sail. These optional notes compare mechanisms. Correct fields, callable release
+callbacks, explicit code identity and bounded resources are requirements throughout.
 
 ## E1. Add Comet’s scalar boundary beside the existing route
 
 Sail’s existing native scalar route uses `datafusion-ffi`, which exposes DataFusion
-types and requires matching host build versions. Comet’s scalar C ABI passes Arrow
-schemas and arrays through C callbacks instead. This reduces DataFusion coupling,
-but Comet explicitly disclaims ABI stability across releases.
+types and requires matching host build versions. Comet’s scalar C interface passes
+Arrow schemas and arrays through C callbacks instead. This reduces DataFusion coupling,
+but Comet explicitly disclaims binary-interface stability across releases.
 
 Add a pinned, attributed Comet scalar adapter while retaining the existing route.
 Replacing every package at once would combine host migration and boundary changes.
@@ -20,14 +21,14 @@ Comet’s pinned interface admits pure immutable functions. Its constant-argumen
 initialization pointer is reserved and must be null. Refuse functions requiring
 unsupported capabilities rather than extending the interface implicitly.
 
-The standalone Sail prototype calls a handwritten fixture successfully. It does
-not establish SDK-built Comet interoperability, package integration or worker
-execution. Comet’s pinned SDK supports SDK-built libraries; similar Sedona layouts
-do not prove interchangeable binaries.
+The standalone adapter passes metadata, null, slice and lifetime controls, plus
+two probes from an independently compiled pinned Comet SDK producer. This qualifies
+that component, not package admission, worker execution or cross-version compatibility.
+Similar Sedona layouts do not establish interchangeable binaries.
 
-Which Comet SDK/library pair should be the first interoperability target? Require
-an independently built binary to pass metadata, error, null, slice and lifetime
-checks before admitting it through the package loader.
+Which package exports should use this boundary first? Verify package admission
+and worker identity through both routes. [Optional component evidence](COMET-SCALAR-RESULTS.md)
+retains the controls; no production performance envelope is established.
 
 ## E2. Specify relation capabilities separately
 
@@ -75,32 +76,39 @@ cases before changing package admission.
 
 A native result array can retain a release callback into its library after the
 function, plan and session have gone. Holding a library only in the function does
-not prove that callback remains callable. The standalone Sail C prototype needs
-this lifetime repair before package integration.
+not prove that callback remains callable. The standalone adapter now retains code
+and passes retained-result lifetime controls.
 
 Retain library code for the process lifetime initially, matching the existing
 extension policy and Comet’s importer. Keep session allocations, state and host-funded
-memory leases scoped and releasable. Code retention must not keep those resources
-charged after their dependent work settles.
+memory leases scoped and releasable. The existing scalar registry retains the full
+package owner; separating code from session state remains porting work. The standalone
+registry retains code without kernel instances or session state. Each opening retains
+resources, so package admission still needs a bound and content identity.
 
 An unloadable design could attach library ownership to every dependent allocation
 and callback. That enables unloading but adds a broader ownership mechanism.
 It is unnecessary for initial scalar integration.
 
-Use process-retained code for the first adapter? Test retained results after
-dropping functions, plans and sessions, including errors and sliced arrays. Check
-release callbacks and quota settlement independently before integrating the loader.
+Retain process-lifetime code for integrated packages, or require unloadable ownership?
+Test retained results after dropping functions, plans and sessions, including errors
+and sliced arrays. Check release callbacks and quota settlement independently before
+integrating the loader.
 
 ## E5. Keep streaming control and durable effects in Sail
 
 Sail encodes user data, retractions and ordered markers in Arrow batches. Native
-scalar kernels must see only user arguments. Marker-safe filtering exists on the
-foundation branch, while projection and asynchronous expressions still need
-isolation before they can call arbitrary native functions safely.
+scalar kernels must see only user arguments. Supported local filter and projection
+paths now isolate markers, including supported asynchronous expression execution.
+This does not qualify native package or worker integration.
 
 Keep markers and retractions under Sail operator control. Native scalar arrays
-remain ordinary arrays; do not pass private control columns through Comet’s ABI.
-This preserves the existing scalar interface without inventing a streaming ABI.
+remain ordinary arrays; do not pass private control columns through Comet’s C interface.
+This preserves the existing scalar interface without inventing a streaming interface.
+Mixed-marker execution fragmentation and short-stream compilation costs remain
+unresolved. The separate projection-composition repair resolves its measured deep
+identity regression, with a small shallow-wide residual. These are shared-host
+diagnostics, not production throughput claims.
 
 A finite relation needs a defined completion boundary. Durable replay additionally
 needs reproducible input identity or saved prepared output. A live extension source

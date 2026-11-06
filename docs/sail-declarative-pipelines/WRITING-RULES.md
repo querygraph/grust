@@ -39,6 +39,8 @@ architectural-fit requirements that apply alongside these writing rules.
   after, in plain words. Do not rely on a glossary the reader must jump to.
 - Use one name for one thing throughout. Do not alternate between synonyms.
 - Do not introduce a concept the document does not go on to use.
+- Across a review sequence, give each substantial explanation one home. Later
+  documents briefly state the premise they need and explain what they add.
 
 ## Sentences and structure
 
@@ -66,7 +68,8 @@ architectural-fit requirements that apply alongside these writing rules.
   inconsistency, say so and state the consistent behavior Sail chooses
   instead, which is the maintainers' own rule.
 - Open questions are questions, with what would settle them.
-- Keep it under two thousand words. If it needs more, it is two documents.
+- Keep it under two thousand words. Tighten its question before splitting it;
+  another document must add a distinct argument, not another system summary.
 
 ## Pull-request descriptions
 

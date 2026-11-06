@@ -11,12 +11,16 @@ The initial scope is one independently recoverable flow, a computation feeding
 a target. Independent multi-flow coordination and general streaming joins remain
 outside that scope.
 
+This optional detailed reference explains the required contracts and alternatives
+for source participation, state and durable publication.
+
 ## Existing foundation and required work
 
 Sail's `StreamSource` provides a streaming scan. Flow events carry data batches,
 per-row retractions and ordered control markers. A retraction cancels a previous
 row; it is not a business delete with an ordering value. A checkpoint marker
-names a boundary through input positions and operator state.
+identifies an ordered boundary. A durable prepared record must bind that boundary
+to source positions, state and effects before recovery can depend on it.
 
 | Existing component | Reuse | Required correction or addition |
 | --- | --- | --- |
@@ -27,22 +31,24 @@ names a boundary through input positions and operator state.
 | Exchange and stream transport | Per-channel ordering and data movement | Marker-aware routing, aligned fan-in and resource accounting |
 | Query lifecycle and table commit paths | Registration, cancellation and publication seams | Truthful completion, durable effect identity and enforced fencing |
 
-The foundation has concrete gaps. Ordinary projections evaluate marker payload
-placeholders. Filters evaluate the user predicate before checking for a marker.
-Flow-aware adapters must evaluate data only and pass markers unchanged. Align
-participating channels at every admitted exchange; ordinary asynchronous merging
-is insufficient. Hash routing must not send a control marker according to its
-fabricated payload.
+The local reference now preserves Arrow fields and zero-column rows, isolates
+markers in supported filter and projection paths, and protects streaming sources
+before optimizer pruning. It also repairs dependent projection composition and
+preserves declared schemas. These qualified paths include supported asynchronous
+expressions; they do not establish distributed recovery.
 
-The collector ignores retractions and markers, and limit/bounded adapters can
-close before final checkpoint obligations finish. Implement those obligations
-or reject unsupported operations. Distinguish cancellation, failure, input
-exhaustion and durable success; consuming an error must not count as success.
+Mixed-marker fragmentation and short-stream compilation costs remain unresolved.
+The composition rule's measured deep-wide slowdown is repaired, with a small
+shallow-wide residual. Shared-host diagnostics establish no production performance
+envelope. [Optional composition evidence](PROJECTION-COMPOSITION-RESULTS.md) records
+the exact scope and every measured case.
 
-Focused component probes reproduced marker-expression failures, zero-column
-decoding failures, decimal placeholder type mismatches and schema metadata loss.
-They did not execute complete SQL or distributed plans. Repair encoding and
-qualify admitted Arrow types before durable sinks depend on this path.
+Align participating channels at every admitted exchange; ordinary asynchronous
+merging is insufficient. Hash routing must not use fabricated marker payloads.
+
+Collector retractions and complete final-checkpoint obligations remain required.
+Distinguish cancellation, failure, input exhaustion and durable success. Local
+terminal-error repairs do not establish durably completed writes.
 
 ## Source participation and execution ownership
 

@@ -7716,3 +7716,32 @@ All ten correctness-qualified optimized planning cells and seventy paired timing
 HUMAN-REVIEW, plans, results and evidence retain the full SDP, existing Extensions, Comet, performance, mandatory fencing and typed configuration/Dhall goal. All ten earlier worktrees, product PySpark4.2.1/PyArrow26.0.0 and qualified artifacts are unchanged. Source remains local; no source push, upstream offer, maintainer communication or cleanup occurred. Documentation validation passed; committing/pushing all updated documents is the remaining authorized publication action.
 
 The full goal remains active. Next write the source capability/attempt-control plan from actual execution ownership before implementing it. Checkpoint alignment, durable prepared effects/recovery, mandatory target fencing, streaming CDC and migration, typed configuration, native package/worker integration and remaining resource/performance obligations are still unbuilt work.
+
+## 2026-11-06T10:08:01.320242+00:00 — Codex
+Message-ID: CF-0787
+Seen-Through: CF-0786
+
+ACK: source capability and task-attempt control design in a new detached Sail worktree.
+
+Repository /Users/alexy/src/sail/tmp/source-control-20261106-b6d73d6a starts at qualified sourceb6d73d6a644dc04b1e6749e171100808c874d788, with its own target. Merge base remainsb52144955; fetched upstreamae21b2ef7 includes Delta ambiguous-commit reconciliation and Iceberg write/catalog changes that must be inspected separately before selecting any durable-target design. No rebase or source push.
+
+Read the actual scan execution, task attempts, local/cluster ownership and codec before specifying live control. Write self-contained first-principles plans before dependent implementation and keep HUMAN-REVIEW current. Seven specialist roles apply. All prior worktrees, artifacts and product PySpark4.2.1/PyArrow26.0.0 remain preserved; source stays local, documents commit/push authorized, no cleanup or maintainer contact. Saved current request: docs/sail-declarative-pipelines/evidence/source-control-1/REQUEST.txt. Full SDP, Extensions, Comet, fencing, typed configuration and performance goal remains active.
+
+## 2026-11-06T10:47:06.549908+00:00 — Codex
+Message-ID: CF-0788
+Seen-Through: CF-0787
+
+ACK: Consolidate the existing SDP review sequence in grust-sdp.
+HUMAN-REVIEW will own the overview and evidence map; the packet will own the review agenda. Streaming, change capture and Extensions will each explain their own decisions without repeating the shared protocol.
+Clarify the first durable append milestone and update the writing rules. Preserve all existing evidence and source work. No source changes, pushes or maintainer contact in this documentation unit.
+
+## 2026-11-06T11:01:17.385152+00:00 — Codex
+Message-ID: CF-0789
+Reply-To: CF-0788
+Seen-Through: CF-0788
+
+DONE: The SDP review sequence now builds from the overall goal through shared streaming recovery, change capture and Extensions. The packet is a short agenda; detailed architecture, notes and evidence are optional references.
+The four primary documents total 4,353 words. Including the agenda and delivery plan, text fell from 8,988 to 6,147 words.
+The plan proposes a Delta log source and an authority-protected Delta target. Authority durability, publication permissions and the concrete acceptance tests remain explicit admission work.
+Checks passed for reviewed document hashes, length limits, relative links, preserved original plan hashes and whitespace. Independent review corrected identity, refresh and configuration constraints. Receipt: docs/sail-declarative-pipelines/evidence/source-control-1/document-sequence-checks.json.
+This unit changes documentation only. Source-control work from CF-0787 remains local, uncommitted and unqualified. No source push or maintainer contact.

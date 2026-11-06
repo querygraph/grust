@@ -1,15 +1,23 @@
 # StreamSource architecture and required engineering changes
 
 Sail can support durable streaming pipelines by extending its existing source,
-flow-event and job execution model. The foundation is suitable, but its current
-marker handling, completion and resource behavior are insufficient for durable
-table writes. Correct those contracts before attaching a recovery coordinator
-and treating component tests as a complete streaming engine.
+flow-event and job execution model. This optional diagnostic reviews Sail baseline
+`85c6cca01` and the existing pipeline runtime that processes finite input ranges.
+Its findings explain constraints on durable execution and the required corrections.
 
 Spark Declarative Pipelines is a useful behavioral reference, not the authority
 for Sail's architecture or correctness. Preserve useful client interfaces and
 well-defined behavior. Replace nondeterminism, weak ownership and permissive
 configuration where they undermine reliable execution.
+
+The local reference has since repaired Arrow fidelity, zero-column rows, supported
+filter/projection marker isolation, source preservation before pruning and dependent
+projection composition. Supported asynchronous expressions are isolated too. These
+repairs have local component and public-query evidence, not distributed recovery
+qualification. Mixed-marker fragmentation and short-stream planning cost remain
+unresolved; the composition repair retains a small shallow-wide residual and no
+production performance claim. [Optional current results](PROJECTION-COMPOSITION-RESULTS.md)
+state the qualified scope. The diagnostic findings below describe the named baseline.
 
 ## What Sail already provides
 
@@ -29,7 +37,7 @@ Markers describe latency, event-time progress, checkpoints and end of data.
 | Query lifecycle and sinks | Query registration, cancellation and write integration | Separate input exhaustion, failure, cancellation and durably completed output |
 | Catalog and format commit operators | Actual table publication boundaries | Enforced writer fencing and recoverable operation identities for every admitted target |
 
-The only concrete upstream `StreamSource` implementations are rate and socket
+The only concrete `StreamSource` implementations in this baseline are rate and socket
 sources. They do not supply durable replay contracts. A rate row counter does
 not reproduce wall-clock timestamps, and a socket stream cannot recover data it
 never retained. Neither establishes exactly-once source-to-table execution.
@@ -63,7 +71,8 @@ modules and pinned dependencies reproduced failure to decode zero-column events,
 including all four marker kinds. Nonnullable decimal marker payloads failed at
 nondefault precision and scale for all four decimal widths. The probes also
 reproduced strict-cast failure on marker placeholders and schema metadata loss.
-These are component reproductions, not executed SQL or distributed workloads.
+These baseline reproductions were component probes. Later local SQL checks do not
+retroactively turn them into distributed workload evidence.
 
 **Bounded channels do not imply bounded memory.** Local replica transport has
 an unbounded overflow queue. The append prototype holds an entire interval,
@@ -152,11 +161,11 @@ target enforces fencing, so those remain runtime capability checks.
 
 ## Implementation order and acceptance
 
-First repair event-safe operators, encoding and truthful completion. Then prove
-alignment and bounded resource behavior through the actual local and cluster
-plans. Add task-scoped source controls and stable recovery identity to existing
-job execution. Implement one fenced source-to-target path and its crash tests
-before expanding operators or targets.
+Durable execution requires event-safe operators, exact encoding, truthful completion,
+source controls and stable recovery identity. Prove alignment and bounded resources
+through actual local and cluster plans. These contracts can develop together;
+none requires waiting for an unrelated operator. Qualify one fenced source-to-target
+path and its crash tests before admitting further durable targets.
 
 A checkpoint remains a recovery boundary. It must not become a boundary that
 changes business results. State, source positions, normalized configuration and
