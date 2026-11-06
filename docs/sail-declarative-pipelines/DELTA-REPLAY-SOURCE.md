@@ -69,10 +69,12 @@ bounded-stream timestamp behavior.
 
 The first descriptor admits path-based Parquet tables with no format options. Reject
 catalog-managed logs without their commit context, unknown protocol features and
-incomplete column mappings. Require globally unique positive mapping IDs and
+incomplete column mappings. Require globally unique positive 32-bit mapping IDs and
 sibling-unique physical names on mapped fields, including fields inside collections. Collection
-wrappers and Variant storage children are not separate mapped columns. Pin the full
-schema and normalized protocol feature sets. Initially require exact equality at
+wrappers and Variant storage children are not separate mapped columns. These IDs become
+Parquet field IDs; accepting wider values can discard identity during conversion.
+The bound follows [Delta's column-mapping contract](https://github.com/delta-io/delta/blob/88c008d55b38fb8f49a9a80982004cb5b06a2b59/PROTOCOL.md#column-mapping).
+Pin the full schema and normalized protocol feature sets. Initially require exact equality at
 consumed versions, even for otherwise harmless writer-only protocol upgrades; a more
 permissive compatibility relation needs its own evidence.
 

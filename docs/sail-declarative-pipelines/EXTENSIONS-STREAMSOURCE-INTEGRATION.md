@@ -78,10 +78,6 @@ query and session owner.
 
 Flow events contain data with retraction flags or ordered control markers. Native
 functions must receive data values only; Sail retains marker ordering and retractions.
-Local foundation checks now cover filter isolation and supported synchronous and
-asynchronous projections, with schema-preserving projection composition. Mixed-marker
-batch fragmentation and short streaming startup costs remain performance limits.
-The [composition results](PROJECTION-COMPOSITION-RESULTS.md) define that evidence scope.
 
 A finite native relation can participate where the graph defines its completion.
 Returning Arrow batches does not make it replayable. A live extension source needs

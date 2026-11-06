@@ -19,11 +19,7 @@ checkpoints. Durable target-associated state avoids keeping every historical key
 in the executing operator’s memory.
 
 Sail’s `StreamSource` and flow events provide the scan and ordered control markers.
-Local repairs now isolate supported filter and projection expressions from markers
-and preserve declared schemas. Distributed checkpoint alignment, durable preparation
-and the change-capture operators remain unbuilt. The
-[foundation results](PROJECTION-COMPOSITION-RESULTS.md) describe the qualified scope;
-individual reduction and merge prototypes do not demonstrate integrated recovery.
+The change-capture operators and their integration with durable recovery remain unbuilt.
 
 ## Require an order for each key
 
@@ -101,9 +97,8 @@ support must demonstrate metadata preservation and enforcement for every admitte
 writer. Otherwise evaluate fenced sidecar recovery. A hidden table-to-view substitution
 does not preserve the public table contract.
 
-All layouts inherit mandatory fencing, immutable preparation and bounded artifact
-retention from the streaming protocol. The first delivery may admit one enforced
-target; it cannot admit another through an unfenced fallback.
+Every layout must preserve the shared ownership and recovery guarantees for both
+visible rows and version state.
 
 ## Refresh without losing ordering history
 
