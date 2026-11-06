@@ -29,7 +29,7 @@ manifest writer that pages the eventual output would leave it intact.
 ## Recommend emitting winners from each input batch
 
 Select the first action for each new key while scanning an input batch. Emit its
-payload when it is an Add. Retain only the owned current key and its decided state
+payload when it is an Add. Retain only the owned current key, which records that decision,
 across batches; discard older actions for that key. Produce one output batch from
 the selected rows, or continue reading if none survive. No pending winner or array
 slice needs to survive privately while the operator fetches another input batch.
@@ -40,12 +40,20 @@ time at which a completed batch becomes available may change; neither is a persi
 file identity. EOF needs no deferred winner flush. Errors and cancellation must
 release owned state through the normal stream lifecycle.
 
-Fund the key and temporary row-selection storage through the task's existing memory
-pool, reserving before growth and releasing when ownership ends. Avoid copying the
-same key for every older action. This eliminates private payload accumulation across
-batches. A finite task pool also limits the owned key and selection storage. It
-does not establish a byte bound for upstream decoding, sorting or downstream
-consumers. Those components retain their own resource responsibilities.
+Fund the owned key and top-level row indices through the task's existing memory
+pool, reserving before growth and releasing when ownership ends. Compare borrowed
+keys within a batch and copy only its final non-null key. This eliminates private
+payload accumulation across batches. A finite task pool also limits the owned key
+and index storage. Arrow kernel scratch space and returned output, upstream decoding
+and sorting, and downstream consumers have separate resource responsibilities; this
+reservation does not establish a byte bound for the whole query.
+
+Use Arrow's existing gather kernel with 64-bit row indices and construct the result
+with its declared schema and explicit row count, including zero-column output.
+The installed bitmap filter reconstructs child metadata for run-end encoded arrays;
+the gather kernel preserves it. A bitmap uses less selection memory, but repairing
+or wrapping that dependency adds maintenance cost. Measure the existing gather path
+before considering that alternative.
 
 ## Alternatives and the performance decision
 
@@ -72,7 +80,9 @@ Retain a control that demonstrates the old operator keeps prior payload buffers 
 while requesting later input. Release producer and consumer references so the control
 isolates ownership inside replay. The repaired operator must release those private
 references. Exercise groups spanning batches, empty batches, long runs of older
-actions, Add/Remove ties, cancellation and error termination. Verify reservation
+actions, existing internal tie handling, cancellation and error termination. A valid
+Delta commit cannot contain both Add and Remove for the same logical file key;
+public fixtures must use valid histories. Verify reservation
 release and named resource failure when the key or selection cannot be funded.
 
 Check exact output membership, multiplicity, order and schema under changed input
