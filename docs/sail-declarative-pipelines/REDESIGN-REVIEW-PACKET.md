@@ -6,9 +6,10 @@ model, adds deterministic updates and deletions, and preserves separately packag
 native Extensions. The first milestone should prove one replayable source feeding
 one append-only destination through a process restart.
 
-This memo asks for three architectural decisions. The components built so far provide
-reference implementations and tests; they do not yet form a recoverable pipeline.
-The decisions determine which components to integrate and what the first delivery promises.
+This memo asks for three architectural decisions. A local Delta append implementation
+makes the proposed recovery boundaries concrete; its qualification status is recorded
+in the [human review summary](HUMAN-REVIEW.md). The decisions determine which boundaries
+Sail should maintain and what a supported delivery promises.
 
 ## Use Sail's existing execution ownership
 
@@ -25,8 +26,8 @@ the new task's progress.
 **Recommend coordinating through the existing job runner and distributed actors.** A
 separate coordinator could span independent jobs, but introduces another lifecycle and
 ownership boundary. Use it only if coordination across jobs belongs in the first delivery.
-Local control tests support the proposed route; real worker replacement and cancellation
-still need testing.
+Local control and process-replacement tests support the proposed route. Distributed
+task replacement and cancellation still need testing.
 
 There is a related operator choice. User expressions must evaluate data, not internal
 control placeholders: a cast on a placeholder can fail a valid query. Dedicated streaming
@@ -42,8 +43,8 @@ Delta stores table data in files and records table changes in a transaction log.
 It is a practical first source and destination because Sail already reads and writes
 it. Use separate source and target tables, initially with the local job runner.
 The source requires retained immutable files and a stable storage location. Its
-saved description and replay repairs are built; the complete saved file list and
-continuous recovery reader remain to be built and integrated.
+reader saves exact file lists and physical-row positions for restart. Initial snapshot
+capture requires contiguous JSON history; source data files must remain available.
 
 Recovery has two distinct problems. A write may succeed but lose its reply, so restart
 must look up that same write instead of issuing a new one. Also, a paused worker may
@@ -51,7 +52,8 @@ resume after a replacement has taken over. Reading the newest table version does
 restore its permission to write. The destination must check current ownership together
 with acceptance of each write. This rejection of obsolete writers is called fencing.
 
-**Support one Delta append target first, and select its commit mechanism before code.**
+**Support one Delta append target first, and assess its commit mechanism explicitly.**
+The local implementation records ownership and publication in the same Delta log.
 The alternatives are:
 
 | Mechanism | Why consider it | What must be established |
@@ -60,9 +62,9 @@ The alternatives are:
 | Record ownership and append decisions in the same Delta log | Orders takeover and writes together without another commit history | A required writer protocol and enforcement or refusal on every permitted write path, including other engines |
 | Use a separate durable commit service | Can provide one acceptance interface for several table formats | Protection against direct writes, recovery of accepted but unpublished output, and safe service restart and restore |
 
-Prefer an existing catalog if it can enforce the contract. For a filesystem-managed
-Delta target, compare the same-log and protected-service designs explicitly; neither
-is selected by this memo. A property that only cooperating Sail writers honor cannot
+Prefer an existing catalog if it can enforce the contract. The local filesystem target
+uses the same-log design to avoid a second durable authority. Decide whether that cost
+and storage contract fit Sail, or whether a catalog or protected service is preferable. A property that only cooperating Sail writers honor cannot
 control other permitted clients. Creation, maintenance and retries need the same
 protection as ordinary appends.
 

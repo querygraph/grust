@@ -43,12 +43,13 @@ shallow-wide residual. Shared-host diagnostics establish no production performan
 envelope. [Optional composition evidence](PROJECTION-COMPOSITION-RESULTS.md) records
 the exact scope and every measured case.
 
-Align participating channels at every admitted exchange; ordinary asynchronous
+Align participating channels at every supported exchange; ordinary asynchronous
 merging is insufficient. Hash routing must not use fabricated marker payloads.
 
-Collector retractions and complete final-checkpoint obligations remain required.
-Distinguish cancellation, failure, input exhaustion and durable success. Local
-terminal-error repairs do not establish durably completed writes.
+Collector retractions and final-checkpoint obligations across distributed plans remain
+required. Distinguish cancellation, failure, input exhaustion and durable success.
+The local append coordinator waits for its final table commit before reporting success;
+ordinary query termination alone does not establish that commit.
 
 ## Source participation and execution ownership
 
@@ -84,8 +85,8 @@ A normalized change contains an entity key, complete per-key order, immutable
 event identity, explicit upsert or delete action, payload and semantic version.
 An upsert replaces the whole row. The semantic version identifies the key,
 comparison, action, schema and normalization rules.
-Preserve source provenance outside user projection or require an admitted event
-envelope. Stable replacement-event identity can derive from source incarnation,
+Preserve source provenance outside user projection or require input records
+carrying the necessary identity and ordering fields. Stable replacement-event identity can derive from source incarnation,
 canonical key and complete order; an independent native identifier is optional.
 
 Require a source or application order that distinguishes different changes to
@@ -110,8 +111,8 @@ interval and equality against the current durable version. Repeated identities
 must map consistently within that retained scope. A detected conflict prevents
 that interval's effects; earlier completed intervals remain committed.
 This guarantees stable output for valid inputs, not detection of every invalid
-superseded event in history. Exhaustive verification requires an explicit
-fingerprint horizon, source frontier and state budget.
+superseded event in history. Exhaustive verification requires a limit on retained
+conflict history, a source position proving older events cannot arrive, and a storage budget.
 
 ## Storage and recoverable publication
 
@@ -164,7 +165,7 @@ Extend existing catalog and format commit interfaces. Implement filesystem Delta
 managed Delta and Iceberg adapters, including creation, reset, maintenance and
 schema mutations. Worker execution needs authenticated access to the authority,
 not merely a serialized token. Missing adapters are required build work; targets
-remain unadmitted until enforcement is established.
+remain unsupported until enforcement is established.
 
 Every permitted writer must use the authority or an enforced protocol. A Sail-only
 table property does not fence another engine with direct publication credentials.
@@ -186,9 +187,9 @@ replacing it with blocking queues without examining fan-out can deadlock.
 Use byte budgets, backpressure or bounded spill while preserving ordered control
 progress. Periodic checkpoints alone do not bound memory.
 
-Full snapshots suit only a qualified state-size envelope. Larger state may need
-partitioned or incremental snapshots. Tombstones require a durable source
-frontier that excludes older input before reclamation; arbitrary expiry is unsafe.
+Full snapshots suit only a tested maximum state size. Larger state may need
+partitioned or incremental snapshots. Delete markers require durable proof that older input cannot arrive before they can
+be discarded; arbitrary expiry is unsafe.
 
 For windows, retain Sail's [watermark promise](https://github.com/lakehq/sail/blob/85c6cca01cd521dd778bc200c987a34edf141de1/crates/sail-common-datafusion/src/streaming/event/marker.rs#L18):
 no later row has an older event timestamp. Enforce late-row handling before
@@ -206,8 +207,9 @@ same validated model outside the runtime. Bind effective configuration to prepar
 work; type checking does not establish source replay or target fencing.
 
 Changing identity or ordering requires migration. A complete rebuild may use an
-authoritative snapshot plus a log frontier rather than physical offset zero.
-Prefer a new fenced generation and atomic publication where supported. Preserve
+authoritative snapshot and its matching log position.
+Prefer a new computation generation that prevents the old one from writing, with atomic
+publication where supported. Preserve
 pending accepted effects and define visibility for any in-place reset.
 
 ## Intentional differences from Spark
@@ -220,6 +222,8 @@ correctness; isolate protocol translation from native execution semantics.
 
 Acceptance requires real local and cluster marker tests, permutations and checkpoint
 regrouping of valid changes, slow-consumer resource tests, partial-commit recovery,
-unknown-outcome reconciliation and stale-writer rejection. The integrated path
-and target adapters remain unbuilt. The concrete choices are the first source
-and target, the enforceable commit authority and the public storage representation.
+unknown-outcome reconciliation and stale-writer rejection. The first local Delta append
+path is implemented; [HUMAN-REVIEW.md](HUMAN-REVIEW.md) records qualification and limits.
+Distributed recovery, change capture and other target adapters remain required.
+The public change-state representation and each adapter's commit authority need their
+own implementation decisions.

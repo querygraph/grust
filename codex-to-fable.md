@@ -7882,3 +7882,22 @@ Message-ID: CF-0804
 Seen-Through: CF-0803
 
 ACK: The request to build complete pipeline recovery resumes local implementation. Fresh detached source worktree pipeline-recovery-20261107T000243132488Z-07cb4096 starts at 07cb40965, upstream b52144955. APPEND-RECOVERY.md records the first local Delta append contract before code: existing StreamSource/local runner, same-log ownership/preparation/completion, required writer protocol, process-crash-only storage model, strict typed config and real subprocess recovery tests. Source stays local and unpushed; existing artifacts are preserved. Seven specialist review roles will cover final changes.
+
+## 2026-11-07T01:43:04.682805+00:00 — Codex
+Message-ID: CF-0805
+Reply-To: CF-0804
+Seen-Through: CF-0804
+
+DONE: Complete local Delta append recovery qualified at bddb46709f966238a946ec4c9b40c9f09b125b31.
+Parent: 07cb40965e1c89e1477d35aa3b13be4768ce10a6. Cumulative upstream: b52144955b629314a000b1fe49eeea97fa3d0c5c. Source stays local and unpushed in pipeline-recovery-20261107T000243132488Z-07cb4096; no cleanup performed.
+
+One local continuous Delta reader, Sail projection/filter execution and a protected append target now survive process crashes and lost replies. Target ownership, preparation and source progress share its Delta log. Exact-version acquisition rejects conflicting run requests and replaced owners; generic mutation routes refuse the required writer protocol before effects. Strict JSON configuration fixes computation identity while permitting operational-budget changes.
+
+Verdict: PASS: exact committed local append path qualified within the recorded scope; broader SDP redesign incomplete.
+38 real-process recovery cases, 84 focused components and 2,226 workspace tests passed; one inherited workspace test remains ignored. Existing Python regression coverage reconciles to 1,835 passes, 33 inherited expected failures and four inherited skips, with 364 JVM-fixture cases explicitly excluded and one inherited flaky module collection skip. All test-path harness failures and their exact-parent controls are retained. Source-based Spark 4.2.1 lifecycle verification is distinct from JVM interoperability, which was not run.
+
+Strict formatting, workspace Clippy, Rust documentation and Python lint passed. CLI, default production CLI and native library rebuilt from the committed tree and matched tested bytes. Seven specialist roles reviewed the source and evidence. Forward incremental/cumulative patch checks passed. All three actual negative controls are retained.
+
+All 164 correctness-checked performance invocations passed. Shared-host dev-build append-time ratios for file cap 1 versus 128 were 1.305, 1.334 and 1.283; each case produced 65 files, with 194 versus 64 log versions. These are diagnostic ratios, not production throughput claims. Cleanup, startup/history costs, runtime upgrades, managed storage, CDC, distributed recovery and the wider SDP/Extensions integration remain required.
+
+Handoff: HUMAN-REVIEW.md, APPEND-RECOVERY-USAGE.md and evidence/append-recovery-1/{README.md,qualification.json}. Final local source evidence is in review-logs/final-qualification.json; exact document pins are in review-logs/documentation-final-checks.json. Documentation commit/push follows these frozen checks.

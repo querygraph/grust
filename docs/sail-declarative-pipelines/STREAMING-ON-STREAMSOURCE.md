@@ -154,17 +154,19 @@ Late-data handling is separate from checkpoint frequency.
 
 ## What would establish this design
 
-The local components do not yet demonstrate source-to-table recovery. Test real process
-and task failures before and after saving work, accepting writes, publishing output and
-recording completion. Include lost replies, obsolete workers, missing input, source
-replacement, final completion and resource exhaustion.
+The local Delta append implementation connects these boundaries through a single reader
+and protected target. Its [qualification summary](HUMAN-REVIEW.md) distinguishes tested
+behavior from remaining work. Acceptance requires process and task failures around saving
+work and publishing output, including lost replies, replaced workers, missing input,
+source replacement, final completion and resource exhaustion. Distributed execution and
+other target adapters need the same evidence for their own contracts.
 
 Flink offers a useful comparison: it coordinates source and operator state through
 checkpoints, while external publication depends on the sink connector. Its internal
 leader checks cannot substitute for destination enforcement. The
 [Flink comparison](FLINK-COMPARISON.md) supplies sources and connector examples.
 
-Choose the source-control route, expression-operator boundary and first destination's
-commit mechanism before their dependent implementation. The [decision memo](REDESIGN-REVIEW-PACKET.md)
+Confirm or adjust the source-control route, expression-operator boundary and first
+destination's commit mechanism before adopting them as supported interfaces. The [decision memo](REDESIGN-REVIEW-PACKET.md)
 contains the alternatives; [architecture](STREAMING-ARCHITECTURE.md) and
 [commit ownership](FENCED-TABLE-COMMITS.md) are optional technical references.

@@ -36,9 +36,9 @@ exposed mutation route must enforce the protocol or refuse before modifying reac
 
 ## Public entry and fixed computation
 
-The upstream-based code has no declarative-pipeline command runtime yet. Add a local
-`sail pipeline run --config <file>` entry backed by a typed runtime API, rather than
-pretending the existing Spark `writeStream` lifecycle provides recovery. Its declaration
+Provide a local `sail pipeline run --config <file>` entry backed by a typed runtime
+API. The ordinary Spark `writeStream` lifecycle does not save the source positions and
+prepared writes required by this command. Its declaration
 names one pipeline, one local Delta source, one target and a SQL query over `input`.
 A bounded mode captures the current input end and finishes its final write; continuous
 mode waits for later commits. This first entry does not replace the existing bounded SDP API.
@@ -75,7 +75,7 @@ An empty range still checks identity.
 Save exact file metadata and ordering in bounded immutable pages before a recovery point
 can refer to them. Reuse the complete Add decoder and sorted replay where their contracts
 apply; validate raw log input before parsing can discard duplicate fields or other evidence.
-The first JSON-history path may require complete contiguous JSON history to construct an
+The first JSON-history path requires complete contiguous JSON history to construct an
 initial snapshot. Refuse missing history explicitly; checkpoint-only snapshot reconstruction
 requires a later qualified decoder rather than a permissive fallback.
 
@@ -107,8 +107,12 @@ mutable latest-checkpoint file.
 
 Creation has a stable request identifier. A retry observes the same table or refuses a
 conflicting definition; it cannot enroll an unrelated existing table. Taking over is a
-separate explicit operation with an expected owner and request identifier. Repeating a
-superseded acquisition must fail rather than take ownership again. Retrying an append
+separate explicit operation with the expected owner, inspected log version and request
+identifier. Check both committed and pending run identities before acquiring ownership.
+A different run cannot interrupt a prepared starting boundary. If the inspected state
+changes before acquisition, refuse without replacing its owner; the caller can inspect
+again in a new attempt. Repeating a superseded acquisition must fail rather than take
+ownership again. Retrying an append
 never acquires ownership.
 
 If A checks ownership at version N and B takes over at N+1, A cannot create N+1. Its
@@ -165,8 +169,8 @@ identifier, missing input and prepared files, empty input, changed batch sizes a
 completion. Ordinary reads must succeed; ordinary writes to a protected target must fail
 without changing its log or rows. Test resource failures without advancing progress.
 
-The existing task-panic termination gap also needs a focused repair and control before
-claiming complete lifecycle behavior. Keep all failures, source pins and performance costs
+A task panic or a closed status channel must report failure rather than successful
+termination. Verify those cases with focused regression tests and a failing control. Keep all failures, source pins and performance costs
 in the evidence. Passing these local tests establishes this path only; migration of SDP,
 keyed change capture, managed targets, Extensions, broader failure models and distributed
 recovery remain part of the full redesign.

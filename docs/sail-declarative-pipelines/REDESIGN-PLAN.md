@@ -22,9 +22,9 @@ table reads.
 
 The [Delta source plan](DELTA-REPLAY-SOURCE.md) separates checking the saved source
 description, capturing exact file lists, and reading continuously. Descriptions already
-record table identity, schema and starting boundaries. Complete the file lists and
-reproducible within-range progress next. Progress must identify logical files and rows,
-not a task's temporary assignment.
+record table identity, schema and starting boundaries. The local append implementation
+also saves exact file lists and positions within files. Progress identifies logical
+files and rows, independently of a task's temporary assignment.
 
 Initially reject data-changing rewrites, incompatible schemas, lossy read options and
 missing history. Require immutable retained files and a stable storage location; checking
@@ -37,7 +37,9 @@ The native rate source uses wall-clock data and cannot currently replay it. A de
 synthetic source helps testing but does not qualify real ingestion. Iggy adds broker
 retention, partition changes and client dependencies, so it is a later source option.
 
-Choose the destination's ownership mechanism before building its adapter. Prefer a catalog
+The local append adapter records ownership and publication in the same Delta log.
+Review that mechanism and failure model before adopting it as a supported target.
+Prefer a catalog
 that can check current ownership and the exact write in one operation. Other options are
 a required Delta writer protocol or a protected commit service that approves immutable
 staged output before publication. The memo explains their different costs.
@@ -48,10 +50,10 @@ accepted staged content. Specify service restart and restore behavior: the exist
 bounded-runtime reference covers one authority process, not concurrent authorities,
 power loss or restoration of an older database.
 
-Create and register new targets through the selected mechanism. Attaching the existing
-protected Delta writer unchanged would leave a gap because it accepts only already
-existing filesystem-managed tables. Schema changes, refresh and maintenance must use
-protected paths or be refused. The first milestone includes no unchecked write fallback.
+Create and register new targets through the selected mechanism. The local append adapter
+creates metadata, required writer protocol and initial ownership together. Schema changes,
+refresh and maintenance must use protected paths or be refused. The first milestone
+includes no unchecked write fallback.
 
 ## Keep each increment small enough to inspect
 
@@ -101,8 +103,9 @@ Component tests and the existing bounded runtime supply controls, not evidence t
 these cases work together. Preserve correct Spark-facing behavior and test intentional
 stricter behavior explicitly. Do not weaken assertions to obtain a pass.
 
-The public corpus under `python/pysail/tests/spark/pipelines/` is the starting point.
-Retain `test_delta_sources.py` coverage for snapshot plus later commits, empty tables,
+The existing bounded-runtime corpus under `python/pysail/tests/spark/pipelines/` supplies
+migration requirements. The local command's `_dev/spark/pipelines/` suite does not yet
+establish preservation of that wider SDP API. Retain `test_delta_sources.py` coverage for snapshot plus later commits, empty tables,
 starting versions and timestamps, initial-run-only start options, commits without data
 changes, table replacement and repeated writes. Keep empty-flow completion in
 `test_triggered_execution.py` and failed-run status in `test_end_to_end_cli.py`.

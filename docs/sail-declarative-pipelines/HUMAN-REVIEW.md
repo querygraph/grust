@@ -7,12 +7,18 @@ separately packaged native Extensions, adds an optional scalar-function interfac
 Apache DataFusion Comet, a native accelerator for Spark,
 and incorporates measured performance improvements.
 
-Individual components have been tested locally. Work on a complete local append pipeline
-now follows the [process-recovery implementation contract](APPEND-RECOVERY.md): one Delta
-source, ownership and completion recorded in the target's own log, and real process-crash
-tests. This complete path is not yet demonstrated. The [decision memo](REDESIGN-REVIEW-PACKET.md)
-keeps the alternatives and upstream architecture choices reviewable; the local implementation
-does not establish maintainer agreement or production readiness.
+The local implementation connects one Delta source, a SQL projection or filter, and a
+Delta append target through Sail's continuous execution model. It saves ownership,
+prepared output and input progress in the target's transaction log. Real process-crash
+tests demonstrate restart without duplicate writes and rejection of replaced writers.
+The [usage guide](APPEND-RECOVERY-USAGE.md) explains running and restarting it; the
+[implementation contract](APPEND-RECOVERY.md) explains its choices and
+[qualification evidence](evidence/append-recovery-1/README.md) records the exact scope.
+
+The [decision memo](REDESIGN-REVIEW-PACKET.md) keeps alternatives and upstream architecture
+choices reviewable. This local path covers process crashes while the operating system
+and filesystem survive. It does not establish maintainer agreement, production readiness,
+power-loss recovery or completion of the broader redesign.
 
 ## Fit with Sail
 
@@ -61,18 +67,19 @@ references; neither adds another required approval sequence.
 
 | Area | Demonstrated locally | Still required |
 | --- | --- | --- |
-| Flow events and expressions | Schema fidelity, data-only expression evaluation, worker reconstruction and reporting of returned execution errors | Resolve costly small outputs when data and control messages alternate; complete termination handling and integrated recovery |
-| Source controls and Delta reading | Requests reach live local readers; Delta descriptors record table identity, schema and starting positions; sorted replay releases consumed input buffers | Distributed controls, saved file lists, a reproducible reader and process restart |
-| Delta file metadata | A private decoder preserves complete known metadata and rejects malformed supported fields | Input-format checks, memory limits and integration with saved file lists |
-| Targets and change capture | The existing bounded pipeline implementation supplies merge, validation and staged-write references | Destination ownership enforcement, streaming change operators and recoverable publication |
+| Flow events and expressions | Schema fidelity, data-only evaluation, worker reconstruction and error reporting | Resolve small outputs when data and control messages alternate; distributed recovery |
+| Source controls and Delta reading | Live local controls, fixed source identity, saved file lists and the next row to read in each file | Initial snapshots from Delta checkpoints; distributed source controls |
+| Append recovery | Process restart, lost replies, changed batch sizes, exact row multisets and rejection of replaced writers | Managed storage, machine failures, cleanup and runtime upgrades |
+| Change capture | The bounded pipeline implementation supplies merge, validation and staged-write references | Streaming change operators, durable record versions and their integration with recovery |
 | Native Extensions | Standalone Comet adapter checks and probes from an independently compiled, pinned Comet producer | Package loading, worker integration and limits on native resource use |
-| Configuration | Strict typed configuration and optional Dhall authoring are specified | Shared validation and integration with recovery |
+| Configuration | The local command uses strict versioned JSON bound to its saved computation | Wider SDP declarations, YAML frontend and optional Dhall authoring |
 
-[Source and replay evidence](evidence/delta-add-payload-1/README.md),
+[Decoder component evidence](evidence/delta-add-payload-1/README.md),
 [expression results](PROJECTION-COMPOSITION-RESULTS.md) and
 [native adapter results](COMET-SCALAR-RESULTS.md) record their exact scope and limitations.
-A recorded execution error is covered; a task panic before recording its outcome remains
-an open completion case. The replacement is not ready to take over production pipelines.
+A worker panic or loss of status reporting now produces failure rather than successful
+termination, with focused regression tests. The replacement is not ready to take over
+production pipelines.
 
 ## Keep implementation maintainable and reviewable
 
@@ -90,4 +97,6 @@ not make those decisions.
 Performance remains part of acceptance. Keep slowdowns in the evidence, compare equal
 results and resource use, and treat shared-machine timings as diagnostics. The existing
 projection improvements do not resolve small-batch fragmentation or startup overhead.
-Material regressions remain work to do before the affected path is ready.
+The append writer also creates a file per output batch and repeatedly reads retained log
+history. These costs and cleanup limits require work before production use; the local
+correctness result is not a throughput or scale guarantee.

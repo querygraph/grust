@@ -1,0 +1,456 @@
+{
+  "created_at": "2026-11-07T01:42:19.437748+00:00",
+  "passed": true,
+  "scope": "Local filesystem Delta append recovery after process crashes; no production, distributed or JVM interoperability claim",
+  "commit": "bddb46709f966238a946ec4c9b40c9f09b125b31",
+  "parent": "07cb40965e1c89e1477d35aa3b13be4768ce10a6",
+  "upstream_base": "b52144955b629314a000b1fe49eeea97fa3d0c5c",
+  "tree": "21d95492300f0bb6ca6ac675c981b6c9b9828655",
+  "worktree": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096",
+  "source_manifest": {
+    "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/source-manifest.json",
+    "sha256": "a3077e04a663c05465c4c13c18d1cd0ace78e3786148d5e974ce03db732590ad"
+  },
+  "source_files": {
+    "Cargo.lock": "5d6797276c356680ddd96b46193e9356bcf8be095719ce1835047f491146ed5e",
+    "Cargo.toml": "a63a704992e7f28bab1338c181a5e717835c713c5bdf95b5c8d6d2ae27bbfd2a",
+    "crates/sail-c-udf-fixture/Cargo.toml": "6dfcd09a2013ffefc45377710a9bcda60c4aaddf0c140f828197d048e2b74a6f",
+    "crates/sail-c-udf-fixture/examples/missing_probe.rs": "33e0043ede20b52f7a0653cec3b72132382fca51647ee2f4949242ec24582c0b",
+    "crates/sail-c-udf-fixture/src/lib.rs": "5e222f9137ac6b9a52b48f0adc58e39e59d20b6ec6e1a53ee49cb2a8a79f40d3",
+    "crates/sail-c-udf/Cargo.toml": "34052a555fd917e48ce6ab5c2abc687eb489ef3ae8f81a47855383cc0a172e0c",
+    "crates/sail-c-udf/src/abi.rs": "7d5465de3fe66642914e33e2c8c78872abcdca2df35ecd87a41ee20d341b3197",
+    "crates/sail-c-udf/src/lib.rs": "e679c700540ba3ab61e22f39df897196dabbdab1ae79b8a4ebe956febe78155e",
+    "crates/sail-c-udf/src/loader.rs": "2eb758ba2463077ecae3600aac77661d62e3f5ac655b58f33eab0f3a6900e990",
+    "crates/sail-c-udf/src/nulls.rs": "ddca60e97a98166aeecac5368633e91bc509a6c8f88d517738d46be9a5aedcdb",
+    "crates/sail-c-udf/src/udf.rs": "5022f1f3fa806a5055e81fabca81aa8c6aef63e6554a15bc88584c2010e5bf98",
+    "crates/sail-c-udf/tests/common/mod.rs": "b7f0eb26254541cdff41dea920e339b9cf493a882322cc48f8f473ebf719436a",
+    "crates/sail-c-udf/tests/fixture.rs": "7da5267577b70b312b374f3b4d409f0ee896b00fd3a2a3771217168be5d0d9bb",
+    "crates/sail-c-udf/tests/lifetime.rs": "0079e0d1139630b7f1a5eee327fb42538968207999702606092b0422835850f1",
+    "crates/sail-c-udf/tests/metadata.rs": "7dbcf1b775036c31404d9db19f9c26123751ed676e2debe9b9a11ca77bc7f8bb",
+    "crates/sail-c-udf/tests/nullable.rs": "f7d453788ed5a6b6fb04b10426e6d596caaf3e65e5661cb1377c8a3295707bad",
+    "crates/sail-cli/Cargo.toml": "13ff400ae3356e5ba17c7b3a5d9ebef696473ae3e5dd373a64b51079af1d2331",
+    "crates/sail-cli/src/lib.rs": "9b88c731799a3cd101408ea9e9666dd7ac250e0c749c54f8958485ec28fc07f9",
+    "crates/sail-cli/src/pipeline/mod.rs": "4f6cfad4b70565d26f931b5e993ed72584e4a84ba3a1a9ad35b6e8b986d1af0f",
+    "crates/sail-cli/src/pipeline/test_hooks.rs": "d26114adeac79e41922e6b1d930aacfac4c846f72db30a31c0223cdd0614a878",
+    "crates/sail-cli/src/runner.rs": "36683cd371cf72fec719d9f46469f8985df64af94cfc8010d31726839fc68a08",
+    "crates/sail-common-datafusion/src/array/mod.rs": "d93e7b3a659f2b78e64d75a5f967120929fda4ffc0cf8127a0cd473fe49e4872",
+    "crates/sail-common-datafusion/src/array/null.rs": "d64dca64da53d5a3d79b5dc7dc1fc4758ce424d9b65b97a2938e68ab778cac65",
+    "crates/sail-common-datafusion/src/array/null_tests.rs": "fa46df4ac06b09686a5a9b94b671719c758edac89bb03692b5c21600067eba91",
+    "crates/sail-common-datafusion/src/array/placeholder.rs": "3984b209dcd85a5aeb279c0070e7b36db47e92ea3c8d6f38366232bcaa0b11d6",
+    "crates/sail-common-datafusion/src/array/placeholder_tests.rs": "61d95287e2850fc622c42e812ca72a72a11f15eb2ada907d947a24bd8c47e2af",
+    "crates/sail-common-datafusion/src/lib.rs": "0f7175244733fd5236857394265a538908e5e88e4fec840ba9aea16df203d3d5",
+    "crates/sail-common-datafusion/src/recovery.rs": "393e13c5977f77aa1ffef3bde816b5c9f2aa47acdcef764b14a8ae93fa8fb83b",
+    "crates/sail-common-datafusion/src/session/job.rs": "c7c3eda6f5304e4805c20150acbc5427a8e655529413c247096e91535439f30d",
+    "crates/sail-common-datafusion/src/streaming/control/context.rs": "0b610423fed14fd96fd3275c91fae688ed7eadb358dbed4d39b78b0a048de99d",
+    "crates/sail-common-datafusion/src/streaming/control/mod.rs": "2e8f29931ed9d941403d373cf375ceb191f1985ab1bd039d1ead78018caf2daa",
+    "crates/sail-common-datafusion/src/streaming/control/scope.rs": "e1e6dd8c1bfffb8c07e537224e1580f27355304fd364f9d8c436c7f36a6423a6",
+    "crates/sail-common-datafusion/src/streaming/control/scope_tests.rs": "261e173c7032e150b49829f5f2fe7ac9602f02670fa885c2cf015ee9cd5eb1fa",
+    "crates/sail-common-datafusion/src/streaming/control/types.rs": "76b25f96e31f819e59dfc2b988c551ee440e29afcda9a395751766ebd5d7c4a9",
+    "crates/sail-common-datafusion/src/streaming/event/encoding.rs": "974927b32fb68b9c6867c17677bde14a9903830da73606d99d985b597a987c46",
+    "crates/sail-common-datafusion/src/streaming/event/encoding_tests.rs": "89d497c114279329d398957cad0b4078afa5469bf4eb3708ffb782b2c8fd315f",
+    "crates/sail-common-datafusion/src/streaming/event/mod.rs": "f2a07810554e76f96f8e5a982512c103acd498dbfb379686ac034c904dc523bc",
+    "crates/sail-common-datafusion/src/streaming/event/schema.rs": "c1b568b7d8ec892b6d81655ff3c105aa3cfb9cc1f8fe11f9d3d82a0167a9c25c",
+    "crates/sail-common-datafusion/src/streaming/mod.rs": "a99b292a9978b18d57dc53d66e4413e6ca0d8f047ca687da67716e110327a598",
+    "crates/sail-common-datafusion/src/streaming/source.rs": "65567617ffa3bad4a05ecb00bfde54aeca07bc0ecb6c2da1d4336bbc252fec8d",
+    "crates/sail-data-source/src/formats/console/writer.rs": "2642d003b5b2615379f4f9ded6328b238f327a7f1a6ee2e005f33ff69cf69296",
+    "crates/sail-data-source/src/formats/console/writer_tests.rs": "aad761509234fba3346ed23d61b373d340a58a752e678c6abf6e778bf0bbb639",
+    "crates/sail-data-source/src/formats/python/arrow_utils.rs": "c020a71d9ecc28bfc4ec022969dc4071df063e5f49207ab1c69c405e9fa8fd0a",
+    "crates/sail-data-source/src/formats/python/datasource.rs": "2df89c2353e7f47cfe371cb3469607c008cf5b30f605594f5f41173343f94ed4",
+    "crates/sail-data-source/src/formats/rate/control.rs": "51656b15b1768244160e5fa73620c6dfabc1ad25686493b2a8aebb5f58157934",
+    "crates/sail-data-source/src/formats/rate/control_tests.rs": "063cb13b7d513548fdf399acce7ad333d6f91a7a51688d0de06758d7950e4b7c",
+    "crates/sail-data-source/src/formats/rate/mod.rs": "e5edbf3656f00daf6b1e1138d986e867d6407f99e69232d17938f8d9fc0ad13c",
+    "crates/sail-data-source/src/formats/rate/reader.rs": "d6774404c217637512058e95d4e9d26de2c8714e9e420515eeaef6539fdea82d",
+    "crates/sail-delta-lake/Cargo.toml": "b947557782f4ebefaacab70149b9ee30710af71024d5841c27e3ac102dab98d4",
+    "crates/sail-delta-lake/src/datasource/mod.rs": "54c32226e95626d536989d5fda52fdd46115f73263f2193aadb55b17371e1566",
+    "crates/sail-delta-lake/src/lib.rs": "a10f1efe86fec1b9bc06a727e99b1762c722969ba6fea809a9daca71f10643ae",
+    "crates/sail-delta-lake/src/physical_plan/log_replay_exec.rs": "0a4f1cf45e7be391e187ada7df01c2187d155e65651cdaa94f66eba0fc888e3a",
+    "crates/sail-delta-lake/src/physical_plan/log_replay_exec/arrow_tests.rs": "edf5294a3e7ab6a012c439195a8fca0253653c8f7deb1abf55c9ad35684a739b",
+    "crates/sail-delta-lake/src/physical_plan/log_replay_exec/lifecycle_tests.rs": "b222f137722874ea9c108ea16c0d841f2087775eff9deb3877b2b84544950ee8",
+    "crates/sail-delta-lake/src/physical_plan/log_replay_exec/lifetime_tests.rs": "cdfa1e3586116663191f455d5c838f0919ad73ba826cf0e0004a75d5348b7a2a",
+    "crates/sail-delta-lake/src/physical_plan/log_replay_exec/sort.rs": "ab796be6757b3d489ac20445437c969ad552abf5365d319fe6755479654e2ec3",
+    "crates/sail-delta-lake/src/physical_plan/planner/context.rs": "ed5c6b2429b757251343edd75793842d5cb36a3a16717219d88049bafe8c0674",
+    "crates/sail-delta-lake/src/recovery/codec.rs": "181381d57500e6c3fc61ecfc0bd8c14231cc47ea3bd19e00725db405d9ff54d2",
+    "crates/sail-delta-lake/src/recovery/mod.rs": "15d957ab79d11514089e3f6db8154fa194b6b282d66973ad7443b9c4cd25a834",
+    "crates/sail-delta-lake/src/recovery/storage.rs": "4095271a8d95677d7071dada815edad25a35c5ec9d9451fb6f5c07fcc436c265",
+    "crates/sail-delta-lake/src/recovery/target.rs": "7a87dab2ae36d2ec704ff3d73d6fdabe69f51f86a95a4a0dc3f527a0316daa48",
+    "crates/sail-delta-lake/src/recovery/tests.rs": "bb008163a844df8403f0265c84812d92b8238449961bfdc1592741d3c6c9da9a",
+    "crates/sail-delta-lake/src/recovery/types.rs": "a7d03afcc6fb079171ef47d0802dbbb8e86559789d7fc5cfeae5fbab48fc38e8",
+    "crates/sail-delta-lake/src/recovery/validation.rs": "f00a1bce7accd141c4aaf25937f9af48d48de3b7f005fe8730b36ae8d3e63c57",
+    "crates/sail-delta-lake/src/replay/admission.rs": "ee8732ab56a4f90cec5079dba024bcb2bc19301d63b53a9ad0402b7e5e14f53a",
+    "crates/sail-delta-lake/src/replay/capture.rs": "6de544ced314ce2ee679c09e22c8ec05fafa67fb2e98331e56547fe67e9b4cda",
+    "crates/sail-delta-lake/src/replay/codec.rs": "18bedb6b7b88b65ddb117bc7313d3257771b7c23cc07c779e2dbe134d9467c9f",
+    "crates/sail-delta-lake/src/replay/descriptor.rs": "b00f571ef1d71cda5d3bb225697a14ee165cc5399dea5f55be096b628498241a",
+    "crates/sail-delta-lake/src/replay/json.rs": "80794f8b6ffcaf638058fc7388fa97c08be4800b0635464b39325ed39e88b162",
+    "crates/sail-delta-lake/src/replay/manifest.rs": "e0b2e3281b0aeeb02d2dcd5f78630857707d0e54e91b054d7b297e2e1d2141fc",
+    "crates/sail-delta-lake/src/replay/mod.rs": "0b8a7125c3567392f06d8773b581a2a8dfd67b032c4c72dbc1aa51545ecf23c0",
+    "crates/sail-delta-lake/src/replay/payload.rs": "ea29c9cfc7475a6f8bc5951c24b4e72e7236f22a3d59664383b1688b5185722e",
+    "crates/sail-delta-lake/src/replay/payload_tests.rs": "1a2411fd5222b62d9a39e06a214e19a032fedccbe68b4f4bcc78b278d070aba9",
+    "crates/sail-delta-lake/src/replay/position.rs": "ac5c38aa0e4ecd6a4a8c9415fba83290f082185a053063689748889d1e8320d9",
+    "crates/sail-delta-lake/src/replay/properties.rs": "3b88aba67c402619336d1440a39744a4b50ac564d6bc85932ee7da72518392e9",
+    "crates/sail-delta-lake/src/replay/raw_json.rs": "2b65c1d75f596726558f75a9651ae3d2798101698c95b296aea2cb3ec17e7362",
+    "crates/sail-delta-lake/src/replay/raw_log.rs": "9dbbcb9a26615aebe3a168b9ad098f05a12e0baae78c9c33f4f49c9da6687c29",
+    "crates/sail-delta-lake/src/replay/reader.rs": "e59d12ac171e8f9e7e0e0db424d4040ce68d26231fe326eb94b577d3e867246f",
+    "crates/sail-delta-lake/src/replay/reader_core.rs": "64bfb88c5df4a5111bbc1f4d2c4cafde341eacdf8b091e3d7da74ea6cddaf53d",
+    "crates/sail-delta-lake/src/replay/source.rs": "cf6b42788d4a5ce2c98d6df862e908c5d2208012a80688dad4227d0ee85faafe",
+    "crates/sail-delta-lake/src/replay/source_tests.rs": "c9c510d3735aaa725267888465f99cf4414fcf2feee9e373f2bf0484da5c63ca",
+    "crates/sail-delta-lake/src/replay/tests.rs": "3b9c5d3ebf10d07e80ad0cf0b8617a68b74a25e3ae18327d548cc3af853bb835",
+    "crates/sail-delta-lake/src/replay/tests/admission.rs": "d7faa32c342c52c39a29cafbbf12d724610111aab9aadc8438ad04317ee1dbb7",
+    "crates/sail-delta-lake/src/replay/tests/capture.rs": "34f14c43578dc1a3d3ed043f7919a4d806da2cb7f7b93b045116d9e83395c4bb",
+    "crates/sail-delta-lake/src/replay/tests/descriptor-v1.json": "0fc6a6d4fbea2803dfe461edec075559aa55c61a020a551eea8067db0d157227",
+    "crates/sail-delta-lake/src/replay/tests/descriptor-v1.sha256": "96de4596695bd0612ea3abf7ebbdb0a081ec286934ef18fa568a47606f980a28",
+    "crates/sail-delta-lake/src/replay/tests/store.rs": "add2354a43e9b1e69f19a0621671d09a4ae3e6428c2bd2139bc7ee47465cd276",
+    "crates/sail-delta-lake/src/snapshot/mod.rs": "b4f136479525dcee8c84b40d92e1917ea3ab0e43d7844814bcfc165cfebcc515",
+    "crates/sail-delta-lake/src/spec/metadata.rs": "023583f729ffeb1c3729150f57e5dfe436e11892f7147f39a9cfa563c6de703e",
+    "crates/sail-delta-lake/src/spec/mod.rs": "afd2cd2227de37f27d2772ab7691e7dd3c2d3a1f3f8231598ecf9d6f93ce41bc",
+    "crates/sail-delta-lake/src/spec/properties.rs": "507c0e6dfdbaf3b8c5aa5d958edb72aace618901cb51861e272079dbf51d01ca",
+    "crates/sail-delta-lake/src/spec/protocol.rs": "d6fc41dd4f4f9d8cba14b90fa446cc15850a8c987d4ecea908f786369b9de31f",
+    "crates/sail-execution/proto/sail/plan/physical.proto": "03ed6a1ab9cae76b8d5e47246c2a0f04e60e63522c448164ba2784c3efb3dda0",
+    "crates/sail-execution/src/driver/registry.rs": "f16b8132170e228c55eb3ae2acdd256e7059f7260a8a3e7e1d1aabec374c1a87",
+    "crates/sail-execution/src/job_runner.rs": "0e4e0a3d0c29a6c9b10590d12c1a5a924dc925043bb7fe9dc3702a85dcf222ee",
+    "crates/sail-execution/src/job_runner/source_control.rs": "17da8cb742795b6037372e32d2c10de9829bef644ccce899db3e18294270125b",
+    "crates/sail-execution/src/job_runner/source_control_registry_tests.rs": "81a4b0b17655898b4353e63a34f03477f7ea82ccac428cf430d229a8b9fec558",
+    "crates/sail-execution/src/job_runner/source_control_tests.rs": "a64b6bc62990cb0fef66b3a1bd518e42a9f862df47f9b29ef6d89d4c499ca70b",
+    "crates/sail-execution/src/proto/codec.rs": "6acaf2c4e304e8054eaf273b4820d9dca22406c8423c806dec9f5152a2503b4a",
+    "crates/sail-execution/src/proto/source_control_tests.rs": "93688a07a70c8fdc482338d42da2db9d4bf8fe72aed7e88671fae5571ad2ca13",
+    "crates/sail-execution/src/proto/stream_projection_tests.rs": "9771862141ef03a4bf2b63791677ee668bec05f02dbd5ff6c33834da80e60ea4",
+    "crates/sail-logical-optimizer/Cargo.toml": "bdd17a9cfacee3a8a91c01ec4a16960eaf84ffd0b42a03123bd6d7700a656d37",
+    "crates/sail-logical-optimizer/src/lib.rs": "92934922cf92cb8c5267025f72ec07416e521c0953ad2f6c2bfaf8c622583387",
+    "crates/sail-logical-optimizer/src/optimize_projections/composition_tests.rs": "67c554eecd482dcfd67cf1c7cf1820591858f2e0217cadaec58acd72b9057bb7",
+    "crates/sail-logical-optimizer/src/optimize_projections/mod.rs": "ab210de37085fdce9854a09ce0380872749f2be5d2c71d06e95773fbd0920653",
+    "crates/sail-logical-optimizer/src/optimize_projections/referenced_indices.rs": "b904fb830e5360731539fb31a801adb080802aac9ed8e38cc9055b0c8f2b1254",
+    "crates/sail-logical-optimizer/src/optimize_projections/required_indices.rs": "cb5d3b4d3f62dba7da03c35d2b582595d25e6b507b0426e2bbed920fd73afbcd",
+    "crates/sail-logical-plan/Cargo.toml": "64fc5620a77b6d1358edf1a099155a8d5f335f50b6b48e2b2433636bcef874e4",
+    "crates/sail-logical-plan/src/streaming/collector.rs": "a19285929813d16973a437f9cb533db94f3405405e3f9dad46090b76be78b8a1",
+    "crates/sail-logical-plan/src/streaming/mod.rs": "ef4fe6f0fbe75061a9f343ab7aa20f179087eb3d1eda639d828d18da23958472",
+    "crates/sail-logical-plan/src/streaming/projection.rs": "f43576eb9124d213790ab099803eedc38f0a662da9381f821e53299b3aeec9db",
+    "crates/sail-logical-plan/src/streaming/source_adapter.rs": "0bc3c2a0db692159eb1530576154e2142cf442b04d3d48b38baabfc381ffbbc6",
+    "crates/sail-logical-plan/src/streaming/source_wrapper.rs": "2e1d8d5837a3bbb151976f0e215cdbd0ba3455f5ccc579047b48fbcb4e2b85e6",
+    "crates/sail-logical-plan/src/streaming/source_wrapper_tests.rs": "4220b030cdf7f0a15479707fd64e75af631b10ff6075318ff0c7e2299bbad1b4",
+    "crates/sail-physical-plan/Cargo.toml": "0848e98589392d0bc7aa4853df52fa56b389694a4cf8c832dd5683518de935e5",
+    "crates/sail-physical-plan/src/streaming/filter.rs": "cb8b337f46395c0e76573eeca068586871e7ca7e84ee800756558fe0af3026dd",
+    "crates/sail-physical-plan/src/streaming/filter_tests.rs": "ab1748fc3d7388cabe2f3a9b96c10f634a49173c7db350a3ab09749dc6ebacbe",
+    "crates/sail-physical-plan/src/streaming/limit.rs": "4e16d5a85e1d457cd2459f8749338bd7e4fbc9a06909107ac517cabea44efd2b",
+    "crates/sail-physical-plan/src/streaming/limit_tests.rs": "203a293af10c3b1733f97356eed278d193cd97dbad9c817afbb53c13e260051b",
+    "crates/sail-physical-plan/src/streaming/mod.rs": "55728d777451b9644de8ab905c43cf9be469b4270de61e4d108495ada80caa34",
+    "crates/sail-physical-plan/src/streaming/projection.rs": "c14ee2329ef2b0cedc0eb4c7d51bb638ffeb5566f258adbc6a433111f2a94baf",
+    "crates/sail-physical-plan/src/streaming/projection_async_tests.rs": "e394d16cb0041727b223eeefc40f719b25ec6525d89af4c41c600a1432258260",
+    "crates/sail-physical-plan/src/streaming/projection_metrics_tests.rs": "584e1712fe5803a519a301241bc34a3c57eb3c1509adf8e6b764bfcbc6926756",
+    "crates/sail-physical-plan/src/streaming/projection_tests.rs": "6c0fe6928beccdc5b77c5250810210cae0d3e44d71ab1060a8b786fc67fbdd7b",
+    "crates/sail-physical-plan/src/streaming/projection_types_tests.rs": "c30be8094f9508c5b90813922eae7b7f0facaa2dbfbe0d1a416b34aa134e6e4f",
+    "crates/sail-physical-plan/src/streaming/source_binding.rs": "b8761e61a9a1383f8800890faf3dac1181a1c8c3cbd3350bb1a8aa4ed5d82ebd",
+    "crates/sail-physical-plan/src/streaming/source_binding_tests.rs": "b5e986f3a8c66765c15b5b283f98374ee8b6b148324d47983587298aadaf20be",
+    "crates/sail-plan/src/explain.rs": "6006b9b53f521712fae7b73ed298a41bc078c031208cc914e2248f7e65ae6641",
+    "crates/sail-plan/src/lib.rs": "6056cad6e99b16f6be2a4ebd70799393f95864dc8d49de4062bb85c6bea00ce6",
+    "crates/sail-plan/src/optimizer.rs": "bd72af6797a2ad3e64a1734d1d0f730648d3ef2d6a9b0c58986984c5c64a6b27",
+    "crates/sail-plan/src/resolver/query/limit.rs": "39840fef018835d04f6521bc11353bbca98427d21f2315a26d68fffcd28f94de",
+    "crates/sail-plan/src/resolver/query/pivoting.rs": "e24e9252c7345d8ba2eb79ba5658c136f215ab1d89299a4b0d3946783c86dabc",
+    "crates/sail-plan/src/resolver/query/stat.rs": "7051d15cf1d0485b99b40e5de0629c834b02beb0a92c04d52cd8cad3bb691d63",
+    "crates/sail-plan/src/resolver/query/time_travel.rs": "db036b499728172050eb5daf60c825218b0dc0aa1e4fd10f2458fd96c0e3be6c",
+    "crates/sail-plan/src/streaming/mod.rs": "9c38ad8284b3b6a79c84fc207c8a44603e60355313804c7b5363a2abbb7cbcd6",
+    "crates/sail-plan/src/streaming/preparation.rs": "f73db9f978a12b998cc5f0709394562de92beb184e5411000aa7ed401eec972d",
+    "crates/sail-plan/src/streaming/rewriter.rs": "44bc776de569f2e88aa6bfabe727fbc571e15ba7b3cd6c5177ef2089ba7528c2",
+    "crates/sail-session/Cargo.toml": "5e137c12683c7007a0cb7d65c07a68b4ea31394dc7874ee6675df9f96a6dd407",
+    "crates/sail-session/build.rs": "d513c523386f743385dc6b46ecf52d1f0e5894a444bd2ba9e87ac1fac70fdba1",
+    "crates/sail-session/src/lib.rs": "a730c369657be567ca6fdb5860ddcd3c6e24b0981f384f50021da24176050f57",
+    "crates/sail-session/src/pipeline/config.rs": "7d70f18940798d0c4265d8760bc8135b90abf55acf38790802d086bcefecd1a9",
+    "crates/sail-session/src/pipeline/mod.rs": "c62bcb8f59b7295e8adafce8e60b0def11ca52717f0235258bd884950b48896e",
+    "crates/sail-session/src/pipeline/planner.rs": "2268a2db668d5b4edc39a512acc30d3e71ac93ac5241963a6f2606124e836aad",
+    "crates/sail-session/src/pipeline/runtime.rs": "a073ac8b939c8b395141935e903ec250a7aa561726f8b24c14d919f7645c0311",
+    "crates/sail-session/src/pipeline/state.rs": "6178cf1b8861dba49730f02b553283584ff70f274100e7de1ade1d86706d7a70",
+    "crates/sail-session/src/pipeline/writer.rs": "5e8ebe3b8617232f1f8c0a645a9ccfc1c03d7f033ed16a9a80cd4cd96268388f",
+    "crates/sail-session/src/planner.rs": "701a9c214835c5e3118b45296ad46b3c66aa5c904cc42cdc5b64bcdea6f0ba3b",
+    "crates/sail-session/src/projection_composition_tests.rs": "bfff70f991cd6793e501ce5b88968a265ed8384db631fbcc527fb364df6a1c5a",
+    "crates/sail-session/src/source_control_tests.rs": "41ff37a0184a90e71dcd23cfa96650354e9406cc0e675a3a3563e75aae1d2494",
+    "crates/sail-session/src/streaming_participation_boundary_tests.rs": "3ba9cbf2c5c2bb2599124242abbdd205bf0286ce7f62f4b065dc85814e237614",
+    "crates/sail-session/src/streaming_participation_optimization_tests.rs": "c3accb1122a859f2254eb9711c991bd532c590bcfe1fbb7452a8de79f7dff35c",
+    "crates/sail-session/src/streaming_participation_tests.rs": "7425737dcfe84b04a5b9ef95481b9b111e114000f2161ed42b225d93e7df4b60",
+    "crates/sail-session/src/streaming_projection_tests.rs": "08dc4515d42bbe6e5b96eb0323a51c1e2af31de081fa540a57f23f6fb2f071fb",
+    "crates/sail-spark-connect/src/error.rs": "d9233d16f1e2b82d3ea9b6c7c76f913e72bef4473bf0b408e1361543ac1ef34e",
+    "crates/sail-spark-connect/src/lib.rs": "de5c8329d89e5c0443b71369cc31ab63061fd90cfd132a34c55ce79f1bdb3ef4",
+    "crates/sail-spark-connect/src/proto/data_type.rs": "ac765e92a6bce4978bd4c02c53005510a467b0dd8554e7f4424a5501c1d9cef5",
+    "crates/sail-spark-connect/src/proto/data_type_arrow.rs": "0f6e51950b281366c5f46717475b5face39338b2abc9c981be5f2ab5d36be009",
+    "crates/sail-spark-connect/src/service/plan_executor.rs": "d0f48b20966de88dcdb6b09852a8d199e086fef7e5f11b3c66526f263c354bf0",
+    "crates/sail-spark-connect/src/service/plan_executor_tests.rs": "4eccb5a05d4864b9e3ea1c00e5789305b6814670a8eb2003f08bb2c537bb7544",
+    "crates/sail-spark-connect/src/streaming.rs": "fef354a58f82db8f0436047971d682e39cffc417c515bc7b1a73228d79b1a334",
+    "crates/sail-spark-connect/src/streaming_tests.rs": "0ea27e56326cef12f03444349c87a584cb1b86125c989dbd05867c31dc03a964",
+    "crates/sail-telemetry/Cargo.toml": "0526afa2d8852e4fbc79cec628734a4cb618b903b8991bf9767d74a302f971a3",
+    "crates/sail-telemetry/src/execution/metrics/mod.rs": "14fff2bb876034c0370964a894a53f3cd7e7f76571f8b23c423cf70bc0d30db9",
+    "crates/sail-telemetry/src/execution/metrics/projection.rs": "5b8184aeda205b8abe931e27e1432d7467cd02a68388775596af789ea38d2dea",
+    "crates/sail-telemetry/src/execution/physical_plan.rs": "09105f67f1372fe7f127920709141ebf1df99a790886ee5f0e01728ebdd96eb1",
+    "crates/sail-telemetry/src/execution/source_binding_tests.rs": "a86afe7166560d238677e8729548ed0650a5d661e0e0f5a226aac7e21d7aaf44",
+    "python/pysail/tests/_dev/spark/dataframe/test_projection_composition.py": "6057f05410b00f15fd8094f35bf5e934f008e3d6085e1ca5584e254e2682ee1e",
+    "python/pysail/tests/_dev/spark/datasource/test_rate.py": "4e5b9f749b2e4b408f652a3e1b0b8f829ee67fdfb9709fda5a59d5062612b391",
+    "python/pysail/tests/_dev/spark/delta/test_delta_sorted_replay_cases.py": "5a6c085def48356c38558d2fef41b30f824cdb3b420189fef67f0cd101c47d0a",
+    "python/pysail/tests/_dev/spark/pipelines/conftest.py": "935fe9eb0e599e3794ce695b8eccdf990aa3936b0ba13ea26a77448aa3d67df7",
+    "python/pysail/tests/_dev/spark/pipelines/test_append_recovery.py": "a4013e76004b5012601453f77cc4e01a622d4d1ad129cb6131ba55029e249e9d",
+    "python/pysail/tests/_dev/spark/pipelines/test_append_recovery_types.py": "9382b8136d64265dc3e6e7140f4230e97ca81bce427c7dc69bed392958b02753",
+    "python/pysail/tests/_dev/spark/streaming/test_participation.py": "bfe60d44ffce2026ac38baa8b2c20e0a5ac459a5bd9a095e1cdc85c21973b8a7",
+    "python/pysail/tests/_dev/spark/streaming/test_projection.py": "993a695a73ebd76beb895d9342c881668efd7f5017f0138660094ea65eff8b33",
+    "python/pysail/tests/_dev/spark/streaming/test_streaming_failures.py": "4f24742757e6bbe4133bb6824a180d87873fcb5425f34584140045754d141a6c"
+  },
+  "patches": {
+    "increment": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/increment.patch",
+      "sha256": "7a10b923041de8b3b4724d0c7150af19f8758f1aea40d8af9933891ed6aa0c33"
+    },
+    "cumulative": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/cumulative.patch",
+      "sha256": "1b41aee84825cdda6ffbee0198b57b9e1d2602d0f9fd0ebbd5848b46f21e6f5a"
+    }
+  },
+  "gates": {
+    "recovery-immutable-mechanical-v1": {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-immutable-mechanical-v1/receipt.json",
+        "sha256": "9468d5cb4c05d2ac3c8e853457ecd8d318ddf6d9f96047da913d5348329b95d6"
+      },
+      "verdict": "PASS: formatting, strict workspace Clippy, strict Rust documentation and Python lint"
+    },
+    "recovery-immutable-workspace-v1": {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-immutable-workspace-v1/receipt.json",
+        "sha256": "c2e9aeea9b1dfccee950c587267e441b45ed5516e93c4d85aef6ba3a8e61b260"
+      },
+      "verdict": "PASS: frozen workspace tests; public regression, performance and immutable qualification remain separate"
+    },
+    "recovery-immutable-e2e-v1": {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-immutable-e2e-v1/receipt.json",
+        "sha256": "9a4da2626b0c64fb4dbe55ec13d456c85636d651407ceda6b678ab719b69d7d2"
+      },
+      "verdict": "PASS: 38 real-process recovery cases; exact candidate artifacts"
+    },
+    "recovery-immutable-artifacts-v1": {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-immutable-artifacts-v1/receipt.json",
+        "sha256": "2f90703cdfcdfd06097aea0c9092f15fcdf04b44f57716f911f4f7e59a306ba1"
+      },
+      "verdict": "PASS: committed-source CLI, default production CLI and native rebuild match tested artifact bytes"
+    },
+    "append-performance-v3-trials3": {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/append-performance-v3-trials3/receipt.json",
+        "sha256": "a9c8e664a56fd4e24826a2ac5d6973758bd7394e8b695e9123e34fa11dd19f36"
+      },
+      "verdict": "PASS: correctness-checked shared-host diagnostics"
+    }
+  },
+  "artifacts": {
+    "cli": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/sail",
+      "sha256": "cb731857e974e8c7f2420021b51f4637c56441b59b735e6a76b7648cbb6d5c83"
+    },
+    "production_cli": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/sail-production",
+      "sha256": "818fb3ffec80c25ce61609432cb7d8a75df56a047b0833459ef28f8a6179b7e5"
+    },
+    "native": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/_native.abi3.so",
+      "sha256": "9a0fb3a6049e00422c0b0a4abe7434d327483721b76589ed7c4ded1eeee29b4c"
+    }
+  },
+  "rebuilt_artifacts": {
+    "cli": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-immutable-artifacts-v1/sail",
+      "sha256": "cb731857e974e8c7f2420021b51f4637c56441b59b735e6a76b7648cbb6d5c83",
+      "tested_path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/sail",
+      "tested_sha256": "cb731857e974e8c7f2420021b51f4637c56441b59b735e6a76b7648cbb6d5c83"
+    },
+    "production_cli": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-immutable-artifacts-v1/sail-production",
+      "sha256": "818fb3ffec80c25ce61609432cb7d8a75df56a047b0833459ef28f8a6179b7e5",
+      "tested_path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/sail-production",
+      "tested_sha256": "818fb3ffec80c25ce61609432cb7d8a75df56a047b0833459ef28f8a6179b7e5"
+    },
+    "native": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-immutable-artifacts-v1/_native.abi3.so",
+      "sha256": "9a0fb3a6049e00422c0b0a4abe7434d327483721b76589ed7c4ded1eeee29b4c",
+      "tested_path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-artifacts-v3/_native.abi3.so",
+      "tested_sha256": "9a0fb3a6049e00422c0b0a4abe7434d327483721b76589ed7c4ded1eeee29b4c"
+    }
+  },
+  "source_candidate_prerequisites": {
+    "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/candidate-ready.json",
+    "sha256": "58724cb3b5e2ff40539d56f7d5bdca53f498c24c3ecb60271fb0b7e57292bf9a"
+  },
+  "counts": {
+    "recovery_process_cases": 38,
+    "focused_components": 84,
+    "workspace_passed": 2226,
+    "workspace_inherited_ignored": 1,
+    "python": {
+      "passed": 1835,
+      "xfail": 33,
+      "skipped": 4
+    },
+    "python_unique_selected": 1872,
+    "python_jvm_cases_excluded": 364,
+    "python_inherited_collection_skip": 1,
+    "performance_checked_invocations": 164
+  },
+  "python_resolution": {
+    "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/python-regression-resolution.json",
+    "sha256": "5ea4e58e59c16cd7ba7c406e8fdec030629112e10da24d6b94156e38ff698af5"
+  },
+  "independent_reviews": [
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/design-scope-v3-review.md",
+      "sha256": "31b5cf2e5a8c1179ec7ca097324e4902a93297fa01e815addc6fae493b109c42"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/design-scope-v3-pins.json",
+      "sha256": "67393565dfc50072cd1840100e7200c6d80fcc07628b1388719a602c9ac06294"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/SOURCE-RESEARCH-PERFORMANCE-V3.md",
+      "sha256": "c4e04b0b5912df7bd921a230d539bbbb6ac3f25ebc92ee9bd374669fc1a2a0c5"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/APPEND-PERFORMANCE-RESULTS-V3.md",
+      "sha256": "c27c079b0df0e3355533aa8a361b191deb7bdba88e4daee79d2fc0a6c7025228"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/append-performance-v3-analysis.json",
+      "sha256": "9be243d41b9eb149602a31ed98882a372e6966231d0cc4ad8b3256bf50f5db4c"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/source-research-performance-v3-pins.json",
+      "sha256": "a1830196c56925b42dffb63feab310481515952054290bbb04ab09b3700ac4d6"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/spark-regression-final-source-review.md",
+      "sha256": "a11d4578a1151714af9fff6ebe74d56c7b5bff7fe4b8a32dea0ce745c1a22592"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/spark-regression-final-source-pins.json",
+      "sha256": "d90ae5698b7186dded0a888de1752cd5f814e8b35049b2fad51a70b672ed1938"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/test-oracle-independent-review.md",
+      "sha256": "763a04dbb8f1d57daf93e1a28f5ed82bd3fe1ff9f65bfd9f7691fcb4fe2d7f33"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/independent-final-evidence-audit.json",
+      "sha256": "274dcf258870e43436b93c9a80b309e815ecae5c5145b7937f37e6020b527ca3"
+    }
+  ],
+  "negative_controls": [
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/creator-negative-v1/control-result.json",
+      "sha256": "d698dcbc683b6944397bd24456e5817972643fec49b3a6a2e06a889d93fb4916"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/lifecycle-negative-v1/control-result.json",
+      "sha256": "2f7bd0be6134a9f0b4b0000f4700a2bcc903caa16a5231b34fe31385471da6e0"
+    },
+    {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/pending-run-negative-v1/receipt.json",
+      "sha256": "f59a8590458579d5a84f6f6b80bf62b5692da9c589f858af81a0e8e49b5c6a65"
+    }
+  ],
+  "performance": {
+    "receipt": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/append-performance-v3-trials3/receipt.json",
+      "sha256": "a9c8e664a56fd4e24826a2ac5d6973758bd7394e8b695e9123e34fa11dd19f36"
+    },
+    "summary": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/append-performance-v3-trials3/summary.json",
+      "sha256": "0ad61386a0264083b6ab4333e83433549773b74a7600db85e580cde4d5ec9a55"
+    },
+    "measurements": {
+      "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/append-performance-v3-trials3/measurements.csv",
+      "sha256": "43fd75e79e4f63c3658cdb1b5e2a05daa9f3aed82f6e66827962d829eaae127b"
+    },
+    "build": "dev",
+    "host": "shared macOS; warm/uncontrolled cache; ratios diagnostic only"
+  },
+  "retained_failed_runs": [
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/lifecycle-negative-v1/receipt.json",
+        "sha256": "cc2d10ff95490c5ce28346315ec5a292b0c616cae3a714b7c4961b3d4c430034"
+      },
+      "error_summary": [
+        "AssertionError"
+      ],
+      "finished_at": "2026-11-07T00:54:23.166114+00:00"
+    },
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-components-v1/receipt.json",
+        "sha256": "4b56e7e7169d08f62ffd00c0a830853b74211bc834ab3ad745819b21e50a353a"
+      },
+      "error_summary": [
+        "subprocess.CalledProcessError: Command '['git', 'write-tree']' returned non-zero exit status 128."
+      ],
+      "finished_at": "2026-11-07T00:39:33.164255+00:00"
+    },
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-components-v2/receipt.json",
+        "sha256": "98026ffdd043af3a4a8f658bf4d61733e2f884edd61237e1c86284f64f49f2c6"
+      },
+      "error_summary": [
+        "AssertionError: ('components', 100)"
+      ],
+      "finished_at": "2026-11-07T00:42:21.117566+00:00"
+    },
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-e2e-v1/receipt.json",
+        "sha256": "18dc5a32c9e2c231edfaa0d814a09a9cf43d29b07ca6151a5dba89d8b9750b1a"
+      },
+      "error_summary": [
+        "AssertionError: ('pytest', 1)"
+      ],
+      "finished_at": "2026-11-07T00:43:14.209158+00:00"
+    },
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-preflight-v3/receipt.json",
+        "sha256": "7c7b1dd5b6cdacf24ca1d0158c9532d3f2655c43dbd1f6c1b6b050fa44779659"
+      },
+      "error_summary": [
+        "AssertionError: \"review-logs/recovery-python-regression-v3/fixtures/test_insert_partition_clause_u2/\\303\\211=1/part-00001-33d58877-d288-4b1c-85ea-dd6e2eab728f-c000.snappy.parquet\""
+      ],
+      "finished_at": "2026-11-07T01:13:14.287661+00:00"
+    },
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-python-parent-path-control-v1/receipt.json",
+        "sha256": "d1b39bf955cd60cf942b5fd8d85b9b682a0f8e43abeede3c2cc9853e3afd79ec"
+      },
+      "error_summary": [
+        "AssertionError: ('parent-corrected-path', 1)"
+      ],
+      "finished_at": "2026-11-07T01:17:29.489224+00:00"
+    },
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-python-parent-path-control-v2/receipt.json",
+        "sha256": "79d98e96e2f5e22d0b0ea43f695771d55311a905f58c078967f50f7d5a6afb8c"
+      },
+      "error_summary": [
+        "AssertionError: ('parent-corrected-path', 1)"
+      ],
+      "finished_at": "2026-11-07T01:18:01.068803+00:00"
+    },
+    {
+      "receipt": {
+        "path": "/Users/alexy/src/sail/tmp/pipeline-recovery-20261107T000243132488Z-07cb4096/review-logs/recovery-python-regression-v3/receipt.json",
+        "sha256": "ee2092433c8bfa0faa0aaf2b87a0ace9a32daa32231e029d955a661be3c8e39b"
+      },
+      "error_summary": [
+        "AssertionError: ('pytest', 1)"
+      ],
+      "finished_at": "2026-11-07T01:14:29.776507+00:00"
+    }
+  ],
+  "not_run": [
+    "JVM Spark/Delta interoperability for this increment",
+    "distributed recovery",
+    "power-loss durability",
+    "optimized-release performance"
+  ],
+  "verdict": "PASS: exact committed local append path qualified within the recorded scope; broader SDP redesign incomplete"
+}
