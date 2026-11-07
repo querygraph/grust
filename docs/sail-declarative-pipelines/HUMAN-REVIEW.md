@@ -7,11 +7,12 @@ separately packaged native Extensions, adds an optional scalar-function interfac
 Apache DataFusion Comet, a native accelerator for Spark,
 and incorporates measured performance improvements.
 
-The work is ready for architectural review. Individual components have been tested
-locally; a complete pipeline that recovers through process restart has not been built.
-Resolve the choices in the [decision memo](REDESIGN-REVIEW-PACKET.md) before further
-implementation that depends on them. The memo contains the context needed to decide;
-code and test records are supporting evidence.
+Individual components have been tested locally. Work on a complete local append pipeline
+now follows the [process-recovery implementation contract](APPEND-RECOVERY.md): one Delta
+source, ownership and completion recorded in the target's own log, and real process-crash
+tests. This complete path is not yet demonstrated. The [decision memo](REDESIGN-REVIEW-PACKET.md)
+keeps the alternatives and upstream architecture choices reviewable; the local implementation
+does not establish maintainer agreement or production readiness.
 
 ## Fit with Sail
 

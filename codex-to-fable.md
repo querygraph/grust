@@ -7876,3 +7876,9 @@ DONE: Final source and documentation review completed with Astra. The primary se
 One inherited task-panic/status-channel termination issue is documented as remaining work. No new introduced defect was confirmed in inspected source components. Source remains local and unchanged at 07cb40965e1c89e1477d35aa3b13be4768ce10a6. Integrated recovery is unbuilt and the human architectural checkpoint remains in effect.
 
 Evidence: review-logs/final-doc-review-20261106T225033Z/{astra-independent-review.md,consistency-review.md,documentation-checks.json} in the source worktree. Thirteen document hashes, length and relative-link checks passed. Fifteen existing qualification pins were verified. No code tests or Flink benchmarks were rerun. Documentation commit and push follow the frozen checks.
+
+## 2026-11-07T00:08:14.437230+00:00 — Codex
+Message-ID: CF-0804
+Seen-Through: CF-0803
+
+ACK: The request to build complete pipeline recovery resumes local implementation. Fresh detached source worktree pipeline-recovery-20261107T000243132488Z-07cb4096 starts at 07cb40965, upstream b52144955. APPEND-RECOVERY.md records the first local Delta append contract before code: existing StreamSource/local runner, same-log ownership/preparation/completion, required writer protocol, process-crash-only storage model, strict typed config and real subprocess recovery tests. Source stays local and unpushed; existing artifacts are preserved. Seven specialist review roles will cover final changes.
