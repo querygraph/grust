@@ -43,6 +43,15 @@ names one pipeline, one local Delta source, one target and a SQL query over `inp
 A bounded mode captures the current input end and finishes its final write; continuous
 mode waits for later commits. This first entry does not replace the existing bounded SDP API.
 
+A `run_id` names the requested run separately from the fixed pipeline computation. A
+retry with that identifier resumes its saved end or returns its recorded completion,
+even when new source data has arrived. A different identifier can capture a new end
+only after the preceding run completes. Save that end before processing any output.
+Reusing an older identifier must never start fresh work; refuse it with its recorded
+status if returning its old result is unavailable. Keep completed identifiers in the
+retained log, including runs that produced no rows. Operational budgets and batch size
+may change on restart without changing the computation.
+
 Parse configuration into a strict versioned type. Reject duplicate or unknown keys,
 wrong types, conflicting paths and unsupported choices. Start with JSON, which is also
 a concrete rendered artifact for future YAML and optional Dhall frontends. Keep those
@@ -58,7 +67,8 @@ for deterministic recomputation, and reject unknown interpretation versions.
 ## Read reproducible input
 
 The first source uses a stable local table location and retained immutable data files.
-Its descriptor fixes table identity, schema and interpretation. Detect observed recreation,
+Its descriptor fixes table identity, schema and interpretation. This first adapter
+requires canonical table-relative data paths; external and absolute data paths are refused. Detect observed recreation,
 missing files, incompatible schema/protocol changes and data-changing tail removals.
 An empty range still checks identity.
 
@@ -127,7 +137,10 @@ The first implementation performs no automatic deletion of recovery artifacts. C
 retained preparation against an explicit budget and stop safely when it is exhausted.
 A later cleanup policy must prove that no pending write or supported restart needs each
 artifact. Process cancellation or loss of ownership does not make uncertain files disposable.
-Output already published as table data has the table's ordinary retention responsibilities.
+The initial directory budget conservatively counts published output too. Increasing it
+allows recovery without changing the computation. These checks bound one active writer's
+preparation; a hard quota shared by overlapping processes requires a filesystem quota.
+Published output also has the table's ordinary retention responsibilities.
 
 ## Build and verify in reviewable pieces
 
@@ -145,8 +158,9 @@ legitimate identical rows. This detects both duplicate writes and accidentally s
 Deterministic stopping points use a no-op observer in production and a default-off test
 feature in the CLI. Test controls are not part of pipeline configuration.
 
-Pause A immediately before conditional publication, let B take over and publish, then
-resume A and require rejection. Test concurrent creation, changed content under one write
+Pause A immediately before conditional publication, let B take over, then resume A
+before B publishes and require rejection. Also resume A after B publishes: it may
+recognize the same receipt, but must never create a second append. Test concurrent creation, changed content under one write
 identifier, missing input and prepared files, empty input, changed batch sizes and bounded
 completion. Ordinary reads must succeed; ordinary writes to a protected target must fail
 without changing its log or rows. Test resource failures without advancing progress.
