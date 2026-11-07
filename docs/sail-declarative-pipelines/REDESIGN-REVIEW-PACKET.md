@@ -75,8 +75,8 @@ The alternatives are:
 
 Prefer an existing catalog if it can enforce the contract. The local filesystem target
 uses the same-log design to avoid a second durable authority. Decide whether that cost
-and storage contract fit Sail, or whether a catalog or protected service is preferable. A property that only cooperating Sail writers honor cannot
-control other permitted clients. Creation, maintenance and retries need the same
+and storage contract fit Sail, or whether a catalog or protected service is preferable. A property
+that only cooperating Sail writers honor cannot control other permitted clients. Creation, maintenance and retries need the same
 protection as ordinary appends.
 
 The first failure model also needs a choice. Surviving a process crash while the OS
@@ -126,10 +126,11 @@ Separately, testing found defects in the current streaming code on `main` that d
 depend on these decisions: marker encoding drops decimal precision and schema metadata
 and decodes payload-free batches with zero rows, the streaming filter evaluates casts on
 marker placeholders, and a failed streaming query can be reported as successful. Each fix
-has a test that fails on `main`, and they can be reviewed as one small pull request now. Append recovery comes before keyed change capture
-because the latter adds durable record versions to that same recovery path. Configuration
-validation and native interface work can proceed independently once their own boundaries
-are agreed. Strict configuration validation, optional authoring with the typed configuration
+has a test that fails on `main`, and they can be reviewed as one small pull request now.
+
+Append recovery comes before keyed change capture because the latter adds durable record
+versions to that same recovery path. Configuration validation and native interface work
+can proceed independently once their own boundaries are agreed. Strict configuration validation, optional authoring with the typed configuration
 language Dhall, and deterministic change ordering remain requirements. Spark compatibility
 cannot justify weaker behavior.
 
