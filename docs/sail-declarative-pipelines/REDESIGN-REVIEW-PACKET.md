@@ -6,10 +6,14 @@ model, adds deterministic updates and deletions, and preserves separately packag
 native Extensions. The first milestone should prove one replayable source feeding
 one append-only destination through a process restart.
 
-This memo asks for three architectural decisions. A local Delta append implementation
-makes the proposed recovery boundaries concrete; its qualification status is recorded
-in the [human review summary](HUMAN-REVIEW.md). The decisions determine which boundaries
-Sail should maintain and what a supported delivery promises.
+This memo asks for four architectural decisions. To test the design, a local
+implementation reads one Delta table continuously and appends to another, and resumes
+correctly after the process is killed at any point before or after a write, including
+when the write succeeded but its reply was lost. It is local only: one source partition,
+the local job runner, process crashes but not power loss. It is offered as reference
+material for these decisions, in a few large pull requests that each explain one boundary,
+not as something to merge as is. The decisions determine which boundaries Sail should
+maintain and what a supported delivery promises.
 
 ## Use Sail's existing execution ownership
 
@@ -23,19 +27,22 @@ intended output. A message passing through the plan identifies its boundary but 
 not itself make that state durable. Responses from a replaced task must not advance
 the new task's progress.
 
-**Recommend coordinating through the existing job runner and distributed actors.** A
-separate coordinator could span independent jobs, but introduces another lifecycle and
-ownership boundary. Use it only if coordination across jobs belongs in the first delivery.
-Local control and process-replacement tests support the proposed route. Distributed
-task replacement and cancellation still need testing.
+**Decision 1: recommend coordinating through the existing job runner and distributed
+actors.** A separate coordinator could span independent jobs, but introduces another
+lifecycle and ownership boundary. Use it only if coordination across jobs belongs in the
+first delivery. Local control and process-replacement tests support the proposed route.
+Distributed task replacement and cancellation still need testing.
 
-There is a related operator choice. User expressions must evaluate data, not internal
-control placeholders: a cast on a placeholder can fail a valid query. Dedicated streaming
-filter and projection nodes work locally, but alternating data and control messages
-produce expensive small batches. Adapting existing operators is another reasonable
-mechanism. **Choose which operator boundary Sail should maintain.** Both options must
-preserve message order and pass performance checks; the current reference code does
-not settle that choice.
+**Decision 2: where user expressions are kept away from control messages.** A control
+message travels as a row whose data columns hold placeholders, so a strict cast on a
+placeholder can fail a valid query. The reference code adds dedicated streaming filter and
+projection nodes that evaluate only data rows and pass control rows through in order. On
+data-only input they cost about the same as the ordinary operators. When control messages
+alternate with data row by row, each run becomes its own output batch, and the measured
+slowdown is roughly a hundred to a thousand times; with one control message per batch it
+is two to three times. The alternative is to change Sail's existing filter and projection
+to skip control rows. **Choose which operator boundary Sail should maintain**, and whether
+batching adjacent outputs under a byte limit is an acceptable way to remove that cost.
 
 ## Choose where a destination accepts a write
 
@@ -52,8 +59,12 @@ resume after a replacement has taken over. Reading the newest table version does
 restore its permission to write. The destination must check current ownership together
 with acceptance of each write. This rejection of obsolete writers is called fencing.
 
-**Support one Delta append target first, and assess its commit mechanism explicitly.**
-The local implementation records ownership and publication in the same Delta log.
+**Decision 3: support one Delta append target first, and choose its commit mechanism
+explicitly.** The local implementation records ownership and publication in the same Delta
+log. To stop other writers from bypassing that check, it marks each pipeline target table
+with a Sail-specific required writer feature: Delta writers that do not implement the
+feature must refuse the table, and ordinary Sail writes refuse it too. Reads are unchanged.
+That is a visible change to what these tables are, and it needs your agreement.
 The alternatives are:
 
 | Mechanism | Why consider it | What must be established |
@@ -84,7 +95,7 @@ functions. It reduces coupling to those Rust types, but its binary contract must
 be pinned and checked against the producer.
 
 Replacing the existing interface would force package migration alongside streaming work.
-Supporting both adds loader and compatibility responsibilities. **Recommend preserving
+Supporting both adds loader and compatibility responsibilities. **Decision 4: recommend preserving
 the existing route and letting each exported function select the additional C interface.**
 Decide whether that extra boundary belongs in Sail's host.
 
@@ -100,20 +111,28 @@ coordinates source and operator snapshots, while connectors determine when outpu
 visible. Iceberg's Flink connector can complete a checkpoint before a table commit succeeds.
 This supports keeping saved recovery progress separate from publication status. Flink's
 internal ownership checks also do not prove that an arbitrary table rejects an old writer.
-The [Flink comparison](FLINK-COMPARISON.md) supplies versioned sources and explains the
+A separate comparison with Flink supplies versioned sources and explains the
 implications; it does not substitute for testing Sail's chosen target.
 
 ## The requested outcome
 
 Select the execution and operator boundaries, first target's commit mechanism and failure
-model, and native package boundary. Append recovery comes before keyed change capture
+model, and native package boundary. The reference implementation is started by a separate
+local command, `sail pipeline run --config <file>`, rather than through the Spark pipelines
+API; say whether a separate entry point is acceptable or whether recovery must arrive
+through the existing API first.
+
+Separately, testing found defects in the current streaming code on `main` that do not
+depend on these decisions: marker encoding drops decimal precision and schema metadata
+and decodes payload-free batches with zero rows, the streaming filter evaluates casts on
+marker placeholders, and a failed streaming query can be reported as successful. Each fix
+has a test that fails on `main`, and they can be reviewed as one small pull request now. Append recovery comes before keyed change capture
 because the latter adds durable record versions to that same recovery path. Configuration
 validation and native interface work can proceed independently once their own boundaries
 are agreed. Strict configuration validation, optional authoring with the typed configuration
 language Dhall, and deterministic change ordering remain requirements. Spark compatibility
 cannot justify weaker behavior.
 
-For fuller context, read [the overview](HUMAN-REVIEW.md),
-[streaming](STREAMING-ON-STREAMSOURCE.md), [change capture](CHANGE-CAPTURE-ON-STREAMSOURCE.md),
-then [Extensions](EXTENSIONS-STREAMSOURCE-INTEGRATION.md). The
-[delivery plan](REDESIGN-PLAN.md) and detailed evidence are optional references.
+Optional detail, not needed to answer the questions: the streaming, change-capture and
+Extensions proposals, a comparison with Flink's design, and the test evidence for the
+reference implementation.

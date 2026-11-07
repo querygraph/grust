@@ -19,16 +19,15 @@ bounded microbatches, and asked that documents need no outside context.
 
 ## Where they will push back
 
-**1. "You built it again before asking."** The message leads with "a tested local
-Delta append implementation demonstrates recovery". Behind that sentence is
-13 commits and about 27,500 added lines against their `main`, the largest
-single commit 7,248 lines, all built since their feedback and none seen by
-them. Their feedback was that review at the end is too late and AI output
-exceeds human bandwidth. The memo is the design conversation they asked for,
-but it arrives after the implementation, and the closing question ("which
-piece should we prepare for focused code review first?") reads as an
-invitation to review that code. Expect: "Thanks, but we asked to discuss the
-design first; we can't review this."
+**1. Unexplained code arriving with the design.** The message leads with "a tested
+local Delta append implementation demonstrates recovery". Behind that sentence are 13
+commits and about 27,500 added lines against their `main`, built since their feedback.
+Their objection was to a queue of forty-odd PRs they could not digest, not to a few
+large reference PRs, so offering the code is acceptable if each piece is properly
+explained. As sent, it is not: seven of the thirteen commits had no message body,
+including the 7,248-line append commit, and "which piece should we prepare for focused
+code review first?" hands them the job of working out what the code is. Expect: "What
+are we being asked to review, and why is it this size?"
 
 **2. A product decision is buried in question 2.** "Recording ownership and
 writes together in Delta's log" means adding a Sail-specific required writer
@@ -60,58 +59,52 @@ and metadata loss in marker encoding, strict casts evaluated on marker
 placeholders, failures reported as success. These are exactly the small PRs
 they asked for, and the message does not offer them.
 
-## Proposed changes
+## Changes made
 
-1. **Close #2930** with one line ("superseded by a shorter design memo") before
-   sending anything.
-2. **Paste the memo into their discussion thread** rather than linking Grust.
-   Drop the dependency on `HUMAN-REVIEW.md`: put its one relevant sentence of
-   status in the memo.
-3. **Say plainly what the code is and is not.** One sentence: "To test the
-   design we wrote a local prototype; we are not proposing it for review and
-   will rebuild what you approve as small PRs." Do not describe it as tested
-   evidence of readiness.
-4. **Split question 1** into coordination (job runner and task actors) and
-   operators (new nodes versus adapting yours), and state the dense-marker
-   cost with the alternative.
-5. **Make the Delta choice explicit in question 2**: "Pipeline targets would carry
-   a Sail writer feature that other writers must refuse. Is that acceptable for
-   a first target, or should ownership live in a catalog or commit service?"
-   Mention the new CLI entry as a separate yes-or-no.
-6. **Replace "which piece should we prepare for focused code review"** with a
-   concrete offer: the foundation bug fixes as four or five small PRs, each
-   with its failing test, ready now.
-7. **Hold the Flink comparison** until someone asks; offer it in one line.
+Applied on 2026-11-06, after the owner noted that a few large PRs are acceptable when
+properly explained:
+
+1. **Every commit now has a full message.** The seven body-less commits were given
+   messages stating the defect or decision, the change, known costs, the tests, and the
+   design document behind them. Trees, authors and dates are unchanged; the old-to-new
+   hashes are in `COMMIT-MAP.md`. The append pipeline tip now has its own branch,
+   `work/delta-append-recovery-20261106`.
+2. **The memo asks four questions, not three.** Coordination and the operator boundary
+   are separate decisions, and the operator decision states the measured cost (about two
+   to three times with one marker per batch, a hundred to a thousand times when markers
+   alternate row by row) and the alternative of changing Sail's existing operators.
+3. **The Delta choice is explicit.** The memo says pipeline targets carry a Sail-specific
+   required writer feature that other writers must refuse, and asks for agreement. The
+   separate `sail pipeline run` entry point is asked as its own question.
+4. **The code is framed as a few explained reference PRs**, not a review queue and not
+   "ready". The memo describes what the local implementation does and its limits in its
+   own words, so it no longer depends on the human review summary.
+5. **The bug fixes are offered as one small PR now**, with the defects named.
+6. **The memo has no required links.** The Flink comparison and other documents are
+   mentioned as optional detail, to be attached rather than linked into Grust.
+
+Still for the owner to do before sending: close lakehq/sail#2930 with a one-line note
+that it is superseded, and paste the memo into the discussion thread rather than linking
+the Grust repository.
 
 ## Suggested message
 
-> We'd like your direction on building declarative pipelines and change capture
-> on Sail's continuous `StreamSource` execution, before we write production code.
-> The memo below explains the fit and the choices.
+> We'd like your direction on building declarative pipelines and change capture on Sail's
+> continuous `StreamSource` execution. The memo below explains the fit and asks four
+> questions: where checkpoint coordination lives, how user expressions are kept away from
+> control messages, how the first Delta target rejects obsolete writers, and whether
+> Comet's Arrow-only scalar interface should sit alongside the existing native interface.
 >
-> To test the design we built a local prototype of one recoverable Delta-to-Delta
-> append pipeline. We are not proposing it for review; we will rebuild whatever
-> you approve as small PRs.
+> To test the design we built a local Delta-to-Delta append pipeline that survives process
+> crashes. We can share it as a few large reference PRs, each explaining one boundary,
+> once you've told us which boundaries you would keep or change.
 >
-> Four questions:
->
-> 1. Coordination: should checkpoint coordination go through the existing job
->    runner and task actors?
-> 2. Operators: user expressions must not run on control markers. Should that be
->    new streaming filter and projection nodes, or changes to the existing ones?
->    The new nodes are correct but slow down sharply when markers are dense.
-> 3. First target: pipeline target tables would carry a Sail-specific Delta writer
->    feature so that other writers must refuse them. Is that acceptable for a first
->    target, or should ownership live in a catalog or commit service? Is surviving
->    a process crash (not power loss) a reasonable first milestone?
-> 4. Extensions: should Comet's Arrow-only scalar interface sit alongside the
->    existing native interface? This is independent of the rest.
->
-> Separately, while testing we found and fixed several bugs in the current
-> streaming code on `main` (marker encoding loses decimal parameters and schema
-> metadata, filters evaluate casts on marker placeholders, query failures can be
-> reported as success). We can open these now as small PRs with failing tests.
-> We also have a comparison with Flink's design if that is useful.
+> Separately, testing found defects in the current streaming code on `main`: marker
+> encoding loses decimal parameters and schema metadata, filters evaluate casts on marker
+> placeholders, and a failed streaming query can be reported as successful. These fixes
+> are independent of the decisions, each has a test that fails on `main`, and we can open
+> them as one small PR now. A comparison with Flink's design is attached for anyone who
+> wants it.
 
 ## What this review did not do
 
