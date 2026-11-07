@@ -1,19 +1,37 @@
 # Decisions for recoverable streaming pipelines on Sail
 
-Sail Declarative Pipelines should keep tables current from declared computations and
-resume safely after failures. The proposed design uses Sail's continuous execution
-model, adds deterministic updates and deletions, and preserves separately packaged
-native Extensions. The first milestone should prove one replayable source feeding
-one append-only destination through a process restart.
+Declarative pipelines let a user describe the tables they want instead of the jobs that
+produce them. Each table or view is declared as a query over sources or other tables,
+in SQL or Python. The engine reads the declarations, works out the dependency graph,
+creates the tables, and keeps them up to date in the right order. Users write no
+orchestration code, no scheduling, and no bookkeeping of what has already been processed.
+Spark 4.2 ships this as Spark Declarative Pipelines, with an unchanged client that talks
+to the server over Spark Connect; we have implemented its batch part on Sail.
 
-This memo asks for four architectural decisions. To test the design, a local
+The same declarations cover streaming and change data capture. A **streaming table**
+processes only data that arrived since the last run, or continuously as it arrives,
+instead of recomputing everything. A **change-capture flow** reads a stream of inserts,
+updates and deletes from a source database or log, keyed by a primary key and ordered
+by a version, and keeps a table holding the current state of each record, even when
+changes arrive late or out of order. Both are what users otherwise hand-build with
+streaming jobs, merge statements and checkpoint directories.
+
+This memo proposes how Sail should run those two incremental kinds. Build them on
+Sail's existing continuous `StreamSource` execution rather than on repeated batch jobs,
+make the result of a change-capture flow depend only on the data, not on how it was
+split into batches, and keep separately packaged native Extensions working inside
+pipelines. Because these pipelines run unattended and write tables, the part that most
+needs agreement is what happens when they stop partway: a restart must neither lose
+rows nor write them twice. The decisions below are mostly about that.
+
+The memo asks for four architectural decisions. To test the design, a local
 implementation reads one Delta table continuously and appends to another, and resumes
 correctly after the process is killed at any point before or after a write, including
 when the write succeeded but its reply was lost. It is local only: one source partition,
 the local job runner, process crashes but not power loss. It is offered as reference
-material for these decisions, in a few large pull requests that each explain one boundary,
-not as something to merge as is. The decisions determine which boundaries Sail should
-maintain and what a supported delivery promises.
+material for these decisions, in a few large pull requests that each explain one
+boundary, not as something to merge as is. The proposed first milestone is that same
+shape, one replayable source feeding one append-only table through a restart.
 
 ## Use Sail's existing execution ownership
 
